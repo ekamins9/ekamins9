@@ -34,9 +34,12 @@
          attacker is stunned, defender gets a riposte speed buff.
 
      INJURY (see Injury / Ragdoll modules)
-       • A lethal hit to an arm or leg has DISMEMBER_CHANCE to sever it
-         instead of killing: the victim survives on BLEED_HP and bleeds out.
-         Lethal head hits decapitate when DECAPITATE is on.
+       • Head hits deal HEAD_DAMAGE_MULT × damage. A LETHAL hit to a limb
+         severs that limb (DISMEMBER_ON_KILL); with BLEED_OUT_CHANCE the
+         victim survives it on BLEED_HP and bleeds out instead of dying.
+         A lethal head hit decapitates (DECAPITATE).
+       • A lethal STAB (attack kind = "stab") doesn't sever: the weapon is
+         left run through the body (IMPALE) until the corpse despawns.
        • Blocking with a missing arm, or taking a guard hit at 0 stamina,
          flings the weapon out of the hand (a real pickup on the ground).
        • Losing the right arm drops the weapon; losing the left arm drops it
@@ -70,7 +73,7 @@ CombatServer.DEFAULTS = {
 	-- weapon identity (a weapon MUST provide these)
 	IDLE_ID     = nil,
 	BLOCK_ID    = nil,
-	ATTACKS     = nil,   -- { Name = {anim, damage, windup, active, recovery, blockCost, staminaCost, speed} }
+	ATTACKS     = nil,   -- { Name = {anim, kind="slash"|"stab", damage, windup, active, recovery, blockCost, staminaCost, speed} }
 	CYCLE_ORDER = nil,   -- { "Stab", "LeftSwing", ... } for left-click cycling
 
 	-- weapon feel
@@ -95,9 +98,11 @@ CombatServer.DEFAULTS = {
 	REACH_TOLERANCE  = 3.0,   -- latency slack on top of REACH
 	HIT_GRACE        = 0.30,  -- accept reports this long after release ends (round-trip lag)
 	MIN_PHASE        = 0.05,
-	HEAD_ONESHOT     = true,
-	DECAPITATE       = true,  -- lethal head hits take the head off (death cam rides it)
-	DISMEMBER_CHANCE = 0.35,  -- lethal arm/leg hits: chance to sever + bleed instead of kill
+	HEAD_DAMAGE_MULT = 2.0,   -- head hits hurt this much more (no longer an automatic kill)
+	DECAPITATE       = true,  -- lethal slash to the head takes it off (death cam rides it)
+	DISMEMBER_ON_KILL= true,  -- lethal slash to an arm/leg takes that limb off
+	BLEED_OUT_CHANCE = 0.35,  -- …and this often the victim survives it, bleeding, instead of dying
+	IMPALE           = true,  -- lethal stab leaves the weapon run through the body
 	KNOCKDOWN_TIME   = 2.00,  -- ragdoll time after a leg hit
 	DISARM_STUN      = 0.60,  -- stagger after your weapon is knocked away
 
@@ -264,6 +269,18 @@ function CombatServer.attach(Tool, weaponConfig)
 		return d.Magnitude > 1e-3 and d.Unit or Vector3.new(0, 0, -1)
 	end
 
+	-- world direction of our blade's long axis, pointed toward the target
+	local function bladeDirTo(target)
+		local toward = dirTo(target)
+		local box = hitboxes[1]
+		if not box then return toward end
+		local s = box.Size
+		local axis = (s.X >= s.Y and s.X >= s.Z) and Vector3.xAxis or (s.Y >= s.Z and Vector3.yAxis or Vector3.zAxis)
+		local v = box.CFrame:VectorToWorldSpace(axis)
+		if v:Dot(toward) < 0 then v = -v end
+		return v
+	end
+
 	-- victim's client listens for HitTick to flinch the camera; HitDir says which way
 	local function flinch(target, dir)
 		target:SetAttribute("HitDir", dir)
@@ -422,35 +439,38 @@ function CombatServer.attach(Tool, weaponConfig)
 		Injury.bloodBurst(part)
 		flinch(target, dir)
 
-		if region == "head" and cfg.HEAD_ONESHOT then
-			if cfg.DECAPITATE and Injury.dismember(target, "Head", dir) then
+		local dmg    = info.damage * (region == "head" and cfg.HEAD_DAMAGE_MULT or 1)
+		local lethal = hum.Health - dmg <= 0
+		local isStab = info.kind == "stab"
+		-- the limb we actually struck (only real rig parts, not accessories)
+		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
+
+		if lethal then
+			if isStab then
+				hum:TakeDamage(dmg)
+				if cfg.IMPALE then Injury.impale(target, part, Tool, bladeDirTo(target)) end
+				dprint("KILLED", target.Name, "with a stab", region)
+			elseif limb == "Head" and cfg.DECAPITATE and Injury.hasLimb(target, "Head") then
+				Injury.dismember(target, "Head", dir, true)
 				dprint("DECAPITATED", target.Name)
+			elseif limb and limb ~= "Head" and cfg.DISMEMBER_ON_KILL and Injury.hasLimb(target, limb) then
+				local survives = target:GetAttribute("Bleeding") ~= true and math.random() < cfg.BLEED_OUT_CHANCE
+				Injury.dismember(target, limb, dir, not survives)
+				dprint(survives and "DISMEMBERED (bleeding out)" or "KILLED, severed", target.Name, limb)
 			else
-				hum:TakeDamage(hum.MaxHealth)
-				dprint("HEADSHOT on", target.Name)
+				hum:TakeDamage(dmg)
+				dprint("KILLED", target.Name, region)
 			end
 			tell("HitConfirm", region)
 			return
 		end
 
-		-- lethal limb hit: chance to take the limb instead of the life
-		local lethal = hum.Health - info.damage <= 0
-		local limb = (part.Parent == target and Injury.LIMBS[part.Name] and part.Name ~= "Head") and part.Name or nil
-		if lethal and limb and target:GetAttribute("Bleeding") ~= true
-			and Injury.hasLimb(target, limb) and math.random() < cfg.DISMEMBER_CHANCE then
-			if Injury.dismember(target, limb, dir) then
-				dprint("DISMEMBERED", target.Name, limb)
-				tell("HitConfirm", region)
-				return
-			end
-		end
-
-		hum:TakeDamage(info.damage)
+		hum:TakeDamage(dmg)
 		if region == "legs" and hum.Health > 0 then
 			Ragdoll.knockdown(target, cfg.KNOCKDOWN_TIME)
 			Sounds.play(SoundConfig.BodyFall, target:FindFirstChild("Torso"))
 		end
-		dprint("hit", target.Name, region, info.damage)
+		dprint("hit", target.Name, region, dmg)
 		tell("HitConfirm", region)
 	end
 
@@ -666,6 +686,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if character:GetAttribute("BlockMeter") == nil then
 			character:SetAttribute("BlockMeter", cfg.BLOCK_MAX)
 		end
+		character:SetAttribute("BlockMax", cfg.BLOCK_MAX)   -- HUD scale
 		character:SetAttribute("Blocking", false)
 		setGuard(false)
 		-- weapon weight: composes with armor etc. via ReplicatedStorage.Modifiers

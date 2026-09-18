@@ -6,6 +6,7 @@ return {
 	Heartbeat = "rbxassetid://0",   -- client: loop while bleeding / low HP (InjuryFX)
 	Death     = "rbxassetid://0",   -- server: at the head on death
 	Dismember = "rbxassetid://0",   -- server: limb severed
+	Impale    = "rbxassetid://0",   -- server: lethal stab leaves the weapon in the body
 	Bleed     = "rbxassetid://0",   -- server: bleed-out begins
 	Disarm    = "rbxassetid://0",   -- server: weapon flies out of a hand
 	BodyFall  = "rbxassetid://0",   -- server: ragdoll knockdown

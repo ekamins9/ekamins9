@@ -26,6 +26,7 @@ Injury.CONFIG = {
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at
 	DISARM_NO_PICKUP = 2.0,   -- seconds before a flung weapon can be grabbed again
 	LIMB_DEBRIS_TIME = 25,
+	IMPALE_DEPTH     = 1.5,   -- how far past the hit point a lethal stab's weapon sits
 	BLOOD_COLOR      = Color3.fromRGB(120, 0, 0),
 }
 local C = Injury.CONFIG
@@ -150,9 +151,46 @@ function Injury.disarm(char, dir)
 end
 
 --------------------------------------------------------------------
---  DISMEMBER
+--  IMPALE — a lethal stab leaves a copy of the weapon run through the
+--  corpse (welded to the struck part, gone when the body despawns).
+--  The attacker keeps the real weapon.
 --------------------------------------------------------------------
-function Injury.dismember(char, partName, dir)
+local STRIP = {"BaseScript", "JointInstance", "Constraint", "Attachment", "Trail", "ParticleEmitter", "Sound"}
+
+function Injury.impale(char, hitPart, tool, bladeDir)
+	if not (hitPart and tool and hitPart:IsDescendantOf(char)) then return false end
+	local shift = bladeDir.Unit * C.IMPALE_DEPTH
+	local model = Instance.new("Model")
+	model.Name = "ImpaledWeapon"
+	local count = 0
+	for _, d in ipairs(tool:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name ~= "GuardHull" and d.Transparency < 1 then
+			local c = d:Clone()
+			for _, child in ipairs(c:GetDescendants()) do
+				for _, cls in ipairs(STRIP) do
+					if child:IsA(cls) then child:Destroy(); break end
+				end
+			end
+			c.CanCollide, c.CanQuery, c.CanTouch = false, false, false
+			c.Massless, c.Anchored = true, false
+			c.CFrame = d.CFrame + shift
+			c.Parent = model
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1, weld.Parent = hitPart, c, c
+			count += 1
+		end
+	end
+	if count == 0 then model:Destroy(); return false end
+	model.Parent = char
+	Sounds.play(SoundConfig.Impale, hitPart)
+	return true
+end
+
+--------------------------------------------------------------------
+--  DISMEMBER  (fatal = the limb comes off and they die; otherwise they
+--  survive on BLEED_HP and bleed. Head is always fatal.)
+--------------------------------------------------------------------
+function Injury.dismember(char, partName, dir, fatal)
 	local part  = char:FindFirstChild(partName)
 	local torso = char:FindFirstChild("Torso")
 	local hum   = char:FindFirstChildOfClass("Humanoid")
@@ -206,7 +244,9 @@ function Injury.dismember(char, partName, dir)
 	char:SetAttribute("Blocking", false)
 	Injury.recomputeMobility(char)
 	Sounds.play(SoundConfig.Dismember, torso)
-	if partName ~= "Head" then Injury.startBleed(char) end
+	if partName ~= "Head" then
+		if fatal then hum.Health = 0 else Injury.startBleed(char) end
+	end
 	return true
 end
 

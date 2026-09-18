@@ -7,6 +7,11 @@
      FP gets its own clunk boost (translation + a small rotational kick per
      step) so it reads heavier than TP without changing TP's tuned feel.
 
+     The body pose itself (aim bend, lean, bob, kick, crouch, sway) is
+     computed by ReplicatedStorage.RigPose and the INPUTS are sent ~20×/s
+     through PoseRelay so every other client renders the same pose on us —
+     that is what makes a crouch or a lean-back a real dodge.
+
      Inputs published by other systems (all optional, all on the character):
        ClunkMult_<Source>  (server: weapon, armor…) footstep weight, composed
                            by ReplicatedStorage.Modifiers, 1 = base
@@ -30,6 +35,7 @@ local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Modifiers      = require(ReplicatedStorage:WaitForChild("Modifiers"))
 local Sounds         = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local RigPose        = require(ReplicatedStorage:WaitForChild("RigPose"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
 
 local player    = Players.LocalPlayer
@@ -39,29 +45,27 @@ local Camera    = workspace.CurrentCamera
 local Humanoid = character:WaitForChild("Humanoid")
 if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then return end
 
-local Head          = character:WaitForChild("Head")
-local Torso         = character:WaitForChild("Torso")
-local HRP           = character:WaitForChild("HumanoidRootPart")
-local LeftArm       = character:WaitForChild("Left Arm")
-local RightArm      = character:WaitForChild("Right Arm")
-local Neck          = Torso:WaitForChild("Neck")
-local RootJoint     = HRP:WaitForChild("RootJoint")
-local LeftHip       = Torso:WaitForChild("Left Hip")
-local RightHip      = Torso:WaitForChild("Right Hip")
-local LeftShoulder  = Torso:WaitForChild("Left Shoulder")
-local RightShoulder = Torso:WaitForChild("Right Shoulder")
+local Head      = character:WaitForChild("Head")
+local Torso     = character:WaitForChild("Torso")
+local HRP       = character:WaitForChild("HumanoidRootPart")
+local LeftArm   = character:WaitForChild("Left Arm")
+local RightArm  = character:WaitForChild("Right Arm")
+local Neck      = Torso:WaitForChild("Neck")
+local RootJoint = HRP:WaitForChild("RootJoint")
+Torso:WaitForChild("Left Hip"); Torso:WaitForChild("Right Hip")
+Torso:WaitForChild("Left Shoulder"); Torso:WaitForChild("Right Shoulder")
 
-local NeckOrigin = Neck.C0
-local RootOrigin = RootJoint.C0
-local LHipOrigin = LeftHip.C0
-local RHipOrigin = RightHip.C0
-local LShOrigin  = LeftShoulder.C0
-local RShOrigin  = RightShoulder.C0
+local Joints  = RigPose.joints(character)
+local Origins = RigPose.origins(character)
+if not (Joints and Origins) then return end
 
 -- C1 values are never modified by this script, so they're stable to read
 -- back for forward-kinematics (unlike Part.CFrame, which lags a frame)
 local RootC1 = RootJoint.C1
 local NeckC1 = Neck.C1
+
+local poseRemote   = ReplicatedStorage:WaitForChild("PoseRemote")
+local crouchRemote = ReplicatedStorage:WaitForChild("CrouchRemote")
 
 --------------------------------------------------------------------
 --  SETTINGS
@@ -91,27 +95,15 @@ local SHOULDER_Y  = 0.0
 
 local ACCESSORY_TRANSPARENCY = 1
 
--- aim rig
-local PITCH_DIR   = -1
-local NECK_PITCH  = 0.7
-local TORSO_PITCH = 0.5
-local TORSO_PIVOT = 1.0
-local ARM_PITCH   = 0.7
-local RIGHT_ARM_DIR = 1
-local LEFT_ARM_DIR  = -1
-local LEAN_DIR        = 1
+-- rig response (pose shapes live in RigPose.CONFIG so other clients match)
 local MOMENTUM_FACTOR = 0.008
 local BEND_SPEED      = 16
-
--- kick: procedural pose layered on the hip joint, so it never fights weapon idles.
--- Rise time comes from the server's KICK_WINDUP so the leg peaks on the hit frame.
-local KICK_ANGLE    = math.rad(80)  -- how far the right leg swings forward
-local KICK_DIR      = 1             -- flip to -1 if the leg swings backward
-local KICK_FALL     = 0.30          -- retract time after the peak
-local KICK_SNAP     = 40            -- joint lerp speed during the kick (BEND_SPEED is too mushy)
-local KICK_LEAN     = 0.12          -- torso lean-back at full extension
-local KICK_LEAN_DIR = -1            -- flip if the torso leans forward instead of back
-local KICK_CAM      = 0.04          -- FP head bump at kick start
+local KICK_FALL       = 0.30   -- retract time after the kick peak
+local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED is too mushy)
+local KICK_CAM        = 0.04   -- FP head bump at kick start
+local CROUCH_KEY      = Enum.KeyCode.LeftControl
+local CROUCH_SPEED    = 9      -- how fast the crouch pose settles
+local POSE_RATE       = 1/20   -- how often our pose inputs go to other players
 
 -- walk bob (stepped/clunky, not a smooth wave) — scales with Humanoid.WalkSpeed:
 -- slower than BASE_WALKSPEED (e.g. heavy armor) = heavier, slower clunks;
@@ -192,6 +184,9 @@ local lastInFP = nil
 local eyePos = nil
 local lastKickAt = 0
 local wasCapped = false
+local crouchHeld, crouchAmt = false, 0
+local lastPoseSent = 0
+local CROUCH_DROP = RigPose.CONFIG.CROUCH_DROP
 
 local camRay = RaycastParams.new()
 camRay.FilterType = Enum.RaycastFilterType.Exclude
@@ -238,6 +233,18 @@ UIS.InputChanged:Connect(function(input)
 	elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 		camDistTarget = math.clamp(camDistTarget - input.Position.Z * ZOOM_STEP, 0, TP_MAX_DIST)
 	end
+end)
+
+local function setCrouch(on)
+	if crouchHeld == on then return end
+	crouchHeld = on
+	crouchRemote:FireServer(on)
+end
+UIS.InputBegan:Connect(function(input, gp)
+	if not gp and input.KeyCode == CROUCH_KEY then setCrouch(true) end
+end)
+UIS.InputEnded:Connect(function(input)
+	if input.KeyCode == CROUCH_KEY then setCrouch(false) end
 end)
 
 --------------------------------------------------------------------
@@ -293,8 +300,6 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	if not bodyFree then
 		HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, rot.Y, 0)
 	end
-
-	local p = rot.X * PITCH_DIR
 
 	-- movement
 	local flatVel = HRP.AssemblyLinearVelocity * Vector3.new(1,0,1)
@@ -364,7 +369,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	local breatheX = math.sin(now*BREATHE_HZ) * BREATHE_AMOUNT * idle
 	local breatheY = math.sin(now*BREATHE_HZ*2) * BREATHE_AMOUNT * 0.5 * idle
 
-	-- KICK pose: snaps out over the server windup, eases back over KICK_FALL
+	-- KICK: snaps out over the server windup, eases back over KICK_FALL
 	local kickAt   = character:GetAttribute("LocalKickAt") or 0
 	local kickRise = character:GetAttribute("LocalKickRise") or 0.22
 	local kickT    = now - kickAt
@@ -382,30 +387,28 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 		lastKickAt = kickAt
 		sKick.v = sKick.v - KICK_CAM * 26
 	end
-	local kickLean = CFrame.Angles(KICK_LEAN * KICK_LEAN_DIR * kickPose, 0, 0)
 
-	-- HEAD
-	Neck.C0 = Neck.C0:Lerp(NeckOrigin * CFrame.Angles(p*NECK_PITCH, 0, 0), a)
+	-- CROUCH
+	crouchAmt = crouchAmt + ((crouchHeld and 1 or 0) - crouchAmt) * math.clamp(dt*CROUCH_SPEED, 0, 1)
 
-	-- TORSO aim + walk lean + kick lean + bob
-	local x = moveDir.X * math.abs(relVel.X) * MOMENTUM_FACTOR
-	local z = moveDir.Z * math.abs(relVel.Z) * MOMENTUM_FACTOR
-	local walkLean = CFrame.Angles(z*LEAN_DIR, 0, x*LEAN_DIR)
-	local aim = CFrame.new(0,0,-TORSO_PIVOT) * CFrame.Angles(p*TORSO_PITCH,0,0) * CFrame.new(0,0,TORSO_PIVOT)
-	local rootBend = RootOrigin * aim * walkLean * kickLean
-	RootJoint.C0 = RootJoint.C0:Lerp(CFrame.new(0, torsoBobY, 0) * rootBend, a)
-
-	-- LEGS stay straight/planted; right leg swings for the kick
-	local counter = RootOrigin * rootBend:Inverse()
+	-- BODY POSE (shared math; the same inputs are relayed to other clients)
+	local inputs = {
+		pitch  = rot.X,
+		bob    = torsoBobY,
+		leanX  = moveDir.X * math.abs(relVel.X) * MOMENTUM_FACTOR,
+		leanZ  = moveDir.Z * math.abs(relVel.Z) * MOMENTUM_FACTOR,
+		kick   = kickPose,
+		crouch = crouchAmt,
+		arm    = character:FindFirstChildOfClass("Tool") and (rot.X * RigPose.CONFIG.ARM_PITCH) or 0,
+		swayX  = swayX,
+		swayY  = swayY,
+	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
-	LeftHip.C0  = LeftHip.C0:Lerp(counter * LHipOrigin, legA)
-	RightHip.C0 = RightHip.C0:Lerp(counter * RHipOrigin * CFrame.Angles(0, 0, KICK_DIR * KICK_ANGLE * kickPose), legA)
-
-	-- ARMS aim + sway
-	local armAng = character:FindFirstChildOfClass("Tool") and (rot.X*ARM_PITCH) or 0
-	local swayCF = CFrame.Angles(swayY, swayX, 0)
-	RightShoulder.C0 = RightShoulder.C0:Lerp(swayCF * RShOrigin * CFrame.Angles(0,0,armAng*RIGHT_ARM_DIR), a)
-	LeftShoulder.C0  = LeftShoulder.C0:Lerp( swayCF * LShOrigin * CFrame.Angles(0,0,armAng*LEFT_ARM_DIR),  a)
+	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
+	if now - lastPoseSent >= POSE_RATE then
+		lastPoseSent = now
+		poseRemote:FireServer(RigPose.pack(inputs))
+	end
 
 	-- CAMERA
 	local vOff = bobY + breatheY + landDip
@@ -429,7 +432,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	else
 		eyePos = nil
 		Camera.FieldOfView = TP_FOV + FOV_BOOST*walkFrac
-		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)
+		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP - CROUCH_DROP * crouchAmt, 0)
 		camRay.FilterDescendantsInstances = {character}
 		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X, 0, 0)
 		local back = orbit.LookVector * -1
@@ -462,6 +465,7 @@ end)
 --------------------------------------------------------------------
 local function onDied()
 	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
+	setCrouch(false)
 	UIS.MouseBehavior = Enum.MouseBehavior.Default
 	Humanoid.CameraOffset = Vector3.zero
 	setBodyForFP(true)
