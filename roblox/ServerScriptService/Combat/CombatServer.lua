@@ -123,7 +123,9 @@ CombatServer.DEFAULTS = {
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
 	PARRY_WINDOW      = 0.35,
-	PARRY_RETRY       = 0.45,  -- re-tapping block sooner than this gives no new parry window
+	BLOCK_COOLDOWN    = 0.50,  -- after lowering your guard, how long before you can raise it again
+	PARRY_RETRY       = 0.90,  -- …and how long it must have been DOWN to earn a fresh parry window.
+	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
 	PARRY_COST_MULT   = 0.3,   -- a timed parry costs this fraction of the attack's blockCost
 	PARRY_PUNISH_STUN = 1.50,
 	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks run at RIPOSTE_SPEED tempo
@@ -183,7 +185,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	local state = {
 		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick
 		attack = nil, attackName = nil, alreadyHit = {}, queued = nil,
-		windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0,
+		windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0, nextBlockTime = 0,
 		cycleIndex = 0, lastBlockStart = -1e9,
 	}
 
@@ -808,6 +810,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			dprint("block denied: committed"); return
 		end
 		if attr("Blocking") then return end
+		if now < state.nextBlockTime then dprint("block denied: cooldown"); return end
 		setAttr("Blocking", true)
 		if now - state.lastBlockStart >= cfg.PARRY_RETRY then
 			setAttr("ParryUntil", now + cfg.PARRY_WINDOW)
@@ -819,7 +822,11 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local function doBlockStop()
 		if not character then return end
-		if attr("Blocking") then setAttr("Blocking", false) end
+		if attr("Blocking") then
+			setAttr("Blocking", false)
+			state.nextBlockTime = os.clock() + cfg.BLOCK_COOLDOWN
+		end
+		setAttr("ParryUntil", 0)
 		tell("Block", false)
 	end
 
@@ -960,7 +967,10 @@ function CombatServer.attach(Tool, weaponConfig)
 		npcStopAll()
 		removeToolGrip(character)
 		if state.phase ~= "idle" then cancelSwing("unequipped") end
+		-- a weapon leaving the hand mid-guard must not leave the guard raised:
+		-- clear it unconditionally, not just when the attribute still reads true
 		doBlockStop()
+		setAttr("Blocking", false)
 		setSwinging(false)
 		setAttr("SpeedMult_Weapon", nil)
 		setAttr("ClunkMult_Weapon", nil)

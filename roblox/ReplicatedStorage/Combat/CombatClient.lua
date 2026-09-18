@@ -417,6 +417,19 @@ function CombatClient.attach(Tool, weaponConfig)
 		stopAll()
 	end))
 
+	-- The block track is LOOPED and runs on the character's Animator, not on the
+	-- tool — so if this script stops running before stopping it (the tool being
+	-- flung into the world by a disarm parents it out of the player, which kills
+	-- the script), the guard pose loops forever and the player looks stuck
+	-- blocking. Unequipped doesn't cover every teardown, so catch the move itself.
+	table.insert(conns, Tool.AncestryChanged:Connect(function()
+		local char = player.Character
+		-- still ours if it's in the Backpack (a child of the player) or the character
+		if Tool:IsDescendantOf(player) or (char and Tool:IsDescendantOf(char)) then return end
+		equipped = false
+		stopAll()
+	end))
+
 	table.insert(conns, Tool.Activated:Connect(function()  -- left click cycles attacks
 		remote:FireServer("Cycle")
 	end))
