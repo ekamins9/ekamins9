@@ -5,8 +5,16 @@
      camera rig) keep working, and a knockdown can be undone by re-enabling
      them. Death ragdolls are simply never undone.
 
-     Requires Humanoid.BreakJointsOnDeath = false (CharacterSystems sets it)
-     or Roblox will still explode the rig on death. ]]
+     Requires Humanoid.BreakJointsOnDeath = false and RequiresNeck = false
+     (CharacterSystems sets both): otherwise Roblox explodes the rig on
+     death, and disabling the Neck motor would itself kill the humanoid.
+
+     A player's client owns its humanoid's STATE, so the server can't put it
+     into Physics / GettingUp directly; RagdollRemote asks the owning client
+     (CameraRig listens). Server-owned NPCs are switched here directly. ]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Ragdoll = {}
 
@@ -14,7 +22,23 @@ local FOLDER = "RagdollJoints"
 local UPPER_ANGLE = 45
 local TWIST       = 45
 
+local remote = ReplicatedStorage:FindFirstChild("RagdollRemote")
+if not remote then
+	remote = Instance.new("RemoteEvent")
+	remote.Name = "RagdollRemote"
+	remote.Parent = ReplicatedStorage
+end
+
 local function humanoidOf(char) return char:FindFirstChildOfClass("Humanoid") end
+
+local function setState(char, hum, ragdolled)
+	local plr = Players:GetPlayerFromCharacter(char)
+	if plr then
+		remote:FireClient(plr, ragdolled)
+	else
+		hum:ChangeState(ragdolled and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+	end
+end
 
 function Ragdoll.isRagdolled(char)
 	return char:FindFirstChild(FOLDER) ~= nil
@@ -49,7 +73,7 @@ function Ragdoll.enable(char)
 		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then p.CanCollide = true end
 	end
 	hum.PlatformStand = true
-	hum:ChangeState(Enum.HumanoidStateType.Physics)
+	setState(char, hum, true)
 end
 
 function Ragdoll.disable(char)
@@ -70,7 +94,7 @@ function Ragdoll.disable(char)
 	local hum = humanoidOf(char)
 	if hum and hum.Health > 0 then
 		hum.PlatformStand = false
-		hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		setState(char, hum, false)
 	end
 end
 

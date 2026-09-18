@@ -121,6 +121,10 @@ function CombatClient.attach(Tool, weaponConfig)
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
 	rayParams.IgnoreWater = true
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.MaxParts = 8
+	local PROBE = Vector3.new(0.2, 0.2, 0.2)
 
 	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}}
 	local swingToken = nil
@@ -155,6 +159,7 @@ function CombatClient.attach(Tool, weaponConfig)
 		local char = player.Character
 		if not char then return end
 		rayParams.FilterDescendantsInstances = {char}
+		overlapParams.FilterDescendantsInstances = {char}
 		local last = {}
 		for _, b in ipairs(blades) do
 			local pts = {}
@@ -165,35 +170,58 @@ function CombatClient.attach(Tool, weaponConfig)
 		setTrail(true)
 	end
 
-	local function onRayHit(res)
-		local part  = res.Instance
+	-- Raycasts never register a surface they START inside, and at melee range
+	-- the blade is often already inside the target's guard hull (or body) when
+	-- release begins. So each frame every sample point is also tested for
+	-- being inside a part: a cheap bounds query, then an exact box test.
+	local function pointInPart(p, part)
+		local l = part.CFrame:PointToObjectSpace(p)
+		local h = part.Size * 0.5
+		return math.abs(l.X) <= h.X and math.abs(l.Y) <= h.Y and math.abs(l.Z) <= h.Z
+	end
+
+	-- all touches in a frame are gathered per target first, so touching a
+	-- GuardHull anywhere on the blade beats touching a body part elsewhere
+	local function noteTouch(frameHits, part, pos)
 		local model = humanoidModelOf(part)
 		if not model or model == player.Character then return end
 		local hum = model:FindFirstChildOfClass("Humanoid")
-		if hum.Health <= 0 or sweep.reported[hum] then return end
-		sweep.reported[hum] = true
-		remote:FireServer("Hit", sweep.token, model, part, res.Position, part.Name == "GuardHull")
-		dprint("blade touched", model.Name, part.Name)
+		if not hum or hum.Health <= 0 or sweep.reported[hum] then return end
+		local isGuard = part.Name == "GuardHull"
+		local e = frameHits[hum]
+		if not e then
+			frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard}
+		elseif isGuard and not e.guard then
+			e.part, e.pos, e.guard = part, pos, true
+		end
 	end
 
 	table.insert(conns, RunService.Heartbeat:Connect(function()
 		if not sweep then return end
 		if os.clock() > sweep.endsAt then endSweep(); return end
 		local showRays = DebugFlags.get("Rays")
+		local frameHits = {}
 		for _, b in ipairs(blades) do
 			local pts = sweep.last[b]
 			for i, off in ipairs(b.offsets) do
 				local p    = b.part.CFrame:PointToWorldSpace(off)
 				local prev = pts[i]
 				local d    = p - prev
+				for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(p), PROBE, overlapParams)) do
+					if pointInPart(p, part) then noteTouch(frameHits, part, p) end
+				end
 				if d.Magnitude > 1e-3 then
 					local res = workspace:Raycast(prev, d, rayParams)
 					if showRays then debugRay(prev, res and res.Position or p, res ~= nil) end
-					if res then onRayHit(res) end
-					if not sweep then return end
+					if res then noteTouch(frameHits, res.Instance, res.Position) end
 				end
 				pts[i] = p
 			end
+		end
+		for hum, e in pairs(frameHits) do
+			sweep.reported[hum] = true
+			remote:FireServer("Hit", sweep.token, e.model, e.part, e.pos, e.guard)
+			dprint("blade touched", e.model.Name, e.part.Name, e.guard and "(guard)" or "")
 		end
 	end))
 

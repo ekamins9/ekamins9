@@ -505,3 +505,9 @@ local function stop()
 end
 Humanoid.Died:Once(onDied)
 script.Destroying:Connect(stop)
+
+-- the server can't change a player-owned humanoid's state, so Ragdoll asks us
+ReplicatedStorage:WaitForChild("RagdollRemote").OnClientEvent:Connect(function(ragdolled)
+	if Humanoid.Health <= 0 then return end
+	Humanoid:ChangeState(ragdolled and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+end)

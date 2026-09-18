@@ -167,12 +167,14 @@ function Injury.dismember(char, partName, dir)
 	dir = dir or torso.CFrame.LookVector
 
 	if partName == "Head" then
-		-- decapitation: the real head comes off; RequiresNeck kills the humanoid
+		-- decapitation: the real head comes off and the humanoid is killed outright
+		-- (RequiresNeck is off so ragdoll knockdowns can disable the Neck motor)
 		if joint then joint:Destroy() end
 		part.CanCollide = true
 		part.AssemblyLinearVelocity  = dir * 12 + Vector3.new(0, 10, 0)
 		part.AssemblyAngularVelocity = Vector3.new(8, 4, 8)
 		bloodEmitter(part, 40, 4)
+		hum.Health = 0
 	else
 		local clone = part:Clone()
 		clone:ClearAllChildren()

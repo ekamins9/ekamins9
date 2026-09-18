@@ -17,6 +17,7 @@ local function setup(char)
 	local hum = char:WaitForChild("Humanoid", 10)
 	if not hum then return end
 	hum.BreakJointsOnDeath = false   -- Ragdoll needs the joints intact
+	hum.RequiresNeck = false         -- disabling the Neck motor for a ragdoll must not count as death
 
 	hum.Died:Once(function()
 		Ragdoll.enable(char)

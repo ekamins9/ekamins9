@@ -57,6 +57,12 @@ local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 
 local CombatServer = {}
 
+local function pointInBox(p, part, margin)
+	local l = part.CFrame:PointToObjectSpace(p)
+	local h = part.Size * 0.5 + Vector3.new(margin, margin, margin)
+	return math.abs(l.X) <= h.X and math.abs(l.Y) <= h.Y and math.abs(l.Z) <= h.Z
+end
+
 --------------------------------------------------------------------
 --  DEFAULTS — global combat rules. A weapon Config overrides any key.
 --------------------------------------------------------------------
@@ -126,6 +132,7 @@ CombatServer.DEFAULTS = {
 	HITBOX_NAME    = "Hitbox",
 	GUARD_WIDTH    = 4.5,   -- hull cross-section around the blade while blocking
 	GUARD_PAD      = 0.75,  -- extra hull length past each end of the blade
+	GUARD_MARGIN   = 0.5,   -- server: a body hit this close inside a raised hull still counts as blocked
 	TURN_CAP_EXTRA = 0.10,
 }
 
@@ -355,6 +362,21 @@ function CombatServer.attach(Tool, weaponConfig)
 		end
 
 		local dir = dirTo(target)
+
+		-- the client's ray can start inside a hull and never "enter" it; if the
+		-- body hit's point lies inside a raised, facing guard hull, it's a block
+		if not claimedGuard and guardUp and facing then
+			local tool = target:FindFirstChildOfClass("Tool")
+			if tool then
+				for _, h in ipairs(tool:GetDescendants()) do
+					if h.Name == "GuardHull" and h:IsA("BasePart") and pointInBox(hitPos, h, cfg.GUARD_MARGIN) then
+						claimedGuard = true
+						dprint("hit point inside", target.Name, "guard -> block")
+						break
+					end
+				end
+			end
+		end
 
 		if claimedGuard and guardUp and facing then
 			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
