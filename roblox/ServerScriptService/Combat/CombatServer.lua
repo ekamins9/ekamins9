@@ -144,9 +144,9 @@ CombatServer.DEFAULTS = {
 	-- geometry
 	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
 	HITBOX_NAME    = "Hitbox",
-	GUARD_WIDTH    = 4.0,   -- hull cross-section around the blade while blocking
-	GUARD_PAD      = 0.5,   -- extra hull length past each end of the blade
-	GUARD_MARGIN   = 0.5,   -- server: blade or hit point this close inside a raised hull still counts as blocked
+	GUARD_WIDTH    = 1.6,   -- hull cross-section around the blade while blocking — snug to the weapon
+	GUARD_PAD      = 0.3,   -- extra hull length past each end of the blade
+	GUARD_MARGIN   = 0.6,   -- server: blade or hit point this close inside a raised hull still counts as blocked
 	TURN_CAP_EXTRA = 0.10,
 }
 
@@ -547,7 +547,6 @@ function CombatServer.attach(Tool, weaponConfig)
 	----------------------------------------------------------------
 	local npc = {tracks = {}, idle = nil, block = nil, current = nil, sweep = nil}
 	local NPC_PROBE = Vector3.new(0.2, 0.2, 0.2)
-	local NPC_CONFIRM_FRAMES = 2
 	local npcRay = RaycastParams.new()
 	npcRay.FilterType = Enum.RaycastFilterType.Exclude
 	local npcOverlap = OverlapParams.new()
@@ -631,19 +630,22 @@ function CombatServer.attach(Tool, weaponConfig)
 				pts[i] = p
 			end
 		end
+		-- same deferral as the player client: a blocking target's body touch
+		-- waits for a guard touch (instant) or the swing to fully end; a
+		-- non-blocking target reports on first contact, no delay
 		for hum, e in pairs(frameHits) do
-			local p = sw.pending[hum]
-			if p then
-				if (e.guard and not p.e.guard) or (not p.e.guard and e.ray and not p.e.ray) then p.e = e end
-			else
-				sw.pending[hum] = {e = e, frames = 0}
-			end
-		end
-		for hum, p in pairs(sw.pending) do
-			p.frames += 1
-			if p.e.guard or p.frames >= NPC_CONFIRM_FRAMES then
+			if e.guard then
 				sw.pending[hum] = nil
-				npcReport(sw, hum, p.e)
+				npcReport(sw, hum, e)
+			elseif e.model:GetAttribute("Blocking") then
+				local p = sw.pending[hum]
+				if p then
+					if (e.guard and not p.e.guard) or (not p.e.guard and e.ray and not p.e.ray) then p.e = e end
+				else
+					sw.pending[hum] = {e = e}
+				end
+			else
+				npcReport(sw, hum, e)
 			end
 		end
 	end

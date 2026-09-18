@@ -37,7 +37,7 @@ CombatClient.DEFAULTS = {
 	HITBOX_NAME   = "Hitbox",
 	BLADE_SAMPLES = 6,      -- raycast origins spread along each Hitbox's long axis
 	HITSTOP_HIT   = 0.06,   -- animation freeze on a clean hit
-	HITSTOP_BLOCK = 0.12,   -- longer "clang" freeze when blocked
+	HITSTOP_BLOCK = 0.18,   -- longer "clang" freeze when blocked — sells the bounce-off
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
@@ -126,12 +126,8 @@ function CombatClient.attach(Tool, weaponConfig)
 	overlapParams.MaxParts = 8
 	local PROBE = Vector3.new(0.2, 0.2, 0.2)
 
-	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}, pending={[Humanoid]={e=,frames=}}}
+	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}, pending={[Humanoid]={e=}}}
 	local swingToken = nil
-	-- a body touch is held this many frames before reporting, so a guard the
-	-- blade enters a moment later still wins (the tip nicking an arm on the way
-	-- into a raised guard is not a hit). Guard touches report immediately.
-	local CONFIRM_FRAMES = 2
 
 	local function report(hum, e)
 		sweep.reported[hum] = true
@@ -239,16 +235,23 @@ function CombatClient.attach(Tool, weaponConfig)
 				pts[i] = p
 			end
 		end
-		-- fold this frame's touches into what's pending, then report what's ripe
+		-- A defender who's actively guarding gets the benefit of the doubt: a
+		-- body touch on them is held until EITHER their guard is touched (which
+		-- always reports instantly, below) OR the whole swing's active window
+		-- ends with the guard never touched. That's what "the sword clearly
+		-- went into the box" needs — a body part poking a sliver outside the
+		-- hull can't score a hit off a stray early-frame contact while the same
+		-- swing is still in the middle of reaching the guard. A target who
+		-- ISN'T blocking has no guard to reach, so they report immediately.
 		for hum, e in pairs(frameHits) do
-			local p = sweep.pending[hum]
-			if p then merge(p.e, e.part, e.pos, e.guard, e.ray) else sweep.pending[hum] = {e = e, frames = 0} end
-		end
-		for hum, p in pairs(sweep.pending) do
-			p.frames += 1
-			if p.e.guard or p.frames >= CONFIRM_FRAMES then
+			if e.guard then
 				sweep.pending[hum] = nil
-				report(hum, p.e)
+				report(hum, e)
+			elseif e.model:GetAttribute("Blocking") then
+				local p = sweep.pending[hum]
+				if p then merge(p.e, e.part, e.pos, e.guard, e.ray) else sweep.pending[hum] = {e = e} end
+			else
+				report(hum, e)
 			end
 		end
 	end))
