@@ -23,8 +23,10 @@ RigPose.CONFIG = {
 	KICK_DIR      = 1,             -- flip to -1 if the leg swings backward
 	KICK_LEAN     = 0.12,          -- torso lean-back at full extension
 	KICK_LEAN_DIR = -1,            -- flip if the torso leans forward instead of back
-	-- crouch
-	CROUCH_DROP     = 1.0,          -- studs the torso sinks
+	-- crouch (the height drop itself is physical — CameraRig lowers
+	-- Humanoid.HipHeight — so it replicates and hitboxes move with it;
+	-- this pose only adds the lean and the leg fold)
+	CROUCH_DROP     = 0.0,          -- extra torso sink in the pose, on top of the HipHeight drop
 	CROUCH_LEAN     = 0.25,         -- forward tilt (radians) at full crouch
 	CROUCH_LEAN_DIR = 1,            -- flip if it leans back instead
 	CROUCH_LEG      = math.rad(55), -- how far the thighs fold forward

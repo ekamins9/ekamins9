@@ -108,7 +108,8 @@ local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED i
 local KICK_CAM        = 0.04   -- FP head bump at kick start
 local CROUCH_KEYS     = {Enum.KeyCode.LeftControl, Enum.KeyCode.C}
 local CROUCH_TOGGLE   = true   -- press to crouch, press again (or jump) to stand; false = hold
-local CROUCH_SPEED    = 9      -- how fast the crouch pose settles
+local CROUCH_SPEED    = 9      -- how fast the crouch settles
+local CROUCH_HIP_DROP = 1.0    -- studs the whole body sinks (Humanoid.HipHeight — physical, replicated)
 local POSE_RATE       = 1/20   -- how often our pose inputs go to other players
 
 -- walk bob (stepped/clunky, not a smooth wave) — scales with Humanoid.WalkSpeed:
@@ -192,7 +193,8 @@ local lastKickAt = 0
 local wasCapped = false
 local crouchHeld, crouchAmt = false, 0
 local lastPoseSent = 0
-local CROUCH_DROP = RigPose.CONFIG.CROUCH_DROP
+local baseHipHeight = Humanoid.HipHeight
+local lastCrouchLog = 0
 
 local camRay = RaycastParams.new()
 camRay.FilterType = Enum.RaycastFilterType.Exclude
@@ -258,10 +260,6 @@ CAS:BindAction("Crouch", function(_, state)
 	end
 	return Enum.ContextActionResult.Sink
 end, false, table.unpack(CROUCH_KEYS))
-Humanoid.Jumping:Connect(function(active)
-	if active then setCrouch(false) end
-end)
-local crouchLogged = false
 
 --------------------------------------------------------------------
 --  MAIN
@@ -404,8 +402,10 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 		sKick.v = sKick.v - KICK_CAM * 26
 	end
 
-	-- CROUCH
+	-- CROUCH: an actual jump stands us up; the body sinks physically via HipHeight
+	if crouchHeld and Humanoid:GetState() == Enum.HumanoidStateType.Jumping then setCrouch(false) end
 	crouchAmt = crouchAmt + ((crouchHeld and 1 or 0) - crouchAmt) * math.clamp(dt*CROUCH_SPEED, 0, 1)
+	Humanoid.HipHeight = baseHipHeight - CROUCH_HIP_DROP * crouchAmt
 
 	-- BODY POSE (shared math; the same inputs are relayed to other clients)
 	local inputs = {
@@ -421,14 +421,13 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
-	if DebugFlags.get("Logs") then
-		if crouchAmt > 0.95 and not crouchLogged then
-			crouchLogged = true
-			print(string.format("[CameraRig] crouch pose settled: torso dropped %.2f studs (expect ~%.2f)",
-				(Origins.RootJoint.Position - RootJoint.C0.Position).Y, CROUCH_DROP))
-		elseif crouchAmt < 0.05 then
-			crouchLogged = false
-		end
+	-- while crouched, report every half second which stage is actually moving
+	if crouchHeld and now - lastCrouchLog > 0.5 and DebugFlags.get("Logs") then
+		lastCrouchLog = now
+		local hipRel = Origins["Right Hip"]:Inverse() * Joints["Right Hip"].C0
+		local _, _, hipZ = hipRel:ToEulerAnglesXYZ()
+		print(string.format("[CameraRig] crouch amt=%.2f  HipHeight=%.2f  torsoDrop=%.2f  rightHipFold=%.0f°",
+			crouchAmt, Humanoid.HipHeight, (Origins.RootJoint.Position - RootJoint.C0.Position).Y, math.deg(hipZ)))
 	end
 	if poseRemote and now - lastPoseSent >= POSE_RATE then
 		lastPoseSent = now
@@ -457,7 +456,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	else
 		eyePos = nil
 		Camera.FieldOfView = TP_FOV + FOV_BOOST*walkFrac
-		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP - CROUCH_DROP * crouchAmt, 0)
+		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)   -- HRP itself sinks when crouched
 		camRay.FilterDescendantsInstances = {character}
 		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X, 0, 0)
 		local back = orbit.LookVector * -1
@@ -527,6 +526,7 @@ local function stop()
 	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
 	pcall(function() RunService:UnbindFromRenderStep("DeathCam") end)
 	pcall(function() CAS:UnbindAction("Crouch") end)
+	Humanoid.HipHeight = baseHipHeight
 	Camera.CameraType    = Enum.CameraType.Custom
 	Humanoid.AutoRotate  = true
 	UIS.MouseBehavior    = Enum.MouseBehavior.Default
