@@ -472,8 +472,14 @@ function CombatServer.attach(Tool, weaponConfig)
 				drainStamina(target, info.blockCost)
 				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
+				-- the blade stops dead on a guard, same as a parry — the parry's
+				-- extra punish is the attacker's stun and the defender's riposte
+				cancelSwing("blocked")
 				if m <= 0 then
 					target:SetAttribute("Blocking", false)
+					-- run dry holding the guard and the weapon is jarred out of your hands
+					knockAwayWeapon(target, dir, "guard broken at 0 stamina")
+					-- set last: knockAwayWeapon's shorter DISARM_STUN must not cut this short
 					target:SetAttribute("StunnedUntil", now + cfg.BLOCK_BREAK_STUN)
 					tell("Blocked", true)
 					dprint("BLOCK BROKEN on", target.Name)
