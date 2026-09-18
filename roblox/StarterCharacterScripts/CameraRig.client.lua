@@ -288,9 +288,10 @@ end, false, table.unpack(CROUCH_KEYS))
 --  MAIN
 --------------------------------------------------------------------
 local CAM = Enum.RenderPriority.Camera.Value
-pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
-
-RunService:BindToRenderStep("FPRig", CAM, function(dt)
+-- unique per copy: an older camera script unbinding "FPRig" can't take this loop away
+local LOOP_NAME = "CameraRig_" .. VERSION .. "_" .. tostring(math.random(1, 1e9))
+local lastLoopError = 0
+local function loopBody(dt)
 	if not (Neck.Parent and RootJoint.Parent) then return end
 	local a   = math.clamp(dt*BEND_SPEED, 0, 1)
 	local dtc = math.min(dt, 1/30)
@@ -511,13 +512,22 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 
 	lastSpeed = speed
 	lastVY = grounded and 0 or vy
+end
+
+RunService:BindToRenderStep(LOOP_NAME, CAM, function(dt)
+	local ok, err = pcall(loopBody, dt)
+	if not ok and os.clock() - lastLoopError > 1 then
+		lastLoopError = os.clock()
+		warn("[CameraRig] LOOP ERROR (repeating every frame): " .. tostring(err))
+	end
 end)
+print("[CameraRig " .. VERSION .. "] loop bound as " .. LOOP_NAME)
 
 --------------------------------------------------------------------
 --  DEATH — first person from inside the head, wherever it ends up
 --------------------------------------------------------------------
 local function onDied()
-	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
+	pcall(function() RunService:UnbindFromRenderStep(LOOP_NAME) end)
 	setCrouch(false)
 	UIS.MouseBehavior = Enum.MouseBehavior.Default
 	Humanoid.CameraOffset = Vector3.zero
@@ -552,7 +562,7 @@ local function onDied()
 end
 
 local function stop()
-	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
+	pcall(function() RunService:UnbindFromRenderStep(LOOP_NAME) end)
 	pcall(function() RunService:UnbindFromRenderStep("DeathCam") end)
 	pcall(function() CAS:UnbindAction("Crouch") end)
 	Humanoid.HipHeight = baseHipHeight
