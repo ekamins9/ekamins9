@@ -441,7 +441,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 		end
 
-		if claimedGuard and guardUp and facing then
+		-- a CONFIRMED touch of the guard hull (from the sweep itself, not the
+		-- inferred fallback above) is an absolute block: no damage, full stop,
+		-- regardless of facing — the weapon physically caught it. Facing only
+		-- gates the fallback, which is inferring contact rather than reporting one.
+		if claimedGuard and guardUp then
 			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
 			local meter = target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX
 			markCombat(character)

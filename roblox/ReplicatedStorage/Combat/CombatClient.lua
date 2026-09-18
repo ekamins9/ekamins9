@@ -37,7 +37,8 @@ CombatClient.DEFAULTS = {
 	HITBOX_NAME   = "Hitbox",
 	BLADE_SAMPLES = 6,      -- raycast origins spread along each Hitbox's long axis
 	HITSTOP_HIT   = 0.06,   -- animation freeze on a clean hit
-	HITSTOP_BLOCK = 0.18,   -- longer "clang" freeze when blocked — sells the bounce-off
+	HITSTOP_BLOCK = 0.18,   -- hard freeze then cancel when blocked — weapon bounces off, doesn't swing through
+	HITSTOP_PARRY = 0.22,   -- same, held a touch longer — a parry is the bigger punish
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
@@ -291,12 +292,29 @@ function CombatClient.attach(Tool, weaponConfig)
 		return t
 	end
 
+	-- a clean hit: brief slowdown for weight, then the swing finishes normally
 	local function hitstop(duration)
 		local t, s = currentTrack, currentSpeed
 		if not t then return end
 		t:AdjustSpeed(0.05)
 		task.delay(duration, function()
 			if currentTrack == t and t.IsPlaying then t:AdjustSpeed(s) end
+		end)
+	end
+
+	-- a block/parry: the weapon genuinely stops, it does not swing through.
+	-- Hard freeze (0 speed, no creep) for the clang, then the track is
+	-- STOPPED rather than resumed — the idle/guard track underneath takes
+	-- back over, so the weapon visibly bounces off instead of finishing the arc.
+	local function clangStop(duration)
+		local t = currentTrack
+		if not t then return end
+		t:AdjustSpeed(0)
+		task.delay(duration, function()
+			if currentTrack == t then
+				t:Stop()
+				currentTrack = nil
+			end
 		end)
 	end
 
@@ -361,13 +379,15 @@ function CombatClient.attach(Tool, weaponConfig)
 			impact("hit")
 
 		elseif what == "Blocked" then
-			hitstop(cfg.HITSTOP_BLOCK)
+			clangStop(cfg.HITSTOP_BLOCK)
 			impact("block")
 			endSweep()   -- blade stopped on their guard; it can't carry on to hit others
 
 		elseif what == "Parried" then
+			clangStop(cfg.HITSTOP_PARRY)
 			impact("parry")
-			stopAttack()
+			swingToken = nil
+			endSweep()
 
 		elseif what == "Cancel" then
 			stopAttack()
