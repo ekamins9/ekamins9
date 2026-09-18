@@ -12,15 +12,20 @@ local Ragdoll     = require(ServerScriptService:WaitForChild("Combat"):WaitForCh
 local Injury      = require(ServerScriptService.Combat:WaitForChild("Injury"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+
+local DEATH_SHOVE = 10   -- studs/s the corpse falls away from the last hit
 
 local function setup(char)
 	local hum = char:WaitForChild("Humanoid", 10)
 	if not hum then return end
 	hum.BreakJointsOnDeath = false   -- Ragdoll needs the joints intact
 	hum.RequiresNeck = false         -- disabling the Neck motor for a ragdoll must not count as death
+	DebugFlags.log("CharacterSystems", "setup", char.Name)
 
 	hum.Died:Once(function()
-		Ragdoll.enable(char)
+		local dir = char:GetAttribute("HitDir")
+		Ragdoll.enable(char, typeof(dir) == "Vector3" and dir or nil, DEATH_SHOVE)
 		Sounds.play(SoundConfig.Death, char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
 	end)
 

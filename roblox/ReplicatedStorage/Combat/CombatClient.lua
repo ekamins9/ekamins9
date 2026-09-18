@@ -180,9 +180,11 @@ function CombatClient.attach(Tool, weaponConfig)
 		return math.abs(l.X) <= h.X and math.abs(l.Y) <= h.Y and math.abs(l.Z) <= h.Z
 	end
 
-	-- all touches in a frame are gathered per target first, so touching a
-	-- GuardHull anywhere on the blade beats touching a body part elsewhere
-	local function noteTouch(frameHits, part, pos)
+	-- all touches in a frame are gathered per target first; priority is
+	-- guard > surface entry (ray) > already-inside (probe), so a GuardHull
+	-- anywhere on the blade beats a body part, and a real first contact
+	-- (e.g. the shin on a low swing) beats a sample that merely sat inside
+	local function noteTouch(frameHits, part, pos, viaRay)
 		local model = humanoidModelOf(part)
 		if not model or model == player.Character then return end
 		local hum = model:FindFirstChildOfClass("Humanoid")
@@ -190,9 +192,9 @@ function CombatClient.attach(Tool, weaponConfig)
 		local isGuard = part.Name == "GuardHull"
 		local e = frameHits[hum]
 		if not e then
-			frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard}
-		elseif isGuard and not e.guard then
-			e.part, e.pos, e.guard = part, pos, true
+			frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard, ray = viaRay}
+		elseif (isGuard and not e.guard) or (not e.guard and viaRay and not e.ray) then
+			e.part, e.pos, e.guard, e.ray = part, pos, isGuard, viaRay
 		end
 	end
 
@@ -208,12 +210,12 @@ function CombatClient.attach(Tool, weaponConfig)
 				local prev = pts[i]
 				local d    = p - prev
 				for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(p), PROBE, overlapParams)) do
-					if pointInPart(p, part) then noteTouch(frameHits, part, p) end
+					if pointInPart(p, part) then noteTouch(frameHits, part, p, false) end
 				end
 				if d.Magnitude > 1e-3 then
 					local res = workspace:Raycast(prev, d, rayParams)
 					if showRays then debugRay(prev, res and res.Position or p, res ~= nil) end
-					if res then noteTouch(frameHits, res.Instance, res.Position) end
+					if res then noteTouch(frameHits, res.Instance, res.Position, true) end
 				end
 				pts[i] = p
 			end

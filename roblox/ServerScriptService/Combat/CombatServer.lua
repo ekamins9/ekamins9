@@ -109,6 +109,7 @@ CombatServer.DEFAULTS = {
 	BLEED_OUT_CHANCE = 0.35,  -- …and this often the victim survives it, bleeding, instead of dying
 	IMPALE           = true,  -- lethal stab leaves the weapon run through the body
 	KNOCKDOWN_TIME   = 2.00,  -- ragdoll time after a leg hit
+	KNOCK_SPEED      = 18,    -- studs/s the knocked-down body is shoved away from the blow
 	DISARM_STUN      = 0.60,  -- stagger after your weapon is knocked away
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
@@ -488,7 +489,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 		hum:TakeDamage(dmg)
 		if region == "legs" and hum.Health > 0 then
-			Ragdoll.knockdown(target, cfg.KNOCKDOWN_TIME)
+			Ragdoll.knockdown(target, cfg.KNOCKDOWN_TIME, dir + Vector3.new(0, 0.25, 0), cfg.KNOCK_SPEED)
 			Sounds.play(SoundConfig.BodyFall, target:FindFirstChild("Torso"))
 		end
 		dprint("hit", target.Name, region, dmg)
@@ -577,7 +578,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not sw or not character then return end
 		if os.clock() > sw.endsAt then npc.sweep = nil; return end
 		local frameHits = {}
-		local function note(part, pos)
+		-- priority per target: guard > surface entry (ray) > already-inside (probe)
+		local function note(part, pos, viaRay)
 			local model = humanoidModelOf(part)
 			if not model or model == character then return end
 			local hum = model:FindFirstChildOfClass("Humanoid")
@@ -585,9 +587,9 @@ function CombatServer.attach(Tool, weaponConfig)
 			local isGuard = part.Name == "GuardHull"
 			local e = frameHits[hum]
 			if not e then
-				frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard}
-			elseif isGuard and not e.guard then
-				e.part, e.pos, e.guard = part, pos, true
+				frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard, ray = viaRay}
+			elseif (isGuard and not e.guard) or (not e.guard and viaRay and not e.ray) then
+				e.part, e.pos, e.guard, e.ray = part, pos, isGuard, viaRay
 			end
 		end
 		for _, b in ipairs(blades) do
@@ -595,12 +597,12 @@ function CombatServer.attach(Tool, weaponConfig)
 			for i, off in ipairs(b.offsets) do
 				local p, prev = b.part.CFrame:PointToWorldSpace(off), pts[i]
 				for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(p), NPC_PROBE, npcOverlap)) do
-					if pointInBox(p, part, 0) then note(part, p) end
+					if pointInBox(p, part, 0) then note(part, p, false) end
 				end
 				local d = p - prev
 				if d.Magnitude > 1e-3 then
 					local res = workspace:Raycast(prev, d, npcRay)
-					if res then note(res.Instance, res.Position) end
+					if res then note(res.Instance, res.Position, true) end
 				end
 				pts[i] = p
 			end

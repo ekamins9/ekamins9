@@ -58,7 +58,29 @@ Torso:WaitForChild("Left Shoulder"); Torso:WaitForChild("Right Shoulder")
 
 local Joints  = RigPose.joints(character)
 local Origins = RigPose.origins(character)
-if not (Joints and Origins) then return end
+if not (Joints and Origins) then
+	warn("[CameraRig] R6 joints not found on", character:GetFullName())
+	return
+end
+
+-- startup report: where this copy runs from, and any OTHER local scripts that
+-- could be fighting it (an older camera script left in the character or in
+-- StarterPlayerScripts is the usual reason a new feature "does nothing")
+local VERSION = "v4"
+print(string.format("[CameraRig %s] running from %s", VERSION, script:GetFullName()))
+for _, s in ipairs(character:GetDescendants()) do
+	if s:IsA("LocalScript") and s ~= script then
+		print("[CameraRig] other LocalScript in character:", s:GetFullName())
+	end
+end
+local ps = player:FindFirstChild("PlayerScripts")
+if ps then
+	for _, s in ipairs(ps:GetChildren()) do
+		if s:IsA("LocalScript") and s.Name ~= "PlayerScriptsLoader" and s.Name ~= "RbxCharacterSounds" then
+			print("[CameraRig] LocalScript in PlayerScripts:", s.Name)
+		end
+	end
+end
 
 -- C1 values are never modified by this script, so they're stable to read
 -- back for forward-kinematics (unlike Part.CFrame, which lags a frame)
@@ -195,6 +217,7 @@ local crouchHeld, crouchAmt = false, 0
 local lastPoseSent = 0
 local baseHipHeight = Humanoid.HipHeight
 local lastCrouchLog = 0
+local lastAliveLog  = 0
 
 local camRay = RaycastParams.new()
 camRay.FilterType = Enum.RaycastFilterType.Exclude
@@ -310,7 +333,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	-- body faces camera yaw (capped via rot.Y) — unless physics owns the body
 	-- (knocked down / seated), in which case forcing it upright every frame
 	-- would fight the ragdoll or the seat
-	local bodyFree = Humanoid.PlatformStand or Humanoid.Sit
+	local bodyFree = Humanoid.PlatformStand or Humanoid.Sit or character:GetAttribute("Ragdolled") == true
 	if not bodyFree then
 		HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, rot.Y, 0)
 	end
@@ -421,6 +444,12 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
+	-- heartbeat: proves THIS loop is the one drawing the body
+	if DebugFlags.get("Logs") and now - lastAliveLog > 3 then
+		lastAliveLog = now
+		print(string.format("[CameraRig %s] loop ok | %s | crouchHeld=%s amt=%.2f HipHeight=%.2f bodyFree=%s",
+			VERSION, inFP and "FP" or "TP", tostring(crouchHeld), crouchAmt, Humanoid.HipHeight, tostring(bodyFree)))
+	end
 	-- while crouched, report every half second which stage is actually moving
 	if crouchHeld and now - lastCrouchLog > 0.5 and DebugFlags.get("Logs") then
 		lastCrouchLog = now
@@ -536,8 +565,14 @@ end
 Humanoid.Died:Once(onDied)
 script.Destroying:Connect(stop)
 
--- the server can't change a player-owned humanoid's state, so Ragdoll asks us
-ReplicatedStorage:WaitForChild("RagdollRemote").OnClientEvent:Connect(function(ragdolled)
-	if Humanoid.Health <= 0 then return end
-	Humanoid:ChangeState(ragdolled and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+-- the server can't change a player-owned humanoid's state or push our parts
+-- (we own the physics), so Ragdoll asks us to do both
+ReplicatedStorage:WaitForChild("RagdollRemote").OnClientEvent:Connect(function(ragdolled, shoveDir, shoveSpeed)
+	if DebugFlags.get("Logs") then print("[CameraRig] ragdoll", ragdolled, shoveDir, shoveSpeed) end
+	if Humanoid.Health > 0 then
+		Humanoid:ChangeState(ragdolled and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+	end
+	if ragdolled and typeof(shoveDir) == "Vector3" and Torso.Parent then
+		Torso.AssemblyLinearVelocity = Torso.AssemblyLinearVelocity + shoveDir * (shoveSpeed or 0)
+	end
 end)
