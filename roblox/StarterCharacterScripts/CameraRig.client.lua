@@ -129,9 +129,10 @@ local KICK_FALL       = 0.30   -- retract time after the kick peak
 local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED is too mushy)
 local KICK_CAM        = 0.04   -- FP head bump at kick start
 local CROUCH_KEYS     = {Enum.KeyCode.LeftControl, Enum.KeyCode.C}
-local CROUCH_TOGGLE   = true   -- press to crouch, press again (or jump) to stand; false = hold
+local CROUCH_TOGGLE   = false  -- hold to crouch; true = press to toggle
+local CROUCH_DEBOUNCE = 0.2    -- crouch state can't flip faster than this (no spam)
 local CROUCH_SPEED    = 9      -- how fast the crouch settles
-local CROUCH_HIP_DROP = 1.0    -- studs the whole body sinks (Humanoid.HipHeight — physical, replicated)
+local CROUCH_HIP_DROP = 0.95   -- studs the whole body sinks (HipHeight) — matches the leg fold so feet stay on the floor
 local POSE_RATE       = 1/20   -- how often our pose inputs go to other players
 
 -- walk bob (stepped/clunky, not a smooth wave) — scales with Humanoid.WalkSpeed:
@@ -214,6 +215,7 @@ local eyePos = nil
 local lastKickAt = 0
 local wasCapped = false
 local crouchHeld, crouchAmt = false, 0
+local crouchWanted, lastCrouchChange = false, -1e9
 local lastPoseSent = 0
 local baseHipHeight = Humanoid.HipHeight
 local lastCrouchLog = 0
@@ -276,10 +278,11 @@ end
 -- "game processed", which is what silently ate a plain InputBegan check
 CAS:BindAction("Crouch", function(_, state)
 	if UIS:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end
+	-- only records what the player WANTS; the loop applies it, rate-limited by CROUCH_DEBOUNCE
 	if state == Enum.UserInputState.Begin then
-		if CROUCH_TOGGLE then setCrouch(not crouchHeld) else setCrouch(true) end
+		if CROUCH_TOGGLE then crouchWanted = not crouchWanted else crouchWanted = true end
 	elseif not CROUCH_TOGGLE and (state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel) then
-		setCrouch(false)
+		crouchWanted = false
 	end
 	return Enum.ContextActionResult.Sink
 end, false, table.unpack(CROUCH_KEYS))
@@ -426,8 +429,12 @@ local function loopBody(dt)
 		sKick.v = sKick.v - KICK_CAM * 26
 	end
 
-	-- CROUCH: an actual jump stands us up; the body sinks physically via HipHeight
-	if crouchHeld and Humanoid:GetState() == Enum.HumanoidStateType.Jumping then setCrouch(false) end
+	-- CROUCH: follows the key, but can't flip faster than CROUCH_DEBOUNCE; a jump stands us up
+	local wanted = crouchWanted and Humanoid:GetState() ~= Enum.HumanoidStateType.Jumping
+	if wanted ~= crouchHeld and now - lastCrouchChange >= CROUCH_DEBOUNCE then
+		lastCrouchChange = now
+		setCrouch(wanted)
+	end
 	crouchAmt = crouchAmt + ((crouchHeld and 1 or 0) - crouchAmt) * math.clamp(dt*CROUCH_SPEED, 0, 1)
 	Humanoid.HipHeight = baseHipHeight - CROUCH_HIP_DROP * crouchAmt
 

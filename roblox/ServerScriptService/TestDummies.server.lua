@@ -34,6 +34,7 @@ local WEAPON_NAME     = "Greatsword"   -- looked up in StarterPack, then ServerS
 local SPAWN_DIST      = 8
 local ATTACK_INTERVAL = 1.6
 local PARRY_RANGE     = 20             -- parry dummy reacts to swings started within this range
+local PARRY_REACTION  = 0.25           -- seconds before it raises guard (a human's reaction time)
 local CORPSE_TIME     = 10
 --------------------------------------------------------------------
 
@@ -169,8 +170,12 @@ local function spawnDummy(player, mode)
 				local swinging = target ~= nil and target:GetAttribute("SpeedMult_Swing") ~= nil
 				if swinging and not entry.blocking then
 					entry.blocking = true
-					log("parry dummy: guard up")
-					ctrl.blockStart()
+					task.delay(PARRY_REACTION, function()
+						if model.Parent and entry.blocking then
+							log("parry dummy: guard up")
+							ctrl.blockStart()
+						end
+					end)
 				elseif not swinging and entry.blocking then
 					entry.blocking = false
 					task.delay(0.3, function()

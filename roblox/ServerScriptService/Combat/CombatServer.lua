@@ -118,7 +118,7 @@ CombatServer.DEFAULTS = {
 	STAMINA_REGEN_DELAY = 2.5, -- …but only this long after the last combat event (attack, feint,
 	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing
 	BLOCK_BREAK_STUN  = 2.50,
-	BLOCK_CONE_DEG    = 75,    -- must face the attacker within this half-angle to block
+	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
 	PARRY_WINDOW      = 0.35,
 	PARRY_RETRY       = 0.45,  -- re-tapping block sooner than this gives no new parry window
@@ -135,17 +135,18 @@ CombatServer.DEFAULTS = {
 	KICK_CONE_DEG    = 50,
 	KICK_WINDUP      = 0.22,
 	KICK_RECOVERY    = 0.55,
+	KICK_COOLDOWN    = 2.5,   -- minimum time between kicks
 	KICK_DAMAGE      = 5,
-	KICK_STAGGER     = 0.9,
+	KICK_STAGGER     = 1.2,   -- a kicked guard (block OR parry window) drops and the victim is stunned this long
 	KICK_COST        = 10,
 	KICK_BLOCK_DRAIN = 15,
 
 	-- geometry
 	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
 	HITBOX_NAME    = "Hitbox",
-	GUARD_WIDTH    = 4.5,   -- hull cross-section around the blade while blocking
-	GUARD_PAD      = 0.75,  -- extra hull length past each end of the blade
-	GUARD_MARGIN   = 0.5,   -- server: a body hit this close inside a raised hull still counts as blocked
+	GUARD_WIDTH    = 3.0,   -- hull cross-section around the blade while blocking (smaller = legs/head exposed)
+	GUARD_PAD      = 0.4,   -- extra hull length past each end of the blade
+	GUARD_MARGIN   = 0.25,  -- server: a body hit this close inside a raised hull still counts as blocked
 	TURN_CAP_EXTRA = 0.10,
 }
 
@@ -180,7 +181,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	local state = {
 		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick
 		attack = nil, attackName = nil, alreadyHit = {}, queued = nil,
-		windupEnd = 0, releaseEnd = 0, nextActionTime = 0,
+		windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0,
 		cycleIndex = 0, lastBlockStart = -1e9,
 	}
 
@@ -786,7 +787,9 @@ function CombatServer.attach(Tool, weaponConfig)
 			sfx("Kick", thrp)
 			flinch(m, to.Unit)
 			if m:GetAttribute("Blocking") then
+				-- breaks a held block AND an open parry window
 				m:SetAttribute("Blocking", false)
+				m:SetAttribute("ParryUntil", 0)
 				m:SetAttribute("StunnedUntil", now + cfg.KICK_STAGGER)
 				drainStamina(m, cfg.KICK_BLOCK_DRAIN)
 				dprint("KICK staggered", m.Name)
@@ -804,10 +807,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not Injury.hasLimb(character, "Right Leg") then dprint("kick denied: no right leg"); return end
 		local now = os.clock()
 		if state.phase ~= "idle" or now < state.nextActionTime then dprint("kick denied: busy"); return end
+		if now < state.nextKickTime then dprint("kick denied: cooldown"); return end
 		state.token += 1
 		local token = state.token
 		state.attack, state.attackName, state.phase = nil, nil, "kick"
 		state.nextActionTime = now + cfg.KICK_WINDUP + cfg.KICK_RECOVERY
+		state.nextKickTime   = now + cfg.KICK_COOLDOWN
 		spend(cfg.KICK_COST)
 		setSwinging(true)
 		setAttr("TurnCapUntil", now + cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA)

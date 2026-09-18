@@ -29,7 +29,8 @@ RigPose.CONFIG = {
 	CROUCH_DROP     = 0.0,          -- extra torso sink in the pose, on top of the HipHeight drop
 	CROUCH_LEAN     = 0.25,         -- forward tilt (radians) at full crouch
 	CROUCH_LEAN_DIR = 1,            -- flip if it leans back instead
-	CROUCH_LEG      = math.rad(55), -- how far the thighs fold forward
+	CROUCH_LEG      = math.rad(60), -- how far the thighs fold forward (a 2-stud R6 leg at 60° is
+	                                --   1 stud tall, so CameraRig's CROUCH_HIP_DROP ≈ 0.95 keeps feet on the floor)
 	CROUCH_LEG_DIR  = 1,            -- flip if the legs fold backward
 }
 local C = RigPose.CONFIG
