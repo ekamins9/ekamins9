@@ -10,8 +10,7 @@
      debris and a bloody stump is welded on. Head: the REAL head comes off —
      RequiresNeck kills the humanoid and the death camera rides the head. ]]
 
-local Debris  = game:GetService("Debris")
-local Players = game:GetService("Players")
+local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
@@ -25,9 +24,7 @@ Injury.CONFIG = {
 	LEG_SPEED        = 0.45,  -- WalkSpeed factor per lost leg
 	LEG_CLUNK        = 1.5,   -- footstep clunk factor per lost leg
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at
-	DISARM_NO_PICKUP = 2.0,   -- seconds before anyone can grab a flung weapon
-	DISARM_LOCKOUT   = 6.0,   -- …and how long the person who lost it is kept from
-	                          --   re-grabbing, so standing on it doesn't just undo the disarm
+	DISARM_DESPAWN   = 45,    -- a disarmed weapon can't be picked up, so clean it off the floor
 	LIMB_DEBRIS_TIME = 25,
 	SKEWER_DURATION  = 4,     -- seconds the head stays welded to the blade before it falls
 	SKEWER_OFFSET    = 0.6,   -- how far past the hit point, along the blade, the head sits
@@ -128,11 +125,9 @@ function Injury.recomputeMobility(char)
 end
 
 --------------------------------------------------------------------
---  DISARM — the equipped Tool leaves the hand AND the inventory, and
---  lands in the world as a real pickup. The person who lost it can't
---  re-grab it for DISARM_LOCKOUT seconds: without that they just stand
---  on their own dropped weapon and it silently returns to the backpack,
---  which makes the disarm feel like it never happened.
+--  DISARM — the weapon is severed from the body, leaves the inventory,
+--  and is thrown clear. It cannot be picked up again: a disarm is
+--  permanent for that weapon, so losing your guard really costs you it.
 --------------------------------------------------------------------
 function Injury.disarm(char, dir)
 	local tool = char:FindFirstChildOfClass("Tool")
@@ -144,41 +139,36 @@ function Injury.disarm(char, dir)
 
 	char:SetAttribute("Blocking", false)
 	if hum then hum:UnequipTools() end   -- out of the hand (into the backpack)…
+
+	-- Sever every joint still tying the weapon to the body BEFORE flinging it.
+	-- Tool.Unequipped fires deferred, so the ToolGrip Motor6D that CombatServer
+	-- installed is still live right here — and while it is, the weapon shares
+	-- the character's physics assembly, so throwing the handle throws the whole
+	-- body with it (and anyone who walks into the pair gets launched too).
+	for _, d in ipairs(char:GetDescendants()) do
+		if d:IsA("JointInstance")
+			and ((d.Part0 and d.Part0:IsDescendantOf(tool)) or (d.Part1 and d.Part1:IsDescendantOf(tool))) then
+			d:Destroy()
+		end
+	end
+
 	tool.Parent = workspace              -- …and straight back out of the backpack
 
-	if handle and hrp then
-		handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
-		local fling = (dir or hrp.CFrame.LookVector) + Vector3.new(0, 0.8, 0)
-		handle.AssemblyLinearVelocity  = fling.Unit * C.DISARM_FLING
-		handle.AssemblyAngularVelocity = Vector3.new(math.random() * 10, math.random() * 10, math.random() * 10)
-		handle.CanTouch = false
-		task.delay(C.DISARM_NO_PICKUP, function()
-			if handle.Parent then handle.CanTouch = true end
-		end)
+	-- no touch pickup, ever: a disarmed weapon stays on the ground
+	for _, d in ipairs(tool:GetDescendants()) do
+		if d:IsA("BasePart") then d.CanTouch = false end
 	end
 
-	-- bounce it back out if it tries to return to the disarmed player
-	local plr = Players:GetPlayerFromCharacter(char)
-	if plr then
-		local until_ = os.clock() + C.DISARM_LOCKOUT
-		local conn
-		conn = tool.AncestryChanged:Connect(function()
-			if os.clock() > until_ then conn:Disconnect(); return end
-			local backpack = plr:FindFirstChildOfClass("Backpack")
-			if tool.Parent == backpack or tool.Parent == plr.Character then
-				tool.Parent = workspace
-				if handle and handle.Parent then
-					handle.CanTouch = false
-					task.delay(C.DISARM_NO_PICKUP, function()
-						if handle.Parent then handle.CanTouch = true end
-					end)
-				end
-			end
-		end)
-		task.delay(C.DISARM_LOCKOUT, function()
-			if conn.Connected then conn:Disconnect() end
-		end)
+	if handle then
+		handle.CanCollide = true
+		if hrp then
+			handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
+			local fling = (dir or hrp.CFrame.LookVector) + Vector3.new(0, 0.8, 0)
+			handle.AssemblyLinearVelocity  = fling.Unit * C.DISARM_FLING
+			handle.AssemblyAngularVelocity = Vector3.new(math.random() * 10, math.random() * 10, math.random() * 10)
+		end
 	end
+	Debris:AddItem(tool, C.DISARM_DESPAWN)
 
 	Sounds.play(SoundConfig.Disarm, handle or hrp)
 	return true
