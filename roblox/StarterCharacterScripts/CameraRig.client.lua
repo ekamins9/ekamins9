@@ -8,9 +8,12 @@
      step) so it reads heavier than TP without changing TP's tuned feel.
 
      Inputs published by other systems (all optional, all on the character):
-       ClunkMult       (server, gear)  footstep weight multiplier, 1 = base
-       LocalTurnCapUntil (client, weapon) os.clock() deadline for the turn cap
-       LocalKickAt / LocalKickRise (client, weapon) procedural leg kick ]]
+       ClunkMult_<Source>  (server: weapon, armor…) footstep weight, composed
+                           by ReplicatedStorage.Modifiers, 1 = base
+       LocalTurnCapUntil   (client, weapon) os.clock() deadline for the turn cap
+       LocalKickAt / LocalKickRise (client, weapon) procedural leg kick
+
+     DEBUG (ReplicatedStorage.Debug attributes, live): TurnCap ]]
 
 local RunService = game:GetService("RunService")
 local UIS        = game:GetService("UserInputService")
@@ -18,6 +21,8 @@ local Players    = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
+local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local Modifiers      = require(ReplicatedStorage:WaitForChild("Modifiers"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
 
 local player    = Players.LocalPlayer
@@ -58,7 +63,6 @@ local SENSITIVITY = 0.003   -- multiplied by the player's Roblox mouse-sensitivi
 local PITCH_LIMIT = math.rad(75)
 
 local TURN_CAP_DPS = 400
-local TURN_DEBUG   = true
 
 -- framing
 local ANCHOR_UP   = 1.5
@@ -128,9 +132,9 @@ local BREATHE_AMOUNT, BREATHE_HZ = 0.03, 1.1
 local MOMENTUM_LEAN = 0.05
 local SPRING_STIFF, SPRING_DAMP = 120, 16
 
--- global clunk baseline — this IS your tuned "0.5" feel.
--- ClunkMult (character attribute, set by armor/gear) multiplies on top of
--- it at runtime; 1 = base/no-armor, reproducing this exact value.
+-- global clunk baseline — this IS your tuned "0.5" feel. Every ClunkMult_*
+-- attribute on the character (weapon, armor, …) multiplies on top of it at
+-- runtime; with none set that's exactly this value.
 local BASE_CLUNK = 0.5
 --------------------------------------------------------------------
 
@@ -226,7 +230,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	-- turn cap: LOCAL timer only. The server's TurnCapUntil is on the
 	-- server's os.clock(), which is a different clock — never compare it here.
 	local capped = now < (character:GetAttribute("LocalTurnCapUntil") or 0)
-	if TURN_DEBUG and capped and not wasCapped then print("[TurnCap] active") end
+	if capped and not wasCapped and DebugFlags.get("TurnCap") then print("[TurnCap] active") end
 	wasCapped = capped
 
 	local rawDX, rawDY = mouseDX, mouseDY
@@ -273,13 +277,13 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	-- bob: smooth walkFrac so intensity fades in/out, but the motion itself
 	-- is a discrete per-step impulse, not a continuous wave. Cadence and
 	-- weight both scale off actual WalkSpeed (heavy armor = slower WalkSpeed
-	-- = longer waits between heavier clunks), PLUS the ClunkMult attribute
+	-- = longer waits between heavier clunks), PLUS the ClunkMult_* attributes
 	-- for direct per-gear control independent of the speed change.
 	bobAmt = bobAmt + (walkFrac - bobAmt) * math.clamp(dt*BOB_SMOOTH, 0, 1)
 
 	local speedRatio = math.max(Humanoid.WalkSpeed, 0.01) / BASE_WALKSPEED
 	local heaviness  = math.clamp(1 / speedRatio, HEAVINESS_MIN, HEAVINESS_MAX)
-	local clunkMult  = BASE_CLUNK * (character:GetAttribute("ClunkMult") or 1)
+	local clunkMult  = BASE_CLUNK * Modifiers.product(character, "ClunkMult")
 
 	local stepped = false
 	if grounded and walkFrac > 0.05 then
