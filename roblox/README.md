@@ -14,6 +14,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/WalkSpeedGovernor.server.lua` | `ServerScriptService` → `WalkSpeedGovernor` | Script |
 | `ServerScriptService/CharacterSystems.server.lua` | `ServerScriptService` → `CharacterSystems` | Script |
 | `ServerScriptService/PoseRelay.server.lua` | `ServerScriptService` → `PoseRelay` | Script |
+| `ServerScriptService/TestDummies.server.lua` | `ServerScriptService` → `TestDummies` | Script |
 | `ServerScriptService/Combat/CombatServer.lua` | `ServerScriptService` → `Combat` (Folder) → `CombatServer` | ModuleScript |
 | `ServerScriptService/Combat/Injury.lua` | `ServerScriptService` → `Combat` → `Injury` | ModuleScript |
 | `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
@@ -45,7 +46,15 @@ work on them too.
 ## Controls
 
 LMB cycle attack · Q/E/F/X specific attacks · RMB block (feint during windup) ·
-G kick · **LeftControl crouch** (hold) · scroll zoom (all the way in = first person)
+G kick · **LeftControl or C crouch** (toggle; jump stands you up) · scroll zoom (all the way in = first person)
+
+## Test dummies (chat)
+
+`/spawn idle` · `/spawn block` · `/spawn parry` · `/spawn attack` · `/spawn clear` — spawns an
+R6 dummy holding the `Greatsword` (from StarterPack) 8 studs in front of you, facing you.
+Attack dummies really hit and parry dummies really parry: their weapon runs the combat
+module in NPC mode (server-side animation + server-side blade sweep). Change `WEAPON_NAME`
+in `TestDummies` for another weapon.
 
 ## Combat rules (Mordhau-ish)
 

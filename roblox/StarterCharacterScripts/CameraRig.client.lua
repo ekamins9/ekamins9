@@ -107,6 +107,7 @@ local KICK_FALL       = 0.30   -- retract time after the kick peak
 local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED is too mushy)
 local KICK_CAM        = 0.04   -- FP head bump at kick start
 local CROUCH_KEYS     = {Enum.KeyCode.LeftControl, Enum.KeyCode.C}
+local CROUCH_TOGGLE   = true   -- press to crouch, press again (or jump) to stand; false = hold
 local CROUCH_SPEED    = 9      -- how fast the crouch pose settles
 local POSE_RATE       = 1/20   -- how often our pose inputs go to other players
 
@@ -251,12 +252,16 @@ end
 CAS:BindAction("Crouch", function(_, state)
 	if UIS:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end
 	if state == Enum.UserInputState.Begin then
-		setCrouch(true)
-	elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
+		if CROUCH_TOGGLE then setCrouch(not crouchHeld) else setCrouch(true) end
+	elseif not CROUCH_TOGGLE and (state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel) then
 		setCrouch(false)
 	end
 	return Enum.ContextActionResult.Sink
 end, false, table.unpack(CROUCH_KEYS))
+Humanoid.Jumping:Connect(function(active)
+	if active then setCrouch(false) end
+end)
+local crouchLogged = false
 
 --------------------------------------------------------------------
 --  MAIN
@@ -416,6 +421,15 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
+	if DebugFlags.get("Logs") then
+		if crouchAmt > 0.95 and not crouchLogged then
+			crouchLogged = true
+			print(string.format("[CameraRig] crouch pose settled: torso dropped %.2f studs (expect ~%.2f)",
+				(Origins.RootJoint.Position - RootJoint.C0.Position).Y, CROUCH_DROP))
+		elseif crouchAmt < 0.05 then
+			crouchLogged = false
+		end
+	end
 	if poseRemote and now - lastPoseSent >= POSE_RATE then
 		lastPoseSent = now
 		poseRemote:FireServer(RigPose.pack(inputs))

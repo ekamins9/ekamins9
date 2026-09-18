@@ -60,6 +60,11 @@ local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 
 local CombatServer = {}
 
+-- attach() registers a controller per Tool so server code (test dummies,
+-- future AI) can drive a weapon: CombatServer.get(tool).cycle() etc.
+CombatServer.controllers = {}
+function CombatServer.get(tool) return CombatServer.controllers[tool] end
+
 local function pointInBox(p, part, margin)
 	local l = part.CFrame:PointToObjectSpace(p)
 	local h = part.Size * 0.5 + Vector3.new(margin, margin, margin)
@@ -256,7 +261,11 @@ function CombatServer.attach(Tool, weaponConfig)
 		markCombat(char)
 	end
 	local function spend(n)     if character then drainStamina(character, n) end end
-	local function tell(...)    if player then remote:FireClient(player, ...) end end
+	local npcTell   -- server-side stand-in for the client when no player holds the tool; set below
+	local function tell(...)
+		if player then remote:FireClient(player, ...)
+		elseif npcTell then npcTell(...) end
+	end
 	local function setSwinging(on) setAttr("SpeedMult_Swing", on and cfg.SWING_SLOW or nil) end
 	local function handle()     return Tool:FindFirstChild("Handle") end
 	local function sfx(slot, at, opts) Sounds.play(cfg.SOUNDS[slot], at or handle(), opts) end
@@ -504,6 +513,151 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	----------------------------------------------------------------
+	--  NPC SUPPORT — with no player behind the tool (test dummies, AI),
+	--  animations play server-side and the blade sweep runs here, using
+	--  the same probe + swept-ray logic as CombatClient.
+	----------------------------------------------------------------
+	local npc = {tracks = {}, idle = nil, block = nil, current = nil, sweep = nil}
+	local NPC_SAMPLES, NPC_PROBE = 6, Vector3.new(0.2, 0.2, 0.2)
+	local blades = {}
+	for _, box in ipairs(hitboxes) do
+		local s = box.Size
+		local axis, len
+		if s.X >= s.Y and s.X >= s.Z then axis, len = Vector3.xAxis, s.X
+		elseif s.Y >= s.Z then          axis, len = Vector3.yAxis, s.Y
+		else                            axis, len = Vector3.zAxis, s.Z end
+		local offsets = {}
+		for i = 0, NPC_SAMPLES - 1 do
+			offsets[#offsets + 1] = axis * (len * (i / (NPC_SAMPLES - 1) - 0.5))
+		end
+		table.insert(blades, {part = box, offsets = offsets})
+	end
+	local npcRay = RaycastParams.new()
+	npcRay.FilterType = Enum.RaycastFilterType.Exclude
+	local npcOverlap = OverlapParams.new()
+	npcOverlap.FilterType = Enum.RaycastFilterType.Exclude
+	npcOverlap.MaxParts = 8
+
+	local function npcTrack(id, priority, looped)
+		if type(id) ~= "string" or id == "" or id == "rbxassetid://0" or not character then return nil end
+		local hum = character:FindFirstChildOfClass("Humanoid")
+		if not hum then return nil end
+		local animator = hum:FindFirstChildOfClass("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = hum
+		end
+		local anim = Instance.new("Animation")
+		anim.AnimationId = id
+		local ok, t = pcall(animator.LoadAnimation, animator, anim)
+		if not ok then return nil end
+		t.Priority, t.Looped = priority, looped or false
+		return t
+	end
+
+	local function npcStopAll()
+		npc.sweep = nil
+		if npc.current then npc.current:Stop(); npc.current = nil end
+		if npc.idle then npc.idle:Stop() end
+		if npc.block then npc.block:Stop() end
+		for _, t in pairs(npc.tracks) do t:Stop() end
+	end
+
+	local function humanoidModelOf(part)
+		local m = part:FindFirstAncestorOfClass("Model")
+		while m do
+			if m:FindFirstChildOfClass("Humanoid") then return m end
+			m = m:FindFirstAncestorOfClass("Model")
+		end
+		return nil
+	end
+
+	local function npcSweepStep()
+		local sw = npc.sweep
+		if not sw or not character then return end
+		if os.clock() > sw.endsAt then npc.sweep = nil; return end
+		local frameHits = {}
+		local function note(part, pos)
+			local model = humanoidModelOf(part)
+			if not model or model == character then return end
+			local hum = model:FindFirstChildOfClass("Humanoid")
+			if not hum or hum.Health <= 0 or sw.reported[hum] then return end
+			local isGuard = part.Name == "GuardHull"
+			local e = frameHits[hum]
+			if not e then
+				frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard}
+			elseif isGuard and not e.guard then
+				e.part, e.pos, e.guard = part, pos, true
+			end
+		end
+		for _, b in ipairs(blades) do
+			local pts = sw.last[b]
+			for i, off in ipairs(b.offsets) do
+				local p, prev = b.part.CFrame:PointToWorldSpace(off), pts[i]
+				for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(p), NPC_PROBE, npcOverlap)) do
+					if pointInBox(p, part, 0) then note(part, p) end
+				end
+				local d = p - prev
+				if d.Magnitude > 1e-3 then
+					local res = workspace:Raycast(prev, d, npcRay)
+					if res then note(res.Instance, res.Position) end
+				end
+				pts[i] = p
+			end
+		end
+		for hum, e in pairs(frameHits) do
+			sw.reported[hum] = true
+			onHitReport(sw.token, e.model, e.part, e.pos, e.guard)
+		end
+	end
+	table.insert(conns, RunService.Heartbeat:Connect(npcSweepStep))
+
+	npcTell = function(what, a, b, c, d, e, f)
+		if what == "Setup" then
+			npcStopAll()
+			npc.tracks = {}
+			npc.idle  = npcTrack(a, Enum.AnimationPriority.Idle, true)
+			npc.block = npcTrack(b, Enum.AnimationPriority.Action, true)
+			if npc.idle then npc.idle:Play() end
+
+		elseif what == "PlayAttack" then
+			local id, speed, windup, active, token = a, b or 1, c or 0, d or 0, f
+			local t = npc.tracks[id]
+			if not t then
+				t = npcTrack(id, Enum.AnimationPriority.Action, false)
+				npc.tracks[id] = t
+			end
+			if npc.current and npc.current ~= t then npc.current:Stop() end
+			if t then t:Stop(); t:Play(); t:AdjustSpeed(speed) end
+			npc.current = t
+			task.delay(windup, function()
+				if state.token ~= token or not character then return end
+				npcRay.FilterDescendantsInstances = {character}
+				npcOverlap.FilterDescendantsInstances = {character}
+				local last = {}
+				for _, bl in ipairs(blades) do
+					local pts = {}
+					for i, off in ipairs(bl.offsets) do pts[i] = bl.part.CFrame:PointToWorldSpace(off) end
+					last[bl] = pts
+				end
+				npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}}
+			end)
+
+		elseif what == "Block" then
+			if npc.block then
+				if a == true then npc.block:Play() else npc.block:Stop() end
+			end
+		elseif what == "Blocked" then
+			npc.sweep = nil
+		elseif what == "Parried" or what == "Cancel" then
+			npc.sweep = nil
+			if npc.current then npc.current:Stop(); npc.current = nil end
+		elseif what == "Cleanup" then
+			npcStopAll()
+		end
+	end
+
+	----------------------------------------------------------------
 	--  ATTACKS
 	----------------------------------------------------------------
 	local function startAttack(name)
@@ -684,11 +838,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		elseif action == "Kick"       then doKick() end
 	end))
 
-	table.insert(conns, Tool.Equipped:Connect(function()
+	local function onEquipped()
 		character = Tool.Parent
+		if not (character and character:IsA("Model")) then character = nil; return end
 		player    = Players:GetPlayerFromCharacter(character)
 		humanoid  = character:FindFirstChildOfClass("Humanoid")
-		dprint("equipped by", player and player.Name)
+		dprint("equipped by", player and player.Name or character.Name .. " (NPC)")
 		if not humanoid then warn("[" .. TAG .. "] no Humanoid on equip"); return end
 		-- can't hold it without the arm(s): it goes straight back to the ground
 		if not Injury.canWield(character, cfg.TWO_HANDED) then
@@ -729,10 +884,12 @@ function CombatServer.attach(Tool, weaponConfig)
 			if not on then char:SetAttribute("BlockStoppedAt", os.clock()) end
 		end)
 		tell("Setup", cfg.IDLE_ID, cfg.BLOCK_ID)
-	end))
+	end
+	table.insert(conns, Tool.Equipped:Connect(onEquipped))
 
 	table.insert(conns, Tool.Unequipped:Connect(function()
 		dprint("unequipped")
+		npcStopAll()
 		removeToolGrip(character)
 		if state.phase ~= "idle" then cancelSwing("unequipped") end
 		doBlockStop()
@@ -758,10 +915,26 @@ function CombatServer.attach(Tool, weaponConfig)
 	end))
 
 	table.insert(conns, Tool.Destroying:Connect(function()
+		CombatServer.controllers[Tool] = nil
 		for _, c in ipairs(conns) do c:Disconnect() end
 		for _, c in ipairs(limbConns) do c:Disconnect() end
 		if blockConn then blockConn:Disconnect() end
 	end))
+
+	-- a tool parented straight into a character (test dummies) is equipped
+	-- before this script could connect, so catch up
+	if not character and Tool.Parent and Tool.Parent:FindFirstChildOfClass("Humanoid") then
+		task.defer(onEquipped)
+	end
+
+	local controller = {
+		tool = Tool,
+		attack = doAttack, cycle = doCycle,
+		blockStart = doBlockStart, blockStop = doBlockStop,
+		kick = doKick,
+	}
+	CombatServer.controllers[Tool] = controller
+	return controller
 end
 
 return CombatServer
