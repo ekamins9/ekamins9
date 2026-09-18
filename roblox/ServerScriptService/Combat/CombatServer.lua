@@ -122,6 +122,7 @@ CombatServer.DEFAULTS = {
 	KICK_BLOCK_DRAIN = 15,
 
 	-- geometry
+	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
 	HITBOX_NAME    = "Hitbox",
 	GUARD_WIDTH    = 4.5,   -- hull cross-section around the blade while blocking
 	GUARD_PAD      = 0.75,  -- extra hull length past each end of the blade
@@ -260,6 +261,32 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function flinch(target, dir)
 		target:SetAttribute("HitDir", dir)
 		target:SetAttribute("HitTick", (target:GetAttribute("HitTick") or 0) + 1)
+	end
+
+	-- Roblox attaches tools with a Weld named RightGrip, which animations can't
+	-- drive. Replace it with a Motor6D of the same pose so weapon animations work.
+	local function installToolGrip(char)
+		local arm = char:FindFirstChild("Right Arm")
+		if not arm then return end
+		local grip = arm:WaitForChild("RightGrip", 2)
+		if not grip or character ~= char or not grip.Parent then return end
+		local existing = arm:FindFirstChild("ToolGrip")
+		if existing then existing:Destroy() end
+		local motor = Instance.new("Motor6D")
+		motor.Name  = "ToolGrip"
+		motor.Part0 = grip.Part0
+		motor.Part1 = grip.Part1
+		motor.C0    = grip.C0
+		motor.C1    = grip.C1
+		motor.Parent = arm
+		grip:Destroy()
+		dprint("ToolGrip installed")
+	end
+
+	local function removeToolGrip(char)
+		local arm = char and char:FindFirstChild("Right Arm")
+		local motor = arm and arm:FindFirstChild("ToolGrip")
+		if motor then motor:Destroy() end
 	end
 
 	local function knockAwayWeapon(target, dir, reason)
@@ -623,6 +650,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		character:SetAttribute("SpeedMult_Weapon", cfg.SpeedMult)
 		character:SetAttribute("ClunkMult_Weapon", cfg.ClunkMult)
 		sfx("Equip")
+		if cfg.ANIMATED_GRIP then task.spawn(installToolGrip, character) end
 		-- losing an arm mid-fight drops the weapon
 		for _, c in ipairs(limbConns) do c:Disconnect() end
 		limbConns = {}
@@ -649,6 +677,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	table.insert(conns, Tool.Unequipped:Connect(function()
 		dprint("unequipped")
+		removeToolGrip(character)
 		if state.phase ~= "idle" then cancelSwing("unequipped") end
 		doBlockStop()
 		setSwinging(false)
