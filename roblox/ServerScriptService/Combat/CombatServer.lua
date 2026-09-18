@@ -148,6 +148,7 @@ CombatServer.DEFAULTS = {
 	HITBOX_NAME    = "Hitbox",
 	GUARD_WIDTH    = 1.6,   -- hull cross-section around the blade while blocking — snug to the weapon
 	GUARD_PAD      = 0.3,   -- extra hull length past each end of the blade
+	GUARD_MARGIN   = 0.6,   -- server: blade or hit point this close inside a raised hull still counts as blocked
 	TURN_CAP_EXTRA = 0.10,
 }
 
@@ -257,6 +258,14 @@ function CombatServer.attach(Tool, weaponConfig)
 			offsets[#offsets + 1] = axis * (len * (i / (BLADE_SAMPLES - 1) - 0.5))
 		end
 		table.insert(blades, {part = box, offsets = offsets})
+	end
+	local function bladeInside(hull, margin)
+		for _, b in ipairs(blades) do
+			for _, off in ipairs(b.offsets) do
+				if pointInBox(b.part.CFrame:PointToWorldSpace(off), hull, margin) then return true end
+			end
+		end
+		return false
 	end
 	table.insert(conns, DebugFlags.onChanged("GuardHull", updateHullLook))
 	table.insert(conns, DebugFlags.onChanged("Hitbox", function(show)
@@ -417,16 +426,21 @@ function CombatServer.attach(Tool, weaponConfig)
 
 		local dir = dirTo(target)
 
-		-- A raised guard covers the front, whether or not the swing happened to
-		-- clip the weapon's own hull. Relying on blade-vs-weapon collision alone
-		-- meant a HELD block (weapon static in a settled pose) was easy to miss
-		-- entirely, while a parry — weapon still sweeping up into guard — caught
-		-- it; that's why parries worked and held blocks didn't. The hull is now
-		-- just the fast path for "physically caught it", which also works when
-		-- they're facing the wrong way; this covers the deliberate block.
+		-- safety net, independent of what the client saw first: if the hit point
+		-- OR any point of our blade is inside a raised, facing guard hull right
+		-- now, the guard caught it. "Sword inside the box = blocked."
 		if not claimedGuard and guardUp and facing then
-			claimedGuard = true
-			dprint("guard up and facing", target.Name, "-> block")
+			local tool = target:FindFirstChildOfClass("Tool")
+			if tool then
+				for _, h in ipairs(tool:GetDescendants()) do
+					if h.Name == "GuardHull" and h:IsA("BasePart")
+						and (pointInBox(hitPos, h, cfg.GUARD_MARGIN) or bladeInside(h, cfg.GUARD_MARGIN)) then
+						claimedGuard = true
+						dprint("blade inside", target.Name, "guard -> block")
+						break
+					end
+				end
+			end
 		end
 
 		-- a CONFIRMED touch of the guard hull (from the sweep itself, not the
