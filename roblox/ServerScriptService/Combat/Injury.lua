@@ -152,49 +152,67 @@ function Injury.disarm(char, dir)
 end
 
 --------------------------------------------------------------------
---  SKEWER — a lethal face stab pops the head off and welds it to the
---  ATTACKER'S REAL BLADE (not a clone) for SKEWER_DURATION, so it dangles
---  there as they keep holding the weapon. Head only — the rest of the
---  corpse ragdolls normally. Falls off on its own, or immediately if the
---  attacker unequips/loses the weapon first.
+--  SKEWER — a lethal face stab leaves the victim's head riding the
+--  attacker's blade. A CLONE of the head is welded to the blade and the
+--  real one is just hidden, so nothing of the victim's rig ever joins the
+--  attacker's physics assembly: the corpse keeps every joint and ragdolls
+--  normally, and cleanup is a Debris call. Falls off after SKEWER_DURATION,
+--  or immediately if the attacker unequips/loses the weapon first.
 --------------------------------------------------------------------
-function Injury.skewerHead(char, tool, hitPos, bladeDir)
-	local head  = char:FindFirstChild("Head")
-	local torso = char:FindFirstChild("Torso")
-	local hitbox = tool and tool:FindFirstChild("Hitbox")
-	if not (head and torso and hitbox) or char:GetAttribute("LimbLost_Head") then return false end
+function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
+	local head = char:FindFirstChild("Head")
+	if not (head and hitbox and hitbox.Parent) or char:GetAttribute("HeadSkewered") then return false end
+	char:SetAttribute("HeadSkewered", true)
 
-	local joint
-	for _, m in ipairs(torso:GetChildren()) do
-		if m:IsA("Motor6D") and m.Part1 == head then joint = m; break end
+	local dir = (typeof(bladeDir) == "Vector3" and bladeDir.Magnitude > 1e-4) and bladeDir.Unit or Vector3.new(0, 0, -1)
+	local anchor = (typeof(hitPos) == "Vector3" and hitPos or head.Position) + dir * C.SKEWER_OFFSET
+
+	-- the trophy: a free part in the world, welded to the blade
+	local trophy = head:Clone()
+	trophy.Name = "SkeweredHead"
+	for _, d in ipairs(trophy:GetDescendants()) do
+		if d:IsA("JointInstance") or d:IsA("Constraint") or d:IsA("BaseScript") or d:IsA("Sound") then
+			d:Destroy()
+		end
 	end
-	if joint then joint:Destroy() end
-
-	local dir = (typeof(bladeDir) == "Vector3" and bladeDir.Magnitude > 0) and bladeDir.Unit or Vector3.new(0, 0, -1)
-	head.CanCollide, head.Massless, head.Anchored = false, true, false
-	head.CFrame = CFrame.new((typeof(hitPos) == "Vector3" and hitPos or head.Position) + dir * C.SKEWER_OFFSET)
-	head.AssemblyLinearVelocity, head.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
+	trophy.CanCollide, trophy.CanQuery, trophy.CanTouch = false, false, false
+	trophy.Massless, trophy.Anchored = true, false
+	trophy.CFrame = CFrame.new(anchor) * (head.CFrame - head.CFrame.Position)
+	trophy.Parent = workspace
 
 	local weld = Instance.new("WeldConstraint")
 	weld.Name = "SkewerWeld"
-	weld.Part0, weld.Part1 = hitbox, head
-	weld.Parent = head
-	bloodEmitter(head, 30, 2)
-	char:SetAttribute("LimbLost_Head", true)
-	Sounds.play(SoundConfig.Impale, head)
+	weld.Part0, weld.Part1 = hitbox, trophy
+	weld.Parent = trophy
+
+	-- the real head stays on the corpse, just invisible and un-hittable
+	head.Transparency = 1
+	head.CanQuery = false
+	for _, d in ipairs(head:GetDescendants()) do
+		if d:IsA("Decal") or d:IsA("Texture") then d.Transparency = 1 end
+	end
+
+	bloodEmitter(trophy, 25, 2)
+	bloodEmitter(head, 12, 4)
+	Sounds.play(SoundConfig.Impale, trophy)
 
 	local dropped = false
 	local function drop()
-		if dropped or not head.Parent then return end
+		if dropped then return end
 		dropped = true
-		local w = head:FindFirstChild("SkewerWeld")
-		if w then w:Destroy() end
-		head.CanCollide = true
-		head.AssemblyLinearVelocity = dir * 4 + Vector3.new(0, 2, 0)
+		if weld.Parent then weld:Destroy() end
+		if trophy.Parent then
+			trophy.CanCollide, trophy.Massless = true, false
+			trophy.AssemblyLinearVelocity = dir * 4 + Vector3.new(0, 3, 0)
+			Debris:AddItem(trophy, C.LIMB_DEBRIS_TIME)
+		end
 	end
 	task.delay(C.SKEWER_DURATION, drop)
-	tool.Unequipped:Once(drop)
-	tool.Destroying:Once(drop)
+	local tool = hitbox:FindFirstAncestorOfClass("Tool")
+	if tool then
+		tool.Unequipped:Once(drop)
+		tool.Destroying:Once(drop)
+	end
 	return true
 end
 

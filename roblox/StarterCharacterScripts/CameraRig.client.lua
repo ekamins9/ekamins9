@@ -586,8 +586,12 @@ script.Destroying:Connect(stop)
 -- (we own the physics), so Ragdoll asks us to do both
 ReplicatedStorage:WaitForChild("RagdollRemote").OnClientEvent:Connect(function(ragdolled, shoveDir, shoveSpeed)
 	if DebugFlags.get("Logs") then print("[CameraRig] ragdoll", ragdolled, shoveDir, shoveSpeed) end
-	if Humanoid.Health > 0 then
-		Humanoid:ChangeState(ragdolled and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+	-- Physics state still matters when dead (that's the death ragdoll);
+	-- only standing back up requires being alive
+	if ragdolled then
+		Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	elseif Humanoid.Health > 0 then
+		Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 	end
 	if ragdolled and typeof(shoveDir) == "Vector3" and Torso.Parent then
 		Torso.AssemblyLinearVelocity = Torso.AssemblyLinearVelocity + shoveDir * (shoveSpeed or 0)

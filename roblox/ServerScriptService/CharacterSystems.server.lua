@@ -24,6 +24,7 @@ local function setup(char)
 	DebugFlags.log("CharacterSystems", "setup", char.Name)
 
 	hum.Died:Once(function()
+		DebugFlags.log("CharacterSystems", char.Name, "died -> ragdoll")
 		local dir = char:GetAttribute("HitDir")
 		Ragdoll.enable(char, typeof(dir) == "Vector3" and dir or nil, DEATH_SHOVE)
 		Sounds.play(SoundConfig.Death, char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
@@ -46,12 +47,19 @@ end
 Players.PlayerAdded:Connect(onPlayer)
 for _, p in ipairs(Players:GetPlayers()) do onPlayer(p) end
 
+-- Own the NPCs folder rather than only hooking it when it already exists:
+-- TestDummies also creates it, and whichever script loads second used to lose
+-- the ChildAdded connection entirely — leaving dummies with no Died handler
+-- (no ragdoll) and no BreakJointsOnDeath/RequiresNeck setup.
 local npcs = workspace:FindFirstChild("NPCs")
-if npcs then
-	for _, m in ipairs(npcs:GetChildren()) do
-		if m:IsA("Model") and m:FindFirstChildOfClass("Humanoid") then setup(m) end
-	end
-	npcs.ChildAdded:Connect(function(m)
-		if m:IsA("Model") then setup(m) end
-	end)
+if not npcs then
+	npcs = Instance.new("Folder")
+	npcs.Name = "NPCs"
+	npcs.Parent = workspace
 end
+for _, m in ipairs(npcs:GetChildren()) do
+	if m:IsA("Model") and m:FindFirstChildOfClass("Humanoid") then setup(m) end
+end
+npcs.ChildAdded:Connect(function(m)
+	if m:IsA("Model") then task.defer(setup, m) end
+end)

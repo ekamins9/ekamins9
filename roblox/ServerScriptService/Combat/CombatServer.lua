@@ -501,10 +501,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
 
 		if lethal then
-			if isStab and region == "head" and cfg.IMPALE and Injury.hasLimb(target, "Head") then
-				-- detach + weld BEFORE the kill so Ragdoll never sees a Neck motor to disable
-				Injury.skewerHead(target, Tool, hitPos, bladeDirTo(target))
+			if isStab and region == "head" and cfg.IMPALE then
+				-- kill first so the ragdoll captures a complete rig, then hide the
+				-- real head and hang a clone off the blade (nothing of theirs welds
+				-- into our assembly, so the corpse still flops normally)
 				hum:TakeDamage(dmg)
+				Injury.skewerHead(target, hitboxes[1], hitPos, bladeDirTo(target))
 				dprint("SKEWERED", target.Name, "on the blade")
 			elseif isStab then
 				hum:TakeDamage(dmg)

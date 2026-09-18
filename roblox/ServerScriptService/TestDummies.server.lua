@@ -86,7 +86,10 @@ local function makeDummy(sourceChar, name)
 	end
 	for k in pairs(model:GetAttributes()) do model:SetAttribute(k, nil) end
 	for _, p in ipairs(model:GetChildren()) do
-		if p:IsA("BasePart") then p.Transparency = p.Name == "HumanoidRootPart" and 1 or 0 end
+		if p:IsA("BasePart") then
+			p.Transparency = p.Name == "HumanoidRootPart" and 1 or 0
+			p.CanQuery = true   -- a source head hidden by a skewer must not carry over
+		end
 	end
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.DisplayName = name
