@@ -74,7 +74,7 @@ local function makeDummy(sourceChar, name)
 	model.Name = name
 	for _, d in ipairs(model:GetDescendants()) do
 		if d:IsA("BaseScript") or d:IsA("Tool") or d:IsA("ForceField")
-			or d.Name == "RagdollJoints" or d.Name == "ImpaledWeapon" or d.Name:find("^Stump_")
+			or d.Name == "RagdollJoints" or d.Name == "SkewerWeld" or d.Name:find("^Stump_")
 			or d.Name == "RagdollA0" or d.Name == "RagdollA1"
 			or (d:IsA("Motor6D") and (not d.Part1 or not d.Part0)) then
 			d:Destroy()

@@ -26,7 +26,8 @@ Injury.CONFIG = {
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at
 	DISARM_NO_PICKUP = 2.0,   -- seconds before a flung weapon can be grabbed again
 	LIMB_DEBRIS_TIME = 25,
-	IMPALE_DEPTH     = 1.5,   -- how far past the hit point a lethal stab's weapon sits
+	SKEWER_DURATION  = 4,     -- seconds the head stays welded to the blade before it falls
+	SKEWER_OFFSET    = 0.6,   -- how far past the hit point, along the blade, the head sits
 	BLOOD_COLOR      = Color3.fromRGB(120, 0, 0),
 }
 local C = Injury.CONFIG
@@ -151,38 +152,49 @@ function Injury.disarm(char, dir)
 end
 
 --------------------------------------------------------------------
---  IMPALE — a lethal stab leaves a copy of the weapon run through the
---  corpse (welded to the struck part, gone when the body despawns).
---  The attacker keeps the real weapon.
+--  SKEWER — a lethal face stab pops the head off and welds it to the
+--  ATTACKER'S REAL BLADE (not a clone) for SKEWER_DURATION, so it dangles
+--  there as they keep holding the weapon. Head only — the rest of the
+--  corpse ragdolls normally. Falls off on its own, or immediately if the
+--  attacker unequips/loses the weapon first.
 --------------------------------------------------------------------
-local STRIP = {"BaseScript", "JointInstance", "Constraint", "Attachment", "Trail", "ParticleEmitter", "Sound"}
+function Injury.skewerHead(char, tool, hitPos, bladeDir)
+	local head  = char:FindFirstChild("Head")
+	local torso = char:FindFirstChild("Torso")
+	local hitbox = tool and tool:FindFirstChild("Hitbox")
+	if not (head and torso and hitbox) or char:GetAttribute("LimbLost_Head") then return false end
 
-function Injury.impale(char, hitPart, tool, bladeDir)
-	if not (hitPart and tool and hitPart:IsDescendantOf(char)) then return false end
-	local shift = bladeDir.Unit * C.IMPALE_DEPTH
-	local model = Instance.new("Model")
-	model.Name = "ImpaledWeapon"
-	local count = 0
-	for _, d in ipairs(tool:GetDescendants()) do
-		if d:IsA("BasePart") and d.Name ~= "GuardHull" and d.Transparency < 1 then
-			local c = d:Clone()
-			for _, child in ipairs(c:GetDescendants()) do
-				for _, cls in ipairs(STRIP) do
-					if child:IsA(cls) then child:Destroy(); break end
-				end
-			end
-			c.CanCollide, c.CanQuery, c.CanTouch = false, false, false
-			c.Massless, c.Anchored = true, false
-			c.CFrame = d.CFrame + shift
-			c.Parent = model
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0, weld.Part1, weld.Parent = hitPart, c, c
-			count += 1
-		end
+	local joint
+	for _, m in ipairs(torso:GetChildren()) do
+		if m:IsA("Motor6D") and m.Part1 == head then joint = m; break end
 	end
-	if count == 0 then model:Destroy(); return false end
-	model.Parent = char
-	Sounds.play(SoundConfig.Impale, hitPart)
+	if joint then joint:Destroy() end
+
+	local dir = (typeof(bladeDir) == "Vector3" and bladeDir.Magnitude > 0) and bladeDir.Unit or Vector3.new(0, 0, -1)
+	head.CanCollide, head.Massless, head.Anchored = false, true, false
+	head.CFrame = CFrame.new((typeof(hitPos) == "Vector3" and hitPos or head.Position) + dir * C.SKEWER_OFFSET)
+	head.AssemblyLinearVelocity, head.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
+
+	local weld = Instance.new("WeldConstraint")
+	weld.Name = "SkewerWeld"
+	weld.Part0, weld.Part1 = hitbox, head
+	weld.Parent = head
+	bloodEmitter(head, 30, 2)
+	char:SetAttribute("LimbLost_Head", true)
+	Sounds.play(SoundConfig.Impale, head)
+
+	local dropped = false
+	local function drop()
+		if dropped or not head.Parent then return end
+		dropped = true
+		local w = head:FindFirstChild("SkewerWeld")
+		if w then w:Destroy() end
+		head.CanCollide = true
+		head.AssemblyLinearVelocity = dir * 4 + Vector3.new(0, 2, 0)
+	end
+	task.delay(C.SKEWER_DURATION, drop)
+	tool.Unequipped:Once(drop)
+	tool.Destroying:Once(drop)
 	return true
 end
 

@@ -38,8 +38,10 @@
          severs that limb (DISMEMBER_ON_KILL); with BLEED_OUT_CHANCE the
          victim survives it on BLEED_HP and bleeds out instead of dying.
          A lethal head hit decapitates (DECAPITATE).
-       • A lethal STAB (attack kind = "stab") doesn't sever: the weapon is
-         left run through the body (IMPALE) until the corpse despawns.
+       • A lethal STAB (attack kind = "stab") to the HEAD skewers it: the
+         head pops off and welds to the attacker's real blade (SKEWER) for
+         a few seconds before falling — the rest of the corpse ragdolls
+         normally. A lethal stab elsewhere just kills, no extra effect.
        • Blocking with a missing arm, or taking a guard hit at 0 stamina,
          flings the weapon out of the hand (a real pickup on the ground).
        • Losing the right arm drops the weapon; losing the left arm drops it
@@ -107,7 +109,7 @@ CombatServer.DEFAULTS = {
 	DECAPITATE       = true,  -- lethal slash to the head takes it off (death cam rides it)
 	DISMEMBER_ON_KILL= true,  -- lethal slash to an arm/leg takes that limb off
 	BLEED_OUT_CHANCE = 0.35,  -- …and this often the victim survives it, bleeding, instead of dying
-	IMPALE           = true,  -- lethal stab leaves the weapon run through the body
+	IMPALE           = true,  -- lethal face stab skewers the head on the attacker's real blade
 	KNOCKDOWN_TIME   = 2.00,  -- ragdoll time after a leg hit
 	KNOCK_SPEED      = 18,    -- studs/s the knocked-down body is shoved away from the blow
 	DISARM_STUN      = 0.60,  -- stagger after your weapon is knocked away
@@ -499,9 +501,13 @@ function CombatServer.attach(Tool, weaponConfig)
 		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
 
 		if lethal then
-			if isStab then
+			if isStab and region == "head" and cfg.IMPALE and Injury.hasLimb(target, "Head") then
+				-- detach + weld BEFORE the kill so Ragdoll never sees a Neck motor to disable
+				Injury.skewerHead(target, Tool, hitPos, bladeDirTo(target))
 				hum:TakeDamage(dmg)
-				if cfg.IMPALE then Injury.impale(target, part, Tool, bladeDirTo(target)) end
+				dprint("SKEWERED", target.Name, "on the blade")
+			elseif isStab then
+				hum:TakeDamage(dmg)
 				dprint("KILLED", target.Name, "with a stab", region)
 			elseif limb == "Head" and cfg.DECAPITATE and Injury.hasLimb(target, "Head") then
 				Injury.dismember(target, "Head", dir, true)
