@@ -131,8 +131,8 @@ CombatServer.DEFAULTS = {
 
 	-- kick: short, unblockable, staggers a held block. Leg animation is
 	-- procedural in the camera rig (LocalKickAt / LocalKickRise attributes).
-	KICK_RANGE       = 5.5,
-	KICK_CONE_DEG    = 50,
+	KICK_RANGE       = 7.0,   -- sword fights happen at 6-8 studs; a kick must reach that
+	KICK_CONE_DEG    = 60,
 	KICK_WINDUP      = 0.22,
 	KICK_RECOVERY    = 0.55,
 	KICK_COOLDOWN    = 2.5,   -- minimum time between kicks
@@ -144,9 +144,9 @@ CombatServer.DEFAULTS = {
 	-- geometry
 	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
 	HITBOX_NAME    = "Hitbox",
-	GUARD_WIDTH    = 3.0,   -- hull cross-section around the blade while blocking (smaller = legs/head exposed)
-	GUARD_PAD      = 0.4,   -- extra hull length past each end of the blade
-	GUARD_MARGIN   = 0.25,  -- server: a body hit this close inside a raised hull still counts as blocked
+	GUARD_WIDTH    = 4.0,   -- hull cross-section around the blade while blocking
+	GUARD_PAD      = 0.5,   -- extra hull length past each end of the blade
+	GUARD_MARGIN   = 0.5,   -- server: blade or hit point this close inside a raised hull still counts as blocked
 	TURN_CAP_EXTRA = 0.10,
 }
 
@@ -240,6 +240,30 @@ function CombatServer.attach(Tool, weaponConfig)
 		guardOn = on
 		for _, h in ipairs(hulls) do h.CanQuery = on end
 		updateHullLook()
+	end
+
+	-- sample points along each Hitbox's long axis (server-side view of our blade)
+	local BLADE_SAMPLES = 6
+	local blades = {}
+	for _, box in ipairs(hitboxes) do
+		local s = box.Size
+		local axis, len
+		if s.X >= s.Y and s.X >= s.Z then axis, len = Vector3.xAxis, s.X
+		elseif s.Y >= s.Z then          axis, len = Vector3.yAxis, s.Y
+		else                            axis, len = Vector3.zAxis, s.Z end
+		local offsets = {}
+		for i = 0, BLADE_SAMPLES - 1 do
+			offsets[#offsets + 1] = axis * (len * (i / (BLADE_SAMPLES - 1) - 0.5))
+		end
+		table.insert(blades, {part = box, offsets = offsets})
+	end
+	local function bladeInside(hull, margin)
+		for _, b in ipairs(blades) do
+			for _, off in ipairs(b.offsets) do
+				if pointInBox(b.part.CFrame:PointToWorldSpace(off), hull, margin) then return true end
+			end
+		end
+		return false
 	end
 	table.insert(conns, DebugFlags.onChanged("GuardHull", updateHullLook))
 	table.insert(conns, DebugFlags.onChanged("Hitbox", function(show)
@@ -400,15 +424,17 @@ function CombatServer.attach(Tool, weaponConfig)
 
 		local dir = dirTo(target)
 
-		-- the client's ray can start inside a hull and never "enter" it; if the
-		-- body hit's point lies inside a raised, facing guard hull, it's a block
+		-- safety net, independent of what the client saw first: if the hit point
+		-- OR any point of our blade is inside a raised, facing guard hull right
+		-- now, the guard caught it. "Sword inside the box = blocked."
 		if not claimedGuard and guardUp and facing then
 			local tool = target:FindFirstChildOfClass("Tool")
 			if tool then
 				for _, h in ipairs(tool:GetDescendants()) do
-					if h.Name == "GuardHull" and h:IsA("BasePart") and pointInBox(hitPos, h, cfg.GUARD_MARGIN) then
+					if h.Name == "GuardHull" and h:IsA("BasePart")
+						and (pointInBox(hitPos, h, cfg.GUARD_MARGIN) or bladeInside(h, cfg.GUARD_MARGIN)) then
 						claimedGuard = true
-						dprint("hit point inside", target.Name, "guard -> block")
+						dprint("blade inside", target.Name, "guard -> block")
 						break
 					end
 				end
@@ -520,20 +546,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	--  the same probe + swept-ray logic as CombatClient.
 	----------------------------------------------------------------
 	local npc = {tracks = {}, idle = nil, block = nil, current = nil, sweep = nil}
-	local NPC_SAMPLES, NPC_PROBE = 6, Vector3.new(0.2, 0.2, 0.2)
-	local blades = {}
-	for _, box in ipairs(hitboxes) do
-		local s = box.Size
-		local axis, len
-		if s.X >= s.Y and s.X >= s.Z then axis, len = Vector3.xAxis, s.X
-		elseif s.Y >= s.Z then          axis, len = Vector3.yAxis, s.Y
-		else                            axis, len = Vector3.zAxis, s.Z end
-		local offsets = {}
-		for i = 0, NPC_SAMPLES - 1 do
-			offsets[#offsets + 1] = axis * (len * (i / (NPC_SAMPLES - 1) - 0.5))
-		end
-		table.insert(blades, {part = box, offsets = offsets})
-	end
+	local NPC_PROBE = Vector3.new(0.2, 0.2, 0.2)
+	local NPC_CONFIRM_FRAMES = 2
 	local npcRay = RaycastParams.new()
 	npcRay.FilterType = Enum.RaycastFilterType.Exclude
 	local npcOverlap = OverlapParams.new()
@@ -574,10 +588,19 @@ function CombatServer.attach(Tool, weaponConfig)
 		return nil
 	end
 
+	local function npcReport(sw, hum, e)
+		sw.reported[hum] = true
+		onHitReport(sw.token, e.model, e.part, e.pos, e.guard)
+	end
+
 	local function npcSweepStep()
 		local sw = npc.sweep
 		if not sw or not character then return end
-		if os.clock() > sw.endsAt then npc.sweep = nil; return end
+		if os.clock() > sw.endsAt then
+			for hum, p in pairs(sw.pending) do npcReport(sw, hum, p.e) end
+			npc.sweep = nil
+			return
+		end
 		local frameHits = {}
 		-- priority per target: guard > surface entry (ray) > already-inside (probe)
 		local function note(part, pos, viaRay)
@@ -609,8 +632,19 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 		end
 		for hum, e in pairs(frameHits) do
-			sw.reported[hum] = true
-			onHitReport(sw.token, e.model, e.part, e.pos, e.guard)
+			local p = sw.pending[hum]
+			if p then
+				if (e.guard and not p.e.guard) or (not p.e.guard and e.ray and not p.e.ray) then p.e = e end
+			else
+				sw.pending[hum] = {e = e, frames = 0}
+			end
+		end
+		for hum, p in pairs(sw.pending) do
+			p.frames += 1
+			if p.e.guard or p.frames >= NPC_CONFIRM_FRAMES then
+				sw.pending[hum] = nil
+				npcReport(sw, hum, p.e)
+			end
 		end
 	end
 	table.insert(conns, RunService.Heartbeat:Connect(npcSweepStep))
@@ -643,7 +677,7 @@ function CombatServer.attach(Tool, weaponConfig)
 					for i, off in ipairs(bl.offsets) do pts[i] = bl.part.CFrame:PointToWorldSpace(off) end
 					last[bl] = pts
 				end
-				npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}}
+				npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
 			end)
 
 		elseif what == "Block" then
@@ -777,13 +811,16 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not hrp then return end
 		local cosCone = math.cos(math.rad(cfg.KICK_CONE_DEG))
 		local now = os.clock()
+		local landed, nearest = false, math.huge
 		eachTarget(function(m)
 			local hum, thrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
 			if not (hum and thrp and hum.Health > 0) then return end
 			local to = thrp.Position - hrp.Position
 			to = Vector3.new(to.X, 0, to.Z)
+			nearest = math.min(nearest, to.Magnitude)
 			if to.Magnitude > cfg.KICK_RANGE or to.Magnitude < 1e-3 then return end
 			if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
+			landed = true
 			sfx("Kick", thrp)
 			flinch(m, to.Unit)
 			if m:GetAttribute("Blocking") then
@@ -800,6 +837,10 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 			tell("HitConfirm", "kick")
 		end)
+		if not landed then
+			dprint(string.format("kick missed — nearest target %.1f studs (range %.1f, cone ±%d°)",
+				nearest, cfg.KICK_RANGE, cfg.KICK_CONE_DEG))
+		end
 	end
 
 	local function doKick()

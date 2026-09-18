@@ -126,10 +126,23 @@ function CombatClient.attach(Tool, weaponConfig)
 	overlapParams.MaxParts = 8
 	local PROBE = Vector3.new(0.2, 0.2, 0.2)
 
-	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}}
+	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}, pending={[Humanoid]={e=,frames=}}}
 	local swingToken = nil
+	-- a body touch is held this many frames before reporting, so a guard the
+	-- blade enters a moment later still wins (the tip nicking an arm on the way
+	-- into a raised guard is not a hit). Guard touches report immediately.
+	local CONFIRM_FRAMES = 2
 
-	local function endSweep()
+	local function report(hum, e)
+		sweep.reported[hum] = true
+		remote:FireServer("Hit", sweep.token, e.model, e.part, e.pos, e.guard)
+		dprint("blade touched", e.model.Name, e.part.Name, e.guard and "(guard)" or "")
+	end
+
+	local function endSweep(flush)
+		if sweep and flush then
+			for hum, p in pairs(sweep.pending) do report(hum, p.e) end
+		end
 		sweep = nil
 		setTrail(false)
 	end
@@ -166,7 +179,7 @@ function CombatClient.attach(Tool, weaponConfig)
 			for i, off in ipairs(b.offsets) do pts[i] = b.part.CFrame:PointToWorldSpace(off) end
 			last[b] = pts
 		end
-		sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}}
+		sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
 		setTrail(true)
 	end
 
@@ -184,6 +197,12 @@ function CombatClient.attach(Tool, weaponConfig)
 	-- guard > surface entry (ray) > already-inside (probe), so a GuardHull
 	-- anywhere on the blade beats a body part, and a real first contact
 	-- (e.g. the shin on a low swing) beats a sample that merely sat inside
+	local function merge(e, part, pos, isGuard, viaRay)
+		if (isGuard and not e.guard) or (not e.guard and viaRay and not e.ray) then
+			e.part, e.pos, e.guard, e.ray = part, pos, isGuard, viaRay
+		end
+	end
+
 	local function noteTouch(frameHits, part, pos, viaRay)
 		local model = humanoidModelOf(part)
 		if not model or model == player.Character then return end
@@ -193,14 +212,14 @@ function CombatClient.attach(Tool, weaponConfig)
 		local e = frameHits[hum]
 		if not e then
 			frameHits[hum] = {model = model, part = part, pos = pos, guard = isGuard, ray = viaRay}
-		elseif (isGuard and not e.guard) or (not e.guard and viaRay and not e.ray) then
-			e.part, e.pos, e.guard, e.ray = part, pos, isGuard, viaRay
+		else
+			merge(e, part, pos, isGuard, viaRay)
 		end
 	end
 
 	table.insert(conns, RunService.Heartbeat:Connect(function()
 		if not sweep then return end
-		if os.clock() > sweep.endsAt then endSweep(); return end
+		if os.clock() > sweep.endsAt then endSweep(true); return end
 		local showRays = DebugFlags.get("Rays")
 		local frameHits = {}
 		for _, b in ipairs(blades) do
@@ -220,10 +239,17 @@ function CombatClient.attach(Tool, weaponConfig)
 				pts[i] = p
 			end
 		end
+		-- fold this frame's touches into what's pending, then report what's ripe
 		for hum, e in pairs(frameHits) do
-			sweep.reported[hum] = true
-			remote:FireServer("Hit", sweep.token, e.model, e.part, e.pos, e.guard)
-			dprint("blade touched", e.model.Name, e.part.Name, e.guard and "(guard)" or "")
+			local p = sweep.pending[hum]
+			if p then merge(p.e, e.part, e.pos, e.guard, e.ray) else sweep.pending[hum] = {e = e, frames = 0} end
+		end
+		for hum, p in pairs(sweep.pending) do
+			p.frames += 1
+			if p.e.guard or p.frames >= CONFIRM_FRAMES then
+				sweep.pending[hum] = nil
+				report(hum, p.e)
+			end
 		end
 	end))
 
