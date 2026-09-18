@@ -14,6 +14,17 @@ return {
 	-- feel
 	SPEED_MULT = 0.5,   -- whole-weapon tempo; scales windup/release/recovery of every attack
 	REACH      = 9.0,   -- studs from attacker root to a valid hit point (long weapon)
+	TWO_HANDED = true,  -- a polearm: losing either arm drops it
+
+	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS)
+	SOUNDS = {
+		Equip = "rbxassetid://0",
+		Swing = "rbxassetid://0",
+		Hit   = "rbxassetid://0",
+		Block = "rbxassetid://0",
+		Parry = "rbxassetid://0",
+		Kick  = "rbxassetid://0",
+	},
 
 	-- weight: published as SpeedMult_Weapon / ClunkMult_Weapon while equipped
 	-- and composed with armor etc. (1 = no effect). A heavier weapon = lower

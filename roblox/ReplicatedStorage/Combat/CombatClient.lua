@@ -38,6 +38,9 @@ CombatClient.DEFAULTS = {
 	BLADE_SAMPLES = 6,      -- raycast origins spread along each Hitbox's long axis
 	HITSTOP_HIT   = 0.06,   -- animation freeze on a clean hit
 	HITSTOP_BLOCK = 0.12,   -- longer "clang" freeze when blocked
+	TRAIL          = true,  -- blade trail while the hitbox is live
+	TRAIL_LIFETIME = 0.12,
+	TRAIL_COLOR    = Color3.new(1, 1, 1),
 	KEYS = {
 		[Enum.KeyCode.Q] = "LeftSwing",
 		[Enum.KeyCode.E] = "RightSwing",
@@ -80,6 +83,38 @@ function CombatClient.attach(Tool, weaponConfig)
 	end
 	dprint("blade samples:", #blades * cfg.BLADE_SAMPLES)
 
+	-- blade trail between the two ends of each Hitbox, lit only during release
+	local trails = {}
+	if cfg.TRAIL then
+		for _, b in ipairs(blades) do
+			local a0 = Instance.new("Attachment")
+			a0.Name, a0.Position, a0.Parent = "TrailA0", b.offsets[1], b.part
+			local a1 = Instance.new("Attachment")
+			a1.Name, a1.Position, a1.Parent = "TrailA1", b.offsets[#b.offsets], b.part
+			local t = Instance.new("Trail")
+			t.Attachment0, t.Attachment1 = a0, a1
+			t.Lifetime = cfg.TRAIL_LIFETIME
+			t.Color = ColorSequence.new(cfg.TRAIL_COLOR)
+			t.Transparency = NumberSequence.new(0.3, 1)
+			t.WidthScale = NumberSequence.new(1, 0.2)
+			t.LightEmission = 0.5
+			t.Enabled = false
+			t.Parent = b.part
+			table.insert(trails, t)
+		end
+	end
+	local function setTrail(on)
+		for _, t in ipairs(trails) do t.Enabled = on end
+	end
+
+	-- our own swing landing or being stopped: the camera rig reads these for a kick
+	local function impact(kind)
+		local char = player.Character
+		if not char then return end
+		char:SetAttribute("LocalImpactKind", kind)
+		char:SetAttribute("LocalImpactAt", os.clock())
+	end
+
 	----------------------------------------------------------------
 	--  SWEEP
 	----------------------------------------------------------------
@@ -89,6 +124,11 @@ function CombatClient.attach(Tool, weaponConfig)
 
 	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}}
 	local swingToken = nil
+
+	local function endSweep()
+		sweep = nil
+		setTrail(false)
+	end
 
 	local function humanoidModelOf(part)
 		local m = part:FindFirstAncestorOfClass("Model")
@@ -122,6 +162,7 @@ function CombatClient.attach(Tool, weaponConfig)
 			last[b] = pts
 		end
 		sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}}
+		setTrail(true)
 	end
 
 	local function onRayHit(res)
@@ -137,7 +178,7 @@ function CombatClient.attach(Tool, weaponConfig)
 
 	table.insert(conns, RunService.Heartbeat:Connect(function()
 		if not sweep then return end
-		if os.clock() > sweep.endsAt then sweep = nil; return end
+		if os.clock() > sweep.endsAt then endSweep(); return end
 		local showRays = DebugFlags.get("Rays")
 		for _, b in ipairs(blades) do
 			local pts = sweep.last[b]
@@ -202,7 +243,7 @@ function CombatClient.attach(Tool, weaponConfig)
 
 	local function stopAttack()
 		swingToken = nil
-		sweep = nil
+		endSweep()
 		if currentTrack then currentTrack:Stop(); currentTrack = nil end
 	end
 
@@ -258,12 +299,18 @@ function CombatClient.attach(Tool, weaponConfig)
 
 		elseif what == "HitConfirm" then
 			hitstop(cfg.HITSTOP_HIT)
+			impact("hit")
 
 		elseif what == "Blocked" then
 			hitstop(cfg.HITSTOP_BLOCK)
-			sweep = nil   -- blade stopped on their guard; it can't carry on to hit others
+			impact("block")
+			endSweep()   -- blade stopped on their guard; it can't carry on to hit others
 
-		elseif what == "Parried" or what == "Cancel" then
+		elseif what == "Parried" then
+			impact("parry")
+			stopAttack()
+
+		elseif what == "Cancel" then
 			stopAttack()
 
 		elseif what == "Block" then

@@ -12,6 +12,11 @@
                            by ReplicatedStorage.Modifiers, 1 = base
        LocalTurnCapUntil   (client, weapon) os.clock() deadline for the turn cap
        LocalKickAt / LocalKickRise (client, weapon) procedural leg kick
+       LocalImpactAt / LocalImpactKind (client, weapon) our swing landed / was stopped
+       HitTick / HitDir    (server) we got hit, and from which direction
+
+     On death the camera rides the head (first person, wherever it rolls),
+     holds, then fades to black until respawn.
 
      DEBUG (ReplicatedStorage.Debug attributes, live): TurnCap ]]
 
@@ -23,6 +28,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Modifiers      = require(ReplicatedStorage:WaitForChild("Modifiers"))
+local Sounds         = require(ReplicatedStorage:WaitForChild("Sounds"))
+local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
 
 local player    = Players.LocalPlayer
@@ -136,6 +143,16 @@ local SPRING_STIFF, SPRING_DAMP = 120, 16
 -- attribute on the character (weapon, armor, …) multiplies on top of it at
 -- runtime; with none set that's exactly this value.
 local BASE_CLUNK = 0.5
+local FOOTSTEP_VOLUME = 0.5
+
+-- hit feedback (both views)
+local HIT_FLINCH  = 0.07   -- pitch kick when we take a hit
+local HIT_ROLL    = 0.5    -- roll impulse away from the side we were hit on
+local IMPACT_KICK = {hit = 0.025, block = 0.05, parry = 0.06}   -- our own swing landing / being stopped
+
+-- death: ride the head as it falls, then fade
+local DEATH_HOLD = 2.2
+local DEATH_FADE = 1.6
 --------------------------------------------------------------------
 
 local function newSpring() return {p=0, v=0} end
@@ -146,8 +163,22 @@ local function springC(s, target, dt, stiff, damp)
 end
 local function spring(s, target, dt) return springC(s, target, dt, SPRING_STIFF, SPRING_DAMP) end
 
-local sRoll, sLand, sSwayX, sSwayY, sLean, sStepY, sStepX, sKick =
-	newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring()
+local sRoll, sLand, sSwayX, sSwayY, sLean, sStepY, sStepX, sKick, sHit =
+	newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring()
+
+-- taking a hit: flinch down and roll away from the blow
+character:GetAttributeChangedSignal("HitTick"):Connect(function()
+	sHit.v = sHit.v - HIT_FLINCH * 26
+	local dir = character:GetAttribute("HitDir")
+	if typeof(dir) == "Vector3" then
+		sRoll.v = sRoll.v + HRP.CFrame.RightVector:Dot(dir) * HIT_ROLL
+	end
+end)
+-- our own swing landing, or clanging off a guard
+character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
+	local k = IMPACT_KICK[character:GetAttribute("LocalImpactKind")] or IMPACT_KICK.hit
+	sHit.v = sHit.v - k * 26
+end)
 
 local rot = Vector2.new(0, select(2, HRP.CFrame:ToOrientation()))
 local camDist       = DEFAULT_DIST
@@ -301,11 +332,16 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 		sStepY.v = sStepY.v - BOB_CAM_Y * 26 * bobAmt * heaviness * clunkMult
 		sStepX.v = sStepX.v + stepSide * BOB_CAM_X * 20 * bobAmt * heaviness * clunkMult
 		sKick.v  = sKick.v  - FP_KICK_AMT * 26 * bobAmt * heaviness * clunkMult
+		Sounds.play(SoundConfig.Footstep, HRP, {
+			Volume = FOOTSTEP_VOLUME * math.clamp(heaviness * clunkMult / BASE_CLUNK, 0.4, 2),
+			Speed  = 1 / heaviness ^ 0.3,
+		})
 	end
 
 	local bobY = springC(sStepY, 0, dtc, STEP_STIFF, STEP_DAMP)
 	local bobX = springC(sStepX, 0, dtc, STEP_STIFF, STEP_DAMP)
 	local kick = springC(sKick,  0, dtc, STEP_STIFF, STEP_DAMP)
+	local hitKick = springC(sHit, 0, dtc, STEP_STIFF, STEP_DAMP)
 	local torsoBobY = math.abs(bobY) * (BOB_TORSO / math.max(BOB_CAM_Y, 0.001))
 	local dirFwd  = -moveDir.Z * BOB_DIR_FWD  * bobAmt * math.abs(bobY)
 	local dirSide =  moveDir.X * BOB_DIR_SIDE * bobAmt * math.abs(bobY)
@@ -381,13 +417,14 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 		-- forward-kinematics the head's world position from the C0s we just
 		-- set this frame — same "follows the head" feel as reading
 		-- Head.Position, but synchronous (no one-frame joint-solver lag)
+		-- (while ragdolled the joints are off, so ride the real head instead)
 		local torsoCF = HRP.CFrame * RootJoint.C0 * RootC1:Inverse()
 		local headCF  = torsoCF * Neck.C0 * NeckC1:Inverse()
-		local target  = headCF.Position
+		local target  = bodyFree and Head.Position or headCF.Position
 		eyePos = eyePos and eyePos:Lerp(target, math.clamp(dt*CAM_SMOOTH, 0, 1)) or target
 		Camera.CFrame = CFrame.new(eyePos)
 			* CFrame.Angles(0, rot.Y, 0)
-			* CFrame.Angles(rot.X + leanPitch + kick, 0, roll*FP_ROLL_MULT)
+			* CFrame.Angles(rot.X + leanPitch + kick + hitKick, 0, roll*FP_ROLL_MULT)
 			* CFrame.new(hOff*FP_CLUNK_MULT, EYE_UP + vOff*FP_CLUNK_MULT, -EYE_FWD + zOff*FP_CLUNK_MULT)
 	else
 		eyePos = nil
@@ -401,7 +438,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 		if res then distNow = math.max(0.6, (res.Position - focus).Magnitude - 0.4) end
 		Camera.CFrame = CFrame.new(focus)
 			* CFrame.Angles(0, rot.Y, 0)
-			* CFrame.Angles(rot.X + leanPitch, 0, roll)
+			* CFrame.Angles(rot.X + leanPitch + hitKick, 0, roll)
 			* CFrame.new(SHOULDER_X + hOff, SHOULDER_Y + vOff, distNow + zOff)
 	end
 	Humanoid.CameraOffset = Vector3.zero
@@ -420,13 +457,51 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	lastVY = grounded and 0 or vy
 end)
 
+--------------------------------------------------------------------
+--  DEATH — first person from inside the head, wherever it ends up
+--------------------------------------------------------------------
+local function onDied()
+	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
+	UIS.MouseBehavior = Enum.MouseBehavior.Default
+	Humanoid.CameraOffset = Vector3.zero
+	setBodyForFP(true)
+	Head.LocalTransparencyModifier = 1
+	Camera.CameraType  = Enum.CameraType.Scriptable
+	Camera.FieldOfView = FP_FOV
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "DeathFade"
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 1000
+	gui.ResetOnSpawn = true
+	local black = Instance.new("Frame")
+	black.Size = UDim2.fromScale(1, 1)
+	black.BackgroundColor3 = Color3.new(0, 0, 0)
+	black.BackgroundTransparency = 1
+	black.BorderSizePixel = 0
+	black.Parent = gui
+	gui.Parent = player:WaitForChild("PlayerGui")
+
+	local t0 = os.clock()
+	RunService:BindToRenderStep("DeathCam", CAM, function()
+		if Head.Parent then
+			Camera.CFrame = Head.CFrame * CFrame.new(0, 0.15, -0.25)
+		end
+		local t = os.clock() - t0 - DEATH_HOLD
+		if t > 0 then
+			black.BackgroundTransparency = 1 - math.clamp(t / DEATH_FADE, 0, 1)
+		end
+	end)
+end
+
 local function stop()
 	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
+	pcall(function() RunService:UnbindFromRenderStep("DeathCam") end)
 	Camera.CameraType    = Enum.CameraType.Custom
 	Humanoid.AutoRotate  = true
 	UIS.MouseBehavior    = Enum.MouseBehavior.Default
 	Head.LocalTransparencyModifier = 0
 	Humanoid.CameraOffset = Vector3.zero
 end
-Humanoid.Died:Connect(stop)
+Humanoid.Died:Once(onDied)
 script.Destroying:Connect(stop)

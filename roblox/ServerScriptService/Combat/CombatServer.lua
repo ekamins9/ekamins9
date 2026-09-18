@@ -33,13 +33,27 @@
        • Timed parry = a block landed inside PARRY_WINDOW after raising guard:
          attacker is stunned, defender gets a riposte speed buff.
 
+     INJURY (see Injury / Ragdoll modules)
+       • A lethal hit to an arm or leg has DISMEMBER_CHANCE to sever it
+         instead of killing: the victim survives on BLEED_HP and bleeds out.
+         Lethal head hits decapitate when DECAPITATE is on.
+       • Blocking with a missing arm, or taking a guard hit at 0 stamina,
+         flings the weapon out of the hand (a real pickup on the ground).
+       • Losing the right arm drops the weapon; losing the left arm drops it
+         only if the weapon is TWO_HANDED. Kicking needs the right leg.
+       • Leg hits knock the target into a timed ragdoll.
+
      DEBUG (ReplicatedStorage.Debug attributes, live): Logs, GuardHull, Hitbox ]]
 
 local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
+local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local Injury      = require(script.Parent:WaitForChild("Injury"))
+local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 
 local CombatServer = {}
 
@@ -56,16 +70,30 @@ CombatServer.DEFAULTS = {
 	-- weapon feel
 	SPEED_MULT  = 1.0,   -- whole-weapon tempo; scales windup/release/recovery of every attack
 	REACH       = 8.0,   -- studs from attacker root to a valid hit point
+	TWO_HANDED  = false, -- needs both arms to wield (losing the left arm drops it too)
 	SpeedMult   = 1.0,   -- weight: WalkSpeed multiplier while equipped (published as SpeedMult_Weapon)
 	ClunkMult   = 1.0,   -- weight: footstep clunk multiplier while equipped (published as ClunkMult_Weapon)
 	SWING_SLOW  = 0.55,  -- WalkSpeed multiplier while attacking (published as SpeedMult_Swing)
 
-	-- hit validation
-	REACH_TOLERANCE = 3.0,   -- latency slack on top of REACH
-	HIT_GRACE       = 0.30,  -- accept reports this long after release ends (round-trip lag)
-	MIN_PHASE       = 0.05,
-	HEAD_ONESHOT    = true,
-	KNOCKDOWN_TIME  = 2.00,
+	-- sound slots (a weapon Config's SOUNDS table overrides per key)
+	SOUNDS = {
+		Equip = "rbxassetid://0",
+		Swing = "rbxassetid://0",   -- at the Handle when the windup starts
+		Hit   = "rbxassetid://0",   -- at the struck part
+		Block = "rbxassetid://0",
+		Parry = "rbxassetid://0",
+		Kick  = "rbxassetid://0",
+	},
+
+	-- hit validation / lethality
+	REACH_TOLERANCE  = 3.0,   -- latency slack on top of REACH
+	HIT_GRACE        = 0.30,  -- accept reports this long after release ends (round-trip lag)
+	MIN_PHASE        = 0.05,
+	HEAD_ONESHOT     = true,
+	DECAPITATE       = true,  -- lethal head hits take the head off (death cam rides it)
+	DISMEMBER_CHANCE = 0.35,  -- lethal arm/leg hits: chance to sever + bleed instead of kill
+	KNOCKDOWN_TIME   = 2.00,  -- ragdoll time after a leg hit
+	DISARM_STUN      = 0.60,  -- stagger after your weapon is knocked away
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
 	BLOCK_MAX         = 100,
@@ -105,6 +133,9 @@ function CombatServer.attach(Tool, weaponConfig)
 	local cfg = {}
 	for k, v in pairs(CombatServer.DEFAULTS) do cfg[k] = v end
 	for k, v in pairs(weaponConfig or {}) do cfg[k] = v end
+	cfg.SOUNDS = {}
+	for k, v in pairs(CombatServer.DEFAULTS.SOUNDS) do cfg.SOUNDS[k] = v end
+	for k, v in pairs((weaponConfig and weaponConfig.SOUNDS) or {}) do cfg.SOUNDS[k] = v end
 
 	local TAG = Tool.Name .. "/Server"
 	local function dprint(...) DebugFlags.log(TAG, ...) end
@@ -123,6 +154,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local character, humanoid, player
 	local blockConn
+	local limbConns = {}
 	local conns = {}
 	local state = {
 		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick
@@ -204,6 +236,40 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function spend(n)     setAttr("BlockMeter", math.max(0, stamina() - n)) end
 	local function tell(...)    if player then remote:FireClient(player, ...) end end
 	local function setSwinging(on) setAttr("SpeedMult_Swing", on and cfg.SWING_SLOW or nil) end
+	local function handle()     return Tool:FindFirstChild("Handle") end
+	local function sfx(slot, at, opts) Sounds.play(cfg.SOUNDS[slot], at or handle(), opts) end
+
+	-- stunned, ragdolled, or dead: no actions
+	local function isIncapacitated()
+		if not character then return true end
+		if isStunned() or Ragdoll.isRagdolled(character) then return true end
+		local hum = character:FindFirstChildOfClass("Humanoid")
+		return not hum or hum.Health <= 0
+	end
+
+	-- flat direction from us to a target's root, for flinging things and flinches
+	local function dirTo(target)
+		local myHRP, tHRP = character and character:FindFirstChild("HumanoidRootPart"), target:FindFirstChild("HumanoidRootPart")
+		if not (myHRP and tHRP) then return Vector3.new(0, 0, -1) end
+		local d = tHRP.Position - myHRP.Position
+		d = Vector3.new(d.X, 0, d.Z)
+		return d.Magnitude > 1e-3 and d.Unit or Vector3.new(0, 0, -1)
+	end
+
+	-- victim's client listens for HitTick to flinch the camera; HitDir says which way
+	local function flinch(target, dir)
+		target:SetAttribute("HitDir", dir)
+		target:SetAttribute("HitTick", (target:GetAttribute("HitTick") or 0) + 1)
+	end
+
+	local function knockAwayWeapon(target, dir, reason)
+		if Injury.disarm(target, dir) then
+			target:SetAttribute("StunnedUntil", os.clock() + cfg.DISARM_STUN)
+			dprint("DISARMED", target.Name, "-", reason)
+			return true
+		end
+		return false
+	end
 
 	local function cancelSwing(reason)
 		state.token += 1
@@ -211,13 +277,6 @@ function CombatServer.attach(Tool, weaponConfig)
 		setSwinging(false)
 		tell("Cancel", reason)
 		dprint("swing cancelled:", reason)
-	end
-
-	local function knockdown(hum)
-		hum.PlatformStand = true
-		task.delay(cfg.KNOCKDOWN_TIME, function()
-			if hum and hum.Parent then hum.PlatformStand = false end
-		end)
 	end
 
 	local function regionOf(part, model)
@@ -268,18 +327,30 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 		end
 
+		local dir = dirTo(target)
+
 		if claimedGuard and guardUp and facing then
+			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
+			local meter = target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX
+			if meter <= 0 or not Injury.canBlock(target) then
+				knockAwayWeapon(target, dir, meter <= 0 and "guard hit at 0 stamina" or "guard with a missing arm")
+				sfx("Block", part)
+				tell("Blocked", true)
+				return
+			end
 			if (target:GetAttribute("ParryUntil") or 0) > now then
 				-- PARRY: attacker punished, defender gets a riposte
 				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
-				target:SetAttribute("BlockMeter", math.max(0, (target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX) - cfg.PARRY_COST))
+				target:SetAttribute("BlockMeter", math.max(0, meter - cfg.PARRY_COST))
 				cancelSwing("parried")
+				sfx("Parry", part)
 				tell("Parried")
 				dprint("PARRIED by", target.Name)
 			else
 				-- BLOCK: drains defender stamina; empty = guard broken
-				local m = (target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX) - info.blockCost
+				local m = meter - info.blockCost
+				sfx("Block", part)
 				if m <= 0 then
 					target:SetAttribute("BlockMeter", 0)
 					target:SetAttribute("Blocking", false)
@@ -298,14 +369,39 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- CLEAN HIT: a lowered guard, a raised guard the blade got past, or from behind
 		local region = claimedGuard and "body" or regionOf(part, target)
 		if claimedGuard then dprint("guard touched but invalid (up:", guardUp, "facing:", facing, ") -> body hit") end
+		sfx("Hit", part)
+		Injury.bloodBurst(part)
+		flinch(target, dir)
+
 		if region == "head" and cfg.HEAD_ONESHOT then
-			hum:TakeDamage(hum.MaxHealth)
-			dprint("HEADSHOT on", target.Name)
-		else
-			hum:TakeDamage(info.damage)
-			if region == "legs" then knockdown(hum) end
-			dprint("hit", target.Name, region, info.damage)
+			if cfg.DECAPITATE and Injury.dismember(target, "Head", dir) then
+				dprint("DECAPITATED", target.Name)
+			else
+				hum:TakeDamage(hum.MaxHealth)
+				dprint("HEADSHOT on", target.Name)
+			end
+			tell("HitConfirm", region)
+			return
 		end
+
+		-- lethal limb hit: chance to take the limb instead of the life
+		local lethal = hum.Health - info.damage <= 0
+		local limb = (part.Parent == target and Injury.LIMBS[part.Name] and part.Name ~= "Head") and part.Name or nil
+		if lethal and limb and target:GetAttribute("Bleeding") ~= true
+			and Injury.hasLimb(target, limb) and math.random() < cfg.DISMEMBER_CHANCE then
+			if Injury.dismember(target, limb, dir) then
+				dprint("DISMEMBERED", target.Name, limb)
+				tell("HitConfirm", region)
+				return
+			end
+		end
+
+		hum:TakeDamage(info.damage)
+		if region == "legs" and hum.Health > 0 then
+			Ragdoll.knockdown(target, cfg.KNOCKDOWN_TIME)
+			Sounds.play(SoundConfig.BodyFall, target:FindFirstChild("Torso"))
+		end
+		dprint("hit", target.Name, region, info.damage)
 		tell("HitConfirm", region)
 	end
 
@@ -352,6 +448,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		setSwinging(true)
 		local cap = windup + active + cfg.TURN_CAP_EXTRA
 		setAttr("TurnCapUntil", now + cap)
+		sfx("Swing", nil, {Speed = math.clamp(speed, 0.7, 1.4)})
 
 		task.delay(windup, function()
 			if state.token ~= token then return end
@@ -379,8 +476,8 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local function doAttack(name)
 		if not character or not cfg.ATTACKS[name] then return end
-		if isStunned()      then dprint("attack denied: stunned");  return end
-		if attr("Blocking") then dprint("attack denied: blocking"); return end
+		if isIncapacitated() then dprint("attack denied: incapacitated"); return end
+		if attr("Blocking")   then dprint("attack denied: blocking");      return end
 		if state.phase == "release" or state.phase == "recovery" then
 			if not state.attack then return end
 			if name == state.attackName then dprint("combo denied: same attack"); return end
@@ -401,8 +498,14 @@ function CombatServer.attach(Tool, weaponConfig)
 	--  BLOCK / FEINT
 	----------------------------------------------------------------
 	local function doBlockStart()
-		if not character or isStunned() then return end
+		if not character or isIncapacitated() then return end
 		local now = os.clock()
+		-- one arm can't brace a guard: trying flings the weapon away
+		if not Injury.canBlock(character) then
+			if state.phase ~= "idle" then cancelSwing("disarmed") end
+			knockAwayWeapon(character, nil, "tried to block with a missing arm")
+			return
+		end
 		if state.phase == "windup" then
 			-- feint-to-parry: cancel the windup and raise guard in one motion
 			if stamina() < cfg.FEINT_COST then dprint("feint denied: stamina"); return end
@@ -443,6 +546,8 @@ function CombatServer.attach(Tool, weaponConfig)
 			to = Vector3.new(to.X, 0, to.Z)
 			if to.Magnitude > cfg.KICK_RANGE or to.Magnitude < 1e-3 then return end
 			if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
+			sfx("Kick", thrp)
+			flinch(m, to.Unit)
 			if m:GetAttribute("Blocking") then
 				m:SetAttribute("Blocking", false)
 				m:SetAttribute("StunnedUntil", now + cfg.KICK_STAGGER)
@@ -457,7 +562,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	local function doKick()
-		if not character or isStunned() or attr("Blocking") then return end
+		if not character or isIncapacitated() or attr("Blocking") then return end
+		if not Injury.hasLimb(character, "Right Leg") then dprint("kick denied: no right leg"); return end
 		local now = os.clock()
 		if state.phase ~= "idle" or now < state.nextActionTime then dprint("kick denied: busy"); return end
 		state.token += 1
@@ -502,6 +608,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		humanoid  = character:FindFirstChildOfClass("Humanoid")
 		dprint("equipped by", player and player.Name)
 		if not humanoid then warn("[" .. TAG .. "] no Humanoid on equip"); return end
+		-- can't hold it without the arm(s): it goes straight back to the ground
+		if not Injury.canWield(character, cfg.TWO_HANDED) then
+			local char = character
+			task.defer(function() Injury.disarm(char) end)
+			return
+		end
 		if character:GetAttribute("BlockMeter") == nil then
 			character:SetAttribute("BlockMeter", cfg.BLOCK_MAX)
 		end
@@ -510,6 +622,19 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- weapon weight: composes with armor etc. via ReplicatedStorage.Modifiers
 		character:SetAttribute("SpeedMult_Weapon", cfg.SpeedMult)
 		character:SetAttribute("ClunkMult_Weapon", cfg.ClunkMult)
+		sfx("Equip")
+		-- losing an arm mid-fight drops the weapon
+		for _, c in ipairs(limbConns) do c:Disconnect() end
+		limbConns = {}
+		local char = character
+		for _, limb in ipairs({"LimbLost_RightArm", "LimbLost_LeftArm"}) do
+			table.insert(limbConns, char:GetAttributeChangedSignal(limb):Connect(function()
+				if char == character and not Injury.canWield(char, cfg.TWO_HANDED) then
+					if state.phase ~= "idle" then cancelSwing("lost an arm") end
+					Injury.disarm(char)
+				end
+			end))
+		end
 		-- any script that lowers our Blocking attribute (block break, kick,
 		-- parry) also lowers the hull and stamps the release time for lag grace
 		if blockConn then blockConn:Disconnect() end
@@ -531,6 +656,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		setAttr("ClunkMult_Weapon", nil)
 		setGuard(false)
 		if blockConn then blockConn:Disconnect(); blockConn = nil end
+		for _, c in ipairs(limbConns) do c:Disconnect() end
+		limbConns = {}
 		tell("Cleanup")
 		character = nil
 	end))
@@ -545,6 +672,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	table.insert(conns, Tool.Destroying:Connect(function()
 		for _, c in ipairs(conns) do c:Disconnect() end
+		for _, c in ipairs(limbConns) do c:Disconnect() end
 		if blockConn then blockConn:Disconnect() end
 	end))
 end

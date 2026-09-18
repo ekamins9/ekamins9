@@ -7,23 +7,56 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/MovementConfig.lua` | `ReplicatedStorage` → `MovementConfig` | ModuleScript |
 | `ReplicatedStorage/DebugFlags.lua` | `ReplicatedStorage` → `DebugFlags` | ModuleScript |
 | `ReplicatedStorage/Modifiers.lua` | `ReplicatedStorage` → `Modifiers` | ModuleScript |
+| `ReplicatedStorage/Sounds.lua` | `ReplicatedStorage` → `Sounds` | ModuleScript |
+| `ReplicatedStorage/SoundConfig.lua` | `ReplicatedStorage` → `SoundConfig` | ModuleScript |
 | `ReplicatedStorage/Combat/CombatClient.lua` | `ReplicatedStorage` → `Combat` (Folder) → `CombatClient` | ModuleScript |
 | `ServerScriptService/WalkSpeedGovernor.server.lua` | `ServerScriptService` → `WalkSpeedGovernor` | Script |
+| `ServerScriptService/CharacterSystems.server.lua` | `ServerScriptService` → `CharacterSystems` | Script |
 | `ServerScriptService/Combat/CombatServer.lua` | `ServerScriptService` → `Combat` (Folder) → `CombatServer` | ModuleScript |
+| `ServerScriptService/Combat/Injury.lua` | `ServerScriptService` → `Combat` → `Injury` | ModuleScript |
+| `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
+| `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `Tools/Pitchfork/Config.lua` | inside the Tool → `Config` | ModuleScript |
 | `Tools/Pitchfork/Server.server.lua` | inside the Tool → `Server` | Script |
 | `Tools/Pitchfork/Client.client.lua` | inside the Tool → `Client` | LocalScript |
 
+Nothing gets inserted into a Tool automatically — create `Config`, `Server` and `Client`
+inside each weapon by hand. `CombatServer` / `CombatClient` live once, in the folders above.
+
 ## Making a new weapon
 
 Duplicate the Pitchfork tool's three scripts into the new Tool and edit **only `Config`**:
-animations, `ATTACKS`, `CYCLE_ORDER`, `REACH`, `SPEED_MULT`, and its weight
-(`SpeedMult` / `ClunkMult`, 1 = no effect). Any key from `CombatServer.DEFAULTS` or
-`CombatClient.DEFAULTS` can be overridden there too (e.g. `PARRY_WINDOW`, `KEYS`).
+animations, `ATTACKS`, `CYCLE_ORDER`, `REACH`, `SPEED_MULT`, `TWO_HANDED`, its weight
+(`SpeedMult` / `ClunkMult`, 1 = no effect) and `SOUNDS`. Any key from
+`CombatServer.DEFAULTS` or `CombatClient.DEFAULTS` can be overridden there too
+(e.g. `PARRY_WINDOW`, `DISMEMBER_CHANCE`, `KEYS`, `TRAIL_COLOR`).
 
 The Tool needs a box `Part` named `Hitbox` whose longest axis runs along the blade.
-Optional: a `workspace.NPCs` folder of humanoid models for kicks to hit.
+Optional: a `workspace.NPCs` folder of humanoid models — kicks, ragdoll, and bleeding
+work on them too.
+
+## Combat rules (Mordhau-ish)
+
+- **Phases**: windup → release (blade live) → recovery. All scale with `SPEED_MULT`.
+- **Physical blocking**: while holding RMB your weapon's `GuardHull` is raycast-visible.
+  The incoming blade must touch it *before* a body part, and you must face the attacker
+  within `BLOCK_CONE_DEG`. From behind / off-side / under the guard = clean hit.
+- **Parry**: block raised within `PARRY_WINDOW` → attacker stunned, you get a riposte
+  (`RIPOSTE_SPEED` tempo for `RIPOSTE_DURATION`). Re-tapping block spams no new windows.
+- **Feint**: RMB during windup cancels the attack into a block (`FEINT_COST`).
+- **Combo**: press a *different* attack during release/recovery to chain it, skipping recovery.
+- **Kick (G)**: unblockable, staggers a held block. Needs your right leg.
+- **Stamina** (`BlockMeter`): attacks, feints, kicks, blocks drain it. Hits 0 from a
+  block → guard break stun. Guard hit while already at 0 → **weapon flies out of your hand**.
+- **Dismemberment**: a lethal hit to an arm/leg has `DISMEMBER_CHANCE` to sever it instead
+  of killing; you're left on `BLEED_HP` and bleed out over `BLEED_TIME`. Lethal head hits
+  decapitate (`DECAPITATE`). Lose the right arm → weapon dropped, can't wield. Lose the
+  left arm → dropped only if `TWO_HANDED`. Trying to block one-armed flings the weapon.
+  Each lost leg multiplies speed by `LEG_SPEED` and clunk by `LEG_CLUNK`.
+- **Ragdoll**: leg hits knock you down for `KNOCKDOWN_TIME`; death ragdolls for good.
+- **Death cam**: first person from inside your head wherever it rolls, then fade to black.
+- **Disarmed weapons** land as real pickups; walk over one to grab it (after 2s).
 
 ## Debug flags (live, no code changes)
 
@@ -43,6 +76,12 @@ game.ReplicatedStorage.Debug:SetAttribute("Rays", true)
 | `Hitbox` | false | show weapon `Hitbox` parts |
 | `TurnCap` | false | print when the camera turn cap engages |
 
+## Sound slots
+
+All default to `rbxassetid://0` (silent). Per weapon, in `Config.SOUNDS`: `Equip`,
+`Swing`, `Hit`, `Block`, `Parry`, `Kick`. Global, in `SoundConfig`: `Footstep`,
+`Heartbeat`, `Death`, `Dismember`, `Bleed`, `Disarm`, `BodyFall`.
+
 ## Movement modifiers (composable)
 
 Anything that scales speed or footstep clunk writes **one attribute per source** on the
@@ -55,18 +94,23 @@ character:SetAttribute("ClunkMult_Armor", 1.8)   -- …and 80% heavier steps
 character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 ```
 
-| Attribute | Set by | Read by |
-|---|---|---|
-| `SpeedMult_Weapon`, `ClunkMult_Weapon` | CombatServer (from the weapon `Config`) | governor / camera |
-| `SpeedMult_Swing` | CombatServer while attacking or kicking | governor |
-| `SpeedMult_Armor`, `ClunkMult_Armor` | your future armor system | governor / camera |
-| bare `SpeedMult` / `ClunkMult` | you, by hand in Properties, for testing | governor / camera |
+| Attribute | Set by |
+|---|---|
+| `SpeedMult_Weapon`, `ClunkMult_Weapon` | CombatServer (from the weapon `Config`) |
+| `SpeedMult_Swing` | CombatServer while attacking or kicking |
+| `SpeedMult_Limbs`, `ClunkMult_Limbs` | Injury, per lost leg |
+| `SpeedMult_Armor`, `ClunkMult_Armor` | your future armor system |
+| bare `SpeedMult` / `ClunkMult` | you, by hand in Properties, for testing |
 
 ## Other character attributes
 
 | Attribute | Set by | Read by | Meaning |
 |---|---|---|---|
 | `Blocking`, `BlockStoppedAt`, `ParryUntil`, `BlockMeter`, `StunnedUntil`, `FastUntil` | CombatServer | CombatServer (other players' tools) | combat state; `BlockMeter` is stamina |
+| `LimbLost_LeftArm` … `LimbLost_Head`, `Bleeding`, `BleedDPS` | Injury | CombatServer, InjuryFX | injuries; a bandage system clears `Bleeding` |
+| `KnockedDownUntil` | Ragdoll | Ragdoll | knockdown timer |
+| `HitTick`, `HitDir` | CombatServer | CameraRig, InjuryFX | victim feedback (flinch, flash) |
 | `TurnCapUntil` | CombatServer | server only | **server clock** — never compare on the client |
 | `LocalTurnCapUntil` | CombatClient | CameraRig | turn cap deadline on the **client clock** |
 | `LocalKickAt`, `LocalKickRise` | CombatClient | CameraRig | procedural leg kick |
+| `LocalImpactAt`, `LocalImpactKind` | CombatClient | CameraRig | attacker feedback (impact kick) |
