@@ -10,7 +10,8 @@
      debris and a bloody stump is welded on. Head: the REAL head comes off —
      RequiresNeck kills the humanoid and the death camera rides the head. ]]
 
-local Debris = game:GetService("Debris")
+local Debris  = game:GetService("Debris")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
@@ -24,7 +25,9 @@ Injury.CONFIG = {
 	LEG_SPEED        = 0.45,  -- WalkSpeed factor per lost leg
 	LEG_CLUNK        = 1.5,   -- footstep clunk factor per lost leg
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at
-	DISARM_NO_PICKUP = 2.0,   -- seconds before a flung weapon can be grabbed again
+	DISARM_NO_PICKUP = 2.0,   -- seconds before anyone can grab a flung weapon
+	DISARM_LOCKOUT   = 6.0,   -- …and how long the person who lost it is kept from
+	                          --   re-grabbing, so standing on it doesn't just undo the disarm
 	LIMB_DEBRIS_TIME = 25,
 	SKEWER_DURATION  = 4,     -- seconds the head stays welded to the blade before it falls
 	SKEWER_OFFSET    = 0.6,   -- how far past the hit point, along the blade, the head sits
@@ -125,18 +128,24 @@ function Injury.recomputeMobility(char)
 end
 
 --------------------------------------------------------------------
---  DISARM — the equipped Tool leaves the hand and lands as a real pickup
+--  DISARM — the equipped Tool leaves the hand AND the inventory, and
+--  lands in the world as a real pickup. The person who lost it can't
+--  re-grab it for DISARM_LOCKOUT seconds: without that they just stand
+--  on their own dropped weapon and it silently returns to the backpack,
+--  which makes the disarm feel like it never happened.
 --------------------------------------------------------------------
 function Injury.disarm(char, dir)
 	local tool = char:FindFirstChildOfClass("Tool")
 	if not tool then return false end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	local hum = char:FindFirstChildOfClass("Humanoid")
 	local handle = tool:FindFirstChild("Handle")
-	local hrp    = char:FindFirstChild("HumanoidRootPart")
-	local hum    = char:FindFirstChildOfClass("Humanoid")
+		or (tool.PrimaryPart or tool:FindFirstChildWhichIsA("BasePart", true))
 
 	char:SetAttribute("Blocking", false)
-	if hum then hum:UnequipTools() end
-	tool.Parent = workspace
+	if hum then hum:UnequipTools() end   -- out of the hand (into the backpack)…
+	tool.Parent = workspace              -- …and straight back out of the backpack
+
 	if handle and hrp then
 		handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
 		local fling = (dir or hrp.CFrame.LookVector) + Vector3.new(0, 0.8, 0)
@@ -147,6 +156,30 @@ function Injury.disarm(char, dir)
 			if handle.Parent then handle.CanTouch = true end
 		end)
 	end
+
+	-- bounce it back out if it tries to return to the disarmed player
+	local plr = Players:GetPlayerFromCharacter(char)
+	if plr then
+		local until_ = os.clock() + C.DISARM_LOCKOUT
+		local conn
+		conn = tool.AncestryChanged:Connect(function()
+			if os.clock() > until_ then conn:Disconnect(); return end
+			local backpack = plr:FindFirstChildOfClass("Backpack")
+			if tool.Parent == backpack or tool.Parent == plr.Character then
+				tool.Parent = workspace
+				if handle and handle.Parent then
+					handle.CanTouch = false
+					task.delay(C.DISARM_NO_PICKUP, function()
+						if handle.Parent then handle.CanTouch = true end
+					end)
+				end
+			end
+		end)
+		task.delay(C.DISARM_LOCKOUT, function()
+			if conn.Connected then conn:Disconnect() end
+		end)
+	end
+
 	Sounds.play(SoundConfig.Disarm, handle or hrp)
 	return true
 end
