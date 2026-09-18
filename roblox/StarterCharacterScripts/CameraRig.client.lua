@@ -27,6 +27,7 @@
 
 local RunService = game:GetService("RunService")
 local UIS        = game:GetService("UserInputService")
+local CAS        = game:GetService("ContextActionService")
 local Players    = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -64,8 +65,12 @@ if not (Joints and Origins) then return end
 local RootC1 = RootJoint.C1
 local NeckC1 = Neck.C1
 
-local poseRemote   = ReplicatedStorage:WaitForChild("PoseRemote")
-local crouchRemote = ReplicatedStorage:WaitForChild("CrouchRemote")
+-- created by ServerScriptService.PoseRelay; the camera must still work without it
+local poseRemote   = ReplicatedStorage:WaitForChild("PoseRemote", 5)
+local crouchRemote = ReplicatedStorage:WaitForChild("CrouchRemote", 5)
+if not (poseRemote and crouchRemote) then
+	warn("[CameraRig] PoseRelay remotes missing — is ServerScriptService.PoseRelay in place? Pose replication and crouch slow-down are off.")
+end
 
 --------------------------------------------------------------------
 --  SETTINGS
@@ -101,7 +106,7 @@ local BEND_SPEED      = 16
 local KICK_FALL       = 0.30   -- retract time after the kick peak
 local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED is too mushy)
 local KICK_CAM        = 0.04   -- FP head bump at kick start
-local CROUCH_KEY      = Enum.KeyCode.LeftControl
+local CROUCH_KEYS     = {Enum.KeyCode.LeftControl, Enum.KeyCode.C}
 local CROUCH_SPEED    = 9      -- how fast the crouch pose settles
 local POSE_RATE       = 1/20   -- how often our pose inputs go to other players
 
@@ -238,14 +243,20 @@ end)
 local function setCrouch(on)
 	if crouchHeld == on then return end
 	crouchHeld = on
-	crouchRemote:FireServer(on)
+	if DebugFlags.get("Logs") then print("[CameraRig] crouch", on) end
+	if crouchRemote then crouchRemote:FireServer(on) end
 end
-UIS.InputBegan:Connect(function(input, gp)
-	if not gp and input.KeyCode == CROUCH_KEY then setCrouch(true) end
-end)
-UIS.InputEnded:Connect(function(input)
-	if input.KeyCode == CROUCH_KEY then setCrouch(false) end
-end)
+-- ContextActionService gets the key even when something else marks it
+-- "game processed", which is what silently ate a plain InputBegan check
+CAS:BindAction("Crouch", function(_, state)
+	if UIS:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end
+	if state == Enum.UserInputState.Begin then
+		setCrouch(true)
+	elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
+		setCrouch(false)
+	end
+	return Enum.ContextActionResult.Sink
+end, false, table.unpack(CROUCH_KEYS))
 
 --------------------------------------------------------------------
 --  MAIN
@@ -405,7 +416,7 @@ RunService:BindToRenderStep("FPRig", CAM, function(dt)
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
-	if now - lastPoseSent >= POSE_RATE then
+	if poseRemote and now - lastPoseSent >= POSE_RATE then
 		lastPoseSent = now
 		poseRemote:FireServer(RigPose.pack(inputs))
 	end
@@ -501,6 +512,7 @@ end
 local function stop()
 	pcall(function() RunService:UnbindFromRenderStep("FPRig") end)
 	pcall(function() RunService:UnbindFromRenderStep("DeathCam") end)
+	pcall(function() CAS:UnbindAction("Crouch") end)
 	Camera.CameraType    = Enum.CameraType.Custom
 	Humanoid.AutoRotate  = true
 	UIS.MouseBehavior    = Enum.MouseBehavior.Default

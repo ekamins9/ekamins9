@@ -108,13 +108,15 @@ CombatServer.DEFAULTS = {
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
 	BLOCK_MAX         = 100,
-	BLOCK_REGEN       = 15,
+	BLOCK_REGEN       = 15,    -- per second…
+	STAMINA_REGEN_DELAY = 2.5, -- …but only this long after the last combat event (attack, feint,
+	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing
 	BLOCK_BREAK_STUN  = 2.50,
 	BLOCK_CONE_DEG    = 75,    -- must face the attacker within this half-angle to block
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
 	PARRY_WINDOW      = 0.35,
 	PARRY_RETRY       = 0.45,  -- re-tapping block sooner than this gives no new parry window
-	PARRY_COST        = 5,     -- timed parry costs less stamina than a held block
+	PARRY_COST_MULT   = 0.3,   -- a timed parry costs this fraction of the attack's blockCost
 	PARRY_PUNISH_STUN = 1.50,
 	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks run at RIPOSTE_SPEED tempo
 	RIPOSTE_SPEED     = 1.6,
@@ -246,7 +248,14 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function setAttr(n,v) if character then character:SetAttribute(n,v) end end
 	local function isStunned()  return (attr("StunnedUntil") or 0) > os.clock() end
 	local function stamina()    return attr("BlockMeter") or cfg.BLOCK_MAX end
-	local function spend(n)     setAttr("BlockMeter", math.max(0, stamina() - n)) end
+	-- every stamina event (and every hit taken) stamps LastCombatAt, which
+	-- holds off regen for STAMINA_REGEN_DELAY on whichever character it's on
+	local function markCombat(char) char:SetAttribute("LastCombatAt", os.clock()) end
+	local function drainStamina(char, amount)
+		char:SetAttribute("BlockMeter", math.max(0, (char:GetAttribute("BlockMeter") or cfg.BLOCK_MAX) - amount))
+		markCombat(char)
+	end
+	local function spend(n)     if character then drainStamina(character, n) end end
 	local function tell(...)    if player then remote:FireClient(player, ...) end end
 	local function setSwinging(on) setAttr("SpeedMult_Swing", on and cfg.SWING_SLOW or nil) end
 	local function handle()     return Tool:FindFirstChild("Handle") end
@@ -398,33 +407,34 @@ function CombatServer.attach(Tool, weaponConfig)
 		if claimedGuard and guardUp and facing then
 			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
 			local meter = target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX
+			markCombat(character)
 			if meter <= 0 or not Injury.canBlock(target) then
+				markCombat(target)
 				knockAwayWeapon(target, dir, meter <= 0 and "guard hit at 0 stamina" or "guard with a missing arm")
 				sfx("Block", part)
 				tell("Blocked", true)
 				return
 			end
 			if (target:GetAttribute("ParryUntil") or 0) > now then
-				-- PARRY: attacker punished, defender gets a riposte
+				-- PARRY: attacker punished, defender gets a riposte; costs a fraction of a block
 				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
-				target:SetAttribute("BlockMeter", math.max(0, meter - cfg.PARRY_COST))
+				drainStamina(target, info.blockCost * cfg.PARRY_COST_MULT)
 				cancelSwing("parried")
 				sfx("Parry", part)
 				tell("Parried")
 				dprint("PARRIED by", target.Name)
 			else
-				-- BLOCK: drains defender stamina; empty = guard broken
-				local m = meter - info.blockCost
+				-- BLOCK: drains defender stamina by the attack's blockCost; empty = guard broken
+				drainStamina(target, info.blockCost)
+				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
 				if m <= 0 then
-					target:SetAttribute("BlockMeter", 0)
 					target:SetAttribute("Blocking", false)
 					target:SetAttribute("StunnedUntil", now + cfg.BLOCK_BREAK_STUN)
 					tell("Blocked", true)
 					dprint("BLOCK BROKEN on", target.Name)
 				else
-					target:SetAttribute("BlockMeter", m)
 					tell("Blocked", false)
 					dprint("blocked by", target.Name, "meter", math.floor(m))
 				end
@@ -438,6 +448,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		sfx("Hit", part)
 		Injury.bloodBurst(part)
 		flinch(target, dir)
+		markCombat(character)
+		markCombat(target)
 
 		local dmg    = info.damage * (region == "head" and cfg.HEAD_DAMAGE_MULT or 1)
 		local lethal = hum.Health - dmg <= 0
@@ -620,10 +632,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			if m:GetAttribute("Blocking") then
 				m:SetAttribute("Blocking", false)
 				m:SetAttribute("StunnedUntil", now + cfg.KICK_STAGGER)
-				m:SetAttribute("BlockMeter", math.max(0, (m:GetAttribute("BlockMeter") or cfg.BLOCK_MAX) - cfg.KICK_BLOCK_DRAIN))
+				drainStamina(m, cfg.KICK_BLOCK_DRAIN)
 				dprint("KICK staggered", m.Name)
 			else
 				hum:TakeDamage(cfg.KICK_DAMAGE)
+				markCombat(m)
 				dprint("kick hit", m.Name)
 			end
 			tell("HitConfirm", "kick")
@@ -735,7 +748,9 @@ function CombatServer.attach(Tool, weaponConfig)
 	end))
 
 	table.insert(conns, RunService.Heartbeat:Connect(function(dt)
-		if not character or isStunned() or attr("Blocking") then return end
+		-- no regen while blocking, mid-action, stunned, or within the delay of any combat event
+		if not character or isStunned() or attr("Blocking") or state.phase ~= "idle" then return end
+		if os.clock() - (attr("LastCombatAt") or -1e9) < cfg.STAMINA_REGEN_DELAY then return end
 		local m = stamina()
 		if m < cfg.BLOCK_MAX then
 			setAttr("BlockMeter", math.min(cfg.BLOCK_MAX, m + cfg.BLOCK_REGEN * dt))
