@@ -322,6 +322,10 @@ function CombatClient.attach(Tool, weaponConfig)
 		swingToken = nil
 		endSweep()
 		if currentTrack then currentTrack:Stop(); currentTrack = nil end
+		-- the kick leg is a procedural pose in CameraRig, not a track: clearing
+		-- its timestamp is what cancels it
+		local char = player.Character
+		if char then char:SetAttribute("LocalKickAt", 0) end
 	end
 
 	local function stopAll()

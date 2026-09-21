@@ -99,7 +99,8 @@ CombatServer.DEFAULTS = {
 		Hit   = "rbxasset://sounds/swordlunge.wav",  -- at the struck part
 		Block = "rbxasset://sounds/metal.ogg",
 		Parry = "rbxasset://sounds/metal.ogg",
-		Kick  = "rbxasset://sounds/swordlunge.wav",
+		Kick    = "rbxasset://sounds/swordlunge.wav",  -- the kick itself, at the kicker
+		KickHit = "rbxasset://sounds/metal.ogg",      -- …and the impact, at whoever caught it
 	},
 
 	-- hit validation / lethality
@@ -330,6 +331,15 @@ function CombatServer.attach(Tool, weaponConfig)
 		return v
 	end
 
+	-- Break whatever someone else was in the middle of. Their own weapon owns
+	-- their action state, so go through its controller rather than poking
+	-- attributes — that way their client is told to stop the animation too.
+	local function interrupt(targetChar, reason)
+		local tool = targetChar and targetChar:FindFirstChildOfClass("Tool")
+		local ctrl = tool and CombatServer.controllers[tool]
+		if ctrl then ctrl.interrupt(reason) end
+	end
+
 	-- victim's client listens for HitTick to flinch the camera; HitDir says which way
 	local function flinch(target, dir)
 		target:SetAttribute("HitDir", dir)
@@ -500,6 +510,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		sfx("Hit", part)
 		Injury.bloodBurst(part)
 		flinch(target, dir)
+		-- a clean hit breaks whatever they were doing, so trades are rarer
+		interrupt(target, "hit")
 		markCombat(character)
 		markCombat(target)
 
@@ -831,6 +843,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		tell("Block", false)
 	end
 
+	-- being hit or kicked breaks our own action: mid-swing, mid-kick, or guard
+	local function interruptSelf(reason)
+		if state.phase ~= "idle" then cancelSwing(reason) end
+		if attr("Blocking") then doBlockStop() end
+	end
+
 	----------------------------------------------------------------
 	--  KICK
 	----------------------------------------------------------------
@@ -849,9 +867,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			if to.Magnitude > cfg.KICK_RANGE or to.Magnitude < 1e-3 then return end
 			if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
 			landed = true
-			sfx("Kick", thrp)
+			sfx("KickHit", thrp)
 			flinch(m, to.Unit)
-			if m:GetAttribute("Blocking") then
+			local wasBlocking = m:GetAttribute("Blocking") == true
+			interrupt(m, "kicked")   -- stops their swing and drops their guard, animation included
+			if wasBlocking then
 				-- breaks a held block AND an open parry window
 				m:SetAttribute("Blocking", false)
 				m:SetAttribute("ParryUntil", 0)
@@ -884,6 +904,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.nextKickTime   = now + cfg.KICK_COOLDOWN
 		spend(cfg.KICK_COST)
 		setSwinging(true)
+		sfx("Kick")
 		setAttr("TurnCapUntil", now + cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA)
 		tell("PlayKick", cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA, cfg.KICK_WINDUP)
 		task.delay(cfg.KICK_WINDUP, function()
@@ -1010,7 +1031,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		tool = Tool,
 		attack = doAttack, cycle = doCycle,
 		blockStart = doBlockStart, blockStop = doBlockStop,
-		kick = doKick,
+		kick = doKick, interrupt = interruptSelf,
 	}
 	CombatServer.controllers[Tool] = controller
 	return controller

@@ -452,7 +452,7 @@ local function loopBody(dt)
 	end
 	if kickAt ~= lastKickAt then
 		lastKickAt = kickAt
-		sKick.v = sKick.v - KICK_CAM * 26
+		if kickAt > 0 then sKick.v = sKick.v - KICK_CAM * 26 end   -- 0 means cancelled, not kicked
 	end
 
 	-- CROUCH: follows the key, but can't flip faster than CROUCH_DEBOUNCE; a jump stands us up
