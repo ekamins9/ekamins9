@@ -154,9 +154,16 @@ function Injury.disarm(char, dir)
 
 	tool.Parent = workspace              -- …and straight back out of the backpack
 
-	-- no touch pickup, ever: a disarmed weapon stays on the ground
+	-- No touch pickup, ever: a disarmed weapon stays on the ground. Every part
+	-- collides too, not just the Handle, or the blade pivots on the grip and
+	-- sinks through the floor instead of coming to rest on it. The GuardHull is
+	-- an invisible box, so it stays non-solid.
 	for _, d in ipairs(tool:GetDescendants()) do
-		if d:IsA("BasePart") then d.CanTouch = false end
+		if d:IsA("BasePart") then
+			d.CanTouch = false
+			d.CanCollide = d.Name ~= "GuardHull"
+			d.Massless = false
+		end
 	end
 
 	if handle then
@@ -190,23 +197,59 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 	local dir = (typeof(bladeDir) == "Vector3" and bladeDir.Magnitude > 1e-4) and bladeDir.Unit or Vector3.new(0, 0, -1)
 	local anchor = (typeof(hitPos) == "Vector3" and hitPos or head.Position) + dir * C.SKEWER_OFFSET
 
-	-- the trophy: a free part in the world, welded to the blade
-	local trophy = head:Clone()
+	local function scrub(part)
+		for _, d in ipairs(part:GetDescendants()) do
+			if d:IsA("JointInstance") or d:IsA("Constraint") or d:IsA("BaseScript") or d:IsA("Sound") then
+				d:Destroy()
+			end
+		end
+		part.CanCollide, part.CanQuery, part.CanTouch = false, false, false
+		part.Massless, part.Anchored = true, false
+		part.Transparency = 0
+	end
+
+	-- the trophy: their actual head — face, mesh and all — plus whatever they
+	-- were wearing on it, so it reads as that specific enemy's head
+	local trophy = Instance.new("Model")
 	trophy.Name = "SkeweredHead"
-	for _, d in ipairs(trophy:GetDescendants()) do
-		if d:IsA("JointInstance") or d:IsA("Constraint") or d:IsA("BaseScript") or d:IsA("Sound") then
-			d:Destroy()
+
+	local headClone = head:Clone()
+	headClone.Name = "Head"
+	scrub(headClone)
+	headClone.CFrame = CFrame.new(anchor) * (head.CFrame - head.CFrame.Position)
+	headClone.Parent = trophy
+	trophy.PrimaryPart = headClone
+
+	for _, acc in ipairs(char:GetChildren()) do
+		if acc:IsA("Accessory") then
+			local h = acc:FindFirstChild("Handle")
+			local onHead = false
+			if h and h:IsA("BasePart") then
+				for _, j in ipairs(acc:GetDescendants()) do
+					if j:IsA("JointInstance") and (j.Part0 == head or j.Part1 == head) then onHead = true; break end
+				end
+			end
+			if onHead then
+				local rel = head.CFrame:ToObjectSpace(h.CFrame)
+				local hatClone = h:Clone()
+				scrub(hatClone)
+				hatClone.CFrame = headClone.CFrame * rel
+				hatClone.Parent = trophy
+				local hw = Instance.new("WeldConstraint")
+				hw.Part0, hw.Part1 = headClone, hatClone
+				hw.Parent = hatClone
+				h.Transparency = 1   -- the corpse loses it along with the head
+				h.CanQuery = false
+			end
 		end
 	end
-	trophy.CanCollide, trophy.CanQuery, trophy.CanTouch = false, false, false
-	trophy.Massless, trophy.Anchored = true, false
-	trophy.CFrame = CFrame.new(anchor) * (head.CFrame - head.CFrame.Position)
+
 	trophy.Parent = workspace
 
 	local weld = Instance.new("WeldConstraint")
 	weld.Name = "SkewerWeld"
-	weld.Part0, weld.Part1 = hitbox, trophy
-	weld.Parent = trophy
+	weld.Part0, weld.Part1 = hitbox, headClone
+	weld.Parent = headClone
 
 	-- the real head stays on the corpse, just invisible and un-hittable
 	head.Transparency = 1
@@ -215,20 +258,20 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 		if d:IsA("Decal") or d:IsA("Texture") then d.Transparency = 1 end
 	end
 
-	bloodEmitter(trophy, 25, 2)
+	bloodEmitter(headClone, 25, 2)
 	bloodEmitter(head, 12, 4)
-	Sounds.play(SoundConfig.Impale, trophy)
+	Sounds.play(SoundConfig.Impale, headClone)
 
 	local dropped = false
 	local function drop()
 		if dropped then return end
 		dropped = true
 		if weld.Parent then weld:Destroy() end
-		if trophy.Parent then
-			trophy.CanCollide, trophy.Massless = true, false
-			trophy.AssemblyLinearVelocity = dir * 4 + Vector3.new(0, 3, 0)
-			Debris:AddItem(trophy, C.LIMB_DEBRIS_TIME)
+		if headClone.Parent then
+			headClone.CanCollide, headClone.Massless = true, false
+			headClone.AssemblyLinearVelocity = dir * 4 + Vector3.new(0, 3, 0)
 		end
+		Debris:AddItem(trophy, C.LIMB_DEBRIS_TIME)
 	end
 	task.delay(C.SKEWER_DURATION, drop)
 	local tool = hitbox:FindFirstAncestorOfClass("Tool")

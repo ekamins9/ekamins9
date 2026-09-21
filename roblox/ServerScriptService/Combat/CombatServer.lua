@@ -56,7 +56,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
-local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
 local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 
@@ -91,14 +90,16 @@ CombatServer.DEFAULTS = {
 	ClunkMult   = 1.0,   -- weight: footstep clunk multiplier while equipped (published as ClunkMult_Weapon)
 	SWING_SLOW  = 0.55,  -- WalkSpeed multiplier while attacking (published as SpeedMult_Swing)
 
-	-- sound slots (a weapon Config's SOUNDS table overrides per key)
+	-- Sound slots (a weapon Config's SOUNDS table overrides per key). These
+	-- default to Roblox's built-in rbxasset:// content so everything is audible
+	-- out of the box — swap in your own asset ids per weapon.
 	SOUNDS = {
-		Equip = "rbxassetid://0",
-		Swing = "rbxassetid://0",   -- at the Handle when the windup starts
-		Hit   = "rbxassetid://0",   -- at the struck part
-		Block = "rbxassetid://0",
-		Parry = "rbxassetid://0",
-		Kick  = "rbxassetid://0",
+		Equip = "rbxasset://sounds/unsheath.wav",
+		Swing = "rbxasset://sounds/swordslash.wav",  -- at the Handle when the windup starts
+		Hit   = "rbxasset://sounds/swordlunge.wav",  -- at the struck part
+		Block = "rbxasset://sounds/metal.ogg",
+		Parry = "rbxasset://sounds/metal.ogg",
+		Kick  = "rbxasset://sounds/swordlunge.wav",
 	},
 
 	-- hit validation / lethality
@@ -110,8 +111,8 @@ CombatServer.DEFAULTS = {
 	DISMEMBER_ON_KILL= true,  -- lethal slash to an arm/leg takes that limb off
 	BLEED_OUT_CHANCE = 0.35,  -- …and this often the victim survives it, bleeding, instead of dying
 	IMPALE           = true,  -- lethal face stab skewers the head on the attacker's real blade
-	KNOCKDOWN_TIME   = 2.00,  -- ragdoll time after a leg hit
-	KNOCK_SPEED      = 18,    -- studs/s the knocked-down body is shoved away from the blow
+	STAB_HEAD_EXECUTE= true,  -- …and a stab to the face always kills, so the skewer always happens.
+	                          --    Slashes to the head still only kill if the damage gets there.
 	DISARM_STUN      = 0.60,  -- stagger after your weapon is knocked away
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
@@ -503,8 +504,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		markCombat(target)
 
 		local dmg    = info.damage * (region == "head" and cfg.HEAD_DAMAGE_MULT or 1)
-		local lethal = hum.Health - dmg <= 0
 		local isStab = info.kind == "stab"
+		-- a stab through the face is a finisher, not a damage roll
+		if isStab and region == "head" and cfg.STAB_HEAD_EXECUTE then
+			dmg = math.max(dmg, hum.Health)
+		end
+		local lethal = hum.Health - dmg <= 0
 		-- the limb we actually struck (only real rig parts, not accessories)
 		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
 
@@ -535,10 +540,6 @@ function CombatServer.attach(Tool, weaponConfig)
 		end
 
 		hum:TakeDamage(dmg)
-		if region == "legs" and hum.Health > 0 then
-			Ragdoll.knockdown(target, cfg.KNOCKDOWN_TIME, dir + Vector3.new(0, 0.25, 0), cfg.KNOCK_SPEED)
-			Sounds.play(SoundConfig.BodyFall, target:FindFirstChild("Torso"))
-		end
 		dprint("hit", target.Name, region, dmg)
 		tell("HitConfirm", region)
 	end

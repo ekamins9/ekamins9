@@ -68,6 +68,7 @@ in `TestDummies` for another weapon.
 - **Feint**: RMB during windup cancels the attack into a block (`FEINT_COST`).
 - **Combo**: press a *different* attack during release/recovery to chain it, skipping recovery.
 - **Kick (G)**: unblockable, staggers a held block. Needs your right leg.
+- **Leg hits** deal damage only — they no longer knock you down.
 - **Crouch (LeftControl)**: torso drops `CROUCH_DROP`, `SpeedMult_Crouch` slows you. Other
   players see it, so ducking under a high swing or leaning back from a stab is a real dodge.
 - **Stamina** (`BlockMeter`): attacks, feints, kicks, blocks drain it. Hits 0 from a
@@ -112,9 +113,18 @@ game.ReplicatedStorage.Debug:SetAttribute("Rays", true)
 
 ## Sound slots
 
-All default to `rbxassetid://0` (silent). Per weapon, in `Config.SOUNDS`: `Equip`,
-`Swing`, `Hit`, `Block`, `Parry`, `Kick`. Global, in `SoundConfig`: `Footstep`,
-`Heartbeat`, `Death`, `Dismember`, `Impale`, `Bleed`, `Disarm`, `BodyFall`.
+Per weapon, in `Config.SOUNDS`: `Equip`, `Swing`, `Hit`, `Block`, `Parry`, `Kick` —
+these default to Roblox built-in `rbxasset://` content so combat is audible immediately.
+Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`, `Impale`,
+`Bleed`, `Disarm`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
+
+**Footsteps by material:** put a folder named `FootstepSounds` in `SoundService`
+(or `ReplicatedStorage`) containing one `Sound` per `Enum.Material` name — `Grass`,
+`Slate`, `Metal`, `Wood`, `Sand`, … plus an optional `Default`. `CameraRig` fires one
+of these per step (the stepped clunk drives the timing, so they're one-shots rather
+than loops) and falls back to `SoundConfig.Footstep` if the folder isn't there. Each
+sound's own `Volume` and `PlaybackSpeed` are used as the baseline, then scaled by
+step weight. Roblox's built-in looping `Running` sound is removed automatically.
 
 ## Movement modifiers (composable)
 
