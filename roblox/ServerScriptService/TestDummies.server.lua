@@ -126,6 +126,8 @@ end
 
 local function clearAll()
 	for i = #dummies, 1, -1 do remove(dummies[i]) end
+	local dropped = workspace:FindFirstChild("DroppedWeapons")
+	if dropped then dropped:ClearAllChildren() end   -- their weapons on the floor go too
 	log("cleared")
 end
 

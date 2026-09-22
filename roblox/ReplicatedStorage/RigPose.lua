@@ -32,6 +32,8 @@ RigPose.CONFIG = {
 	CROUCH_LEG      = math.rad(60), -- how far the thighs fold forward (a 2-stud R6 leg at 60° is
 	                                --   1 stud tall, so CameraRig's CROUCH_HIP_DROP ≈ 0.95 keeps feet on the floor)
 	CROUCH_LEG_DIR  = 1,            -- flip if the legs fold backward
+	-- dodge: a lean impulse into the dodge direction, fed through the lean inputs
+	DODGE_LEAN      = 0.35,
 }
 local C = RigPose.CONFIG
 

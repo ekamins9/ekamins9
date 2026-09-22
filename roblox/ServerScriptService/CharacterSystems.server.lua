@@ -1,5 +1,7 @@
 --[[ CHARACTER SYSTEMS — per-character server wiring that isn't tied to a
-     weapon: ragdoll on death, bleed-out ticking, death sound.
+     weapon: ragdoll on death, bleed-out ticking, death sound, STAMINA REGEN
+     (it used to live in the weapon script, so a disarmed player never
+     regenerated), dropping your weapons when you die, and no jumping.
      Covers every player character plus any humanoid Model placed in a
      workspace.NPCs folder. ]]
 
@@ -10,22 +12,36 @@ local ReplicatedStorage   = game:GetService("ReplicatedStorage")
 
 local Ragdoll     = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Ragdoll"))
 local Injury      = require(ServerScriptService.Combat:WaitForChild("Injury"))
+local Pickup      = require(ServerScriptService.Combat:WaitForChild("Pickup"))
+local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 
 local DEATH_SHOVE = 10   -- studs/s the corpse falls away from the last hit
+-- stamina (the BlockMeter attribute) — a weapon overrides these through the
+-- BlockMax / StaminaRegen / StaminaRegenDelay attributes it publishes on equip
+local STAMINA_MAX   = 100
+local STAMINA_REGEN = 15    -- per second…
+local STAMINA_DELAY = 2.5   -- …starting this long after the last combat event
 
 local function setup(char)
 	local hum = char:WaitForChild("Humanoid", 10)
 	if not hum then return end
 	hum.BreakJointsOnDeath = false   -- Ragdoll needs the joints intact
 	hum.RequiresNeck = false         -- disabling the Neck motor for a ragdoll must not count as death
+	if MovementConfig.NO_JUMP then
+		hum.UseJumpPower = true
+		hum.JumpPower = 0              -- (the client also disables the Jumping state)
+	end
+	if char:GetAttribute("BlockMeter") == nil then char:SetAttribute("BlockMeter", STAMINA_MAX) end
+	if char:GetAttribute("BlockMax")   == nil then char:SetAttribute("BlockMax",   STAMINA_MAX) end
 	DebugFlags.log("CharacterSystems", "setup", char.Name)
 
 	hum.Died:Once(function()
 		DebugFlags.log("CharacterSystems", char.Name, "died -> ragdoll")
 		local dir = char:GetAttribute("HitDir")
+		Pickup.dropAll(char)   -- weapons hit the floor next to the body, for anyone to take
 		Ragdoll.enable(char, typeof(dir) == "Vector3" and dir or nil, DEATH_SHOVE)
 		Sounds.play(SoundConfig.Death, char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
 	end)
@@ -37,6 +53,18 @@ local function setup(char)
 			return
 		end
 		Injury.tick(char, dt)
+		-- stamina regen: not while blocking, mid-action, stunned, dead, or
+		-- within the delay of any combat event (attack, dodge, hit taken…)
+		if hum.Health > 0
+			and not char:GetAttribute("Blocking") and not char:GetAttribute("Acting")
+			and (char:GetAttribute("StunnedUntil") or 0) <= os.clock()
+			and os.clock() - (char:GetAttribute("LastCombatAt") or -1e9) >= (char:GetAttribute("StaminaRegenDelay") or STAMINA_DELAY) then
+			local max = char:GetAttribute("BlockMax") or STAMINA_MAX
+			local m = char:GetAttribute("BlockMeter") or max
+			if m < max then
+				char:SetAttribute("BlockMeter", math.min(max, m + (char:GetAttribute("StaminaRegen") or STAMINA_REGEN) * dt))
+			end
+		end
 	end)
 end
 

@@ -38,7 +38,9 @@ local Modifiers      = require(ReplicatedStorage:WaitForChild("Modifiers"))
 local Sounds         = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local RigPose        = require(ReplicatedStorage:WaitForChild("RigPose"))
+local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
+ClientSettings.load()
 
 local player    = Players.LocalPlayer
 local character = script.Parent
@@ -129,7 +131,7 @@ local BEND_SPEED      = 16
 local KICK_FALL       = 0.30   -- retract time after the kick peak
 local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED is too mushy)
 local KICK_CAM        = 0.04   -- FP head bump at kick start
-local CROUCH_KEYS     = {Enum.KeyCode.LeftControl, Enum.KeyCode.C}
+local CROUCH_KEYS     = {ClientSettings.key("Crouch"), Enum.KeyCode.C}   -- rebindable in settings (+ C)
 local CROUCH_TOGGLE   = false  -- hold to crouch; true = press to toggle
 local CROUCH_DEBOUNCE = 0.2    -- crouch state can't flip faster than this (no spam)
 local CROUCH_SPEED    = 9      -- how fast the crouch settles
@@ -168,6 +170,16 @@ local SPRING_STIFF, SPRING_DAMP = 120, 16
 local BASE_CLUNK = 0.5
 local FOOTSTEP_VOLUME = 0.5
 
+-- sprint / dodge feel
+local SPRINT_FOV_ADD = 8      -- degrees while SpeedMult_Sprint is published
+local DODGE_ROLL     = 0.35   -- roll impulse into a side dodge
+local DODGE_DIP      = 0.06   -- pitch dip on any dodge
+
+-- Every tuned value above is the "1.0" the player's settings scale:
+-- ClientSettings Bob / Sway / Roll / Shake / Breathe / FPClunk / FOV
+-- (the ⚙ on the loadout menu). Read every frame, so changes apply live.
+local function S(key) return ClientSettings.get(key) end
+
 -- hit feedback (both views)
 local HIT_FLINCH  = 0.07   -- pitch kick when we take a hit
 local HIT_ROLL    = 0.5    -- roll impulse away from the side we were hit on
@@ -191,16 +203,26 @@ local sRoll, sLand, sSwayX, sSwayY, sLean, sStepY, sStepX, sKick, sHit =
 
 -- taking a hit: flinch down and roll away from the blow
 character:GetAttributeChangedSignal("HitTick"):Connect(function()
-	sHit.v = sHit.v - HIT_FLINCH * 26
+	sHit.v = sHit.v - HIT_FLINCH * 26 * S("Shake")
 	local dir = character:GetAttribute("HitDir")
 	if typeof(dir) == "Vector3" then
-		sRoll.v = sRoll.v + HRP.CFrame.RightVector:Dot(dir) * HIT_ROLL
+		sRoll.v = sRoll.v + HRP.CFrame.RightVector:Dot(dir) * HIT_ROLL * S("Shake")
 	end
 end)
 -- our own swing landing, or clanging off a guard
 character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
 	local k = IMPACT_KICK[character:GetAttribute("LocalImpactKind")] or IMPACT_KICK.hit
-	sHit.v = sHit.v - k * 26
+	sHit.v = sHit.v - k * 26 * S("Shake")
+end)
+-- a dodge (Movement.client): lean the body into it, roll the camera
+local sDodgeX, sDodgeZ = newSpring(), newSpring()
+character:GetAttributeChangedSignal("LocalDodgeAt"):Connect(function()
+	local dx = character:GetAttribute("LocalDodgeX") or 0
+	local dz = character:GetAttribute("LocalDodgeZ") or 0
+	sDodgeX.v = sDodgeX.v + dx * RigPose.CONFIG.DODGE_LEAN * 6   -- peaks ≈ DODGE_LEAN·0.55 rad, settles in ~0.4 s
+	sDodgeZ.v = sDodgeZ.v + dz * RigPose.CONFIG.DODGE_LEAN * 6
+	sRoll.v = sRoll.v + dx * DODGE_ROLL * S("Roll")
+	sHit.v  = sHit.v - DODGE_DIP * 26 * S("Shake")
 end)
 
 local rot = Vector2.new(0, select(2, HRP.CFrame:ToOrientation()))
@@ -247,6 +269,12 @@ end
 local running = HRP:FindFirstChild("Running")
 if running then running:Destroy() end
 
+-- no jumping (Space is the dodge); the server zeroes JumpPower too
+if MovementConfig.NO_JUMP then
+	Humanoid.JumpPower = 0
+	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+end
+
 player.CameraMode = Enum.CameraMode.Classic
 
 --------------------------------------------------------------------
@@ -256,9 +284,16 @@ local function applyVisibility(d, inFP)
 	if d:IsA("BasePart") then
 		if d.Name == "Head" then
 			-- handled per-frame below
-		elseif d.Parent:IsA("Accessory") or d:FindFirstAncestor("HeadClothing") then
-			-- hats and helmets both sit in front of the camera in first person
+		elseif d.Parent:IsA("Accessory") then
+			-- hats sit in front of the camera in first person
 			d.LocalTransparencyModifier = inFP and ACCESSORY_TRANSPARENCY or 0
+			d.CastShadow = true
+		elseif d:FindFirstAncestor("Armor") and d:FindFirstAncestor("Armor").Parent == character then
+			-- armor: only the leg pieces show in first person — helmet, torso and
+			-- arm pieces clip through the camera (Middle is invisible anyway)
+			local piece = d:FindFirstAncestorOfClass("Model")
+			local isLeg = piece and piece.Name:find("LegClothing") ~= nil
+			d.LocalTransparencyModifier = (inFP and not isLeg) and 1 or 0
 			d.CastShadow = true
 		else
 			d.LocalTransparencyModifier = 0
@@ -310,6 +345,22 @@ CAS:BindAction("Crouch", function(_, state)
 	end
 	return Enum.ContextActionResult.Sink
 end, false, table.unpack(CROUCH_KEYS))
+-- rebinding crouch in settings takes effect without a respawn
+ClientSettings.onChanged(function(key)
+	if key ~= "Key_Crouch" then return end
+	CAS:UnbindAction("Crouch")
+	CROUCH_KEYS = {ClientSettings.key("Crouch"), Enum.KeyCode.C}
+	crouchWanted = false
+	CAS:BindAction("Crouch", function(_, state)
+		if UIS:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end
+		if state == Enum.UserInputState.Begin then
+			if CROUCH_TOGGLE then crouchWanted = not crouchWanted else crouchWanted = true end
+		elseif not CROUCH_TOGGLE and (state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel) then
+			crouchWanted = false
+		end
+		return Enum.ContextActionResult.Sink
+	end, false, table.unpack(CROUCH_KEYS))
+end)
 
 --------------------------------------------------------------------
 --  MAIN
@@ -328,6 +379,7 @@ local function loopBody(dt)
 	local typing = UIS:GetFocusedTextBox() ~= nil
 	Camera.CameraType   = Enum.CameraType.Scriptable
 	UIS.MouseBehavior   = typing and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
+	UIS.MouseIconEnabled = typing   -- no cursor over the crosshair-less view while we're alive
 	Humanoid.AutoRotate = false
 
 	-- turn cap: LOCAL timer only. The server's TurnCapUntil is on the
@@ -399,9 +451,10 @@ local function loopBody(dt)
 	end
 
 	if stepped then
-		sStepY.v = sStepY.v - BOB_CAM_Y * 26 * bobAmt * heaviness * clunkMult
-		sStepX.v = sStepX.v + stepSide * BOB_CAM_X * 20 * bobAmt * heaviness * clunkMult
-		sKick.v  = sKick.v  - FP_KICK_AMT * 26 * bobAmt * heaviness * clunkMult
+		local bobS = S("Bob")
+		sStepY.v = sStepY.v - BOB_CAM_Y * 26 * bobAmt * heaviness * clunkMult * bobS
+		sStepX.v = sStepX.v + stepSide * BOB_CAM_X * 20 * bobAmt * heaviness * clunkMult * bobS
+		sKick.v  = sKick.v  - FP_KICK_AMT * 26 * bobAmt * heaviness * clunkMult * bobS * S("FPClunk")
 		-- one shot per step, using the sound for whatever we're standing on
 		local template = footstepFor(Humanoid.FloorMaterial)
 		Sounds.play(template and template.SoundId or SoundConfig.Footstep, HRP, {
@@ -421,7 +474,7 @@ local function loopBody(dt)
 
 	-- immersion springs
 	local turnRate = math.clamp(-appliedDX * 0.9, -3, 3)
-	local rollTarget = math.clamp(turnRate*ROLL_TURN + moveDir.X*ROLL_STRAFE, -ROLL_MAX, ROLL_MAX)
+	local rollTarget = math.clamp(turnRate*ROLL_TURN + moveDir.X*ROLL_STRAFE, -ROLL_MAX, ROLL_MAX) * S("Roll")
 	roll = spring(sRoll, rollTarget, dtc)
 
 	if grounded and lastVY < -5 then sLand.v = sLand.v - (-lastVY)*LAND_FORCE end
@@ -430,12 +483,15 @@ local function loopBody(dt)
 	local accel = (speed - lastSpeed) / math.max(dt, 1e-3)
 	leanPitch = spring(sLean, math.clamp(accel*MOMENTUM_LEAN*0.02, -0.15, 0.15), dtc)
 
-	local swayX = math.clamp(spring(sSwayX, -appliedDX*SWAY_AMOUNT*0.02, dtc), -SWAY_MAX, SWAY_MAX)
-	local swayY = math.clamp(spring(sSwayY, -appliedDY*SWAY_AMOUNT*0.02, dtc), -SWAY_MAX, SWAY_MAX)
+	local swayS = S("Sway")
+	local swayX = math.clamp(spring(sSwayX, -appliedDX*SWAY_AMOUNT*0.02*swayS, dtc), -SWAY_MAX, SWAY_MAX)
+	local swayY = math.clamp(spring(sSwayY, -appliedDY*SWAY_AMOUNT*0.02*swayS, dtc), -SWAY_MAX, SWAY_MAX)
 
-	local idle = 1 - walkFrac
+	local idle = (1 - walkFrac) * S("Breathe")
 	local breatheX = math.sin(now*BREATHE_HZ) * BREATHE_AMOUNT * idle
 	local breatheY = math.sin(now*BREATHE_HZ*2) * BREATHE_AMOUNT * 0.5 * idle
+	local dodgeLX = spring(sDodgeX, 0, dtc)
+	local dodgeLZ = spring(sDodgeZ, 0, dtc)
 
 	-- KICK: snaps out over the server windup, eases back over KICK_FALL
 	local kickAt   = character:GetAttribute("LocalKickAt") or 0
@@ -453,11 +509,11 @@ local function loopBody(dt)
 	end
 	if kickAt ~= lastKickAt then
 		lastKickAt = kickAt
-		if kickAt > 0 then sKick.v = sKick.v - KICK_CAM * 26 end   -- 0 means cancelled, not kicked
+		if kickAt > 0 then sKick.v = sKick.v - KICK_CAM * 26 * S("Shake") end   -- 0 means cancelled, not kicked
 	end
 
-	-- CROUCH: follows the key, but can't flip faster than CROUCH_DEBOUNCE; a jump stands us up
-	local wanted = crouchWanted and Humanoid:GetState() ~= Enum.HumanoidStateType.Jumping
+	-- CROUCH: follows the key, but can't flip faster than CROUCH_DEBOUNCE
+	local wanted = crouchWanted
 	if wanted ~= crouchHeld and now - lastCrouchChange >= CROUCH_DEBOUNCE then
 		lastCrouchChange = now
 		setCrouch(wanted)
@@ -469,8 +525,8 @@ local function loopBody(dt)
 	local inputs = {
 		pitch  = rot.X,
 		bob    = torsoBobY,
-		leanX  = moveDir.X * math.abs(relVel.X) * MOMENTUM_FACTOR,
-		leanZ  = moveDir.Z * math.abs(relVel.Z) * MOMENTUM_FACTOR,
+		leanX  = moveDir.X * math.abs(relVel.X) * MOMENTUM_FACTOR + dodgeLX,
+		leanZ  = moveDir.Z * math.abs(relVel.Z) * MOMENTUM_FACTOR + dodgeLZ,
 		kick   = kickPose,
 		crouch = crouchAmt,
 		arm    = character:FindFirstChildOfClass("Tool") and (rot.X * RigPose.CONFIG.ARM_PITCH) or 0,
@@ -499,12 +555,15 @@ local function loopBody(dt)
 	end
 
 	-- CAMERA
+	-- FP clunk boost: 1 + (FP_CLUNK_MULT-1) × setting, so 0 = plain TP-strength bob
+	local fpClunk = 1 + (FP_CLUNK_MULT - 1) * S("FPClunk")
 	local vOff = bobY + breatheY + landDip
 	local hOff = bobX + breatheX + dirSide
 	local zOff = dirFwd
 
+	local sprinting = character:GetAttribute("SpeedMult_Sprint") ~= nil
 	if inFP then
-		Camera.FieldOfView = FP_FOV + FOV_BOOST*walkFrac
+		Camera.FieldOfView = S("FOV") + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD or 0)
 		-- forward-kinematics the head's world position from the C0s we just
 		-- set this frame — same "follows the head" feel as reading
 		-- Head.Position, but synchronous (no one-frame joint-solver lag)
@@ -516,10 +575,10 @@ local function loopBody(dt)
 		Camera.CFrame = CFrame.new(eyePos)
 			* CFrame.Angles(0, rot.Y, 0)
 			* CFrame.Angles(rot.X + leanPitch + kick + hitKick, 0, roll*FP_ROLL_MULT)
-			* CFrame.new(hOff*FP_CLUNK_MULT, EYE_UP + vOff*FP_CLUNK_MULT, -EYE_FWD + zOff*FP_CLUNK_MULT)
+			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + zOff*fpClunk)
 	else
 		eyePos = nil
-		Camera.FieldOfView = TP_FOV + FOV_BOOST*walkFrac
+		Camera.FieldOfView = TP_FOV + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0)
 		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)   -- HRP itself sinks when crouched
 		camRay.FilterDescendantsInstances = {character}
 		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X, 0, 0)
@@ -564,6 +623,7 @@ local function onDied()
 	pcall(function() RunService:UnbindFromRenderStep(LOOP_NAME) end)
 	setCrouch(false)
 	UIS.MouseBehavior = Enum.MouseBehavior.Default
+	UIS.MouseIconEnabled = true
 	Humanoid.CameraOffset = Vector3.zero
 	setBodyForFP(true)
 	Head.LocalTransparencyModifier = 1
@@ -608,6 +668,7 @@ local function stop()
 	Camera.CameraType    = Enum.CameraType.Custom
 	Humanoid.AutoRotate  = true
 	UIS.MouseBehavior    = Enum.MouseBehavior.Default
+	UIS.MouseIconEnabled = true
 	Head.LocalTransparencyModifier = 0
 	Humanoid.CameraOffset = Vector3.zero
 end

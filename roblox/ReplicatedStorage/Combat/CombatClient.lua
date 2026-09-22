@@ -25,7 +25,8 @@ local RunService = game:GetService("RunService")
 local Debris     = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local player     = Players.LocalPlayer
 
 local CombatClient = {}
@@ -42,13 +43,16 @@ CombatClient.DEFAULTS = {
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
+	-- Keys: the player's ClientSettings binds (LeftSwing / RightSwing /
+	-- Overhead / Stab / Kick) win for attacks of those names; a weapon whose
+	-- attacks are named differently lists them here, keyed by KeyCode.
 	KEYS = {
 		[Enum.KeyCode.Q] = "LeftSwing",
 		[Enum.KeyCode.E] = "RightSwing",
 		[Enum.KeyCode.F] = "Overhead",
 		[Enum.KeyCode.X] = "Stab",
 	},
-	KICK_KEY = Enum.KeyCode.G,
+	KICK_KEY = Enum.KeyCode.G,   -- fallback when the settings module is unavailable
 }
 
 --------------------------------------------------------------------
@@ -88,6 +92,13 @@ function CombatClient.attach(Tool, weaponConfig)
 	local trails = {}
 	if cfg.TRAIL then
 		for _, b in ipairs(blades) do
+			-- this script restarts when a dropped weapon is picked back up: reuse
+			local old = b.part:FindFirstChildOfClass("Trail")
+			if old then old:Destroy() end
+			for _, n in ipairs({"TrailA0", "TrailA1"}) do
+				local a = b.part:FindFirstChild(n)
+				if a then a:Destroy() end
+			end
 			local a0 = Instance.new("Attachment")
 			a0.Name, a0.Position, a0.Parent = "TrailA0", b.offsets[1], b.part
 			local a1 = Instance.new("Attachment")
@@ -438,14 +449,32 @@ function CombatClient.attach(Tool, weaponConfig)
 		remote:FireServer("Cycle")
 	end))
 
+	-- which attack (or "Kick") a key means: the player's binds first, then the weapon's KEYS
+	local function actionFor(keyCode)
+		local bound = ClientSettings.actionFor(keyCode)
+		if bound == "Kick" then return "Kick" end
+		if bound and cfg.ATTACKS and cfg.ATTACKS[bound] then return bound end
+		if bound == nil and keyCode == cfg.KICK_KEY then return "Kick" end
+		local byWeapon = cfg.KEYS[keyCode]
+		-- a weapon key that the player has re-bound elsewhere no longer fires here
+		if byWeapon and (ClientSettings.get("Key_" .. byWeapon) == nil or ClientSettings.get("Key_" .. byWeapon) == keyCode.Name) then
+			return byWeapon
+		end
+		return nil
+	end
+
 	table.insert(conns, UIS.InputBegan:Connect(function(input, gp)
 		if gp or not equipped then return end
+		if UIS:GetFocusedTextBox() then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			remote:FireServer("BlockStart")
-		elseif input.KeyCode == cfg.KICK_KEY then
-			remote:FireServer("Kick")
-		elseif cfg.KEYS[input.KeyCode] then
-			remote:FireServer("Attack", cfg.KEYS[input.KeyCode])
+		elseif input.UserInputType == Enum.UserInputType.Keyboard then
+			local action = actionFor(input.KeyCode)
+			if action == "Kick" then
+				remote:FireServer("Kick")
+			elseif action then
+				remote:FireServer("Attack", action)
+			end
 		end
 	end))
 

@@ -79,6 +79,83 @@ local function pointInBox(p, part, margin)
 end
 
 --------------------------------------------------------------------
+--  SHARED HELPERS (also used by MovementServer for unarmed kicks)
+--------------------------------------------------------------------
+-- every stamina event (and every hit taken) stamps LastCombatAt, which
+-- holds off regen (CharacterSystems) for StaminaRegenDelay on that character
+function CombatServer.markCombat(char) char:SetAttribute("LastCombatAt", os.clock()) end
+function CombatServer.drainStamina(char, amount, max)
+	char:SetAttribute("BlockMeter", math.max(0, (char:GetAttribute("BlockMeter") or max or 100) - amount))
+	CombatServer.markCombat(char)
+end
+-- victim's client listens for HitTick to flinch the camera; HitDir says which way
+function CombatServer.flinch(target, dir)
+	target:SetAttribute("HitDir", dir)
+	target:SetAttribute("HitTick", (target:GetAttribute("HitTick") or 0) + 1)
+end
+-- Break whatever someone else was in the middle of. Their own weapon owns
+-- their action state, so go through its controller rather than poking
+-- attributes — that way their client is told to stop the animation too.
+function CombatServer.interrupt(targetChar, reason)
+	local tool = targetChar and targetChar:FindFirstChildOfClass("Tool")
+	local ctrl = tool and CombatServer.controllers[tool]
+	if ctrl then ctrl.interrupt(reason) end
+end
+function CombatServer.eachTarget(character, fn)
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Character and p.Character ~= character then fn(p.Character) end
+	end
+	local npcs = workspace:FindFirstChild("NPCs")
+	if npcs then
+		for _, m in ipairs(npcs:GetChildren()) do
+			if m:IsA("Model") then fn(m) end
+		end
+	end
+end
+
+-- The kick's landing: everyone in range and in the cone. hooks = {sfx, tell, dprint}
+-- (a weapon supplies its sounds; an unarmed kick uses the defaults)
+function CombatServer.resolveKick(character, cfg, hooks)
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return false end
+	local cosCone = math.cos(math.rad(cfg.KICK_CONE_DEG))
+	local now = os.clock()
+	local landed, nearest = false, math.huge
+	CombatServer.eachTarget(character, function(m)
+		local hum, thrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
+		if not (hum and thrp and hum.Health > 0) then return end
+		local to = thrp.Position - hrp.Position
+		to = Vector3.new(to.X, 0, to.Z)
+		nearest = math.min(nearest, to.Magnitude)
+		if to.Magnitude > cfg.KICK_RANGE or to.Magnitude < 1e-3 then return end
+		if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
+		landed = true
+		if hooks.sfx then hooks.sfx("KickHit", thrp) end
+		CombatServer.flinch(m, to.Unit)
+		local wasBlocking = m:GetAttribute("Blocking") == true
+		CombatServer.interrupt(m, "kicked")   -- stops their swing and drops their guard, animation included
+		if wasBlocking then
+			-- breaks a held block AND an open parry window
+			m:SetAttribute("Blocking", false)
+			m:SetAttribute("ParryUntil", 0)
+			m:SetAttribute("StunnedUntil", now + cfg.KICK_STAGGER)
+			CombatServer.drainStamina(m, cfg.KICK_BLOCK_DRAIN, cfg.BLOCK_MAX)
+			if hooks.dprint then hooks.dprint("KICK staggered", m.Name) end
+		else
+			hum:TakeDamage(cfg.KICK_DAMAGE)
+			CombatServer.markCombat(m)
+			if hooks.dprint then hooks.dprint("kick hit", m.Name) end
+		end
+		if hooks.tell then hooks.tell("HitConfirm", "kick") end
+	end)
+	if not landed and hooks.dprint then
+		hooks.dprint(string.format("kick missed — nearest target %.1f studs (range %.1f, cone ±%d°)",
+			nearest, cfg.KICK_RANGE, cfg.KICK_CONE_DEG))
+	end
+	return landed
+end
+
+--------------------------------------------------------------------
 --  DEFAULTS — global combat rules. A weapon Config overrides any key.
 --------------------------------------------------------------------
 CombatServer.DEFAULTS = {
@@ -118,9 +195,13 @@ CombatServer.DEFAULTS = {
 	DISMEMBER_ON_KILL= true,  -- lethal slash to an arm/leg takes that limb off
 	BLEED_OUT_CHANCE = 0.35,  -- …and this often the victim survives it, bleeding, instead of dying
 	IMPALE           = true,  -- lethal face stab skewers the head on the attacker's real blade
-	STAB_HEAD_EXECUTE= true,  -- …and a stab to the face always kills, so the skewer always happens.
-	                          --    Slashes to the head still only kill if the damage gets there.
+	STAB_HEAD_EXECUTE= false, -- true = a stab to the face always kills. Off: it's a normal
+	                          --    HEAD_DAMAGE_MULT hit, and only a LETHAL one skewers.
+	HEAD_THROW_SPEED = 60,    -- a skewered head stays on the blade until your next swing, then
+	HEAD_THROW_DAMAGE= 15,    --    flies off forward as a projectile: light damage + a stun on
+	HEAD_THROW_STUN  = 1.0,   --    whoever it hits (can finish someone low)
 	DISARM_STUN      = 0.60,  -- stagger after your weapon is knocked away
+	SECONDARY        = false, -- true = this weapon may be carried as the secondary (see Pickup)
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
 	BLOCK_MAX         = 100,
@@ -178,6 +259,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		warn("[" .. TAG .. "] Config needs ATTACKS and CYCLE_ORDER")
 		return
 	end
+
+	Tool.CanBeDropped = false   -- Backspace would dump it in workspace with no pickup prompt
 
 	local remote = Tool:FindFirstChild("CombatRemote")
 	if not remote then
@@ -291,20 +374,20 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function setAttr(n,v) if character then character:SetAttribute(n,v) end end
 	local function isStunned()  return (attr("StunnedUntil") or 0) > os.clock() end
 	local function stamina()    return attr("BlockMeter") or cfg.BLOCK_MAX end
-	-- every stamina event (and every hit taken) stamps LastCombatAt, which
-	-- holds off regen for STAMINA_REGEN_DELAY on whichever character it's on
-	local function markCombat(char) char:SetAttribute("LastCombatAt", os.clock()) end
-	local function drainStamina(char, amount)
-		char:SetAttribute("BlockMeter", math.max(0, (char:GetAttribute("BlockMeter") or cfg.BLOCK_MAX) - amount))
-		markCombat(char)
-	end
+	local markCombat = CombatServer.markCombat
+	local function drainStamina(char, amount) CombatServer.drainStamina(char, amount, cfg.BLOCK_MAX) end
 	local function spend(n)     if character then drainStamina(character, n) end end
 	local npcTell   -- server-side stand-in for the client when no player holds the tool; set below
 	local function tell(...)
 		if player then remote:FireClient(player, ...)
 		elseif npcTell then npcTell(...) end
 	end
-	local function setSwinging(on) setAttr("SpeedMult_Swing", on and cfg.SWING_SLOW or nil) end
+	-- mid-attack / mid-kick: slower, and "Acting" tells other systems
+	-- (dodge, sprint, stamina regen) that we're committed to something
+	local function setSwinging(on)
+		setAttr("SpeedMult_Swing", on and cfg.SWING_SLOW or nil)
+		setAttr("Acting", on or nil)
+	end
 	local function handle()     return Tool:FindFirstChild("Handle") end
 	local function sfx(slot, at, opts) Sounds.play(cfg.SOUNDS[slot], at or handle(), opts) end
 
@@ -337,20 +420,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		return v
 	end
 
-	-- Break whatever someone else was in the middle of. Their own weapon owns
-	-- their action state, so go through its controller rather than poking
-	-- attributes — that way their client is told to stop the animation too.
-	local function interrupt(targetChar, reason)
-		local tool = targetChar and targetChar:FindFirstChildOfClass("Tool")
-		local ctrl = tool and CombatServer.controllers[tool]
-		if ctrl then ctrl.interrupt(reason) end
-	end
-
-	-- victim's client listens for HitTick to flinch the camera; HitDir says which way
-	local function flinch(target, dir)
-		target:SetAttribute("HitDir", dir)
-		target:SetAttribute("HitTick", (target:GetAttribute("HitTick") or 0) + 1)
-	end
+	local interrupt = CombatServer.interrupt
+	local flinch    = CombatServer.flinch
 
 	-- Roblox attaches tools with a Weld named RightGrip, which animations can't
 	-- drive. Replace it with a Motor6D of the same pose so weapon animations work.
@@ -409,18 +480,6 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 		end
 		return "body"
-	end
-
-	local function eachTarget(fn)
-		for _, p in ipairs(Players:GetPlayers()) do
-			if p.Character and p.Character ~= character then fn(p.Character) end
-		end
-		local npcs = workspace:FindFirstChild("NPCs")
-		if npcs then
-			for _, m in ipairs(npcs:GetChildren()) do
-				if m:IsA("Model") then fn(m) end
-			end
-		end
 	end
 
 	----------------------------------------------------------------
@@ -778,6 +837,28 @@ function CombatServer.attach(Tool, weaponConfig)
 			if state.token ~= token then return end
 			if isStunned() then cancelSwing("stunned"); return end
 			state.phase = "release"
+			-- a head still riding the blade comes off with the swing, forward,
+			-- as a projectile: light damage and a stun on whoever it hits
+			local box = hitboxes[1]
+			local hrp = character:FindFirstChild("HumanoidRootPart")
+			if box and hrp and Injury.hasSkewer(box) then
+				local throwDir = hrp.CFrame.LookVector + Vector3.new(0, 0.12, 0)
+				local thrower = character
+				Injury.launchSkewer(box, throwDir, cfg.HEAD_THROW_SPEED, thrower, function(victim, part)
+					local vh = victim:FindFirstChildOfClass("Humanoid")
+					if not vh then return end
+					sfx("Hit", part)
+					Injury.bloodBurst(part)
+					flinch(victim, (part.Position - hrp.Position).Unit)
+					interrupt(victim, "hit")
+					victim:SetAttribute("Blocking", false)
+					victim:SetAttribute("StunnedUntil", os.clock() + cfg.HEAD_THROW_STUN)
+					markCombat(victim)
+					vh:TakeDamage(cfg.HEAD_THROW_DAMAGE)
+					dprint("thrown head hit", victim.Name)
+				end)
+				dprint("launched the skewered head")
+			end
 		end)
 		task.delay(windup + active, function()
 			if state.token ~= token then return end
@@ -870,42 +951,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	--  KICK
 	----------------------------------------------------------------
 	local function resolveKick()
-		local hrp = character and character:FindFirstChild("HumanoidRootPart")
-		if not hrp then return end
-		local cosCone = math.cos(math.rad(cfg.KICK_CONE_DEG))
-		local now = os.clock()
-		local landed, nearest = false, math.huge
-		eachTarget(function(m)
-			local hum, thrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
-			if not (hum and thrp and hum.Health > 0) then return end
-			local to = thrp.Position - hrp.Position
-			to = Vector3.new(to.X, 0, to.Z)
-			nearest = math.min(nearest, to.Magnitude)
-			if to.Magnitude > cfg.KICK_RANGE or to.Magnitude < 1e-3 then return end
-			if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
-			landed = true
-			sfx("KickHit", thrp)
-			flinch(m, to.Unit)
-			local wasBlocking = m:GetAttribute("Blocking") == true
-			interrupt(m, "kicked")   -- stops their swing and drops their guard, animation included
-			if wasBlocking then
-				-- breaks a held block AND an open parry window
-				m:SetAttribute("Blocking", false)
-				m:SetAttribute("ParryUntil", 0)
-				m:SetAttribute("StunnedUntil", now + cfg.KICK_STAGGER)
-				drainStamina(m, cfg.KICK_BLOCK_DRAIN)
-				dprint("KICK staggered", m.Name)
-			else
-				hum:TakeDamage(cfg.KICK_DAMAGE)
-				markCombat(m)
-				dprint("kick hit", m.Name)
-			end
-			tell("HitConfirm", "kick")
-		end)
-		if not landed then
-			dprint(string.format("kick missed — nearest target %.1f studs (range %.1f, cone ±%d°)",
-				nearest, cfg.KICK_RANGE, cfg.KICK_CONE_DEG))
-		end
+		CombatServer.resolveKick(character, cfg, {sfx = sfx, tell = tell, dprint = dprint})
 	end
 
 	local function doKick()
@@ -969,6 +1015,10 @@ function CombatServer.attach(Tool, weaponConfig)
 			character:SetAttribute("BlockMeter", cfg.BLOCK_MAX)
 		end
 		character:SetAttribute("BlockMax", cfg.BLOCK_MAX)   -- HUD scale
+		-- stamina regen runs in CharacterSystems (so it keeps going when this
+		-- weapon leaves the hand); it reads these
+		character:SetAttribute("StaminaRegen", cfg.BLOCK_REGEN)
+		character:SetAttribute("StaminaRegenDelay", cfg.STAMINA_REGEN_DELAY)
 		character:SetAttribute("Blocking", false)
 		setGuard(false)
 		-- weapon weight: composes with armor etc. via ReplicatedStorage.Modifiers
@@ -1019,16 +1069,6 @@ function CombatServer.attach(Tool, weaponConfig)
 		limbConns = {}
 		tell("Cleanup")
 		character = nil
-	end))
-
-	table.insert(conns, RunService.Heartbeat:Connect(function(dt)
-		-- no regen while blocking, mid-action, stunned, or within the delay of any combat event
-		if not character or isStunned() or attr("Blocking") or state.phase ~= "idle" then return end
-		if os.clock() - (attr("LastCombatAt") or -1e9) < cfg.STAMINA_REGEN_DELAY then return end
-		local m = stamina()
-		if m < cfg.BLOCK_MAX then
-			setAttr("BlockMeter", math.min(cfg.BLOCK_MAX, m + cfg.BLOCK_REGEN * dt))
-		end
 	end))
 
 	table.insert(conns, Tool.Destroying:Connect(function()

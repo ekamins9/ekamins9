@@ -19,6 +19,7 @@ return {
 	SPEED_MULT = 0.4,   -- whole-weapon tempo; scales windup/release/recovery of every attack
 	REACH      = 9.0,   -- studs from attacker root to a valid hit point (long weapon)
 	TWO_HANDED = true,  -- losing either arm drops it
+	SECONDARY  = false, -- true = can also be carried in the SECONDARY slot (a greatsword is primary-only)
 
 	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS).
 	-- Never put "rbxassetid://0" here — that overrides a default with silence.

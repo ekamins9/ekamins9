@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local Pickup      = require(script.Parent:WaitForChild("Pickup"))
 
 local Injury = {}
 
@@ -23,11 +24,11 @@ Injury.CONFIG = {
 	BLEED_TIME       = 10,    -- …and how long until it's gone (a bandage system can clear Bleeding)
 	LEG_SPEED        = 0.45,  -- WalkSpeed factor per lost leg
 	LEG_CLUNK        = 1.5,   -- footstep clunk factor per lost leg
-	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at
-	DISARM_DESPAWN   = 45,    -- a disarmed weapon can't be picked up, so clean it off the floor
+	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at (it lands as a pickup)
 	LIMB_DEBRIS_TIME = 25,
-	SKEWER_DURATION  = 4,     -- seconds the head stays welded to the blade before it falls
+	SKEWER_DURATION  = 0,     -- seconds the head stays on the blade; 0 = until the attacker's next swing launches it
 	SKEWER_OFFSET    = 0.6,   -- how far past the hit point, along the blade, the head sits
+	HEAD_THROW_LIFE  = 20,    -- seconds a thrown head lies around
 	BLOOD_COLOR      = Color3.fromRGB(120, 0, 0),
 }
 local C = Injury.CONFIG
@@ -166,51 +167,10 @@ function Injury.disarm(char, dir)
 	local tool = char:FindFirstChildOfClass("Tool")
 	if not tool then return false end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	local handle = tool:FindFirstChild("Handle")
-		or (tool.PrimaryPart or tool:FindFirstChildWhichIsA("BasePart", true))
-
-	char:SetAttribute("Blocking", false)
-	if hum then hum:UnequipTools() end   -- out of the hand (into the backpack)…
-
-	-- Sever every joint still tying the weapon to the body BEFORE flinging it.
-	-- Tool.Unequipped fires deferred, so the ToolGrip Motor6D that CombatServer
-	-- installed is still live right here — and while it is, the weapon shares
-	-- the character's physics assembly, so throwing the handle throws the whole
-	-- body with it (and anyone who walks into the pair gets launched too).
-	for _, d in ipairs(char:GetDescendants()) do
-		if d:IsA("JointInstance")
-			and ((d.Part0 and d.Part0:IsDescendantOf(tool)) or (d.Part1 and d.Part1:IsDescendantOf(tool))) then
-			d:Destroy()
-		end
-	end
-
-	tool.Parent = workspace              -- …and straight back out of the backpack
-
-	-- No touch pickup, ever: a disarmed weapon stays on the ground. Every part
-	-- collides too, not just the Handle, or the blade pivots on the grip and
-	-- sinks through the floor instead of coming to rest on it. The GuardHull is
-	-- an invisible box, so it stays non-solid.
-	for _, d in ipairs(tool:GetDescendants()) do
-		if d:IsA("BasePart") then
-			d.CanTouch = false
-			d.CanCollide = d.Name ~= "GuardHull"
-			d.Massless = false
-		end
-	end
-
-	if handle then
-		handle.CanCollide = true
-		if hrp then
-			handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
-			local fling = (dir or hrp.CFrame.LookVector) + Vector3.new(0, 0.8, 0)
-			handle.AssemblyLinearVelocity  = fling.Unit * C.DISARM_FLING
-			handle.AssemblyAngularVelocity = Vector3.new(math.random() * 10, math.random() * 10, math.random() * 10)
-		end
-	end
-	Debris:AddItem(tool, C.DISARM_DESPAWN)
-
-	Sounds.play(SoundConfig.Disarm, handle or hrp)
+	-- flung clear as a pickup (Pickup severs the grip joints first so the
+	-- body doesn't go with it)
+	if not Pickup.drop(tool, char, dir, C.DISARM_FLING) then return false end
+	Sounds.play(SoundConfig.Disarm, hrp)
 	return true
 end
 
@@ -222,13 +182,39 @@ end
 --  normally, and cleanup is a Debris call. Falls off after SKEWER_DURATION,
 --  or immediately if the attacker unequips/loses the weapon first.
 --------------------------------------------------------------------
+local skewers = {}   -- [hitbox] = {trophy=, head=, weld=, drop=fn}
+
+function Injury.hasSkewer(hitbox)
+	local e = hitbox and skewers[hitbox]
+	return e ~= nil and e.head.Parent ~= nil
+end
+
+-- the blade's long axis in hitbox-local space, signed toward `towardWorld`
+local function bladeAxis(hitbox, towardWorld)
+	local sz = hitbox.Size
+	local axis = (sz.X >= sz.Y and sz.X >= sz.Z) and Vector3.xAxis or (sz.Y >= sz.Z and Vector3.yAxis or Vector3.zAxis)
+	local halfLen = math.abs(sz:Dot(axis)) * 0.5
+	if towardWorld and hitbox.CFrame:VectorToWorldSpace(axis):Dot(towardWorld) < 0 then axis = -axis end
+	return axis, halfLen
+end
+
 function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 	local head = char:FindFirstChild("Head")
 	if not (head and hitbox and hitbox.Parent) or char:GetAttribute("HeadSkewered") then return false end
+	if Injury.hasSkewer(hitbox) then return false end   -- one head per blade
 	char:SetAttribute("HeadSkewered", true)
 
 	local dir = (typeof(bladeDir) == "Vector3" and bladeDir.Magnitude > 1e-4) and bladeDir.Unit or Vector3.new(0, 0, -1)
-	local anchor = (typeof(hitPos) == "Vector3" and hitPos or head.Position) + dir * C.SKEWER_OFFSET
+	-- Sit EXACTLY on the blade's axis: take the hit point in hitbox space,
+	-- keep only its along-the-blade component (drops any sideways error from
+	-- a hit on a hat or the head's edge), then push it out toward the tip.
+	local axis, halfLen = bladeAxis(hitbox, dir)
+	local along = (typeof(hitPos) == "Vector3") and hitbox.CFrame:PointToObjectSpace(hitPos):Dot(axis) or halfLen * 0.5
+	along = math.clamp(along + C.SKEWER_OFFSET, -halfLen, halfLen + 0.4)
+	local anchor  = hitbox.CFrame:PointToWorldSpace(axis * along)
+	local tipDir  = hitbox.CFrame:VectorToWorldSpace(axis)
+	-- the blade went in through the face: the face looks back down the blade
+	local headCF  = CFrame.lookAt(anchor, anchor - tipDir)
 
 	local function scrub(part)
 		for _, d in ipairs(part:GetDescendants()) do
@@ -249,7 +235,7 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 	local headClone = head:Clone()
 	headClone.Name = "Head"
 	scrub(headClone)
-	headClone.CFrame = CFrame.new(anchor) * (head.CFrame - head.CFrame.Position)
+	headClone.CFrame = headCF
 	headClone.Parent = trophy
 	trophy.PrimaryPart = headClone
 
@@ -299,22 +285,59 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 	Sounds.play(SoundConfig.Impale, headClone)
 
 	local dropped = false
-	local function drop()
-		if dropped then return end
+	local function release()
+		if dropped then return false end
 		dropped = true
+		skewers[hitbox] = nil
 		if weld.Parent then weld:Destroy() end
-		if headClone.Parent then
-			headClone.CanCollide, headClone.Massless = true, false
+		for _, p in ipairs(trophy:GetDescendants()) do
+			if p:IsA("BasePart") then p.Massless = false end
+		end
+		Debris:AddItem(trophy, C.HEAD_THROW_LIFE)
+		return true
+	end
+	local function drop()
+		if release() and headClone.Parent then
+			headClone.CanCollide = true
 			headClone.AssemblyLinearVelocity = dir * 4 + Vector3.new(0, 3, 0)
 		end
-		Debris:AddItem(trophy, C.LIMB_DEBRIS_TIME)
 	end
-	task.delay(C.SKEWER_DURATION, drop)
+	skewers[hitbox] = {trophy = trophy, head = headClone, weld = weld, drop = drop, release = release}
+	if C.SKEWER_DURATION > 0 then task.delay(C.SKEWER_DURATION, drop) end
 	local tool = hitbox:FindFirstAncestorOfClass("Tool")
 	if tool then
 		tool.Unequipped:Once(drop)
 		tool.Destroying:Once(drop)
 	end
+	return true
+end
+
+-- The attacker swings: the head comes off the blade as a projectile. onHit(model, part)
+-- is called once for the first other humanoid it strikes (the caller decides damage).
+function Injury.launchSkewer(hitbox, dir, speed, thrower, onHit)
+	local e = hitbox and skewers[hitbox]
+	if not (e and e.head.Parent) then return false end
+	local head = e.head
+	if not e.release() then return false end
+	dir = (typeof(dir) == "Vector3" and dir.Magnitude > 1e-4) and dir.Unit or Vector3.new(0, 0, -1)
+	head.CanCollide, head.CanTouch, head.CanQuery = true, true, true
+	head.AssemblyLinearVelocity  = dir * (speed or 60)
+	head.AssemblyAngularVelocity = Vector3.new(math.random() * 20, math.random() * 20, math.random() * 20)
+	e.trophy:SetAttribute("Thrown", true)
+	Sounds.play(SoundConfig.HeadThrow, head)
+	local struck = false
+	local t0 = os.clock()
+	head.Touched:Connect(function(part)
+		if struck or os.clock() - t0 > 3 then return end
+		local model = part:FindFirstAncestorOfClass("Model")
+		while model and not model:FindFirstChildOfClass("Humanoid") do model = model:FindFirstAncestorOfClass("Model") end
+		if not model or model == thrower or part:IsDescendantOf(e.trophy) then return end
+		local hum = model:FindFirstChildOfClass("Humanoid")
+		if not hum or hum.Health <= 0 then return end
+		if head.AssemblyLinearVelocity.Magnitude < 12 then return end   -- rolling on the floor doesn't count
+		struck = true
+		if onHit then onHit(model, part) end
+	end)
 	return true
 end
 

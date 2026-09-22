@@ -18,6 +18,11 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/CombatServer.lua` | `ServerScriptService` → `Combat` (Folder) → `CombatServer` | ModuleScript |
 | `ServerScriptService/Combat/Injury.lua` | `ServerScriptService` → `Combat` → `Injury` | ModuleScript |
 | `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
+| `ServerScriptService/Combat/Pickup.lua` | `ServerScriptService` → `Combat` → `Pickup` | ModuleScript |
+| `ServerScriptService/MovementServer.server.lua` | `ServerScriptService` → `MovementServer` | Script |
+| `ServerScriptService/SettingsServer.server.lua` | `ServerScriptService` → `SettingsServer` | Script |
+| `ReplicatedStorage/ClientSettings.lua` | `ReplicatedStorage` → `ClientSettings` | ModuleScript |
+| `StarterCharacterScripts/Movement.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `Movement` | LocalScript |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
 | `ServerStorage/Armor/<Set>/Config.lua` | `ServerStorage` → `Armor` (Folder) → each set → `Config` | ModuleScript |
@@ -107,10 +112,44 @@ The Tool needs a box `Part` named `Hitbox` whose longest axis runs along the bla
 Optional: a `workspace.NPCs` folder of humanoid models — kicks, ragdoll, and bleeding
 work on them too.
 
-## Controls
+## Controls (all rebindable in the ⚙ on the spawn menu, except the mouse)
 
-LMB cycle attack · Q/E/F/X specific attacks · RMB block (feint during windup) ·
-G kick · **LeftControl or C crouch** (toggle; jump stands you up) · scroll zoom (all the way in = first person)
+LMB cycle attack · Q/E/F/X specific attacks · RMB block (feint during windup) · G kick (works
+unarmed too) · **LeftShift sprint** (forward / forward-diagonal only) · **Space dodge** (side or
+back, costs stamina) · LeftControl/C crouch · V pick up a weapon · scroll zoom (all the way in =
+first person). **There is no jumping.** Walking backwards is 35% slower and sideways 20% slower —
+dodge to reposition fast.
+
+## Movement (MovementServer + Movement)
+
+Numbers live in `ReplicatedStorage.MovementConfig`. The server publishes `SpeedMult_Sprint`
+and `SpeedMult_Facing` from replicated state (MoveDirection, attributes), so the client can
+only ever *ask*. Sprint ends the moment you block, crouch, attack, get stunned or ragdoll.
+Dodge: the client pushes itself (it owns its physics, `DODGE_SPEED` for `DODGE_TIME`) and the
+server validates and charges `DODGE_COST` stamina; forward input is stripped, no input = hop back.
+
+## Weapons on the floor (Pickup)
+
+A weapon that leaves a hand — disarm, death, or a swap — lands as a pickup with a prompt (hold
+V) in `workspace.DroppedWeapons`, for `DESPAWN` seconds. Slots: **one primary + one secondary**
+(a weapon whose `Config` has `SECONDARY = true`), `MAX_WEAPONS` total; taking a weapon for a full
+slot drops what was in it right there. The loadout menu offers a secondary list from the same
+flag. Switch weapons with the Roblox backpack (1 / 2).
+
+## Skewered heads
+
+A **lethal** face stab (no more auto-execute — `STAB_HEAD_EXECUTE` is off) hangs the victim's
+head on your blade, sitting exactly on its axis. It stays there until your next swing, then flies
+off forward at `HEAD_THROW_SPEED`: `HEAD_THROW_DAMAGE` and a `HEAD_THROW_STUN` on whoever it
+hits (it can finish someone low). Unequipping just drops it.
+
+## Settings (⚙ on the spawn menu)
+
+Camera feel sliders (head bob, weapon sway, camera roll, impact shake, breathing, first-person
+clunk boost, FP FOV — 0 turns an effect off, for competitive play) and keybinds. Stored in
+`ReplicatedStorage.ClientSettings`, read live by CameraRig / CombatClient / Movement, and
+saved per player by `SettingsServer` (DataStore; in Studio enable *Allow Studio access to API
+services* or it just lasts the session).
 
 ## Test dummies (chat)
 
@@ -182,7 +221,7 @@ Per weapon, in `Config.SOUNDS`: `Equip`, `Swing`, `Hit`, `Block`, `Parry`, `Kick
 these default to Roblox built-in `rbxasset://` content so combat is audible immediately.
 Only list slots you've filled: an `rbxassetid://0` entry overrides the default with silence.
 Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`, `Impale`,
-`Bleed`, `Disarm`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
+`Bleed`, `Disarm`, `Pickup`, `Dodge`, `HeadThrow`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
 
 **Footsteps by material:** put a folder named `FootstepSounds` in `SoundService`
 (or `ReplicatedStorage`) containing one `Sound` per `Enum.Material` name — `Grass`,
@@ -211,6 +250,7 @@ character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 | `SpeedMult_Crouch` | PoseRelay while crouched |
 | `SpeedMult_Limbs`, `ClunkMult_Limbs` | Injury, per lost leg |
 | `SpeedMult_Armor`, `ClunkMult_Armor` | Loadout `Armor` (from the set's `Config`) |
+| `SpeedMult_Sprint`, `SpeedMult_Facing` | MovementServer (sprint; backpedal/strafe penalty) |
 | bare `SpeedMult` / `ClunkMult` | you, by hand in Properties, for testing |
 
 ## Other character attributes
@@ -219,6 +259,10 @@ character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 |---|---|---|---|
 | `Blocking`, `BlockStoppedAt`, `ParryUntil`, `BlockMeter`, `BlockMax`, `StunnedUntil`, `FastUntil` | CombatServer | CombatServer (other players' tools), HUD | combat state; `BlockMeter` is stamina |
 | `Crouching` | PoseRelay | anything | holding crouch |
+| `Acting` | CombatServer / MovementServer | MovementServer, CharacterSystems | mid-attack or mid-kick (no dodge, no sprint, no regen) |
+| `StaminaRegen`, `StaminaRegenDelay` | CombatServer (weapon `Config`) | CharacterSystems | stamina regen now runs per character, weapon or not |
+| `Dropped` (on a Tool) | Pickup | Pickup | the weapon is on the floor |
+| `LocalDodgeAt`, `LocalDodgeX/Z` | Movement | CameraRig | dodge lean/roll |
 | `ArmorId`, `ArmorType`, `ArmorProtection`, `BaseMaxHealth` | Loadout `Armor` | CombatServer, TestDummies | worn set; protection applies only to covered limbs |
 | `LimbLost_LeftArm` … `LimbLost_Head`, `Bleeding`, `BleedDPS` | Injury | CombatServer, InjuryFX, HUD | injuries; a bandage system clears `Bleeding` |
 | `KnockedDownUntil` | Ragdoll | Ragdoll | knockdown timer |

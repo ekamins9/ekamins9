@@ -11,5 +11,8 @@ return {
 	Impale    = "rbxassetid://0",   -- server: lethal face stab skewers the head on the blade
 	Bleed     = "rbxassetid://0",   -- server: bleed-out begins
 	Disarm    = "rbxassetid://0",   -- server: weapon flies out of a hand
+	Pickup    = "rbxasset://sounds/unsheath.wav",   -- server: a weapon picked up off the floor
+	Dodge     = "rbxassetid://0",   -- client: dodge burst
+	HeadThrow = "rbxassetid://0",   -- server: skewered head launched off the blade
 	BodyFall  = "rbxassetid://0",   -- server: a body hitting the ground (Ragdoll.knockdown callers)
 }

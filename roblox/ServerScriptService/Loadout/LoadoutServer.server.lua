@@ -7,7 +7,7 @@
        ReplicatedStorage.LoadoutRemote  (RemoteFunction, created here)
            client -> "Catalog"                -> {armors = {...}, weapons = {...}}
        ReplicatedStorage.LoadoutEvent   (RemoteEvent, created here)
-           client -> "Spawn", armorId, weaponId
+           client -> "Spawn", armorId, weaponId, secondaryId
            server -> "Show", lastChoice       (re-open the menu)
            server -> "Spawned"                (menu closes)
 
@@ -20,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage     = game:GetService("ServerStorage")
 
 local Armor      = require(script.Parent:WaitForChild("Armor"))
+local Pickup     = require(script.Parent.Parent:WaitForChild("Combat"):WaitForChild("Pickup"))
 local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 
 local RESPAWN_MENU_DELAY = 4.0    -- seconds after death before the menu comes back
@@ -80,6 +81,7 @@ local function weaponSummary(tool)
 		weightSpeed = cfg.SpeedMult or 1,        -- walkspeed while carried
 		weightClunk = cfg.ClunkMult or 1,
 		stab = stab, slash = slash,
+		secondary   = cfg.SECONDARY == true,     -- may ride in the secondary slot
 	}
 end
 
@@ -115,7 +117,7 @@ end
 --------------------------------------------------------------------
 --  SPAWNING
 --------------------------------------------------------------------
-local lastChoice = {}   -- [player] = {armor = id, weapon = id}
+local lastChoice = {}   -- [player] = {armor = id, weapon = id, secondary = id}
 local spawning   = {}   -- [player] = true while a spawn is in flight
 
 local function isAlive(plr)
@@ -124,29 +126,36 @@ local function isAlive(plr)
 	return hum ~= nil and hum.Health > 0 and char.Parent ~= nil
 end
 
-local function giveWeapon(plr, char, weaponId)
+local function giveWeapon(plr, char, weaponId, equip)
 	local template = findWeapon(weaponId)
 	if not template then return end
 	local tool = template:Clone()
 	tool.Parent = plr:WaitForChild("Backpack")
-	if AUTO_EQUIP then
+	if equip then
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then task.defer(function() if tool.Parent and hum.Health > 0 then hum:EquipTool(tool) end end) end
 	end
 end
 
-local function spawnWith(plr, armorId, weaponId)
+local function spawnWith(plr, armorId, weaponId, secondaryId)
 	if spawning[plr] then return end
 	if isAlive(plr) then log(plr.Name, "asked to spawn while alive — ignored"); return end
+	if secondaryId == "" then secondaryId = nil end
 	local armorOk  = armorId == nil or Armor.config(armorId) ~= nil
 	local weaponOk = weaponId == nil or findWeapon(weaponId) ~= nil
-	if not (armorOk and weaponOk) then
-		warn("[Loadout] " .. plr.Name .. " picked something that isn't in the folders:", tostring(armorId), tostring(weaponId))
+	local secOk    = secondaryId == nil or findWeapon(secondaryId) ~= nil
+	if not (armorOk and weaponOk and secOk) then
+		warn("[Loadout] " .. plr.Name .. " picked something that isn't in the folders:", tostring(armorId), tostring(weaponId), tostring(secondaryId))
 		return
 	end
+	local pairOk, why = Pickup.validLoadout(weaponId and findWeapon(weaponId), secondaryId and findWeapon(secondaryId))
+	if not pairOk then
+		warn("[Loadout] " .. plr.Name .. ": " .. tostring(why))
+		secondaryId = nil
+	end
 	spawning[plr] = true
-	lastChoice[plr] = {armor = armorId, weapon = weaponId}
-	log(plr.Name, "spawning with", tostring(armorId), "+", tostring(weaponId))
+	lastChoice[plr] = {armor = armorId, weapon = weaponId, secondary = secondaryId}
+	log(plr.Name, "spawning with", tostring(armorId), "+", tostring(weaponId), "/", tostring(secondaryId))
 
 	plr:LoadCharacter()
 	local char = plr.Character or plr.CharacterAdded:Wait()
@@ -158,7 +167,8 @@ local function spawnWith(plr, armorId, weaponId)
 	if not (hum and char.Parent) then spawning[plr] = nil; return end
 
 	if armorId then Armor.equip(char, armorId) end
-	if weaponId then giveWeapon(plr, char, weaponId) end
+	if secondaryId then giveWeapon(plr, char, secondaryId, false) end
+	if weaponId then giveWeapon(plr, char, weaponId, AUTO_EQUIP) end
 	spawning[plr] = nil
 	event:FireClient(plr, "Spawned")
 
@@ -171,9 +181,9 @@ local function spawnWith(plr, armorId, weaponId)
 	end)
 end
 
-event.OnServerEvent:Connect(function(plr, what, armorId, weaponId)
+event.OnServerEvent:Connect(function(plr, what, armorId, weaponId, secondaryId)
 	if what == "Spawn" then
-		spawnWith(plr, armorId, weaponId)
+		spawnWith(plr, armorId, weaponId, secondaryId)
 	elseif what == "Ready" then
 		-- the menu script just started; if they have no body, show it
 		if not isAlive(plr) then event:FireClient(plr, "Show", lastChoice[plr]) end
