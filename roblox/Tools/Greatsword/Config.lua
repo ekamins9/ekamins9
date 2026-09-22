@@ -1,4 +1,4 @@
---[[ PITCHFORK — weapon config (ModuleScript inside the Tool).
+--[[ GREATSWORD — weapon config (ModuleScript inside the Tool).
 
      Only what makes this weapon different goes here; everything else comes
      from CombatServer.DEFAULTS / CombatClient.DEFAULTS and can be overridden
@@ -8,17 +8,17 @@
 
 return {
 	-- shown on the loadout menu
-	Name        = "Pitchfork",
-	Description = "A farmer's tool with a long reach and a nasty point. Slow, two-handed, and it will go straight through a face.",
+	Name        = "Greatsword",
+	Description = "Six feet of steel swung in great arcs. Every hit lands like a hammer, but it takes both hands and a wide stance.",
 
 	-- animations
-	IDLE_ID  = "rbxassetid://135659407369438",
-	BLOCK_ID = "rbxassetid://130536914016941",
+	IDLE_ID  = "rbxassetid://132465214430348",
+	BLOCK_ID = "rbxassetid://72812411957933",
 
 	-- feel
-	SPEED_MULT = 0.5,   -- whole-weapon tempo; scales windup/release/recovery of every attack
+	SPEED_MULT = 0.4,   -- whole-weapon tempo; scales windup/release/recovery of every attack
 	REACH      = 9.0,   -- studs from attacker root to a valid hit point (long weapon)
-	TWO_HANDED = true,  -- a polearm: losing either arm drops it
+	TWO_HANDED = true,  -- losing either arm drops it
 
 	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS).
 	-- Never put "rbxassetid://0" here — that overrides a default with silence.
@@ -39,12 +39,13 @@ return {
 	ClunkMult = 1.0,
 
 	-- phase times are seconds at speed 1.0; all three divide by (speed * SPEED_MULT)
-	-- kind: "stab" kills leave the weapon run through the body; "slash" kills sever the limb hit
+	-- kind: "stab" — a lethal face hit skewers the head on the blade;
+	--       "slash" — a lethal hit severs the limb struck (or decapitates)
 	ATTACKS = {
-		Stab       = {anim="rbxassetid://119395054343039", kind="stab",  damage=18, windup=0.12, active=0.14, recovery=0.14, blockCost=20, staminaCost=8,  speed=1.0},
-		LeftSwing  = {anim="rbxassetid://89500144760778",  kind="slash", damage=15, windup=0.14, active=0.16, recovery=0.15, blockCost=18, staminaCost=8,  speed=1.0},
-		RightSwing = {anim="rbxassetid://82652664048008",  kind="slash", damage=15, windup=0.14, active=0.16, recovery=0.15, blockCost=18, staminaCost=8,  speed=1.0},
-		Overhead   = {anim="rbxassetid://101285628758246", kind="slash", damage=30, windup=0.20, active=0.18, recovery=0.20, blockCost=40, staminaCost=12, speed=0.8},
+		Stab       = {anim="rbxassetid://108978202248647", kind="stab",  damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
+		LeftSwing  = {anim="rbxassetid://89557792743992",  kind="slash", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
+		RightSwing = {anim="rbxassetid://113017879607829", kind="slash", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
+		Overhead   = {anim="rbxassetid://125963745291088", kind="slash", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
 	},
 	CYCLE_ORDER = {"Stab", "LeftSwing", "RightSwing", "Overhead"},
 }

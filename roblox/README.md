@@ -29,6 +29,9 @@ Folder layout mirrors where each script lives in Studio.
 | `Tools/Pitchfork/Config.lua` | inside the Tool → `Config` | ModuleScript |
 | `Tools/Pitchfork/Server.server.lua` | inside the Tool → `Server` | Script |
 | `Tools/Pitchfork/Client.client.lua` | inside the Tool → `Client` | LocalScript |
+| `Tools/Greatsword/Config.lua` | inside the Greatsword Tool → `Config` | ModuleScript |
+| `Tools/Greatsword/Server.server.lua` | inside the Tool → `Server` | Script |
+| `Tools/Greatsword/Client.client.lua` | inside the Tool → `Client` | LocalScript |
 
 Nothing gets inserted into a Tool automatically — create `Config`, `Server` and `Client`
 inside each weapon by hand. `CombatServer` / `CombatClient` live once, in the folders above.
