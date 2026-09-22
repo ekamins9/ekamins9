@@ -18,6 +18,10 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/CombatServer.lua` | `ServerScriptService` → `Combat` (Folder) → `CombatServer` | ModuleScript |
 | `ServerScriptService/Combat/Injury.lua` | `ServerScriptService` → `Combat` → `Injury` | ModuleScript |
 | `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
+| `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
+| `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
+| `ServerStorage/Armor/<Set>/Config.lua` | `ServerStorage` → `Armor` (Folder) → each set → `Config` | ModuleScript |
+| `StarterPlayerScripts/LoadoutMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript |
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -28,8 +32,65 @@ Folder layout mirrors where each script lives in Studio.
 
 Nothing gets inserted into a Tool automatically — create `Config`, `Server` and `Client`
 inside each weapon by hand. `CombatServer` / `CombatClient` live once, in the folders above.
-Note `RigReplicator` goes in **StarterPlayerScripts** (not StarterCharacterScripts): it
-tracks everyone *else* and must survive your respawns.
+Note `RigReplicator` and `LoadoutMenu` go in **StarterPlayerScripts** (not
+StarterCharacterScripts): they must survive your respawns.
+
+**Weapons now live in `ServerStorage` → `Weapons` (Folder)**, not StarterPack. The loadout
+menu clones the chosen one into your Backpack when you spawn. Empty StarterPack, or
+you'll spawn with two.
+
+## Loadout menu (armor + weapon before you spawn)
+
+`LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they
+press SPAWN. The menu lists every set in `ServerStorage.Armor` and every Tool in
+`ServerStorage.Weapons` with their stats (read from each one's `Config`), remembers your
+last pick, and comes back 4 s after you die (the ragdoll gets its moment first).
+Change `RESPAWN_MENU_DELAY` / `AUTO_EQUIP` at the top of `LoadoutServer`.
+
+## Armor sets
+
+```
+ServerStorage
+└─ Armor (Folder)
+   └─ KnightSkin (Model or Folder — its name is the armor id)
+      ├─ Config            ModuleScript (see below)
+      ├─ HeadClothing      Model  ┐ each has a Part named Middle, the same size as
+      ├─ TorsoClothing     Model  │ the limb it dresses, plus any other parts built
+      ├─ LeftArmClothing   Model  │ around it. Any slot may be missing (a peasant
+      ├─ RightArmClothing  Model  │ has no HeadClothing → bare head, full damage).
+      ├─ LeftLegClothing   Model  │
+      └─ RightLegClothing  Model  ┘
+```
+
+On equip, `Middle` is welded exactly onto the limb and every other part is welded at the
+offset it had from `Middle` in the template — build the set on a dummy in place and it
+lands the same way on the player. All pieces end up massless, non-colliding, `Middle`
+invisible, inside `Character.Armor`. Each clothing model gets a `Limb` attribute
+(`"Head"`, `"Left Arm"`, …) so other systems can find it.
+
+`Config` (only list what differs from `Armor.DEFAULTS`):
+
+```lua
+return {
+	Name        = "Knight Skin",
+	Description = "A beautiful shiny suit of armor, worn only by the finest of knights.",
+	Type        = "Heavy",   -- Light | Medium | Heavy (badge + menu order)
+	Health      = 50,        -- added to MaxHealth
+	SpeedMult   = 0.75,      -- WalkSpeed multiplier → SpeedMult_Armor
+	ClunkMult   = 1.8,       -- footstep weight → ClunkMult_Armor
+	Protection  = 0.35,      -- 35% less damage on limbs this set covers
+}
+```
+
+Rules the sets play by:
+- **Protection is per limb.** A hit only gets the reduction if that limb has a clothing
+  model on it. No helmet = full head damage (and heads already take `HEAD_DAMAGE_MULT`).
+  Hits on hats/clothing count as the limb underneath.
+- A face-stab execute still kills through any helmet (it's a finisher, not a damage roll).
+- Severed limbs take their armor with them; a skewered head takes its helmet onto the blade.
+- Helmets (`HeadClothing`) are hidden in first person like hats.
+- Test dummies wear whatever you're wearing; `/spawn attack Pitchfork PeasantSkin`
+  picks a weapon and set, `/spawn attack Pitchfork none` strips it.
 
 ## Making a new weapon
 
@@ -51,10 +112,11 @@ G kick · **LeftControl or C crouch** (toggle; jump stands you up) · scroll zoo
 ## Test dummies (chat)
 
 `/spawn idle` · `/spawn block` · `/spawn parry` · `/spawn attack` · `/spawn clear` — spawns an
-R6 dummy holding the `Greatsword` (from StarterPack) 8 studs in front of you, facing you.
-Attack dummies really hit and parry dummies really parry: their weapon runs the combat
-module in NPC mode (server-side animation + server-side blade sweep). Change `WEAPON_NAME`
-in `TestDummies` for another weapon.
+R6 dummy holding the `Greatsword` (from `ServerStorage.Weapons`) 8 studs in front of you,
+facing you, wearing your armor. `/spawn <mode> <WeaponName> [ArmorId|none]` picks
+different gear. Attack dummies really hit and parry dummies really parry: their weapon
+runs the combat module in NPC mode (server-side animation + server-side blade sweep).
+Change `WEAPON_NAME` in `TestDummies` for another default weapon.
 
 ## Combat rules (Mordhau-ish)
 
@@ -113,8 +175,9 @@ game.ReplicatedStorage.Debug:SetAttribute("Rays", true)
 
 ## Sound slots
 
-Per weapon, in `Config.SOUNDS`: `Equip`, `Swing`, `Hit`, `Block`, `Parry`, `Kick` —
+Per weapon, in `Config.SOUNDS`: `Equip`, `Swing`, `Hit`, `Block`, `Parry`, `Kick`, `KickHit` —
 these default to Roblox built-in `rbxasset://` content so combat is audible immediately.
+Only list slots you've filled: an `rbxassetid://0` entry overrides the default with silence.
 Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`, `Impale`,
 `Bleed`, `Disarm`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
 
@@ -144,7 +207,7 @@ character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 | `SpeedMult_Swing` | CombatServer while attacking or kicking |
 | `SpeedMult_Crouch` | PoseRelay while crouched |
 | `SpeedMult_Limbs`, `ClunkMult_Limbs` | Injury, per lost leg |
-| `SpeedMult_Armor`, `ClunkMult_Armor` | your future armor system |
+| `SpeedMult_Armor`, `ClunkMult_Armor` | Loadout `Armor` (from the set's `Config`) |
 | bare `SpeedMult` / `ClunkMult` | you, by hand in Properties, for testing |
 
 ## Other character attributes
@@ -153,6 +216,7 @@ character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 |---|---|---|---|
 | `Blocking`, `BlockStoppedAt`, `ParryUntil`, `BlockMeter`, `BlockMax`, `StunnedUntil`, `FastUntil` | CombatServer | CombatServer (other players' tools), HUD | combat state; `BlockMeter` is stamina |
 | `Crouching` | PoseRelay | anything | holding crouch |
+| `ArmorId`, `ArmorType`, `ArmorProtection`, `BaseMaxHealth` | Loadout `Armor` | CombatServer, TestDummies | worn set; protection applies only to covered limbs |
 | `LimbLost_LeftArm` … `LimbLost_Head`, `Bleeding`, `BleedDPS` | Injury | CombatServer, InjuryFX, HUD | injuries; a bandage system clears `Bleeding` |
 | `KnockedDownUntil` | Ragdoll | Ragdoll | knockdown timer |
 | `HitTick`, `HitDir` | CombatServer | CameraRig, InjuryFX | victim feedback (flinch, flash) |

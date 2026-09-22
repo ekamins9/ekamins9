@@ -44,6 +44,39 @@ local function attrKey(partName)
 	return k and ("LimbLost_" .. k) or nil
 end
 
+-- Armor: the clothing model dressing a limb (Loadout.Armor tags each one
+-- with a Limb attribute), so a severed limb takes its armor with it
+local function clothingOn(char, limbName)
+	local container = char:FindFirstChild("Armor")
+	if not container then return nil end
+	for _, m in ipairs(container:GetChildren()) do
+		if m:GetAttribute("Limb") == limbName then return m end
+	end
+	return nil
+end
+
+-- copy the visible clothing parts off limbPart onto ontoPart at the same
+-- offset, parented under parentTo, then remove the originals
+local function carryClothing(char, limbName, limbPart, ontoPart, parentTo)
+	local piece = clothingOn(char, limbName)
+	if not piece then return end
+	for _, p in ipairs(piece:GetDescendants()) do
+		if p:IsA("BasePart") and p.Name ~= "Middle" then
+			local rel = limbPart.CFrame:ToObjectSpace(p.CFrame)
+			local c = p:Clone()
+			for _, d in ipairs(c:GetDescendants()) do
+				if d:IsA("JointInstance") or d:IsA("Constraint") then d:Destroy() end
+			end
+			c.CanCollide, c.CanQuery, c.CanTouch, c.Massless, c.Anchored = false, false, false, true, false
+			c.CFrame = ontoPart.CFrame * rel
+			c.Parent = parentTo
+			local w = Instance.new("WeldConstraint")
+			w.Part0, w.Part1, w.Parent = ontoPart, c, c
+		end
+	end
+	piece:Destroy()
+end
+
 function Injury.hasLimb(char, partName)
 	local k = attrKey(partName)
 	return k == nil or char:GetAttribute(k) ~= true
@@ -244,6 +277,9 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 		end
 	end
 
+	-- their helmet comes along on the blade too
+	carryClothing(char, "Head", head, headClone, trophy)
+
 	trophy.Parent = workspace
 
 	local weld = Instance.new("WeldConstraint")
@@ -315,6 +351,7 @@ function Injury.dismember(char, partName, dir, fatal)
 		clone.Name = partName .. " (severed)"
 		clone.CanCollide, clone.CanQuery, clone.CanTouch, clone.Anchored = true, false, false, false
 		clone.CFrame = part.CFrame
+		carryClothing(char, partName, part, clone, clone)   -- armor goes with the limb
 		clone.Parent = workspace
 		clone.AssemblyLinearVelocity  = dir * 15 + Vector3.new(0, 8, 0)
 		clone.AssemblyAngularVelocity = Vector3.new(6, 6, 6)

@@ -30,7 +30,7 @@ local CombatServer = require(ServerScriptService:WaitForChild("Combat"):WaitForC
 local DebugFlags   = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 
 --------------------------------------------------------------------
-local WEAPON_NAME     = "Greatsword"   -- looked up in StarterPack, then ServerStorage
+local WEAPON_NAME     = "Greatsword"   -- default; /spawn <mode> <Weapon> [Armor] overrides. Looked up in ServerStorage.Weapons, ServerStorage, StarterPack
 local SPAWN_DIST      = 8
 local ATTACK_INTERVAL = 1.6
 local PARRY_RANGE     = 20             -- parry dummy reacts to swings started within this range
@@ -49,8 +49,20 @@ end
 
 local dummies = {}
 
-local function findWeapon()
-	return StarterPack:FindFirstChild(WEAPON_NAME) or ServerStorage:FindFirstChild(WEAPON_NAME)
+-- optional: Loadout.Armor, so dummies can wear a set (and inherit yours)
+local Armor do
+	local loadout = script.Parent:FindFirstChild("Loadout")
+	local mod = loadout and loadout:FindFirstChild("Armor")
+	if mod then Armor = require(mod) end
+end
+
+local function findWeapon(name)
+	name = name or WEAPON_NAME
+	local weapons = ServerStorage:FindFirstChild("Weapons")
+	local t = (weapons and weapons:FindFirstChild(name))
+		or ServerStorage:FindFirstChild(name)
+		or StarterPack:FindFirstChild(name)
+	return t and t:IsA("Tool") and t or nil
 end
 
 local function nearestPlayer(pos, range)
@@ -84,7 +96,11 @@ local function makeDummy(sourceChar, name)
 			d.CollisionGroup = "Default"
 		end
 	end
+	local armorId = model:GetAttribute("ArmorId")
+	local baseHp  = model:GetAttribute("BaseMaxHealth")   -- MaxHealth without the armor bonus
 	for k in pairs(model:GetAttributes()) do model:SetAttribute(k, nil) end
+	local oldArmor = model:FindFirstChild("Armor")
+	if oldArmor then oldArmor:Destroy() end   -- re-equipped fresh below so welds are clean
 	for _, p in ipairs(model:GetChildren()) do
 		if p:IsA("BasePart") then
 			p.Transparency = p.Name == "HumanoidRootPart" and 1 or 0
@@ -93,10 +109,11 @@ local function makeDummy(sourceChar, name)
 	end
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.DisplayName = name
+	if baseHp then hum.MaxHealth = baseHp end
 	hum.Health = hum.MaxHealth
 	hum.WalkSpeed, hum.JumpPower = 0, 0
 	hum.PlatformStand = false
-	return model, hum
+	return model, hum, armorId
 end
 
 local function remove(entry)
@@ -112,21 +129,26 @@ local function clearAll()
 	log("cleared")
 end
 
-local function spawnDummy(player, mode)
+local function spawnDummy(player, mode, weaponName, armorName)
 	local char = player.Character
 	local hrp  = char and char:FindFirstChild("HumanoidRootPart")
 	if not hrp then log("no character for", player.Name); return end
-	local weapon = findWeapon()
+	local weapon = findWeapon(weaponName)
 	if not weapon then
-		warn("[TestDummies] no Tool named '" .. WEAPON_NAME .. "' in StarterPack or ServerStorage")
+		warn("[TestDummies] no Tool named '" .. tostring(weaponName or WEAPON_NAME) .. "' in ServerStorage.Weapons / ServerStorage / StarterPack")
 		return
 	end
-	log("spawning", mode, "dummy for", player.Name)
+	log("spawning", mode, "dummy for", player.Name, "with", weapon.Name, armorName or "(your armor)")
 
-	local model, hum = makeDummy(char, "Dummy_" .. mode)
+	local model, hum, armorId = makeDummy(char, "Dummy_" .. mode)
 	local pos = hrp.Position + hrp.CFrame.LookVector * SPAWN_DIST
 	model:PivotTo(CFrame.lookAt(pos, Vector3.new(hrp.Position.X, pos.Y, hrp.Position.Z)))
 	model.Parent = folder
+	-- dress it: the named set, else whatever the caller is wearing
+	if Armor then
+		local wanted = armorName or armorId
+		if wanted and wanted ~= "none" then Armor.equip(model, wanted) end
+	end
 	local dhrp = model:WaitForChild("HumanoidRootPart")
 	dhrp:SetNetworkOwner(nil)   -- server simulates it, so its blade sweep sees true positions
 
@@ -209,19 +231,22 @@ local MODES = {idle = true, block = true, parry = true, attack = true}
 local lastCommand = {}   -- [player] = os.clock(), to dedupe the two chat hooks
 
 local function handle(player, text)
-	local cmd, arg = text:match("^/(%a+)%s*(%a*)")
+	local cmd, rest = text:match("^/(%a+)%s*(.*)$")
 	if not cmd or cmd:lower() ~= "spawn" then return end
 	if os.clock() - (lastCommand[player] or -1e9) < 0.3 then return end
 	lastCommand[player] = os.clock()
 	log("command from", player.Name .. ":", text)
-	arg = (arg or ""):lower()
+	-- /spawn <mode> [WeaponName] [ArmorId|none]
+	local words = {}
+	for w in (rest or ""):gmatch("%S+") do table.insert(words, w) end
+	local arg = (words[1] or ""):lower()
 	if arg == "clear" then clearAll(); return end
 	if arg == "" then arg = "idle" end
 	if not MODES[arg] then
 		warn("[TestDummies] unknown mode '" .. arg .. "' — use idle | block | parry | attack | clear")
 		return
 	end
-	spawnDummy(player, arg)
+	spawnDummy(player, arg, words[2], words[3])
 end
 
 -- both chat systems: TextChatService command AND legacy Chatted (deduped above)
@@ -242,4 +267,4 @@ local function hook(plr) plr.Chatted:Connect(function(msg) handle(plr, msg) end)
 Players.PlayerAdded:Connect(hook)
 for _, p in ipairs(Players:GetPlayers()) do hook(p) end
 
-log("ready — type /spawn attack, /spawn parry, /spawn block, /spawn idle, /spawn clear")
+log("ready — /spawn attack|parry|block|idle [Weapon] [ArmorId|none], /spawn clear")

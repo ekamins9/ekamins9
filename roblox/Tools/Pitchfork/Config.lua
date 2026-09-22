@@ -7,6 +7,10 @@
      client read this same module. ]]
 
 return {
+	-- shown on the loadout menu
+	Name        = "Pitchfork",
+	Description = "A farmer's tool with a long reach and a nasty point. Slow, two-handed, and it will go straight through a face.",
+
 	-- animations
 	IDLE_ID  = "rbxassetid://135659407369438",
 	BLOCK_ID = "rbxassetid://130536914016941",
@@ -16,15 +20,14 @@ return {
 	REACH      = 9.0,   -- studs from attacker root to a valid hit point (long weapon)
 	TWO_HANDED = true,  -- a polearm: losing either arm drops it
 
-	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS)
-	SOUNDS = {
-		Equip = "rbxassetid://0",
-		Swing = "rbxassetid://0",
-		Hit   = "rbxassetid://0",
-		Block = "rbxassetid://0",
-		Parry = "rbxassetid://0",
-		Kick  = "rbxassetid://0",
-	},
+	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS,
+	-- which are audible Roblox built-ins). An "rbxassetid://0" entry here
+	-- would OVERRIDE a default with silence, so only list slots you've filled:
+	-- SOUNDS = {
+	-- 	Equip = "rbxassetid://…", Swing = "rbxassetid://…", Hit = "rbxassetid://…",
+	-- 	Block = "rbxassetid://…", Parry = "rbxassetid://…",
+	-- 	Kick  = "rbxassetid://…", KickHit = "rbxassetid://…",
+	-- },
 
 	-- weight: published as SpeedMult_Weapon / ClunkMult_Weapon while equipped
 	-- and composed with armor etc. (1 = no effect). A heavier weapon = lower

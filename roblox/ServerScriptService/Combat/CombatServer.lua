@@ -58,6 +58,12 @@ local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
 local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
+-- optional: ServerScriptService.Loadout.Armor (damage reduction on armored limbs)
+local Armor do
+	local loadout = script.Parent.Parent:FindFirstChild("Loadout")
+	local mod = loadout and loadout:FindFirstChild("Armor")
+	if mod then Armor = require(mod) end
+end
 
 local CombatServer = {}
 
@@ -516,6 +522,17 @@ function CombatServer.attach(Tool, weaponConfig)
 		markCombat(target)
 
 		local dmg    = info.damage * (region == "head" and cfg.HEAD_DAMAGE_MULT or 1)
+		-- armor: the set's Protection applies only on limbs it actually covers.
+		-- Hits on accessories/clothing count as the limb they're on.
+		if Armor then
+			local limbName = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name
+				or (region == "head" and "Head") or "Torso"
+			local prot = Armor.protectionAt(target, limbName)
+			if prot > 0 then
+				dmg = dmg * (1 - math.clamp(prot, 0, 0.95))
+				dprint("armor on", limbName, "absorbed", math.floor(prot * 100) .. "%")
+			end
+		end
 		local isStab = info.kind == "stab"
 		-- a stab through the face is a finisher, not a damage roll
 		if isStab and region == "head" and cfg.STAB_HEAD_EXECUTE then

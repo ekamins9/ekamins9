@@ -256,7 +256,8 @@ local function applyVisibility(d, inFP)
 	if d:IsA("BasePart") then
 		if d.Name == "Head" then
 			-- handled per-frame below
-		elseif d.Parent:IsA("Accessory") then
+		elseif d.Parent:IsA("Accessory") or d:FindFirstAncestor("HeadClothing") then
+			-- hats and helmets both sit in front of the camera in first person
 			d.LocalTransparencyModifier = inFP and ACCESSORY_TRANSPARENCY or 0
 			d.CastShadow = true
 		else
