@@ -179,7 +179,7 @@ end
 --  attacker's blade. A CLONE of the head is welded to the blade and the
 --  real one is just hidden, so nothing of the victim's rig ever joins the
 --  attacker's physics assembly: the corpse keeps every joint and ragdolls
---  normally, and cleanup is a Debris call. Falls off after SKEWER_DURATION,
+--  normally, and cleanup is a Debris call. Stays on until the next swing throws it,
 --  or immediately if the attacker unequips/loses the weapon first.
 --------------------------------------------------------------------
 local skewers = {}   -- [hitbox] = {trophy=, head=, weld=, drop=fn}
