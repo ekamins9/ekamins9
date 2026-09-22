@@ -23,6 +23,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/SettingsServer.server.lua` | `ServerScriptService` → `SettingsServer` | Script |
 | `ReplicatedStorage/ClientSettings.lua` | `ReplicatedStorage` → `ClientSettings` | ModuleScript |
 | `StarterCharacterScripts/Movement.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `Movement` | LocalScript |
+| `ServerScriptService/Scoreboard.server.lua` | `ServerScriptService` → `Scoreboard` | Script |
+| `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
 | `ServerStorage/Armor/<Set>/Config.lua` | `ServerStorage` → `Armor` (Folder) → each set → `Config` | ModuleScript |
@@ -115,8 +117,8 @@ work on them too.
 ## Controls (all rebindable in the ⚙ on the spawn menu, except the mouse)
 
 LMB cycle attack · Q/E/F/X specific attacks · RMB block (feint during windup) · G kick (works
-unarmed too) · **LeftShift sprint** (forward / forward-diagonal only) · **Space dodge** (side or
-back, costs stamina) · LeftControl/C crouch · V pick up a weapon · scroll zoom (all the way in =
+unarmed too) · **LeftShift sprint** (forward / forward-diagonal only) · **Space dodge** (a ~2-stud sidestep, side or
+back, 10 stamina) · LeftControl/C crouch · V pick up a weapon · scroll zoom (all the way in =
 first person). **There is no jumping.** Walking backwards is 35% slower and sideways 20% slower —
 dodge to reposition fast.
 
@@ -142,6 +144,14 @@ A **lethal** face stab (no more auto-execute — `STAB_HEAD_EXECUTE` is off) han
 head on your blade, sitting exactly on its axis. It stays there until your next swing, then flies
 off forward at `HEAD_THROW_SPEED`: `HEAD_THROW_DAMAGE` and a `HEAD_THROW_STUN` on whoever it
 hits (it can finish someone low). Unequipping just drops it.
+
+## Kill feed + leaderboard
+
+`Scoreboard` keeps `leaderstats` (Kills, Deaths) per player and fires a kill-feed entry on every
+death. Credit: CombatServer stamps `LastHitBy` / `LastHitWith` / `LastHitKind` on a character
+each time it hurts it (swings, kicks, thrown heads); a death within `CREDIT_WINDOW` (15 s) of
+the last hit counts for that attacker, a bleed-out included. **Hold Tab** for the board (kills,
+deaths, K/D, sorted by kills; replaces Roblox's list). Dummies show in the feed, not the board.
 
 ## Settings (⚙ on the spawn menu)
 

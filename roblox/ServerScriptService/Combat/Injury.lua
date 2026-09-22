@@ -143,7 +143,9 @@ function Injury.tick(char, dt)
 	if char:GetAttribute("Bleeding") ~= true then return end
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum and hum.Health > 0 then
-		hum:TakeDamage((char:GetAttribute("BleedDPS") or 2.5) * dt)
+		local dmg = (char:GetAttribute("BleedDPS") or 2.5) * dt
+		if hum.Health - dmg <= 0 then char:SetAttribute("LastHitKind", "bleed") end
+		hum:TakeDamage(dmg)
 	end
 end
 

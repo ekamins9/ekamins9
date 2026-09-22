@@ -101,6 +101,15 @@ function CombatServer.interrupt(targetChar, reason)
 	local ctrl = tool and CombatServer.controllers[tool]
 	if ctrl then ctrl.interrupt(reason) end
 end
+-- who hurt whom last, for kill credit (Scoreboard reads these on death)
+function CombatServer.credit(target, attacker, weaponName, kind)
+	local plr = attacker and Players:GetPlayerFromCharacter(attacker)
+	target:SetAttribute("LastHitBy", plr and plr.UserId or 0)
+	target:SetAttribute("LastHitByName", attacker and attacker.Name or "")
+	target:SetAttribute("LastHitWith", weaponName or "")
+	target:SetAttribute("LastHitKind", kind or "")
+	target:SetAttribute("LastHitAt", os.clock())
+end
 function CombatServer.eachTarget(character, fn)
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p.Character and p.Character ~= character then fn(p.Character) end
@@ -142,6 +151,7 @@ function CombatServer.resolveKick(character, cfg, hooks)
 			CombatServer.drainStamina(m, cfg.KICK_BLOCK_DRAIN, cfg.BLOCK_MAX)
 			if hooks.dprint then hooks.dprint("KICK staggered", m.Name) end
 		else
+			CombatServer.credit(m, character, hooks.weaponName or "", "kick")
 			hum:TakeDamage(cfg.KICK_DAMAGE)
 			CombatServer.markCombat(m)
 			if hooks.dprint then hooks.dprint("kick hit", m.Name) end
@@ -253,6 +263,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	for k, v in pairs((weaponConfig and weaponConfig.SOUNDS) or {}) do cfg.SOUNDS[k] = v end
 
 	local TAG = Tool.Name .. "/Server"
+	local weaponName = cfg.Name or Tool.Name   -- kill feed
 	local function dprint(...) DebugFlags.log(TAG, ...) end
 
 	if not (cfg.ATTACKS and cfg.CYCLE_ORDER) then
@@ -579,6 +590,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		interrupt(target, "hit")
 		markCombat(character)
 		markCombat(target)
+		CombatServer.credit(target, character, weaponName, info.kind == "stab" and (region == "head" and "facestab" or "stab") or (region == "head" and "headslash" or "slash"))
 
 		local dmg    = info.damage * (region == "head" and cfg.HEAD_DAMAGE_MULT or 1)
 		-- armor: the set's Protection applies only on limbs it actually covers.
@@ -854,6 +866,7 @@ function CombatServer.attach(Tool, weaponConfig)
 					victim:SetAttribute("Blocking", false)
 					victim:SetAttribute("StunnedUntil", os.clock() + cfg.HEAD_THROW_STUN)
 					markCombat(victim)
+					CombatServer.credit(victim, thrower, weaponName, "head")
 					vh:TakeDamage(cfg.HEAD_THROW_DAMAGE)
 					dprint("thrown head hit", victim.Name)
 				end)
@@ -951,7 +964,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	--  KICK
 	----------------------------------------------------------------
 	local function resolveKick()
-		CombatServer.resolveKick(character, cfg, {sfx = sfx, tell = tell, dprint = dprint})
+		CombatServer.resolveKick(character, cfg, {sfx = sfx, tell = tell, dprint = dprint, weaponName = weaponName})
 	end
 
 	local function doKick()

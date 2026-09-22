@@ -18,10 +18,10 @@ return {
 	FORWARD_DOT    = 0.5,  -- at/above this is "forward", full speed
 
 	-- dodge: a burst to the side or backwards, never forward
-	DODGE_COST     = 20,   -- stamina (the BlockMeter)
+	DODGE_COST     = 10,   -- stamina (the BlockMeter)
 	DODGE_COOLDOWN = 1.0,
-	DODGE_SPEED    = 42,   -- studs/s during the burst…
-	DODGE_TIME     = 0.18, -- …for this long (≈ 7.5 studs)
+	DODGE_SPEED    = 19,   -- studs/s during the burst…
+	DODGE_TIME     = 0.10, -- …for this long (≈ 2 studs: a sidestep, not a leap)
 	DODGE_LEAN     = 0.35, -- body lean into the dodge (RigPose lean input impulse)
 
 	-- jumping is disabled: JumpPower 0 on the server, Jumping state off on the client
