@@ -46,7 +46,7 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "LoadoutMenu"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.DisplayOrder = 50
+gui.DisplayOrder = 2000   -- above CameraRig's DeathFade (1000)
 gui.Enabled = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -348,7 +348,26 @@ end
 --------------------------------------------------------------------
 local mouseConn
 
+-- CameraRig fades to black when we die and, with no auto-respawn, nothing
+-- ever clears it: lift it here so the menu opens over the (Custom) camera
+local function clearDeathFade()
+	local pg = player:FindFirstChild("PlayerGui")
+	local fade = pg and pg:FindFirstChild("DeathFade")
+	pcall(RunService.UnbindFromRenderStep, RunService, "DeathCam")
+	local cam = workspace.CurrentCamera
+	if cam then
+		cam.CameraType = Enum.CameraType.Custom
+		cam.FieldOfView = 70
+	end
+	if fade then
+		local black = fade:FindFirstChildOfClass("Frame")
+		if black then TweenService:Create(black, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play() end
+		task.delay(0.7, function() if fade.Parent then fade:Destroy() end end)
+	end
+end
+
 local function show(last)
+	clearDeathFade()
 	fetchCatalog()   -- fresh every time, so sets added while testing appear
 	-- preselect: last choice, else the first of each list
 	selected.armor  = (last and catalogData.byArmor[last.armor])   and last.armor  or (catalogData.armors[1]  and catalogData.armors[1].id)

@@ -592,6 +592,11 @@ local function onDied()
 		if t > 0 then
 			black.BackgroundTransparency = 1 - math.clamp(t / DEATH_FADE, 0, 1)
 		end
+		-- fully black: stop steering the camera so the loadout menu can take
+		-- it over (LoadoutMenu clears DeathFade when it opens)
+		if t > DEATH_FADE then
+			pcall(function() RunService:UnbindFromRenderStep("DeathCam") end)
+		end
 	end)
 end
 
