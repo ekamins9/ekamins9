@@ -160,8 +160,12 @@ a greatsword at `SPEED_MULT 0.4` has 2.5× the window of the same clips at 1.0. 
 (0.08 s) lets a morph/feint that arrives just after the windup ended still count, as long as
 the blade hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selected.
 
-- **Morph** — a different attack pressed during the **windup**: the new attack's wind-up
-  plays over whatever windup is left, then its swing.
+- **Morph** — a different attack pressed during the **windup**: the new attack's wind-up plays
+  **in full, at its normal speed** (`MORPH_WINDUP` × its windup — the morph's cost is that extra
+  time), then its swing.
+- **Blending** — every clip change (windup→windup on a morph, windup→swing, swing→swing on a
+  combo, a feint back to idle) cross-fades over `BLEND / speed` seconds (0.08 at speed 1, so a
+  slow weapon blends slower), capped at half the phase.
 - **Combo** — a different attack pressed during the **swing** (active): when this swing ends,
   the next attack goes **straight into its swing** — no second wind-up, no recovery between.
 - Same attack twice is neither (denied).

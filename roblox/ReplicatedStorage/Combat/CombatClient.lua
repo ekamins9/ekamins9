@@ -44,6 +44,7 @@ CombatClient.DEFAULTS = {
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
 	FIT_ANIMS     = true,   -- stretch windup / release anims to the phase times (see CombatServer)
+	BLEND         = 0.08,   -- seconds (at speed 1) to cross-fade between clips; divided by the attack speed
 	KICK_KEY = Enum.KeyCode.G,   -- fallback when the settings module is unavailable
 }
 
@@ -309,12 +310,20 @@ function CombatClient.attach(Tool, weaponConfig)
 		return t or nil
 	end
 
-	-- play `id` so that it lasts `fitTo` seconds (FIT_ANIMS), else at `speed`
-	local function playFit(id, fitTo, speed)
+	-- cross-fade length for a transition at this speed, never more than half the phase
+	local function blendFor(speed, phase)
+		local b = cfg.BLEND / math.max(speed or 1, 0.05)
+		return math.clamp(b, 0.02, math.max(0.02, (phase or 1) * 0.5))
+	end
+
+	-- play `id` so that it lasts `fitTo` seconds (FIT_ANIMS), else at `speed`,
+	-- fading in over `fade` (the outgoing track is faded by the caller, so the
+	-- two blend instead of snapping)
+	local function playFit(id, fitTo, speed, fade)
 		local t = cached(id)
 		if not t then return nil, speed end
-		t:Stop()
-		t:Play()
+		if t.IsPlaying then t:Stop(0) end
+		t:Play(fade or 0.1)
 		local sp = speed or 1
 		if cfg.FIT_ANIMS ~= false and fitTo and fitTo > 0 and t.Length > 0 then sp = t.Length / fitTo end
 		t:AdjustSpeed(sp)
@@ -330,22 +339,25 @@ function CombatClient.attach(Tool, weaponConfig)
 		armToken += 1
 		local arm = armToken
 		if windup > 0 then endSweep() end   -- a morph out of the grace window: the blade goes cold again
-		if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
-		if currentTrack then currentTrack:Stop(); currentTrack = nil end
+		-- outgoing clips fade over the same time the incoming one fades in
+		local fadeW, fadeA = blendFor(speed, windup), blendFor(speed, active)
+		local fadeOut = windup > 0 and fadeW or fadeA
+		if windupTrack then windupTrack:Stop(fadeOut); windupTrack = nil end
+		if currentTrack then currentTrack:Stop(fadeOut); currentTrack = nil end
 		if windupId then
-			if windup > 0 then windupTrack = playFit(windupId, windup, speed) end
+			if windup > 0 then windupTrack = playFit(windupId, windup, speed, fadeW) end
 		elseif skipFrac and skipFrac > 0 then
-			currentTrack, currentSpeed = playFit(releaseId, active / (1 - skipFrac), speed)
+			currentTrack, currentSpeed = playFit(releaseId, active / (1 - skipFrac), speed, fadeA)
 			if currentTrack and currentTrack.Length > 0 then currentTrack.TimePosition = currentTrack.Length * skipFrac end
 		else
-			currentTrack, currentSpeed = playFit(releaseId, windup + active, speed)
+			currentTrack, currentSpeed = playFit(releaseId, windup + active, speed, fadeW)
 		end
 		swingToken = token
 		task.delay(windup, function()
 			if swingToken ~= token or armToken ~= arm or not equipped then return end
 			if windupId then
-				if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
-				currentTrack, currentSpeed = playFit(releaseId, active, speed)
+				if windupTrack then windupTrack:Stop(fadeA); windupTrack = nil end
+				currentTrack, currentSpeed = playFit(releaseId, active, speed, fadeA)
 			end
 			beginSweep(token, active)
 		end)
@@ -378,8 +390,10 @@ function CombatClient.attach(Tool, weaponConfig)
 		swingToken = nil
 		armToken += 1
 		endSweep()
-		if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
-		if currentTrack then currentTrack:Stop(); currentTrack = nil end
+		-- a feint / cancel eases back to idle rather than snapping
+		local fade = blendFor(currentSpeed, 1)
+		if windupTrack then windupTrack:Stop(fade); windupTrack = nil end
+		if currentTrack then currentTrack:Stop(fade); currentTrack = nil end
 		-- the kick leg is a procedural pose in CameraRig, not a track: clearing
 		-- its timestamp is what cancels it
 		local char = player.Character
@@ -434,8 +448,9 @@ function CombatClient.attach(Tool, weaponConfig)
 			task.delay(a or 0, function()
 				if swingToken ~= token or armToken ~= arm or not equipped then return end
 				if separate and windupTrack then
-					windupTrack:Stop(0.05); windupTrack = nil
-					currentTrack, currentSpeed = playFit(releaseId, b or 0, 1)
+					local fade = blendFor(currentSpeed, b)
+					windupTrack:Stop(fade); windupTrack = nil
+					currentTrack, currentSpeed = playFit(releaseId, b or 0, 1, fade)
 				end
 				beginSweep(token, b or 0)
 			end)

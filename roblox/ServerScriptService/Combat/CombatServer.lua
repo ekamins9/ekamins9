@@ -279,7 +279,10 @@ CombatServer.DEFAULTS = {
 	MORPH_COST       = 10,    -- switch attack mid-windup (right swing -> stab…): stamina
 	MORPHS_PER_SWING = 1,
 	MORPH_CUTOFF     = 1.0,   -- no morph past this fraction of the windup (1 = the whole windup)
-	MORPH_MIN_WINDUP = 0.5,   -- the new attack keeps at least this × its own windup
+	MORPH_WINDUP     = 1.0,   -- a morph plays this × the new attack's FULL windup, at normal speed
+	                          --    (1 = a complete second windup; the morph's cost is the time)
+	BLEND            = 0.08,  -- seconds (at speed 1) to cross-fade between clips: windup→windup on a
+	                          --    morph, windup→swing, swing→swing on a combo. Divided by the speed.
 	CHAMBER          = true,  -- be in WINDUP of the mirror of their attack while theirs is in
 	                          --    its swing (same type, opposite side: their RightOverhead vs
 	                          --    your LeftOverhead; any stab vs any stab), facing them, and
@@ -919,15 +922,20 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- the NPC's own windup/release playback (mirrors CombatClient's)
 	local npcArm = 0
-	local function npcPlay(id, priority, fitTo, fallbackSpeed)
+	-- cross-fade length for a transition at this speed, never more than half the phase
+	local function blendFor(speed, phase)
+		local b = cfg.BLEND / math.max(speed or 1, 0.05)
+		return math.clamp(b, 0.02, math.max(0.02, (phase or 1) * 0.5))
+	end
+	local function npcPlay(id, priority, fitTo, fallbackSpeed, fade)
 		local t = npc.tracks[id]
 		if not t then
 			t = npcTrack(id, priority, false)
 			npc.tracks[id] = t
 		end
 		if not t then return nil end
-		t:Stop()
-		t:Play()
+		if t.IsPlaying then t:Stop(0) end
+		t:Play(fade or 0.1)
 		local sp = fallbackSpeed or 1
 		if cfg.FIT_ANIMS and fitTo and fitTo > 0 and t.Length > 0 then sp = t.Length / fitTo end
 		t:AdjustSpeed(sp)
@@ -936,21 +944,22 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function npcArmRelease(releaseId, speed, windup, active, recovery, token, windupId, skipFrac)
 		npcArm += 1
 		local arm = npcArm
-		if npc.current then npc.current:Stop(); npc.current = nil end
+		local fadeW, fadeA = blendFor(speed, windup), blendFor(speed, active)
+		if npc.current then npc.current:Stop(windup > 0 and fadeW or fadeA); npc.current = nil end
 		if windupId then
-			if windup > 0 then npc.current = npcPlay(windupId, Enum.AnimationPriority.Action, windup, speed) end
+			if windup > 0 then npc.current = npcPlay(windupId, Enum.AnimationPriority.Action, windup, speed, fadeW) end
 		elseif skipFrac and skipFrac > 0 then
 			-- combo: the clip's windup part is skipped
-			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active / (1 - skipFrac), speed)
+			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active / (1 - skipFrac), speed, fadeA)
 			if npc.current and npc.current.Length > 0 then npc.current.TimePosition = npc.current.Length * skipFrac end
 		else
-			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, windup + active, speed)
+			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, windup + active, speed, fadeW)
 		end
 		task.delay(windup, function()
 			if state.token ~= token or npcArm ~= arm or not character then return end
 			if windupId then
-				if npc.current then npc.current:Stop(0.05) end
-				npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active, speed)
+				if npc.current then npc.current:Stop(fadeA) end
+				npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active, speed, fadeA)
 			end
 			npcRay.FilterDescendantsInstances = {character}
 			npcOverlap.FilterDescendantsInstances = {character}
@@ -1171,7 +1180,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		if stamina() < cfg.MORPH_COST then dprint("morph denied: stamina"); return end
 		spend(cfg.MORPH_COST)
 		local speed, windup, active, recovery = attackTimes(info, name)
-		local remaining = math.max(state.windupEnd - now, windup * cfg.MORPH_MIN_WINDUP)
+		-- the new windup runs in full at its own speed (never squeezed into what was left)
+		local remaining = math.max(cfg.MIN_PHASE, windup * cfg.MORPH_WINDUP)
 		state.attack, state.attackName = info, name
 		state.morphs += 1
 		state.chambered = false
