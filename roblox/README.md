@@ -43,6 +43,9 @@ Folder layout mirrors where each script lives in Studio.
 | `Tools/Hammer/Config.lua` | inside the Hammer Tool → `Config` | ModuleScript |
 | `Tools/Hammer/Server.server.lua` | inside the Tool → `Server` | Script |
 | `Tools/Hammer/Client.client.lua` | inside the Tool → `Client` | LocalScript |
+| `Tools/Shortsword/Config.lua` | inside the Shortsword Tool → `Config` | ModuleScript |
+| `Tools/Shortsword/Server.server.lua` | inside the Tool → `Server` | Script |
+| `Tools/Shortsword/Client.client.lua` | inside the Tool → `Client` | LocalScript |
 
 Nothing gets inserted into a Tool automatically — create `Config`, `Server` and `Client`
 inside each weapon by hand. `CombatServer` / `CombatClient` live once, in the folders above.
