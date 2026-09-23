@@ -325,23 +325,30 @@ function CombatClient.attach(Tool, weaponConfig)
 		return t, sp
 	end
 
-	-- windup now, release + sweep when the windup ends (re-armable)
-	local function armSwing(releaseId, speed, windup, active, recovery, token, windupId)
+	-- Windup now, release + sweep when the windup ends (re-armable).
+	-- One clip (no windupId): it is windup + swing, fitted to windup + active.
+	-- Two clips: windupId fits the windup, releaseId fits the active phase.
+	-- Recovery is a hold after the clip ends. skipFrac > 0 = a combo: no
+	-- windup, and the single clip starts at its swing part.
+	local function armSwing(releaseId, speed, windup, active, recovery, token, windupId, skipFrac)
 		armToken += 1
 		local arm = armToken
 		if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
 		if currentTrack then currentTrack:Stop(); currentTrack = nil end
 		if windupId then
-			windupTrack = playFit(windupId, windup, speed)
+			if windup > 0 then windupTrack = playFit(windupId, windup, speed) end
+		elseif skipFrac and skipFrac > 0 then
+			currentTrack, currentSpeed = playFit(releaseId, active / (1 - skipFrac), speed)
+			if currentTrack and currentTrack.Length > 0 then currentTrack.TimePosition = currentTrack.Length * skipFrac end
 		else
-			currentTrack, currentSpeed = playFit(releaseId, windup + active + recovery, speed)
+			currentTrack, currentSpeed = playFit(releaseId, windup + active, speed)
 		end
 		swingToken = token
 		task.delay(windup, function()
 			if swingToken ~= token or armToken ~= arm or not equipped then return end
 			if windupId then
 				if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
-				currentTrack, currentSpeed = playFit(releaseId, active + recovery, speed)
+				currentTrack, currentSpeed = playFit(releaseId, active, speed)
 			end
 			beginSweep(token, active)
 		end)
@@ -396,7 +403,7 @@ function CombatClient.attach(Tool, weaponConfig)
 		end
 	end
 
-	table.insert(conns, remote.OnClientEvent:Connect(function(what, a, b, c, d, e, f, g, h)
+	table.insert(conns, remote.OnClientEvent:Connect(function(what, a, b, c, d, e, f, g, h, i)
 		dprint("recv", what, a, b, c)
 
 		if what == "Setup" then
@@ -407,9 +414,10 @@ function CombatClient.attach(Tool, weaponConfig)
 			if idleTrack then idleTrack:Play() else dprint("idle track failed to load") end
 
 		elseif what == "PlayAttack" then
-			-- a = release anim, b = speed, c = windup, d = active, e = turn cap, f = token, g = windup anim, h = recovery
+			-- a = release anim, b = speed, c = windup, d = active, e = turn cap, f = token,
+			-- g = windup anim, h = recovery, i = combo skip fraction (0 = normal attack)
 			setLocalTurnCap(e or 0)
-			armSwing(a, b or 1, c or 0, d or 0, h or 0, f, g)
+			armSwing(a, b or 1, c or 0, d or 0, h or 0, f, g, i)
 
 		elseif what == "Morph" then
 			-- a = release anim, b = speed, c = remaining windup, d = active, e = recovery, f = token, g = windup anim
@@ -430,7 +438,7 @@ function CombatClient.attach(Tool, weaponConfig)
 				if swingToken ~= token or armToken ~= arm or not equipped then return end
 				if separate and windupTrack then
 					windupTrack:Stop(0.05); windupTrack = nil
-					currentTrack, currentSpeed = playFit(releaseId, (b or 0) + (c or 0), 1)
+					currentTrack, currentSpeed = playFit(releaseId, b or 0, 1)
 				end
 				beginSweep(token, b or 0)
 			end)

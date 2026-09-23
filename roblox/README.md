@@ -143,23 +143,23 @@ side you get is a setting (⚙ → Keybinds → *Attack side*):
 - **Mouse**: the way your mouse was moving when you pressed. Still mouse = alternate. The
   Opposite-side key flips whatever the flick gave you.
 
-## Windup animations (two per attack)
+## Attack animations, morphs and combos
 
-Each attack in a weapon `Config` takes two animation ids:
+`anim` is **one clip of wind-up + swing** (0.1 s + 0.3 s in every current weapon) and
+`FIT_ANIMS` stretches it to `windup + active`, so the clip's wind-up part *is* the windup
+phase at whatever tempo the weapon runs. Recovery is a hold after the clip ends. Optional
+two-clip form: `windupAnim` (idle → loaded pose) fits `windup`, `anim` (swing only) fits
+`active`. Every phase time divides by `speed × SPEED_MULT`, so tune a weapon's overall tempo
+with `SPEED_MULT` and a single attack's with its `speed`.
 
-| key | what it is | stretched to |
-|---|---|---|
-| `windupAnim` | idle pose → "loaded" pose (arm back, blade cocked) | the attack's `windup` |
-| `anim` | loaded pose → the swing → back to idle | `active + recovery` |
+- **Morph** — a different attack pressed during the **windup**: the new attack's wind-up
+  plays over whatever windup is left, then its swing.
+- **Combo** — a different attack pressed during the **swing** (active): when this swing ends,
+  the next attack goes **straight into its swing** — no second wind-up, no recovery between.
+- Same attack twice is neither (denied).
 
-Make them in the Animation Editor as two separate clips (end the windup exactly where the
-release starts), upload both, paste the ids. `FIT_ANIMS` stretches each clip to the phase
-time, so the windup you see is the windup the rules use — and a morph, riposte or chamber
-re-times the picture too. No `windupAnim` (nil or `rbxassetid://0`) = the release clip plays over
-the whole windup+active+recovery, as before. Attack names: `LeftSwing`, `RightStab`,
-`LeftOverhead`, `RightUnderhand`… or plain `Stab` / `Overhead` for an unsided one; a sided
-version wins over the plain one once it exists. Every Config has the sided set commented out
-ready to fill.
+Attack names: `LeftSwing`, `RightStab`, `LeftOverhead`, `RightUnderhand`… or plain `Stab` /
+`Overhead` for an unsided one; a sided version wins over the plain one once it exists.
 
 ## Combat rules 2 (the fencing layer)
 

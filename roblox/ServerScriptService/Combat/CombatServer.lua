@@ -218,8 +218,10 @@ CombatServer.DEFAULTS = {
 	HEAD_DAMAGE_MULT = 2.0,   -- head hits hurt this much more (no longer an automatic kill)
 	LEG_DAMAGE_MULT  = 0.85,  -- …and legs a little less. An attack may instead give
 	                          --    damage = {head=, body=, legs=} for exact per-region numbers.
-	FIT_ANIMS        = true,  -- stretch each attack's windup / release animation to the Config
-	                          --    phase times (so a morph or riposte re-times the swing you see)
+	FIT_ANIMS        = true,  -- stretch each attack's clip(s) to the Config phase times, so a
+	                          --    morph or riposte re-times the swing you see. One clip: it is
+	                          --    windup + swing, fitted to windup + active. Two clips: windupAnim
+	                          --    fits windup, anim fits active. Recovery is a hold either way.
 	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
 	                          --    already in release finishes (trades are a real choice)
 	MISS_COST_MULT   = 0.75,  -- a swing that touches nothing costs this × staminaCost extra
@@ -861,20 +863,24 @@ function CombatServer.attach(Tool, weaponConfig)
 		t:AdjustSpeed(sp)
 		return t
 	end
-	local function npcArmRelease(releaseId, speed, windup, active, recovery, token, windupId)
+	local function npcArmRelease(releaseId, speed, windup, active, recovery, token, windupId, skipFrac)
 		npcArm += 1
 		local arm = npcArm
 		if npc.current then npc.current:Stop(); npc.current = nil end
 		if windupId then
-			npc.current = npcPlay(windupId, Enum.AnimationPriority.Action, windup, speed)
+			if windup > 0 then npc.current = npcPlay(windupId, Enum.AnimationPriority.Action, windup, speed) end
+		elseif skipFrac and skipFrac > 0 then
+			-- combo: the clip's windup part is skipped
+			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active / (1 - skipFrac), speed)
+			if npc.current and npc.current.Length > 0 then npc.current.TimePosition = npc.current.Length * skipFrac end
 		else
-			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, windup + active + recovery, speed)
+			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, windup + active, speed)
 		end
 		task.delay(windup, function()
 			if state.token ~= token or npcArm ~= arm or not character then return end
 			if windupId then
 				if npc.current then npc.current:Stop(0.05) end
-				npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active + recovery, speed)
+				npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active, speed)
 			end
 			npcRay.FilterDescendantsInstances = {character}
 			npcOverlap.FilterDescendantsInstances = {character}
@@ -888,7 +894,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		end)
 	end
 
-	npcTell = function(what, a, b, c, d, e, f, g, h)
+	npcTell = function(what, a, b, c, d, e, f, g, h, i)
 		if what == "Setup" then
 			npcStopAll()
 			npc.tracks = {}
@@ -897,8 +903,8 @@ function CombatServer.attach(Tool, weaponConfig)
 			if npc.idle then npc.idle:Play() end
 
 		elseif what == "PlayAttack" then
-			-- a = release anim, b = speed, c = windup, d = active, e = cap, f = token, g = windup anim, h = recovery
-			npcArmRelease(a, b or 1, c or 0, d or 0, h or 0, f, g)
+			-- a = release anim, b = speed, c = windup, d = active, e = cap, f = token, g = windup anim, h = recovery, i = combo skip fraction
+			npcArmRelease(a, b or 1, c or 0, d or 0, h or 0, f, g, i)
 
 		elseif what == "Morph" then
 			-- a = release anim, b = speed, c = remaining windup, d = active, e = recovery, f = token, g = windup anim
@@ -915,7 +921,7 @@ function CombatServer.attach(Tool, weaponConfig)
 					if state.token ~= token or npcArm ~= arm or not character then return end
 					if animId(state.attack.windupAnim) then
 						t:Stop(0.05)
-						npc.current = npcPlay(state.attack.anim, Enum.AnimationPriority.Action, (b or 0) + (c or 0), 1)
+						npc.current = npcPlay(state.attack.anim, Enum.AnimationPriority.Action, b or 0, 1)
 					end
 					npcRay.FilterDescendantsInstances = {character}
 					npcOverlap.FilterDescendantsInstances = {character}
@@ -991,11 +997,18 @@ function CombatServer.attach(Tool, weaponConfig)
 		end)
 	end
 
-	local function startAttack(name)
+	-- combo = true: chained straight out of the previous release, so there is
+	-- NO windup — the blade goes live now and the clip starts at its swing part
+	local function startAttack(name, combo)
 		local info = cfg.ATTACKS[name]
 		if not info then return end
 		local now = os.clock()
 		local speed, windup, active, recovery = attackTimes(info)
+		local skipFrac = 0
+		if combo then
+			skipFrac = windup / (windup + active)   -- how much of the clip is windup
+			windup = 0
+		end
 
 		state.token += 1
 		local token = state.token
@@ -1051,7 +1064,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			if state.queued and not isStunned() then
 				local q = state.queued
 				state.queued = nil
-				startAttack(q)   -- combo: chain straight out of release, skipping recovery
+				startAttack(q, true)   -- combo: straight into the next swing, no windup, no recovery
 			end
 		end)
 		at(token, function() return state.nextActionTime end, function()
@@ -1059,8 +1072,8 @@ function CombatServer.attach(Tool, weaponConfig)
 			setSwinging(false)
 		end)
 
-		dprint("attack ->", name, string.format("speed %.2f | windup %.2f release %.2f recovery %.2f", speed, windup, active, recovery))
-		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, animId(info.windupAnim), recovery)
+		dprint(combo and "combo ->" or "attack ->", name, string.format("speed %.2f | windup %.2f release %.2f recovery %.2f", speed, windup, active, recovery))
+		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, animId(info.windupAnim), recovery, skipFrac)
 	end
 
 	-- MORPH: swap the attack during the windup (right swing -> stab, overhead -> underhand…)

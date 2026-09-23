@@ -44,13 +44,14 @@ return {
 	-- type (Stab, Overhead) when it has no sides. Swing / Stab / Overhead / Underhand
 	-- are the four inputs; the side comes from the mouse flick or the modifier key.
 	--
-	-- TWO ANIMATIONS PER ATTACK:
-	--   windupAnim  the wind-up: from the idle pose to the "loaded" pose (arm back,
-	--               blade cocked). Stretched to exactly `windup` seconds.
-	--   anim        the release: from that loaded pose, through the swing, back to
-	--               idle. Stretched to `active + recovery` seconds.
-	-- Upload each as its own animation and paste both ids. An attack with no
-	-- windupAnim plays `anim` over the whole windup+active+recovery instead.
+	-- ANIMATIONS: `anim` is ONE clip of windup + swing (yours: 0.1 s wind-up then
+	-- 0.3 s swing) and is stretched to `windup + active`, so its wind-up part IS
+	-- the windup phase. Recovery is a hold after it ends. Optional two-clip form:
+	--   windupAnim  idle → "loaded" pose, stretched to `windup`
+	--   anim        the swing only, stretched to `active`
+	-- Morph (new attack during windup): the new clip's wind-up plays over the
+	-- windup that's left. Combo (new attack during the swing): once this swing
+	-- ends the next clip starts at its swing part — no second wind-up.
 	--
 	--   damage      one number (× HEAD_DAMAGE_MULT / LEG_DAMAGE_MULT by region)
 	--               or {head = 40, body = 20, legs = 14} for exact per-region numbers
