@@ -465,6 +465,9 @@ function CombatClient.attach(Tool, weaponConfig)
 			swingToken = nil
 			endSweep()
 
+		elseif what == "Feinted" then
+			impact("feint")   -- small camera dip so a feint reads as a deliberate pull
+
 		elseif what == "Cancel" then
 			stopAttack()
 

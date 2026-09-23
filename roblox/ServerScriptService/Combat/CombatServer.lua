@@ -1066,7 +1066,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	-- MORPH: swap the attack during the windup (right swing -> stab, overhead -> underhand…)
 	local function morph(name)
 		local info = cfg.ATTACKS[name]
-		if not info or name == state.attackName then return end
+		if not info then return end
+		if name == state.attackName then dprint("morph denied: same attack"); return end
 		local now = os.clock()
 		if state.morphs >= cfg.MORPHS_PER_SWING then dprint("morph denied: already morphed"); return end
 		local span = state.windupEnd - state.windupStart
@@ -1119,11 +1120,15 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- FEINT (key): pull the swing during windup, no guard involved
 	local function doFeint()
-		if not character or state.phase ~= "windup" or not cfg.FEINT_ANYTIME then return end
+		if not character or not cfg.FEINT_ANYTIME then return end
+		if state.phase ~= "windup" then dprint("feint denied: not in windup (" .. state.phase .. ")"); return end
 		if stamina() < cfg.FEINT_COST then dprint("feint denied: stamina"); return end
 		spend(cfg.FEINT_COST)
 		cancelSwing("feint")
 		state.nextActionTime = os.clock() + cfg.FEINT_RECOVERY
+		sfx("Swing", nil, {Speed = 1.5, Volume = 0.5})
+		tell("Feinted")
+		dprint("FEINT")
 	end
 
 	----------------------------------------------------------------
@@ -1138,17 +1143,24 @@ function CombatServer.attach(Tool, weaponConfig)
 			knockAwayWeapon(character, nil, "tried to block with a missing arm")
 			return
 		end
+		-- WINDUP only: feint-to-parry — cancel the windup and raise guard in one
+		-- motion. Release / kick are committed; recovery just blocks normally.
+		local feinted = false
 		if state.phase == "windup" then
-			-- feint-to-parry: cancel the windup and raise guard in one motion
-			if stamina() < cfg.FEINT_COST then dprint("feint denied: stamina"); return end
+			if stamina() < cfg.FEINT_COST then dprint("feint-to-parry denied: stamina"); return end
 			spend(cfg.FEINT_COST)
 			cancelSwing("feint")
 			state.nextActionTime = now + cfg.FEINT_RECOVERY
+			feinted = true
+			sfx("Swing", nil, {Speed = 1.5, Volume = 0.5})
+			tell("Feinted")
+			dprint("FEINT -> parry")
 		elseif state.phase == "release" or state.phase == "kick" then
-			dprint("block denied: committed"); return
+			dprint("block denied: committed (" .. state.phase .. ")"); return
 		end
 		if attr("Blocking") then return end
-		if now < state.nextBlockTime then dprint("block denied: cooldown"); return end
+		-- a feint already paid for this guard: the re-guard cooldown doesn't apply
+		if not feinted and now < state.nextBlockTime then dprint("block denied: cooldown"); return end
 		CombatServer.dropProtection(character)
 		setAttr("Blocking", true)
 		if now - state.lastBlockStart >= cfg.PARRY_RETRY then
