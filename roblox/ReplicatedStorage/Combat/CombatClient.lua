@@ -481,10 +481,11 @@ function CombatClient.attach(Tool, weaponConfig)
 	end))
 
 	----------------------------------------------------------------
-	--  INPUT — LMB / Swing key = swing, Stab / Overhead / Underhand keys,
-	--  Feint, Kick. The SIDE (Left/Right) comes from the mouse: whichever way
-	--  it was moving in the last SIDE_WINDOW seconds when you pressed; still
-	--  mouse = alternate sides. A weapon lists attacks as <Side><Type>
+	--  INPUT — Swing / Stab / Overhead / Underhand / Feint / Kick binds from
+	--  ClientSettings (keys, left/middle mouse, scroll up/down). The SIDE
+	--  (Left/Right): Modifier mode = DefaultSide, flipped while SideFlip is
+	--  held; Mouse mode = the way the mouse moved in the last SIDE_WINDOW
+	--  seconds, still = alternate. A weapon lists attacks as <Side><Type>
 	--  (RightSwing, LeftStab, RightUnderhand…) or just <Type> (Stab).
 	----------------------------------------------------------------
 	local SIDE_WINDOW, SIDE_MIN = 0.15, 6   -- seconds of mouse history; pixels to count as a flick
@@ -570,10 +571,6 @@ function CombatClient.attach(Tool, weaponConfig)
 		stopAll()
 	end))
 
-	table.insert(conns, Tool.Activated:Connect(function()  -- left click = swing
-		sendAttack("Swing")
-	end))
-
 	-- which action an input means: the player's binds first, then the weapon's KEYS (legacy)
 	local function actionFor(input)
 		local bound = ClientSettings.actionForInput(input)
@@ -607,7 +604,9 @@ function CombatClient.attach(Tool, weaponConfig)
 		if UIS:GetFocusedTextBox() then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			remote:FireServer("BlockStart")
-		elseif input.UserInputType == Enum.UserInputType.Keyboard or input.UserInputType == Enum.UserInputType.MouseButton3 then
+		elseif input.UserInputType == Enum.UserInputType.Keyboard
+			or input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.MouseButton3 then
 			handleAction(actionFor(input))
 		end
 	end))

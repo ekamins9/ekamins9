@@ -136,7 +136,8 @@ end))
 --------------------------------------------------------------------
 table.insert(conns, UIS.InputBegan:Connect(function(input, gp)
 	if gp then return end
-	if input.UserInputType ~= Enum.UserInputType.Keyboard and input.UserInputType ~= Enum.UserInputType.MouseButton3 then return end
+	local t = input.UserInputType
+	if t ~= Enum.UserInputType.Keyboard and t ~= Enum.UserInputType.MouseButton1 and t ~= Enum.UserInputType.MouseButton3 then return end
 	if UIS:GetFocusedTextBox() then return end
 	local action = ClientSettings.actionForInput(input)
 	if action == "Sprint" then sprintHeld = true; sendSprint()

@@ -30,27 +30,30 @@ ClientSettings.SLIDERS = {
 	{key = "FOV",     label = "First-person FOV", min = 70, max = 110, step = 1, hint = "degrees"},
 }
 
--- rebindable actions. Block stays on right mouse; LEFT CLICK = swing. The
--- SIDE of an attack (left/right swing, stab, overhead, underhand) comes from
--- the way your mouse was moving when you pressed — flick left, press = the
--- left version — or alternates when the mouse was still.
--- A bind is a KeyCode name ("Q", "LeftAlt"…) or one of the mouse names
--- "MouseWheelUp", "MouseWheelDown", "MouseButton3" (middle click) — so scroll
--- up = stab, scroll down = overhead is a valid layout. Zoom then moves off the wheel.
+-- rebindable actions. Block stays on right mouse. The SIDE of an attack
+-- (left/right swing, stab, overhead, underhand) is your DefaultSide, flipped
+-- while the SideFlip key is held (Modifier mode) — or, in Mouse mode, the way
+-- the mouse was moving when you pressed.
+-- A bind is a KeyCode name ("Q", "LeftAlt"…) or a mouse name: "MouseButton1"
+-- (left), "MouseButton3" (middle), "MouseWheelUp", "MouseWheelDown". Right
+-- mouse is always block. Roblox does NOT expose the side buttons (Mouse 4/5)
+-- to games — bind them to a key in your mouse software (e.g. Mouse4 → X) and
+-- bind that key here.
 ClientSettings.KEYS = {
+	{key = "Swing",      label = "Swing",            default = "MouseButton1"},
+	{key = "Stab",       label = "Stab",             default = "MouseWheelUp"},
+	{key = "Overhead",   label = "Overhead",         default = "MouseWheelDown"},
+	{key = "Underhand",  label = "Underhand",        default = "X"},
+	{key = "Feint",      label = "Feint (cancel windup)", default = "Q"},
+	{key = "SideFlip",   label = "Opposite side (hold)", default = "LeftAlt"},
+	{key = "Kick",       label = "Kick",             default = "G"},
 	{key = "Sprint",     label = "Sprint",           default = "LeftShift"},
 	{key = "Dodge",      label = "Dodge",            default = "Space"},
 	{key = "Crouch",     label = "Crouch",           default = "LeftControl"},
-	{key = "Kick",       label = "Kick",             default = "G"},
-	{key = "Feint",      label = "Feint (cancel windup)", default = "Q"},
-	{key = "Swing",      label = "Swing (also LMB)", default = "E"},
-	{key = "Stab",       label = "Stab",             default = "X"},
-	{key = "Overhead",   label = "Overhead",         default = "F"},
-	{key = "Underhand",  label = "Underhand",        default = "R"},
-	{key = "SideFlip",   label = "Opposite side (hold)", default = "LeftAlt"},
+	{key = "View",       label = "First / third person", default = "Z"},
 	{key = "Pickup",     label = "Pick up weapon",   default = "V"},
 }
-ClientSettings.MOUSE_NAMES = {MouseWheelUp = true, MouseWheelDown = true, MouseButton3 = true}
+ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}
 
 -- multiple-choice settings (rendered as cycling buttons)
 ClientSettings.CHOICES = {
@@ -62,7 +65,7 @@ ClientSettings.CHOICES = {
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 100,
-	SideMode = "Mouse", DefaultSide = "Right",
+	SideMode = "Modifier", DefaultSide = "Right",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 
@@ -110,6 +113,7 @@ ClientSettings.valid = valid
 function ClientSettings.inputName(input)
 	local t = input.UserInputType
 	if t == Enum.UserInputType.Keyboard then return input.KeyCode.Name end
+	if t == Enum.UserInputType.MouseButton1 then return "MouseButton1" end
 	if t == Enum.UserInputType.MouseButton3 then return "MouseButton3" end
 	if t == Enum.UserInputType.MouseWheel then
 		if input.Position.Z > 0 then return "MouseWheelUp" elseif input.Position.Z < 0 then return "MouseWheelDown" end
@@ -120,8 +124,8 @@ end
 -- is the bind for this action currently held (keys and middle mouse only)
 function ClientSettings.isDown(action)
 	local name = ClientSettings.get("Key_" .. action)
-	if name == "MouseButton3" then
-		return game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType.MouseButton3)
+	if name == "MouseButton1" or name == "MouseButton3" then
+		return game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType[name])
 	end
 	if ClientSettings.MOUSE_NAMES[name] then return false end
 	local ok, kc = pcall(function() return Enum.KeyCode[name] end)

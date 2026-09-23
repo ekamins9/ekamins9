@@ -569,7 +569,7 @@ local function keyRow(spec, order)
 	keyRefresh[spec.key] = refresh
 	refresh()
 	btn.Activated:Connect(function()
-		listening = {key = spec.key}
+		listening = {key = spec.key, since = os.clock()}
 		for _, r in pairs(keyRefresh) do r() end
 	end)
 end
@@ -604,13 +604,14 @@ local function choiceRow(spec, order)
 end
 for i, spec in ipairs(ClientSettings.CHOICES) do choiceRow(spec, i) end
 for i, spec in ipairs(ClientSettings.KEYS) do keyRow(spec, 10 + i) end
-local keyHint = label(keyCol, "Binds take keys, middle mouse, or scroll up / down (e.g. scroll up = stab, scroll down = overhead — zoom then leaves the wheel). Press Escape to cancel a rebind.", 11, FONT_BODY, COL_DIM)
-keyHint.Size = UDim2.new(1, -8, 0, 44)
+local keyHint = label(keyCol, "Binds take keys, left / middle mouse, or scroll up / down. Right mouse is always block. Roblox can't see Mouse 4 / 5 — bind them to a key in your mouse software and use that key here. Escape cancels a rebind.", 11, FONT_BODY, COL_DIM)
+keyHint.Size = UDim2.new(1, -8, 0, 58)
 keyHint.LayoutOrder = 99
 keyHint.TextYAlignment = Enum.TextYAlignment.Top
 
 local function captureBind(input)
 	if not listening then return end
+	if os.clock() - (listening.since or 0) < 0.2 then return end   -- the click that opened the prompt
 	local name = ClientSettings.inputName(input)
 	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Escape then name = nil
 	elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Unknown then return end
@@ -627,7 +628,8 @@ local function captureBind(input)
 	for _, r in pairs(keyRefresh) do r() end
 end
 UserInputService.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.Keyboard or input.UserInputType == Enum.UserInputType.MouseButton3 then
+	local t = input.UserInputType
+	if t == Enum.UserInputType.Keyboard or t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.MouseButton3 then
 		captureBind(input)
 	end
 end)

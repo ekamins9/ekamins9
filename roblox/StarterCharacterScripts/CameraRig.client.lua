@@ -1,5 +1,5 @@
 --[[ R6 UNIFIED FIRST/THIRD PERSON CAMERA + aim rig + immersion + turn cap.
-     Owns the camera in BOTH views. Scroll in/out = FP/TP. Shift-lock in TP.
+     Owns the camera in BOTH views. The View key (Z) toggles FP/TP. Shift-lock in TP.
      Turn cap reads the LOCAL cap timer (set by our own client on our own
      clock) so it works in live servers, not just Studio. FP camera follows
      the head/torso rig via forward kinematics (no physics-step lag), so the
@@ -114,14 +114,13 @@ local TP_FOV      = 70
 local FOV_BOOST   = 1
 local CAM_SMOOTH  = 100
 
--- third-person / zoom
-local TP_MAX_DIST = 14
-local DEFAULT_DIST= 10
+-- third-person: the View key (settings, default Z) toggles first / third
+-- person; the scroll wheel is for attacks now, so there's no zooming
+local DEFAULT_DIST= 9
 local FP_ENTER    = 0.75
-local ZOOM_STEP   = 1.5
 local ZOOM_SMOOTH = 14
-local SHOULDER_X  = 1
-local SHOULDER_Y  = 0.0
+local SHOULDER_X  = 2.2   -- over the right shoulder
+local SHOULDER_Y  = 0.9   -- …and a bit above it
 
 local ACCESSORY_TRANSPARENCY = 1
 
@@ -327,12 +326,18 @@ UIS.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement then
 		mouseDX = mouseDX + input.Delta.X
 		mouseDY = mouseDY + input.Delta.Y
-	elseif input.UserInputType == Enum.UserInputType.MouseWheel then
-		-- a wheel bound to an attack in settings no longer zooms
-		if not ClientSettings.wheelBound() then
-			camDistTarget = math.clamp(camDistTarget - input.Position.Z * ZOOM_STEP, 0, TP_MAX_DIST)
-		end
 	end
+end)
+-- first / third person toggle (rebindable; any bind type)
+local function viewInput(input, gp)
+	if gp or UIS:GetFocusedTextBox() then return end
+	if ClientSettings.actionForInput(input) == "View" then
+		camDistTarget = (camDistTarget <= FP_ENTER) and DEFAULT_DIST or 0
+	end
+end
+UIS.InputBegan:Connect(viewInput)
+UIS.InputChanged:Connect(function(input, gp)
+	if input.UserInputType == Enum.UserInputType.MouseWheel then viewInput(input, gp) end
 end)
 
 local function setCrouch(on)
