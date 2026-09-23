@@ -121,27 +121,27 @@ The Tool needs a box `Part` named `Hitbox` whose longest axis runs along the bla
 Optional: a `workspace.NPCs` folder of humanoid models — kicks, ragdoll, and bleeding
 work on them too.
 
-## Controls (all rebindable in the ⚙ on the spawn menu, except the mouse)
+## Controls (all rebindable in the ⚙ on the spawn menu; right mouse is always block)
 
-**LMB / E swing · X stab · F overhead · R underhand** — the *side* (left/right version) is the way
-your mouse was moving when you pressed; still mouse = alternate sides · **Q feint** (cancels a
-windup) · RMB block (feint-to-parry during windup) · G kick (works unarmed too) · LeftShift
-sprint (forward / forward-diagonal only) · Space dodge (a ~2-stud sidestep, side or back, 10
-stamina) · LeftControl/C crouch · V pick up a weapon · Tab leaderboard · scroll zoom (all the
-way in = first person). **There is no jumping.** Walking backwards is 35% slower and sideways
-20% slower — dodge to reposition fast.
+**LMB swing · scroll up stab · scroll down overhead · X underhand** — hold **LeftAlt** for the
+left-side version (default side Right; both are settings) · **Q feint** · RMB block (feint-to-parry
+during windup) · G kick (works unarmed too) · LeftShift sprint (forward / forward-diagonal only) ·
+Space dodge (a ~2-stud sidestep, side or back, 10 stamina) · LeftControl/C crouch · **Z first /
+third person** (no scroll zoom any more) · V pick up a weapon · Tab leaderboard. **There is no
+jumping.** Walking backwards is 35% slower and sideways 20% slower — dodge to reposition fast.
+
+Binds take keys, left / middle mouse, scroll up / down. Roblox does not expose Mouse 4 / 5 to
+games — bind them to a key in your mouse software (e.g. Mouse4 → X) and bind that key here.
 
 ## Attack input: sides, modifier, scroll wheel
 
-Four inputs — **Swing (LMB/E), Stab (X), Overhead (F), Underhand (R)** — each with a left and a
-right version. Which side you get is a setting (⚙ → Keybinds → *Attack side*):
+Four inputs — **Swing, Stab, Overhead, Underhand** — each with a left and a right version. Which
+side you get is a setting (⚙ → Keybinds → *Attack side*):
 
-- **Mouse** (default): the way your mouse was moving when you pressed. Still mouse = alternate.
-- **Modifier**: always your *Default side* (Right/Left); hold the *Opposite side* key (LeftAlt)
-  for the other. In Mouse mode the same key flips whatever the flick gave you.
-
-Any bind can be a key, **middle mouse, scroll up or scroll down** — so scroll up = stab, scroll
-down = overhead works; the wheel then stops zooming the camera.
+- **Modifier** (default): always your *Default side* (Right); hold the *Opposite side* key
+  (LeftAlt) for the other.
+- **Mouse**: the way your mouse was moving when you pressed. Still mouse = alternate. The
+  Opposite-side key flips whatever the flick gave you.
 
 ## Windup animations (two per attack)
 
