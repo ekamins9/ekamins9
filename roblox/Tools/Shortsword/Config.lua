@@ -18,7 +18,7 @@ return {
 	-- feel
 	SPEED_MULT = 0.45,   -- whole-weapon tempo (every phase of every attack divides by it)
 	TYPE_SPEED = {Swing = 1.0, Stab = 1.1, Overhead = 1.0, Underhand = 1.1},   -- per attack type, on top of SPEED_MULT
-	WINDUP     = 0.25,  -- seconds (at speed 1) of blend into the loaded pose — the wind-up
+	WINDUP     = 0.15,  -- seconds (at speed 1) of blend into the loaded pose — the wind-up
 	RECOVERY   = 0.14,  -- seconds (at speed 1) of hold after the swing clip ends
 	REACH      = 4.0,   -- studs from attacker root to a valid hit point
 	TWO_HANDED = false,  -- one hand: losing the LEFT arm doesn't drop it

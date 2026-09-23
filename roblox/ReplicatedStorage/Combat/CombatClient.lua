@@ -336,13 +336,18 @@ function CombatClient.attach(Tool, weaponConfig)
 		currentTrack, currentSpeed = t, 0
 		local function release()
 			if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end
-			local sp = (cfg.FIT_ANIMS ~= false and t.Length > 0) and t.Length / (active + fadeA) or speed
+			local sp = (cfg.FIT_ANIMS ~= false and t.Length > 0) and t.Length / active or speed
 			t:AdjustSpeed(sp)
 			currentSpeed = sp
 			beginSweep(token, active)
-			-- ease out as the clip ends instead of snapping to idle
-			task.delay(active, function()
-				if currentTrack == t and armToken == arm then t:Stop(fadeA); currentTrack = nil end
+			-- the whole clip plays; just before it would end, hold its last frame and
+			-- fade back to idle from there (a finished track would otherwise snap)
+			task.delay(math.max(active - 0.02, 0), function()
+				if currentTrack == t and armToken == arm then
+					t:AdjustSpeed(0)
+					t:Stop(fadeA)
+					currentTrack = nil
+				end
 			end)
 		end
 		if windup > 0 then task.delay(windup, release) else release() end
@@ -440,10 +445,12 @@ function CombatClient.attach(Tool, weaponConfig)
 			task.delay(a or 0, function()
 				if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end
 				local fadeA = blendFor(1, b)
-				local sp = (t and t.Length > 0) and t.Length / ((b or 0) + fadeA) or 1
+				local sp = (t and t.Length > 0) and t.Length / math.max(b or 0.01, 0.01) or 1
 				if t then t:AdjustSpeed(sp); currentSpeed = sp end
 				beginSweep(token, b or 0)
-				task.delay(b or 0, function() if currentTrack == t and armToken == arm then t:Stop(fadeA); currentTrack = nil end end)
+				task.delay(math.max((b or 0) - 0.02, 0), function()
+					if currentTrack == t and armToken == arm then t:AdjustSpeed(0); t:Stop(fadeA); currentTrack = nil end
+				end)
 			end)
 
 		elseif what == "PlayKick" then

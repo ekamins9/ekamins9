@@ -239,7 +239,7 @@ CombatServer.DEFAULTS = {
 	-- so morph / feint / chamber windows are the real windup at this tempo.
 	SPEED_MULT  = 1.0,   -- whole-weapon tempo
 	TYPE_SPEED  = {Swing = 1.0, Stab = 1.0, Overhead = 1.0, Underhand = 1.0},   -- per attack type
-	WINDUP      = 0.25,  -- seconds (at speed 1) of blend into the loaded pose; an attack may set its own `windup`
+	WINDUP      = 0.15,  -- seconds (at speed 1) of blend into the loaded pose; an attack may set its own `windup`
 	RECOVERY    = 0.15,  -- seconds (at speed 1) of hold after the swing clip ends
 	DEFAULT_ACTIVE = 0.3,-- swing-clip length fallback when the server can't read the clip
 	INPUT_GRACE = 0.08,  -- a morph / feint that arrives this long after the windup ended still
@@ -951,7 +951,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		npc.current = t
 		local function release()
 			if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
-			local sp = (cfg.FIT_ANIMS and t.Length > 0) and t.Length / (active + fadeA) or speed
+			local sp = (cfg.FIT_ANIMS and t.Length > 0) and t.Length / active or speed
 			t:AdjustSpeed(sp)
 			npcRay.FilterDescendantsInstances = {character}
 			npcOverlap.FilterDescendantsInstances = {character}
@@ -962,8 +962,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				last[bl] = pts
 			end
 			npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
-			task.delay(active, function()
-				if npc.current == t and npcArm == arm then t:Stop(fadeA); npc.current = nil end
+			task.delay(math.max(active - 0.02, 0), function()
+				if npc.current == t and npcArm == arm then t:AdjustSpeed(0); t:Stop(fadeA); npc.current = nil end
 			end)
 		end
 		if windup > 0 then task.delay(windup, release) else release() end
@@ -995,7 +995,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				task.delay(a or 0, function()
 					if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
 					local fadeA = blendFor(1, b)
-					t:AdjustSpeed((t.Length > 0) and t.Length / ((b or 0) + fadeA) or 1)
+					t:AdjustSpeed((t.Length > 0) and t.Length / math.max(b or 0.01, 0.01) or 1)
 					npcRay.FilterDescendantsInstances = {character}
 					npcOverlap.FilterDescendantsInstances = {character}
 					local last = {}
