@@ -34,6 +34,9 @@ ClientSettings.SLIDERS = {
 -- SIDE of an attack (left/right swing, stab, overhead, underhand) comes from
 -- the way your mouse was moving when you pressed — flick left, press = the
 -- left version — or alternates when the mouse was still.
+-- A bind is a KeyCode name ("Q", "LeftAlt"…) or one of the mouse names
+-- "MouseWheelUp", "MouseWheelDown", "MouseButton3" (middle click) — so scroll
+-- up = stab, scroll down = overhead is a valid layout. Zoom then moves off the wheel.
 ClientSettings.KEYS = {
 	{key = "Sprint",     label = "Sprint",           default = "LeftShift"},
 	{key = "Dodge",      label = "Dodge",            default = "Space"},
@@ -44,11 +47,22 @@ ClientSettings.KEYS = {
 	{key = "Stab",       label = "Stab",             default = "X"},
 	{key = "Overhead",   label = "Overhead",         default = "F"},
 	{key = "Underhand",  label = "Underhand",        default = "R"},
+	{key = "SideFlip",   label = "Opposite side (hold)", default = "LeftAlt"},
 	{key = "Pickup",     label = "Pick up weapon",   default = "V"},
+}
+ClientSettings.MOUSE_NAMES = {MouseWheelUp = true, MouseWheelDown = true, MouseButton3 = true}
+
+-- multiple-choice settings (rendered as cycling buttons)
+ClientSettings.CHOICES = {
+	{key = "SideMode",    label = "Attack side", options = {"Mouse", "Modifier"},
+		hint = "Mouse: the way your mouse was moving when you pressed picks left/right (still = alternate). Modifier: always your default side; hold the Opposite-side key for the other."},
+	{key = "DefaultSide", label = "Default side", options = {"Right", "Left"},
+		hint = "Modifier mode: the side you get without the Opposite-side key held. Mouse mode: what a held Opposite-side key flips away from."},
 }
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 100,
+	SideMode = "Mouse", DefaultSide = "Right",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 
@@ -63,17 +77,56 @@ local function sliderSpec(key)
 	return nil
 end
 
+local function choiceSpec(key)
+	for _, c in ipairs(ClientSettings.CHOICES) do if c.key == key then return c end end
+	return nil
+end
+
+local function isKeyName(v)
+	if ClientSettings.MOUSE_NAMES[v] then return true end
+	local ok, kc = pcall(function() return Enum.KeyCode[v] end)
+	return ok and kc ~= nil
+end
+
 local function valid(key, v)
 	local s = sliderSpec(key)
 	if s then
 		return type(v) == "number" and v == v and v >= s.min and v <= s.max
 	end
+	local c = choiceSpec(key)
+	if c then
+		for _, o in ipairs(c.options) do if o == v then return true end end
+		return false
+	end
 	if key:sub(1, 4) == "Key_" then
-		return type(v) == "string" and Enum.KeyCode[v] ~= nil
+		return type(v) == "string" and isKeyName(v)
 	end
 	return false
 end
 ClientSettings.valid = valid
+
+-- the bind name an input event corresponds to (InputBegan for keys / mouse
+-- buttons, InputChanged for the wheel), or nil
+function ClientSettings.inputName(input)
+	local t = input.UserInputType
+	if t == Enum.UserInputType.Keyboard then return input.KeyCode.Name end
+	if t == Enum.UserInputType.MouseButton3 then return "MouseButton3" end
+	if t == Enum.UserInputType.MouseWheel then
+		if input.Position.Z > 0 then return "MouseWheelUp" elseif input.Position.Z < 0 then return "MouseWheelDown" end
+	end
+	return nil
+end
+
+-- is the bind for this action currently held (keys and middle mouse only)
+function ClientSettings.isDown(action)
+	local name = ClientSettings.get("Key_" .. action)
+	if name == "MouseButton3" then
+		return game:GetService("UserInputService"):IsMouseButtonPressed(Enum.UserInputType.MouseButton3)
+	end
+	if ClientSettings.MOUSE_NAMES[name] then return false end
+	local ok, kc = pcall(function() return Enum.KeyCode[name] end)
+	return ok and kc ~= nil and game:GetService("UserInputService"):IsKeyDown(kc)
+end
 
 function ClientSettings.get(key)
 	local v = values[key]
@@ -81,18 +134,35 @@ function ClientSettings.get(key)
 	return v
 end
 
+-- the KeyCode for an action (Unknown when it's bound to the mouse)
 function ClientSettings.key(action)
 	local name = ClientSettings.get("Key_" .. action)
+	if ClientSettings.MOUSE_NAMES[name] then return Enum.KeyCode.Unknown end
 	local ok, kc = pcall(function() return Enum.KeyCode[name] end)
 	return ok and kc or Enum.KeyCode.Unknown
 end
 
--- which action a pressed key means, if any
-function ClientSettings.actionFor(keyCode)
+local function actionForName(name)
+	if not name then return nil end
 	for _, k in ipairs(ClientSettings.KEYS) do
-		if ClientSettings.get("Key_" .. k.key) == keyCode.Name then return k.key end
+		if ClientSettings.get("Key_" .. k.key) == name then return k.key end
 	end
 	return nil
+end
+
+-- which action a pressed key means, if any
+function ClientSettings.actionFor(keyCode)
+	return actionForName(keyCode.Name)
+end
+
+-- same, from a raw InputObject (handles the wheel and middle mouse too)
+function ClientSettings.actionForInput(input)
+	return actionForName(ClientSettings.inputName(input))
+end
+
+-- is the mouse wheel bound to anything (then the camera must not zoom on it)
+function ClientSettings.wheelBound()
+	return actionForName("MouseWheelUp") ~= nil or actionForName("MouseWheelDown") ~= nil
 end
 
 function ClientSettings.onChanged(fn)

@@ -40,6 +40,9 @@ Folder layout mirrors where each script lives in Studio.
 | `Tools/Greatsword/Config.lua` | inside the Greatsword Tool → `Config` | ModuleScript |
 | `Tools/Greatsword/Server.server.lua` | inside the Tool → `Server` | Script |
 | `Tools/Greatsword/Client.client.lua` | inside the Tool → `Client` | LocalScript |
+| `Tools/Hammer/Config.lua` | inside the Hammer Tool → `Config` | ModuleScript |
+| `Tools/Hammer/Server.server.lua` | inside the Tool → `Server` | Script |
+| `Tools/Hammer/Client.client.lua` | inside the Tool → `Client` | LocalScript |
 
 Nothing gets inserted into a Tool automatically — create `Config`, `Server` and `Client`
 inside each weapon by hand. `CombatServer` / `CombatClient` live once, in the folders above.
@@ -124,6 +127,36 @@ sprint (forward / forward-diagonal only) · Space dodge (a ~2-stud sidestep, sid
 stamina) · LeftControl/C crouch · V pick up a weapon · Tab leaderboard · scroll zoom (all the
 way in = first person). **There is no jumping.** Walking backwards is 35% slower and sideways
 20% slower — dodge to reposition fast.
+
+## Attack input: sides, modifier, scroll wheel
+
+Four inputs — **Swing (LMB/E), Stab (X), Overhead (F), Underhand (R)** — each with a left and a
+right version. Which side you get is a setting (⚙ → Keybinds → *Attack side*):
+
+- **Mouse** (default): the way your mouse was moving when you pressed. Still mouse = alternate.
+- **Modifier**: always your *Default side* (Right/Left); hold the *Opposite side* key (LeftAlt)
+  for the other. In Mouse mode the same key flips whatever the flick gave you.
+
+Any bind can be a key, **middle mouse, scroll up or scroll down** — so scroll up = stab, scroll
+down = overhead works; the wheel then stops zooming the camera.
+
+## Windup animations (two per attack)
+
+Each attack in a weapon `Config` takes two animation ids:
+
+| key | what it is | stretched to |
+|---|---|---|
+| `windupAnim` | idle pose → "loaded" pose (arm back, blade cocked) | the attack's `windup` |
+| `anim` | loaded pose → the swing → back to idle | `active + recovery` |
+
+Make them in the Animation Editor as two separate clips (end the windup exactly where the
+release starts), upload both, paste the ids. `FIT_ANIMS` stretches each clip to the phase
+time, so the windup you see is the windup the rules use — and a morph, riposte or chamber
+re-times the picture too. No `windupAnim` (nil or `rbxassetid://0`) = the release clip plays over
+the whole windup+active+recovery, as before. Attack names: `LeftSwing`, `RightStab`,
+`LeftOverhead`, `RightUnderhand`… or plain `Stab` / `Overhead` for an unsided one; a sided
+version wins over the plain one once it exists. Every Config has the sided set commented out
+ready to fill.
 
 ## Combat rules 2 (the fencing layer)
 

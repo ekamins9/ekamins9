@@ -41,19 +41,35 @@ return {
 
 	-- ATTACK NAMES: <Side><Type> — LeftSwing / RightSwing / LeftStab / RightStab /
 	-- LeftOverhead / RightOverhead / LeftUnderhand / RightUnderhand — or just the
-	-- type (Stab, Overhead) when it has no sides. The client picks the side from
-	-- the mouse flick on press. Each attack may also have:
-	--   windupAnim = "rbxassetid://…"   separate windup animation, stretched to `windup`
-	--                                   (the release anim is stretched to active+recovery)
-	--   damage = {head = 40, body = 20, legs = 14}   exact per-region numbers, instead
-	--                                   of one number × HEAD/LEG_DAMAGE_MULT
+	-- type (Stab, Overhead) when it has no sides. Swing / Stab / Overhead / Underhand
+	-- are the four inputs; the side comes from the mouse flick or the modifier key.
+	--
+	-- TWO ANIMATIONS PER ATTACK:
+	--   windupAnim  the wind-up: from the idle pose to the "loaded" pose (arm back,
+	--               blade cocked). Stretched to exactly `windup` seconds.
+	--   anim        the release: from that loaded pose, through the swing, back to
+	--               idle. Stretched to `active + recovery` seconds.
+	-- Upload each as its own animation and paste both ids. An attack with no
+	-- windupAnim plays `anim` over the whole windup+active+recovery instead.
+	--
+	--   damage      one number (× HEAD_DAMAGE_MULT / LEG_DAMAGE_MULT by region)
+	--               or {head = 40, body = 20, legs = 14} for exact per-region numbers
+	--   kind        "stab" (lethal face hit skewers) | "slash" (lethal hit severs)
 	-- phase times are seconds at speed 1.0; all three divide by (speed * SPEED_MULT)
-	-- kind: "stab" kills leave the weapon run through the body; "slash" kills sever the limb hit
 	ATTACKS = {
-		Stab       = {anim="rbxassetid://119395054343039", kind="stab",  damage=18, windup=0.12, active=0.14, recovery=0.14, blockCost=20, staminaCost=8,  speed=1.0},
-		LeftSwing  = {anim="rbxassetid://89500144760778",  kind="slash", damage=15, windup=0.14, active=0.16, recovery=0.15, blockCost=18, staminaCost=8,  speed=1.0},
-		RightSwing = {anim="rbxassetid://82652664048008",  kind="slash", damage=15, windup=0.14, active=0.16, recovery=0.15, blockCost=18, staminaCost=8,  speed=1.0},
-		Overhead   = {anim="rbxassetid://101285628758246", kind="slash", damage=30, windup=0.20, active=0.18, recovery=0.20, blockCost=40, staminaCost=12, speed=0.8},
+		-- the four you have (sides for the swing; the stab and overhead resolve without one)
+		Stab       = {anim="rbxassetid://119395054343039", windupAnim=nil, kind="stab",  damage=18, windup=0.12, active=0.14, recovery=0.14, blockCost=20, staminaCost=8,  speed=1.0},
+		LeftSwing  = {anim="rbxassetid://89500144760778",  windupAnim=nil, kind="slash", damage=15, windup=0.14, active=0.16, recovery=0.15, blockCost=18, staminaCost=8,  speed=1.0},
+		RightSwing = {anim="rbxassetid://82652664048008",  windupAnim=nil, kind="slash", damage=15, windup=0.14, active=0.16, recovery=0.15, blockCost=18, staminaCost=8,  speed=1.0},
+		Overhead   = {anim="rbxassetid://101285628758246", windupAnim=nil, kind="slash", damage=30, windup=0.20, active=0.18, recovery=0.20, blockCost=40, staminaCost=12, speed=0.8},
+		-- the sided set: uncomment and fill as you make the animations. Once a
+		-- sided version exists it wins over the plain one (RightStab beats Stab).
+		-- LeftStab       = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="stab", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
+		-- RightStab      = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="stab", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
+		-- LeftOverhead   = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=34, windup=0.18, active=0.16, recovery=0.18, blockCost=26, staminaCost=10, speed=0.9},
+		-- RightOverhead  = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=34, windup=0.18, active=0.16, recovery=0.18, blockCost=26, staminaCost=10, speed=0.9},
+		-- LeftUnderhand  = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=26, windup=0.13, active=0.16, recovery=0.15, blockCost=18, staminaCost=8, speed=1.1},
+		-- RightUnderhand = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=26, windup=0.13, active=0.16, recovery=0.15, blockCost=18, staminaCost=8, speed=1.1},
 	},
-	CYCLE_ORDER = {"Stab", "LeftSwing", "RightSwing", "Overhead"},
+	CYCLE_ORDER = {"Stab", "LeftSwing", "RightSwing", "Overhead"},   -- only used by weapons with no *Swing attacks
 }

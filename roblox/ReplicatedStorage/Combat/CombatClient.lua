@@ -508,12 +508,25 @@ function CombatClient.attach(Tool, weaponConfig)
 		return nil
 	end
 
+	local function flip(side) return side == "Right" and "Left" or "Right" end
+
+	-- which side this press means (ClientSettings: SideMode / DefaultSide / SideFlip key)
+	local function pickSide()
+		local side
+		if ClientSettings.get("SideMode") == "Modifier" then
+			side = ClientSettings.get("DefaultSide")
+		else
+			side = mouseSide() or flip(lastSide)
+		end
+		if ClientSettings.isDown("SideFlip") then side = flip(side) end
+		return side
+	end
+
 	-- the attack name for a type ("Swing", "Stab", "Overhead", "Underhand")
 	local function resolveAttack(kind)
 		local A = cfg.ATTACKS or {}
-		local side = mouseSide()
-		if not side then side = (lastSide == "Right") and "Left" or "Right" end
-		local other = side == "Right" and "Left" or "Right"
+		local side = pickSide()
+		local other = flip(side)
 		for _, name in ipairs({side .. kind, kind, other .. kind}) do
 			if A[name] then
 				if name:sub(1, #side) == side then lastSide = side elseif name:sub(1, #other) == other then lastSide = other end
@@ -561,16 +574,32 @@ function CombatClient.attach(Tool, weaponConfig)
 		sendAttack("Swing")
 	end))
 
-	-- which action a key means: the player's binds first, then the weapon's KEYS (legacy)
-	local function actionFor(keyCode)
-		local bound = ClientSettings.actionFor(keyCode)
+	-- which action an input means: the player's binds first, then the weapon's KEYS (legacy)
+	local function actionFor(input)
+		local bound = ClientSettings.actionForInput(input)
 		if bound == "Kick" or bound == "Feint" or bound == "Swing" or bound == "Stab" or bound == "Overhead" or bound == "Underhand" then
 			return bound
 		end
-		if bound == nil and keyCode == cfg.KICK_KEY then return "Kick" end
-		local byWeapon = cfg.KEYS[keyCode]
+		if input.UserInputType ~= Enum.UserInputType.Keyboard then return nil end
+		if bound == nil and input.KeyCode == cfg.KICK_KEY then return "Kick" end
+		local byWeapon = cfg.KEYS[input.KeyCode]
 		if bound == nil and byWeapon and cfg.ATTACKS and cfg.ATTACKS[byWeapon] then return "Named:" .. byWeapon end
 		return nil
+	end
+
+	local function handleAction(action)
+		if action == "Kick" then
+			remote:FireServer("Kick")
+		elseif action == "Feint" then
+			remote:FireServer("Feint")
+		elseif action == "Swing" or action == "Stab" or action == "Overhead" or action == "Underhand" then
+			sendAttack(action)
+		elseif action and action:sub(1, 6) == "Named:" then
+			local name = action:sub(7)
+			local char = player.Character
+			if char then char:SetAttribute("LocalAttackName", name) end
+			remote:FireServer("Attack", name)
+		end
 	end
 
 	table.insert(conns, UIS.InputBegan:Connect(function(input, gp)
@@ -578,21 +607,15 @@ function CombatClient.attach(Tool, weaponConfig)
 		if UIS:GetFocusedTextBox() then return end
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			remote:FireServer("BlockStart")
-		elseif input.UserInputType == Enum.UserInputType.Keyboard then
-			local action = actionFor(input.KeyCode)
-			if action == "Kick" then
-				remote:FireServer("Kick")
-			elseif action == "Feint" then
-				remote:FireServer("Feint")
-			elseif action == "Swing" or action == "Stab" or action == "Overhead" or action == "Underhand" then
-				sendAttack(action)
-			elseif action and action:sub(1, 6) == "Named:" then
-				local name = action:sub(7)
-				local char = player.Character
-				if char then char:SetAttribute("LocalAttackName", name) end
-				remote:FireServer("Attack", name)
-			end
+		elseif input.UserInputType == Enum.UserInputType.Keyboard or input.UserInputType == Enum.UserInputType.MouseButton3 then
+			handleAction(actionFor(input))
 		end
+	end))
+	-- scroll-wheel binds (scroll up = stab, down = overhead, if that's how you set it)
+	table.insert(conns, UIS.InputChanged:Connect(function(input, gp)
+		if gp or not equipped or input.UserInputType ~= Enum.UserInputType.MouseWheel then return end
+		if UIS:GetFocusedTextBox() then return end
+		handleAction(actionFor(input))
 	end))
 
 	table.insert(conns, UIS.InputEnded:Connect(function(input)

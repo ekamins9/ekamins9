@@ -913,7 +913,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				if t.Length > 0 then t:AdjustSpeed(math.max(t.Length - t.TimePosition, 0.01) / math.max(a, 0.01)) end
 				task.delay(a, function()
 					if state.token ~= token or npcArm ~= arm or not character then return end
-					if state.attack.windupAnim then
+					if animId(state.attack.windupAnim) then
 						t:Stop(0.05)
 						npc.current = npcPlay(state.attack.anim, Enum.AnimationPriority.Action, (b or 0) + (c or 0), 1)
 					end
@@ -969,6 +969,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	local function headPart() return character and (character:FindFirstChild("Head") or handle()) end
+	-- a windupAnim left as "rbxassetid://0" / "" means "none"
+	local function animId(id) if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then return id end return nil end
 
 	-- stamina back to anyone whose dodge made this swing miss: they dodged
 	-- during the swing, were inside reach (+ a margin) and in front of us
@@ -1058,7 +1060,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		end)
 
 		dprint("attack ->", name, string.format("speed %.2f | windup %.2f release %.2f recovery %.2f", speed, windup, active, recovery))
-		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, info.windupAnim, recovery)
+		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, animId(info.windupAnim), recovery)
 	end
 
 	-- MORPH: swap the attack during the windup (right swing -> stab, overhead -> underhand…)
@@ -1080,7 +1082,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.nextActionTime = state.releaseEnd + recovery
 		setAttr("TurnCapUntil", state.releaseEnd + cfg.TURN_CAP_EXTRA)
 		dprint("MORPH ->", name, string.format("(%.2f windup left)", remaining))
-		tell("Morph", info.anim, speed, remaining, active, recovery, state.token, info.windupAnim)
+		tell("Morph", info.anim, speed, remaining, active, recovery, state.token, animId(info.windupAnim))
 	end
 
 	-- CHAMBERED someone: our windup is cut short and we release now
@@ -1091,7 +1093,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.windupEnd  = math.min(state.windupEnd, now + cfg.CHAMBER_RELEASE)
 		state.releaseEnd = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery
-		tell("Retime", state.windupEnd - now, active, recovery, state.token, state.attack.anim, state.attack.windupAnim ~= nil)
+		tell("Retime", state.windupEnd - now, active, recovery, state.token, state.attack.anim, animId(state.attack.windupAnim) ~= nil)
 	end
 
 	local function doAttack(name)

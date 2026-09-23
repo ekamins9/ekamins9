@@ -573,27 +573,72 @@ local function keyRow(spec, order)
 		for _, r in pairs(keyRefresh) do r() end
 	end)
 end
-for i, spec in ipairs(ClientSettings.KEYS) do keyRow(spec, i) end
+-- multiple-choice rows (attack side mode, default side): click to cycle
+local choiceRefresh = {}
+local function choiceRow(spec, order)
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, -8, 0, 52)
+	row.LayoutOrder = order
+	row.Parent = keyCol
+	local name = label(row, spec.label, 15, FONT_BODY, COL_TEXT)
+	name.Size = UDim2.new(0.55, 0, 0, 30)
+	local hint = label(row, spec.hint or "", 11, FONT_BODY, COL_DIM)
+	hint.Position = UDim2.new(0, 0, 0, 30)
+	hint.Size = UDim2.new(1, 0, 0, 22)
+	hint.TextYAlignment = Enum.TextYAlignment.Top
+	local btn = button(row, "", 14, COL_CARD)
+	btn.AnchorPoint = Vector2.new(1, 0)
+	btn.Position = UDim2.new(1, 0, 0, 0)
+	btn.Size = UDim2.new(0.42, 0, 0, 30)
+	local function refresh() btn.Text = tostring(ClientSettings.get(spec.key)) .. "  ▸" end
+	choiceRefresh[spec.key] = refresh
+	refresh()
+	btn.Activated:Connect(function()
+		local cur = ClientSettings.get(spec.key)
+		local idx = 1
+		for i, o in ipairs(spec.options) do if o == cur then idx = i end end
+		ClientSettings.set(spec.key, spec.options[idx % #spec.options + 1])
+		refresh()
+	end)
+end
+for i, spec in ipairs(ClientSettings.CHOICES) do choiceRow(spec, i) end
+for i, spec in ipairs(ClientSettings.KEYS) do keyRow(spec, 10 + i) end
+local keyHint = label(keyCol, "Binds take keys, middle mouse, or scroll up / down (e.g. scroll up = stab, scroll down = overhead — zoom then leaves the wheel). Press Escape to cancel a rebind.", 11, FONT_BODY, COL_DIM)
+keyHint.Size = UDim2.new(1, -8, 0, 44)
+keyHint.LayoutOrder = 99
+keyHint.TextYAlignment = Enum.TextYAlignment.Top
 
-UserInputService.InputBegan:Connect(function(input, gp)
-	if not listening or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-	local kc = input.KeyCode
-	if kc ~= Enum.KeyCode.Escape and kc ~= Enum.KeyCode.Unknown then
-		-- steal the key from whatever else had it, so two actions never share one
+local function captureBind(input)
+	if not listening then return end
+	local name = ClientSettings.inputName(input)
+	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Escape then name = nil
+	elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Unknown then return end
+	if name then
+		-- steal the bind from whatever else had it, so two actions never share one
 		for _, k in ipairs(ClientSettings.KEYS) do
-			if k.key ~= listening.key and ClientSettings.get("Key_" .. k.key) == kc.Name then
+			if k.key ~= listening.key and ClientSettings.get("Key_" .. k.key) == name then
 				ClientSettings.set("Key_" .. k.key, ClientSettings.get("Key_" .. listening.key))
 			end
 		end
-		ClientSettings.set("Key_" .. listening.key, kc.Name)
+		ClientSettings.set("Key_" .. listening.key, name)
 	end
 	listening = nil
 	for _, r in pairs(keyRefresh) do r() end
+end
+UserInputService.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Keyboard or input.UserInputType == Enum.UserInputType.MouseButton3 then
+		captureBind(input)
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if listening and input.UserInputType == Enum.UserInputType.MouseWheel and input.Position.Z ~= 0 then captureBind(input) end
 end)
 
 local function refreshSettingsUI()
 	for _, r in pairs(sliderRefresh) do r() end
 	for _, r in pairs(keyRefresh) do r() end
+	for _, r in pairs(choiceRefresh) do r() end
 end
 ClientSettings.onChanged(function() refreshSettingsUI() end)
 

@@ -135,21 +135,26 @@ end))
 --  INPUT
 --------------------------------------------------------------------
 table.insert(conns, UIS.InputBegan:Connect(function(input, gp)
-	if gp or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	if gp then return end
+	if input.UserInputType ~= Enum.UserInputType.Keyboard and input.UserInputType ~= Enum.UserInputType.MouseButton3 then return end
 	if UIS:GetFocusedTextBox() then return end
-	local action = ClientSettings.actionFor(input.KeyCode)
+	local action = ClientSettings.actionForInput(input)
 	if action == "Sprint" then sprintHeld = true; sendSprint()
 	elseif action == "Dodge" then tryDodge()
 	elseif action == "Kick" then tryKick() end
 end))
+table.insert(conns, UIS.InputChanged:Connect(function(input, gp)
+	if gp or input.UserInputType ~= Enum.UserInputType.MouseWheel then return end
+	local action = ClientSettings.actionForInput(input)
+	if action == "Dodge" then tryDodge() elseif action == "Kick" then tryKick() end
+end))
 table.insert(conns, UIS.InputEnded:Connect(function(input)
-	if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-	if ClientSettings.actionFor(input.KeyCode) == "Sprint" then sprintHeld = false; sendSprint() end
+	if ClientSettings.actionForInput(input) == "Sprint" then sprintHeld = false; sendSprint() end
 end))
 -- a rebind while the key is down, or losing window focus, must not leave sprint stuck on
 table.insert(conns, UIS.WindowFocusReleased:Connect(function() sprintHeld = false; sendSprint() end))
 table.insert(conns, RunService.Heartbeat:Connect(function()
-	if sprintHeld and not UIS:IsKeyDown(ClientSettings.key("Sprint")) then sprintHeld = false; sendSprint() end
+	if sprintHeld and not ClientSettings.isDown("Sprint") then sprintHeld = false; sendSprint() end
 end))
 
 --------------------------------------------------------------------

@@ -328,7 +328,10 @@ UIS.InputChanged:Connect(function(input)
 		mouseDX = mouseDX + input.Delta.X
 		mouseDY = mouseDY + input.Delta.Y
 	elseif input.UserInputType == Enum.UserInputType.MouseWheel then
-		camDistTarget = math.clamp(camDistTarget - input.Position.Z * ZOOM_STEP, 0, TP_MAX_DIST)
+		-- a wheel bound to an attack in settings no longer zooms
+		if not ClientSettings.wheelBound() then
+			camDistTarget = math.clamp(camDistTarget - input.Position.Z * ZOOM_STEP, 0, TP_MAX_DIST)
+		end
 	end
 end)
 
