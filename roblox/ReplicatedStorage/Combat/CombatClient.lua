@@ -43,8 +43,9 @@ CombatClient.DEFAULTS = {
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
-	FIT_ANIMS     = true,   -- stretch windup / release anims to the phase times (see CombatServer)
-	BLEND         = 0.08,   -- seconds (at speed 1) to cross-fade between clips; divided by the attack speed
+	FIT_ANIMS     = true,   -- stretch the swing clip to the active phase (see CombatServer)
+	BLEND         = 0.08,   -- seconds (at speed 1) to cross-fade clips; divided by the attack speed
+	RECOIL        = 0.18,   -- seconds a blocked / parried swing eases back to idle
 	KICK_KEY = Enum.KeyCode.G,   -- fallback when the settings module is unavailable
 }
 
@@ -262,15 +263,15 @@ function CombatClient.attach(Tool, weaponConfig)
 	end))
 
 	----------------------------------------------------------------
-	--  ANIMATION PLAYBACK — each attack has a release anim (`anim`) and an
-	--  optional `windupAnim`. With FIT_ANIMS both are STRETCHED to the phase
-	--  times the server sends, so what you see winding up IS the windup, and
-	--  a morph / riposte / chamber re-times the picture along with the rules.
+	--  ANIMATION PLAYBACK — one clip per attack: the SWING. The windup is a
+	--  blend: the swing clip fades in, frozen on its first frame (the loaded
+	--  pose), over the windup time — from idle, from a block, from another
+	--  windup (a morph) — then runs over the active phase and eases back out.
+	--  Every transition is a cross-fade sized by the attack's speed.
 	----------------------------------------------------------------
-	local idleTrack, blockTrack
+	local idleTrack, blockTrack, hitTrack
 	local attackCache = {}
 	local currentTrack, currentSpeed = nil, 1
-	local windupTrack = nil
 	local armToken = 0           -- bumps whenever the release timing changes
 
 	local function getAnimator()
@@ -316,73 +317,58 @@ function CombatClient.attach(Tool, weaponConfig)
 		return math.clamp(b, 0.02, math.max(0.02, (phase or 1) * 0.5))
 	end
 
-	-- play `id` so that it lasts `fitTo` seconds (FIT_ANIMS), else at `speed`,
-	-- fading in over `fade` (the outgoing track is faded by the caller, so the
-	-- two blend instead of snapping)
-	local function playFit(id, fitTo, speed, fade)
-		local t = cached(id)
-		if not t then return nil, speed end
-		if t.IsPlaying then t:Stop(0) end
-		t:Play(fade or 0.1)
-		local sp = speed or 1
-		if cfg.FIT_ANIMS ~= false and fitTo and fitTo > 0 and t.Length > 0 then sp = t.Length / fitTo end
-		t:AdjustSpeed(sp)
-		return t, sp
-	end
-
-	-- Windup now, release + sweep when the windup ends (re-armable).
-	-- One clip (no windupId): it is windup + swing, fitted to windup + active.
-	-- Two clips: windupId fits the windup, releaseId fits the active phase.
-	-- Recovery is a hold after the clip ends. skipFrac > 0 = a combo: no
-	-- windup, and the single clip starts at its swing part.
-	local function armSwing(releaseId, speed, windup, active, recovery, token, windupId, skipFrac)
+	-- Windup now, release + sweep when it ends (re-armable). windup = 0 is a
+	-- combo: the next swing fades straight in over a short blend and runs.
+	local function armSwing(releaseId, speed, windup, active, recovery, token)
 		armToken += 1
 		local arm = armToken
 		if windup > 0 then endSweep() end   -- a morph out of the grace window: the blade goes cold again
-		-- outgoing clips fade over the same time the incoming one fades in
-		local fadeW, fadeA = blendFor(speed, windup), blendFor(speed, active)
-		local fadeOut = windup > 0 and fadeW or fadeA
-		if windupTrack then windupTrack:Stop(fadeOut); windupTrack = nil end
-		if currentTrack then currentTrack:Stop(fadeOut); currentTrack = nil end
-		if windupId then
-			if windup > 0 then windupTrack = playFit(windupId, windup, speed, fadeW) end
-		elseif skipFrac and skipFrac > 0 then
-			currentTrack, currentSpeed = playFit(releaseId, active / (1 - skipFrac), speed, fadeA)
-			if currentTrack and currentTrack.Length > 0 then currentTrack.TimePosition = currentTrack.Length * skipFrac end
-		else
-			currentTrack, currentSpeed = playFit(releaseId, windup + active, speed, fadeW)
-		end
+		local fadeA  = blendFor(speed, active)
+		local fadeIn = windup > 0 and windup or fadeA
+		if currentTrack then currentTrack:Stop(fadeIn); currentTrack = nil end
+		local t = cached(releaseId)
 		swingToken = token
-		task.delay(windup, function()
-			if swingToken ~= token or armToken ~= arm or not equipped then return end
-			if windupId then
-				if windupTrack then windupTrack:Stop(fadeA); windupTrack = nil end
-				currentTrack, currentSpeed = playFit(releaseId, active, speed, fadeA)
-			end
+		if not t then return end
+		if t.IsPlaying then t:Stop(0) end
+		t:Play(fadeIn)               -- the fade from wherever we are into the loaded pose IS the windup
+		t.TimePosition = 0
+		t:AdjustSpeed(0)
+		currentTrack, currentSpeed = t, 0
+		local function release()
+			if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end
+			local sp = (cfg.FIT_ANIMS ~= false and t.Length > 0) and t.Length / (active + fadeA) or speed
+			t:AdjustSpeed(sp)
+			currentSpeed = sp
 			beginSweep(token, active)
-		end)
+			-- ease out as the clip ends instead of snapping to idle
+			task.delay(active, function()
+				if currentTrack == t and armToken == arm then t:Stop(fadeA); currentTrack = nil end
+			end)
+		end
+		if windup > 0 then task.delay(windup, release) else release() end
 	end
 
 	-- a clean hit: brief slowdown for weight, then the swing finishes normally
 	local function hitstop(duration)
 		local t, s = currentTrack, currentSpeed
-		if not t then return end
+		if not t or s <= 0 then return end
 		t:AdjustSpeed(0.05)
 		task.delay(duration, function()
 			if currentTrack == t and t.IsPlaying then t:AdjustSpeed(s) end
 		end)
 	end
 
-	-- a block/parry/chamber: the weapon genuinely stops, it does not swing
-	-- through. Hard freeze for the clang, then the track is STOPPED rather
-	-- than resumed — the idle/guard track underneath takes back over.
+	-- a block/parry/chamber: the weapon genuinely stops. Hard freeze for the
+	-- clang, then it eases back to idle over RECOIL instead of swinging through.
 	local function clangStop(duration)
-		local t = currentTrack or windupTrack
+		local t = currentTrack
 		if not t then return end
 		t:AdjustSpeed(0)
 		task.delay(duration, function()
-			if currentTrack == t then t:Stop(); currentTrack = nil end
-			if windupTrack == t then t:Stop(); windupTrack = nil end
+			if currentTrack == t then
+				t:Stop((cfg.RECOIL or 0.18) / math.max(currentSpeed > 0 and currentSpeed or 1, 0.3))
+				currentTrack = nil
+			end
 		end)
 	end
 
@@ -391,19 +377,29 @@ function CombatClient.attach(Tool, weaponConfig)
 		armToken += 1
 		endSweep()
 		-- a feint / cancel eases back to idle rather than snapping
-		local fade = blendFor(currentSpeed, 1)
-		if windupTrack then windupTrack:Stop(fade); windupTrack = nil end
-		if currentTrack then currentTrack:Stop(fade); currentTrack = nil end
+		if currentTrack then currentTrack:Stop(blendFor(1, 1)); currentTrack = nil end
 		-- the kick leg is a procedural pose in CameraRig, not a track: clearing
 		-- its timestamp is what cancels it
 		local char = player.Character
 		if char then char:SetAttribute("LocalKickAt", 0) end
 	end
 
+	-- being hit: blend into the flinch clip from wherever the sword is, then back out
+	local function flinch()
+		if not hitTrack then return end
+		local fade = blendFor(1, 1)
+		if hitTrack.IsPlaying then hitTrack:Stop(0) end
+		hitTrack:Play(fade)
+		if hitTrack.Length > 0 then
+			task.delay(math.max(hitTrack.Length - fade, 0), function() if hitTrack.IsPlaying then hitTrack:Stop(fade) end end)
+		end
+	end
+
 	local function stopAll()
 		stopAttack()
 		if idleTrack  then idleTrack:Stop()  end
 		if blockTrack then blockTrack:Stop() end
+		if hitTrack   then hitTrack:Stop()   end
 		for _, t in pairs(attackCache) do if t then t:Stop() end end
 	end
 
@@ -414,7 +410,7 @@ function CombatClient.attach(Tool, weaponConfig)
 		end
 	end
 
-	table.insert(conns, remote.OnClientEvent:Connect(function(what, a, b, c, d, e, f, g, h, i)
+	table.insert(conns, remote.OnClientEvent:Connect(function(what, a, b, c, d, e, f, g)
 		dprint("recv", what, a, b, c)
 
 		if what == "Setup" then
@@ -422,37 +418,32 @@ function CombatClient.attach(Tool, weaponConfig)
 			stopAll()
 			idleTrack  = loadTrack(a, Enum.AnimationPriority.Idle,   true)
 			blockTrack = loadTrack(b, Enum.AnimationPriority.Action, true)
+			hitTrack   = loadTrack(c, Enum.AnimationPriority.Action2, false)
 			if idleTrack then idleTrack:Play() else dprint("idle track failed to load") end
 
 		elseif what == "PlayAttack" then
-			-- a = release anim, b = speed, c = windup, d = active, e = turn cap, f = token,
-			-- g = windup anim, h = recovery, i = combo skip fraction (0 = normal attack)
+			-- a = swing anim, b = speed, c = windup, d = active, e = turn cap, f = token, g = recovery
 			setLocalTurnCap(e or 0)
-			armSwing(a, b or 1, c or 0, d or 0, h or 0, f, g, i)
+			armSwing(a, b or 1, c or 0, d or 0, g or 0, f)
 
 		elseif what == "Morph" then
-			-- a = release anim, b = speed, c = remaining windup, d = active, e = recovery, f = token, g = windup anim
+			-- a = swing anim, b = speed, c = new windup, d = active, e = recovery, f = token
 			setLocalTurnCap((c or 0) + (d or 0) + 0.1)
-			armSwing(a, b or 1, c or 0, d or 0, e or 0, f, g)
+			armSwing(a, b or 1, c or 0, d or 0, e or 0, f)
 
 		elseif what == "Retime" then
-			-- a = remaining windup, b = active, c = recovery, d = token, e = release anim,
-			-- f = has a separate windup anim  (a chamber cut our windup: release sooner)
-			local token, releaseId, separate = d, e, f
+			-- a = remaining windup, b = active, c = recovery, d = token (chamber: release sooner)
+			local token, t = d, currentTrack
 			armToken += 1
 			local arm = armToken
-			local t = windupTrack or currentTrack
-			if t and t.Length > 0 then
-				t:AdjustSpeed(math.max(t.Length - t.TimePosition, 0.01) / math.max(a or 0.01, 0.01))
-			end
+			if t then t:AdjustWeight(1, math.max(a or 0, 0.01)) end   -- finish the blend-in early
 			task.delay(a or 0, function()
-				if swingToken ~= token or armToken ~= arm or not equipped then return end
-				if separate and windupTrack then
-					local fade = blendFor(currentSpeed, b)
-					windupTrack:Stop(fade); windupTrack = nil
-					currentTrack, currentSpeed = playFit(releaseId, b or 0, 1, fade)
-				end
+				if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end
+				local fadeA = blendFor(1, b)
+				local sp = (t and t.Length > 0) and t.Length / ((b or 0) + fadeA) or 1
+				if t then t:AdjustSpeed(sp); currentSpeed = sp end
 				beginSweep(token, b or 0)
+				task.delay(b or 0, function() if currentTrack == t and armToken == arm then t:Stop(fadeA); currentTrack = nil end end)
 			end)
 
 		elseif what == "PlayKick" then
@@ -491,11 +482,14 @@ function CombatClient.attach(Tool, weaponConfig)
 		elseif what == "Cancel" then
 			stopAttack()
 
+		elseif what == "Flinch" then
+			flinch()
+
 		elseif what == "Block" then
 			if a == true then
-				if blockTrack then blockTrack:Play() end
+				if blockTrack then blockTrack:Play(blendFor(1, 1)) end
 			else
-				if blockTrack then blockTrack:Stop() end
+				if blockTrack then blockTrack:Stop(blendFor(1, 1)) end
 			end
 
 		elseif what == "Cleanup" then

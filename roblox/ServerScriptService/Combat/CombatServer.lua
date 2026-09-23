@@ -226,20 +226,22 @@ CombatServer.DEFAULTS = {
 	-- weapon identity (a weapon MUST provide these)
 	IDLE_ID     = nil,
 	BLOCK_ID    = nil,
-	ATTACKS     = nil,   -- { <Side><Type> = {anim, windupAnim, kind="stab"|"slash", damage, blockCost, staminaCost, speed?} }
+	HIT_ID      = nil,   -- optional flinch clip, played (blended) when a hit interrupts us
+	ATTACKS     = nil,   -- { <Side><Type> = {anim, kind="stab"|"slash", damage, blockCost, staminaCost, speed?, windup?} }
 	                     --   Side = Left|Right, Type = Swing|Stab|Overhead|Underhand. Every attack is sided.
+	                     --   `anim` is the SWING only: its first frame is the loaded pose.
 
-	-- TIMING comes from the clips, not from numbers: windup = the windupAnim's
-	-- length, active = the swing clip's length, each divided by the attack's
-	-- effective speed  =  speed × TYPE_SPEED[type] × SPEED_MULT  (× RIPOSTE_SPEED
-	-- after a parry). Recovery is RECOVERY seconds, divided the same way. Morph,
-	-- feint and chamber windows are fractions of the REAL windup, so they scale
-	-- with the weapon. (Per-attack `windup` / `active` numbers are only a
-	-- fallback for a clip whose length can't be read.)
+	-- TIMING: the windup is a BLEND — the swing clip fades in from wherever the
+	-- body is (idle, a block, another windup…) while frozen on its first frame,
+	-- over WINDUP seconds; that fade IS the wind-up motion, no clip needed. Then
+	-- the clip runs: active = its length. Both, and RECOVERY, divide by
+	--     speed × TYPE_SPEED[type] × SPEED_MULT   (× RIPOSTE_SPEED after a parry)
+	-- so morph / feint / chamber windows are the real windup at this tempo.
 	SPEED_MULT  = 1.0,   -- whole-weapon tempo
 	TYPE_SPEED  = {Swing = 1.0, Stab = 1.0, Overhead = 1.0, Underhand = 1.0},   -- per attack type
+	WINDUP      = 0.25,  -- seconds (at speed 1) of blend into the loaded pose; an attack may set its own `windup`
 	RECOVERY    = 0.15,  -- seconds (at speed 1) of hold after the swing clip ends
-	DEFAULT_WINDUP = 0.1, DEFAULT_ACTIVE = 0.3,   -- clip-length fallbacks
+	DEFAULT_ACTIVE = 0.3,-- swing-clip length fallback when the server can't read the clip
 	INPUT_GRACE = 0.08,  -- a morph / feint that arrives this long after the windup ended still
 	                     --    counts (client→server latency), as long as the blade hit nothing yet
 	REACH       = 8.0,   -- studs from attacker root to a valid hit point
@@ -268,10 +270,8 @@ CombatServer.DEFAULTS = {
 	HEAD_DAMAGE_MULT = 2.0,   -- head hits hurt this much more (no longer an automatic kill)
 	LEG_DAMAGE_MULT  = 0.85,  -- …and legs a little less. An attack may instead give
 	                          --    damage = {head=, body=, legs=} for exact per-region numbers.
-	FIT_ANIMS        = true,  -- stretch each attack's clip(s) to the Config phase times, so a
-	                          --    morph or riposte re-times the swing you see. One clip: it is
-	                          --    windup + swing, fitted to windup + active. Two clips: windupAnim
-	                          --    fits windup, anim fits active. Recovery is a hold either way.
+	FIT_ANIMS        = true,  -- the swing clip is stretched to the active phase (so a riposte or
+	                          --    a slow weapon re-times the picture with the rules)
 	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
 	                          --    already in release finishes (trades are a real choice)
 	MISS_COST_MULT   = 0.75,  -- a swing that touches nothing costs this × staminaCost extra
@@ -281,8 +281,9 @@ CombatServer.DEFAULTS = {
 	MORPH_CUTOFF     = 1.0,   -- no morph past this fraction of the windup (1 = the whole windup)
 	MORPH_WINDUP     = 1.0,   -- a morph plays this × the new attack's FULL windup, at normal speed
 	                          --    (1 = a complete second windup; the morph's cost is the time)
-	BLEND            = 0.08,  -- seconds (at speed 1) to cross-fade between clips: windup→windup on a
-	                          --    morph, windup→swing, swing→swing on a combo. Divided by the speed.
+	BLEND            = 0.08,  -- seconds (at speed 1) to cross-fade clips that aren't a windup: a combo's
+	                          --    swing→swing, a swing ending, a feint back to idle. Divided by the speed.
+	RECOIL           = 0.18,  -- seconds (at speed 1) a blocked / parried / chambered swing eases back to idle
 	CHAMBER          = true,  -- be in WINDUP of the mirror of their attack while theirs is in
 	                          --    its swing (same type, opposite side: their RightOverhead vs
 	                          --    your LeftOverhead; any stab vs any stab), facing them, and
@@ -371,10 +372,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 	task.spawn(function()
 		for name, a in pairs(cfg.ATTACKS) do
-			if usable(name) then
-				CombatServer.clipLength(a.anim)
-				CombatServer.clipLength(a.windupAnim)
-			end
+			if usable(name) then CombatServer.clipLength(a.anim) end
 		end
 	end)
 
@@ -920,47 +918,38 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 	table.insert(conns, RunService.Heartbeat:Connect(npcSweepStep))
 
-	-- the NPC's own windup/release playback (mirrors CombatClient's)
+	-- the NPC's own playback (mirrors CombatClient's): the swing clip fades in
+	-- frozen on its first frame over the windup, then runs over `active`
 	local npcArm = 0
-	-- cross-fade length for a transition at this speed, never more than half the phase
 	local function blendFor(speed, phase)
 		local b = cfg.BLEND / math.max(speed or 1, 0.05)
 		return math.clamp(b, 0.02, math.max(0.02, (phase or 1) * 0.5))
 	end
-	local function npcPlay(id, priority, fitTo, fallbackSpeed, fade)
+	local function npcCached(id)
 		local t = npc.tracks[id]
-		if not t then
-			t = npcTrack(id, priority, false)
+		if t == nil then
+			t = npcTrack(id, Enum.AnimationPriority.Action, false) or false
 			npc.tracks[id] = t
 		end
-		if not t then return nil end
-		if t.IsPlaying then t:Stop(0) end
-		t:Play(fade or 0.1)
-		local sp = fallbackSpeed or 1
-		if cfg.FIT_ANIMS and fitTo and fitTo > 0 and t.Length > 0 then sp = t.Length / fitTo end
-		t:AdjustSpeed(sp)
-		return t
+		return t or nil
 	end
-	local function npcArmRelease(releaseId, speed, windup, active, recovery, token, windupId, skipFrac)
+	local function npcArmRelease(releaseId, speed, windup, active, recovery, token)
 		npcArm += 1
 		local arm = npcArm
-		local fadeW, fadeA = blendFor(speed, windup), blendFor(speed, active)
-		if npc.current then npc.current:Stop(windup > 0 and fadeW or fadeA); npc.current = nil end
-		if windupId then
-			if windup > 0 then npc.current = npcPlay(windupId, Enum.AnimationPriority.Action, windup, speed, fadeW) end
-		elseif skipFrac and skipFrac > 0 then
-			-- combo: the clip's windup part is skipped
-			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active / (1 - skipFrac), speed, fadeA)
-			if npc.current and npc.current.Length > 0 then npc.current.TimePosition = npc.current.Length * skipFrac end
-		else
-			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, windup + active, speed, fadeW)
-		end
-		task.delay(windup, function()
-			if state.token ~= token or npcArm ~= arm or not character then return end
-			if windupId then
-				if npc.current then npc.current:Stop(fadeA) end
-				npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active, speed, fadeA)
-			end
+		local fadeA = blendFor(speed, active)
+		local fadeIn = windup > 0 and windup or fadeA
+		if npc.current then npc.current:Stop(fadeIn); npc.current = nil end
+		local t = npcCached(releaseId)
+		if not t then return end
+		if t.IsPlaying then t:Stop(0) end
+		t:Play(fadeIn)
+		t.TimePosition = 0
+		t:AdjustSpeed(0)              -- hold the loaded pose while it blends in
+		npc.current = t
+		local function release()
+			if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
+			local sp = (cfg.FIT_ANIMS and t.Length > 0) and t.Length / (active + fadeA) or speed
+			t:AdjustSpeed(sp)
 			npcRay.FilterDescendantsInstances = {character}
 			npcOverlap.FilterDescendantsInstances = {character}
 			local last = {}
@@ -970,10 +959,14 @@ function CombatServer.attach(Tool, weaponConfig)
 				last[bl] = pts
 			end
 			npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
-		end)
+			task.delay(active, function()
+				if npc.current == t and npcArm == arm then t:Stop(fadeA); npc.current = nil end
+			end)
+		end
+		if windup > 0 then task.delay(windup, release) else release() end
 	end
 
-	npcTell = function(what, a, b, c, d, e, f, g, h, i)
+	npcTell = function(what, a, b, c, d, e, f, g, h)
 		if what == "Setup" then
 			npcStopAll()
 			npc.tracks = {}
@@ -982,26 +975,24 @@ function CombatServer.attach(Tool, weaponConfig)
 			if npc.idle then npc.idle:Play() end
 
 		elseif what == "PlayAttack" then
-			-- a = release anim, b = speed, c = windup, d = active, e = cap, f = token, g = windup anim, h = recovery, i = combo skip fraction
-			npcArmRelease(a, b or 1, c or 0, d or 0, h or 0, f, g, i)
+			-- a = swing anim, b = speed, c = windup, d = active, e = cap, f = token, g = recovery
+			npcArmRelease(a, b or 1, c or 0, d or 0, g or 0, f)
 
 		elseif what == "Morph" then
-			-- a = release anim, b = speed, c = remaining windup, d = active, e = recovery, f = token, g = windup anim
-			npcArmRelease(a, b or 1, c or 0, d or 0, e or 0, f, g)
+			-- a = swing anim, b = speed, c = new windup, d = active, e = recovery, f = token
+			npcArmRelease(a, b or 1, c or 0, d or 0, e or 0, f)
 
 		elseif what == "Retime" then
 			-- a = remaining windup, b = active, c = recovery, d = token: the windup got cut (chamber)
-			if npc.current and state.attack then
+			local t = npc.current
+			if t and state.attack then
 				npcArm += 1
 				local arm, token = npcArm, d
-				local t = npc.current
-				if t.Length > 0 then t:AdjustSpeed(math.max(t.Length - t.TimePosition, 0.01) / math.max(a, 0.01)) end
-				task.delay(a, function()
-					if state.token ~= token or npcArm ~= arm or not character then return end
-					if animId(state.attack.windupAnim) then
-						t:Stop(0.05)
-						npc.current = npcPlay(state.attack.anim, Enum.AnimationPriority.Action, b or 0, 1)
-					end
+				t:AdjustWeight(1, math.max(a or 0, 0.01))
+				task.delay(a or 0, function()
+					if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
+					local fadeA = blendFor(1, b)
+					t:AdjustSpeed((t.Length > 0) and t.Length / ((b or 0) + fadeA) or 1)
 					npcRay.FilterDescendantsInstances = {character}
 					npcOverlap.FilterDescendantsInstances = {character}
 					local last = {}
@@ -1011,6 +1002,7 @@ function CombatServer.attach(Tool, weaponConfig)
 						last[bl] = pts
 					end
 					npc.sweep = {token = token, endsAt = os.clock() + (b or 0), last = last, reported = {}, pending = {}}
+					task.delay(b or 0, function() if npc.current == t and npcArm == arm then t:Stop(fadeA); npc.current = nil end end)
 				end)
 			end
 
@@ -1018,12 +1010,19 @@ function CombatServer.attach(Tool, weaponConfig)
 			if npc.block then
 				if a == true then npc.block:Play() else npc.block:Stop() end
 			end
-		elseif what == "Blocked" then
-			npc.sweep = nil
-		elseif what == "Parried" or what == "Chambered" or what == "Cancel" then
+		elseif what == "Blocked" or what == "Parried" or what == "Chambered" then
+			-- the blade stops on their guard, then eases back to idle
 			npc.sweep = nil
 			npcArm += 1
-			if npc.current then npc.current:Stop(); npc.current = nil end
+			local t = npc.current
+			if t then
+				t:AdjustSpeed(0)
+				task.delay(cfg.HITSTOP or 0.15, function() if npc.current == t then t:Stop(cfg.RECOIL); npc.current = nil end end)
+			end
+		elseif what == "Cancel" or what == "Flinch" then
+			npc.sweep = nil
+			npcArm += 1
+			if npc.current then npc.current:Stop(blendFor(1, 1)); npc.current = nil end
 		elseif what == "Cleanup" then
 			npcStopAll()
 		end
@@ -1044,7 +1043,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		task.delay(math.max(getTime() - os.clock(), 0), tick)
 	end
 
-	-- a windupAnim left as "rbxassetid://0" / "" means "none"
+	-- an id left as "rbxassetid://0" / "" means "none"
 	local function animId(id) if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then return id end return nil end
 
 	-- speed, windup, active, recovery — from the clips and the speed stack
@@ -1052,7 +1051,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		local _, atype = CombatServer.sideType(name)
 		local speed = (info.speed or 1) * ((cfg.TYPE_SPEED or {})[atype or ""] or 1) * cfg.SPEED_MULT
 		if (attr("FastUntil") or 0) > os.clock() then speed = speed * cfg.RIPOSTE_SPEED end
-		local wl = CombatServer.clipLength(animId(info.windupAnim)) or info.windup or cfg.DEFAULT_WINDUP
+		local wl = info.windup or cfg.WINDUP
 		local al = CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE
 		local rl = info.recovery or cfg.RECOVERY
 		return speed,
@@ -1095,11 +1094,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not info then return end
 		local now = os.clock()
 		local speed, windup, active, recovery = attackTimes(info, name)
-		local skipFrac = 0
-		if combo then
-			skipFrac = windup / (windup + active)   -- how much of the clip is windup
-			windup = 0
-		end
+		if combo then windup = 0 end   -- straight into the next swing
 
 		state.token += 1
 		local token = state.token
@@ -1164,7 +1159,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		end)
 
 		dprint(combo and "combo ->" or "attack ->", name, string.format("speed %.2f | windup %.2f release %.2f recovery %.2f", speed, windup, active, recovery))
-		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, animId(info.windupAnim), recovery, skipFrac)
+		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, recovery)
 	end
 
 	-- MORPH: swap the attack during the windup (right swing -> stab, overhead -> underhand…)
@@ -1191,7 +1186,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.nextActionTime = state.releaseEnd + recovery
 		setAttr("TurnCapUntil", state.releaseEnd + cfg.TURN_CAP_EXTRA)
 		dprint("MORPH ->", name, string.format("(%.2f windup left)", remaining))
-		tell("Morph", info.anim, speed, remaining, active, recovery, state.token, animId(info.windupAnim))
+		tell("Morph", info.anim, speed, remaining, active, recovery, state.token)
 	end
 
 	-- CHAMBERED someone: our windup is cut short and we release now
@@ -1204,7 +1199,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.windupEnd  = math.min(state.windupEnd, now + cfg.CHAMBER_RELEASE)
 		state.releaseEnd = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery
-		tell("Retime", state.windupEnd - now, active, recovery, state.token, state.attack.anim, animId(state.attack.windupAnim) ~= nil)
+		tell("Retime", state.windupEnd - now, active, recovery, state.token)
 	end
 
 	local function doAttack(name)
@@ -1295,14 +1290,18 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- being hit or kicked breaks our own action: mid-swing, mid-kick, or guard
 	local function interruptSelf(reason)
+		local cancelled = false
 		if state.phase ~= "idle" then
 			-- a hit only stops a swing that hasn't committed yet; a kick stops anything
 			local committed = state.phase == "release" or state.phase == "recovery"
 			if not (cfg.FLINCH_ONLY_WINDUP and reason == "hit" and committed) then
 				cancelSwing(reason)
+				cancelled = true
 			end
 		end
 		if attr("Blocking") then doBlockStop() end
+		-- the flinch clip plays whenever we aren't mid-swing (idle, blocking, or just cancelled)
+		if cancelled or state.phase == "idle" then tell("Flinch", reason) end
 	end
 
 	----------------------------------------------------------------
@@ -1410,7 +1409,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			setGuard(on)
 			if not on then char:SetAttribute("BlockStoppedAt", os.clock()) end
 		end)
-		tell("Setup", cfg.IDLE_ID, cfg.BLOCK_ID)
+		tell("Setup", cfg.IDLE_ID, cfg.BLOCK_ID, animId(cfg.HIT_ID))
 	end
 	table.insert(conns, Tool.Equipped:Connect(onEquipped))
 

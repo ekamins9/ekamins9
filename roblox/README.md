@@ -145,30 +145,28 @@ side you get is a setting (⚙ → Keybinds → *Attack side*):
 
 ## Attack animations, timing, morphs and combos
 
-Every attack is `<Side><Type>` (Left/Right × Swing/Stab/Overhead/Underhand) with **two clips**:
-`windupAnim` (idle → loaded pose) and `anim` (the swing). **Timing comes from the clips**, not
-from numbers: the windup phase *is* the windupAnim's length and the active phase the swing
-clip's length, each divided by the attack's effective speed
+Every attack is `<Side><Type>` (Left/Right × Swing/Stab/Overhead/Underhand) with **one clip**:
+`anim`, the swing. Its first frame is the loaded pose. **The windup is a blend**: the clip fades
+in frozen on that first frame over `WINDUP` seconds — from idle, from a block, from another
+windup on a morph — and that fade *is* the wind-up motion. No windup clips to make. Then the
+clip runs: the active phase is its length (the server reads it with
+`KeyframeSequenceProvider`, so a client can't lie). Windup, active and `RECOVERY` all divide by
 
     speed  ×  TYPE_SPEED[type]  ×  SPEED_MULT      (× RIPOSTE_SPEED after a parry)
 
-`RECOVERY` (seconds at speed 1, divided the same way) is a hold after the swing. The server
-reads clip lengths itself (`KeyframeSequenceProvider`, cached per id) so a client can't lie
-about its windup; a clip it can't read falls back to `DEFAULT_WINDUP` / `DEFAULT_ACTIVE`. Morph,
-feint and chamber windows are fractions of the **real** windup, so they scale with the weapon:
-a greatsword at `SPEED_MULT 0.4` has 2.5× the window of the same clips at 1.0. `INPUT_GRACE`
-(0.08 s) lets a morph/feint that arrives just after the windup ended still count, as long as
-the blade hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selected.
+so morph / feint / chamber windows are the **real** windup at that weapon's tempo. `INPUT_GRACE`
+(0.08 s) lets a morph/feint that arrives just after the windup ended still count if the blade
+hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selected.
 
-- **Morph** — a different attack pressed during the **windup**: the new attack's wind-up plays
-  **in full, at its normal speed** (`MORPH_WINDUP` × its windup — the morph's cost is that extra
-  time), then its swing.
-- **Blending** — every clip change (windup→windup on a morph, windup→swing, swing→swing on a
-  combo, a feint back to idle) cross-fades over `BLEND / speed` seconds (0.08 at speed 1, so a
-  slow weapon blends slower), capped at half the phase.
-- **Combo** — a different attack pressed during the **swing** (active): when this swing ends,
-  the next attack goes **straight into its swing** — no second wind-up, no recovery between.
-- Same attack twice is neither (denied).
+- **Morph** — a different attack pressed during the **windup**: the current loaded pose blends
+  into the new one over a full `WINDUP` at normal speed (the morph's cost is that time).
+- **Combo** — a different attack pressed during the **swing**: when it ends, the next swing
+  fades straight in over `BLEND / speed` — no wind-up, no recovery between.
+- **Blocked / parried / chambered** — the blade freezes for the clang, then eases back to idle
+  over `RECOIL` instead of swinging through.
+- **Hit** — when a hit interrupts you (or lands while you're idle / blocking) the optional
+  `HIT_ID` flinch clip blends in from wherever the sword is and back out.
+- **Feint** — eases back to idle over a blend. Same attack twice is denied.
 
 ## Combat rules 2 (the fencing layer)
 

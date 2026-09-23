@@ -11,12 +11,14 @@ return {
 	Description = "A farmer's tool with a long reach and a nasty point. Slow, two-handed, and it will go straight through a face.",
 
 	-- animations
+	HIT_ID   = "rbxassetid://0",   -- optional flinch clip when a hit interrupts you (blended in and out)
 	IDLE_ID  = "rbxassetid://135659407369438",
 	BLOCK_ID = "rbxassetid://130536914016941",
 
 	-- feel
 	SPEED_MULT = 0.5,   -- whole-weapon tempo (every phase of every attack divides by it)
 	TYPE_SPEED = {Swing = 1.0, Stab = 1.15, Overhead = 0.9, Underhand = 1.0},   -- per attack type, on top of SPEED_MULT
+	WINDUP     = 0.25,  -- seconds (at speed 1) of blend into the loaded pose — the wind-up
 	RECOVERY   = 0.15,  -- seconds (at speed 1) of hold after the swing clip ends
 	REACH      = 9.0,   -- studs from attacker root to a valid hit point
 	TWO_HANDED = true,  -- losing either arm drops it
@@ -41,26 +43,26 @@ return {
 	ClunkMult = 1.0,
 
 	-- ATTACKS: one entry per <Side><Type> — Swing / Stab / Overhead / Underhand,
-	-- Left and Right. Every attack has TWO clips: `windupAnim` (idle → loaded
-	-- pose) and `anim` (the swing). TIMING COMES FROM THE CLIPS: the windup phase
-	-- is the windupAnim's length and the active phase the swing clip's length,
-	-- each divided by the attack's effective speed
+	-- Left and Right. ONE clip each: `anim` is the SWING; its first frame is the
+	-- loaded pose. The windup is a BLEND: the clip fades in frozen on that first
+	-- frame over WINDUP seconds (from idle, from a block, from another windup on
+	-- a morph) — that fade is the wind-up motion. Then it runs: active = its
+	-- length. Windup, active and RECOVERY all divide by
 	--     speed  ×  TYPE_SPEED[type]  ×  SPEED_MULT     (× RIPOSTE_SPEED after a parry)
-	-- so morph / feint / chamber windows are the real windup at this weapon's
-	-- tempo. RECOVERY is the hold after the swing (seconds at speed 1). An attack
-	-- whose `anim` is still rbxassetid://0 can't be selected yet.
+	-- so morph / feint / chamber windows are the real windup at this tempo.
+	-- An attack whose `anim` is still rbxassetid://0 can't be selected yet.
 	--   damage   one number (× HEAD_DAMAGE_MULT / LEG_DAMAGE_MULT by region) or
 	--            {head = 40, body = 20, legs = 14} for exact per-region numbers
 	--   kind     "stab" (lethal face hit skewers) | "slash" (lethal hit severs)
-	--   speed    optional per-attack multiplier (default 1)
+	--   speed    optional per-attack multiplier (default 1);  windup  optional override
 	ATTACKS = {
-		LeftSwing      = {anim="rbxassetid://133334061889126", windupAnim="rbxassetid://82159833969249", kind="slash", damage=15, blockCost=18, staminaCost=8},
-		RightSwing     = {anim="rbxassetid://73820534240915", windupAnim="rbxassetid://98861449576171", kind="slash", damage=15, blockCost=18, staminaCost=8},
-		LeftStab       = {anim="rbxassetid://94684673453479", windupAnim="rbxassetid://83482986790732", kind="stab", damage=18, blockCost=18, staminaCost=8},
-		RightStab      = {anim="rbxassetid://108978202248647", windupAnim="rbxassetid://107986596699833", kind="stab", damage=18, blockCost=18, staminaCost=8},
-		LeftOverhead   = {anim="rbxassetid://127511139053596", windupAnim="rbxassetid://82372263541812", kind="slash", damage=15, blockCost=18, staminaCost=8},
-		RightOverhead  = {anim="rbxassetid://81289899270401", windupAnim="rbxassetid://73513400956855", kind="slash", damage=15, blockCost=18, staminaCost=8},
-		LeftUnderhand  = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=15, blockCost=18, staminaCost=8},
-		RightUnderhand = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=15, blockCost=18, staminaCost=8},
+		LeftSwing      = {anim="rbxassetid://133334061889126", kind="slash", damage=15, blockCost=18, staminaCost=8},
+		RightSwing     = {anim="rbxassetid://73820534240915", kind="slash", damage=15, blockCost=18, staminaCost=8},
+		LeftStab       = {anim="rbxassetid://94684673453479", kind="stab", damage=18, blockCost=18, staminaCost=8},
+		RightStab      = {anim="rbxassetid://108978202248647", kind="stab", damage=18, blockCost=18, staminaCost=8},
+		LeftOverhead   = {anim="rbxassetid://127511139053596", kind="slash", damage=15, blockCost=18, staminaCost=8},
+		RightOverhead  = {anim="rbxassetid://81289899270401", kind="slash", damage=15, blockCost=18, staminaCost=8},
+		LeftUnderhand  = {anim="rbxassetid://0", kind="slash", damage=15, blockCost=18, staminaCost=8},
+		RightUnderhand = {anim="rbxassetid://0", kind="slash", damage=15, blockCost=18, staminaCost=8},
 	},
 }
