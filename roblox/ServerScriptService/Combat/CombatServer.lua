@@ -278,6 +278,8 @@ CombatServer.DEFAULTS = {
 	HIT_REFUND       = 4,     -- …and a clean hit gives this much back
 	MORPH_COST       = 10,    -- switch attack mid-windup (right swing -> stab…): stamina
 	MORPHS_PER_SWING = 1,
+	MORPH_NO_MIRROR  = true,  -- can't morph into the mirror of the same attack (RightSwing -> LeftSwing):
+	                          --    the blade would have to cross the whole body
 	MORPH_CUTOFF     = 1.0,   -- no morph past this fraction of the windup (1 = the whole windup)
 	MORPH_WINDUP     = 1.0,   -- a morph plays this × the new attack's FULL windup, at normal speed
 	                          --    (1 = a complete second windup; the morph's cost is the time)
@@ -1167,6 +1169,11 @@ function CombatServer.attach(Tool, weaponConfig)
 		local info = cfg.ATTACKS[name]
 		if not info then return end
 		if name == state.attackName then dprint("morph denied: same attack"); return end
+		if cfg.MORPH_NO_MIRROR then
+			local fs, ft = CombatServer.sideType(state.attackName)
+			local ts, tt = CombatServer.sideType(name)
+			if ft == tt and fs and ts and fs ~= ts then dprint("morph denied: mirror of the same attack"); return end
+		end
 		local now = os.clock()
 		if state.morphs >= cfg.MORPHS_PER_SWING then dprint("morph denied: already morphed"); return end
 		local span = state.windupEnd - state.windupStart
