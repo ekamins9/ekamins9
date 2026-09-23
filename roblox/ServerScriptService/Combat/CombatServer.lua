@@ -280,6 +280,7 @@ CombatServer.DEFAULTS = {
 	MORPHS_PER_SWING = 1,
 	MORPH_NO_MIRROR  = true,  -- can't morph into the mirror of the same attack (RightSwing -> LeftSwing):
 	                          --    the blade would have to cross the whole body
+	MORPH_FORBID     = {Overhead = "Underhand", Underhand = "Overhead"},   -- type pairs too far apart to morph between
 	MORPH_CUTOFF     = 1.0,   -- no morph past this fraction of the windup (1 = the whole windup)
 	MORPH_WINDUP     = 1.0,   -- a morph plays this × the new attack's FULL windup, at normal speed
 	                          --    (1 = a complete second windup; the morph's cost is the time)
@@ -1173,6 +1174,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			local fs, ft = CombatServer.sideType(state.attackName)
 			local ts, tt = CombatServer.sideType(name)
 			if ft == tt and fs and ts and fs ~= ts then dprint("morph denied: mirror of the same attack"); return end
+		end
+		do
+			local _, ft = CombatServer.sideType(state.attackName)
+			local _, tt = CombatServer.sideType(name)
+			if ft and (cfg.MORPH_FORBID or {})[ft] == tt then dprint("morph denied:", ft, "->", tt, "is too far"); return end
 		end
 		local now = os.clock()
 		if state.morphs >= cfg.MORPHS_PER_SWING then dprint("morph denied: already morphed"); return end

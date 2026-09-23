@@ -160,7 +160,8 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 
 - **Morph** — a different attack pressed during the **windup**: the current loaded pose blends
   into the new one over a full `WINDUP` at normal speed (the morph's cost is that time). Not into
-  the mirror of the same attack (RightSwing → LeftSwing) — too far (`MORPH_NO_MIRROR`).
+  the mirror of the same attack (RightSwing → LeftSwing), nor between overhead and underhand —
+  too far (`MORPH_NO_MIRROR`, `MORPH_FORBID`).
 - **Combo** — a different attack pressed during the **swing**: when it ends, the next swing
   fades straight in over `BLEND / speed` — no wind-up, no recovery between.
 - **Blocked / parried / chambered** — the blade freezes for the clang, then eases back to idle
