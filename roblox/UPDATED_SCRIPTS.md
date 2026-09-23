@@ -2,15 +2,12 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** animation fitting matches your clips (one clip = wind-up + swing, fitted to
-`windup + active`; recovery is a hold), and combos skip the windup — the next attack goes
-straight into its swing part when the current swing ends.
+**Last change:** chamber rule = mirror attack (same type, opposite side; any stab vs any stab)
+while you're in windup and they're in their swing; a chamber can be morphed.
 
 ## Updated files (replace the whole script)
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | Combo = `startAttack(name, true)`: windup 0, clip skip fraction sent to the client; NPC playback matches |
-| [ReplicatedStorage/Combat/CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | `ReplicatedStorage` → `Combat` → `CombatClient` | ModuleScript | Clip fitted to windup+active (or windup / active for two clips); combo starts the clip at its swing part |
-| [Tools/Greatsword/Config.lua](Tools/Greatsword/Config.lua) · [Pitchfork](Tools/Pitchfork/Config.lua) · [Hammer](Tools/Hammer/Config.lua) · [Shortsword](Tools/Shortsword/Config.lua) | each Tool → `Config` | ModuleScript | Comment block only — keep your own numbers, no need to re-paste |
-| [README.md](README.md) | not a Studio object | — | Animations / morph / combo section |
+| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `chamberMatch` (side/type parse), `CHAMBER_RELEASE` 0.2, chamber-morph grace, `CHAMBER_MORPH_FREE` |
+| [README.md](README.md) | not a Studio object | — | Chamber rule |

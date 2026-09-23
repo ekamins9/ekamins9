@@ -135,6 +135,24 @@ function CombatServer.eachTarget(character, fn)
 	end
 end
 
+-- "RightOverhead" -> "Right", "Overhead";  "Stab" -> nil, "Stab"
+function CombatServer.sideType(name)
+	if type(name) ~= "string" then return nil, nil end
+	local side = name:match("^(Left)") or name:match("^(Right)")
+	return side, side and name:sub(#side + 1) or name
+end
+
+-- does `mine` (in windup) chamber `theirs` (in its swing)? Same type, opposite
+-- side; an unsided attack matches either side; stabs chamber stabs regardless.
+function CombatServer.chamberMatch(theirs, theirKind, mine, myKind)
+	if theirKind == "stab" or myKind == "stab" then return theirKind == "stab" and myKind == "stab" end
+	local ts, tt = CombatServer.sideType(theirs)
+	local ms, mt = CombatServer.sideType(mine)
+	if not tt or not mt or tt ~= mt then return false end
+	if ts and ms then return ts ~= ms end
+	return true
+end
+
 -- The kick's landing: everyone in range and in the cone. hooks = {sfx, tell, dprint}
 -- (a weapon supplies its sounds; an unarmed kick uses the defaults)
 function CombatServer.resolveKick(character, cfg, hooks)
@@ -230,11 +248,15 @@ CombatServer.DEFAULTS = {
 	MORPHS_PER_SWING = 1,
 	MORPH_CUTOFF     = 0.7,   -- no morph past this fraction of the windup
 	MORPH_MIN_WINDUP = 0.5,   -- the new attack keeps at least this × its own windup
-	CHAMBER          = true,  -- start the SAME kind of attack (stab vs strike) while theirs is
-	CHAMBER_WINDOW   = 0.45,  --    coming, facing them, within this of your windup start: their
-	CHAMBER_STUN     = 0.5,   --    swing dies (attacker stunned this long), yours releases at once
-	CHAMBER_COST_MULT= 0.15,  --    defender pays this × the attack's blockCost
-	CHAMBER_RELEASE  = 0.08,  --    …and their windup is cut to this
+	CHAMBER          = true,  -- be in WINDUP of the mirror of their attack while theirs is in
+	                          --    its swing (same type, opposite side: their RightOverhead vs
+	                          --    your LeftOverhead; any stab vs any stab), facing them, and
+	                          --    their swing dies while yours goes on
+	CHAMBER_WINDOW   = 0.6,   --    your windup must have started within this of the contact
+	CHAMBER_STUN     = 0.5,   --    the attacker is stunned this long
+	CHAMBER_COST_MULT= 0.15,  --    you pay this × the attack's blockCost
+	CHAMBER_RELEASE  = 0.2,   --    your windup is cut to this — long enough to morph out of it
+	CHAMBER_MORPH_FREE = true,--    a chamber resets your morph count: you can morph the chamber
 	FEINT_ANYTIME    = true,  -- the feint key cancels a windup (no block needed)
 	DECAPITATE       = true,  -- lethal slash to the head takes it off (death cam rides it)
 	DISMEMBER_ON_KILL= true,  -- lethal slash to an arm/leg takes that limb off
@@ -326,6 +348,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		windupStart = 0, windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0, nextBlockTime = 0,
 		cycleIndex = 0, lastBlockStart = -1e9,
 		morphs = 0, landed = false,         -- per swing: morphs used; touched anything (no miss penalty)
+		chambered = false,                  -- this windup just chambered someone (morph allowed past the cutoff)
 	}
 
 	----------------------------------------------------------------
@@ -629,7 +652,8 @@ function CombatServer.attach(Tool, weaponConfig)
 			local ttool = target:FindFirstChildOfClass("Tool")
 			local tctrl = ttool and CombatServer.controllers[ttool]
 			local snap  = tctrl and tctrl.snapshot and tctrl.snapshot()
-			if snap and snap.phase == "windup" and snap.kind ~= nil and snap.kind == info.kind
+			if snap and snap.phase == "windup"
+				and CombatServer.chamberMatch(state.attackName, info.kind, snap.name, snap.kind)
 				and now - snap.windupStart <= cfg.CHAMBER_WINDOW then
 				markCombat(character)
 				markCombat(target)
@@ -1018,7 +1042,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.windupEnd   = now + windup
 		state.releaseEnd  = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery
-		state.morphs, state.landed = 0, false
+		state.morphs, state.landed, state.chambered = 0, false, false
 		spend(info.staminaCost or 0)
 		CombatServer.dropProtection(character)
 
@@ -1084,13 +1108,15 @@ function CombatServer.attach(Tool, weaponConfig)
 		local now = os.clock()
 		if state.morphs >= cfg.MORPHS_PER_SWING then dprint("morph denied: already morphed"); return end
 		local span = state.windupEnd - state.windupStart
-		if span > 0 and (now - state.windupStart) / span > cfg.MORPH_CUTOFF then dprint("morph denied: too late in the windup"); return end
+		-- a windup that just chambered may morph however late it is (chamber-morph)
+		if not state.chambered and span > 0 and (now - state.windupStart) / span > cfg.MORPH_CUTOFF then dprint("morph denied: too late in the windup"); return end
 		if stamina() < cfg.MORPH_COST then dprint("morph denied: stamina"); return end
 		spend(cfg.MORPH_COST)
 		local speed, windup, active, recovery = attackTimes(info)
 		local remaining = math.max(state.windupEnd - now, windup * cfg.MORPH_MIN_WINDUP)
 		state.attack, state.attackName = info, name
 		state.morphs += 1
+		state.chambered = false
 		state.windupEnd  = now + remaining
 		state.releaseEnd = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery
@@ -1104,6 +1130,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		if state.phase ~= "windup" or not state.attack then return end
 		local now = os.clock()
 		local _, _, active, recovery = attackTimes(state.attack)
+		state.chambered = true
+		if cfg.CHAMBER_MORPH_FREE then state.morphs = 0 end
 		state.windupEnd  = math.min(state.windupEnd, now + cfg.CHAMBER_RELEASE)
 		state.releaseEnd = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery

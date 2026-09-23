@@ -166,9 +166,13 @@ Attack names: `LeftSwing`, `RightStab`, `LeftOverhead`, `RightUnderhand`… or p
 - **Morph**: press a different attack during your windup (right swing → stab…) to switch to it.
   `MORPH_COST` stamina, `MORPHS_PER_SWING` per swing, not past `MORPH_CUTOFF` of the windup; the
   new attack keeps at least `MORPH_MIN_WINDUP` × its own windup. The windup animation swaps too.
-- **Chamber**: start the same *kind* of attack (stab vs strike) while theirs is coming, facing
-  them, within `CHAMBER_WINDOW` of your windup start — their swing dies (`CHAMBER_STUN` on them),
-  yours releases at once. Sparks + the white edge flash mean you got it.
+- **Chamber**: be in the **windup of the mirror of their attack** while theirs is in its swing —
+  same type, opposite side (their `RightOverhead` → your `LeftOverhead`, their `LeftSwing` →
+  your `RightSwing`); any stab chambers any stab; an unsided attack matches either side. Facing
+  them, windup started within `CHAMBER_WINDOW`. Their swing dies (`CHAMBER_STUN` on them), your
+  windup is cut to `CHAMBER_RELEASE` (0.2 s) — and you may **morph the chamber** into anything
+  in that time, whatever the cutoff (`CHAMBER_MORPH_FREE` also resets your morph count). Sparks
+  + the white edge flash mean you got it.
 - **Flinch only in windup** (`FLINCH_ONLY_WINDUP`): a hit stops a swing that hasn't committed;
   one already in release finishes. Trading is a choice now. Kicks still stop anything.
 - **Stamina**: a swing that touches nothing costs `MISS_COST_MULT` × its cost extra; a clean hit
