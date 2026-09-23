@@ -111,10 +111,10 @@ Rules the sets play by:
 
 ## Making a new weapon
 
-Duplicate the Pitchfork tool's three scripts into the new Tool and edit **only `Config`**:
-animations, `ATTACKS` (each with `kind = "slash"` or `"stab"`), `CYCLE_ORDER`, `REACH`,
-`SPEED_MULT`, `TWO_HANDED`, its weight (`SpeedMult` / `ClunkMult`, 1 = no effect) and
-`SOUNDS`. Any key from `CombatServer.DEFAULTS` or `CombatClient.DEFAULTS` can be overridden
+Duplicate any weapon's three scripts into the new Tool and edit **only `Config`**:
+animations, `ATTACKS` (sided, each with `kind = "slash"` or `"stab"`), `REACH`, `SPEED_MULT`,
+`TYPE_SPEED`, `RECOVERY`, `TWO_HANDED`, `SECONDARY`, its weight (`SpeedMult` / `ClunkMult`,
+1 = no effect) and `SOUNDS`. Any key from `CombatServer.DEFAULTS` or `CombatClient.DEFAULTS` can be overridden
 there too (e.g. `PARRY_WINDOW`, `HEAD_DAMAGE_MULT`, `KEYS`, `TRAIL_COLOR`).
 
 The Tool needs a box `Part` named `Hitbox` whose longest axis runs along the blade.
@@ -143,23 +143,28 @@ side you get is a setting (⚙ → Keybinds → *Attack side*):
 - **Mouse**: the way your mouse was moving when you pressed. Still mouse = alternate. The
   Opposite-side key flips whatever the flick gave you.
 
-## Attack animations, morphs and combos
+## Attack animations, timing, morphs and combos
 
-`anim` is **one clip of wind-up + swing** (0.1 s + 0.3 s in every current weapon) and
-`FIT_ANIMS` stretches it to `windup + active`, so the clip's wind-up part *is* the windup
-phase at whatever tempo the weapon runs. Recovery is a hold after the clip ends. Optional
-two-clip form: `windupAnim` (idle → loaded pose) fits `windup`, `anim` (swing only) fits
-`active`. Every phase time divides by `speed × SPEED_MULT`, so tune a weapon's overall tempo
-with `SPEED_MULT` and a single attack's with its `speed`.
+Every attack is `<Side><Type>` (Left/Right × Swing/Stab/Overhead/Underhand) with **two clips**:
+`windupAnim` (idle → loaded pose) and `anim` (the swing). **Timing comes from the clips**, not
+from numbers: the windup phase *is* the windupAnim's length and the active phase the swing
+clip's length, each divided by the attack's effective speed
+
+    speed  ×  TYPE_SPEED[type]  ×  SPEED_MULT      (× RIPOSTE_SPEED after a parry)
+
+`RECOVERY` (seconds at speed 1, divided the same way) is a hold after the swing. The server
+reads clip lengths itself (`KeyframeSequenceProvider`, cached per id) so a client can't lie
+about its windup; a clip it can't read falls back to `DEFAULT_WINDUP` / `DEFAULT_ACTIVE`. Morph,
+feint and chamber windows are fractions of the **real** windup, so they scale with the weapon:
+a greatsword at `SPEED_MULT 0.4` has 2.5× the window of the same clips at 1.0. `INPUT_GRACE`
+(0.08 s) lets a morph/feint that arrives just after the windup ended still count, as long as
+the blade hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selected.
 
 - **Morph** — a different attack pressed during the **windup**: the new attack's wind-up
   plays over whatever windup is left, then its swing.
 - **Combo** — a different attack pressed during the **swing** (active): when this swing ends,
   the next attack goes **straight into its swing** — no second wind-up, no recovery between.
 - Same attack twice is neither (denied).
-
-Attack names: `LeftSwing`, `RightStab`, `LeftOverhead`, `RightUnderhand`… or plain `Stab` /
-`Overhead` for an unsided one; a sided version wins over the plain one once it exists.
 
 ## Combat rules 2 (the fencing layer)
 

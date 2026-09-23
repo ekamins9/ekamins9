@@ -3,8 +3,7 @@
      Only what makes this weapon different goes here; everything else comes
      from CombatServer.DEFAULTS / CombatClient.DEFAULTS and can be overridden
      by adding the key here (e.g. PARRY_WINDOW = 0.5 for a parry-friendly
-     weapon, or KEYS = {...} for a different keymap). Both the server and
-     client read this same module. ]]
+     weapon). Both the server and client read this same module. ]]
 
 return {
 	-- shown on the loadout menu
@@ -16,10 +15,12 @@ return {
 	BLOCK_ID = "rbxassetid://72812411957933",
 
 	-- feel
-	SPEED_MULT = 0.4,   -- whole-weapon tempo; scales windup/release/recovery of every attack
-	REACH      = 9.0,   -- studs from attacker root to a valid hit point (long weapon)
+	SPEED_MULT = 0.4,   -- whole-weapon tempo (every phase of every attack divides by it)
+	TYPE_SPEED = {Swing = 1.0, Stab = 1.0, Overhead = 1.0, Underhand = 1.0},   -- per attack type, on top of SPEED_MULT
+	RECOVERY   = 0.15,  -- seconds (at speed 1) of hold after the swing clip ends
+	REACH      = 9.0,   -- studs from attacker root to a valid hit point
 	TWO_HANDED = true,  -- losing either arm drops it
-	SECONDARY  = false, -- true = can also be carried in the SECONDARY slot (a greatsword is primary-only)
+	SECONDARY  = false, -- true = can also be carried in the SECONDARY slot
 
 	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS).
 	-- Never put "rbxassetid://0" here — that overrides a default with silence.
@@ -36,41 +37,30 @@ return {
 	-- weight: published as SpeedMult_Weapon / ClunkMult_Weapon while equipped
 	-- and composed with armor etc. (1 = no effect). A heavier weapon = lower
 	-- SpeedMult, higher ClunkMult.
-	SpeedMult = 1.0,
-	ClunkMult = 1.0,
+	SpeedMult = 1.1,
+	ClunkMult = 1.1,
 
-	-- ATTACK NAMES: <Side><Type> — LeftSwing / RightSwing / LeftStab / RightStab /
-	-- LeftOverhead / RightOverhead / LeftUnderhand / RightUnderhand — or just the
-	-- type (Stab, Overhead) when it has no sides. Swing / Stab / Overhead / Underhand
-	-- are the four inputs; the side comes from the mouse flick or the modifier key.
-	--
-	-- ANIMATIONS: `anim` is ONE clip of windup + swing (yours: 0.1 s wind-up then
-	-- 0.3 s swing) and is stretched to `windup + active`, so its wind-up part IS
-	-- the windup phase. Recovery is a hold after it ends. Optional two-clip form:
-	--   windupAnim  idle → "loaded" pose, stretched to `windup`
-	--   anim        the swing only, stretched to `active`
-	-- Morph (new attack during windup): the new clip's wind-up plays over the
-	-- windup that's left. Combo (new attack during the swing): once this swing
-	-- ends the next clip starts at its swing part — no second wind-up.
-	--
-	--   damage      one number (× HEAD_DAMAGE_MULT / LEG_DAMAGE_MULT by region)
-	--               or {head = 40, body = 20, legs = 14} for exact per-region numbers
-	--   kind        "stab" (lethal face hit skewers) | "slash" (lethal hit severs)
-	-- phase times are seconds at speed 1.0; all three divide by (speed * SPEED_MULT)
+	-- ATTACKS: one entry per <Side><Type> — Swing / Stab / Overhead / Underhand,
+	-- Left and Right. Every attack has TWO clips: `windupAnim` (idle → loaded
+	-- pose) and `anim` (the swing). TIMING COMES FROM THE CLIPS: the windup phase
+	-- is the windupAnim's length and the active phase the swing clip's length,
+	-- each divided by the attack's effective speed
+	--     speed  ×  TYPE_SPEED[type]  ×  SPEED_MULT     (× RIPOSTE_SPEED after a parry)
+	-- so morph / feint / chamber windows are the real windup at this weapon's
+	-- tempo. RECOVERY is the hold after the swing (seconds at speed 1). An attack
+	-- whose `anim` is still rbxassetid://0 can't be selected yet.
+	--   damage   one number (× HEAD_DAMAGE_MULT / LEG_DAMAGE_MULT by region) or
+	--            {head = 40, body = 20, legs = 14} for exact per-region numbers
+	--   kind     "stab" (lethal face hit skewers) | "slash" (lethal hit severs)
+	--   speed    optional per-attack multiplier (default 1)
 	ATTACKS = {
-		-- the four you have (sides for the swing; the stab and overhead resolve without one)
-		Stab       = {anim="rbxassetid://108978202248647", windupAnim=nil, kind="stab",  damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
-		LeftSwing  = {anim="rbxassetid://89557792743992",  windupAnim=nil, kind="slash", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
-		RightSwing = {anim="rbxassetid://113017879607829", windupAnim=nil, kind="slash", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
-		Overhead   = {anim="rbxassetid://125963745291088", windupAnim=nil, kind="slash", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
-		-- the sided set: uncomment and fill as you make the animations. Once a
-		-- sided version exists it wins over the plain one (RightStab beats Stab).
-		-- LeftStab       = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="stab", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
-		-- RightStab      = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="stab", damage=30, windup=0.14, active=0.16, recovery=0.15, blockCost=20, staminaCost=8, speed=1.0},
-		-- LeftOverhead   = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=34, windup=0.18, active=0.16, recovery=0.18, blockCost=26, staminaCost=10, speed=0.9},
-		-- RightOverhead  = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=34, windup=0.18, active=0.16, recovery=0.18, blockCost=26, staminaCost=10, speed=0.9},
-		-- LeftUnderhand  = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=26, windup=0.13, active=0.16, recovery=0.15, blockCost=18, staminaCost=8, speed=1.1},
-		-- RightUnderhand = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=26, windup=0.13, active=0.16, recovery=0.15, blockCost=18, staminaCost=8, speed=1.1},
+		LeftSwing      = {anim="rbxassetid://133334061889126", windupAnim="rbxassetid://82159833969249", kind="slash", damage=30, blockCost=20, staminaCost=10},
+		RightSwing     = {anim="rbxassetid://73820534240915", windupAnim="rbxassetid://98861449576171", kind="slash", damage=30, blockCost=20, staminaCost=10},
+		LeftStab       = {anim="rbxassetid://94684673453479", windupAnim="rbxassetid://83482986790732", kind="stab", damage=30, blockCost=20, staminaCost=10},
+		RightStab      = {anim="rbxassetid://108978202248647", windupAnim="rbxassetid://107986596699833", kind="stab", damage=30, blockCost=20, staminaCost=10},
+		LeftOverhead   = {anim="rbxassetid://127511139053596", windupAnim="rbxassetid://82372263541812", kind="slash", damage=30, blockCost=20, staminaCost=10},
+		RightOverhead  = {anim="rbxassetid://81289899270401", windupAnim="rbxassetid://73513400956855", kind="slash", damage=30, blockCost=20, staminaCost=10},
+		LeftUnderhand  = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=30, blockCost=20, staminaCost=10},
+		RightUnderhand = {anim="rbxassetid://0", windupAnim="rbxassetid://0", kind="slash", damage=30, blockCost=20, staminaCost=10},
 	},
-	CYCLE_ORDER = {"Stab", "LeftSwing", "RightSwing", "Overhead"},   -- only used by weapons with no *Swing attacks
 }

@@ -44,10 +44,6 @@ CombatClient.DEFAULTS = {
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
 	FIT_ANIMS     = true,   -- stretch windup / release anims to the phase times (see CombatServer)
-	-- Legacy direct binds: a weapon whose attacks aren't named <Side><Type>
-	-- can list them here keyed by KeyCode. Normal play uses the ClientSettings
-	-- binds (Swing / Stab / Overhead / Underhand / Feint / Kick) + mouse side.
-	KEYS = {},
 	KICK_KEY = Enum.KeyCode.G,   -- fallback when the settings module is unavailable
 }
 
@@ -333,6 +329,7 @@ function CombatClient.attach(Tool, weaponConfig)
 	local function armSwing(releaseId, speed, windup, active, recovery, token, windupId, skipFrac)
 		armToken += 1
 		local arm = armToken
+		if windup > 0 then endSweep() end   -- a morph out of the grace window: the blade goes cold again
 		if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
 		if currentTrack then currentTrack:Stop(); currentTrack = nil end
 		if windupId then
@@ -534,29 +531,29 @@ function CombatClient.attach(Tool, weaponConfig)
 		return side
 	end
 
-	-- the attack name for a type ("Swing", "Stab", "Overhead", "Underhand")
+	-- an attack exists and has a swing clip (rbxassetid://0 = not made yet)
+	local function usable(name)
+		local a = cfg.ATTACKS and cfg.ATTACKS[name]
+		return a ~= nil and type(a.anim) == "string" and a.anim ~= "" and a.anim ~= "rbxassetid://0"
+	end
+
+	-- the attack name for a type ("Swing", "Stab", "Overhead", "Underhand"):
+	-- <Side><Type>, falling back to the other side if this one has no clip yet
 	local function resolveAttack(kind)
-		local A = cfg.ATTACKS or {}
 		local side = pickSide()
 		local other = flip(side)
-		for _, name in ipairs({side .. kind, kind, other .. kind}) do
-			if A[name] then
-				if name:sub(1, #side) == side then lastSide = side elseif name:sub(1, #other) == other then lastSide = other end
-				return name
-			end
-		end
+		if usable(side .. kind) then lastSide = side; return side .. kind end
+		if usable(other .. kind) then lastSide = other; return other .. kind end
+		dprint("no usable", kind, "attack on this weapon")
 		return nil
 	end
 
 	local function sendAttack(kind)
 		local name = resolveAttack(kind)
-		if name then
-			local char = player.Character
-			if char then char:SetAttribute("LocalAttackName", name) end
-			remote:FireServer("Attack", name)
-		elseif kind == "Swing" then
-			remote:FireServer("Cycle")   -- a weapon with no *Swing attacks: cycle its list
-		end
+		if not name then return end
+		local char = player.Character
+		if char then char:SetAttribute("LocalAttackName", name) end
+		remote:FireServer("Attack", name)
 	end
 
 	table.insert(conns, Tool.Equipped:Connect(function()
@@ -582,16 +579,13 @@ function CombatClient.attach(Tool, weaponConfig)
 		stopAll()
 	end))
 
-	-- which action an input means: the player's binds first, then the weapon's KEYS (legacy)
+	-- which action an input means (the player's binds)
 	local function actionFor(input)
 		local bound = ClientSettings.actionForInput(input)
 		if bound == "Kick" or bound == "Feint" or bound == "Swing" or bound == "Stab" or bound == "Overhead" or bound == "Underhand" then
 			return bound
 		end
-		if input.UserInputType ~= Enum.UserInputType.Keyboard then return nil end
-		if bound == nil and input.KeyCode == cfg.KICK_KEY then return "Kick" end
-		local byWeapon = cfg.KEYS[input.KeyCode]
-		if bound == nil and byWeapon and cfg.ATTACKS and cfg.ATTACKS[byWeapon] then return "Named:" .. byWeapon end
+		if bound == nil and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == cfg.KICK_KEY then return "Kick" end
 		return nil
 	end
 
@@ -602,11 +596,6 @@ function CombatClient.attach(Tool, weaponConfig)
 			remote:FireServer("Feint")
 		elseif action == "Swing" or action == "Stab" or action == "Overhead" or action == "Underhand" then
 			sendAttack(action)
-		elseif action and action:sub(1, 6) == "Named:" then
-			local name = action:sub(7)
-			local char = player.Character
-			if char then char:SetAttribute("LocalAttackName", name) end
-			remote:FireServer("Attack", name)
 		end
 	end
 

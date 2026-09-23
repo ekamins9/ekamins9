@@ -135,6 +135,27 @@ function CombatServer.eachTarget(character, fn)
 	end
 end
 
+-- Clip lengths, read once per animation id on the server (the timing model
+-- must never trust a client's report of how long its own windup is).
+local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
+local clipLength = {}   -- [id] = seconds | false (couldn't read)
+function CombatServer.clipLength(id)
+	if type(id) ~= "string" or id == "" or id == "rbxassetid://0" then return nil end
+	local v = clipLength[id]
+	if v ~= nil then return v or nil end
+	local ok, seq = pcall(KeyframeSequenceProvider.GetKeyframeSequenceAsync, KeyframeSequenceProvider, id)
+	if ok and seq then
+		local len = 0
+		for _, kf in ipairs(seq:GetKeyframes()) do len = math.max(len, kf.Time) end
+		clipLength[id] = len > 0 and len or false
+		seq:Destroy()
+	else
+		clipLength[id] = false
+		warn("[CombatServer] can't read animation length for", id, "-", tostring(seq), "— using the Config fallback")
+	end
+	return clipLength[id] or nil
+end
+
 -- "RightOverhead" -> "Right", "Overhead";  "Stab" -> nil, "Stab"
 function CombatServer.sideType(name)
 	if type(name) ~= "string" then return nil, nil end
@@ -205,11 +226,22 @@ CombatServer.DEFAULTS = {
 	-- weapon identity (a weapon MUST provide these)
 	IDLE_ID     = nil,
 	BLOCK_ID    = nil,
-	ATTACKS     = nil,   -- { Name = {anim, kind="slash"|"stab", damage, windup, active, recovery, blockCost, staminaCost, speed} }
-	CYCLE_ORDER = nil,   -- { "Stab", "LeftSwing", ... } for left-click cycling
+	ATTACKS     = nil,   -- { <Side><Type> = {anim, windupAnim, kind="stab"|"slash", damage, blockCost, staminaCost, speed?} }
+	                     --   Side = Left|Right, Type = Swing|Stab|Overhead|Underhand. Every attack is sided.
 
-	-- weapon feel
-	SPEED_MULT  = 1.0,   -- whole-weapon tempo; scales windup/release/recovery of every attack
+	-- TIMING comes from the clips, not from numbers: windup = the windupAnim's
+	-- length, active = the swing clip's length, each divided by the attack's
+	-- effective speed  =  speed × TYPE_SPEED[type] × SPEED_MULT  (× RIPOSTE_SPEED
+	-- after a parry). Recovery is RECOVERY seconds, divided the same way. Morph,
+	-- feint and chamber windows are fractions of the REAL windup, so they scale
+	-- with the weapon. (Per-attack `windup` / `active` numbers are only a
+	-- fallback for a clip whose length can't be read.)
+	SPEED_MULT  = 1.0,   -- whole-weapon tempo
+	TYPE_SPEED  = {Swing = 1.0, Stab = 1.0, Overhead = 1.0, Underhand = 1.0},   -- per attack type
+	RECOVERY    = 0.15,  -- seconds (at speed 1) of hold after the swing clip ends
+	DEFAULT_WINDUP = 0.1, DEFAULT_ACTIVE = 0.3,   -- clip-length fallbacks
+	INPUT_GRACE = 0.08,  -- a morph / feint that arrives this long after the windup ended still
+	                     --    counts (client→server latency), as long as the blade hit nothing yet
 	REACH       = 8.0,   -- studs from attacker root to a valid hit point
 	TWO_HANDED  = false, -- needs both arms to wield (losing the left arm drops it too)
 	SpeedMult   = 1.0,   -- weight: WalkSpeed multiplier while equipped (published as SpeedMult_Weapon)
@@ -246,13 +278,14 @@ CombatServer.DEFAULTS = {
 	HIT_REFUND       = 4,     -- …and a clean hit gives this much back
 	MORPH_COST       = 10,    -- switch attack mid-windup (right swing -> stab…): stamina
 	MORPHS_PER_SWING = 1,
-	MORPH_CUTOFF     = 0.7,   -- no morph past this fraction of the windup
+	MORPH_CUTOFF     = 1.0,   -- no morph past this fraction of the windup (1 = the whole windup)
 	MORPH_MIN_WINDUP = 0.5,   -- the new attack keeps at least this × its own windup
 	CHAMBER          = true,  -- be in WINDUP of the mirror of their attack while theirs is in
 	                          --    its swing (same type, opposite side: their RightOverhead vs
 	                          --    your LeftOverhead; any stab vs any stab), facing them, and
 	                          --    their swing dies while yours goes on
-	CHAMBER_WINDOW   = 0.6,   --    your windup must have started within this of the contact
+	CHAMBER_WINDOW   = 2.0,   --    your windup must have started within this of the contact (a
+	                          --    cap; in practice "you are in windup" is the rule)
 	CHAMBER_STUN     = 0.5,   --    the attacker is stunned this long
 	CHAMBER_COST_MULT= 0.15,  --    you pay this × the attack's blockCost
 	CHAMBER_RELEASE  = 0.2,   --    your windup is cut to this — long enough to morph out of it
@@ -324,10 +357,23 @@ function CombatServer.attach(Tool, weaponConfig)
 	local weaponName = cfg.Name or Tool.Name   -- kill feed
 	local function dprint(...) DebugFlags.log(TAG, ...) end
 
-	if not (cfg.ATTACKS and cfg.CYCLE_ORDER) then
-		warn("[" .. TAG .. "] Config needs ATTACKS and CYCLE_ORDER")
+	if not cfg.ATTACKS then
+		warn("[" .. TAG .. "] Config needs ATTACKS")
 		return
 	end
+	-- an attack with no swing clip yet (rbxassetid://0) can't be used
+	local function usable(name)
+		local a = cfg.ATTACKS[name]
+		return a ~= nil and type(a.anim) == "string" and a.anim ~= "" and a.anim ~= "rbxassetid://0"
+	end
+	task.spawn(function()
+		for name, a in pairs(cfg.ATTACKS) do
+			if usable(name) then
+				CombatServer.clipLength(a.anim)
+				CombatServer.clipLength(a.windupAnim)
+			end
+		end
+	end)
 
 	Tool.CanBeDropped = false   -- Backspace would dump it in workspace with no pickup prompt
 
@@ -989,18 +1035,30 @@ function CombatServer.attach(Tool, weaponConfig)
 		task.delay(math.max(getTime() - os.clock(), 0), tick)
 	end
 
-	local function attackTimes(info)
-		local speed = (info.speed or 1) * cfg.SPEED_MULT
+	-- a windupAnim left as "rbxassetid://0" / "" means "none"
+	local function animId(id) if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then return id end return nil end
+
+	-- speed, windup, active, recovery — from the clips and the speed stack
+	local function attackTimes(info, name)
+		local _, atype = CombatServer.sideType(name)
+		local speed = (info.speed or 1) * ((cfg.TYPE_SPEED or {})[atype or ""] or 1) * cfg.SPEED_MULT
 		if (attr("FastUntil") or 0) > os.clock() then speed = speed * cfg.RIPOSTE_SPEED end
+		local wl = CombatServer.clipLength(animId(info.windupAnim)) or info.windup or cfg.DEFAULT_WINDUP
+		local al = CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE
+		local rl = info.recovery or cfg.RECOVERY
 		return speed,
-			math.max(cfg.MIN_PHASE, info.windup   / speed),
-			math.max(cfg.MIN_PHASE, info.active   / speed),
-			math.max(cfg.MIN_PHASE, info.recovery / speed)
+			math.max(cfg.MIN_PHASE, wl / speed),
+			math.max(cfg.MIN_PHASE, al / speed),
+			math.max(cfg.MIN_PHASE, rl / speed)
+	end
+
+	-- windup, or the first INPUT_GRACE of release with nothing hit yet (latency)
+	local function inWindup()
+		if state.phase == "windup" then return true end
+		return state.phase == "release" and not state.landed and os.clock() - state.windupEnd <= cfg.INPUT_GRACE
 	end
 
 	local function headPart() return character and (character:FindFirstChild("Head") or handle()) end
-	-- a windupAnim left as "rbxassetid://0" / "" means "none"
-	local function animId(id) if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then return id end return nil end
 
 	-- stamina back to anyone whose dodge made this swing miss: they dodged
 	-- during the swing, were inside reach (+ a margin) and in front of us
@@ -1027,7 +1085,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		local info = cfg.ATTACKS[name]
 		if not info then return end
 		local now = os.clock()
-		local speed, windup, active, recovery = attackTimes(info)
+		local speed, windup, active, recovery = attackTimes(info, name)
 		local skipFrac = 0
 		if combo then
 			skipFrac = windup / (windup + active)   -- how much of the clip is windup
@@ -1112,11 +1170,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not state.chambered and span > 0 and (now - state.windupStart) / span > cfg.MORPH_CUTOFF then dprint("morph denied: too late in the windup"); return end
 		if stamina() < cfg.MORPH_COST then dprint("morph denied: stamina"); return end
 		spend(cfg.MORPH_COST)
-		local speed, windup, active, recovery = attackTimes(info)
+		local speed, windup, active, recovery = attackTimes(info, name)
 		local remaining = math.max(state.windupEnd - now, windup * cfg.MORPH_MIN_WINDUP)
 		state.attack, state.attackName = info, name
 		state.morphs += 1
 		state.chambered = false
+		state.phase = "windup"   -- a morph from the grace window steps back out of release
 		state.windupEnd  = now + remaining
 		state.releaseEnd = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery
@@ -1129,7 +1188,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function chamberRelease()
 		if state.phase ~= "windup" or not state.attack then return end
 		local now = os.clock()
-		local _, _, active, recovery = attackTimes(state.attack)
+		local _, _, active, recovery = attackTimes(state.attack, state.attackName)
 		state.chambered = true
 		if cfg.CHAMBER_MORPH_FREE then state.morphs = 0 end
 		state.windupEnd  = math.min(state.windupEnd, now + cfg.CHAMBER_RELEASE)
@@ -1139,10 +1198,10 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	local function doAttack(name)
-		if not character or not cfg.ATTACKS[name] then return end
+		if not character or not usable(name) then dprint("attack denied: no such attack / no clip:", tostring(name)); return end
 		if isIncapacitated() then dprint("attack denied: incapacitated"); return end
 		if attr("Blocking")   then dprint("attack denied: blocking");      return end
-		if state.phase == "windup" then morph(name); return end
+		if inWindup() then morph(name); return end
 		if state.phase == "release" or state.phase == "recovery" then
 			if not state.attack then return end
 			if name == state.attackName then dprint("combo denied: same attack"); return end
@@ -1154,15 +1213,17 @@ function CombatServer.attach(Tool, weaponConfig)
 		startAttack(name)
 	end
 
-	local function doCycle()
-		state.cycleIndex = (state.cycleIndex % #cfg.CYCLE_ORDER) + 1
-		doAttack(cfg.CYCLE_ORDER[state.cycleIndex])
+	-- any usable attack, for NPCs
+	local function randomAttack()
+		local names = {}
+		for n in pairs(cfg.ATTACKS) do if usable(n) then table.insert(names, n) end end
+		if #names > 0 then doAttack(names[math.random(#names)]) end
 	end
 
 	-- FEINT (key): pull the swing during windup, no guard involved
 	local function doFeint()
 		if not character or not cfg.FEINT_ANYTIME then return end
-		if state.phase ~= "windup" then dprint("feint denied: not in windup (" .. state.phase .. ")"); return end
+		if not inWindup() then dprint("feint denied: not in windup (" .. state.phase .. ")"); return end
 		if stamina() < cfg.FEINT_COST then dprint("feint denied: stamina"); return end
 		spend(cfg.FEINT_COST)
 		cancelSwing("feint")
@@ -1187,7 +1248,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- WINDUP only: feint-to-parry — cancel the windup and raise guard in one
 		-- motion. Release / kick are committed; recovery just blocks normally.
 		local feinted = false
-		if state.phase == "windup" then
+		if inWindup() then
 			if stamina() < cfg.FEINT_COST then dprint("feint-to-parry denied: stamina"); return end
 			spend(cfg.FEINT_COST)
 			cancelSwing("feint")
@@ -1283,8 +1344,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			return
 		end
 		dprint("recv", action, a)
-		if action == "Cycle"          then doCycle()
-		elseif action == "Attack"     then doAttack(a)
+		if action == "Attack"         then doAttack(a)
 		elseif action == "Feint"      then doFeint()
 		elseif action == "BlockStart" then doBlockStart()
 		elseif action == "BlockStop"  then doBlockStop()
@@ -1379,7 +1439,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local controller = {
 		tool = Tool,
-		attack = doAttack, cycle = doCycle, feint = doFeint,
+		attack = doAttack, cycle = randomAttack, feint = doFeint,
 		blockStart = doBlockStart, blockStop = doBlockStop,
 		kick = doKick, interrupt = interruptSelf,
 		-- for other weapons' hit resolution (chambers)
