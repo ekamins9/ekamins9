@@ -208,12 +208,53 @@ local function refreshBoard()
 	for i = #list + 1, #rows do rows[i].row.Visible = false end
 end
 
+--------------------------------------------------------------------
+--  ROUND: timer top-centre; the board stays up through the intermission
+--------------------------------------------------------------------
+local roundNode = ReplicatedStorage:FindFirstChild("Round")
+local timer = label(gui, "", 18, FONT, COL_TEXT)
+timer.AnchorPoint = Vector2.new(0.5, 0)
+timer.Position = UDim2.new(0.5, 0, 0, 14)
+timer.Size = UDim2.fromOffset(420, 24)
+timer.TextXAlignment = Enum.TextXAlignment.Center
+timer.TextStrokeTransparency = 0.5
+local banner = label(board, "", 16, FONT, COL_ACCENT)
+banner.Size = UDim2.new(1, 0, 0, 24)
+banner.LayoutOrder = -1
+banner.TextXAlignment = Enum.TextXAlignment.Center
+banner.Visible = false
+
+local function intermission()
+	return roundNode ~= nil and roundNode:GetAttribute("State") == "Intermission"
+end
+
+local function refreshRound()
+	if not roundNode then
+		roundNode = ReplicatedStorage:FindFirstChild("Round")
+		if not roundNode then timer.Text = ""; return end
+	end
+	local left = roundNode:GetAttribute("TimeLeft") or 0
+	local m, sec = math.floor(left / 60), left % 60
+	if intermission() then
+		local w = roundNode:GetAttribute("Winner") or ""
+		timer.Text = string.format("NEXT ROUND IN %d", left)
+		timer.TextColor3 = COL_ACCENT
+		banner.Visible = true
+		banner.Text = w ~= "" and string.format("ROUND %d OVER  ·  %s WINS WITH %d KILLS", (roundNode:GetAttribute("Number") or 1), string.upper(w), roundNode:GetAttribute("WinnerKills") or 0)
+			or string.format("ROUND %d OVER  ·  NO KILLS", roundNode:GetAttribute("Number") or 1)
+	else
+		timer.Text = string.format("ROUND %d   %d:%02d", roundNode:GetAttribute("Number") or 1, m, sec)
+		timer.TextColor3 = COL_TEXT
+		banner.Visible = false
+	end
+end
+
 local holding = false
 local function setBoard(on)
 	if holding == on then return end
 	holding = on
-	board.Visible = on
-	if on then refreshBoard() end
+	board.Visible = on or intermission()
+	if board.Visible then refreshBoard() end
 end
 UserInputService.InputBegan:Connect(function(input, gp)
 	if input.KeyCode == BOARD_KEY and not UserInputService:GetFocusedTextBox() then setBoard(true) end
@@ -222,10 +263,16 @@ UserInputService.InputEnded:Connect(function(input)
 	if input.KeyCode == BOARD_KEY then setBoard(false) end
 end)
 UserInputService.WindowFocusReleased:Connect(function() setBoard(false) end)
--- live while held
+-- live while held (or during the intermission)
 local acc = 0
 RunService.RenderStepped:Connect(function(dt)
-	if not holding then return end
 	acc += dt
-	if acc > 0.5 then acc = 0; refreshBoard() end
+	if acc > 0.5 then
+		acc = 0
+		refreshRound()
+		local show = holding or intermission()
+		if board.Visible ~= show then board.Visible = show end
+		if show then refreshBoard() end
+	end
 end)
+refreshRound()

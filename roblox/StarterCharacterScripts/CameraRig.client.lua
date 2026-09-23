@@ -202,11 +202,16 @@ local sRoll, sLand, sSwayX, sSwayY, sLean, sStepY, sStepX, sKick, sHit =
 	newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring()
 
 -- taking a hit: flinch down and roll away from the blow
+-- body jolt away from the blow (relayed, so everyone sees the reaction)
+local sJoltX, sJoltZ = newSpring(), newSpring()
 character:GetAttributeChangedSignal("HitTick"):Connect(function()
 	sHit.v = sHit.v - HIT_FLINCH * 26 * S("Shake")
 	local dir = character:GetAttribute("HitDir")
 	if typeof(dir) == "Vector3" then
 		sRoll.v = sRoll.v + HRP.CFrame.RightVector:Dot(dir) * HIT_ROLL * S("Shake")
+		local J = RigPose.CONFIG.HIT_JOLT * 6
+		sJoltX.v = sJoltX.v + HRP.CFrame.RightVector:Dot(dir) * J
+		sJoltZ.v = sJoltZ.v + HRP.CFrame.LookVector:Dot(dir) * J
 	end
 end)
 -- our own swing landing, or clanging off a guard
@@ -492,6 +497,8 @@ local function loopBody(dt)
 	local breatheY = math.sin(now*BREATHE_HZ*2) * BREATHE_AMOUNT * 0.5 * idle
 	local dodgeLX = spring(sDodgeX, 0, dtc)
 	local dodgeLZ = spring(sDodgeZ, 0, dtc)
+	local joltX = spring(sJoltX, 0, dtc)
+	local joltZ = spring(sJoltZ, 0, dtc)
 
 	-- KICK: snaps out over the server windup, eases back over KICK_FALL
 	local kickAt   = character:GetAttribute("LocalKickAt") or 0
@@ -532,6 +539,8 @@ local function loopBody(dt)
 		arm    = character:FindFirstChildOfClass("Tool") and (rot.X * RigPose.CONFIG.ARM_PITCH) or 0,
 		swayX  = swayX,
 		swayY  = swayY,
+		hitX   = joltX,
+		hitZ   = joltZ,
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)

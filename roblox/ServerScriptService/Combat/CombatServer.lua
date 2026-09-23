@@ -56,6 +56,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
+local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
 local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 -- optional: ServerScriptService.Loadout.Armor (damage reduction on armored limbs)
@@ -87,6 +88,18 @@ function CombatServer.markCombat(char) char:SetAttribute("LastCombatAt", os.cloc
 function CombatServer.drainStamina(char, amount, max)
 	char:SetAttribute("BlockMeter", math.max(0, (char:GetAttribute("BlockMeter") or max or 100) - amount))
 	CombatServer.markCombat(char)
+end
+function CombatServer.refundStamina(char, amount)
+	local max = char:GetAttribute("BlockMax") or 100
+	char:SetAttribute("BlockMeter", math.min(max, (char:GetAttribute("BlockMeter") or max) + amount))
+end
+-- spawn protection (LoadoutServer parents a ForceField for a few seconds)
+function CombatServer.isProtected(char)
+	return char:FindFirstChildOfClass("ForceField") ~= nil
+end
+function CombatServer.dropProtection(char)
+	local ff = char and char:FindFirstChildOfClass("ForceField")
+	if ff then ff:Destroy() end
 end
 -- victim's client listens for HitTick to flinch the camera; HitDir says which way
 function CombatServer.flinch(target, dir)
@@ -130,9 +143,10 @@ function CombatServer.resolveKick(character, cfg, hooks)
 	local cosCone = math.cos(math.rad(cfg.KICK_CONE_DEG))
 	local now = os.clock()
 	local landed, nearest = false, math.huge
+	CombatServer.dropProtection(character)
 	CombatServer.eachTarget(character, function(m)
 		local hum, thrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
-		if not (hum and thrp and hum.Health > 0) then return end
+		if not (hum and thrp and hum.Health > 0) or CombatServer.isProtected(m) then return end
 		local to = thrp.Position - hrp.Position
 		to = Vector3.new(to.X, 0, to.Z)
 		nearest = math.min(nearest, to.Magnitude)
@@ -140,6 +154,7 @@ function CombatServer.resolveKick(character, cfg, hooks)
 		if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
 		landed = true
 		if hooks.sfx then hooks.sfx("KickHit", thrp) end
+		Sounds.voice("Hurt", m:FindFirstChild("Head") or thrp)
 		CombatServer.flinch(m, to.Unit)
 		local wasBlocking = m:GetAttribute("Blocking") == true
 		CombatServer.interrupt(m, "kicked")   -- stops their swing and drops their guard, animation included
@@ -201,6 +216,24 @@ CombatServer.DEFAULTS = {
 	HIT_GRACE        = 0.30,  -- accept reports this long after release ends (round-trip lag)
 	MIN_PHASE        = 0.05,
 	HEAD_DAMAGE_MULT = 2.0,   -- head hits hurt this much more (no longer an automatic kill)
+	LEG_DAMAGE_MULT  = 0.85,  -- …and legs a little less. An attack may instead give
+	                          --    damage = {head=, body=, legs=} for exact per-region numbers.
+	FIT_ANIMS        = true,  -- stretch each attack's windup / release animation to the Config
+	                          --    phase times (so a morph or riposte re-times the swing you see)
+	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
+	                          --    already in release finishes (trades are a real choice)
+	MISS_COST_MULT   = 0.75,  -- a swing that touches nothing costs this × staminaCost extra
+	HIT_REFUND       = 4,     -- …and a clean hit gives this much back
+	MORPH_COST       = 10,    -- switch attack mid-windup (right swing -> stab…): stamina
+	MORPHS_PER_SWING = 1,
+	MORPH_CUTOFF     = 0.7,   -- no morph past this fraction of the windup
+	MORPH_MIN_WINDUP = 0.5,   -- the new attack keeps at least this × its own windup
+	CHAMBER          = true,  -- start the SAME kind of attack (stab vs strike) while theirs is
+	CHAMBER_WINDOW   = 0.45,  --    coming, facing them, within this of your windup start: their
+	CHAMBER_STUN     = 0.5,   --    swing dies (attacker stunned this long), yours releases at once
+	CHAMBER_COST_MULT= 0.15,  --    defender pays this × the attack's blockCost
+	CHAMBER_RELEASE  = 0.08,  --    …and their windup is cut to this
+	FEINT_ANYTIME    = true,  -- the feint key cancels a windup (no block needed)
 	DECAPITATE       = true,  -- lethal slash to the head takes it off (death cam rides it)
 	DISMEMBER_ON_KILL= true,  -- lethal slash to an arm/leg takes that limb off
 	BLEED_OUT_CHANCE = 0.35,  -- …and this often the victim survives it, bleeding, instead of dying
@@ -243,6 +276,7 @@ CombatServer.DEFAULTS = {
 	KICK_STAGGER     = 1.2,   -- a kicked guard (block OR parry window) drops and the victim is stunned this long
 	KICK_COST        = 10,
 	KICK_BLOCK_DRAIN = 15,
+	KICK_MISS_EXTRA  = 0.45,  -- a kick that hits nobody recovers this much longer (punishable)
 
 	-- geometry
 	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
@@ -287,8 +321,9 @@ function CombatServer.attach(Tool, weaponConfig)
 	local state = {
 		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick
 		attack = nil, attackName = nil, alreadyHit = {}, queued = nil,
-		windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0, nextBlockTime = 0,
+		windupStart = 0, windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0, nextBlockTime = 0,
 		cycleIndex = 0, lastBlockStart = -1e9,
+		morphs = 0, landed = false,         -- per swing: morphs used; touched anything (no miss penalty)
 	}
 
 	----------------------------------------------------------------
@@ -501,6 +536,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		local now  = os.clock()
 		local myHRP     = character:FindFirstChild("HumanoidRootPart")
 		local targetHRP = target:FindFirstChild("HumanoidRootPart")
+		if CombatServer.isProtected(target) then dprint(target.Name, "is spawn-protected"); return end
+		state.landed = true   -- touched something: no miss penalty (a block still counts)
 
 		local guardUp = target:GetAttribute("Blocking") == true
 			or (now - (target:GetAttribute("BlockStoppedAt") or -1e9)) < cfg.BLOCK_GRACE
@@ -540,6 +577,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
 			local meter = target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX
 			markCombat(character)
+			Injury.sparks(hitPos)
 			if meter <= 0 or not Injury.canBlock(target) then
 				markCombat(target)
 				knockAwayWeapon(target, dir, meter <= 0 and "guard hit at 0 stamina" or "guard with a missing arm")
@@ -551,9 +589,11 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- PARRY: attacker punished, defender gets a riposte; costs a fraction of a block
 				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
+				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
 				drainStamina(target, info.blockCost * cfg.PARRY_COST_MULT)
 				cancelSwing("parried")
 				sfx("Parry", part)
+				Sounds.voice("Parry", target:FindFirstChild("Head"))
 				tell("Parried")
 				dprint("PARRIED by", target.Name)
 			else
@@ -580,6 +620,31 @@ function CombatServer.attach(Tool, weaponConfig)
 			return
 		end
 
+		-- CHAMBER: they answered with the same KIND of attack (stab vs strike),
+		-- facing us, and started it inside the window — our swing is caught on
+		-- theirs and dies; theirs releases at once
+		if cfg.CHAMBER and facing then
+			local ttool = target:FindFirstChildOfClass("Tool")
+			local tctrl = ttool and CombatServer.controllers[ttool]
+			local snap  = tctrl and tctrl.snapshot and tctrl.snapshot()
+			if snap and snap.phase == "windup" and snap.kind ~= nil and snap.kind == info.kind
+				and now - snap.windupStart <= cfg.CHAMBER_WINDOW then
+				markCombat(character)
+				markCombat(target)
+				setAttr("StunnedUntil", now + cfg.CHAMBER_STUN)
+				drainStamina(target, (info.blockCost or 0) * cfg.CHAMBER_COST_MULT)
+				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
+				cancelSwing("chambered")
+				Injury.sparks(hitPos)
+				sfx("Parry", part)
+				Sounds.voice("Parry", target:FindFirstChild("Head"))
+				tell("Chambered")
+				tctrl.chambered()
+				dprint("CHAMBERED by", target.Name, "(" .. tostring(snap.name) .. ")")
+				return
+			end
+		end
+
 		-- CLEAN HIT: a lowered guard, a raised guard the blade got past, or from behind
 		local region = claimedGuard and "body" or regionOf(part, target)
 		if claimedGuard then dprint("guard touched but invalid (up:", guardUp, "facing:", facing, ") -> body hit") end
@@ -592,7 +657,15 @@ function CombatServer.attach(Tool, weaponConfig)
 		markCombat(target)
 		CombatServer.credit(target, character, weaponName, info.kind == "stab" and (region == "head" and "facestab" or "stab") or (region == "head" and "headslash" or "slash"))
 
-		local dmg    = info.damage * (region == "head" and cfg.HEAD_DAMAGE_MULT or 1)
+		-- damage: a number (× HEAD/LEG mult) or {head=, body=, legs=}
+		local dmg
+		if type(info.damage) == "table" then
+			dmg = info.damage[region] or info.damage.body or info.damage.torso or 0
+		else
+			dmg = (info.damage or 0) * (region == "head" and cfg.HEAD_DAMAGE_MULT or (region == "legs" and cfg.LEG_DAMAGE_MULT or 1))
+		end
+		CombatServer.refundStamina(character, cfg.HIT_REFUND)
+		Sounds.voice("Hurt", target:FindFirstChild("Head") or part)
 		-- armor: the set's Protection applies only on limbs it actually covers.
 		-- Hits on accessories/clothing count as the limb they're on.
 		if Armor then
@@ -772,7 +845,50 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 	table.insert(conns, RunService.Heartbeat:Connect(npcSweepStep))
 
-	npcTell = function(what, a, b, c, d, e, f)
+	-- the NPC's own windup/release playback (mirrors CombatClient's)
+	local npcArm = 0
+	local function npcPlay(id, priority, fitTo, fallbackSpeed)
+		local t = npc.tracks[id]
+		if not t then
+			t = npcTrack(id, priority, false)
+			npc.tracks[id] = t
+		end
+		if not t then return nil end
+		t:Stop()
+		t:Play()
+		local sp = fallbackSpeed or 1
+		if cfg.FIT_ANIMS and fitTo and fitTo > 0 and t.Length > 0 then sp = t.Length / fitTo end
+		t:AdjustSpeed(sp)
+		return t
+	end
+	local function npcArmRelease(releaseId, speed, windup, active, recovery, token, windupId)
+		npcArm += 1
+		local arm = npcArm
+		if npc.current then npc.current:Stop(); npc.current = nil end
+		if windupId then
+			npc.current = npcPlay(windupId, Enum.AnimationPriority.Action, windup, speed)
+		else
+			npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, windup + active + recovery, speed)
+		end
+		task.delay(windup, function()
+			if state.token ~= token or npcArm ~= arm or not character then return end
+			if windupId then
+				if npc.current then npc.current:Stop(0.05) end
+				npc.current = npcPlay(releaseId, Enum.AnimationPriority.Action, active + recovery, speed)
+			end
+			npcRay.FilterDescendantsInstances = {character}
+			npcOverlap.FilterDescendantsInstances = {character}
+			local last = {}
+			for _, bl in ipairs(blades) do
+				local pts = {}
+				for i, off in ipairs(bl.offsets) do pts[i] = bl.part.CFrame:PointToWorldSpace(off) end
+				last[bl] = pts
+			end
+			npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
+		end)
+	end
+
+	npcTell = function(what, a, b, c, d, e, f, g, h)
 		if what == "Setup" then
 			npcStopAll()
 			npc.tracks = {}
@@ -781,27 +897,37 @@ function CombatServer.attach(Tool, weaponConfig)
 			if npc.idle then npc.idle:Play() end
 
 		elseif what == "PlayAttack" then
-			local id, speed, windup, active, token = a, b or 1, c or 0, d or 0, f
-			local t = npc.tracks[id]
-			if not t then
-				t = npcTrack(id, Enum.AnimationPriority.Action, false)
-				npc.tracks[id] = t
+			-- a = release anim, b = speed, c = windup, d = active, e = cap, f = token, g = windup anim, h = recovery
+			npcArmRelease(a, b or 1, c or 0, d or 0, h or 0, f, g)
+
+		elseif what == "Morph" then
+			-- a = release anim, b = speed, c = remaining windup, d = active, e = recovery, f = token, g = windup anim
+			npcArmRelease(a, b or 1, c or 0, d or 0, e or 0, f, g)
+
+		elseif what == "Retime" then
+			-- a = remaining windup, b = active, c = recovery, d = token: the windup got cut (chamber)
+			if npc.current and state.attack then
+				npcArm += 1
+				local arm, token = npcArm, d
+				local t = npc.current
+				if t.Length > 0 then t:AdjustSpeed(math.max(t.Length - t.TimePosition, 0.01) / math.max(a, 0.01)) end
+				task.delay(a, function()
+					if state.token ~= token or npcArm ~= arm or not character then return end
+					if state.attack.windupAnim then
+						t:Stop(0.05)
+						npc.current = npcPlay(state.attack.anim, Enum.AnimationPriority.Action, (b or 0) + (c or 0), 1)
+					end
+					npcRay.FilterDescendantsInstances = {character}
+					npcOverlap.FilterDescendantsInstances = {character}
+					local last = {}
+					for _, bl in ipairs(blades) do
+						local pts = {}
+						for i, off in ipairs(bl.offsets) do pts[i] = bl.part.CFrame:PointToWorldSpace(off) end
+						last[bl] = pts
+					end
+					npc.sweep = {token = token, endsAt = os.clock() + (b or 0), last = last, reported = {}, pending = {}}
+				end)
 			end
-			if npc.current and npc.current ~= t then npc.current:Stop() end
-			if t then t:Stop(); t:Play(); t:AdjustSpeed(speed) end
-			npc.current = t
-			task.delay(windup, function()
-				if state.token ~= token or not character then return end
-				npcRay.FilterDescendantsInstances = {character}
-				npcOverlap.FilterDescendantsInstances = {character}
-				local last = {}
-				for _, bl in ipairs(blades) do
-					local pts = {}
-					for i, off in ipairs(bl.offsets) do pts[i] = bl.part.CFrame:PointToWorldSpace(off) end
-					last[bl] = pts
-				end
-				npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
-			end)
 
 		elseif what == "Block" then
 			if npc.block then
@@ -809,8 +935,9 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 		elseif what == "Blocked" then
 			npc.sweep = nil
-		elseif what == "Parried" or what == "Cancel" then
+		elseif what == "Parried" or what == "Chambered" or what == "Cancel" then
 			npc.sweep = nil
+			npcArm += 1
 			if npc.current then npc.current:Stop(); npc.current = nil end
 		elseif what == "Cleanup" then
 			npcStopAll()
@@ -818,35 +945,74 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	----------------------------------------------------------------
-	--  ATTACKS
+	--  ATTACKS — windup → release → recovery. Phase boundaries can MOVE
+	--  after they're scheduled (a morph lengthens the windup, a chamber cuts
+	--  it), so every timer re-arms itself against the live state times.
 	----------------------------------------------------------------
+	local function at(token, getTime, fn)
+		local function tick()
+			if state.token ~= token then return end
+			local remaining = getTime() - os.clock()
+			if remaining > 0.004 then task.delay(remaining, tick); return end
+			fn()
+		end
+		task.delay(math.max(getTime() - os.clock(), 0), tick)
+	end
+
+	local function attackTimes(info)
+		local speed = (info.speed or 1) * cfg.SPEED_MULT
+		if (attr("FastUntil") or 0) > os.clock() then speed = speed * cfg.RIPOSTE_SPEED end
+		return speed,
+			math.max(cfg.MIN_PHASE, info.windup   / speed),
+			math.max(cfg.MIN_PHASE, info.active   / speed),
+			math.max(cfg.MIN_PHASE, info.recovery / speed)
+	end
+
+	local function headPart() return character and (character:FindFirstChild("Head") or handle()) end
+
+	-- stamina back to anyone whose dodge made this swing miss: they dodged
+	-- during the swing, were inside reach (+ a margin) and in front of us
+	local function dodgeRefunds()
+		local hrp = character and character:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+		CombatServer.eachTarget(character, function(m)
+			local hum, thrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
+			if not (hum and thrp and hum.Health > 0) or state.alreadyHit[hum] then return end
+			local dodgedAt = m:GetAttribute("LastDodgeAt") or -1e9
+			if dodgedAt < state.windupStart - 0.05 or dodgedAt > state.releaseEnd then return end
+			local to = thrp.Position - hrp.Position
+			if to.Magnitude > cfg.REACH + MovementConfig.DODGE_REFUND_RANGE then return end
+			if hrp.CFrame.LookVector:Dot(to.Unit) < 0.3 then return end
+			CombatServer.refundStamina(m, MovementConfig.DODGE_REFUND)
+			m:SetAttribute("DodgeRefundTick", (m:GetAttribute("DodgeRefundTick") or 0) + 1)
+			dprint(m.Name, "dodged the swing (+" .. MovementConfig.DODGE_REFUND .. " stamina)")
+		end)
+	end
+
 	local function startAttack(name)
 		local info = cfg.ATTACKS[name]
 		if not info then return end
 		local now = os.clock()
-
-		local speed = (info.speed or 1) * cfg.SPEED_MULT
-		if (attr("FastUntil") or 0) > now then speed = speed * cfg.RIPOSTE_SPEED end
-		local windup   = math.max(cfg.MIN_PHASE, info.windup   / speed)
-		local active   = math.max(cfg.MIN_PHASE, info.active   / speed)
-		local recovery = math.max(cfg.MIN_PHASE, info.recovery / speed)
+		local speed, windup, active, recovery = attackTimes(info)
 
 		state.token += 1
 		local token = state.token
 		state.attack, state.attackName, state.alreadyHit, state.queued = info, name, {}, nil
-		state.phase      = "windup"
-		state.windupEnd  = now + windup
-		state.releaseEnd = now + windup + active
-		state.nextActionTime = now + windup + active + recovery
+		state.phase       = "windup"
+		state.windupStart = now
+		state.windupEnd   = now + windup
+		state.releaseEnd  = state.windupEnd + active
+		state.nextActionTime = state.releaseEnd + recovery
+		state.morphs, state.landed = 0, false
 		spend(info.staminaCost or 0)
+		CombatServer.dropProtection(character)
 
 		setSwinging(true)
-		local cap = windup + active + cfg.TURN_CAP_EXTRA
-		setAttr("TurnCapUntil", now + cap)
+		setAttr("TurnCapUntil", state.releaseEnd + cfg.TURN_CAP_EXTRA)
 		sfx("Swing", nil, {Speed = math.clamp(speed, 0.7, 1.4)})
+		Sounds.voice("Swing", headPart())
 
-		task.delay(windup, function()
-			if state.token ~= token then return end
+		at(token, function() return state.windupEnd end, function()
 			if isStunned() then cancelSwing("stunned"); return end
 			state.phase = "release"
 			-- a head still riding the blade comes off with the swing, forward,
@@ -858,7 +1024,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				local thrower = character
 				Injury.launchSkewer(box, throwDir, cfg.HEAD_THROW_SPEED, thrower, function(victim, part)
 					local vh = victim:FindFirstChildOfClass("Humanoid")
-					if not vh then return end
+					if not vh or CombatServer.isProtected(victim) then return end
 					sfx("Hit", part)
 					Injury.bloodBurst(part)
 					flinch(victim, (part.Position - hrp.Position).Unit)
@@ -873,29 +1039,66 @@ function CombatServer.attach(Tool, weaponConfig)
 				dprint("launched the skewered head")
 			end
 		end)
-		task.delay(windup + active, function()
-			if state.token ~= token then return end
+		at(token, function() return state.releaseEnd end, function()
 			state.phase = "recovery"
+			if not state.landed then
+				-- whiffed: the extra stamina is what makes spam a bad idea
+				spend(((state.attack and state.attack.staminaCost) or 0) * cfg.MISS_COST_MULT)
+				dodgeRefunds()
+			end
 			if state.queued and not isStunned() then
 				local q = state.queued
 				state.queued = nil
 				startAttack(q)   -- combo: chain straight out of release, skipping recovery
 			end
 		end)
-		task.delay(windup + active + recovery, function()
-			if state.token ~= token then return end
+		at(token, function() return state.nextActionTime end, function()
 			state.phase = "idle"
 			setSwinging(false)
 		end)
 
 		dprint("attack ->", name, string.format("speed %.2f | windup %.2f release %.2f recovery %.2f", speed, windup, active, recovery))
-		tell("PlayAttack", info.anim, speed, windup, active, cap, token)
+		tell("PlayAttack", info.anim, speed, windup, active, windup + active + cfg.TURN_CAP_EXTRA, token, info.windupAnim, recovery)
+	end
+
+	-- MORPH: swap the attack during the windup (right swing -> stab, overhead -> underhand…)
+	local function morph(name)
+		local info = cfg.ATTACKS[name]
+		if not info or name == state.attackName then return end
+		local now = os.clock()
+		if state.morphs >= cfg.MORPHS_PER_SWING then dprint("morph denied: already morphed"); return end
+		local span = state.windupEnd - state.windupStart
+		if span > 0 and (now - state.windupStart) / span > cfg.MORPH_CUTOFF then dprint("morph denied: too late in the windup"); return end
+		if stamina() < cfg.MORPH_COST then dprint("morph denied: stamina"); return end
+		spend(cfg.MORPH_COST)
+		local speed, windup, active, recovery = attackTimes(info)
+		local remaining = math.max(state.windupEnd - now, windup * cfg.MORPH_MIN_WINDUP)
+		state.attack, state.attackName = info, name
+		state.morphs += 1
+		state.windupEnd  = now + remaining
+		state.releaseEnd = state.windupEnd + active
+		state.nextActionTime = state.releaseEnd + recovery
+		setAttr("TurnCapUntil", state.releaseEnd + cfg.TURN_CAP_EXTRA)
+		dprint("MORPH ->", name, string.format("(%.2f windup left)", remaining))
+		tell("Morph", info.anim, speed, remaining, active, recovery, state.token, info.windupAnim)
+	end
+
+	-- CHAMBERED someone: our windup is cut short and we release now
+	local function chamberRelease()
+		if state.phase ~= "windup" or not state.attack then return end
+		local now = os.clock()
+		local _, _, active, recovery = attackTimes(state.attack)
+		state.windupEnd  = math.min(state.windupEnd, now + cfg.CHAMBER_RELEASE)
+		state.releaseEnd = state.windupEnd + active
+		state.nextActionTime = state.releaseEnd + recovery
+		tell("Retime", state.windupEnd - now, active, recovery, state.token, state.attack.anim, state.attack.windupAnim ~= nil)
 	end
 
 	local function doAttack(name)
 		if not character or not cfg.ATTACKS[name] then return end
 		if isIncapacitated() then dprint("attack denied: incapacitated"); return end
 		if attr("Blocking")   then dprint("attack denied: blocking");      return end
+		if state.phase == "windup" then morph(name); return end
 		if state.phase == "release" or state.phase == "recovery" then
 			if not state.attack then return end
 			if name == state.attackName then dprint("combo denied: same attack"); return end
@@ -910,6 +1113,15 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function doCycle()
 		state.cycleIndex = (state.cycleIndex % #cfg.CYCLE_ORDER) + 1
 		doAttack(cfg.CYCLE_ORDER[state.cycleIndex])
+	end
+
+	-- FEINT (key): pull the swing during windup, no guard involved
+	local function doFeint()
+		if not character or state.phase ~= "windup" or not cfg.FEINT_ANYTIME then return end
+		if stamina() < cfg.FEINT_COST then dprint("feint denied: stamina"); return end
+		spend(cfg.FEINT_COST)
+		cancelSwing("feint")
+		state.nextActionTime = os.clock() + cfg.FEINT_RECOVERY
 	end
 
 	----------------------------------------------------------------
@@ -935,6 +1147,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		end
 		if attr("Blocking") then return end
 		if now < state.nextBlockTime then dprint("block denied: cooldown"); return end
+		CombatServer.dropProtection(character)
 		setAttr("Blocking", true)
 		if now - state.lastBlockStart >= cfg.PARRY_RETRY then
 			setAttr("ParryUntil", now + cfg.PARRY_WINDOW)
@@ -956,7 +1169,13 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- being hit or kicked breaks our own action: mid-swing, mid-kick, or guard
 	local function interruptSelf(reason)
-		if state.phase ~= "idle" then cancelSwing(reason) end
+		if state.phase ~= "idle" then
+			-- a hit only stops a swing that hasn't committed yet; a kick stops anything
+			local committed = state.phase == "release" or state.phase == "recovery"
+			if not (cfg.FLINCH_ONLY_WINDUP and reason == "hit" and committed) then
+				cancelSwing(reason)
+			end
+		end
 		if attr("Blocking") then doBlockStop() end
 	end
 
@@ -964,7 +1183,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	--  KICK
 	----------------------------------------------------------------
 	local function resolveKick()
-		CombatServer.resolveKick(character, cfg, {sfx = sfx, tell = tell, dprint = dprint, weaponName = weaponName})
+		return CombatServer.resolveKick(character, cfg, {sfx = sfx, tell = tell, dprint = dprint, weaponName = weaponName})
 	end
 
 	local function doKick()
@@ -981,14 +1200,19 @@ function CombatServer.attach(Tool, weaponConfig)
 		spend(cfg.KICK_COST)
 		setSwinging(true)
 		sfx("Kick")
+		Sounds.voice("Kick", headPart())
 		setAttr("TurnCapUntil", now + cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA)
 		tell("PlayKick", cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA, cfg.KICK_WINDUP)
 		task.delay(cfg.KICK_WINDUP, function()
 			if state.token ~= token then return end
-			if not isStunned() then resolveKick() end
+			local landed = false
+			if not isStunned() then landed = resolveKick() end
+			if not landed then
+				-- whiffed kick: longer recovery, so it's a commitment
+				state.nextActionTime = state.nextActionTime + cfg.KICK_MISS_EXTRA
+			end
 		end)
-		task.delay(cfg.KICK_WINDUP + cfg.KICK_RECOVERY, function()
-			if state.token ~= token then return end
+		at(token, function() return state.nextActionTime end, function()
 			state.phase = "idle"
 			setSwinging(false)
 		end)
@@ -1006,6 +1230,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		dprint("recv", action, a)
 		if action == "Cycle"          then doCycle()
 		elseif action == "Attack"     then doAttack(a)
+		elseif action == "Feint"      then doFeint()
 		elseif action == "BlockStart" then doBlockStart()
 		elseif action == "BlockStop"  then doBlockStop()
 		elseif action == "Kick"       then doKick() end
@@ -1099,9 +1324,14 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local controller = {
 		tool = Tool,
-		attack = doAttack, cycle = doCycle,
+		attack = doAttack, cycle = doCycle, feint = doFeint,
 		blockStart = doBlockStart, blockStop = doBlockStop,
 		kick = doKick, interrupt = interruptSelf,
+		-- for other weapons' hit resolution (chambers)
+		snapshot = function()
+			return {phase = state.phase, kind = state.attack and state.attack.kind, windupStart = state.windupStart, name = state.attackName}
+		end,
+		chambered = chamberRelease,
 	}
 	CombatServer.controllers[Tool] = controller
 	return controller

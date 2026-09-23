@@ -108,6 +108,7 @@ local function dodge(plr, char, dx, dz)
 	end
 	dodgeReady[char] = now + M.DODGE_COOLDOWN
 	char:SetAttribute("DodgeReadyAt", dodgeReady[char])   -- server clock; the client keeps its own
+	char:SetAttribute("LastDodgeAt", now)                 -- CombatServer refunds stamina if this dodges a swing
 	CombatServer.drainStamina(char, M.DODGE_COST, char:GetAttribute("BlockMax"))
 	log(plr.Name, string.format("dodge %.1f %.1f", dx, dz))
 end
@@ -126,6 +127,7 @@ local function kick(plr, char)
 	kickReady[char]    = now + K.KICK_COOLDOWN
 	kickBusyUntil[char] = now + K.KICK_WINDUP + K.KICK_RECOVERY
 	CombatServer.drainStamina(char, K.KICK_COST, char:GetAttribute("BlockMax"))
+	CombatServer.dropProtection(char)
 	char:SetAttribute("Acting", true)
 	char:SetAttribute("SpeedMult_Swing", K.SWING_SLOW)
 	char:SetAttribute("TurnCapUntil", now + K.KICK_WINDUP + K.TURN_CAP_EXTRA)
@@ -133,19 +135,25 @@ local function kick(plr, char)
 	Sounds.play(K.SOUNDS.Kick, hrp)
 	remote:FireClient(plr, "Kick", K.KICK_WINDUP + K.TURN_CAP_EXTRA, K.KICK_WINDUP)
 	local stamp = kickBusyUntil[char]
+	local function finish()
+		if kickBusyUntil[char] ~= stamp or not char.Parent then return end
+		char:SetAttribute("Acting", nil)
+		char:SetAttribute("SpeedMult_Swing", nil)
+	end
 	task.delay(K.KICK_WINDUP, function()
 		if kickBusyUntil[char] ~= stamp or not char.Parent then return end
+		local landed = false
 		if not incapacitated(char) then
-			CombatServer.resolveKick(char, K, {
+			landed = CombatServer.resolveKick(char, K, {
 				sfx = function(slot, at) Sounds.play(K.SOUNDS[slot], at or hrp) end,
 				dprint = log,
 			})
 		end
-	end)
-	task.delay(K.KICK_WINDUP + K.KICK_RECOVERY, function()
-		if kickBusyUntil[char] ~= stamp or not char.Parent then return end
-		char:SetAttribute("Acting", nil)
-		char:SetAttribute("SpeedMult_Swing", nil)
+		-- a whiffed kick recovers longer
+		local extra = landed and 0 or K.KICK_MISS_EXTRA
+		kickBusyUntil[char] = now + K.KICK_WINDUP + K.KICK_RECOVERY + extra
+		stamp = kickBusyUntil[char]
+		task.delay(K.KICK_RECOVERY + extra, finish)
 	end)
 end
 

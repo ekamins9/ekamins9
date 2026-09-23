@@ -122,6 +122,39 @@ function Injury.bloodBurst(part, count)
 	Debris:AddItem(e, 2)
 end
 
+-- steel on steel: a burst of sparks at a block / parry / chamber contact
+function Injury.sparks(pos)
+	if typeof(pos) ~= "Vector3" then return end
+	local p = Instance.new("Part")
+	p.Name = "Sparks"
+	p.Size = Vector3.new(0.2, 0.2, 0.2)
+	p.Transparency = 1
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	p.CFrame = CFrame.new(pos)
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Color = ColorSequence.new(Color3.fromRGB(255, 230, 150), Color3.fromRGB(255, 120, 40))
+	e.LightEmission = 1
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0)})
+	e.Transparency = NumberSequence.new(0, 1)
+	e.Lifetime = NumberRange.new(0.15, 0.4)
+	e.Speed = NumberRange.new(12, 26)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Acceleration = Vector3.new(0, -60, 0)
+	e.Drag = 4
+	e.Rate = 0
+	e.Parent = p
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 200, 120)
+	light.Brightness = 3
+	light.Range = 8
+	light.Parent = p
+	p.Parent = workspace
+	e:Emit(28)
+	task.delay(0.08, function() if light.Parent then light:Destroy() end end)
+	Debris:AddItem(p, 1)
+end
+
 --------------------------------------------------------------------
 --  BLEEDING  (CharacterSystems calls Injury.tick every Heartbeat)
 --------------------------------------------------------------------

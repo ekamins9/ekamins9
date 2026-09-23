@@ -39,6 +39,14 @@ return {
 	SpeedMult = 1.0,
 	ClunkMult = 1.0,
 
+	-- ATTACK NAMES: <Side><Type> — LeftSwing / RightSwing / LeftStab / RightStab /
+	-- LeftOverhead / RightOverhead / LeftUnderhand / RightUnderhand — or just the
+	-- type (Stab, Overhead) when it has no sides. The client picks the side from
+	-- the mouse flick on press. Each attack may also have:
+	--   windupAnim = "rbxassetid://…"   separate windup animation, stretched to `windup`
+	--                                   (the release anim is stretched to active+recovery)
+	--   damage = {head = 40, body = 20, legs = 14}   exact per-region numbers, instead
+	--                                   of one number × HEAD/LEG_DAMAGE_MULT
 	-- phase times are seconds at speed 1.0; all three divide by (speed * SPEED_MULT)
 	-- kind: "stab" kills leave the weapon run through the body; "slash" kills sever the limb hit
 	ATTACKS = {

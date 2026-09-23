@@ -24,6 +24,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/ClientSettings.lua` | `ReplicatedStorage` → `ClientSettings` | ModuleScript |
 | `StarterCharacterScripts/Movement.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `Movement` | LocalScript |
 | `ServerScriptService/Scoreboard.server.lua` | `ServerScriptService` → `Scoreboard` | Script |
+| `ServerScriptService/RoundServer.server.lua` | `ServerScriptService` → `RoundServer` | Script |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
@@ -116,11 +117,46 @@ work on them too.
 
 ## Controls (all rebindable in the ⚙ on the spawn menu, except the mouse)
 
-LMB cycle attack · Q/E/F/X specific attacks · RMB block (feint during windup) · G kick (works
-unarmed too) · **LeftShift sprint** (forward / forward-diagonal only) · **Space dodge** (a ~2-stud sidestep, side or
-back, 10 stamina) · LeftControl/C crouch · V pick up a weapon · scroll zoom (all the way in =
-first person). **There is no jumping.** Walking backwards is 35% slower and sideways 20% slower —
-dodge to reposition fast.
+**LMB / E swing · X stab · F overhead · R underhand** — the *side* (left/right version) is the way
+your mouse was moving when you pressed; still mouse = alternate sides · **Q feint** (cancels a
+windup) · RMB block (feint-to-parry during windup) · G kick (works unarmed too) · LeftShift
+sprint (forward / forward-diagonal only) · Space dodge (a ~2-stud sidestep, side or back, 10
+stamina) · LeftControl/C crouch · V pick up a weapon · Tab leaderboard · scroll zoom (all the
+way in = first person). **There is no jumping.** Walking backwards is 35% slower and sideways
+20% slower — dodge to reposition fast.
+
+## Combat rules 2 (the fencing layer)
+
+- **Morph**: press a different attack during your windup (right swing → stab…) to switch to it.
+  `MORPH_COST` stamina, `MORPHS_PER_SWING` per swing, not past `MORPH_CUTOFF` of the windup; the
+  new attack keeps at least `MORPH_MIN_WINDUP` × its own windup. The windup animation swaps too.
+- **Chamber**: start the same *kind* of attack (stab vs strike) while theirs is coming, facing
+  them, within `CHAMBER_WINDOW` of your windup start — their swing dies (`CHAMBER_STUN` on them),
+  yours releases at once. Sparks + the white edge flash mean you got it.
+- **Flinch only in windup** (`FLINCH_ONLY_WINDUP`): a hit stops a swing that hasn't committed;
+  one already in release finishes. Trading is a choice now. Kicks still stop anything.
+- **Stamina**: a swing that touches nothing costs `MISS_COST_MULT` × its cost extra; a clean hit
+  refunds `HIT_REFUND`. A dodge that makes a swing miss you refunds `DODGE_REFUND`.
+- **Per-region damage**: `damage` is a number (× `HEAD_DAMAGE_MULT` / `LEG_DAMAGE_MULT`) or
+  `{head=, body=, legs=}`.
+- **Animations fit the rules** (`FIT_ANIMS`): each attack's optional `windupAnim` is stretched to
+  its windup, the release anim to active+recovery — so a morph, riposte or chamber re-times what
+  you see. Attack names are `<Side><Type>` (see a weapon Config).
+- A whiffed kick recovers `KICK_MISS_EXTRA` longer. Spawn protection: a `ForceField` for
+  `SPAWN_PROTECT` s (LoadoutServer); attacking, kicking or blocking ends it early.
+
+## Rounds
+
+`RoundServer`: free-for-all, `ROUND_LENGTH` (5 min) → top killer wins → `INTERMISSION` (15 s)
+with everyone pulled out and the leaderboard forced open → stats reset, everyone re-enters
+through the loadout menu. State lives on `ReplicatedStorage.Round` (`State`, `TimeLeft`, `Number`,
+`Winner`). The timer is top-centre; SPAWN waits during an intermission.
+
+## Voice
+
+Put a folder `Voice` in `SoundService` with subfolders `Swing`, `Hurt`, `Death`, `Kick`, `Parry`,
+each holding any number of `Sound`s — one is picked at random (its own Volume/PlaybackSpeed are
+the baseline). Missing folders are silent.
 
 ## Movement (MovementServer + Movement)
 
@@ -273,6 +309,9 @@ character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 | `StaminaRegen`, `StaminaRegenDelay` | CombatServer (weapon `Config`) | CharacterSystems | stamina regen now runs per character, weapon or not |
 | `Dropped` (on a Tool) | Pickup | Pickup | the weapon is on the floor |
 | `LocalDodgeAt`, `LocalDodgeX/Z` | Movement | CameraRig | dodge lean/roll |
+| `LastDodgeAt`, `DodgeRefundTick` | MovementServer / CombatServer | CombatServer, HUD | dodge timing (server clock); refund cue |
+| `ParryTick` | CombatServer | InjuryFX | you parried / chambered (white edge flash) |
+| `LastHitBy/ByName/With/Kind/At` | CombatServer | Scoreboard | kill credit |
 | `ArmorId`, `ArmorType`, `ArmorProtection`, `BaseMaxHealth` | Loadout `Armor` | CombatServer, TestDummies | worn set; protection applies only to covered limbs |
 | `LimbLost_LeftArm` … `LimbLost_Head`, `Bleeding`, `BleedDPS` | Injury | CombatServer, InjuryFX, HUD | injuries; a bandage system clears `Bleeding` |
 | `KnockedDownUntil` | Ragdoll | Ragdoll | knockdown timer |

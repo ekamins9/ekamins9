@@ -43,15 +43,11 @@ CombatClient.DEFAULTS = {
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
-	-- Keys: the player's ClientSettings binds (LeftSwing / RightSwing /
-	-- Overhead / Stab / Kick) win for attacks of those names; a weapon whose
-	-- attacks are named differently lists them here, keyed by KeyCode.
-	KEYS = {
-		[Enum.KeyCode.Q] = "LeftSwing",
-		[Enum.KeyCode.E] = "RightSwing",
-		[Enum.KeyCode.F] = "Overhead",
-		[Enum.KeyCode.X] = "Stab",
-	},
+	FIT_ANIMS     = true,   -- stretch windup / release anims to the phase times (see CombatServer)
+	-- Legacy direct binds: a weapon whose attacks aren't named <Side><Type>
+	-- can list them here keyed by KeyCode. Normal play uses the ClientSettings
+	-- binds (Swing / Stab / Overhead / Underhand / Feint / Kick) + mouse side.
+	KEYS = {},
 	KICK_KEY = Enum.KeyCode.G,   -- fallback when the settings module is unavailable
 }
 
@@ -269,11 +265,16 @@ function CombatClient.attach(Tool, weaponConfig)
 	end))
 
 	----------------------------------------------------------------
-	--  ANIMATION PLAYBACK
+	--  ANIMATION PLAYBACK — each attack has a release anim (`anim`) and an
+	--  optional `windupAnim`. With FIT_ANIMS both are STRETCHED to the phase
+	--  times the server sends, so what you see winding up IS the windup, and
+	--  a morph / riposte / chamber re-times the picture along with the rules.
 	----------------------------------------------------------------
 	local idleTrack, blockTrack
 	local attackCache = {}
 	local currentTrack, currentSpeed = nil, 1
+	local windupTrack = nil
+	local armToken = 0           -- bumps whenever the release timing changes
 
 	local function getAnimator()
 		local char = player.Character
@@ -303,6 +304,49 @@ function CombatClient.attach(Tool, weaponConfig)
 		return t
 	end
 
+	local function cached(id)
+		local t = attackCache[id]
+		if t == nil then
+			t = loadTrack(id, Enum.AnimationPriority.Action, false) or false
+			attackCache[id] = t
+		end
+		return t or nil
+	end
+
+	-- play `id` so that it lasts `fitTo` seconds (FIT_ANIMS), else at `speed`
+	local function playFit(id, fitTo, speed)
+		local t = cached(id)
+		if not t then return nil, speed end
+		t:Stop()
+		t:Play()
+		local sp = speed or 1
+		if cfg.FIT_ANIMS ~= false and fitTo and fitTo > 0 and t.Length > 0 then sp = t.Length / fitTo end
+		t:AdjustSpeed(sp)
+		return t, sp
+	end
+
+	-- windup now, release + sweep when the windup ends (re-armable)
+	local function armSwing(releaseId, speed, windup, active, recovery, token, windupId)
+		armToken += 1
+		local arm = armToken
+		if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
+		if currentTrack then currentTrack:Stop(); currentTrack = nil end
+		if windupId then
+			windupTrack = playFit(windupId, windup, speed)
+		else
+			currentTrack, currentSpeed = playFit(releaseId, windup + active + recovery, speed)
+		end
+		swingToken = token
+		task.delay(windup, function()
+			if swingToken ~= token or armToken ~= arm or not equipped then return end
+			if windupId then
+				if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
+				currentTrack, currentSpeed = playFit(releaseId, active + recovery, speed)
+			end
+			beginSweep(token, active)
+		end)
+	end
+
 	-- a clean hit: brief slowdown for weight, then the swing finishes normally
 	local function hitstop(duration)
 		local t, s = currentTrack, currentSpeed
@@ -313,25 +357,24 @@ function CombatClient.attach(Tool, weaponConfig)
 		end)
 	end
 
-	-- a block/parry: the weapon genuinely stops, it does not swing through.
-	-- Hard freeze (0 speed, no creep) for the clang, then the track is
-	-- STOPPED rather than resumed — the idle/guard track underneath takes
-	-- back over, so the weapon visibly bounces off instead of finishing the arc.
+	-- a block/parry/chamber: the weapon genuinely stops, it does not swing
+	-- through. Hard freeze for the clang, then the track is STOPPED rather
+	-- than resumed — the idle/guard track underneath takes back over.
 	local function clangStop(duration)
-		local t = currentTrack
+		local t = currentTrack or windupTrack
 		if not t then return end
 		t:AdjustSpeed(0)
 		task.delay(duration, function()
-			if currentTrack == t then
-				t:Stop()
-				currentTrack = nil
-			end
+			if currentTrack == t then t:Stop(); currentTrack = nil end
+			if windupTrack == t then t:Stop(); windupTrack = nil end
 		end)
 	end
 
 	local function stopAttack()
 		swingToken = nil
+		armToken += 1
 		endSweep()
+		if windupTrack then windupTrack:Stop(0.05); windupTrack = nil end
 		if currentTrack then currentTrack:Stop(); currentTrack = nil end
 		-- the kick leg is a procedural pose in CameraRig, not a track: clearing
 		-- its timestamp is what cancels it
@@ -343,7 +386,7 @@ function CombatClient.attach(Tool, weaponConfig)
 		stopAttack()
 		if idleTrack  then idleTrack:Stop()  end
 		if blockTrack then blockTrack:Stop() end
-		for _, t in pairs(attackCache) do t:Stop() end
+		for _, t in pairs(attackCache) do if t then t:Stop() end end
 	end
 
 	local function setLocalTurnCap(duration)
@@ -353,7 +396,7 @@ function CombatClient.attach(Tool, weaponConfig)
 		end
 	end
 
-	table.insert(conns, remote.OnClientEvent:Connect(function(what, a, b, c, d, e, f)
+	table.insert(conns, remote.OnClientEvent:Connect(function(what, a, b, c, d, e, f, g, h)
 		dprint("recv", what, a, b, c)
 
 		if what == "Setup" then
@@ -364,20 +407,32 @@ function CombatClient.attach(Tool, weaponConfig)
 			if idleTrack then idleTrack:Play() else dprint("idle track failed to load") end
 
 		elseif what == "PlayAttack" then
-			local id, speed, windup, active, capDuration, token = a, (b or 1), (c or 0), (d or 0), (e or 0), f
-			local t = attackCache[id]
-			if not t then
-				t = loadTrack(id, Enum.AnimationPriority.Action, false)
-				attackCache[id] = t
+			-- a = release anim, b = speed, c = windup, d = active, e = turn cap, f = token, g = windup anim, h = recovery
+			setLocalTurnCap(e or 0)
+			armSwing(a, b or 1, c or 0, d or 0, h or 0, f, g)
+
+		elseif what == "Morph" then
+			-- a = release anim, b = speed, c = remaining windup, d = active, e = recovery, f = token, g = windup anim
+			setLocalTurnCap((c or 0) + (d or 0) + 0.1)
+			armSwing(a, b or 1, c or 0, d or 0, e or 0, f, g)
+
+		elseif what == "Retime" then
+			-- a = remaining windup, b = active, c = recovery, d = token, e = release anim,
+			-- f = has a separate windup anim  (a chamber cut our windup: release sooner)
+			local token, releaseId, separate = d, e, f
+			armToken += 1
+			local arm = armToken
+			local t = windupTrack or currentTrack
+			if t and t.Length > 0 then
+				t:AdjustSpeed(math.max(t.Length - t.TimePosition, 0.01) / math.max(a or 0.01, 0.01))
 			end
-			if currentTrack and currentTrack ~= t then currentTrack:Stop() end
-			if t then t:Stop(); t:Play(); t:AdjustSpeed(speed) end
-			currentTrack, currentSpeed = t, speed
-			swingToken = token
-			setLocalTurnCap(capDuration)
-			-- blade goes live after windup, on this client's clock
-			task.delay(windup, function()
-				if swingToken == token and equipped then beginSweep(token, active) end
+			task.delay(a or 0, function()
+				if swingToken ~= token or armToken ~= arm or not equipped then return end
+				if separate and windupTrack then
+					windupTrack:Stop(0.05); windupTrack = nil
+					currentTrack, currentSpeed = playFit(releaseId, (b or 0) + (c or 0), 1)
+				end
+				beginSweep(token, b or 0)
 			end)
 
 		elseif what == "PlayKick" then
@@ -404,6 +459,12 @@ function CombatClient.attach(Tool, weaponConfig)
 			swingToken = nil
 			endSweep()
 
+		elseif what == "Chambered" then
+			clangStop(cfg.HITSTOP_PARRY)
+			impact("chamber")
+			swingToken = nil
+			endSweep()
+
 		elseif what == "Cancel" then
 			stopAttack()
 
@@ -420,8 +481,59 @@ function CombatClient.attach(Tool, weaponConfig)
 	end))
 
 	----------------------------------------------------------------
-	--  INPUT
+	--  INPUT — LMB / Swing key = swing, Stab / Overhead / Underhand keys,
+	--  Feint, Kick. The SIDE (Left/Right) comes from the mouse: whichever way
+	--  it was moving in the last SIDE_WINDOW seconds when you pressed; still
+	--  mouse = alternate sides. A weapon lists attacks as <Side><Type>
+	--  (RightSwing, LeftStab, RightUnderhand…) or just <Type> (Stab).
 	----------------------------------------------------------------
+	local SIDE_WINDOW, SIDE_MIN = 0.15, 6   -- seconds of mouse history; pixels to count as a flick
+	local mouseHist = {}                     -- {t=, dx=}
+	local lastSide = "Right"
+
+	table.insert(conns, UIS.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			table.insert(mouseHist, {t = os.clock(), dx = input.Delta.X})
+			if #mouseHist > 40 then table.remove(mouseHist, 1) end
+		end
+	end))
+
+	local function mouseSide()
+		local now, sum = os.clock(), 0
+		for _, h in ipairs(mouseHist) do
+			if now - h.t <= SIDE_WINDOW then sum += h.dx end
+		end
+		if sum <= -SIDE_MIN then return "Left" end
+		if sum >=  SIDE_MIN then return "Right" end
+		return nil
+	end
+
+	-- the attack name for a type ("Swing", "Stab", "Overhead", "Underhand")
+	local function resolveAttack(kind)
+		local A = cfg.ATTACKS or {}
+		local side = mouseSide()
+		if not side then side = (lastSide == "Right") and "Left" or "Right" end
+		local other = side == "Right" and "Left" or "Right"
+		for _, name in ipairs({side .. kind, kind, other .. kind}) do
+			if A[name] then
+				if name:sub(1, #side) == side then lastSide = side elseif name:sub(1, #other) == other then lastSide = other end
+				return name
+			end
+		end
+		return nil
+	end
+
+	local function sendAttack(kind)
+		local name = resolveAttack(kind)
+		if name then
+			local char = player.Character
+			if char then char:SetAttribute("LocalAttackName", name) end
+			remote:FireServer("Attack", name)
+		elseif kind == "Swing" then
+			remote:FireServer("Cycle")   -- a weapon with no *Swing attacks: cycle its list
+		end
+	end
+
 	table.insert(conns, Tool.Equipped:Connect(function()
 		equipped = true
 		dprint("equipped")
@@ -445,21 +557,19 @@ function CombatClient.attach(Tool, weaponConfig)
 		stopAll()
 	end))
 
-	table.insert(conns, Tool.Activated:Connect(function()  -- left click cycles attacks
-		remote:FireServer("Cycle")
+	table.insert(conns, Tool.Activated:Connect(function()  -- left click = swing
+		sendAttack("Swing")
 	end))
 
-	-- which attack (or "Kick") a key means: the player's binds first, then the weapon's KEYS
+	-- which action a key means: the player's binds first, then the weapon's KEYS (legacy)
 	local function actionFor(keyCode)
 		local bound = ClientSettings.actionFor(keyCode)
-		if bound == "Kick" then return "Kick" end
-		if bound and cfg.ATTACKS and cfg.ATTACKS[bound] then return bound end
+		if bound == "Kick" or bound == "Feint" or bound == "Swing" or bound == "Stab" or bound == "Overhead" or bound == "Underhand" then
+			return bound
+		end
 		if bound == nil and keyCode == cfg.KICK_KEY then return "Kick" end
 		local byWeapon = cfg.KEYS[keyCode]
-		-- a weapon key that the player has re-bound elsewhere no longer fires here
-		if byWeapon and (ClientSettings.get("Key_" .. byWeapon) == nil or ClientSettings.get("Key_" .. byWeapon) == keyCode.Name) then
-			return byWeapon
-		end
+		if bound == nil and byWeapon and cfg.ATTACKS and cfg.ATTACKS[byWeapon] then return "Named:" .. byWeapon end
 		return nil
 	end
 
@@ -472,8 +582,15 @@ function CombatClient.attach(Tool, weaponConfig)
 			local action = actionFor(input.KeyCode)
 			if action == "Kick" then
 				remote:FireServer("Kick")
-			elseif action then
-				remote:FireServer("Attack", action)
+			elseif action == "Feint" then
+				remote:FireServer("Feint")
+			elseif action == "Swing" or action == "Stab" or action == "Overhead" or action == "Underhand" then
+				sendAttack(action)
+			elseif action and action:sub(1, 6) == "Named:" then
+				local name = action:sub(7)
+				local char = player.Character
+				if char then char:SetAttribute("LocalAttackName", name) end
+				remote:FireServer("Attack", name)
 			end
 		end
 	end))

@@ -30,17 +30,21 @@ ClientSettings.SLIDERS = {
 	{key = "FOV",     label = "First-person FOV", min = 70, max = 110, step = 1, hint = "degrees"},
 }
 
--- rebindable actions (block stays on right mouse; left click cycles attacks)
+-- rebindable actions. Block stays on right mouse; LEFT CLICK = swing. The
+-- SIDE of an attack (left/right swing, stab, overhead, underhand) comes from
+-- the way your mouse was moving when you pressed — flick left, press = the
+-- left version — or alternates when the mouse was still.
 ClientSettings.KEYS = {
-	{key = "Sprint",     label = "Sprint",        default = "LeftShift"},
-	{key = "Dodge",      label = "Dodge",         default = "Space"},
-	{key = "Crouch",     label = "Crouch",        default = "LeftControl"},
-	{key = "Kick",       label = "Kick",          default = "G"},
-	{key = "Pickup",     label = "Pick up weapon",default = "V"},
-	{key = "LeftSwing",  label = "Left swing",    default = "Q"},
-	{key = "RightSwing", label = "Right swing",   default = "E"},
-	{key = "Overhead",   label = "Overhead",      default = "F"},
-	{key = "Stab",       label = "Stab",          default = "X"},
+	{key = "Sprint",     label = "Sprint",           default = "LeftShift"},
+	{key = "Dodge",      label = "Dodge",            default = "Space"},
+	{key = "Crouch",     label = "Crouch",           default = "LeftControl"},
+	{key = "Kick",       label = "Kick",             default = "G"},
+	{key = "Feint",      label = "Feint (cancel windup)", default = "Q"},
+	{key = "Swing",      label = "Swing (also LMB)", default = "E"},
+	{key = "Stab",       label = "Stab",             default = "X"},
+	{key = "Overhead",   label = "Overhead",         default = "F"},
+	{key = "Underhand",  label = "Underhand",        default = "R"},
+	{key = "Pickup",     label = "Pick up weapon",   default = "V"},
 }
 
 ClientSettings.DEFAULTS = {

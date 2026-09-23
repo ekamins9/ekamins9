@@ -660,8 +660,23 @@ local function hide()
 	if mouseConn then mouseConn:Disconnect(); mouseConn = nil end
 end
 
+-- during an intermission the button waits (RoundServer's countdown is on ReplicatedStorage.Round)
+local roundNode = ReplicatedStorage:FindFirstChild("Round")
+RunService.Heartbeat:Connect(function()
+	if not open then return end
+	roundNode = roundNode or ReplicatedStorage:FindFirstChild("Round")
+	if roundNode and roundNode:GetAttribute("State") == "Intermission" then
+		spawnBtn.Text = string.format("NEXT ROUND IN %d", roundNode:GetAttribute("TimeLeft") or 0)
+		spawnBtn.TextTransparency = 0.3
+	elseif spawnBtn.Text:sub(1, 4) == "NEXT" then
+		spawnBtn.Text = "SPAWN"
+		refreshDetails()
+	end
+end)
+
 spawnBtn.Activated:Connect(function()
 	if not open or not catalogData then return end
+	if roundNode and roundNode:GetAttribute("State") == "Intermission" then return end
 	local a = catalogData.byArmor[selected.armor]
 	local w = catalogData.byWeapon[selected.weapon]
 	local sec = catalogData.byWeapon[selected.secondary]

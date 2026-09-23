@@ -34,6 +34,9 @@ RigPose.CONFIG = {
 	CROUCH_LEG_DIR  = 1,            -- flip if the legs fold backward
 	-- dodge: a lean impulse into the dodge direction, fed through the lean inputs
 	DODGE_LEAN      = 0.35,
+	-- hit reaction: torso jolt away from the blow (hitX/hitZ inputs, radians)
+	HIT_JOLT        = 0.22,
+	HIT_JOLT_DIR    = 1,
 }
 local C = RigPose.CONFIG
 
@@ -64,10 +67,12 @@ function RigPose.origins(character)
 end
 
 -- inputs: pitch (camera pitch, radians), bob (torso Y), leanX, leanZ,
---         kick (0..1), crouch (0..1), arm (radians), swayX, swayY
+--         kick (0..1), crouch (0..1), arm (radians), swayX, swayY,
+--         hitX, hitZ (hit-reaction jolt, radians)
 function RigPose.compute(i, o)
 	local p = i.pitch * C.PITCH_DIR
-	local walkLean   = CFrame.Angles(i.leanZ * C.LEAN_DIR, 0, i.leanX * C.LEAN_DIR)
+	local hx, hz = (i.hitX or 0) * C.HIT_JOLT_DIR, (i.hitZ or 0) * C.HIT_JOLT_DIR
+	local walkLean   = CFrame.Angles(i.leanZ * C.LEAN_DIR + hz, 0, i.leanX * C.LEAN_DIR + hx)
 	local kickLean   = CFrame.Angles(C.KICK_LEAN * C.KICK_LEAN_DIR * i.kick, 0, 0)
 	local crouchLean = CFrame.Angles(C.CROUCH_LEAN * C.CROUCH_LEAN_DIR * i.crouch, 0, 0)
 	local aim = CFrame.new(0, 0, -C.TORSO_PIVOT) * CFrame.Angles(p * C.TORSO_PITCH, 0, 0) * CFrame.new(0, 0, C.TORSO_PIVOT)
@@ -98,7 +103,7 @@ function RigPose.apply(j, target, alpha, legAlpha)
 end
 
 -- wire format: a flat array of 9 numbers
-local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY"}
+local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY", "hitX", "hitZ"}
 local LIMIT = 4   -- sanity clamp on every input
 
 function RigPose.pack(i)
@@ -124,6 +129,6 @@ function RigPose.lerpInputs(from, to, alpha)
 	return i
 end
 
-RigPose.ZERO = {pitch = 0, bob = 0, leanX = 0, leanZ = 0, kick = 0, crouch = 0, arm = 0, swayX = 0, swayY = 0}
+RigPose.ZERO = {pitch = 0, bob = 0, leanX = 0, leanZ = 0, kick = 0, crouch = 0, arm = 0, swayX = 0, swayY = 0, hitX = 0, hitZ = 0}
 
 return RigPose

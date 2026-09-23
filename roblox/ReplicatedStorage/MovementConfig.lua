@@ -23,6 +23,8 @@ return {
 	DODGE_SPEED    = 19,   -- studs/s during the burst…
 	DODGE_TIME     = 0.10, -- …for this long (≈ 2 studs: a sidestep, not a leap)
 	DODGE_LEAN     = 0.35, -- body lean into the dodge (RigPose lean input impulse)
+	DODGE_REFUND   = 8,    -- stamina back when a dodge makes a swing miss you (CombatServer decides)
+	DODGE_REFUND_RANGE = 2.5, -- …if the swing's reach came within this of you
 
 	-- jumping is disabled: JumpPower 0 on the server, Jumping state off on the client
 	NO_JUMP = true,

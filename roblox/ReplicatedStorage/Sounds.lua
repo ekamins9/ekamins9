@@ -29,6 +29,31 @@ function Sounds.play(id, parent, opts)
 	return s
 end
 
+-- VOICE / VARIATION FOLDERS: SoundService.Voice/<kind>/ holds any number of
+-- Sounds (grunts, yells…); one is picked at random. Kinds used by the game:
+--   Swing  Hurt  Death  Kick  Parry  Dodge
+-- Each Sound's own Volume / PlaybackSpeed is the baseline. Missing folder = silent.
+local SoundService = game:GetService("SoundService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+function Sounds.voice(kind, parent, opts)
+	if not parent then return nil end
+	local root = SoundService:FindFirstChild("Voice") or ReplicatedStorage:FindFirstChild("Voice")
+	local folder = root and root:FindFirstChild(kind)
+	if not folder then return nil end
+	local list = {}
+	for _, c in ipairs(folder:GetChildren()) do
+		if c:IsA("Sound") and valid(c.SoundId) then table.insert(list, c) end
+	end
+	if #list == 0 then return nil end
+	local t = list[math.random(#list)]
+	opts = opts or {}
+	return Sounds.play(t.SoundId, parent, {
+		Volume = t.Volume * (opts.Volume or 1),
+		Speed  = t.PlaybackSpeed * (opts.Speed or 1),
+		MaxDistance = opts.MaxDistance, Ttl = opts.Ttl,
+	})
+end
+
 -- returns a looped Sound the caller owns (adjust Volume/PlaybackSpeed, Destroy when done)
 function Sounds.loop(id, parent, volume)
 	if not valid(id) or not parent then return nil end

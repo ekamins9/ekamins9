@@ -18,6 +18,7 @@
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage     = game:GetService("ServerStorage")
+local Debris            = game:GetService("Debris")
 
 local Armor      = require(script.Parent:WaitForChild("Armor"))
 local Pickup     = require(script.Parent.Parent:WaitForChild("Combat"):WaitForChild("Pickup"))
@@ -25,6 +26,7 @@ local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 
 local RESPAWN_MENU_DELAY = 4.0    -- seconds after death before the menu comes back
 local AUTO_EQUIP         = true   -- draw the weapon as soon as they spawn
+local SPAWN_PROTECT      = 3.0    -- seconds of spawn protection (a ForceField; ends early if you attack)
 
 local function log(...) DebugFlags.log("Loadout", ...) end
 
@@ -62,9 +64,11 @@ local function weaponSummary(tool)
 	if type(cfg.ATTACKS) == "table" then
 		for _, a in pairs(cfg.ATTACKS) do
 			if type(a) == "table" then
-				if type(a.damage) == "number" then
-					dmgMin = math.min(dmgMin or a.damage, a.damage)
-					dmgMax = math.max(dmgMax or a.damage, a.damage)
+				local d = a.damage
+				if type(d) == "table" then d = d.body or d.torso or d.head end
+				if type(d) == "number" then
+					dmgMin = math.min(dmgMin or d, d)
+					dmgMax = math.max(dmgMax or d, d)
 				end
 				if a.kind == "stab" then stab = true elseif a.kind == "slash" then slash = true end
 			end
@@ -137,9 +141,17 @@ local function giveWeapon(plr, char, weaponId, equip)
 	end
 end
 
+-- RoundServer publishes the round state on ReplicatedStorage.Round; nobody spawns in an intermission
+local function roundNode() return ReplicatedStorage:FindFirstChild("Round") end
+local function spawningAllowed()
+	local r = roundNode()
+	return not r or r:GetAttribute("State") ~= "Intermission"
+end
+
 local function spawnWith(plr, armorId, weaponId, secondaryId)
 	if spawning[plr] then return end
 	if isAlive(plr) then log(plr.Name, "asked to spawn while alive — ignored"); return end
+	if not spawningAllowed() then log(plr.Name, "asked to spawn during the intermission"); return end
 	if secondaryId == "" then secondaryId = nil end
 	local armorOk  = armorId == nil or Armor.config(armorId) ~= nil
 	local weaponOk = weaponId == nil or findWeapon(weaponId) ~= nil
@@ -169,6 +181,13 @@ local function spawnWith(plr, armorId, weaponId, secondaryId)
 	if armorId then Armor.equip(char, armorId) end
 	if secondaryId then giveWeapon(plr, char, secondaryId, false) end
 	if weaponId then giveWeapon(plr, char, weaponId, AUTO_EQUIP) end
+	-- spawn protection: no damage while it's on; attacking, kicking or blocking ends it early
+	if SPAWN_PROTECT > 0 then
+		local ff = Instance.new("ForceField")
+		ff.Visible = true
+		ff.Parent = char
+		Debris:AddItem(ff, SPAWN_PROTECT)
+	end
 	spawning[plr] = nil
 	event:FireClient(plr, "Spawned")
 
@@ -195,6 +214,25 @@ local function onPlayer(plr)
 	-- before this script ran (Studio Play) would skip the menu
 	if plr.Character then plr.Character:Destroy() end
 end
+
+-- round transitions: an intermission pulls everyone out (the board is up);
+-- a new round opens the menu for everyone
+task.spawn(function()
+	local r = ReplicatedStorage:WaitForChild("Round", 15)
+	if not r then return end
+	r:GetAttributeChangedSignal("State"):Connect(function()
+		local state = r:GetAttribute("State")
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if state == "Intermission" then
+				if plr.Character then plr.Character:Destroy() end
+				spawning[plr] = nil
+				event:FireClient(plr, "Show", lastChoice[plr])
+			elseif state == "Round" then
+				if not isAlive(plr) then event:FireClient(plr, "Show", lastChoice[plr]) end
+			end
+		end
+	end)
+end)
 Players.PlayerAdded:Connect(onPlayer)
 for _, p in ipairs(Players:GetPlayers()) do onPlayer(p) end
 Players.PlayerRemoving:Connect(function(plr) lastChoice[plr] = nil; spawning[plr] = nil end)

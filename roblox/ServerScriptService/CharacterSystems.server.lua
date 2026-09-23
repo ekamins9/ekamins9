@@ -44,6 +44,7 @@ local function setup(char)
 		Pickup.dropAll(char)   -- weapons hit the floor next to the body, for anyone to take
 		Ragdoll.enable(char, typeof(dir) == "Vector3" and dir or nil, DEATH_SHOVE)
 		Sounds.play(SoundConfig.Death, char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
+		Sounds.voice("Death", char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
 	end)
 
 	local conn
