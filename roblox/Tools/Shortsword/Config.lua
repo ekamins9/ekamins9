@@ -24,17 +24,8 @@ return {
 	TWO_HANDED = false,  -- one hand: losing the LEFT arm doesn't drop it
 	SECONDARY  = true, -- true = can also be carried in the SECONDARY slot
 
-	-- sound slots (any you leave out fall back to CombatServer.DEFAULTS.SOUNDS).
-	-- Never put "rbxassetid://0" here — that overrides a default with silence.
-	SOUNDS = {
-		Equip   = "rbxassetid://80636916996187",
-		Swing   = "rbxassetid://135315310485417",
-		Hit     = "rbxassetid://135119591308242",
-		Block   = "rbxassetid://105287234173928",
-		Parry   = "rbxassetid://79514980676418",
-		Kick    = "rbxassetid://135708425496510",
-		KickHit = "rbxassetid://105287234173928",   -- reusing Block until you have a boot-on-body sound
-	},
+	-- sounds: all weapons share CombatServer.DEFAULTS.SOUNDS. To give this one its
+	-- own, add SOUNDS = {Swing = "rbxassetid://…", …} (only the slots you fill).
 
 	-- weight: published as SpeedMult_Weapon / ClunkMult_Weapon while equipped
 	-- and composed with armor etc. (1 = no effect). A heavier weapon = lower

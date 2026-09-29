@@ -289,17 +289,16 @@ CombatServer.DEFAULTS = {
 	ClunkMult   = 1.0,   -- weight: footstep clunk multiplier while equipped (published as ClunkMult_Weapon)
 	SWING_SLOW  = 0.55,  -- WalkSpeed multiplier while attacking (published as SpeedMult_Swing)
 
-	-- Sound slots (a weapon Config's SOUNDS table overrides per key). These
-	-- default to Roblox's built-in rbxasset:// content so everything is audible
-	-- out of the box — swap in your own asset ids per weapon.
+	-- Sound slots. Every weapon uses these unless its Config has a SOUNDS table
+	-- overriding a key (never with "rbxassetid://0" — that silences the slot).
 	SOUNDS = {
-		Equip = "rbxasset://sounds/unsheath.wav",
-		Swing = "rbxasset://sounds/swordslash.wav",  -- at the Handle when the windup starts
-		Hit   = "rbxasset://sounds/swordlunge.wav",  -- at the struck part
-		Block = "rbxasset://sounds/metal.ogg",
-		Parry = "rbxasset://sounds/metal.ogg",
-		Kick    = "rbxasset://sounds/swordlunge.wav",  -- the kick itself, at the kicker
-		KickHit = "rbxasset://sounds/metal.ogg",      -- …and the impact, at whoever caught it
+		Equip   = "rbxassetid://80636916996187",
+		Swing   = "rbxassetid://135315310485417",
+		Hit     = "rbxassetid://135119591308242",
+		Kick    = "rbxassetid://135708425496510",
+		KickHit = "rbxassetid://105287234173928",
+		Block   = "rbxassetid://112773782841691",
+		Parry   = "rbxassetid://5763723309",
 	},
 
 	-- hit validation / lethality
