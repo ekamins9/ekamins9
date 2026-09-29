@@ -2,14 +2,13 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** on-screen combat text — defender sees `PARRY ×2 +12` (gold) / `BLOCK −20`
-(grey) / `CHAMBER` / `GUARD BROKEN`; attacker sees `PARRIED` / `CHAMBERED` (red) / `BLOCKED` /
-`HIT` / `FEINT`. Parry sparks are big and white, block sparks small and orange.
+**Last change:** damage numbers — you see what you dealt (`30`, `HEAD 60` gold, `KILL 60` red)
+to the right of the crosshair and what you took (`-30`, red) to the left. Swings, kicks and
+thrown heads all report.
 
 ## Updated files (replace the whole script)
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `GuardText` / `GuardTick` attributes on the defender; parry sparks at scale 2 |
-| [ServerScriptService/Combat/Injury.lua](ServerScriptService/Combat/Injury.lua) | `ServerScriptService` → `Combat` → `Injury` | ModuleScript | `Injury.sparks(pos, scale)` |
-| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | Combat text popups |
+| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `CombatServer.showDamage` → `DealtText/Tick`, `TakenText/Tick` attributes |
+| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | Damage popups (dealt right, taken left); `HIT` word replaced by the number |

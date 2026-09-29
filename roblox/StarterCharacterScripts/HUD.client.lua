@@ -91,15 +91,17 @@ local TEXT_COL = {
 	PARRIED = Color3.fromRGB(230, 80, 60), CHAMBERED = Color3.fromRGB(230, 80, 60),
 	BLOCKED = Color3.fromRGB(200, 200, 200), HIT = Color3.fromRGB(240, 240, 240), FEINT = Color3.fromRGB(170, 170, 190), WALL = Color3.fromRGB(170, 170, 170),
 	DODGED = Color3.fromRGB(120, 200, 120),
+	DEALT = Color3.fromRGB(255, 240, 200), HEAD = Color3.fromRGB(255, 200, 90), KILL = Color3.fromRGB(255, 90, 70),
+	TAKEN = Color3.fromRGB(230, 70, 60),
 }
 local popupOrder = 0
-local function popup(text, big)
+local function popup(text, big, colorKey, offsetX)
 	popupOrder += 1
-	local key = text:match("^(GUARD BROKEN)") or text:match("^(%u+)")
+	local key = colorKey or text:match("^(GUARD BROKEN)") or text:match("^(%u+)")
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
 	l.AnchorPoint = Vector2.new(0.5, 0.5)
-	l.Position = UDim2.new(0.5, 0, 0.5, 70 + (popupOrder % 3) * 4)
+	l.Position = UDim2.new(0.5, offsetX or 0, 0.5, 70 + (popupOrder % 3) * 4)
 	l.Size = UDim2.fromOffset(400, 40)
 	l.Font = Enum.Font.GothamBlack
 	l.TextSize = big and 30 or 20
@@ -123,14 +125,23 @@ character:GetAttributeChangedSignal("GuardTick"):Connect(function()
 	popup(t, t:sub(1, 5) == "PARRY" or t:sub(1, 7) == "CHAMBER")
 end)
 character:GetAttributeChangedSignal("DodgeRefundTick"):Connect(function() popup("DODGED  +8", false) end)
--- attacker side (CombatClient stamps LocalImpactKind)
+-- attacker side (CombatClient stamps LocalImpactKind; the damage number comes from the server)
 character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
 	local k = character:GetAttribute("LocalImpactKind")
 	if k == "parry" then popup("PARRIED", true)
 	elseif k == "chamber" then popup("CHAMBERED", true)
 	elseif k == "block" then popup("BLOCKED", false)
-	elseif k == "hit" then popup("HIT", false)
 	elseif k == "feint" then popup("FEINT", false) end
+end)
+-- damage dealt: "30" · "HEAD  60" (gold) · "KILL  60" (red), to the right of the crosshair
+character:GetAttributeChangedSignal("DealtTick"):Connect(function()
+	local t = character:GetAttribute("DealtText") or ""
+	local key = t:sub(1, 4) == "KILL" and "KILL" or (t:sub(1, 4) == "HEAD" and "HEAD" or "DEALT")
+	popup(t, key ~= "DEALT", key, 120)
+end)
+-- damage taken: "-30" in red, to the left
+character:GetAttributeChangedSignal("TakenTick"):Connect(function()
+	popup(character:GetAttribute("TakenText") or "", true, "TAKEN", -120)
 end)
 
 local conn = RunService.RenderStepped:Connect(function(dt)

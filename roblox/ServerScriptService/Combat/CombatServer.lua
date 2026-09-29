@@ -114,6 +114,20 @@ function CombatServer.interrupt(targetChar, reason)
 	local ctrl = tool and CombatServer.controllers[tool]
 	if ctrl then ctrl.interrupt(reason) end
 end
+-- damage numbers for both HUDs: the attacker sees what they dealt, the
+-- victim what they took (DealtText/DealtTick, TakenText/TakenTick)
+function CombatServer.showDamage(attacker, target, dmg, region, lethal)
+	local n = math.floor(dmg + 0.5)
+	if attacker then
+		local tag = lethal and "KILL  " or (region == "head" and "HEAD  " or "")
+		attacker:SetAttribute("DealtText", tag .. n)
+		attacker:SetAttribute("DealtTick", (attacker:GetAttribute("DealtTick") or 0) + 1)
+	end
+	if target then
+		target:SetAttribute("TakenText", "-" .. n)
+		target:SetAttribute("TakenTick", (target:GetAttribute("TakenTick") or 0) + 1)
+	end
+end
 -- who hurt whom last, for kill credit (Scoreboard reads these on death)
 function CombatServer.credit(target, attacker, weaponName, kind)
 	local plr = attacker and Players:GetPlayerFromCharacter(attacker)
@@ -245,6 +259,7 @@ function CombatServer.resolveKick(character, cfg, hooks)
 			if hooks.dprint then hooks.dprint("KICK staggered", m.Name) end
 		else
 			CombatServer.credit(m, character, hooks.weaponName or "", "kick")
+			CombatServer.showDamage(character, m, cfg.KICK_DAMAGE, "body", hum.Health - cfg.KICK_DAMAGE <= 0)
 			hum:TakeDamage(cfg.KICK_DAMAGE)
 			CombatServer.markCombat(m)
 			if hooks.dprint then hooks.dprint("kick hit", m.Name) end
@@ -832,6 +847,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			dmg = math.max(dmg, hum.Health)
 		end
 		local lethal = hum.Health - dmg <= 0
+		CombatServer.showDamage(character, target, dmg, region, lethal)
 		-- the limb we actually struck (only real rig parts, not accessories)
 		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
 
@@ -1234,6 +1250,7 @@ function CombatServer.attach(Tool, weaponConfig)
 					victim:SetAttribute("StunnedUntil", os.clock() + cfg.HEAD_THROW_STUN)
 					markCombat(victim)
 					CombatServer.credit(victim, thrower, weaponName, "head")
+					CombatServer.showDamage(thrower, victim, cfg.HEAD_THROW_DAMAGE, "body", vh.Health - cfg.HEAD_THROW_DAMAGE <= 0)
 					vh:TakeDamage(cfg.HEAD_THROW_DAMAGE)
 					dprint("thrown head hit", victim.Name)
 				end)
