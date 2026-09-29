@@ -134,6 +134,7 @@ function CombatClient.attach(Tool, weaponConfig)
 
 	local sweep = nil        -- {token, endsAt, last={[blade]={Vector3...}}, reported={[Humanoid]=true}, pending={[Humanoid]={e=}}}
 	local swingToken = nil
+	local wallStop           -- defined with the animation code below (the blade hit the world)
 
 	local function report(hum, e)
 		sweep.reported[hum] = true
@@ -236,7 +237,17 @@ function CombatClient.attach(Tool, weaponConfig)
 				if d.Magnitude > 1e-3 then
 					local res = workspace:Raycast(prev, d, rayParams)
 					if showRays then debugRay(prev, res and res.Position or p, res ~= nil) end
-					if res then noteTouch(frameHits, res.Instance, res.Position, true) end
+					if res then
+						local inst = res.Instance
+						if humanoidModelOf(inst) or inst.Name == "GuardHull" then
+							noteTouch(frameHits, inst, res.Position, true)
+						elseif inst.CanCollide and not inst:IsDescendantOf(workspace:FindFirstChild("DroppedWeapons") or workspace.Terrain) then
+							-- the blade met the world: the swing stops here
+							remote:FireServer("Wall", sweep.token, res.Position)
+							wallStop()
+							return
+						end
+					end
 				end
 				pts[i] = p
 			end
@@ -375,6 +386,13 @@ function CombatClient.attach(Tool, weaponConfig)
 				currentTrack = nil
 			end
 		end)
+	end
+
+	-- the blade hit a wall / the floor: same feel as a block, then it eases back
+	wallStop = function()
+		clangStop(cfg.HITSTOP_BLOCK)
+		impact("block")
+		endSweep()
 	end
 
 	local function stopAttack()

@@ -149,8 +149,14 @@ local function kick(plr, char)
 				dprint = log,
 			})
 		end
-		-- a whiffed kick recovers longer
-		local extra = landed and 0 or K.KICK_MISS_EXTRA
+		-- land = stamina back; whiff = stamina and a longer recovery; a wall = neither
+		local extra = 0
+		if landed then
+			CombatServer.refundStamina(char, K.KICK_REFUND)
+		elseif not CombatServer.wallAhead(char, 3) then
+			CombatServer.drainStamina(char, K.KICK_MISS_COST, char:GetAttribute("BlockMax"))
+			extra = K.KICK_MISS_EXTRA
+		end
 		kickBusyUntil[char] = now + K.KICK_WINDUP + K.KICK_RECOVERY + extra
 		stamp = kickBusyUntil[char]
 		task.delay(K.KICK_RECOVERY + extra, finish)

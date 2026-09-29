@@ -184,8 +184,22 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   + the white edge flash mean you got it.
 - **Flinch only in windup** (`FLINCH_ONLY_WINDUP`): a hit stops a swing that hasn't committed;
   one already in release finishes. Trading is a choice now. Kicks still stop anything.
-- **Stamina**: a swing that touches nothing costs `MISS_COST_MULT` × its cost extra; a clean hit
-  refunds `HIT_REFUND`. A dodge that makes a swing miss you refunds `DODGE_REFUND`.
+- **Stamina ledger** (Mordhau-style): the windup always costs `staminaCost`; **every enemy a
+  swing hits refunds** `HIT_REFUND` (cut through three = three refunds); a whiff costs
+  `MISS_COST_MULT` × the cost extra; a blade that hits a **wall / floor** stops there (clang,
+  `WALL_RECOVERY`) with no penalty and no refund. Kick: land = `KICK_REFUND` back, whiff =
+  `KICK_MISS_COST` + longer recovery, kick a wall = neither. A dodge that makes a swing miss you
+  refunds `DODGE_REFUND`.
+- **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds `PARRY_REFUND` ×
+  your streak — parries within `PARRY_STREAK_WINDOW` (2 s) of each other stack up to
+  `PARRY_STREAK_MAX`, so 1vX parry-parry-parry is 6, 12, 18… Holding block still pays the full
+  `blockCost` every hit (the turtle tax) and can't attack while up.
+- **Parry chain**: after a *successful* parry you can re-guard instantly with a fresh parry window
+  for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A missed parry keeps
+  the cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing
+  itself plays at normal speed.
+- **Walls**: hits are rejected when the line from your head to the hit point passes through solid
+  geometry (`WALL_CHECK`), so nobody gets stabbed through a wall.
 - **Per-region damage**: `damage` is a number (× `HEAD_DAMAGE_MULT` / `LEG_DAMAGE_MULT`) or
   `{head=, body=, legs=}`.
 - **Animations fit the rules** (`FIT_ANIMS`): each attack's optional `windupAnim` is stretched to
@@ -238,10 +252,17 @@ each time it hurts it (swings, kicks, thrown heads); a death within `CREDIT_WIND
 the last hit counts for that attacker, a bleed-out included. **Hold Tab** for the board (kills,
 deaths, K/D, sorted by kills; replaces Roblox's list). Dummies show in the feed, not the board.
 
+## Low stamina
+
+Below 35% stamina a dark vignette, a little blur and a looped `SoundConfig.Breathing` ramp in
+(InjuryFX); at 0 the vignette pulses and the breathing peaks.
+
 ## Settings (⚙ on the spawn menu)
 
 Camera feel sliders (head bob, weapon sway, camera roll, impact shake, breathing, first-person
-clunk boost, FP FOV — 0 turns an effect off, for competitive play) and keybinds. Stored in
+clunk boost, FP FOV — 0 turns an effect off, for competitive play; the FOV you set gets
+`FP_FOV_HIDDEN` added behind the scenes so the whole sword stays in frame, and also nudges
+third person by half the difference) and keybinds. Stored in
 `ReplicatedStorage.ClientSettings`, read live by CameraRig / CombatClient / Movement, and
 saved per player by `SettingsServer` (DataStore; in Studio enable *Allow Studio access to API
 services* or it just lasts the session).

@@ -171,6 +171,9 @@ local FOOTSTEP_VOLUME = 0.5
 
 -- sprint / dodge feel
 local SPRINT_FOV_ADD = 8      -- degrees while SpeedMult_Sprint is published
+local FOV_SMOOTH     = 6      -- how fast the FOV eases between values
+local FP_FOV_HIDDEN  = 10     -- added to the first-person FOV behind the scenes (whole sword in frame)
+local fovNow         = FP_FOV
 local DODGE_ROLL     = 0.35   -- roll impulse into a side dodge
 local DODGE_DIP      = 0.06   -- pitch dip on any dodge
 
@@ -178,6 +181,9 @@ local DODGE_DIP      = 0.06   -- pitch dip on any dodge
 -- ClientSettings Bob / Sway / Roll / Shake / Breathe / FPClunk / FOV
 -- (the ⚙ on the loadout menu). Read every frame, so changes apply live.
 local function S(key) return ClientSettings.get(key) end
+ClientSettings.onChanged(function(key, v)
+	if DebugFlags.get("Logs") then print("[CameraRig] setting", key, "=", v) end
+end)
 
 -- hit feedback (both views)
 local HIT_FLINCH  = 0.07   -- pitch kick when we take a hit
@@ -447,13 +453,21 @@ local function loopBody(dt)
 	-- for direct per-gear control independent of the speed change.
 	bobAmt = bobAmt + (walkFrac - bobAmt) * math.clamp(dt*BOB_SMOOTH, 0, 1)
 
-	local speedRatio = math.max(Humanoid.WalkSpeed, 0.01) / BASE_WALKSPEED
-	local heaviness  = math.clamp(1 / speedRatio, HEAVINESS_MIN, HEAVINESS_MAX)
+	-- heaviness comes from WEIGHT (weapon, armor, lost legs) — not from backing
+	-- up, strafing, sprinting or crouching, which only change how fast you move
+	local weightRatio = 1
+	for name, v in pairs(character:GetAttributes()) do
+		if type(v) == "number" and (name == "SpeedMult" or name == "SpeedMult_Weapon" or name == "SpeedMult_Armor" or name == "SpeedMult_Limbs") then
+			weightRatio = weightRatio * v
+		end
+	end
+	local heaviness  = math.clamp(1 / math.max(weightRatio, 0.05), HEAVINESS_MIN, HEAVINESS_MAX)
 	local clunkMult  = BASE_CLUNK * Modifiers.product(character, "ClunkMult")
 
+	-- cadence follows how fast the feet actually move
 	local stepped = false
 	if grounded and walkFrac > 0.05 then
-		stepPhase = stepPhase + dt * STEP_RATE_HZ * walkFrac * speedRatio
+		stepPhase = stepPhase + dt * STEP_RATE_HZ * (speed / BASE_WALKSPEED)
 		if stepPhase >= 1 then
 			stepPhase = stepPhase % 1
 			stepSide = -stepSide
@@ -578,9 +592,15 @@ local function loopBody(dt)
 	local hOff = bobX + breatheX + dirSide
 	local zOff = dirFwd
 
+	-- FOV: the setting is what the player sees; FP_FOV_HIDDEN widens it behind
+	-- the scenes so the whole sword stays in frame. Sprint adds and smooths.
 	local sprinting = character:GetAttribute("SpeedMult_Sprint") ~= nil
+	local fovTarget = inFP
+		and (S("FOV") + FP_FOV_HIDDEN + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD or 0))
+		or  (TP_FOV + (S("FOV") - 100) * 0.5 + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0))
+	fovNow = fovNow + (fovTarget - fovNow) * math.clamp(dt * FOV_SMOOTH, 0, 1)
+	Camera.FieldOfView = math.clamp(fovNow, 40, 120)
 	if inFP then
-		Camera.FieldOfView = S("FOV") + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD or 0)
 		-- forward-kinematics the head's world position from the C0s we just
 		-- set this frame — same "follows the head" feel as reading
 		-- Head.Position, but synchronous (no one-frame joint-solver lag)
@@ -595,7 +615,6 @@ local function loopBody(dt)
 			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + zOff*fpClunk)
 	else
 		eyePos = nil
-		Camera.FieldOfView = TP_FOV + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0)
 		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)   -- HRP itself sinks when crouched
 		camRay.FilterDescendantsInstances = {character}
 		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X, 0, 0)

@@ -272,6 +272,8 @@ RunService.RenderStepped:Connect(function(dt)
 		refreshRound()
 		local show = holding or intermission()
 		if board.Visible ~= show then board.Visible = show end
+		-- the loadout menu (DisplayOrder 2000) is up during the intermission: sit above it
+		gui.DisplayOrder = intermission() and 2100 or 30
 		if show then refreshBoard() end
 	end
 end)

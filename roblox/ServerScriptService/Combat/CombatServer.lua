@@ -156,6 +156,45 @@ function CombatServer.clipLength(id)
 	return clipLength[id] or nil
 end
 
+-- Is there world geometry between `from` (a character) and `pos`? Character
+-- parts, non-solid parts, dropped weapons and debris are looked past.
+local function humanoidModelOf(part)
+	local m = part:FindFirstAncestorOfClass("Model")
+	while m do
+		if m:FindFirstChildOfClass("Humanoid") then return m end
+		m = m:FindFirstAncestorOfClass("Model")
+	end
+	return nil
+end
+local wallParams = RaycastParams.new()
+wallParams.FilterType = Enum.RaycastFilterType.Exclude
+wallParams.IgnoreWater = true
+function CombatServer.throughWall(fromChar, targetModel, pos)
+	local head = fromChar:FindFirstChild("Head") or fromChar:FindFirstChild("HumanoidRootPart")
+	if not head then return false end
+	local origin = head.Position
+	local exclude = {fromChar, targetModel}
+	local dropped = workspace:FindFirstChild("DroppedWeapons")
+	if dropped then table.insert(exclude, dropped) end
+	for _ = 1, 4 do
+		wallParams.FilterDescendantsInstances = exclude
+		local res = workspace:Raycast(origin, pos - origin, wallParams)
+		if not res then return false end
+		local inst = res.Instance
+		if inst.CanCollide and not humanoidModelOf(inst) then return true end
+		table.insert(exclude, inst)   -- someone else's limb, a trophy, sparks…: look past it
+	end
+	return false
+end
+-- solid world right in front of a character (a kick into a wall is no whiff)
+function CombatServer.wallAhead(char, dist)
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return false end
+	wallParams.FilterDescendantsInstances = {char}
+	local res = workspace:Raycast(hrp.Position, hrp.CFrame.LookVector * (dist or 3), wallParams)
+	return res ~= nil and res.Instance.CanCollide and not humanoidModelOf(res.Instance)
+end
+
 -- "RightOverhead" -> "Right", "Overhead";  "Stab" -> nil, "Stab"
 function CombatServer.sideType(name)
 	if type(name) ~= "string" then return nil, nil end
@@ -274,8 +313,16 @@ CombatServer.DEFAULTS = {
 	                          --    a slow weapon re-times the picture with the rules)
 	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
 	                          --    already in release finishes (trades are a real choice)
-	MISS_COST_MULT   = 0.75,  -- a swing that touches nothing costs this × staminaCost extra
-	HIT_REFUND       = 4,     -- …and a clean hit gives this much back
+	-- STAMINA LEDGER (Mordhau-style): the windup always costs staminaCost; every
+	-- enemy the swing hits refunds HIT_REFUND (cut through three = three refunds);
+	-- a swing that touches nothing costs MISS_COST_MULT × staminaCost extra; a
+	-- swing that hits a wall / the floor stops there with no penalty and no refund.
+	MISS_COST_MULT   = 0.75,
+	HIT_REFUND       = 6,
+	WALL_CHECK       = true,  -- reject hits whose line from you to the hit point passes through geometry,
+	WALL_RECOVERY    = 0.35,  --    and a blade that hits a wall stops (this long before you can act)
+	KICK_REFUND      = 8,     -- a kick that lands gives this back; one that misses costs KICK_MISS_COST;
+	KICK_MISS_COST   = 8,     --    kicking a wall is neither
 	MORPH_COST       = 10,    -- switch attack mid-windup (right swing -> stab…): stamina
 	MORPHS_PER_SWING = 1,
 	MORPH_NO_MIRROR  = true,  -- can't morph into the mirror of the same attack (RightSwing -> LeftSwing):
@@ -322,10 +369,17 @@ CombatServer.DEFAULTS = {
 	BLOCK_COOLDOWN    = 0.50,  -- after lowering your guard, how long before you can raise it again
 	PARRY_RETRY       = 0.90,  -- …and how long it must have been DOWN to earn a fresh parry window.
 	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
-	PARRY_COST_MULT   = 0.3,   -- a timed parry costs this fraction of the attack's blockCost
+	PARRY_COST_MULT   = 0,     -- a timed parry costs this fraction of the attack's blockCost (0: parries are free;
+	                           --    holding block still pays the full blockCost — the turtle tax)
+	PARRY_REFUND      = 6,     -- …and REFUNDS this × your streak: parries within PARRY_STREAK_WINDOW of
+	PARRY_STREAK_WINDOW = 2.0, --    each other stack (1vX: parry, parry, parry = 6, 12, 18…)
+	PARRY_STREAK_MAX  = 5,
+	PARRY_CHAIN_WINDOW= 1.5,   -- after a SUCCESSFUL parry you can re-guard at once with a fresh parry
+	                           --    window (no BLOCK_COOLDOWN, no PARRY_RETRY) for this long; a missed
+	                           --    parry keeps the normal cooldown
 	PARRY_PUNISH_STUN = 1.50,
-	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks run at RIPOSTE_SPEED tempo
-	RIPOSTE_SPEED     = 1.6,
+	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
+	RIPOSTE_SPEED     = 1.6,   --    itself plays at normal speed — there's still a windup, just a quick one)
 	FEINT_COST        = 12,
 	FEINT_RECOVERY    = 0.25,
 
@@ -665,7 +719,14 @@ function CombatServer.attach(Tool, weaponConfig)
 				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
-				drainStamina(target, info.blockCost * cfg.PARRY_COST_MULT)
+				-- streak: parries close together pay out more (1vX)
+				local streak = (now - (target:GetAttribute("LastParryAt") or -1e9) <= cfg.PARRY_STREAK_WINDOW)
+					and math.min((target:GetAttribute("ParryStreak") or 0) + 1, cfg.PARRY_STREAK_MAX) or 1
+				target:SetAttribute("ParryStreak", streak)
+				target:SetAttribute("LastParryAt", now)
+				drainStamina(target, (info.blockCost or 0) * cfg.PARRY_COST_MULT)
+				CombatServer.refundStamina(target, cfg.PARRY_REFUND * streak)
+				dprint("parry streak", streak, "+" .. cfg.PARRY_REFUND * streak, "stamina to", target.Name)
 				cancelSwing("parried")
 				sfx("Parry", part)
 				Sounds.voice("Parry", target:FindFirstChild("Head"))
@@ -806,8 +867,24 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not hrp then return end
 		if (hrp.Position - hitPos).Magnitude > cfg.REACH + cfg.REACH_TOLERANCE then dprint("hit rejected: out of reach"); return end
 		if (part.Position - hitPos).Magnitude > part.Size.Magnitude * 0.5 + 2 then dprint("hit rejected: point not on part"); return end
+		if cfg.WALL_CHECK and CombatServer.throughWall(character, model, hitPos) then dprint("hit rejected: through a wall"); return end
 		state.alreadyHit[hum] = true
 		resolveHit(hum, model, part, hitPos, claimedGuard == true)
+	end
+
+	-- the client's blade met the world (a wall, the floor): the swing stops
+	-- there — no whiff penalty, no refund, a short recovery
+	local function onWall(token, pos)
+		if not character or token ~= state.token or state.phase ~= "release" then return end
+		if typeof(pos) ~= "Vector3" then return end
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if not hrp or (hrp.Position - pos).Magnitude > cfg.REACH + cfg.REACH_TOLERANCE then return end
+		state.landed = true
+		Injury.sparks(pos)
+		sfx("Block", handle(), {Volume = 0.7})
+		cancelSwing("wall")
+		state.nextActionTime = os.clock() + cfg.WALL_RECOVERY
+		dprint("blade hit the world")
 	end
 
 	----------------------------------------------------------------
@@ -895,7 +972,15 @@ function CombatServer.attach(Tool, weaponConfig)
 				local d = p - prev
 				if d.Magnitude > 1e-3 then
 					local res = workspace:Raycast(prev, d, npcRay)
-					if res then note(res.Instance, res.Position, true) end
+					if res then
+						if humanoidModelOf(res.Instance) or res.Instance.Name == "GuardHull" then
+							note(res.Instance, res.Position, true)
+						elseif res.Instance.CanCollide and not res.Instance:IsDescendantOf(workspace:FindFirstChild("DroppedWeapons") or workspace.Terrain) then
+							npc.sweep = nil
+							onWall(sw.token, res.Position)
+							return
+						end
+					end
 				end
 				pts[i] = p
 			end
@@ -1053,8 +1138,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function attackTimes(info, name)
 		local _, atype = CombatServer.sideType(name)
 		local speed = (info.speed or 1) * ((cfg.TYPE_SPEED or {})[atype or ""] or 1) * cfg.SPEED_MULT
-		if (attr("FastUntil") or 0) > os.clock() then speed = speed * cfg.RIPOSTE_SPEED end
 		local wl = info.windup or cfg.WINDUP
+		if (attr("FastUntil") or 0) > os.clock() then wl = wl / cfg.RIPOSTE_SPEED end   -- riposte: quicker windup only
 		local al = CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE
 		local rl = info.recovery or cfg.RECOVERY
 		return speed,
@@ -1279,11 +1364,13 @@ function CombatServer.attach(Tool, weaponConfig)
 			dprint("block denied: committed (" .. state.phase .. ")"); return
 		end
 		if attr("Blocking") then return end
+		-- a successful parry just now: straight back up with a fresh window (parry, parry, parry)
+		local chained = now - (attr("LastParryAt") or -1e9) <= cfg.PARRY_CHAIN_WINDOW
 		-- a feint already paid for this guard: the re-guard cooldown doesn't apply
-		if not feinted and now < state.nextBlockTime then dprint("block denied: cooldown"); return end
+		if not feinted and not chained and now < state.nextBlockTime then dprint("block denied: cooldown"); return end
 		CombatServer.dropProtection(character)
 		setAttr("Blocking", true)
-		if now - state.lastBlockStart >= cfg.PARRY_RETRY then
+		if chained or now - state.lastBlockStart >= cfg.PARRY_RETRY then
 			setAttr("ParryUntil", now + cfg.PARRY_WINDOW)
 		end
 		state.lastBlockStart = now
@@ -1345,8 +1432,13 @@ function CombatServer.attach(Tool, weaponConfig)
 			if state.token ~= token then return end
 			local landed = false
 			if not isStunned() then landed = resolveKick() end
-			if not landed then
-				-- whiffed kick: longer recovery, so it's a commitment
+			if landed then
+				CombatServer.refundStamina(character, cfg.KICK_REFUND)
+			elseif CombatServer.wallAhead(character, 3) then
+				dprint("kicked a wall")   -- no refund, no penalty
+			else
+				-- whiffed kick: stamina and a longer recovery, so it's a commitment
+				spend(cfg.KICK_MISS_COST)
 				state.nextActionTime = state.nextActionTime + cfg.KICK_MISS_EXTRA
 			end
 		end)
@@ -1363,6 +1455,9 @@ function CombatServer.attach(Tool, weaponConfig)
 		if who ~= player then return end
 		if action == "Hit" then
 			onHitReport(a, b, c, d, e)
+			return
+		elseif action == "Wall" then
+			onWall(a, b)
 			return
 		end
 		dprint("recv", action, a)
