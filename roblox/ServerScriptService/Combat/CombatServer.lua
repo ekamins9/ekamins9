@@ -706,11 +706,17 @@ function CombatServer.attach(Tool, weaponConfig)
 			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
 			local meter = target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX
 			markCombat(character)
-			Injury.sparks(hitPos)
+			-- what the defender's HUD says happened (GuardTick makes it pop)
+			local function guardText(text)
+				target:SetAttribute("GuardText", text)
+				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
+			end
 			if meter <= 0 or not Injury.canBlock(target) then
 				markCombat(target)
+				Injury.sparks(hitPos, 1)
 				knockAwayWeapon(target, dir, meter <= 0 and "guard hit at 0 stamina" or "guard with a missing arm")
 				sfx("Block", part)
+				guardText("DISARMED")
 				tell("Blocked", true)
 				return
 			end
@@ -727,6 +733,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				drainStamina(target, (info.blockCost or 0) * cfg.PARRY_COST_MULT)
 				CombatServer.refundStamina(target, cfg.PARRY_REFUND * streak)
 				dprint("parry streak", streak, "+" .. cfg.PARRY_REFUND * streak, "stamina to", target.Name)
+				guardText(string.format("PARRY%s  +%d", streak > 1 and ("  ×" .. streak) or "", cfg.PARRY_REFUND * streak))
+				Injury.sparks(hitPos, 2)   -- big, white: unmistakably a parry
 				cancelSwing("parried")
 				sfx("Parry", part)
 				Sounds.voice("Parry", target:FindFirstChild("Head"))
@@ -737,6 +745,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				drainStamina(target, info.blockCost)
 				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
+				Injury.sparks(hitPos, 1)
 				-- the blade stops dead on a guard, same as a parry — the parry's
 				-- extra punish is the attacker's stun and the defender's riposte
 				cancelSwing("blocked")
@@ -746,9 +755,11 @@ function CombatServer.attach(Tool, weaponConfig)
 					knockAwayWeapon(target, dir, "guard broken at 0 stamina")
 					-- set last: knockAwayWeapon's shorter DISARM_STUN must not cut this short
 					target:SetAttribute("StunnedUntil", now + cfg.BLOCK_BREAK_STUN)
+					guardText("GUARD BROKEN")
 					tell("Blocked", true)
 					dprint("BLOCK BROKEN on", target.Name)
 				else
+					guardText(string.format("BLOCK  −%d", info.blockCost or 0))
 					tell("Blocked", false)
 					dprint("blocked by", target.Name, "meter", math.floor(m))
 				end
@@ -771,8 +782,10 @@ function CombatServer.attach(Tool, weaponConfig)
 				setAttr("StunnedUntil", now + cfg.CHAMBER_STUN)
 				drainStamina(target, (info.blockCost or 0) * cfg.CHAMBER_COST_MULT)
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
+				target:SetAttribute("GuardText", "CHAMBER")
+				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
 				cancelSwing("chambered")
-				Injury.sparks(hitPos)
+				Injury.sparks(hitPos, 2)
 				sfx("Parry", part)
 				Sounds.voice("Parry", target:FindFirstChild("Head"))
 				tell("Chambered")

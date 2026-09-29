@@ -123,8 +123,10 @@ function Injury.bloodBurst(part, count)
 end
 
 -- steel on steel: a burst of sparks at a block / parry / chamber contact
-function Injury.sparks(pos)
+-- scale 1 = a block (orange, small); 2 = a parry / chamber (white-gold, big flash)
+function Injury.sparks(pos, scale)
 	if typeof(pos) ~= "Vector3" then return end
+	scale = scale or 1
 	local p = Instance.new("Part")
 	p.Name = "Sparks"
 	p.Size = Vector3.new(0.2, 0.2, 0.2)
@@ -133,25 +135,27 @@ function Injury.sparks(pos)
 	p.CFrame = CFrame.new(pos)
 	local e = Instance.new("ParticleEmitter")
 	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	e.Color = ColorSequence.new(Color3.fromRGB(255, 230, 150), Color3.fromRGB(255, 120, 40))
+	e.Color = scale >= 2
+		and ColorSequence.new(Color3.fromRGB(255, 255, 240), Color3.fromRGB(255, 220, 120))
+		or  ColorSequence.new(Color3.fromRGB(255, 230, 150), Color3.fromRGB(255, 120, 40))
 	e.LightEmission = 1
-	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0)})
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.25 * scale), NumberSequenceKeypoint.new(1, 0)})
 	e.Transparency = NumberSequence.new(0, 1)
-	e.Lifetime = NumberRange.new(0.15, 0.4)
-	e.Speed = NumberRange.new(12, 26)
+	e.Lifetime = NumberRange.new(0.15, 0.4 * scale)
+	e.Speed = NumberRange.new(12 * scale, 26 * scale)
 	e.SpreadAngle = Vector2.new(180, 180)
 	e.Acceleration = Vector3.new(0, -60, 0)
 	e.Drag = 4
 	e.Rate = 0
 	e.Parent = p
 	local light = Instance.new("PointLight")
-	light.Color = Color3.fromRGB(255, 200, 120)
-	light.Brightness = 3
-	light.Range = 8
+	light.Color = scale >= 2 and Color3.fromRGB(255, 250, 220) or Color3.fromRGB(255, 200, 120)
+	light.Brightness = 3 * scale
+	light.Range = 8 * scale
 	light.Parent = p
 	p.Parent = workspace
-	e:Emit(28)
-	task.delay(0.08, function() if light.Parent then light:Destroy() end end)
+	e:Emit(28 * scale)
+	task.delay(0.08 * scale, function() if light.Parent then light:Destroy() end end)
 	Debris:AddItem(p, 1)
 end
 

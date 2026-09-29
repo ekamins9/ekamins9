@@ -80,6 +80,59 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 local hpShown, staShown = 1, 1
 
+--------------------------------------------------------------------
+--  COMBAT TEXT — a word near the crosshair for what just happened:
+--  as the defender  PARRY ×2 +12 (gold, big) · BLOCK −20 (grey) · CHAMBER · GUARD BROKEN
+--  as the attacker  PARRIED / CHAMBERED (red) · BLOCKED (grey) · HIT · FEINT · WALL
+--------------------------------------------------------------------
+local TEXT_COL = {
+	PARRY = Color3.fromRGB(255, 215, 110), CHAMBER = Color3.fromRGB(255, 215, 110),
+	BLOCK = Color3.fromRGB(200, 200, 200), ["GUARD BROKEN"] = Color3.fromRGB(230, 80, 60), DISARMED = Color3.fromRGB(230, 80, 60),
+	PARRIED = Color3.fromRGB(230, 80, 60), CHAMBERED = Color3.fromRGB(230, 80, 60),
+	BLOCKED = Color3.fromRGB(200, 200, 200), HIT = Color3.fromRGB(240, 240, 240), FEINT = Color3.fromRGB(170, 170, 190), WALL = Color3.fromRGB(170, 170, 170),
+	DODGED = Color3.fromRGB(120, 200, 120),
+}
+local popupOrder = 0
+local function popup(text, big)
+	popupOrder += 1
+	local key = text:match("^(GUARD BROKEN)") or text:match("^(%u+)")
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.AnchorPoint = Vector2.new(0.5, 0.5)
+	l.Position = UDim2.new(0.5, 0, 0.5, 70 + (popupOrder % 3) * 4)
+	l.Size = UDim2.fromOffset(400, 40)
+	l.Font = Enum.Font.GothamBlack
+	l.TextSize = big and 30 or 20
+	l.TextColor3 = TEXT_COL[key] or Color3.new(1, 1, 1)
+	l.TextStrokeTransparency = 0.4
+	l.TextStrokeColor3 = Color3.new(0, 0, 0)
+	l.Text = text
+	l.ZIndex = 5
+	l.Parent = gui
+	local tw = game:GetService("TweenService")
+	tw:Create(l, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = l.Position - UDim2.fromOffset(0, big and 46 or 30)}):Play()
+	task.delay(0.35, function()
+		tw:Create(l, TweenInfo.new(0.4), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+		task.delay(0.45, function() if l.Parent then l:Destroy() end end)
+	end)
+end
+
+-- defender side (server stamps these)
+character:GetAttributeChangedSignal("GuardTick"):Connect(function()
+	local t = character:GetAttribute("GuardText") or ""
+	popup(t, t:sub(1, 5) == "PARRY" or t:sub(1, 7) == "CHAMBER")
+end)
+character:GetAttributeChangedSignal("DodgeRefundTick"):Connect(function() popup("DODGED  +8", false) end)
+-- attacker side (CombatClient stamps LocalImpactKind)
+character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
+	local k = character:GetAttribute("LocalImpactKind")
+	if k == "parry" then popup("PARRIED", true)
+	elseif k == "chamber" then popup("CHAMBERED", true)
+	elseif k == "block" then popup("BLOCKED", false)
+	elseif k == "hit" then popup("HIT", false)
+	elseif k == "feint" then popup("FEINT", false) end
+end)
+
 local conn = RunService.RenderStepped:Connect(function(dt)
 	local a = math.clamp(dt * LERP_SPEED, 0, 1)
 	local t = os.clock()
