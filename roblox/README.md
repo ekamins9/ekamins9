@@ -195,8 +195,8 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   `PARRY_STREAK_MAX`, so 1vX parry-parry-parry is 6, 12, 18… Holding block still pays the full
   `blockCost` every hit (the turtle tax) and can't attack while up.
 - **Parry chain**: after a *successful* parry you can re-guard instantly with a fresh parry window
-  for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A missed parry keeps
-  the cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing
+  for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A guard that comes
+  down without having parried **breaks the chain** (and the streak): back to the normal cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing
   itself plays at normal speed.
 - **Walls**: hits are rejected when the line from your head to the hit point passes through solid
   geometry (`WALL_CHECK`), so nobody gets stabbed through a wall.

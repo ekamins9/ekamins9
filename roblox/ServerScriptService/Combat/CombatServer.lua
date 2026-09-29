@@ -450,7 +450,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick
 		attack = nil, attackName = nil, alreadyHit = {}, queued = nil,
 		windupStart = 0, windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0, nextBlockTime = 0,
-		cycleIndex = 0, lastBlockStart = -1e9,
+		cycleIndex = 0, lastBlockStart = -1e9, guardStart = 0,
 		morphs = 0, landed = false,         -- per swing: morphs used; touched anything (no miss penalty)
 		chambered = false,                  -- this windup just chambered someone (morph allowed past the cutoff)
 	}
@@ -1374,6 +1374,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			setAttr("ParryUntil", now + cfg.PARRY_WINDOW)
 		end
 		state.lastBlockStart = now
+		state.guardStart = now   -- a guard that comes down without having parried ends the chain
 		tell("Block", true)
 		dprint("block start")
 	end
@@ -1383,6 +1384,13 @@ function CombatServer.attach(Tool, weaponConfig)
 		if attr("Blocking") then
 			setAttr("Blocking", false)
 			state.nextBlockTime = os.clock() + cfg.BLOCK_COOLDOWN
+			-- no parry happened while this guard was up: the chain is broken, normal
+			-- cooldown and PARRY_RETRY apply again (no spamming right click off one parry)
+			if (attr("LastParryAt") or -1e9) < (state.guardStart or 0) then
+				if attr("LastParryAt") then dprint("parry chain broken") end
+				setAttr("LastParryAt", nil)
+				setAttr("ParryStreak", nil)
+			end
 		end
 		setAttr("ParryUntil", 0)
 		tell("Block", false)
