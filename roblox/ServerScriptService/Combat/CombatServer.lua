@@ -343,7 +343,9 @@ CombatServer.DEFAULTS = {
 	                          --    the blade would have to cross the whole body
 	MORPH_FORBID     = {Overhead = "Underhand", Underhand = "Overhead"},   -- type pairs too far apart to morph between
 	MORPH_CUTOFF     = 1.0,   -- no morph past this fraction of the windup (1 = the whole windup)
-	MORPH_WINDUP     = 1.0,   -- a morph plays this × the new attack's FULL windup, at normal speed
+	MORPH_STAB_OPPOSITE = true, -- a swing / underhand morphed into a stab always becomes the OPPOSITE-side
+	                          --    stab (LeftSwing -> RightStab), whatever side key is held — reads smoother
+	MORPH_WINDUP     = 1.3,   -- a morph plays this × the new attack's FULL windup, at normal speed
 	                          --    (1 = a complete second windup; the morph's cost is the time)
 	BLEND            = 0.08,  -- seconds (at speed 1) to cross-fade clips that aren't a windup: a combo's
 	                          --    swing→swing, a swing ending, a feint back to idle. Divided by the speed.
@@ -1054,10 +1056,10 @@ function CombatServer.attach(Tool, weaponConfig)
 		local arm = npcArm
 		local fadeA = blendFor(speed, active)
 		local fadeIn = windup > 0 and windup or fadeA
-		if npc.current then npc.current:Stop(fadeIn); npc.current = nil end
 		local t = npcCached(releaseId)
+		if npc.current and npc.current ~= t then npc.current:Stop(fadeIn) end
+		npc.current = nil
 		if not t then return end
-		if t.IsPlaying then t:Stop(0) end
 		t:Play(fadeIn)
 		t.TimePosition = 0
 		t:AdjustSpeed(0)              -- hold the loaded pose while it blends in
@@ -1138,7 +1140,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		elseif what == "Cancel" or what == "Flinch" then
 			npc.sweep = nil
 			npcArm += 1
-			if npc.current then npc.current:Stop(blendFor(1, 1)); npc.current = nil end
+			if npc.current then npc.current:Stop(0.2); npc.current = nil end
 		elseif what == "Cleanup" then
 			npcStopAll()
 		end
@@ -1281,6 +1283,15 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- MORPH: swap the attack during the windup (right swing -> stab, overhead -> underhand…)
 	local function morph(name)
+		-- swing -> stab lands on the far side of the body: the blade is already there
+		if cfg.MORPH_STAB_OPPOSITE then
+			local fs, ft = CombatServer.sideType(state.attackName)
+			local _, tt = CombatServer.sideType(name)
+			if tt == "Stab" and fs and (ft == "Swing" or ft == "Underhand") then
+				local want = (fs == "Left" and "Right" or "Left") .. "Stab"
+				if usable(want) then name = want end
+			end
+		end
 		local info = cfg.ATTACKS[name]
 		if not info then return end
 		if name == state.attackName then dprint("morph denied: same attack"); return end

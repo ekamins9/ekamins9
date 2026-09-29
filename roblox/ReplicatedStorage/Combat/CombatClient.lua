@@ -46,6 +46,7 @@ CombatClient.DEFAULTS = {
 	FIT_ANIMS     = true,   -- stretch the swing clip to the active phase (see CombatServer)
 	BLEND         = 0.08,   -- seconds (at speed 1) to cross-fade clips; divided by the attack speed
 	RECOIL        = 0.18,   -- seconds a blocked / parried swing eases back to idle
+	CANCEL_BLEND  = 0.12,   -- seconds (at speed 1) a feint / cancel eases back to idle; divided by the attack speed
 	KICK_KEY = Enum.KeyCode.G,   -- fallback when the settings module is unavailable
 }
 
@@ -283,6 +284,7 @@ function CombatClient.attach(Tool, weaponConfig)
 	local idleTrack, blockTrack, hitTrack
 	local attackCache = {}
 	local currentTrack, currentSpeed = nil, 1
+	local lastSpeed = 1          -- the attack speed of the last swing (cancels/feints blend by it)
 	local armToken = 0           -- bumps whenever the release timing changes
 
 	local function getAnimator()
@@ -336,11 +338,14 @@ function CombatClient.attach(Tool, weaponConfig)
 		if windup > 0 then endSweep() end   -- a morph out of the grace window: the blade goes cold again
 		local fadeA  = blendFor(speed, active)
 		local fadeIn = windup > 0 and windup or fadeA
-		if currentTrack then currentTrack:Stop(fadeIn); currentTrack = nil end
+		lastSpeed = speed
 		local t = cached(releaseId)
+		-- the outgoing clip fades over the same time the new one fades in — unless
+		-- it IS the new one (feint → same attack): then it just turns back around
+		if currentTrack and currentTrack ~= t then currentTrack:Stop(fadeIn) end
+		currentTrack = nil
 		swingToken = token
 		if not t then return end
-		if t.IsPlaying then t:Stop(0) end
 		t:Play(fadeIn)               -- the fade from wherever we are into the loaded pose IS the windup
 		t.TimePosition = 0
 		t:AdjustSpeed(0)
@@ -399,8 +404,8 @@ function CombatClient.attach(Tool, weaponConfig)
 		swingToken = nil
 		armToken += 1
 		endSweep()
-		-- a feint / cancel eases back to idle rather than snapping
-		if currentTrack then currentTrack:Stop(blendFor(1, 1)); currentTrack = nil end
+		-- a feint / cancel eases back to idle at the weapon's own tempo, never snaps
+		if currentTrack then currentTrack:Stop(math.clamp(cfg.CANCEL_BLEND / math.max(lastSpeed, 0.05), 0.08, 0.4)); currentTrack = nil end
 		-- the kick leg is a procedural pose in CameraRig, not a track: clearing
 		-- its timestamp is what cancels it
 		local char = player.Character
@@ -410,9 +415,9 @@ function CombatClient.attach(Tool, weaponConfig)
 	-- being hit: blend into the flinch clip from wherever the sword is, then back out
 	local function flinch()
 		if not hitTrack then return end
-		local fade = blendFor(1, 1)
-		if hitTrack.IsPlaying then hitTrack:Stop(0) end
-		hitTrack:Play(fade)
+		local fade = 0.12
+		hitTrack:Play(fade)          -- already playing: Play is a no-op, so just rewind
+		hitTrack.TimePosition = 0
 		if hitTrack.Length > 0 then
 			task.delay(math.max(hitTrack.Length - fade, 0), function() if hitTrack.IsPlaying then hitTrack:Stop(fade) end end)
 		end
@@ -512,9 +517,9 @@ function CombatClient.attach(Tool, weaponConfig)
 
 		elseif what == "Block" then
 			if a == true then
-				if blockTrack then blockTrack:Play(blendFor(1, 1)) end
+				if blockTrack then blockTrack:Play(0.12) end
 			else
-				if blockTrack then blockTrack:Stop(blendFor(1, 1)) end
+				if blockTrack then blockTrack:Stop(0.15) end
 			end
 
 		elseif what == "Cleanup" then

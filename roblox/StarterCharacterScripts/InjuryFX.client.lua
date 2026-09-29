@@ -23,7 +23,7 @@ local BLEED_TINT   = 0.25   -- red tint at full severity
 local LOW_HP_FRAC  = 0.35   -- effects start ramping below this health fraction
 local HEART_VOLUME = 0.8
 local LOW_STAMINA  = 0.35   -- breathing + vignette ramp in below this stamina fraction…
-local BREATH_VOLUME= 0.9    -- …and at 0 the vignette pulses and the view blurs a touch
+local BREATH_VOLUME= 0.35   -- …and at 0 the vignette pulses and the view blurs a touch
 local STAMINA_BLUR = 5
 --------------------------------------------------------------------
 
@@ -149,8 +149,10 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 	local vig = math.clamp(staminaShown * 0.55 + pulse, 0, 0.8)
 	for _, f in ipairs(staminaFrames) do f.BackgroundTransparency = 1 - vig end
 	blur.Size = staminaShown * STAMINA_BLUR + (staFrac <= 0.001 and 2 or 0)
+	-- loops live in this ScreenGui (ResetOnSpawn): they die with the character no
+	-- matter how it goes away, so a respawn can never leave one playing
 	if staminaShown > 0.03 and Humanoid.Health > 0 then
-		if not breathing then breathing = Sounds.loop(SoundConfig.Breathing, workspace.CurrentCamera, 0) end
+		if not breathing then breathing = Sounds.loop(SoundConfig.Breathing, gui, 0) end
 		if breathing then
 			breathing.Volume = BREATH_VOLUME * math.min(1, staminaShown + (staFrac <= 0.001 and 0.3 or 0))
 			breathing.PlaybackSpeed = 0.9 + 0.35 * staminaShown
@@ -162,7 +164,7 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 
 	if severity > 0.05 and Humanoid.Health > 0 then
 		if not heartbeat then
-			heartbeat = Sounds.loop(SoundConfig.Heartbeat, workspace.CurrentCamera, 0)
+			heartbeat = Sounds.loop(SoundConfig.Heartbeat, gui, 0)
 		end
 		if heartbeat then
 			heartbeat.Volume = HEART_VOLUME * severity
@@ -182,3 +184,12 @@ local function cleanup()
 	cc.Saturation, cc.Contrast, cc.TintColor = 0, 0, Color3.new(1, 1, 1)
 end
 script.Destroying:Connect(cleanup)
+Humanoid.Died:Once(function()
+	if heartbeat then heartbeat:Destroy(); heartbeat = nil end
+	if breathing then breathing:Destroy(); breathing = nil end
+	blur.Size = 0
+end)
+-- belt and braces: a loop left behind by an earlier life (old CameraRig-era parent) goes too
+for _, s in ipairs(workspace.CurrentCamera:GetChildren()) do
+	if s:IsA("Sound") and s.Looped then s:Destroy() end
+end
