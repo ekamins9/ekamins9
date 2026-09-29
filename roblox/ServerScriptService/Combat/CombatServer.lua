@@ -356,7 +356,9 @@ CombatServer.DEFAULTS = {
 	                          --    their swing dies while yours goes on
 	CHAMBER_WINDOW   = 2.0,   --    your windup must have started within this of the contact (a
 	                          --    cap; in practice "you are in windup" is the rule)
-	CHAMBER_STUN     = 0.5,   --    the attacker is stunned this long
+	CHAMBER_STUN     = 0,     --    the attacker is stunned this long (0: they can answer the chamber —
+	CHAMBER_PARRY_WINDOW = 0.8, --  for this long after being chambered a block comes up at once, no
+	                          --    cooldown, with a fresh parry window; so a chamber can be parried, or chambered back)
 	CHAMBER_COST_MULT= 0.15,  --    you pay this × the attack's blockCost
 	CHAMBER_RELEASE  = 0.2,   --    your windup is cut to this — long enough to morph out of it
 	CHAMBER_MORPH_FREE = true,--    a chamber resets your morph count: you can morph the chamber
@@ -795,7 +797,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				and now - snap.windupStart <= cfg.CHAMBER_WINDOW then
 				markCombat(character)
 				markCombat(target)
-				setAttr("StunnedUntil", now + cfg.CHAMBER_STUN)
+				if cfg.CHAMBER_STUN > 0 then setAttr("StunnedUntil", now + cfg.CHAMBER_STUN) end
+				setAttr("ChamberedAt", now)   -- doBlockStart lets us guard at once against the counter
 				drainStamina(target, (info.blockCost or 0) * cfg.CHAMBER_COST_MULT)
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
 				target:SetAttribute("GuardText", "CHAMBER")
@@ -1406,6 +1409,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		if attr("Blocking") then return end
 		-- a successful parry just now: straight back up with a fresh window (parry, parry, parry)
 		local chained = now - (attr("LastParryAt") or -1e9) <= cfg.PARRY_CHAIN_WINDOW
+			-- …or we just got chambered: their counter is coming and must be answerable
+			or now - (attr("ChamberedAt") or -1e9) <= cfg.CHAMBER_PARRY_WINDOW
 		-- a feint already paid for this guard: the re-guard cooldown doesn't apply
 		if not feinted and not chained and now < state.nextBlockTime then dprint("block denied: cooldown"); return end
 		CombatServer.dropProtection(character)

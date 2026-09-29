@@ -178,7 +178,8 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - **Chamber**: be in the **windup of the mirror of their attack** while theirs is in its swing —
   same type, opposite side (their `RightOverhead` → your `LeftOverhead`, their `LeftSwing` →
   your `RightSwing`); any stab chambers any stab; an unsided attack matches either side. Facing
-  them, windup started within `CHAMBER_WINDOW`. Their swing dies (`CHAMBER_STUN` on them), your
+  them, windup started within `CHAMBER_WINDOW`. Their swing dies (no stun — for `CHAMBER_PARRY_WINDOW` they can
+  guard instantly and parry or re-chamber your counter), your
   windup is cut to `CHAMBER_RELEASE` (0.2 s) — and you may **morph the chamber** into anything
   in that time, whatever the cutoff (`CHAMBER_MORPH_FREE` also resets your morph count). Sparks
   + the white edge flash mean you got it.
