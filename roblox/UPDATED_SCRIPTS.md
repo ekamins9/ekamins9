@@ -2,19 +2,22 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** the **travel screen** — the moment you press PLAY / JOIN / RETURN TO HUB the
-menu and HUD drop away and a full-screen "TRAVELLING" takes over: where you're going, a sweeping
-bar, rotating gameplay tips. It stays up through Roblox's load on the other side (registered as
-the teleport GUI) and fades once the new server has told us its mode and map. A failed teleport
-takes it down again.
+**Last change:** the Hub loads the courtyard the moment the server starts (no longer waits for
+someone to spawn), and the menu camera is a real cinematic: put several parts in a
+`MenuCameras` folder inside the map (`Shot1`, `Shot2`, …, each aimed where you want) and it dwells
+on each with a slow push-in, then glides to the next; a single `MenuCamera` part gets a slow arc
+around what it looks at; with neither it orbits the spawn. It runs whenever you have no body —
+menu open or not — and eases in from wherever the camera was.
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript | **new** — the screen; edit `HINTS` at the top for the tips |
-| [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | `ServerScriptService` → `Hub` → `HubServer` | Script | fires `HubEvent "Travel", destination` before every teleport, `"TravelFailed"` if it errors |
-| [README.md](README.md) | — | doc | placement row + note |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | cinematic shots (`SHOT_DWELL`, `SHOT_GLIDE`, `PUSH_IN`), runs whenever bodiless |
+| [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) | `ServerScriptService` → `Game` → `Game` | ModuleScript | a public server identifies itself as the Hub at once |
+| [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | `ServerScriptService` → `Game` → `GameServer` | Script | only reserved servers wait for a player before loading the map |
+| [ServerScriptService/Game/MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript | hides the `MenuCameras` parts on load |
+| [README.md](README.md) | — | doc | map format note |
 
-**Also in the previous change (look-down):** [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) — eye slides forward and the torso fades in when looking down.
+**Also recent:** [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) (new, travel screen) · [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) · [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) (look-down).
 
 ---
 

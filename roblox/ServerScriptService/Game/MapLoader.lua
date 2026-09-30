@@ -6,6 +6,8 @@
                       is fine — only their CFrame is used.
        MenuCamera     (optional Part) where the menu's cinematic camera sits;
                       it looks along the part's LookVector.
+       MenuCameras/   (optional Folder of Parts) several shots — the camera
+                      glides from one to the next in name order (Shot1, Shot2…).
        Zones/Hill     (optional Part) King of the Hill capture volume.
        anything else  the geometry.
      Everything that is not the current map stays untouched (your baseplate,
@@ -68,6 +70,12 @@ function MapLoader.load(name)
 	end
 	local cam = m:FindFirstChild("MenuCamera")
 	if cam and cam:IsA("BasePart") then cam.Transparency, cam.CanCollide, cam.CanQuery, cam.Anchored = 1, false, false, true end
+	local cams = m:FindFirstChild("MenuCameras")
+	if cams then
+		for _, c in ipairs(cams:GetDescendants()) do
+			if c:IsA("BasePart") then c.Transparency, c.CanCollide, c.CanQuery, c.CanTouch, c.Anchored = 1, false, false, false, true end
+		end
+	end
 	m.Parent = workspace
 	MapLoader.current, MapLoader.name = m, name
 	log("loaded", name)

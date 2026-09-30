@@ -52,6 +52,13 @@ local STUDIO = game:GetService("RunService"):IsStudio()
 function Game.identify(plr)
 	local sv = Game.server
 	if sv.mode then return sv end
+	-- a public server needs nobody to know what it is: the Hub (Studio: STUDIO_MODE)
+	if not sv.reserved then
+		sv.mode = (STUDIO and GameConfig.MODES[GameConfig.STUDIO_MODE]) and GameConfig.STUDIO_MODE or "Hub"
+		log("this server:", sv.mode, "(public)")
+		return sv
+	end
+	if not plr then return sv end
 	local ok, data = pcall(plr.GetJoinData, plr)
 	local td = ok and data and data.TeleportData
 	if sv.reserved and type(td) == "table" and GameConfig.MODES[td.mode] and td.mode ~= "Hub" then
@@ -96,6 +103,7 @@ end
 
 Players.PlayerAdded:Connect(function(plr) Game.identify(plr) end)
 for _, p in ipairs(Players:GetPlayers()) do Game.identify(p) end
+Game.identify(nil)   -- a public server identifies itself at once (the map loads before anyone arrives)
 
 -- server-side signals (BindableEvents) other scripts subscribe to
 Game.roundStarted        = Instance.new("BindableEvent")   -- (modeId, mapName)

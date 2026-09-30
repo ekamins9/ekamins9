@@ -1319,32 +1319,90 @@ local function classScreenUp()
 	return lm ~= nil and lm.Enabled
 end
 
-RunService.RenderStepped:Connect(function()
+-- CINEMATIC: whenever we have no body. Shots come from the map: a
+-- MenuCameras folder of parts (glide from one to the next, name order), or a
+-- single MenuCamera part (a slow arc around what it looks at), or, with
+-- neither, a wide orbit of the spawn. Every shot breathes a little.
+local SHOT_DWELL, SHOT_GLIDE = 7, 2.5     -- seconds on a shot, seconds gliding to the next
+local PUSH_IN = 2.5                       -- studs of slow push-in over a dwell
+local shots, shotsAt, shotIdx, shotT0 = nil, 0, 1, os.clock()
+local lastCine = nil                      -- last CFrame, to smooth any switch
+
+local function refreshShots()
+	local map = workspace:FindFirstChild("Map")
+	local out = {}
+	if map then
+		local folder = map:FindFirstChild("MenuCameras")
+		if folder then
+			for _, p in ipairs(folder:GetChildren()) do if p:IsA("BasePart") then table.insert(out, p) end end
+			table.sort(out, function(a, b) return a.Name < b.Name end)
+		end
+		local single = map:FindFirstChild("MenuCamera")
+		if #out == 0 and single and single:IsA("BasePart") then table.insert(out, single) end
+	end
+	local changed = (shots == nil) or (#out ~= #shots)
+	if not changed then for i, p in ipairs(out) do if shots[i] ~= p then changed = true end end end
+	if changed then shots = out; shotIdx = 1; shotT0 = os.clock() end
+	shotsAt = os.clock()
+end
+
+local function smoothstep(x) x = math.clamp(x, 0, 1); return x * x * (3 - 2 * x) end
+
+local function breathe(t)
+	return CFrame.Angles(math.sin(t * 0.13) * 0.012, math.sin(t * 0.09) * 0.03, math.sin(t * 0.07) * 0.004)
+		* CFrame.new(math.sin(t * 0.07) * 0.6, math.sin(t * 0.11) * 0.3, 0)
+end
+
+local function cinematicCFrame(t)
+	if os.clock() - shotsAt > 2 then refreshShots() end
+	local n = shots and #shots or 0
+	if n >= 2 then
+		-- dwell with a slow push-in, then glide to the next shot
+		local a = shots[shotIdx]
+		local b = shots[shotIdx % n + 1]
+		local el = t - shotT0
+		local pushA = a.CFrame * CFrame.new(0, 0, -PUSH_IN * math.clamp(el / SHOT_DWELL, 0, 1))
+		if el < SHOT_DWELL then return pushA * breathe(t) end
+		local g = smoothstep((el - SHOT_DWELL) / SHOT_GLIDE)
+		if g >= 1 then shotIdx = shotIdx % n + 1; shotT0 = t; return b.CFrame * breathe(t) end
+		return (a.CFrame * CFrame.new(0, 0, -PUSH_IN)):Lerp(b.CFrame, g) * breathe(t)
+	elseif n == 1 then
+		-- a slow arc around the point the author aimed at, 30 studs out
+		local base = shots[1].CFrame
+		local pivot = base.Position + base.LookVector * 30
+		local ang = math.sin(t * 0.06) * 0.3
+		local pos = pivot + (CFrame.Angles(0, ang, 0) * (base.Position - pivot))
+		return CFrame.lookAt(pos, pivot + Vector3.new(0, math.sin(t * 0.05) * 1.5, 0)) * breathe(t)
+	else
+		-- no shots authored: a wide slow orbit of the spawn area
+		local center = Vector3.new(0, 6, 0)
+		local sp = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+		if sp then center = sp.Position end
+		local ang = t * 0.05
+		return CFrame.lookAt(center + Vector3.new(math.cos(ang) * 70, 32, math.sin(ang) * 70), center + Vector3.new(0, 4, 0))
+	end
+end
+
+RunService.RenderStepped:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	if not cam then return end
-	local wantCine = (open or classScreenUp()) and not alive()
+	-- no body, and either a menu is up or the body is gone entirely (the death
+	-- fade in CameraRig owns the camera for the moment right after dying)
+	local wantCine = not alive() and (open or classScreenUp() or player.Character == nil)
 	if wantCine then
-		cineOn = true
 		cam.CameraType = Enum.CameraType.Scriptable
-		local t = os.clock()
-		local map = workspace:FindFirstChild("Map")
-		local part = map and map:FindFirstChild("MenuCamera")
-		if part and part:IsA("BasePart") then
-			-- a slow breathe + drift around the author's camera
-			local sway = CFrame.Angles(math.sin(t * 0.13) * 0.015, math.sin(t * 0.09) * 0.04, 0)
-			cam.CFrame = part.CFrame * sway * CFrame.new(math.sin(t * 0.07) * 1.2, math.sin(t * 0.11) * 0.5, 0)
-		else
-			-- no MenuCamera part: a wide slow orbit of the spawn area
-			local center = Vector3.new(0, 6, 0)
-			local sp = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
-			if sp then center = sp.Position end
-			local ang = t * 0.05
-			cam.CFrame = CFrame.lookAt(center + Vector3.new(math.cos(ang) * 70, 32, math.sin(ang) * 70), center + Vector3.new(0, 4, 0))
-		end
-		cam.FieldOfView = CINE_FOV
+		local target = cinematicCFrame(os.clock())
+		-- ease into the cinematic from wherever the camera was (death, arrival)
+		if not cineOn or not lastCine then lastCine = cam.CFrame end
+		lastCine = lastCine:Lerp(target, math.clamp(dt * (cineOn and 6 or 2), 0, 1))
+		cam.CFrame = lastCine
+		cineOn = true
+		cam.FieldOfView = cam.FieldOfView + (CINE_FOV - cam.FieldOfView) * math.clamp(dt * 3, 0, 1)
 	elseif cineOn then
 		cineOn = false
-		if not alive() then cam.CameraType = Enum.CameraType.Custom; cam.FieldOfView = 70 end
+		lastCine = nil
+		cam.CameraType = Enum.CameraType.Custom
+		cam.FieldOfView = 70
 	end
 	if open then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default

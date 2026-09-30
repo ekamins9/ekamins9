@@ -36,8 +36,7 @@ end)
 Players.PlayerRemoving:Connect(function(p) votes[p] = nil end)
 
 local function startingMode()
-	local p = Players:GetPlayers()[1]
-	if p then Game.identify(p) end
+	Game.identify(Players:GetPlayers()[1])
 	return Game.server.mode or "Hub"
 end
 
@@ -78,8 +77,10 @@ local function countdown(seconds, mode, earlyEnd)
 end
 
 task.spawn(function()
-	-- wait for someone, so the first round doesn't burn with nobody in it
-	while #Players:GetPlayers() == 0 do task.wait(1) end
+	-- a reserved server learns its mode from its first arrival, so it waits for
+	-- one; a public server is the Hub and loads the courtyard straight away, so
+	-- the menu camera has something to look at from the first frame
+	while Game.server.reserved and #Players:GetPlayers() == 0 do task.wait(0.5) end
 	local modeId = startingMode()
 	local pendingMaps
 	while true do

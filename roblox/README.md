@@ -80,7 +80,7 @@ access they last the session). The class screen comes back after the mode's `res
 ## Hub menu (M)
 
 `HubMenu` is the front door: press **M** anywhere (it also opens by itself when you arrive in
-the courtyard). Behind it a slow cinematic camera sits on the map's `MenuCamera` part.
+the courtyard). Behind it a cinematic camera glides between the map's `MenuCameras` shots.
 Tabs — **PLAY**: every mode from `GameConfig.MODE_ORDER` with live player counts across
 servers and a QUICK PLAY; **SERVERS**: the browser — filters *hide empty*, *custom only*,
 *type of gameplay* (mode category), JOIN — plus friends online in the game, JOIN / INVITE;
@@ -123,8 +123,11 @@ A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
 names them. Inside a map: `Spawns` (Folder of parts; attribute `Team = "A"` / `"B"` on team
 spawns, none = anyone; made invisible on load), optional `MenuCamera` (a Part: the hub
-menu's camera sits there and looks along its LookVector), optional `Zones` → `Hill` (a Part;
-KOTH capture volume), and the geometry. `MapLoader` clones one into `workspace.Map` per round
+menu's camera sits there and looks along its LookVector) or a `MenuCameras` folder of several
+such parts (`Shot1`, `Shot2`… — the camera dwells on each with a slow push-in and glides to the
+next), optional `Zones` → `Hill` (a Part; KOTH capture volume), and the geometry. A public server
+is the Hub and loads its map the moment it starts, so the menu camera has the courtyard to look
+at before anyone has spawned. `MapLoader` clones one into `workspace.Map` per round
 and picks the spawn farthest from enemies; no such map → whatever is in workspace, and
 `SpawnLocation`s. `GameServer` runs the loop: mode → map (vote or rotation) → round (mode
 ticks, clock, early end) → result → intermission with the board up and a 3-map vote
