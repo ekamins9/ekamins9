@@ -197,9 +197,14 @@ end
 -- WHAT THE BLADE HIT: materials fold into a few clang families. A folder named
 -- ClangSounds in SoundService (or ReplicatedStorage) may hold one Sound per
 -- Enum.Material name (Slate, Wood, Metal…) and/or per family (Stone, Wood,
--- Metal, Ground, Glass) plus Default; missing ones fall back to the Wall slot
--- re-pitched per family so materials still sound apart.
+-- Metal, Ground, Glass); a family with no Sound falls back to the weapon's Wall
+-- slot re-pitched (WALL_FEEL) so materials still sound apart. A material that is
+-- in NO family (Plastic, SmoothPlastic, anything not listed) makes no sound and
+-- no sparks — add it below to give it one.
 local WALL_FAMILY = {
+	Slate = "Stone", Concrete = "Stone", Brick = "Stone", Cobblestone = "Stone", Granite = "Stone", Marble = "Stone",
+	Basalt = "Stone", Rock = "Stone", Limestone = "Stone", Pavement = "Stone", Sandstone = "Stone", Asphalt = "Stone",
+	Salt = "Stone", Pebble = "Stone", Plaster = "Stone", CrackedLava = "Stone", RoofShingles = "Stone", ClayRoofTiles = "Stone",
 	Wood = "Wood", WoodPlanks = "Wood", Cardboard = "Wood",
 	Metal = "Metal", CorrodedMetal = "Metal", DiamondPlate = "Metal", Foil = "Metal",
 	Glass = "Glass", Ice = "Glass", Neon = "Glass", ForceField = "Glass",
@@ -214,14 +219,16 @@ local WALL_FEEL = {   -- fallback re-pitch of the Wall slot per family
 	Glass   = {Speed = 1.35, Volume = 0.60},
 }
 function CombatServer.wallFamily(materialName)
-	return WALL_FAMILY[materialName] or "Stone"
+	return WALL_FAMILY[materialName]   -- nil = unknown: silent
 end
--- plays the clang for a material at `at`; `fallbackId` is the weapon's Wall slot
+-- plays the clang for a material at `at`; `fallbackId` is the weapon's Wall slot.
+-- Unknown material: an exact-name Sound in ClangSounds still plays, otherwise nothing.
 function CombatServer.clang(materialName, at, fallbackId)
 	if not at then return end
 	local family = CombatServer.wallFamily(materialName)
 	local folder = game:GetService("SoundService"):FindFirstChild("ClangSounds") or ReplicatedStorage:FindFirstChild("ClangSounds")
-	local src = folder and (folder:FindFirstChild(tostring(materialName)) or folder:FindFirstChild(family) or folder:FindFirstChild("Default"))
+	local src = folder and (folder:FindFirstChild(tostring(materialName)) or (family and folder:FindFirstChild(family)))
+	if not src and not family then return end
 	if src and src:IsA("Sound") then
 		local s = src:Clone()
 		s.PlaybackSpeed = s.PlaybackSpeed * (0.95 + math.random() * 0.10)
@@ -230,7 +237,8 @@ function CombatServer.clang(materialName, at, fallbackId)
 		game:GetService("Debris"):AddItem(s, 6)
 		return
 	end
-	local feel = WALL_FEEL[family] or WALL_FEEL.Stone
+	local feel = WALL_FEEL[family]
+	if not feel then return end
 	Sounds.play(fallbackId, at, {Volume = feel.Volume, Speed = feel.Speed})
 end
 
@@ -983,7 +991,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		CombatServer.clang(material, handle(), cfg.SOUNDS.Wall or cfg.SOUNDS.Block)
 		cancelSwing("wall")
 		state.nextActionTime = os.clock() + cfg.WALL_RECOVERY
-		dprint("blade hit the world:", material, "(" .. family .. ")")
+		dprint("blade hit the world:", material, "(" .. tostring(family or "unknown, silent") .. ")")
 	end
 
 	----------------------------------------------------------------

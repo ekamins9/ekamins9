@@ -6,9 +6,11 @@ Rewritten after every change — only what the **last** change touched. Links op
 the world the client now reports the material it hit; the server plays a clang for it — from a
 `ClangSounds` folder (`SoundService` or `ReplicatedStorage`) holding a `Sound` per material
 name (`Slate`, `Wood`, `Metal`…) or per family (`Stone`, `Metal`, `Wood`, `Ground`, `Glass`)
-plus `Default`; without the folder the `Wall` sound slot is re-pitched per family so stone rings,
-metal rings higher, wood knocks, dirt thuds. Stone and metal spark, the rest don't. No "BLOCKED"
-(or anything) pops up for a wall or floor hit; the camera still kicks.
+— without the folder the `Wall` sound slot is re-pitched per family so stone rings, metal
+rings higher, wood knocks, dirt thuds. **A material in no family is silent** (no sound, no
+sparks): that's `Plastic` / `SmoothPlastic` and anything not listed in `WALL_FAMILY` at the top of
+CombatServer — add a material there to give it a family. Stone and metal spark, the rest don't.
+No "BLOCKED" (or anything) pops up for a wall or floor hit; the camera still kicks.
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|

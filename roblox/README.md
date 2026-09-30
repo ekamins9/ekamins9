@@ -420,9 +420,11 @@ these default to shared ids in `CombatServer.DEFAULTS.SOUNDS` so combat is audib
 **Clangs by material:** when the blade hits the world, CombatServer looks in a `ClangSounds`
 folder (`SoundService` or `ReplicatedStorage`) for a `Sound` named after the `Enum.Material`
 hit (`Slate`, `Wood`, `Metal`…) or its family — `Stone`, `Metal`, `Wood`, `Ground`, `Glass` —
-then `Default`; with no folder the `Wall` slot is re-pitched per family (`WALL_FEEL`), so stone
-rings, metal rings higher, wood knocks, dirt thuds. Stone and metal spark; nothing pops up on
-the HUD for a wall hit.
+with no folder the `Wall` slot is re-pitched per family (`WALL_FEEL`), so stone rings, metal
+rings higher, wood knocks, dirt thuds. A material in no family (`WALL_FAMILY` in CombatServer —
+`Plastic` and `SmoothPlastic` are deliberately not in it) is **silent**, no sparks, unless the
+folder has a Sound with that exact material name. Stone and metal spark; nothing pops up on the
+HUD for a wall hit.
 Only list slots you've filled: an `rbxassetid://0` entry overrides the default with silence.
 Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`, `Impale`,
 `Bleed`, `Disarm`, `Pickup`, `Dodge`, `HeadThrow`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
