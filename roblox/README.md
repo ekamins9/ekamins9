@@ -87,23 +87,27 @@ servers and a QUICK PLAY; **SERVERS**: the browser — filters *hide empty*, *cu
 carry), SAVE, SET ACTIVE; **PARTY**: create / invite / accept / leave — a party travels
 together and lands on the same team; **SETTINGS**: camera feel, attack side, keybinds.
 **ENTER COURTYARD** (Hub only) spawns you to walk around; **RETURN TO HUB** (any match)
-teleports you back. **CUSTOM** on a mode card reserves a fresh, named server of that mode
-(`TeleportService:ReserveServer`); it is listed in the browser under *custom only* and joined
-by its access code. `HubServer` answers all of it (`HubRemote`), heartbeats this server into a
+teleports you back. **CUSTOM** on a mode card reserves a fresh, named server of that mode for
+you and your party, *LISTED* (public, in the browser under *custom only*) or *FRIENDS ONLY*
+(unlisted; friends of anyone inside can join through JOIN FRIEND). `HubServer` answers all of it (`HubRemote`), heartbeats this server into a
 MemoryStore `Servers` map every 20 s for the browser, and teleports through `TeleportService`
 — both need a published game; in Studio the browser shows only this server and PLAY switches
 this server's mode locally so every mode can still be tested.
 
 ## Game modes, maps, places (`GameConfig`)
 
-**One place per mode, never switched.** `GameConfig.PLACES` maps each mode (`Hub`, `FFA`,
-`Duel`, `TDM`, `LTS`, `KOTH`) to a place id in this universe. The Hub place is the game's
-**start place** (set it as such in the Creator Dashboard): everyone lands there, PLAY
-teleports them to the mode's place — Roblox joins a server with room or starts a new one —
-and RETURN TO HUB brings them back. A server works out which mode it runs from its own place
-id (`GameConfig.thisMode()`) and runs it forever. An id of 0 means "not published yet" and
-PLAY says so. Studio has no teleports, so an unpublished place runs `STUDIO_MODE` (Hub) and
-PLAY switches the mode locally instead. `GameConfig.MODES`: `Hub` (courtyard, no clock),
+**One place, many servers, and a server never changes mode.** Every *public* server (what
+Roblox puts you in from the game page) is the **Hub**. Every match is a **reserved server** of
+the same place (`TeleportService:ReserveServer`): HubServer reserves it, and the teleport data
+of its first arrival tells it its mode, access level and name (`Game.identify`), which it keeps
+forever. PLAY joins a public match server of that mode with room for your party, or reserves a
+fresh one; RETURN TO HUB teleports with no code, which lands in a public server, i.e. the Hub.
+Reserved servers can only be entered with their access code, which lives in HubServer's
+MemoryStore registry and never reaches a client or the Roblox page, so **access is ours**:
+`Public` (listed, anyone), `Friends` (unlisted custom lobbies; friends of someone inside may
+join), `Locked` (only the user ids the server was made for — ranked matches; `Game.mayJoin`
+kicks anyone else). One place means one set of scripts to update. Studio has no teleports, so it
+runs `STUDIO_MODE` (Hub) and PLAY switches the mode locally. `GameConfig.MODES`: `Hub` (courtyard, no clock),
 `FFA`, `Duel`, `TDM` (tickets), `LTS` (one life per round, first to `roundsToWin`), `KOTH`
 (`Zones/Hill`, `pointsToWin`) — each with `maps`, `roundLength`, `intermission`,
 `respawnDelay`, `teams` (0 or 2), `maxPlayers`, a `category` (the browser's *type of

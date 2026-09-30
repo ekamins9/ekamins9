@@ -1,13 +1,21 @@
 --[[ GAME CONFIG — the one file that describes the GAME around the combat:
      places, game modes and their maps, classes. Server and client both read it.
 
-     PLACES: one Roblox place per MODE, by place id. A place runs its mode
-     forever — nothing ever switches mode inside a server. The Hub place is
-     the game's start place: everyone lands there, PLAY teleports them to the
-     mode's place (Roblox joins a server with room or starts a new one), and
-     RETURN TO HUB brings them back. 0 = not published yet (PLAY says so).
-     In Studio there are no teleports: the place runs STUDIO_MODE and PLAY
-     switches the mode locally so everything can still be tested.
+     ONE PLACE, MANY SERVERS. A server never changes mode:
+       • a PUBLIC server (what Roblox puts you in from the game page) is the
+         HUB — the courtyard and the menu;
+       • every match is a RESERVED server of this same place
+         (TeleportService:ReserveServer), told its mode / access / name by
+         the teleport data of its first arrival, and it runs that forever.
+     PLAY joins a public match server with room or reserves a fresh one;
+     RETURN TO HUB teleports to the place with no code, i.e. a public server.
+     Reserved servers can only be entered with their access code, which lives
+     in HubServer's registry — never on the Roblox page — so ACCESS is ours:
+       Public   listed in the browser, anyone joins
+       Friends  unlisted; friends of someone inside may join (custom lobbies)
+       Locked   only the user ids the server was made for (ranked matches)
+     Studio has no teleports: it starts in STUDIO_MODE and PLAY switches the
+     mode locally so everything can still be tested.
 
      MODES: each is a plugin in ServerScriptService.Game.Modes/<id>. `maps`
      names Models in ServerStorage.Maps (see MapLoader for what a map needs).
@@ -19,15 +27,8 @@
 
 local GameConfig = {}
 
-GameConfig.PLACES = {
-	Hub  = 0,   -- the start place
-	FFA  = 0,
-	Duel = 0,
-	TDM  = 0,
-	LTS  = 0,
-	KOTH = 0,
-}
-GameConfig.STUDIO_MODE = "Hub"   -- what an unpublished place (Studio) starts in
+GameConfig.STUDIO_MODE = "Hub"   -- what Studio starts in (live: public = Hub, reserved = teleport data)
+GameConfig.ACCESS = {Public = "public", Friends = "friends only", Locked = "locked"}
 
 GameConfig.MODES = {
 	Hub = {
@@ -90,27 +91,9 @@ GameConfig.FRIENDLY_FIRE = 0.5
 function GameConfig.mode(id) return GameConfig.MODES[id] end
 function GameConfig.class(id) return GameConfig.CLASSES[id] end
 
--- the mode THIS server runs: the mode whose place id this is; an unknown /
--- unpublished place runs STUDIO_MODE in Studio and the Hub live
-function GameConfig.thisMode()
-	for modeId, id in pairs(GameConfig.PLACES) do
-		if id ~= 0 and id == game.PlaceId and GameConfig.MODES[modeId] then return modeId end
-	end
-	if game:GetService("RunService"):IsStudio() and GameConfig.MODES[GameConfig.STUDIO_MODE] then return GameConfig.STUDIO_MODE end
-	return "Hub"
-end
-
--- the place id a mode runs in, or nil when it isn't published yet
-function GameConfig.placeFor(modeId)
-	local id = GameConfig.PLACES[modeId]
-	if not id or id == 0 then return nil end
-	return id
-end
-
--- are all the places published (ids pasted in)?
-function GameConfig.placesReady()
-	for _, id in pairs(GameConfig.PLACES) do if id == 0 then return false end end
-	return true
+-- is this server a reserved one (a match) rather than a public one (the Hub)?
+function GameConfig.isReserved()
+	return game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0
 end
 
 -- can this class carry this weapon (Tool name)?

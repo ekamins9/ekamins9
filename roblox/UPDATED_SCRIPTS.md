@@ -2,13 +2,15 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change (follow-up):** one mode per place, never switched — `GameConfig.PLACES` is now
-keyed by mode (Hub / FFA / Duel / TDM / LTS / KOTH); the Hub is the start place, PLAY teleports
-to the mode's place (Roblox joins a server with room or starts one), **RETURN TO HUB** in the
-menu, **CUSTOM** servers per mode (named, reserved, listed in the browser), parties carried
-through teleports, the Hub mode reads HUB (the map is Courtyard). Studio can't teleport, so
-there PLAY still switches the mode locally. Files touched by this follow-up: GameConfig,
-Game, GameServer, Modes/Hub, HubServer, HubMenu, README.
+**Last change (follow-up):** ONE PLACE. No more `PLACES`: public servers are the Hub, every
+match is a **reserved server** of the same place that gets its mode from the teleport data and
+never changes it. PLAY joins a match server with room or reserves a fresh one, **RETURN TO HUB**
+teleports to a public server, **CUSTOM** servers are LISTED (public) or FRIENDS ONLY, and every
+server has an access level — Public / Friends / Locked — enforced on arrival (`Game.mayJoin`
+kicks), so a locked 1v1 can't be crashed through Join Friend. Access codes never reach a
+client. Parties carry through teleports; the Hub mode reads HUB. Studio can't teleport, so
+there PLAY still switches the mode locally. Files touched: GameConfig, Game, GameServer,
+HubServer, HubMenu, README.
 
 **Previous change:** the game around the combat — a **Hub menu (M)** with PLAY / SERVERS (browser
 with filters + friends) / ARMORY (one saved loadout per class) / PARTY / SETTINGS, a **class
@@ -27,10 +29,9 @@ like the old 110 in first person and 110 goes wider still.
    spawns, none for anyone), an optional `MenuCamera` part (menu camera sits there, looks along
    its front), for KOTH a `Zones` folder with a `Hill` part, and the geometry. No map yet → the
    game plays on whatever is in workspace (your current place), so nothing breaks meanwhile.
-4. Make one place per mode in the universe (Hub + FFA + Duel + TDM + LTS + KOTH), all empty
-   worlds with just a skybox, the Hub set as the **start place**, and paste each place id into
-   `GameConfig.PLACES`. Every place gets the same scripts. Until the ids are in, PLAY says the
-   mode isn't published; in Studio PLAY switches the mode locally either way.
+4. One place is all you need: an empty world with a skybox. Publish it; matches are reserved
+   servers of it. In Studio PLAY switches the mode locally (no teleports there); custom servers
+   and the browser need the published game with API access.
 
 ## New files
 

@@ -37,6 +37,66 @@ for k, v in pairs({State = "Intermission", TimeLeft = 0, Number = 0, Mode = "", 
 	if node:GetAttribute(k) == nil then node:SetAttribute(k, v) end
 end
 
+--------------------------------------------------------------------
+--  SERVER IDENTITY — what this server is, fixed by its first arrival
+--------------------------------------------------------------------
+-- A public server is the Hub. A reserved server (ReserveServer) reads mode /
+-- access / name / allowed ids from the teleport data HubServer gave its first
+-- arrival, and keeps them forever. Game.mayJoin enforces the access level.
+Game.server = {
+	reserved = GameConfig.isReserved(), mode = nil, access = "Public", name = "", custom = false,
+	hostId = 0, allowed = nil,   -- allowed: set of user ids (Friends / Locked)
+}
+local STUDIO = game:GetService("RunService"):IsStudio()
+
+function Game.identify(plr)
+	local sv = Game.server
+	if sv.mode then return sv end
+	local ok, data = pcall(plr.GetJoinData, plr)
+	local td = ok and data and data.TeleportData
+	if sv.reserved and type(td) == "table" and GameConfig.MODES[td.mode] and td.mode ~= "Hub" then
+		sv.mode = td.mode
+		sv.access = GameConfig.ACCESS[td.access] and td.access or "Public"
+		sv.name = type(td.name) == "string" and td.name:sub(1, 32) or ""
+		sv.custom = td.custom == true
+		sv.hostId = tonumber(td.host) or plr.UserId
+		if type(td.allowed) == "table" then
+			sv.allowed = {}
+			for _, id in ipairs(td.allowed) do if type(id) == "number" then sv.allowed[id] = true end end
+			sv.allowed[sv.hostId] = true
+		end
+	else
+		sv.mode = (STUDIO and GameConfig.MODES[GameConfig.STUDIO_MODE]) and GameConfig.STUDIO_MODE or "Hub"
+	end
+	log("this server:", sv.mode, sv.access, sv.reserved and "(reserved)" or "(public)", sv.name ~= "" and ("'" .. sv.name .. "'") or "")
+	return sv
+end
+
+-- may this player be here? (HubServer kicks on false)
+function Game.mayJoin(plr)
+	local sv = Game.identify(plr)
+	local def = GameConfig.MODES[sv.mode]
+	if def and def.maxPlayers and #Players:GetPlayers() > def.maxPlayers then return false, "This server is full." end
+	if sv.access == "Locked" then
+		if sv.allowed and sv.allowed[plr.UserId] then return true end
+		return false, "That match is locked."
+	elseif sv.access == "Friends" then
+		if sv.allowed and sv.allowed[plr.UserId] then return true end
+		if plr:GetAttribute("Party") then return true end   -- arrived with a party that is allowed
+		for _, other in ipairs(Players:GetPlayers()) do
+			if other ~= plr then
+				local ok, isFriend = pcall(plr.IsFriendsWith, plr, other.UserId)
+				if ok and isFriend then return true end
+			end
+		end
+		return false, "That server is friends only."
+	end
+	return true
+end
+
+Players.PlayerAdded:Connect(function(plr) Game.identify(plr) end)
+for _, p in ipairs(Players:GetPlayers()) do Game.identify(p) end
+
 -- server-side signals (BindableEvents) other scripts subscribe to
 Game.roundStarted        = Instance.new("BindableEvent")   -- (modeId, mapName)
 Game.roundEnded          = Instance.new("BindableEvent")   -- (modeId, resultText)

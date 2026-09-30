@@ -3,8 +3,9 @@
      when the map has one). Tabs:
        PLAY      the game modes (GameConfig.MODE_ORDER) with live player
                  counts, QUICK PLAY, custom servers, what this server runs;
-                 RETURN TO HUB from any match (one mode per place, never
-                 switched — travel is a teleport; Studio switches locally)
+                 RETURN TO HUB from any match. One place: public servers are
+                 the Hub, matches are reserved servers that never change mode
+                 (travel is a teleport; Studio switches locally instead)
        SERVERS   the browser: every server that heartbeats into the registry,
                  filters (hide empty · custom only · type of gameplay), JOIN —
                  plus your friends who are online in the game, one click to join
@@ -327,7 +328,7 @@ for _, name in ipairs(TABS) do tabBtn[name].Activated:Connect(function() selectT
 --------------------------------------------------------------------
 --  SHARED STATE
 --------------------------------------------------------------------
-local state = {studio = false, placesReady = false, custom = nil, party = nil, profile = nil, servers = {}, friends = {}, catalog = nil, activeClass = nil}
+local state = {studio = false, reserved = false, access = "Public", name = "", custom = false, party = nil, profile = nil, servers = {}, friends = {}, catalog = nil, activeClass = nil}
 
 local function alive()
 	local c = player.Character
@@ -340,8 +341,9 @@ local function roundState() return roundNode:GetAttribute("State") or "" end
 local function refreshHeader()
 	local modeName = roundNode:GetAttribute("ModeName") or ""
 	local map = roundNode:GetAttribute("Map") or ""
-	status.Text = string.format("this server:  %s%s%s  ·  %d player%s%s", state.custom and ("[" .. state.custom .. "]  ") or "",
-		modeName, map ~= "" and ("  on  " .. map) or "",
+	local access = (GameConfig.ACCESS[state.access] and state.access ~= "Public") and ("  ·  " .. GameConfig.ACCESS[state.access]) or ""
+	status.Text = string.format("this server:  %s%s%s%s  ·  %d player%s%s", (state.name and state.name ~= "") and ("[" .. state.name .. "]  ") or "",
+		modeName, map ~= "" and ("  on  " .. map) or "", access,
 		#Players:GetPlayers(), #Players:GetPlayers() == 1 and "" or "s",
 		state.studio and "  ·  Studio (no teleports: PLAY switches this server)" or "")
 	hubBtn.Visible = not inHub()
@@ -372,8 +374,10 @@ local function loadState()
 	local r = call("State")
 	if r.ok then
 		state.studio = r.studio == true
-		state.placesReady = r.placesReady == true
-		state.custom = r.custom
+		state.reserved = r.reserved == true
+		state.access = r.access or "Public"
+		state.name = r.name or ""
+		state.custom = r.custom == true
 		state.party = r.party
 		state.profile = r.profile
 		state.activeClass = r.profile and r.profile.active
@@ -421,9 +425,19 @@ do
 	nameBox.Parent = customRow
 	Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 6)
 	padding(nameBox, 10, 10, 0, 0)
-	local customHint = label(customRow, "Name it, then press CUSTOM on a mode. A fresh server of that mode, listed in the browser under CUSTOM ONLY — friends and your party can join it.", 12, FONT_BODY, COL_DIM)
-	customHint.Position = UDim2.new(0, 416, 0, 0)
-	customHint.Size = UDim2.new(1, -416, 0, 30)
+	local listed = false
+	local listedBtn = button(customRow, "", 12, COL_CARD)
+	listedBtn.Position = UDim2.new(0, 412, 0, 0)
+	listedBtn.Size = UDim2.new(0, 130, 0, 30)
+	local function paintListed()
+		listedBtn.Text = listed and "LISTED  ·  public" or "FRIENDS ONLY"
+		listedBtn.BackgroundColor3 = listed and COL_CARD_ON or COL_CARD
+	end
+	paintListed()
+	listedBtn.Activated:Connect(function() listed = not listed; paintListed() end)
+	local customHint = label(customRow, "Name it, pick who may join, then CUSTOM on a mode: a fresh server of that mode for you and your party. Friends-only servers are unlisted; friends of anyone inside can still join you.", 12, FONT_BODY, COL_DIM)
+	customHint.Position = UDim2.new(0, 552, 0, 0)
+	customHint.Size = UDim2.new(1, -552, 0, 30)
 
 	local grid = Instance.new("ScrollingFrame")
 	grid.Position = UDim2.new(0, 0, 0, 156)
@@ -443,7 +457,7 @@ do
 	local countLabels = {}
 	local function play(modeId, customServer)
 		playNote.Text = "…"
-		local r = customServer and call("Custom", modeId, nameBox.Text) or call("Play", modeId)
+		local r = customServer and call("Custom", modeId, nameBox.Text, listed) or call("Play", modeId)
 		playNote.Text = r.msg or (r.ok and "ok" or "failed")
 		toast((GameConfig.MODES[modeId] and GameConfig.MODES[modeId].name or modeId) .. ":  " .. (r.msg or ""), r.ok and COL_GOOD or COL_BAD)
 	end
@@ -512,9 +526,8 @@ do
 		if r.ok then state.servers = r.servers or {} end
 		refreshCounts()
 		playNote.Text = state.studio
-			and "Studio: no teleports here, so PLAY switches THIS server's mode (in the Hub at once, in a match at the intermission by majority). Live, PLAY teleports you and your party to the mode's place."
-			or (state.placesReady and "Each mode runs in its own place. PLAY teleports you and your party there — Roblox joins a server with room or starts a new one."
-				or "Some place ids in GameConfig.PLACES are still 0 — those modes can't be travelled to until you paste them in.")
+			and "Studio: no teleports here, so PLAY switches THIS server's mode (in the Hub at once, in a match at the intermission by majority). Live, PLAY takes you and your party to a match server."
+			or "PLAY joins a match server of that mode with room for your party, or starts a fresh one. A match server never changes mode; RETURN TO HUB brings you back."
 	end
 end
 
@@ -617,7 +630,8 @@ do
 				row.LayoutOrder = i
 				row.BackgroundTransparency = s.here and 0.3 or 0
 				local x = 0
-				local name = (s.custom and s.name ~= "" and s.name) or ("Official  #" .. string.sub(tostring(s.jobId or "?"), 1, 6))
+				local name = (s.custom and s.name ~= "" and s.name) or ((s.mode == "Hub" and "Hub  #" or "Match  #") .. string.sub(tostring(s.jobId or "?"), 1, 6))
+				if s.pending then name = name .. "  (starting)" end
 				local cells = {name .. (s.here and "   (you're here)" or ""), s.modeName ~= "" and s.modeName or s.mode, s.map,
 					string.format("%d / %d", s.players or 0, s.max or 0)}
 				for ci, c in ipairs(COLS) do

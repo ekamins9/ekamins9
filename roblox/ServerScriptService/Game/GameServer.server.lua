@@ -2,10 +2,11 @@
      round (mode ticks, clock, early end) → result → intermission (board up,
      map vote, everyone pulled out) → next round. Replaces RoundServer.
 
-     Which mode: the one this place is for (GameConfig.PLACES / thisMode);
-     a place never changes mode live. In Studio, NextMode (Game.requestMode
-     from the menu's PLAY) switches it so every mode can be tested in one
-     place. A round only counts down while someone is in the server. ]]
+     Which mode: Game.server.mode — the Hub in a public server, the teleport
+     data's mode in a reserved one (Game.identify, fixed by the first
+     arrival); a server never changes mode live. In Studio, NextMode
+     (Game.requestMode from the menu's PLAY) switches it so every mode can
+     be tested. A round only counts down while someone is in the server. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,7 +35,11 @@ voteRemote.OnServerEvent:Connect(function(plr, idx)
 end)
 Players.PlayerRemoving:Connect(function(p) votes[p] = nil end)
 
-local function startingMode() return GameConfig.thisMode() end
+local function startingMode()
+	local p = Players:GetPlayers()[1]
+	if p then Game.identify(p) end
+	return Game.server.mode or "Hub"
+end
 
 -- up to three candidate maps for a mode (that exist), rotating
 local rotation = {}

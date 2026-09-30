@@ -1,14 +1,15 @@
---[[ HUB SERVER — everything the main menu (HubMenu) needs that isn't combat:
-       • PLAY:    teleport to the mode's place (GameConfig.PLACES; Roblox joins
-                  a server with room or starts one). A place never changes
-                  mode. Studio has no teleports: PLAY switches the mode
-                  locally there (Game.requestMode) so it can all be tested.
-       • HUB:     RETURN TO HUB — teleport back to the start place
-       • CUSTOM:  a named custom server of a mode (TeleportService:ReserveServer);
-                  it shows in the browser as custom and is joined by access code
+--[[ HUB SERVER — everything the main menu (HubMenu) needs that isn't combat.
+     ONE PLACE: public servers are the Hub, every match is a RESERVED server
+     of this same place (see GameConfig). A server never changes mode.
+       • PLAY:    join a public match server of that mode with room, else
+                  reserve a fresh one and go (with the party). Studio has no
+                  teleports: PLAY switches the mode locally (Game.requestMode).
+       • HUB:     RETURN TO HUB — teleport with no code = a public server
+       • CUSTOM:  a named match server, listed (Public) or Friends-only
        • SERVERS: the browser. Every server heartbeats itself into a
-                  MemoryStore SortedMap ("Servers") with mode / map / players;
-                  the menu lists them, filters client-side, joins by JobId
+                  MemoryStore SortedMap ("Servers") with mode / map / players /
+                  access / members / its access code; the menu lists the Public
+                  ones and joins through here (codes never reach a client)
        • FRIENDS: who's online in this game, join them by instance
        • PARTY:   invite / accept / leave; parties teleport together (carried
                   in TeleportData and rebuilt on arrival) and the Party
@@ -35,6 +36,7 @@ local Profile    = require(ServerScriptService:WaitForChild("Loadout"):WaitForCh
 
 local STUDIO = RunService:IsStudio()
 local PARTY_MAX = 6
+local PENDING_TTL = 90   -- a freshly reserved server is advertised for this long until it heartbeats itself
 
 local function log(...) DebugFlags.log("Hub", ...) end
 
@@ -53,18 +55,22 @@ local function toast(plr, text) event:FireClient(plr, "Toast", text) end
 local HEARTBEAT, EXPIRY = 20, 60
 local registry
 pcall(function() registry = MemoryStoreService:GetSortedMap("Servers") end)
--- a custom (reserved) server learns its name + access code from the first
--- arrival's TeleportData and advertises both, so the browser can join it
-local customName, accessCode = nil, nil
+-- a reserved server learns its access code from the first arrival's
+-- TeleportData (only HubServer ever sets it) and advertises it in the registry
+local accessCode = nil
 
 local function entry()
-	local node = Game.node
+	local node, sv = Game.node, Game.server
+	local def = GameConfig.MODES[sv.mode or "Hub"]
+	local members = {}
+	for _, p in ipairs(Players:GetPlayers()) do table.insert(members, p.UserId) end
 	return {
-		jobId = game.JobId, placeId = game.PlaceId,
-		mode = node:GetAttribute("Mode") or "", modeName = node:GetAttribute("ModeName") or "",
+		jobId = game.JobId, placeId = game.PlaceId, reserved = sv.reserved,
+		mode = sv.mode or node:GetAttribute("Mode") or "", modeName = node:GetAttribute("ModeName") or "",
 		category = node:GetAttribute("Category") or "", map = node:GetAttribute("Map") or "",
-		players = #Players:GetPlayers(), max = Players.MaxPlayers,
-		custom = customName ~= nil, name = customName or "", accessCode = accessCode,
+		players = #Players:GetPlayers(), max = def and def.maxPlayers or Players.MaxPlayers,
+		custom = sv.custom, name = sv.name or "", access = sv.access, hostId = sv.hostId,
+		accessCode = accessCode, members = members,
 		state = node:GetAttribute("State") or "", updated = os.time(),
 	}
 end
@@ -81,6 +87,7 @@ game:BindToClose(function()
 	if registry then pcall(function() registry:RemoveAsync(myKey()) end) end
 end)
 
+-- every live entry (server side: codes included)
 local function listServers()
 	local out = {}
 	if registry then
@@ -101,9 +108,40 @@ local function listServers()
 	return out
 end
 
+-- what a client may see: Public servers (and this one), never a code or the member list
+local function listForClient()
+	local out = {}
+	for _, e in ipairs(listServers()) do
+		if e.access == "Public" or e.here then
+			local c = {}
+			for k, v in pairs(e) do if k ~= "accessCode" and k ~= "members" then c[k] = v end end
+			table.insert(out, c)
+		end
+	end
+	return out
+end
+
 local function findServer(jobId)
 	for _, e in ipairs(listServers()) do if e.jobId == jobId then return e end end
 	return nil
+end
+
+local function hasMember(e, userId)
+	for _, id in ipairs(e.members or {}) do if id == userId then return true end end
+	return false
+end
+
+-- may this player enter that server (as the registry describes it)?
+local function mayEnter(plr, e)
+	if (e.players or 0) >= (e.max or 1) then return false, "that server is full" end
+	if e.access == "Public" or not e.reserved then return true end
+	if e.access == "Locked" then return false, "that match is locked" end
+	-- Friends: a friend of someone inside
+	for _, id in ipairs(e.members or {}) do
+		local ok, f = pcall(plr.IsFriendsWith, plr, id)
+		if ok and f then return true end
+	end
+	return false, "that server is friends only"
 end
 
 --------------------------------------------------------------------
@@ -221,6 +259,7 @@ end
 local function teleport(players, placeId, data, jobId, code)
 	local opts = Instance.new("TeleportOptions")
 	data = data or {}
+	if code then data.code = code end   -- the reserved server advertises its own code
 	if #players > 1 then
 		local ids = {}
 		for _, p in ipairs(players) do table.insert(ids, p.UserId) end
@@ -233,6 +272,36 @@ local function teleport(players, placeId, data, jobId, code)
 	return ok, ok and "travelling…" or "teleport failed (published game only)"
 end
 
+-- joining a known match server: repeat its identity in the teleport data, so
+-- even an arrival that beats the creator there fixes the right mode
+local function identityOf(e)
+	return {mode = e.mode, access = e.access, name = e.name, custom = e.custom, host = e.hostId}
+end
+
+-- reserve a fresh match server and send the group; advertise it at once so
+-- others can join it before its own first heartbeat (PENDING_TTL)
+local function reserve(group, modeId, access, name, custom)
+	local ok, code = pcall(TeleportService.ReserveServer, TeleportService, game.PlaceId)
+	if not ok then warn("[Hub] ReserveServer failed:", code); return false, "could not reserve a server" end
+	local def = GameConfig.MODES[modeId]
+	local ids = {}
+	for _, p in ipairs(group) do table.insert(ids, p.UserId) end
+	local data = {mode = modeId, access = access, name = name or "", custom = custom == true, host = group[1].UserId,
+		allowed = access ~= "Public" and ids or nil}
+	if registry then
+		pcall(function()
+			registry:SetAsync("pending:" .. code:sub(1, 24), {
+				jobId = "pending:" .. code:sub(1, 24), placeId = game.PlaceId, reserved = true, pending = true,
+				mode = modeId, modeName = def.name, category = def.category, map = "",
+				players = #group, max = def.maxPlayers or Players.MaxPlayers,
+				custom = custom == true, name = name or "", access = access, hostId = group[1].UserId,
+				accessCode = code, members = ids, state = "Round", updated = os.time(),
+			}, PENDING_TTL)
+		end)
+	end
+	return teleport(group, game.PlaceId, data, nil, code)
+end
+
 local function play(plr, modeId)
 	local def = GameConfig.MODES[modeId]
 	if not def then return false, "no such mode" end
@@ -243,58 +312,81 @@ local function play(plr, modeId)
 		local ok, msg = Game.requestMode(plr, modeId)
 		return ok, ok and ("Studio: switching this server — " .. msg) or msg
 	end
-	if modeId == Game.modeId then return false, "you're already in " .. def.name end
-	local placeId = GameConfig.placeFor(modeId)
-	if not placeId then return false, def.name .. "'s place isn't published yet (GameConfig.PLACES)" end
-	return teleport(group, placeId, {})
+	if modeId == Game.server.mode then return false, "you're already in " .. def.name end
+	if modeId == "Hub" then return teleport(group, game.PlaceId, {}) end
+	-- a public server of that mode with room for the whole group: the fullest first
+	for _, e in ipairs(listServers()) do
+		if e.mode == modeId and e.access == "Public" and e.reserved and e.accessCode and not e.here
+			and (e.players or 0) + #group <= (e.max or 0) then
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode)
+		end
+	end
+	return reserve(group, modeId, "Public", "", false)
 end
 
 local function goHub(plr)
-	if Game.modeId == "Hub" then return false, "you're in the Hub" end
+	if Game.server.mode == "Hub" then return false, "you're in the Hub" end
 	local group = groupFor(plr, false)
 	if STUDIO then
 		local ok, msg = Game.requestMode(plr, "Hub")
 		return ok, ok and ("Studio: switching this server — " .. msg) or msg
 	end
-	local placeId = GameConfig.placeFor("Hub")
-	if not placeId then return false, "the Hub place id isn't in GameConfig.PLACES" end
-	return teleport(group, placeId, {})
+	-- no code = Roblox picks a public server, and public servers are the Hub
+	return teleport(group, game.PlaceId, {})
 end
 
-local function custom(plr, modeId, name)
+local function custom(plr, modeId, name, listed)
 	local def = GameConfig.MODES[modeId]
 	if not def or modeId == "Hub" then return false, "no such mode" end
 	local group, why = groupFor(plr, true)
 	if not group then return false, why end
-	local placeId = GameConfig.placeFor(modeId)
-	if STUDIO or not placeId then return false, STUDIO and "custom servers need a published game" or (def.name .. "'s place isn't published yet") end
+	if STUDIO then return false, "custom servers need a published game" end
 	name = type(name) == "string" and name:gsub("^%s+", ""):gsub("%s+$", ""):sub(1, 32) or ""
 	if name == "" then name = plr.DisplayName .. "'s server" end
-	local ok, code = pcall(TeleportService.ReserveServer, TeleportService, placeId)
-	if not ok then warn("[Hub] ReserveServer failed:", code); return false, "could not reserve a server" end
-	return teleport(group, placeId, {custom = {name = name, code = code}}, nil, code)
+	return reserve(group, modeId, listed == true and "Public" or "Friends", name, true)
 end
 
-local function joinServer(plr, jobId, placeId)
+local function joinServer(plr, jobId)
 	if type(jobId) ~= "string" or jobId == "" then return false, "bad server" end
 	if jobId == game.JobId then return false, "you're already here" end
 	local group, why = groupFor(plr, true)
 	if not group then return false, why end
+	if STUDIO then return false, "no teleports in Studio" end
 	local e = findServer(jobId)
-	if e and (e.players or 0) >= (e.max or 1) then return false, "that server is full" end
-	if e and e.custom and e.accessCode then return teleport(group, e.placeId or placeId, {}, nil, e.accessCode) end
-	return teleport(group, placeId or game.PlaceId, {}, jobId)
+	if not e then return false, "that server is gone" end
+	local ok, msg = mayEnter(plr, e)
+	if not ok then return false, msg end
+	if (e.players or 0) + #group > (e.max or 0) then return false, "no room for your whole party there" end
+	if e.reserved then
+		if not e.accessCode then return false, "that server can't be joined" end
+		return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode)
+	end
+	return teleport(group, game.PlaceId, {}, jobId)
 end
 
 local function joinFriend(plr, userId)
 	if type(userId) ~= "number" then return false, "bad user" end
 	local group, why = groupFor(plr, true)
 	if not group then return false, why end
+	if STUDIO then return false, "no teleports in Studio" end
 	local ok, inGame, err, placeId, jobId = pcall(TeleportService.GetPlayerPlaceInstanceAsync, TeleportService, userId)
 	if not ok or not inGame then return false, "they're not in this game" end
 	if jobId == game.JobId then return false, "they're in this server" end
 	local e = findServer(jobId)
-	if e and e.custom and e.accessCode then return teleport(group, placeId, {}, nil, e.accessCode) end
+	if e then
+		if e.access == "Locked" then return false, "they're in a locked match" end
+		if e.access == "Friends" then
+			local okF, f = pcall(plr.IsFriendsWith, plr, userId)
+			if not (okF and f) and not hasMember(e, plr.UserId) then return false, "that server is friends only" end
+		end
+		if (e.players or 0) + #group > (e.max or 0) then return false, "no room there" end
+		if e.reserved then
+			if not e.accessCode then return false, "that server can't be joined" end
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode)
+		end
+		return teleport(group, placeId, {}, jobId)
+	end
+	-- not in the registry: a public (Hub) server we can reach by instance, or one just starting
 	return teleport(group, placeId, {}, jobId)
 end
 
@@ -343,11 +435,13 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	lastCall[plr] = now
 
 	if op == "State" then
-		return {ok = true, studio = STUDIO, placesReady = GameConfig.placesReady(), placeId = game.PlaceId, jobId = game.JobId,
-			mode = Game.modeId, custom = customName, party = partyInfo(partyOf(plr)),
+		local sv = Game.server
+		return {ok = true, studio = STUDIO, placeId = game.PlaceId, jobId = game.JobId,
+			mode = sv.mode, reserved = sv.reserved, access = sv.access, name = sv.name, custom = sv.custom,
+			party = partyInfo(partyOf(plr)),
 			profile = {active = Profile.get(plr).active, stats = Profile.get(plr).stats}}
 	elseif op == "Servers" then
-		return {ok = true, servers = listServers()}
+		return {ok = true, servers = listForClient()}
 	elseif op == "Friends" then
 		return {ok = true, friends = friendsOnline(plr)}
 	elseif op == "Play" then
@@ -355,9 +449,9 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	elseif op == "Hub" then
 		local ok, msg = goHub(plr); return {ok = ok, msg = msg}
 	elseif op == "Custom" then
-		local ok, msg = custom(plr, a, b); return {ok = ok, msg = msg}
+		local ok, msg = custom(plr, a, b, c); return {ok = ok, msg = msg}
 	elseif op == "Join" then
-		local ok, msg = joinServer(plr, a, b); return {ok = ok, msg = msg}
+		local ok, msg = joinServer(plr, a); return {ok = ok, msg = msg}
 	elseif op == "JoinFriend" then
 		local ok, msg = joinFriend(plr, a); return {ok = ok, msg = msg}
 	elseif op == "PartyCreate" then
@@ -376,17 +470,25 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	return {ok = false, msg = "unknown op"}
 end
 
-Players.PlayerAdded:Connect(function(plr)
+local function onArrival(plr)
+	Game.identify(plr)
 	local ok, data = pcall(plr.GetJoinData, plr)
 	local td = ok and data and data.TeleportData
 	if type(td) == "table" then
-		if type(td.custom) == "table" and customName == nil and game.PrivateServerId ~= "" then
-			customName = tostring(td.custom.name or "custom"):sub(1, 32)
-			accessCode = td.custom.code
-			log("this is the custom server", customName)
-		end
+		if accessCode == nil and Game.server.reserved and type(td.code) == "string" then accessCode = td.code end
 		arrivedWithParty(plr, td)
 	end
-end)
+	-- the door: access level + room (a party member arriving with the host is let through by mayJoin)
+	local allowed, why = Game.mayJoin(plr)
+	if not allowed then
+		log("kicked", plr.Name, "-", why)
+		plr:Kick(why .. " Rejoin from the Hub.")
+		return
+	end
+	-- heartbeat straight away so the browser's player count is fresh
+	if registry then task.spawn(function() pcall(function() registry:SetAsync(myKey(), entry(), EXPIRY) end) end) end
+end
+Players.PlayerAdded:Connect(onArrival)
+for _, p in ipairs(Players:GetPlayers()) do onArrival(p) end
 
-log("ready —", "mode", GameConfig.thisMode(), STUDIO and "(Studio: no teleports)" or (GameConfig.placesReady() and "" or "(some PLACES ids are 0)"))
+log("ready —", Game.server.reserved and "reserved server" or "public server (Hub)", STUDIO and "(Studio: no teleports)" or "")
