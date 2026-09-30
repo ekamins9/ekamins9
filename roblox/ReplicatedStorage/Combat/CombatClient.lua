@@ -243,8 +243,9 @@ function CombatClient.attach(Tool, weaponConfig)
 						if humanoidModelOf(inst) or inst.Name == "GuardHull" then
 							noteTouch(frameHits, inst, res.Position, true)
 						elseif inst.CanCollide and not inst:IsDescendantOf(workspace:FindFirstChild("DroppedWeapons") or workspace.Terrain) then
-							-- the blade met the world: the swing stops here
-							remote:FireServer("Wall", sweep.token, res.Position)
+							-- the blade met the world: the swing stops here (the server
+							-- picks the clang from what we hit)
+							remote:FireServer("Wall", sweep.token, res.Position, res.Material.Name)
 							wallStop()
 							return
 						end
@@ -394,9 +395,10 @@ function CombatClient.attach(Tool, weaponConfig)
 	end
 
 	-- the blade hit a wall / the floor: same feel as a block, then it eases back
+	-- (kind "wall": the camera kicks, nothing pops up on the HUD)
 	wallStop = function()
 		clangStop(cfg.HITSTOP_BLOCK)
-		impact("block")
+		impact("wall")
 		endSweep()
 	end
 

@@ -83,7 +83,8 @@ local hpShown, staShown = 1, 1
 --------------------------------------------------------------------
 --  COMBAT TEXT — a word near the crosshair for what just happened:
 --  as the defender  PARRY ×2 +12 (gold, big) · BLOCK −20 (grey) · CHAMBER · GUARD BROKEN
---  as the attacker  PARRIED / CHAMBERED (red) · BLOCKED (grey) · HIT · FEINT · WALL · TEAMMATE (orange)
+--  as the attacker  PARRIED / CHAMBERED (red) · BLOCKED (grey) · FEINT · TEAMMATE (orange)
+--  (hitting a wall / the floor shows nothing — you heard the clang)
 --------------------------------------------------------------------
 local TEXT_COL = {
 	PARRY = Color3.fromRGB(255, 215, 110), CHAMBER = Color3.fromRGB(255, 215, 110),

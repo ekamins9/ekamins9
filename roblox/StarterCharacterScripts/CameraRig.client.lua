@@ -202,7 +202,7 @@ end)
 -- hit feedback (both views)
 local HIT_FLINCH  = 0.07   -- pitch kick when we take a hit
 local HIT_ROLL    = 0.5    -- roll impulse away from the side we were hit on
-local IMPACT_KICK = {hit = 0.025, block = 0.05, parry = 0.06, chamber = 0.06, feint = 0.015}   -- our own swing landing / being stopped / pulled
+local IMPACT_KICK = {hit = 0.025, block = 0.05, wall = 0.05, parry = 0.06, chamber = 0.06, feint = 0.015}   -- our own swing landing / being stopped / pulled
 
 -- death: ride the head as it falls, then fade
 local DEATH_HOLD = 2.2

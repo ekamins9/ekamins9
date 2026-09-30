@@ -194,6 +194,46 @@ local function humanoidModelOf(part)
 	end
 	return nil
 end
+-- WHAT THE BLADE HIT: materials fold into a few clang families. A folder named
+-- ClangSounds in SoundService (or ReplicatedStorage) may hold one Sound per
+-- Enum.Material name (Slate, Wood, Metal…) and/or per family (Stone, Wood,
+-- Metal, Ground, Glass) plus Default; missing ones fall back to the Wall slot
+-- re-pitched per family so materials still sound apart.
+local WALL_FAMILY = {
+	Wood = "Wood", WoodPlanks = "Wood", Cardboard = "Wood",
+	Metal = "Metal", CorrodedMetal = "Metal", DiamondPlate = "Metal", Foil = "Metal",
+	Glass = "Glass", Ice = "Glass", Neon = "Glass", ForceField = "Glass",
+	Grass = "Ground", LeafyGrass = "Ground", Sand = "Ground", Mud = "Ground", Ground = "Ground", Snow = "Ground",
+	Fabric = "Ground", Carpet = "Ground", Leather = "Ground", Rubber = "Ground",
+}
+local WALL_FEEL = {   -- fallback re-pitch of the Wall slot per family
+	Stone   = {Speed = 1.00, Volume = 0.70},
+	Metal   = {Speed = 1.18, Volume = 0.80},
+	Wood    = {Speed = 0.78, Volume = 0.55},
+	Ground  = {Speed = 0.55, Volume = 0.40},
+	Glass   = {Speed = 1.35, Volume = 0.60},
+}
+function CombatServer.wallFamily(materialName)
+	return WALL_FAMILY[materialName] or "Stone"
+end
+-- plays the clang for a material at `at`; `fallbackId` is the weapon's Wall slot
+function CombatServer.clang(materialName, at, fallbackId)
+	if not at then return end
+	local family = CombatServer.wallFamily(materialName)
+	local folder = game:GetService("SoundService"):FindFirstChild("ClangSounds") or ReplicatedStorage:FindFirstChild("ClangSounds")
+	local src = folder and (folder:FindFirstChild(tostring(materialName)) or folder:FindFirstChild(family) or folder:FindFirstChild("Default"))
+	if src and src:IsA("Sound") then
+		local s = src:Clone()
+		s.PlaybackSpeed = s.PlaybackSpeed * (0.95 + math.random() * 0.10)
+		s.Parent = at
+		s:Play()
+		game:GetService("Debris"):AddItem(s, 6)
+		return
+	end
+	local feel = WALL_FEEL[family] or WALL_FEEL.Stone
+	Sounds.play(fallbackId, at, {Volume = feel.Volume, Speed = feel.Speed})
+end
+
 local wallParams = RaycastParams.new()
 wallParams.FilterType = Enum.RaycastFilterType.Exclude
 wallParams.IgnoreWater = true
@@ -330,6 +370,7 @@ CombatServer.DEFAULTS = {
 		KickHit = "rbxassetid://105287234173928",
 		Block   = "rbxassetid://112773782841691",
 		Parry   = "rbxassetid://5763723309",
+		Wall    = "rbxassetid://112773782841691",   -- the blade meets the world (pitched per material, see WALL_FEEL)
 	},
 
 	-- hit validation / lethality
@@ -929,17 +970,20 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- the client's blade met the world (a wall, the floor): the swing stops
 	-- there — no whiff penalty, no refund, a short recovery
-	local function onWall(token, pos)
+	local function onWall(token, pos, material)
 		if not character or token ~= state.token or state.phase ~= "release" then return end
 		if typeof(pos) ~= "Vector3" then return end
 		local hrp = character:FindFirstChild("HumanoidRootPart")
 		if not hrp or (hrp.Position - pos).Magnitude > cfg.REACH + cfg.REACH_TOLERANCE then return end
 		state.landed = true
-		Injury.sparks(pos)
-		sfx("Block", handle(), {Volume = 0.7})
+		material = type(material) == "string" and material or "Default"
+		-- the clang depends on what we hit: sparks off stone and metal, a dull knock off wood / ground
+		local family = CombatServer.wallFamily(material)
+		if family == "Stone" or family == "Metal" then Injury.sparks(pos) end
+		CombatServer.clang(material, handle(), cfg.SOUNDS.Wall or cfg.SOUNDS.Block)
 		cancelSwing("wall")
 		state.nextActionTime = os.clock() + cfg.WALL_RECOVERY
-		dprint("blade hit the world")
+		dprint("blade hit the world:", material, "(" .. family .. ")")
 	end
 
 	----------------------------------------------------------------
@@ -1032,7 +1076,7 @@ function CombatServer.attach(Tool, weaponConfig)
 							note(res.Instance, res.Position, true)
 						elseif res.Instance.CanCollide and not res.Instance:IsDescendantOf(workspace:FindFirstChild("DroppedWeapons") or workspace.Terrain) then
 							npc.sweep = nil
-							onWall(sw.token, res.Position)
+							onWall(sw.token, res.Position, res.Material.Name)
 							return
 						end
 					end
@@ -1532,7 +1576,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			onHitReport(a, b, c, d, e)
 			return
 		elseif action == "Wall" then
-			onWall(a, b)
+			onWall(a, b, c)
 			return
 		end
 		dprint("recv", action, a)

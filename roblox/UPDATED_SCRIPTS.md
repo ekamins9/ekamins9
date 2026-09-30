@@ -2,22 +2,23 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** the cinematic camera needs no shot blocks any more. It measures the map's
-bounding box (`workspace.Map`, or everything in workspace when no map is loaded), hangs above
-the edge looking down at it, slowly circles, breathes in and out, and lets its gaze wander over
-the ground. It runs whenever you have no body — first join, after a death or a reset, in the Hub
-or a match — as soon as the death fade has cleared. In the Hub the menu now opens by itself in
-every one of those cases (arrival, death, reset) and stays out of the way once you close it
-until your next life. The class screen hands over to the Hub menu whenever the server is the
-Hub, not only mid-round.
+**Last change:** clangs by material, and wall hits are silent on the HUD. When the blade meets
+the world the client now reports the material it hit; the server plays a clang for it — from a
+`ClangSounds` folder (`SoundService` or `ReplicatedStorage`) holding a `Sound` per material
+name (`Slate`, `Wood`, `Metal`…) or per family (`Stone`, `Metal`, `Wood`, `Ground`, `Glass`)
+plus `Default`; without the folder the `Wall` sound slot is re-pitched per family so stone rings,
+metal rings higher, wood knocks, dirt thuds. Stone and metal spark, the rest don't. No "BLOCKED"
+(or anything) pops up for a wall or floor hit; the camera still kicks.
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | bounds-based orbit camera (`ORBIT_SPEED`, `ORBIT_HEIGHT`, `ORBIT_DIST`, `GAZE_WANDER`), auto-open loop |
-| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript | hands over to the Hub menu whenever Mode is Hub |
-| [README.md](README.md) | — | doc | camera note |
+| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `WALL_FAMILY` / `WALL_FEEL`, `CombatServer.clang`, `Wall` sound slot, `onWall(token, pos, material)` |
+| [ReplicatedStorage/Combat/CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | `ReplicatedStorage` → `Combat` → `CombatClient` | ModuleScript | sends the material with the Wall report; impact kind `wall` |
+| [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript | `wall` impact kick |
+| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | comment only (wall hits never popped here; the client used to send "block") |
+| [README.md](README.md) | — | doc | Sound slots: `Wall`, `ClangSounds` folder |
 
-**Also recent (replace if you haven't):** [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) · [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) (Hub map loads at server start) · [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) (new) · [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) · [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua).
+**Also recent (replace if you haven't):** [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) · [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) (orbit camera, auto-open) · [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) · [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) · [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) · [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua).
 
 ---
 
