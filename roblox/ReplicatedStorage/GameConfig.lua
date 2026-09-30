@@ -1,11 +1,13 @@
 --[[ GAME CONFIG — the one file that describes the GAME around the combat:
      places, game modes and their maps, classes. Server and client both read it.
 
-     PLACES: Roblox place ids of this universe. 0 = "not a separate place":
-     with everything at 0 the whole game runs in ONE place (the Hub menu opens
-     over the game and Play switches this server's mode at the next
-     intermission). Publish the other places later, paste their ids here and
-     the same buttons teleport instead. The Hub is the start place.
+     PLACES: one Roblox place per MODE, by place id. A place runs its mode
+     forever — nothing ever switches mode inside a server. The Hub place is
+     the game's start place: everyone lands there, PLAY teleports them to the
+     mode's place (Roblox joins a server with room or starts a new one), and
+     RETURN TO HUB brings them back. 0 = not published yet (PLAY says so).
+     In Studio there are no teleports: the place runs STUDIO_MODE and PLAY
+     switches the mode locally so everything can still be tested.
 
      MODES: each is a plugin in ServerScriptService.Game.Modes/<id>. `maps`
      names Models in ServerStorage.Maps (see MapLoader for what a map needs).
@@ -18,19 +20,19 @@
 local GameConfig = {}
 
 GameConfig.PLACES = {
-	Hub         = 0,
-	Arena       = 0,
-	Battlefield = 0,
-	Siege       = 0,
+	Hub  = 0,   -- the start place
+	FFA  = 0,
+	Duel = 0,
+	TDM  = 0,
+	LTS  = 0,
+	KOTH = 0,
 }
--- which mode a place runs when nobody chose one (by PLACES key; "Battlefield" here = your current place)
-GameConfig.PLACE_DEFAULT_MODE = {Hub = "Hub", Arena = "Duel", Battlefield = "FFA", Siege = "TDM"}
-GameConfig.SINGLE_PLACE_DEFAULT = "FFA"   -- with all PLACES at 0, the mode this server starts in
+GameConfig.STUDIO_MODE = "Hub"   -- what an unpublished place (Studio) starts in
 
 GameConfig.MODES = {
 	Hub = {
-		name = "Courtyard", category = "Hub", teams = 0, maxPlayers = 40,
-		description = "Walk around, talk, practice on the dummies. Pick a mode to fight.",
+		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
+		description = "The courtyard: walk around, talk, practice on the dummies. Pick a mode to fight.",
 		maps = {"Courtyard"}, roundLength = 0, intermission = 0, hidden = true,
 	},
 	FFA = {
@@ -88,25 +90,27 @@ GameConfig.FRIENDLY_FIRE = 0.5
 function GameConfig.mode(id) return GameConfig.MODES[id] end
 function GameConfig.class(id) return GameConfig.CLASSES[id] end
 
--- is this a one-place game right now?
-function GameConfig.singlePlace()
-	for _, id in pairs(GameConfig.PLACES) do if id ~= 0 then return false end end
-	return true
+-- the mode THIS server runs: the mode whose place id this is; an unknown /
+-- unpublished place runs STUDIO_MODE in Studio and the Hub live
+function GameConfig.thisMode()
+	for modeId, id in pairs(GameConfig.PLACES) do
+		if id ~= 0 and id == game.PlaceId and GameConfig.MODES[modeId] then return modeId end
+	end
+	if game:GetService("RunService"):IsStudio() and GameConfig.MODES[GameConfig.STUDIO_MODE] then return GameConfig.STUDIO_MODE end
+	return "Hub"
 end
 
--- which PLACES key this server is
-function GameConfig.thisPlace()
-	for key, id in pairs(GameConfig.PLACES) do if id ~= 0 and id == game.PlaceId then return key end end
-	return nil
-end
-
--- the place a mode runs in (by category), or nil when it's this place / single-place
+-- the place id a mode runs in, or nil when it isn't published yet
 function GameConfig.placeFor(modeId)
-	local m = GameConfig.MODES[modeId]
-	if not m or GameConfig.singlePlace() then return nil end
-	local id = GameConfig.PLACES[m.category]
-	if not id or id == 0 or id == game.PlaceId then return nil end
+	local id = GameConfig.PLACES[modeId]
+	if not id or id == 0 then return nil end
 	return id
+end
+
+-- are all the places published (ids pasted in)?
+function GameConfig.placesReady()
+	for _, id in pairs(GameConfig.PLACES) do if id == 0 then return false end end
+	return true
 end
 
 -- can this class carry this weapon (Tool name)?

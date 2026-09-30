@@ -2,7 +2,9 @@
      body) and it opens over a slow cinematic camera (workspace.Map.MenuCamera
      when the map has one). Tabs:
        PLAY      the game modes (GameConfig.MODE_ORDER) with live player
-                 counts, QUICK PLAY, and what this server is running now
+                 counts, QUICK PLAY, custom servers, what this server runs;
+                 RETURN TO HUB from any match (one mode per place, never
+                 switched — travel is a teleport; Studio switches locally)
        SERVERS   the browser: every server that heartbeats into the registry,
                  filters (hide empty · custom only · type of gameplay), JOIN —
                  plus your friends who are online in the game, one click to join
@@ -292,6 +294,10 @@ end
 local actionBtn = button(side, "ENTER COURTYARD", 15, COL_GO_ON)
 actionBtn.Size = UDim2.new(1, 0, 0, 48)
 actionBtn.LayoutOrder = 50
+local hubBtn = button(side, "⌂  RETURN TO HUB", 14, COL_CARD)
+hubBtn.Size = UDim2.new(1, 0, 0, 40)
+hubBtn.LayoutOrder = 49
+hubBtn.Visible = false
 local sideHint = label(side, "", 12, FONT_BODY, COL_DIM)
 sideHint.Size = UDim2.new(1, 0, 0, 60)
 sideHint.LayoutOrder = 51
@@ -299,7 +305,7 @@ sideHint.TextYAlignment = Enum.TextYAlignment.Top
 local spacer = frame(side, COL_SIDE)
 spacer.BackgroundTransparency = 1
 spacer.LayoutOrder = 40
-spacer.Size = UDim2.new(1, 0, 1, -(5 * 50 + 48 + 60 + 40))
+spacer.Size = UDim2.new(1, 0, 1, -(5 * 50 + 46 + 48 + 60 + 40))
 
 local open = false
 local listening = nil   -- keybind capture (settings)
@@ -321,7 +327,7 @@ for _, name in ipairs(TABS) do tabBtn[name].Activated:Connect(function() selectT
 --------------------------------------------------------------------
 --  SHARED STATE
 --------------------------------------------------------------------
-local state = {singlePlace = true, party = nil, profile = nil, servers = {}, friends = {}, catalog = nil, activeClass = nil}
+local state = {studio = false, placesReady = false, custom = nil, party = nil, profile = nil, servers = {}, friends = {}, catalog = nil, activeClass = nil}
 
 local function alive()
 	local c = player.Character
@@ -334,9 +340,11 @@ local function roundState() return roundNode:GetAttribute("State") or "" end
 local function refreshHeader()
 	local modeName = roundNode:GetAttribute("ModeName") or ""
 	local map = roundNode:GetAttribute("Map") or ""
-	status.Text = string.format("this server:  %s%s  ·  %d player%s%s", modeName, map ~= "" and ("  on  " .. map) or "",
+	status.Text = string.format("this server:  %s%s%s  ·  %d player%s%s", state.custom and ("[" .. state.custom .. "]  ") or "",
+		modeName, map ~= "" and ("  on  " .. map) or "",
 		#Players:GetPlayers(), #Players:GetPlayers() == 1 and "" or "s",
-		state.singlePlace and "  ·  single-place mode" or "")
+		state.studio and "  ·  Studio (no teleports: PLAY switches this server)" or "")
+	hubBtn.Visible = not inHub()
 	local st = state.profile and state.profile.stats
 	if st then
 		profileLine.Text = string.format("%s   ·   %d kills  %d deaths  %d wins", player.DisplayName, st.kills or 0, st.deaths or 0, st.wins or 0)
@@ -363,7 +371,9 @@ end
 local function loadState()
 	local r = call("State")
 	if r.ok then
-		state.singlePlace = r.singlePlace
+		state.studio = r.studio == true
+		state.placesReady = r.placesReady == true
+		state.custom = r.custom
 		state.party = r.party
 		state.profile = r.profile
 		state.activeClass = r.profile and r.profile.active
@@ -388,9 +398,36 @@ do
 	playNote.Position = UDim2.new(0, 280, 0, 44)
 	playNote.Size = UDim2.new(1, -280, 0, 28)
 
+	-- custom servers: name it here, then CUSTOM on a mode card
+	local customRow = frame(f, COL_CARD, 10)
+	customRow.Position = UDim2.new(0, 0, 0, 100)
+	customRow.Size = UDim2.new(1, 0, 0, 44)
+	padding(customRow, 16, 16, 7, 7)
+	local customLbl = label(customRow, "CUSTOM SERVER", 13, FONT, COL_TEXT)
+	customLbl.Size = UDim2.fromOffset(130, 30)
+	local nameBox = Instance.new("TextBox")
+	nameBox.PlaceholderText = player.DisplayName .. "'s server"
+	nameBox.Text = ""
+	nameBox.ClearTextOnFocus = false
+	nameBox.Font = FONT_BODY
+	nameBox.TextSize = 14
+	nameBox.TextColor3 = COL_TEXT
+	nameBox.PlaceholderColor3 = COL_DIM
+	nameBox.BackgroundColor3 = COL_PANEL
+	nameBox.BorderSizePixel = 0
+	nameBox.Position = UDim2.new(0, 140, 0, 0)
+	nameBox.Size = UDim2.new(0, 260, 0, 30)
+	nameBox.TextXAlignment = Enum.TextXAlignment.Left
+	nameBox.Parent = customRow
+	Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 6)
+	padding(nameBox, 10, 10, 0, 0)
+	local customHint = label(customRow, "Name it, then press CUSTOM on a mode. A fresh server of that mode, listed in the browser under CUSTOM ONLY — friends and your party can join it.", 12, FONT_BODY, COL_DIM)
+	customHint.Position = UDim2.new(0, 416, 0, 0)
+	customHint.Size = UDim2.new(1, -416, 0, 30)
+
 	local grid = Instance.new("ScrollingFrame")
-	grid.Position = UDim2.new(0, 0, 0, 104)
-	grid.Size = UDim2.new(1, 0, 1, -104)
+	grid.Position = UDim2.new(0, 0, 0, 156)
+	grid.Size = UDim2.new(1, 0, 1, -156)
 	grid.BackgroundTransparency = 1
 	grid.BorderSizePixel = 0
 	grid.ScrollBarThickness = 4
@@ -404,9 +441,9 @@ do
 	gl.SortOrder = Enum.SortOrder.LayoutOrder
 
 	local countLabels = {}
-	local function play(modeId)
+	local function play(modeId, customServer)
 		playNote.Text = "…"
-		local r = call("Play", modeId)
+		local r = customServer and call("Custom", modeId, nameBox.Text) or call("Play", modeId)
 		playNote.Text = r.msg or (r.ok and "ok" or "failed")
 		toast((GameConfig.MODES[modeId] and GameConfig.MODES[modeId].name or modeId) .. ":  " .. (r.msg or ""), r.ok and COL_GOOD or COL_BAD)
 	end
@@ -445,6 +482,11 @@ do
 			b.Position = UDim2.new(1, 0, 1, 0)
 			b.Size = UDim2.fromOffset(100, 36)
 			b.Activated:Connect(function() play(id) end)
+			local cb = button(card, "CUSTOM", 12, COL_CARD_ON)
+			cb.AnchorPoint = Vector2.new(1, 1)
+			cb.Position = UDim2.new(1, 0, 1, -42)
+			cb.Size = UDim2.fromOffset(100, 26)
+			cb.Activated:Connect(function() play(id, true) end)
 		end
 	end
 
@@ -469,9 +511,10 @@ do
 		local r = call("Servers")
 		if r.ok then state.servers = r.servers or {} end
 		refreshCounts()
-		playNote.Text = state.singlePlace
-			and "Single-place mode: PLAY switches this server at the next intermission once more than half the players ask (in the courtyard: at once). Paste place ids into GameConfig.PLACES and the same buttons teleport."
-			or "Each mode runs in its own place. PLAY teleports you (and your party) there."
+		playNote.Text = state.studio
+			and "Studio: no teleports here, so PLAY switches THIS server's mode (in the Hub at once, in a match at the intermission by majority). Live, PLAY teleports you and your party to the mode's place."
+			or (state.placesReady and "Each mode runs in its own place. PLAY teleports you and your party there — Roblox joins a server with room or starts a new one."
+				or "Some place ids in GameConfig.PLACES are still 0 — those modes can't be travelled to until you paste them in.")
 	end
 end
 
@@ -1321,6 +1364,12 @@ local function hide()
 end
 
 closeBtn.Activated:Connect(hide)
+hubBtn.Activated:Connect(function()
+	hubBtn.Text = "…"
+	local r = call("Hub")
+	hubBtn.Text = "⌂  RETURN TO HUB"
+	toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
+end)
 actionBtn.Activated:Connect(function()
 	if not alive() and inHub() and roundState() == "Round" then
 		actionBtn.Text = "SPAWNING…"

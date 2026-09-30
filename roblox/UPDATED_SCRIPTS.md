@@ -2,7 +2,15 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** the game around the combat — a **Hub menu (M)** with PLAY / SERVERS (browser
+**Last change (follow-up):** one mode per place, never switched — `GameConfig.PLACES` is now
+keyed by mode (Hub / FFA / Duel / TDM / LTS / KOTH); the Hub is the start place, PLAY teleports
+to the mode's place (Roblox joins a server with room or starts one), **RETURN TO HUB** in the
+menu, **CUSTOM** servers per mode (named, reserved, listed in the browser), parties carried
+through teleports, the Hub mode reads HUB (the map is Courtyard). Studio can't teleport, so
+there PLAY still switches the mode locally. Files touched by this follow-up: GameConfig,
+Game, GameServer, Modes/Hub, HubServer, HubMenu, README.
+
+**Previous change:** the game around the combat — a **Hub menu (M)** with PLAY / SERVERS (browser
 with filters + friends) / ARMORY (one saved loadout per class) / PARTY / SETTINGS, a **class
 screen** replacing the old armor+weapon spawn menu, **game modes** (Hub, FFA, Duel, TDM, LTS,
 KOTH) with **maps in `ServerStorage/Maps`** configured per mode in `GameConfig`, **teams** with
@@ -19,8 +27,10 @@ like the old 110 in first person and 110 goes wider still.
    spawns, none for anyone), an optional `MenuCamera` part (menu camera sits there, looks along
    its front), for KOTH a `Zones` folder with a `Hill` part, and the geometry. No map yet → the
    game plays on whatever is in workspace (your current place), so nothing breaks meanwhile.
-4. `GameConfig.PLACES` all `0` = one-place mode (everything in this place). Paste place ids
-   later to split the Hub / Arena / Battlefield into places.
+4. Make one place per mode in the universe (Hub + FFA + Duel + TDM + LTS + KOTH), all empty
+   worlds with just a skybox, the Hub set as the **start place**, and paste each place id into
+   `GameConfig.PLACES`. Every place gets the same scripts. Until the ids are in, PLAY says the
+   mode isn't published; in Studio PLAY switches the mode locally either way.
 
 ## New files
 

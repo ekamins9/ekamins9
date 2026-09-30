@@ -122,11 +122,14 @@ function Game.load(id)
 	return mode
 end
 
--- ask for a mode: the Hub switches at once; a match switches at the
--- intermission when more than half the server asked
+-- STUDIO ONLY: ask this server to switch mode (there are no teleports in
+-- Studio). The Hub switches at once; a match switches at the intermission
+-- when more than half the server asked. Live, a place never changes mode.
 local requests = {}   -- [player] = modeId
 function Game.requestMode(plr, id)
 	if not GameConfig.MODES[id] then return false, "no such mode" end
+	if not game:GetService("RunService"):IsStudio() then return false, "a server never changes mode — travel from the Hub" end
+	if id == Game.modeId then return false, "already here" end
 	requests[plr] = id
 	local counts = {}
 	for p, m in pairs(requests) do if p.Parent then counts[m] = (counts[m] or 0) + 1 end end
