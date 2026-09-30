@@ -2,22 +2,25 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change (follow-up):** ONE PLACE. No more `PLACES`: public servers are the Hub, every
-match is a **reserved server** of the same place that gets its mode from the teleport data and
-never changes it. PLAY joins a match server with room or reserves a fresh one, **RETURN TO HUB**
-teleports to a public server, **CUSTOM** servers are LISTED (public) or FRIENDS ONLY, and every
-server has an access level — Public / Friends / Locked — enforced on arrival (`Game.mayJoin`
-kicks), so a locked 1v1 can't be crashed through Join Friend. Access codes never reach a
-client. Parties carry through teleports; the Hub mode reads HUB. Studio can't teleport, so
-there PLAY still switches the mode locally. Files touched: GameConfig, Game, GameServer,
-HubServer, HubMenu, README.
+**Last change:** first-person look-down. The wide-FOV eye pull-back put the camera over your
+chest, so glancing down showed the TOP of your torso and tabard. Now, as you look down, the
+pull-back fades out and the eye slides forward past your chest, and the torso, tabard and torso
+armor fade in only once you're looking down far enough — you see your chest front, legs and
+feet, never the top surface. Looking level, the torso stays hidden (only arms and sword).
 
-**Previous change:** the game around the combat — a **Hub menu (M)** with PLAY / SERVERS (browser
-with filters + friends) / ARMORY (one saved loadout per class) / PARTY / SETTINGS, a **class
-screen** replacing the old armor+weapon spawn menu, **game modes** (Hub, FFA, Duel, TDM, LTS,
-KOTH) with **maps in `ServerStorage/Maps`** configured per mode in `GameConfig`, **teams** with
-tabards and friendly fire, map votes, profiles, and the **FOV** dial: the 70 setting now looks
-like the old 110 in first person and 110 goes wider still.
+| File | Roblox Studio location | Type | What changed |
+|---|---|---|---|
+| [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript | `LOOKDOWN_ANGLE` / `LOOKDOWN_FWD` eye slide, `TORSO_SHOW_FROM/TO` fade for Torso + Tabard + TorsoClothing armor |
+| [ReplicatedStorage/ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | `ReplicatedStorage` → `ClientSettings` | ModuleScript | FOV slider hint only |
+| [README.md](README.md) | — | doc | look-down note in Settings |
+
+---
+
+**Previous change (one-place servers):** public servers are the Hub, every match is a
+**reserved server** of the same place that gets its mode from the teleport data and never
+changes it; PLAY joins a match server with room or reserves a fresh one; RETURN TO HUB; CUSTOM
+servers LISTED / FRIENDS ONLY; access levels Public / Friends / Locked enforced on arrival.
+Files: GameConfig, Game, GameServer, HubServer, HubMenu, README (all sent earlier).
 
 ## Studio setup (once)
 

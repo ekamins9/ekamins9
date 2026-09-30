@@ -330,9 +330,12 @@ Below 35% stamina a dark vignette, a little blur and a looped `SoundConfig.Breat
 ## Settings (M → SETTINGS)
 
 Camera feel sliders (head bob, weapon sway, camera roll, impact shake, breathing, first-person
-clunk boost, FP FOV — 0 turns an effect off, for competitive play; the FOV you set gets
-`FP_FOV_HIDDEN` added behind the scenes so the whole sword stays in frame, and also nudges
-third person by half the difference) and keybinds. Stored in
+clunk boost, FP FOV — 0 turns an effect off, for competitive play; the FOV dial 70..110 maps to
+a real 116..120° plus an eye pull-back of up to `EYE_PULL_MAX` so the whole sword stays in frame,
+and nudges third person too) and keybinds. **Looking down** in first person: the pull-back fades
+out over `LOOKDOWN_ANGLE` and the eye slides `LOOKDOWN_FWD` studs forward past the chest, and the
+torso, tabard and torso armor fade in between `TORSO_SHOW_FROM` and `TORSO_SHOW_TO` — so you see
+your chest front, legs and feet, never the top surface of your chest. Stored in
 `ReplicatedStorage.ClientSettings`, read live by CameraRig / CombatClient / Movement, and
 saved per player by `SettingsServer` (DataStore; in Studio enable *Allow Studio access to API
 services* or it just lasts the session).

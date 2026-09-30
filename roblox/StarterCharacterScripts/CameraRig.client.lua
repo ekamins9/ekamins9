@@ -177,6 +177,15 @@ local FOV_SMOOTH     = 6      -- how fast the FOV eases between values
 -- widens the picture by pulling the eye BACK (more of the sword in frame).
 local FP_FOV_MIN, FP_FOV_MAX = 116, 120      -- real FOV at setting 70 / 110
 local EYE_PULL_MAX = 0.75                    -- studs the eye moves back at setting 110
+-- LOOKING DOWN: the pulled-back eye sits over the torso, so a downward glance
+-- would show the TOP of the chest and tabard. Instead, as the pitch drops the
+-- pull-back fades out and the eye slides FORWARD past the chest (the "nose"),
+-- so only front faces are in view — chest front, tabard, legs, feet. The
+-- torso itself stays hidden while looking level (only its top face could
+-- show at the bottom of a wide frame) and fades in between the two angles.
+local LOOKDOWN_ANGLE = math.rad(40)          -- pitch at which the pull-back is fully gone
+local LOOKDOWN_FWD   = 0.6                   -- studs the eye moves forward (horizontal) by then
+local TORSO_SHOW_FROM, TORSO_SHOW_TO = math.rad(18), math.rad(34)   -- torso fades in over this pitch range
 local fovNow         = FP_FOV
 local DODGE_ROLL     = 0.35   -- roll impulse into a side dodge
 local DODGE_DIP      = 0.06   -- pitch dip on any dodge
@@ -295,6 +304,8 @@ player.CameraMode = Enum.CameraMode.Classic
 --------------------------------------------------------------------
 --  VISIBILITY
 --------------------------------------------------------------------
+local torsoPieces = {}   -- torso armor parts, faded with the torso in first person
+local setTorsoAlpha
 local function applyVisibility(d, inFP)
 	if d:IsA("BasePart") then
 		if d.Name == "Head" then
@@ -304,11 +315,14 @@ local function applyVisibility(d, inFP)
 			d.LocalTransparencyModifier = inFP and ACCESSORY_TRANSPARENCY or 0
 			d.CastShadow = true
 		elseif d:FindFirstAncestor("Armor") and d:FindFirstAncestor("Armor").Parent == character then
-			-- armor: only the leg pieces show in first person — helmet, torso and
+			-- armor: leg pieces always show in first person; torso pieces follow the
+			-- torso (visible only when looking down, see setTorsoAlpha); helmet and
 			-- arm pieces clip through the camera (Middle is invisible anyway)
 			local piece = d:FindFirstAncestorOfClass("Model")
 			local isLeg = piece and piece.Name:find("LegClothing") ~= nil
+			local isTorso = piece and piece.Name:find("TorsoClothing") ~= nil
 			d.LocalTransparencyModifier = (inFP and not isLeg) and 1 or 0
+			if isTorso then torsoPieces[d] = inFP or nil end
 			d.CastShadow = true
 		else
 			d.LocalTransparencyModifier = 0
@@ -319,7 +333,18 @@ local function applyVisibility(d, inFP)
 end
 
 local function setBodyForFP(inFP)
+	torsoPieces = {}
 	for _, d in ipairs(character:GetDescendants()) do applyVisibility(d, inFP) end
+end
+
+-- 1 = torso hidden (looking level), 0 = fully shown (looking down)
+function setTorsoAlpha(a)
+	Torso.LocalTransparencyModifier = a
+	local tab = character:FindFirstChild("Tabard")
+	if tab then tab.LocalTransparencyModifier = a end
+	for part in pairs(torsoPieces) do
+		if part.Parent then part.LocalTransparencyModifier = a else torsoPieces[part] = nil end
+	end
 end
 
 -- gear equipped after entering FP (hats, tools) gets the same treatment
@@ -615,10 +640,14 @@ local function loopBody(dt)
 		local headCF  = torsoCF * Neck.C0 * NeckC1:Inverse()
 		local target  = bodyFree and Head.Position or headCF.Position
 		eyePos = eyePos and eyePos:Lerp(target, math.clamp(dt*CAM_SMOOTH, 0, 1)) or target
+		local downFrac = math.clamp(-rot.X / LOOKDOWN_ANGLE, 0, 1)
+		local pull = EYE_PULL_MAX * dial * (1 - downFrac)
+		local nose = LOOKDOWN_FWD * downFrac
 		Camera.CFrame = CFrame.new(eyePos)
 			* CFrame.Angles(0, rot.Y, 0)
+			* CFrame.new(0, 0, -nose)   -- horizontal, past the chest, when looking down
 			* CFrame.Angles(rot.X + leanPitch + kick + hitKick, 0, roll*FP_ROLL_MULT)
-			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + EYE_PULL_MAX * dial + zOff*fpClunk)
+			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + pull + zOff*fpClunk)
 	else
 		eyePos = nil
 		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)   -- HRP itself sinks when crouched
@@ -641,8 +670,13 @@ local function loopBody(dt)
 		Head.LocalTransparencyModifier     = 1
 		LeftArm.LocalTransparencyModifier  = 0
 		RightArm.LocalTransparencyModifier = 0
+		-- torso (+ tabard, + torso armor): only when looking down enough that the
+		-- eye is already in front of the chest, so its top face never shows
+		local show = math.clamp((-rot.X - TORSO_SHOW_FROM) / (TORSO_SHOW_TO - TORSO_SHOW_FROM), 0, 1)
+		setTorsoAlpha(1 - show)
 	else
 		Head.LocalTransparencyModifier = 0
+		setTorsoAlpha(0)
 	end
 
 	lastSpeed = speed
