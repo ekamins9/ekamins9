@@ -1319,76 +1319,73 @@ local function classScreenUp()
 	return lm ~= nil and lm.Enabled
 end
 
--- CINEMATIC: whenever we have no body. Shots come from the map: a
--- MenuCameras folder of parts (glide from one to the next, name order), or a
--- single MenuCamera part (a slow arc around what it looks at), or, with
--- neither, a wide orbit of the spawn. Every shot breathes a little.
-local SHOT_DWELL, SHOT_GLIDE = 7, 2.5     -- seconds on a shot, seconds gliding to the next
-local PUSH_IN = 2.5                       -- studs of slow push-in over a dwell
-local shots, shotsAt, shotIdx, shotT0 = nil, 0, 1, os.clock()
-local lastCine = nil                      -- last CFrame, to smooth any switch
+-- CINEMATIC: whenever we have no body (and the death fade isn't running).
+-- No authoring needed: the camera works out the map's bounding box, hangs
+-- above one edge looking down at it, and slowly circles while its gaze
+-- wanders across the ground. Falls back to everything in workspace when no
+-- map is loaded.
+local ORBIT_SPEED  = 0.045   -- radians per second around the map
+local ORBIT_HEIGHT = 0.55    -- camera height above the map's top, as a fraction of its radius
+local ORBIT_DIST   = 1.15    -- orbit radius as a fraction of the map's radius
+local GAZE_WANDER  = 0.28    -- how far (fraction of radius) the look-at point drifts around the centre
+local bounds = nil           -- {center = Vector3, radius = number, top = number}
+local boundsAt = 0
+local lastCine = nil
 
-local function refreshShots()
+local function measure()
 	local map = workspace:FindFirstChild("Map")
-	local out = {}
-	if map then
-		local folder = map:FindFirstChild("MenuCameras")
-		if folder then
-			for _, p in ipairs(folder:GetChildren()) do if p:IsA("BasePart") then table.insert(out, p) end end
-			table.sort(out, function(a, b) return a.Name < b.Name end)
+	local cf, size
+	if map and map:IsA("Model") then
+		cf, size = map:GetBoundingBox()
+	else
+		-- no map: everything solid in workspace except characters and terrain
+		local minV, maxV = nil, nil
+		local n = 0
+		for _, d in ipairs(workspace:GetDescendants()) do
+			if d:IsA("BasePart") and not d:IsA("Terrain") and not Players:GetPlayerFromCharacter(d.Parent) and d.Size.Magnitude > 1 then
+				n += 1
+				if n > 4000 then break end
+				local half = d.Size * 0.5
+				local pos = d.Position
+				minV = minV and Vector3.new(math.min(minV.X, pos.X - half.X), math.min(minV.Y, pos.Y - half.Y), math.min(minV.Z, pos.Z - half.Z)) or pos - half
+				maxV = maxV and Vector3.new(math.max(maxV.X, pos.X + half.X), math.max(maxV.Y, pos.Y + half.Y), math.max(maxV.Z, pos.Z + half.Z)) or pos + half
+			end
 		end
-		local single = map:FindFirstChild("MenuCamera")
-		if #out == 0 and single and single:IsA("BasePart") then table.insert(out, single) end
+		if minV then cf, size = CFrame.new((minV + maxV) * 0.5), maxV - minV else cf, size = CFrame.new(0, 4, 0), Vector3.new(80, 8, 80) end
 	end
-	local changed = (shots == nil) or (#out ~= #shots)
-	if not changed then for i, p in ipairs(out) do if shots[i] ~= p then changed = true end end end
-	if changed then shots = out; shotIdx = 1; shotT0 = os.clock() end
-	shotsAt = os.clock()
-end
-
-local function smoothstep(x) x = math.clamp(x, 0, 1); return x * x * (3 - 2 * x) end
-
-local function breathe(t)
-	return CFrame.Angles(math.sin(t * 0.13) * 0.012, math.sin(t * 0.09) * 0.03, math.sin(t * 0.07) * 0.004)
-		* CFrame.new(math.sin(t * 0.07) * 0.6, math.sin(t * 0.11) * 0.3, 0)
+	local radius = math.max(size.X, size.Z) * 0.5
+	radius = math.max(radius, 20)
+	bounds = {center = cf.Position, radius = radius, top = cf.Position.Y + size.Y * 0.5, bottom = cf.Position.Y - size.Y * 0.5}
+	boundsAt = os.clock()
 end
 
 local function cinematicCFrame(t)
-	if os.clock() - shotsAt > 2 then refreshShots() end
-	local n = shots and #shots or 0
-	if n >= 2 then
-		-- dwell with a slow push-in, then glide to the next shot
-		local a = shots[shotIdx]
-		local b = shots[shotIdx % n + 1]
-		local el = t - shotT0
-		local pushA = a.CFrame * CFrame.new(0, 0, -PUSH_IN * math.clamp(el / SHOT_DWELL, 0, 1))
-		if el < SHOT_DWELL then return pushA * breathe(t) end
-		local g = smoothstep((el - SHOT_DWELL) / SHOT_GLIDE)
-		if g >= 1 then shotIdx = shotIdx % n + 1; shotT0 = t; return b.CFrame * breathe(t) end
-		return (a.CFrame * CFrame.new(0, 0, -PUSH_IN)):Lerp(b.CFrame, g) * breathe(t)
-	elseif n == 1 then
-		-- a slow arc around the point the author aimed at, 30 studs out
-		local base = shots[1].CFrame
-		local pivot = base.Position + base.LookVector * 30
-		local ang = math.sin(t * 0.06) * 0.3
-		local pos = pivot + (CFrame.Angles(0, ang, 0) * (base.Position - pivot))
-		return CFrame.lookAt(pos, pivot + Vector3.new(0, math.sin(t * 0.05) * 1.5, 0)) * breathe(t)
-	else
-		-- no shots authored: a wide slow orbit of the spawn area
-		local center = Vector3.new(0, 6, 0)
-		local sp = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
-		if sp then center = sp.Position end
-		local ang = t * 0.05
-		return CFrame.lookAt(center + Vector3.new(math.cos(ang) * 70, 32, math.sin(ang) * 70), center + Vector3.new(0, 4, 0))
-	end
+	if not bounds or os.clock() - boundsAt > 4 then measure() end
+	local b = bounds
+	local r = b.radius
+	-- the camera circles above the edge; the ring breathes in and out a little
+	local ang = t * ORBIT_SPEED
+	local dist = r * ORBIT_DIST * (1 + 0.08 * math.sin(t * 0.07))
+	local height = b.top + r * ORBIT_HEIGHT * (1 + 0.15 * math.sin(t * 0.05))
+	local pos = Vector3.new(b.center.X + math.cos(ang) * dist, height, b.center.Z + math.sin(ang) * dist)
+	-- the gaze wanders over the ground rather than staring at the exact centre
+	local groundY = b.bottom + (b.top - b.bottom) * 0.25
+	local look = Vector3.new(
+		b.center.X + math.sin(t * 0.13) * r * GAZE_WANDER,
+		groundY + math.sin(t * 0.09) * (b.top - b.bottom) * 0.15,
+		b.center.Z + math.cos(t * 0.11) * r * GAZE_WANDER)
+	return CFrame.lookAt(pos, look) * CFrame.Angles(0, 0, math.sin(t * 0.06) * 0.006)
+end
+
+local function deathFadeUp()
+	local f = playerGui:FindFirstChild("DeathFade")
+	return f ~= nil
 end
 
 RunService.RenderStepped:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	if not cam then return end
-	-- no body, and either a menu is up or the body is gone entirely (the death
-	-- fade in CameraRig owns the camera for the moment right after dying)
-	local wantCine = not alive() and (open or classScreenUp() or player.Character == nil)
+	local wantCine = not alive() and not deathFadeUp()
 	if wantCine then
 		cam.CameraType = Enum.CameraType.Scriptable
 		local target = cinematicCFrame(os.clock())
@@ -1427,11 +1424,13 @@ local function show(tab)
 	refreshHeader()
 end
 
+local autoOpen = true   -- the Hub opens the menu by itself until you close it; re-armed each life
 local function hide()
 	if not open then return end
 	open = false
 	listening = nil
 	gui.Enabled = false
+	autoOpen = false
 	bus:Fire("HubClosed")
 end
 
@@ -1504,7 +1503,15 @@ bus.Event:Connect(function(what, tab)
 	if what == "OpenHub" then show(tab) end
 end)
 
--- first arrival in a Hub server with no body: open straight away
-task.delay(1, function()
-	if not alive() and inHub() and roundState() == "Round" and not open then show("PLAY") end
+-- in the Hub with no body (arrival, death, reset): the menu opens by itself,
+-- over the cinematic, until you close it; the next life re-arms it
+task.spawn(function()
+	local wasAlive = false
+	while true do
+		task.wait(0.4)
+		local a = alive()
+		if a and not wasAlive then autoOpen = true end
+		wasAlive = a
+		if autoOpen and not a and not open and inHub() and not deathFadeUp() and not classScreenUp() then show("PLAY") end
+	end
 end)

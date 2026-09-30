@@ -251,7 +251,7 @@ local function clearDeathFade()
 end
 
 local function inCourtyard()
-	return roundNode:GetAttribute("Mode") == "Hub" and roundNode:GetAttribute("State") == "Round"
+	return roundNode:GetAttribute("Mode") == "Hub"
 end
 
 local function present()

@@ -2,22 +2,22 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** the Hub loads the courtyard the moment the server starts (no longer waits for
-someone to spawn), and the menu camera is a real cinematic: put several parts in a
-`MenuCameras` folder inside the map (`Shot1`, `Shot2`, …, each aimed where you want) and it dwells
-on each with a slow push-in, then glides to the next; a single `MenuCamera` part gets a slow arc
-around what it looks at; with neither it orbits the spawn. It runs whenever you have no body —
-menu open or not — and eases in from wherever the camera was.
+**Last change:** the cinematic camera needs no shot blocks any more. It measures the map's
+bounding box (`workspace.Map`, or everything in workspace when no map is loaded), hangs above
+the edge looking down at it, slowly circles, breathes in and out, and lets its gaze wander over
+the ground. It runs whenever you have no body — first join, after a death or a reset, in the Hub
+or a match — as soon as the death fade has cleared. In the Hub the menu now opens by itself in
+every one of those cases (arrival, death, reset) and stays out of the way once you close it
+until your next life. The class screen hands over to the Hub menu whenever the server is the
+Hub, not only mid-round.
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | cinematic shots (`SHOT_DWELL`, `SHOT_GLIDE`, `PUSH_IN`), runs whenever bodiless |
-| [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) | `ServerScriptService` → `Game` → `Game` | ModuleScript | a public server identifies itself as the Hub at once |
-| [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | `ServerScriptService` → `Game` → `GameServer` | Script | only reserved servers wait for a player before loading the map |
-| [ServerScriptService/Game/MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript | hides the `MenuCameras` parts on load |
-| [README.md](README.md) | — | doc | map format note |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | bounds-based orbit camera (`ORBIT_SPEED`, `ORBIT_HEIGHT`, `ORBIT_DIST`, `GAZE_WANDER`), auto-open loop |
+| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript | hands over to the Hub menu whenever Mode is Hub |
+| [README.md](README.md) | — | doc | camera note |
 
-**Also recent:** [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) (new, travel screen) · [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) · [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) (look-down).
+**Also recent (replace if you haven't):** [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) · [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) (Hub map loads at server start) · [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) (new) · [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) · [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua).
 
 ---
 
