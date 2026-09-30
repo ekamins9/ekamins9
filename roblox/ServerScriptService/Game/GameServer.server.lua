@@ -1,0 +1,142 @@
+--[[ GAME SERVER — the loop: pick a mode → vote/pick a map → load it → run the
+     round (mode ticks, clock, early end) → result → intermission (board up,
+     map vote, everyone pulled out) → next round. Replaces RoundServer.
+
+     Which mode: a TeleportData.mode from the Hub, else NextMode requested
+     through Game.requestMode (the Hub menu's Play), else this place's default
+     from GameConfig. A round only counts down while someone is in the server. ]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local Game       = require(script.Parent:WaitForChild("Game"))
+local MapLoader  = Game.MapLoader
+
+local node = Game.node
+local function log(...) DebugFlags.log("Game", ...) end
+
+-- map vote (client: Scoreboard sends "Vote", index)
+local voteRemote = Instance.new("RemoteEvent")
+voteRemote.Name = "VoteRemote"
+voteRemote.Parent = ReplicatedStorage
+local votes = {}   -- [player] = index
+voteRemote.OnServerEvent:Connect(function(plr, idx)
+	if node:GetAttribute("State") == "Intermission" and type(idx) == "number" and idx >= 1 and idx <= 3 then
+		votes[plr] = math.floor(idx)
+		for i = 1, 3 do
+			local n = 0
+			for _, v in pairs(votes) do if v == i then n += 1 end end
+			node:SetAttribute("Votes" .. i, n)
+		end
+	end
+end)
+Players.PlayerRemoving:Connect(function(p) votes[p] = nil end)
+
+local function startingMode()
+	-- the Hub sends players with a mode in their teleport data
+	for _, p in ipairs(Players:GetPlayers()) do
+		local ok, data = pcall(p.GetJoinData, p)
+		local td = ok and data and data.TeleportData
+		if type(td) == "table" and GameConfig.MODES[td.mode] then return td.mode end
+	end
+	local place = GameConfig.thisPlace()
+	if place and GameConfig.PLACE_DEFAULT_MODE[place] then return GameConfig.PLACE_DEFAULT_MODE[place] end
+	return GameConfig.SINGLE_PLACE_DEFAULT
+end
+
+-- up to three candidate maps for a mode (that exist), rotating
+local rotation = {}
+local function candidates(def)
+	local list = {}
+	for _, m in ipairs(def.maps or {}) do
+		if MapLoader.exists(m) then table.insert(list, m) end
+	end
+	if #list == 0 then list = def.maps and {def.maps[1] or "None"} or {"None"} end
+	local start = (rotation[def] or 0)
+	rotation[def] = start + 1
+	local out = {}
+	for i = 0, math.min(2, #list - 1) do table.insert(out, list[((start + i) % #list) + 1]) end
+	return out
+end
+
+local function countdown(seconds, mode, earlyEnd)
+	local left = seconds
+	node:SetAttribute("TimeLeft", left)
+	local last = os.clock()
+	while true do
+		task.wait(0.25)
+		local now = os.clock()
+		local dt = now - last
+		last = now
+		if mode then mode:tick(dt) end
+		local over = earlyEnd and earlyEnd()
+		if over then return over end
+		if seconds > 0 and #Players:GetPlayers() > 0 then
+			left -= dt
+			local whole = math.max(0, math.ceil(left))
+			if node:GetAttribute("TimeLeft") ~= whole then node:SetAttribute("TimeLeft", whole) end
+			if left <= 0 then return nil end
+		end
+	end
+end
+
+task.spawn(function()
+	-- wait for someone, so the first round doesn't burn with nobody in it
+	while #Players:GetPlayers() == 0 do task.wait(1) end
+	local modeId = startingMode()
+	local pendingMaps
+	while true do
+		local nextMode = node:GetAttribute("NextMode")
+		if nextMode ~= "" and GameConfig.MODES[nextMode] then
+			modeId = nextMode
+			node:SetAttribute("NextMode", "")
+			Game.clearRequests()
+		end
+		local mode = (Game.current and Game.modeId == modeId) and Game.current or Game.load(modeId)
+		local def = mode.def
+
+		-- map: the vote's winner, else rotate
+		local map
+		if pendingMaps then
+			local best, bestN = 1, -1
+			for i = 1, #pendingMaps do
+				local n = node:GetAttribute("Votes" .. i) or 0
+				if n > bestN then best, bestN = i, n end
+			end
+			map = pendingMaps[best]
+		else
+			map = candidates(def)[1]
+		end
+		MapLoader.load(map)
+		node:SetAttribute("Map", map)
+		node:SetAttribute("Number", (node:GetAttribute("Number") or 0) + 1)
+		node:SetAttribute("Winner", "")
+		for i = 1, 3 do node:SetAttribute("Vote" .. i, ""); node:SetAttribute("Votes" .. i, 0) end
+		votes = {}
+
+		mode:start(map)
+		mode:publishScores()
+		node:SetAttribute("State", "Round")
+		Game.roundStarted:Fire(modeId, map)
+		log("round", node:GetAttribute("Number"), "-", modeId, "on", map)
+
+		local early = countdown(def.roundLength or 0, mode, function() return mode:isOver() end)
+		local result = early or mode:result()
+		mode:stop()
+		log("round over:", result)
+		Game.roundEnded:Fire(modeId, result)
+
+		-- intermission: the board is up, the next maps are up for a vote
+		local nextDef = GameConfig.MODES[node:GetAttribute("NextMode")] or def
+		pendingMaps = candidates(nextDef)
+		for i, m in ipairs(pendingMaps) do node:SetAttribute("Vote" .. i, m) end
+		node:SetAttribute("Objective", result)
+		node:SetAttribute("State", "Intermission")
+		local inter = def.intermission or 0
+		if modeId == "Hub" then inter = 3 end
+		Game.intermissionStarted:Fire(inter)
+		countdown(inter, nil, nil)
+		-- the mode's per-round score display resets with the next start
+	end
+end)

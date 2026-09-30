@@ -83,7 +83,7 @@ local hpShown, staShown = 1, 1
 --------------------------------------------------------------------
 --  COMBAT TEXT — a word near the crosshair for what just happened:
 --  as the defender  PARRY ×2 +12 (gold, big) · BLOCK −20 (grey) · CHAMBER · GUARD BROKEN
---  as the attacker  PARRIED / CHAMBERED (red) · BLOCKED (grey) · HIT · FEINT · WALL
+--  as the attacker  PARRIED / CHAMBERED (red) · BLOCKED (grey) · HIT · FEINT · WALL · TEAMMATE (orange)
 --------------------------------------------------------------------
 local TEXT_COL = {
 	PARRY = Color3.fromRGB(255, 215, 110), CHAMBER = Color3.fromRGB(255, 215, 110),
@@ -92,7 +92,7 @@ local TEXT_COL = {
 	BLOCKED = Color3.fromRGB(200, 200, 200), HIT = Color3.fromRGB(240, 240, 240), FEINT = Color3.fromRGB(170, 170, 190), WALL = Color3.fromRGB(170, 170, 170),
 	DODGED = Color3.fromRGB(120, 200, 120),
 	DEALT = Color3.fromRGB(255, 240, 200), HEAD = Color3.fromRGB(255, 200, 90), KILL = Color3.fromRGB(255, 90, 70),
-	TAKEN = Color3.fromRGB(230, 70, 60),
+	TAKEN = Color3.fromRGB(230, 70, 60), TEAMMATE = Color3.fromRGB(200, 140, 60),
 }
 local popupOrder = 0
 local function popup(text, big, colorKey, offsetX)
@@ -136,8 +136,8 @@ end)
 -- damage dealt: "30" · "HEAD  60" (gold) · "KILL  60" (red), to the right of the crosshair
 character:GetAttributeChangedSignal("DealtTick"):Connect(function()
 	local t = character:GetAttribute("DealtText") or ""
-	local key = t:sub(1, 4) == "KILL" and "KILL" or (t:sub(1, 4) == "HEAD" and "HEAD" or "DEALT")
-	popup(t, key ~= "DEALT", key, 120)
+	local key = t:sub(1, 4) == "KILL" and "KILL" or (t:sub(1, 4) == "HEAD" and "HEAD" or (t:sub(1, 4) == "TEAM" and "TEAMMATE" or "DEALT"))
+	popup(t, key == "KILL" or key == "HEAD", key, 120)
 end)
 -- damage taken: "-30" in red, to the left
 character:GetAttributeChangedSignal("TakenTick"):Connect(function()

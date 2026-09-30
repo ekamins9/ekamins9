@@ -24,7 +24,15 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/ClientSettings.lua` | `ReplicatedStorage` → `ClientSettings` | ModuleScript |
 | `StarterCharacterScripts/Movement.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `Movement` | LocalScript |
 | `ServerScriptService/Scoreboard.server.lua` | `ServerScriptService` → `Scoreboard` | Script |
-| `ServerScriptService/RoundServer.server.lua` | `ServerScriptService` → `RoundServer` | Script |
+| `ReplicatedStorage/GameConfig.lua` | `ReplicatedStorage` → `GameConfig` | ModuleScript |
+| `ServerScriptService/Game/Game.lua` | `ServerScriptService` → `Game` (Folder) → `Game` | ModuleScript |
+| `ServerScriptService/Game/MapLoader.lua` | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript |
+| `ServerScriptService/Game/Teams.lua` | `ServerScriptService` → `Game` → `Teams` | ModuleScript |
+| `ServerScriptService/Game/GameServer.server.lua` | `ServerScriptService` → `Game` → `GameServer` | Script |
+| `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH` | ModuleScript each |
+| `ServerScriptService/Hub/HubServer.server.lua` | `ServerScriptService` → `Hub` (Folder) → `HubServer` | Script |
+| `ServerScriptService/Loadout/Profile.lua` | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript |
+| `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
@@ -49,20 +57,69 @@ Folder layout mirrors where each script lives in Studio.
 
 Nothing gets inserted into a Tool automatically — create `Config`, `Server` and `Client`
 inside each weapon by hand. `CombatServer` / `CombatClient` live once, in the folders above.
-Note `RigReplicator` and `LoadoutMenu` go in **StarterPlayerScripts** (not
-StarterCharacterScripts): they must survive your respawns.
+Note `RigReplicator`, `LoadoutMenu`, `HubMenu` and `Scoreboard` go in **StarterPlayerScripts**
+(not StarterCharacterScripts): they must survive your respawns. The old `RoundServer` is gone —
+delete it; `Game/GameServer` replaced it.
 
 **Weapons now live in `ServerStorage` → `Weapons` (Folder)**, not StarterPack. The loadout
 menu clones the chosen one into your Backpack when you spawn. Empty StarterPack, or
 you'll spawn with two.
 
-## Loadout menu (armor + weapon before you spawn)
+## Classes + the class screen
 
-`LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they
-press SPAWN. The menu lists every set in `ServerStorage.Armor` and every Tool in
-`ServerStorage.Weapons` with their stats (read from each one's `Config`), remembers your
-last pick, and comes back 4 s after you die (the ragdoll gets its moment first).
-Change `RESPAWN_MENU_DELAY` / `AUTO_EQUIP` at the top of `LoadoutServer`.
+`LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they pick a
+**class** and press SPAWN. Classes live in `GameConfig.CLASSES`: each fixes an **armor type**
+(`Knight` = Heavy, `Footman` = Medium, `Vanguard` = Light — a set qualifies when its
+`Config.Type` matches) and which weapons it may carry (`weapons = "any"` or a list of Tool
+names). You save **one loadout per class** (armor set, primary, optional secondary) in the
+Armory; the class screen shows the three cards with their saved loadouts and spawns you.
+Saved loadouts and stats live in `Profile` (DataStore `Profiles_v1`; in Studio without API
+access they last the session). The class screen comes back after the mode's `respawnDelay`.
+
+## Hub menu (M)
+
+`HubMenu` is the front door: press **M** anywhere (it also opens by itself when you arrive in
+the courtyard). Behind it a slow cinematic camera sits on the map's `MenuCamera` part.
+Tabs — **PLAY**: every mode from `GameConfig.MODE_ORDER` with live player counts across
+servers and a QUICK PLAY; **SERVERS**: the browser — filters *hide empty*, *custom only*,
+*type of gameplay* (mode category), JOIN — plus friends online in the game, JOIN / INVITE;
+**ARMORY**: per-class loadouts (armor filtered to the class's type, weapons to what it may
+carry), SAVE, SET ACTIVE; **PARTY**: create / invite / accept / leave — a party travels
+together and lands on the same team; **SETTINGS**: camera feel, attack side, keybinds.
+**ENTER COURTYARD** (Hub mode only) spawns you to walk around. `HubServer` answers all of it
+(`HubRemote`), heartbeats this server into a MemoryStore `Servers` map every 20 s for the
+browser, and teleports through `TeleportService` — both need a published game; in Studio the
+browser shows only this server and PLAY switches modes locally.
+
+## Game modes, maps, places (`GameConfig`)
+
+`GameConfig.PLACES` holds the place ids of this universe. **All 0 = single-place mode**: the
+whole game runs in one place — PLAY asks this server to switch mode (in the courtyard at once,
+in a match at the next intermission once more than half the players asked). Publish the other
+places later, paste their ids in, and the same buttons teleport (`PLACE_DEFAULT_MODE` says what
+each place runs when nobody chose). `GameConfig.MODES`: `Hub` (courtyard, no clock),
+`FFA`, `Duel`, `TDM` (tickets), `LTS` (one life per round, first to `roundsToWin`), `KOTH`
+(`Zones/Hill`, `pointsToWin`) — each with `maps`, `roundLength`, `intermission`,
+`respawnDelay`, `teams` (0 or 2), `maxPlayers`, a `category` (the browser's *type of
+gameplay*). A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
+`start / tick / onKill / onDeath / canSpawn / spawnCFrame / isOver / objective / result`.
+
+**Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
+names them. Inside a map: `Spawns` (Folder of parts; attribute `Team = "A"` / `"B"` on team
+spawns, none = anyone; made invisible on load), optional `MenuCamera` (a Part: the hub
+menu's camera sits there and looks along its LookVector), optional `Zones` → `Hill` (a Part;
+KOTH capture volume), and the geometry. `MapLoader` clones one into `workspace.Map` per round
+and picks the spawn farthest from enemies; no such map → whatever is in workspace, and
+`SpawnLocation`s. `GameServer` runs the loop: mode → map (vote or rotation) → round (mode
+ticks, clock, early end) → result → intermission with the board up and a 3-map vote
+(Round `Vote1..3` / `Votes1..3`, `VoteRemote`). State is on `ReplicatedStorage.Round`
+(`State`, `TimeLeft`, `Number`, `Mode`, `ModeName`, `Category`, `Map`, `Teams`, `ScoreA/B`,
+`Objective`, `Winner`, `WinnerKills`, `NextMode`).
+
+**Teams** (`GameConfig.TEAMS`: Crown blue / Iron red) sit on Roblox `Teams`; a character
+carries a `Team` attribute and a coloured tabard. Friendly fire deals
+`GameConfig.FRIENDLY_FIRE` (0.5) of the damage, shows TEAMMATE on your HUD, gives no kill
+credit and reads TEAMKILLED in the feed.
 
 ## Armor sets
 
@@ -211,10 +268,9 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 
 ## Rounds
 
-`RoundServer`: free-for-all, `ROUND_LENGTH` (5 min) → top killer wins → `INTERMISSION` (15 s)
-with everyone pulled out and the leaderboard forced open → stats reset, everyone re-enters
-through the loadout menu. State lives on `ReplicatedStorage.Round` (`State`, `TimeLeft`, `Number`,
-`Winner`). The timer is top-centre; SPAWN waits during an intermission.
+See *Game modes, maps, places* above. The top-centre strip shows the mode, the map, the
+clock, the mode's objective line and (team modes) both scores. At the end everyone is pulled
+out, the board comes up with the result and the map vote, then the class screen returns.
 
 ## Voice
 
@@ -251,14 +307,16 @@ hits (it can finish someone low). Unequipping just drops it.
 death. Credit: CombatServer stamps `LastHitBy` / `LastHitWith` / `LastHitKind` on a character
 each time it hurts it (swings, kicks, thrown heads); a death within `CREDIT_WINDOW` (15 s) of
 the last hit counts for that attacker, a bleed-out included. **Hold Tab** for the board (kills,
-deaths, K/D, sorted by kills; replaces Roblox's list). Dummies show in the feed, not the board.
+deaths, K/D, sorted by kills, team-coloured in team modes; replaces Roblox's list). Dummies show
+in the feed, not the board. Every player death also goes to `Game.onDeath` (tickets, lives,
+round kills) and into the player's `Profile` stats; the board resets each round.
 
 ## Low stamina
 
 Below 35% stamina a dark vignette, a little blur and a looped `SoundConfig.Breathing` ramp in
 (InjuryFX); at 0 the vignette pulses and the breathing peaks.
 
-## Settings (⚙ on the spawn menu)
+## Settings (M → SETTINGS)
 
 Camera feel sliders (head bob, weapon sway, camera roll, impact shake, breathing, first-person
 clunk boost, FP FOV — 0 turns an effect off, for competitive play; the FOV you set gets

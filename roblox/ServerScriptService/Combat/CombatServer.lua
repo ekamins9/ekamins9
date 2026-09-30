@@ -58,6 +58,12 @@ local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
+-- GameConfig (friendly-fire multiplier); optional so the combat still runs without it
+local GameConfig = (function()
+	local m = ReplicatedStorage:FindFirstChild("GameConfig")
+	local ok, t = pcall(function() return require(m) end)
+	return ok and type(t) == "table" and t or {FRIENDLY_FIRE = 0.5}
+end)()
 local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 -- optional: ServerScriptService.Loadout.Armor (damage reduction on armored limbs)
 local Armor do
@@ -116,10 +122,10 @@ function CombatServer.interrupt(targetChar, reason)
 end
 -- damage numbers for both HUDs: the attacker sees what they dealt, the
 -- victim what they took (DealtText/DealtTick, TakenText/TakenTick)
-function CombatServer.showDamage(attacker, target, dmg, region, lethal)
+function CombatServer.showDamage(attacker, target, dmg, region, lethal, friendly)
 	local n = math.floor(dmg + 0.5)
 	if attacker then
-		local tag = lethal and "KILL  " or (region == "head" and "HEAD  " or "")
+		local tag = friendly and "TEAMMATE  " or (lethal and "KILL  " or (region == "head" and "HEAD  " or ""))
 		attacker:SetAttribute("DealtText", tag .. n)
 		attacker:SetAttribute("DealtTick", (attacker:GetAttribute("DealtTick") or 0) + 1)
 	end
@@ -127,6 +133,14 @@ function CombatServer.showDamage(attacker, target, dmg, region, lethal)
 		target:SetAttribute("TakenText", "-" .. n)
 		target:SetAttribute("TakenTick", (target:GetAttribute("TakenTick") or 0) + 1)
 	end
+end
+-- friendly fire: two characters with the same Team attribute (Teams.mark) hurt
+-- each other for GameConfig.FRIENDLY_FIRE of the damage (1 = no teams / enemies)
+function CombatServer.friendlyMult(a, b)
+	local ta = a and a:GetAttribute("Team")
+	if ta == nil or ta == "" then return 1 end
+	if ta ~= (b and b:GetAttribute("Team")) then return 1 end
+	return math.clamp(tonumber(GameConfig.FRIENDLY_FIRE) or 0, 0, 1)
 end
 -- who hurt whom last, for kill credit (Scoreboard reads these on death)
 function CombatServer.credit(target, attacker, weaponName, kind)
@@ -258,9 +272,11 @@ function CombatServer.resolveKick(character, cfg, hooks)
 			CombatServer.drainStamina(m, cfg.KICK_BLOCK_DRAIN, cfg.BLOCK_MAX)
 			if hooks.dprint then hooks.dprint("KICK staggered", m.Name) end
 		else
+			local ff = CombatServer.friendlyMult(character, m)
+			local kd = cfg.KICK_DAMAGE * ff
 			CombatServer.credit(m, character, hooks.weaponName or "", "kick")
-			CombatServer.showDamage(character, m, cfg.KICK_DAMAGE, "body", hum.Health - cfg.KICK_DAMAGE <= 0)
-			hum:TakeDamage(cfg.KICK_DAMAGE)
+			CombatServer.showDamage(character, m, kd, "body", hum.Health - kd <= 0, ff < 1)
+			hum:TakeDamage(kd)
 			CombatServer.markCombat(m)
 			if hooks.dprint then hooks.dprint("kick hit", m.Name) end
 		end
@@ -851,8 +867,14 @@ function CombatServer.attach(Tool, weaponConfig)
 		if isStab and region == "head" and cfg.STAB_HEAD_EXECUTE then
 			dmg = math.max(dmg, hum.Health)
 		end
+		-- a teammate takes only the friendly-fire share (0 = none at all)
+		local friendly = CombatServer.friendlyMult(character, target)
+		if friendly < 1 then
+			dmg = dmg * friendly
+			dprint("friendly fire x" .. tostring(friendly), "on", target.Name)
+		end
 		local lethal = hum.Health - dmg <= 0
-		CombatServer.showDamage(character, target, dmg, region, lethal)
+		CombatServer.showDamage(character, target, dmg, region, lethal, friendly < 1)
 		-- the limb we actually struck (only real rig parts, not accessories)
 		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
 

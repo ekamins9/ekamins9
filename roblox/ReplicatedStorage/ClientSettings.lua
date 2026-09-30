@@ -27,7 +27,7 @@ ClientSettings.SLIDERS = {
 	{key = "Shake",   label = "Impact shake",   min = 0,  max = 2,   hint = "flinch on hits, kick on swings"},
 	{key = "Breathe", label = "Idle breathing", min = 0,  max = 2,   hint = "slow drift while standing still"},
 	{key = "FPClunk", label = "First-person clunk boost", min = 0, max = 2, hint = "extra step weight in first person"},
-	{key = "FOV",     label = "First-person FOV", min = 70, max = 110, step = 1, hint = "degrees"},
+	{key = "FOV",     label = "First-person FOV", min = 70, max = 110, step = 1, hint = "70 is already wide; higher pulls the view back to show more of the sword"},
 }
 
 -- rebindable actions. Block stays on right mouse. The SIDE of an attack
@@ -64,7 +64,7 @@ ClientSettings.CHOICES = {
 }
 
 ClientSettings.DEFAULTS = {
-	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 100,
+	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70,
 	SideMode = "Modifier", DefaultSide = "Right",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end

@@ -172,7 +172,11 @@ local FOOTSTEP_VOLUME = 0.5
 -- sprint / dodge feel
 local SPRINT_FOV_ADD = 8      -- degrees while SpeedMult_Sprint is published
 local FOV_SMOOTH     = 6      -- how fast the FOV eases between values
-local FP_FOV_HIDDEN  = 10     -- added to the first-person FOV behind the scenes (whole sword in frame)
+-- The FOV setting (70..110) is a "wideness" dial, not degrees. Roblox caps the
+-- real FOV at 120, so 70 already maps to a wide 116° and the rest of the range
+-- widens the picture by pulling the eye BACK (more of the sword in frame).
+local FP_FOV_MIN, FP_FOV_MAX = 116, 120      -- real FOV at setting 70 / 110
+local EYE_PULL_MAX = 0.75                    -- studs the eye moves back at setting 110
 local fovNow         = FP_FOV
 local DODGE_ROLL     = 0.35   -- roll impulse into a side dodge
 local DODGE_DIP      = 0.06   -- pitch dip on any dodge
@@ -181,6 +185,7 @@ local DODGE_DIP      = 0.06   -- pitch dip on any dodge
 -- ClientSettings Bob / Sway / Roll / Shake / Breathe / FPClunk / FOV
 -- (the ⚙ on the loadout menu). Read every frame, so changes apply live.
 local function S(key) return ClientSettings.get(key) end
+local function fovDial() return math.clamp((S("FOV") - 70) / 40, 0, 1) end
 ClientSettings.onChanged(function(key, v)
 	if DebugFlags.get("Logs") then print("[CameraRig] setting", key, "=", v) end
 end)
@@ -595,9 +600,10 @@ local function loopBody(dt)
 	-- FOV: the setting is what the player sees; FP_FOV_HIDDEN widens it behind
 	-- the scenes so the whole sword stays in frame. Sprint adds and smooths.
 	local sprinting = character:GetAttribute("SpeedMult_Sprint") ~= nil
+	local dial = fovDial()
 	local fovTarget = inFP
-		and (S("FOV") + FP_FOV_HIDDEN + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD or 0))
-		or  (TP_FOV + (S("FOV") - 100) * 0.5 + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0))
+		and (FP_FOV_MIN + (FP_FOV_MAX - FP_FOV_MIN) * dial + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD or 0))
+		or  (TP_FOV + dial * 12 + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0))
 	fovNow = fovNow + (fovTarget - fovNow) * math.clamp(dt * FOV_SMOOTH, 0, 1)
 	Camera.FieldOfView = math.clamp(fovNow, 40, 120)
 	if inFP then
@@ -612,7 +618,7 @@ local function loopBody(dt)
 		Camera.CFrame = CFrame.new(eyePos)
 			* CFrame.Angles(0, rot.Y, 0)
 			* CFrame.Angles(rot.X + leanPitch + kick + hitKick, 0, roll*FP_ROLL_MULT)
-			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + zOff*fpClunk)
+			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + EYE_PULL_MAX * dial + zOff*fpClunk)
 	else
 		eyePos = nil
 		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)   -- HRP itself sinks when crouched
