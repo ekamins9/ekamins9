@@ -2,7 +2,9 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** clangs by material, and wall hits are silent on the HUD. When the blade meets
+**Last change:** the `Wall` sound slot now ships SILENT (`rbxassetid://0`) — the metal clang you heard on plain parts was the block sound standing in for it. Wall hits make no sound until you give `Wall` an id (then it is re-pitched per material family) or put per-material Sounds in a `ClangSounds` folder.
+
+**Before that:** clangs by material, and wall hits are silent on the HUD. When the blade meets
 the world the client now reports the material it hit; the server plays a clang for it — from a
 `ClangSounds` folder (`SoundService` or `ReplicatedStorage`) holding a `Sound` per material
 name (`Slate`, `Wood`, `Metal`…) or per family (`Stone`, `Metal`, `Wood`, `Ground`, `Glass`)

@@ -378,7 +378,9 @@ CombatServer.DEFAULTS = {
 		KickHit = "rbxassetid://105287234173928",
 		Block   = "rbxassetid://112773782841691",
 		Parry   = "rbxassetid://5763723309",
-		Wall    = "rbxassetid://112773782841691",   -- the blade meets the world (pitched per material, see WALL_FEEL)
+		Wall    = "rbxassetid://0",   -- the blade meets the world: SILENT until you give it an id
+		                              -- (then re-pitched per material family, WALL_FEEL) or fill
+		                              -- a ClangSounds folder with per-material Sounds
 	},
 
 	-- hit validation / lethality
