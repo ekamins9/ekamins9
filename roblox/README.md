@@ -33,6 +33,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Hub/HubServer.server.lua` | `ServerScriptService` → `Hub` (Folder) → `HubServer` | Script |
 | `ServerScriptService/Loadout/Profile.lua` | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
+| `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
@@ -89,7 +90,11 @@ together and lands on the same team; **SETTINGS**: camera feel, attack side, key
 **ENTER COURTYARD** (Hub only) spawns you to walk around; **RETURN TO HUB** (any match)
 teleports you back. **CUSTOM** on a mode card reserves a fresh, named server of that mode for
 you and your party, *LISTED* (public, in the browser under *custom only*) or *FRIENDS ONLY*
-(unlisted; friends of anyone inside can join through JOIN FRIEND). `HubServer` answers all of it (`HubRemote`), heartbeats this server into a
+(unlisted; friends of anyone inside can join through JOIN FRIEND). Every teleport puts up the
+**travel screen** (`TravelScreen`): full screen, destination, a sweeping bar and rotating tips,
+from the moment the server says go until the new server has loaded (it is also registered as
+the teleport GUI, so Roblox keeps it up during the load). Joining an existing server takes a
+few seconds; a freshly reserved server has to boot first, which is Roblox's cold-start time. `HubServer` answers all of it (`HubRemote`), heartbeats this server into a
 MemoryStore `Servers` map every 20 s for the browser, and teleports through `TeleportService`
 — both need a published game; in Studio the browser shows only this server and PLAY switches
 this server's mode locally so every mode can still be tested.

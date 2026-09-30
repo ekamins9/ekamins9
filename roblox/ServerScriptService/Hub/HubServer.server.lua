@@ -256,10 +256,12 @@ local function groupFor(plr, leaderOnly)
 	return {plr}
 end
 
-local function teleport(players, placeId, data, jobId, code)
+local function teleport(players, placeId, data, jobId, code, where)
 	local opts = Instance.new("TeleportOptions")
 	data = data or {}
 	if code then data.code = code end   -- the reserved server advertises its own code
+	-- the travel screen goes up now, before Roblox starts the teleport
+	for _, p in ipairs(players) do event:FireClient(p, "Travel", where or "") end
 	if #players > 1 then
 		local ids = {}
 		for _, p in ipairs(players) do table.insert(ids, p.UserId) end
@@ -268,7 +270,10 @@ local function teleport(players, placeId, data, jobId, code)
 	opts:SetTeleportData(data)
 	if code then opts.ReservedServerAccessCode = code elseif jobId then opts.ServerInstanceId = jobId end
 	local ok, err = pcall(TeleportService.TeleportAsync, TeleportService, placeId, players, opts)
-	if not ok then warn("[Hub] teleport failed:", err) end
+	if not ok then
+		warn("[Hub] teleport failed:", err)
+		for _, p in ipairs(players) do event:FireClient(p, "TravelFailed") end
+	end
 	return ok, ok and "travelling…" or "teleport failed (published game only)"
 end
 
@@ -276,6 +281,9 @@ end
 -- even an arrival that beats the creator there fixes the right mode
 local function identityOf(e)
 	return {mode = e.mode, access = e.access, name = e.name, custom = e.custom, host = e.hostId}
+end
+local function whereOf(e)
+	return ((e.name or "") ~= "" and (e.name .. "  ·  ") or "") .. (e.modeName or e.mode or "") .. ((e.map or "") ~= "" and ("  ·  " .. e.map) or "")
 end
 
 -- reserve a fresh match server and send the group; advertise it at once so
@@ -299,7 +307,7 @@ local function reserve(group, modeId, access, name, custom)
 			}, PENDING_TTL)
 		end)
 	end
-	return teleport(group, game.PlaceId, data, nil, code)
+	return teleport(group, game.PlaceId, data, nil, code, (custom and (name .. "  ·  ") or "") .. def.name .. "  ·  new server")
 end
 
 local function play(plr, modeId)
@@ -313,12 +321,12 @@ local function play(plr, modeId)
 		return ok, ok and ("Studio: switching this server — " .. msg) or msg
 	end
 	if modeId == Game.server.mode then return false, "you're already in " .. def.name end
-	if modeId == "Hub" then return teleport(group, game.PlaceId, {}) end
+	if modeId == "Hub" then return teleport(group, game.PlaceId, {}, nil, nil, "Hub") end
 	-- a public server of that mode with room for the whole group: the fullest first
 	for _, e in ipairs(listServers()) do
 		if e.mode == modeId and e.access == "Public" and e.reserved and e.accessCode and not e.here
 			and (e.players or 0) + #group <= (e.max or 0) then
-			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode)
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, def.name .. (e.map ~= "" and ("  ·  " .. e.map) or ""))
 		end
 	end
 	return reserve(group, modeId, "Public", "", false)
@@ -332,7 +340,7 @@ local function goHub(plr)
 		return ok, ok and ("Studio: switching this server — " .. msg) or msg
 	end
 	-- no code = Roblox picks a public server, and public servers are the Hub
-	return teleport(group, game.PlaceId, {})
+	return teleport(group, game.PlaceId, {}, nil, nil, "Hub")
 end
 
 local function custom(plr, modeId, name, listed)
@@ -359,9 +367,9 @@ local function joinServer(plr, jobId)
 	if (e.players or 0) + #group > (e.max or 0) then return false, "no room for your whole party there" end
 	if e.reserved then
 		if not e.accessCode then return false, "that server can't be joined" end
-		return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode)
+		return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, whereOf(e))
 	end
-	return teleport(group, game.PlaceId, {}, jobId)
+	return teleport(group, game.PlaceId, {}, jobId, nil, whereOf(e))
 end
 
 local function joinFriend(plr, userId)
@@ -382,12 +390,12 @@ local function joinFriend(plr, userId)
 		if (e.players or 0) + #group > (e.max or 0) then return false, "no room there" end
 		if e.reserved then
 			if not e.accessCode then return false, "that server can't be joined" end
-			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode)
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, whereOf(e))
 		end
-		return teleport(group, placeId, {}, jobId)
+		return teleport(group, placeId, {}, jobId, nil, whereOf(e))
 	end
 	-- not in the registry: a public (Hub) server we can reach by instance, or one just starting
-	return teleport(group, placeId, {}, jobId)
+	return teleport(group, placeId, {}, jobId, nil, "a friend's server")
 end
 
 local function friendsOnline(plr)

@@ -2,17 +2,19 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** first-person look-down. The wide-FOV eye pull-back put the camera over your
-chest, so glancing down showed the TOP of your torso and tabard. Now, as you look down, the
-pull-back fades out and the eye slides forward past your chest, and the torso, tabard and torso
-armor fade in only once you're looking down far enough — you see your chest front, legs and
-feet, never the top surface. Looking level, the torso stays hidden (only arms and sword).
+**Last change:** the **travel screen** — the moment you press PLAY / JOIN / RETURN TO HUB the
+menu and HUD drop away and a full-screen "TRAVELLING" takes over: where you're going, a sweeping
+bar, rotating gameplay tips. It stays up through Roblox's load on the other side (registered as
+the teleport GUI) and fades once the new server has told us its mode and map. A failed teleport
+takes it down again.
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript | `LOOKDOWN_ANGLE` / `LOOKDOWN_FWD` eye slide, `TORSO_SHOW_FROM/TO` fade for Torso + Tabard + TorsoClothing armor |
-| [ReplicatedStorage/ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | `ReplicatedStorage` → `ClientSettings` | ModuleScript | FOV slider hint only |
-| [README.md](README.md) | — | doc | look-down note in Settings |
+| [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript | **new** — the screen; edit `HINTS` at the top for the tips |
+| [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | `ServerScriptService` → `Hub` → `HubServer` | Script | fires `HubEvent "Travel", destination` before every teleport, `"TravelFailed"` if it errors |
+| [README.md](README.md) | — | doc | placement row + note |
+
+**Also in the previous change (look-down):** [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) — eye slides forward and the torso fades in when looking down.
 
 ---
 
