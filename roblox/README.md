@@ -99,13 +99,17 @@ same menu (RESUME · RETURN TO COURTYARD). The side bar holds the four **doors**
 (`GameConfig.DOORS`): **Courtyard** (the hub, public servers), **Tiltyard** (a friends-only
 reserved server for you and your party), **Warfront** (public battle servers; the mode is voted
 between rounds from `DOORS.Warfront.modes`, then the map), **The Lists** (1v1 · 2v2 · 3v3,
-casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the stage with
-**ready-up** (every member readies, the leader's PLAY only goes when all are ready; a party is
-at most `PARTY_MAX` = 3 and always travels together), the leaderboard (ranked ratings per
+casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the stage — you stand
+up front in the middle, teammates and open slots (shadows) around you; the leader clicks a
+shadow to invite and the ✕ over a teammate to remove them — with **ready-up** (every member
+readies, the leader's PLAY only goes when all are ready; a party is at most `PARTY_MAX` = 3 and
+always travels together). In a courtyard, the Courtyard card's button spawns you instead of
+travelling, the leaderboard (ranked ratings per
 bracket, Warfront kills), daily contracts, friends; on The Lists the bracket / casual-ranked
 card with FIND MATCH and the queue. **APPEARANCE**: hair, beard, face, skin, hair color, title.
 **CLASSES**: the loadout editor with a live mannequin and TEAM PREVIEW. **SHOP**: crates (the
-drum: odds, pity, duplicate refunds), packs, weapons, premium colors; **GET CROWNS** opens the
+drum shows each skin on its weapon in 3D — a display model in Cosmetics ▸ Weapons ▸ <id>,
+flat colors until one exists — with odds, pity, duplicate refunds), packs, weapons, premium colors; **GET CROWNS** opens the
 Robux bundles and the Crowns → Marks exchange. **SERVERS**: the browser with filters and
 **CREATE CUSTOM** (door, mode, map, player limit, round length, who may join, friendly fire,
 respawns, ground weapons, cheats — a cheat server gives the host `/god /heal /speed /tp

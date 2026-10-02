@@ -4,22 +4,30 @@ Rewritten after every change — only what the **last** change touched. Links op
 
 **Now synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md).
 
-**Last change: Rojo setup fixes — no game code touched.** The CLI pin moved to Rojo 7.7.1 to
-match the auto-updating Creator Store plugin (the 7.4.4 server could not talk to the 7.7 plugin),
-and the three armor sets are now declared as **Models** so Rojo syncs `Config` into the existing
-set Models instead of creating duplicate Folders beside them.
+**Last change: menu fixes.**
+- **Party stage:** you stand up front in the middle, teammates and open slots (shadows) around
+  you. The leader clicks a shadow's **+** to invite and the **✕** over a teammate to remove them;
+  READY UP / LEAVE PARTY sit under your own name. The row of cards under the stage is gone.
+- **Blank popup fixed:** every buy / crowns / invite popup drew its contents *under* its own
+  backdrop (the menu's ScreenGuis used the old global ZIndex rule). They now show, have a CLOSE
+  button, and clicking the dark area around one closes it too.
+- **Courtyard:** already in a courtyard → the Courtyard card's button says ENTER THE COURTYARD
+  and spawns you (BACK TO THE COURTYARD resumes if you're alive) instead of "you're in the Courtyard".
+- **Weapons:** Shortsword, Pitchfork, Greatsword and War Hammer are all free. Nothing is locked.
+- **Crates:** each drum card and the win popup show the skin **on the weapon in 3D** (a
+  ViewportFrame of `Cosmetics ▸ Weapons ▸ <id>` with the skin applied). Until a weapon has a
+  display model there, the card falls back to the flat blade/grip colors.
 
 ## Changed files
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [../rokit.toml](../rokit.toml) | — (PC toolchain) | config | Rojo pin 7.4.4 → 7.7.1 |
-| [ROJO_SETUP.md](ROJO_SETUP.md) | — (docs) | doc | version, Model note, plugin-mismatch note |
-| [ServerStorage/Armor/GambesonSkin/init.meta.json](ServerStorage/Armor/GambesonSkin/init.meta.json) | `ServerStorage` → `Armor` → `GambesonSkin` | Rojo meta | `className: Model` |
-| [ServerStorage/Armor/KnightSkin/init.meta.json](ServerStorage/Armor/KnightSkin/init.meta.json) | `ServerStorage` → `Armor` → `KnightSkin` | Rojo meta | `className: Model` |
-| [ServerStorage/Armor/PeasantSkin/init.meta.json](ServerStorage/Armor/PeasantSkin/init.meta.json) | `ServerStorage` → `Armor` → `PeasantSkin` | Rojo meta | `className: Model` |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | stage overlay + layout, ZIndex fix, Courtyard button, 3D crate cards |
+| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `ReplicatedStorage` → `Catalog` → `Weapons` | ModuleScript | all four weapons `unlock = {free = true}` |
+| [README.md](README.md) | — | doc | Hub menu paragraph |
 
 ## Studio
 
-Nothing to paste. If a stray `GambesonSkin` / `KnightSkin` / `PeasantSkin` **Folder** (holding
-only a `Config`) sits next to the set Model in `ServerStorage` → `Armor`, delete the Folder.
+Nothing to paste (Rojo). For the 3D crate cards, put a display copy of each weapon in
+`ReplicatedStorage` → `Cosmetics` → `Weapons` → `<ToolName>` (a Model with a `Handle`); blade /
+grip parts with attribute `SkinPart` = `"Blade"` / `"Grip"` take the skin tints.
