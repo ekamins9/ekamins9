@@ -1,0 +1,535 @@
+<title>Courtyard Menu Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: a fixed game-menu shell (sidebar · stage · right column) over a courtyard backdrop; one dark look by design. */
+:root{
+  --bg:#141210; --bg2:#1c1916; --panel:rgba(22,20,18,.92); --card:#2a2622; --card2:#383229; --sel:#5e4b2b;
+  --fg:#ece5d6; --dim:#a39a8a; --line:rgba(196,150,70,.45); --gold:#c99a48; --gold2:#ffd277;
+  --red:#b23e2e; --red2:#d35243; --green:#6aa864; --blue:#4a62a8; --iron:#c83c32; --crown:#e8b84a; --mark:#9aa4b0;
+  --display:"Cinzel",Georgia,serif; --body:"Source Sans 3","Segoe UI",Arial,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;overflow:hidden}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;font-size:inherit}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+input,select{font-family:inherit;font-size:13px;color:var(--fg);background:#100e0c;border:1px solid #3a342c;border-radius:6px;padding:6px 8px}
+#app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr}
+.world{position:absolute;inset:0;background:radial-gradient(ellipse at 60% 60%,#3e3528 0%,#1b1714 45%,#0d0b09 100%)}
+.world:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 2px,transparent 2px 80px),repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 2px,transparent 2px 60px);mask:linear-gradient(180deg,transparent,#000 40%)}
+.topbar{position:relative;display:flex;align-items:flex-start;justify-content:space-between;padding:18px 24px 0;gap:12px;z-index:3}
+h1{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:2px;color:var(--gold);margin:0}
+.sub{color:var(--dim);font-size:13px;margin-top:4px}
+.wallet{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.coin{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.4);font-weight:700;font-variant-numeric:tabular-nums}
+.coin i{width:13px;height:13px;border-radius:50%;display:inline-block}
+.coin.marks i{background:var(--mark)}.coin.crowns i{background:var(--crown)}
+.shell{position:relative;display:grid;grid-template-columns:190px 1fr;gap:16px;padding:10px 24px 24px;min-height:0;z-index:2}
+.side{display:flex;flex-direction:column;gap:6px;min-height:0}
+.tab{padding:11px 14px;border-radius:6px;background:var(--card);font-weight:700;text-align:left;color:var(--dim);letter-spacing:.5px;transition:background .15s}
+.tab:hover{background:var(--card2);color:var(--fg)}.tab.on{background:var(--sel);color:var(--fg)}
+.side .grow{flex:1}
+.h{font-weight:700;font-size:12px;letter-spacing:1px;color:var(--fg);margin:0 0 8px}
+.mode .card{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:6px;background:var(--card);margin-top:6px;font-weight:700;font-size:12px;color:var(--dim)}
+.mode .card small{display:block;font-weight:400;font-size:10.5px;color:#7e7568}
+.mode .card.on{background:var(--sel);color:var(--fg);outline:1.5px solid var(--gold)}.mode .card.on small{color:#d8c9a6}
+.btn{display:block;width:100%;padding:11px;border-radius:6px;font-weight:800;font-size:13px;text-align:center;background:var(--card);color:var(--fg);transition:transform .08s,background .15s}
+.btn:hover{background:var(--card2)}.btn:active{transform:scale(.98)}
+.btn.go{background:var(--red)}.btn.go:hover{background:var(--red2)}
+.btn.gold{background:var(--gold);color:#1a1612}.btn.gold:hover{background:var(--gold2)}
+.btn.sm{padding:6px 10px;font-size:11px;width:auto;display:inline-block}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.content{position:relative;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+.content>*,.shell>*,.stagewrap,.stagewrap>*{min-width:0}
+.content.full{grid-template-columns:1fr}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-height:0;overflow:auto}
+.panel.quiet{border-color:rgba(255,255,255,.08)}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto}
+.stagewrap{position:relative;min-height:0;display:grid;grid-template-rows:auto 1fr auto;gap:8px}
+.stage{position:relative;min-height:300px;display:flex;justify-content:center;align-items:flex-end;gap:28px;perspective:900px;cursor:grab;user-select:none}
+.stage:active{cursor:grabbing}
+.mate{position:relative;width:170px;transition:transform .12s;transform-style:preserve-3d}
+.mate .tag{position:absolute;left:50%;transform:translateX(-50%);top:-6px;padding:4px 9px;border-radius:5px;background:rgba(0,0,0,.65);font-size:11px;font-weight:700;white-space:nowrap}
+.mate svg{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 12px rgba(0,0,0,.6))}
+.mate.ghost{opacity:.45}
+.hint{color:var(--dim);font-size:12px;text-align:center}
+.row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--card);border-radius:6px;margin-bottom:6px;font-size:13px;width:100%;text-align:left}
+button.row:hover{background:var(--card2)}
+.row.on{background:var(--sel);outline:1.5px solid var(--gold)}
+.row .r{margin-left:auto;display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;color:var(--dim)}
+.row .r i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.i-m{background:var(--mark)}.i-c{background:var(--crown)}
+.dim{color:var(--dim);font-size:12px}
+.sw{display:flex;gap:6px;flex-wrap:wrap}
+.sw button{width:24px;height:24px;border-radius:4px;border:1px solid rgba(255,255,255,.15);position:relative}
+.sw button.on{outline:2px solid #fff;outline-offset:1px}
+.sw button.lock:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(0,0,0,.45) 0 3px,transparent 3px 6px);border-radius:4px}
+.rar{font-size:10px;font-weight:800;letter-spacing:1px;padding:2px 6px;border-radius:3px;color:#fff}
+.r-Common{background:#5d6b7a}.r-Rare{background:#2f6fb0}.r-Epic{background:#7a3fb0}.r-Legendary{background:var(--gold);color:#1a1612}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{padding:7px 12px;border-radius:6px;background:var(--card);font-weight:700;font-size:12px;color:var(--dim)}
+.chip.on{background:var(--sel);color:var(--fg)}
+.lb .r{display:flex;gap:8px;font-size:12px;padding:6px 8px;border-radius:5px;background:rgba(0,0,0,.3);margin-bottom:4px;font-variant-numeric:tabular-nums}
+.lb .r b{width:26px;color:var(--gold)}.lb .r span{flex:1}.lb .r i{font-style:normal;color:var(--dim)}
+.lb .r.me{background:var(--sel)}
+.rank{display:inline-block;padding:3px 8px;border-radius:4px;font-weight:900;font-size:11px;letter-spacing:1px;background:#8a7a4a;color:#1a1612}
+.bar{height:8px;border-radius:4px;background:#000;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+.grid{display:grid;gap:10px}
+.toasts{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:50;pointer-events:none}
+.toast{padding:8px 16px;border-radius:8px;background:rgba(22,20,18,.95);border:1px solid var(--gold);font-weight:700;font-size:13px;animation:up .25s ease-out}
+.toast.good{border-color:var(--green)}.toast.bad{border-color:var(--red2)}.toast.rare{border-color:var(--gold2);color:var(--gold2)}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal{width:min(480px,100%);background:#1b1917;border:1px solid var(--gold);border-radius:12px;padding:20px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.7);max-height:90vh;overflow:auto}
+.modal .x{position:absolute;right:12px;top:10px;width:28px;height:28px;border-radius:6px;background:var(--card);font-weight:800}
+.modal h3{font-family:var(--display);font-size:15px;letter-spacing:1px;margin:0 0 8px;color:var(--gold)}
+.travel{position:fixed;inset:0;background:#000;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.travel .t{font-family:var(--display);font-size:40px;font-weight:800;letter-spacing:4px;color:var(--gold)}
+.travel .d{font-size:18px;font-weight:700}
+.travel .track{width:min(420px,80vw);height:6px;border-radius:3px;background:#1e1b18;overflow:hidden;position:relative;margin-top:16px}
+.travel .track i{position:absolute;top:0;width:35%;height:100%;background:var(--gold);border-radius:3px;animation:sweep 1.6s linear infinite}
+@keyframes sweep{from{left:-35%}to{left:100%}}
+.travel .tip{position:absolute;bottom:60px;max-width:640px;color:var(--dim);font-size:16px;padding:0 16px}
+.travel .tip b{display:block;font-size:11px;letter-spacing:1px;color:var(--gold);margin-bottom:8px}
+.sel-row{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:5px;background:var(--card);font-size:12px;margin-bottom:6px;gap:8px}
+.sel-row b{color:var(--fg)}
+.tog{width:34px;height:18px;border-radius:9px;background:#3a3630;position:relative;flex:none}
+.tog.on{background:var(--green)}.tog:after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--fg);transition:left .15s}.tog.on:after{left:18px}
+.drum{position:relative;height:250px;border-radius:10px;overflow:hidden;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.drum .mark{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--gold);box-shadow:0 0 12px var(--gold);z-index:2}
+.drum .strip{position:absolute;left:0;top:30px;display:flex;gap:18px;will-change:transform}
+.dcard{width:150px;height:190px;border-radius:8px;background:var(--card);border:2px solid #555;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:10px;font-weight:800;font-size:12px;text-align:center;gap:6px;flex:none}
+.dcard svg{width:70px;height:110px}
+.match{position:fixed;inset:0;z-index:30;background:radial-gradient(ellipse at 50% 60%,#4a4034,#141210)}
+.hud{position:absolute;left:24px;bottom:24px;width:284px;background:rgba(18,18,22,.65);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.hud .bar{height:18px;border-radius:8px;background:rgba(0,0,0,.5)}.hud .bar i{border-radius:8px}
+.hud .hp i{background:#69cd78}.hud .st i{background:#ebbe50}
+.strip-top{position:absolute;left:50%;top:14px;transform:translateX(-50%);text-align:center;font-weight:800}
+.feed{position:absolute;right:20px;top:48px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.feed div{background:rgba(24,22,20,.65);padding:4px 10px;border-radius:6px;font-size:13px}
+.ctrl{position:absolute;right:20px;bottom:24px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:400px}
+.key{display:inline-block;padding:1px 6px;border:1px solid #555;border-radius:4px;font-size:11px;font-weight:700;background:#000}
+.courtyard{position:fixed;inset:0;z-index:1}
+.courtyard .note{position:absolute;left:24px;bottom:24px;color:var(--dim);font-weight:700}
+.courtyard .scene{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:40px;padding-bottom:12vh}
+.pressed{outline:3px solid var(--gold2);box-shadow:0 0 0 6px rgba(255,210,119,.2)}
+.tabs2{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs2 button{padding:8px 14px;border-radius:6px;background:var(--card);font-weight:800;font-size:12px;color:var(--dim)}
+.tabs2 button.on{background:var(--sel);color:var(--fg)}
+.cls{display:flex;gap:8px;margin-bottom:10px}
+.cls button{flex:1;padding:10px;border-radius:8px;background:var(--card);font-weight:800;color:var(--dim)}
+.cls button small{display:block;font-weight:600;font-size:10px}
+.cls button.on{background:var(--gold);color:#1a1612}
+.pack{border-radius:8px;height:120px;display:flex;align-items:flex-end;padding:10px;font-weight:900;font-size:15px;text-align:left;color:#fff;text-shadow:0 1px 2px #000}
+.pack small{display:block;font-size:10px;font-weight:600;opacity:.9}
+.srv{display:grid;grid-template-columns:2fr 1.4fr 1fr .8fr .6fr auto;gap:8px;align-items:center;padding:8px 10px;border-radius:6px;background:var(--card);margin-bottom:6px;font-size:12px}
+.srv.head{background:none;color:var(--dim);font-weight:800;font-size:11px}
+.srv.full .n{color:var(--red2)}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (max-width:900px){.shell{grid-template-columns:1fr}.side{flex-direction:row;flex-wrap:wrap}.side .grow{display:none}.content{grid-template-columns:1fr}.mode{width:100%}.srv{grid-template-columns:1fr 1fr;font-size:11px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="world"></div>
+<div id="app"></div>
+<div class="toasts" id="toasts"></div>
+<div id="layer"></div>
+
+<script>
+/* ========================= CATALOG ========================= */
+const WEIGHTS={Light:{health:0,speed:100,clunk:100,prot:10},Medium:{health:25,speed:94,clunk:115,prot:30},Heavy:{health:50,speed:86,clunk:140,prot:50}};
+const CLASSES={Knight:{weight:"Heavy",desc:"Plate from head to toe. Slow, hard to cut, hits like a wall falling on you."},Footman:{weight:"Medium",desc:"Mail and gambeson. The all-rounder."},Vanguard:{weight:"Light",desc:"No armor to speak of. Fast, long reach, one mistake from death."}};
+const PACKS={
+  Starter_H:{name:"Plate & Mail",weight:"Heavy",free:true,bg:"linear-gradient(135deg,#3a3a3a,#5a5a5a)"},
+  IronCrow:{name:"The Iron Crow",weight:"Heavy",featured:true,bg:"linear-gradient(135deg,#3a2f22,#6a4d2a)"},
+  RustedWatch:{name:"The Rusted Watch",weight:"Heavy",bg:"linear-gradient(135deg,#4a2a1a,#7a4a2a)"},
+  Starter_M:{name:"Mail & Gambeson",weight:"Medium",free:true,bg:"linear-gradient(135deg,#3b3630,#5a5248)"},
+  GildedCourt:{name:"The Gilded Court",weight:"Medium",bg:"linear-gradient(135deg,#3a3522,#8a7a2a)"},
+  RoadWardens:{name:"Road Wardens",weight:"Medium",bg:"linear-gradient(135deg,#2a3a2a,#4a6a3a)"},
+  Starter_L:{name:"Peasant",weight:"Light",free:true,bg:"linear-gradient(135deg,#5a4a3a,#7a6a5a)"},
+  MarshWardens:{name:"Marsh Wardens",weight:"Light",bg:"linear-gradient(135deg,#223a2f,#2a6a4d)"},
+  NightRunners:{name:"Night Runners",weight:"Light",bg:"linear-gradient(135deg,#1a1a2a,#3a3a6a)"},
+};
+// look: helmet type: greathelm (covers hair+face) · sallet (hair) · bascinet (hair) · hood (hair) · cap (hair) · circlet (none) · none
+const PIECES=[
+  // Heavy
+  P("PlateHelm","Plate Helm","helmet","Starter_H","Common",0,0,{type:"bascinet",covers:["Hair"],metal:true}),
+  P("PlateCuirass","Plate Cuirass","top","Starter_H","Common",0,0,{plate:true}),
+  P("PlateLegs","Plate Legs","bottom","Starter_H","Common",0,0,{greaves:true}),
+  P("CrowGreatHelm","Crow Great Helm","helmet","IronCrow","Rare",700,35,{type:"greathelm",covers:["Hair","Face"],metal:true,crest:true}),
+  P("CrowCuirass","Crow Cuirass","top","IronCrow","Rare",800,40,{plate:true,pauldrons:true}),
+  P("CrowGreaves","Crow Greaves","bottom","IronCrow","Rare",600,30,{greaves:true}),
+  P("RustedBascinet","Rusted Bascinet","helmet","RustedWatch","Common",700,35,{type:"bascinet",covers:["Hair"],metal:true,rust:true}),
+  P("RustedBrigandine","Rusted Brigandine","top","RustedWatch","Common",800,40,{plate:true,rust:true}),
+  P("RustedChausses","Rusted Chausses","bottom","RustedWatch","Common",600,30,{greaves:true,rust:true}),
+  P("Sallet","Sallet","helmet","IronCrow","Epic",900,45,{type:"sallet",covers:["Hair"],metal:true}),
+  // Medium
+  P("Kettle","Kettle Hat","helmet","Starter_M","Common",0,0,{type:"cap",covers:["Hair"],metal:true}),
+  P("Gambeson","Gambeson & Mail","top","Starter_M","Common",0,0,{mail:true}),
+  P("Hose","Wool Hose","bottom","Starter_M","Common",0,0,{}),
+  P("GildedBarbute","Gilded Barbute","helmet","GildedCourt","Epic",900,45,{type:"bascinet",covers:["Hair"],metal:true,gilt:true}),
+  P("CourtDoublet","Court Doublet","top","GildedCourt","Epic",900,45,{mail:true,gilt:true}),
+  P("CourtHose","Court Hose","bottom","GildedCourt","Epic",700,35,{gilt:true}),
+  P("WardenHood","Warden's Hood","helmet","RoadWardens","Rare",600,30,{type:"hood",covers:["Hair"]}),
+  P("WardenCoat","Warden's Coat","top","RoadWardens","Rare",700,35,{mail:true,coat:true}),
+  P("WardenBoots","Warden's Boots","bottom","RoadWardens","Rare",500,25,{boots:true}),
+  // Light
+  P("Bare","Bare Head","helmet","Starter_L","Common",0,0,{type:"none",covers:[]}),
+  P("Tunic","Linen Tunic","top","Starter_L","Common",0,0,{}),
+  P("Breeches","Breeches","bottom","Starter_L","Common",0,0,{}),
+  P("MarshCowl","Marsh Cowl","helmet","MarshWardens","Rare",600,30,{type:"hood",covers:["Hair"]}),
+  P("MarshJerkin","Marsh Jerkin","top","MarshWardens","Rare",700,35,{leather:true}),
+  P("MarshWraps","Marsh Wraps","bottom","MarshWardens","Rare",500,25,{boots:true}),
+  P("RunnerMask","Runner's Mask","helmet","NightRunners","Epic",800,40,{type:"mask",covers:["Face"]}),
+  P("RunnerVest","Runner's Vest","top","NightRunners","Epic",800,40,{leather:true}),
+  P("RunnerLeggings","Runner's Leggings","bottom","NightRunners","Epic",600,30,{}),
+  P("Circlet","Iron Circlet","helmet","MarshWardens","Legendary",1500,75,{type:"circlet",covers:[]}),
+];
+function P(id,name,slot,pack,rarity,marks,crowns,look){return {id,name,slot,pack,weight:PACKS[pack].weight,rarity,marks,crowns,look}}
+const PIECE=Object.fromEntries(PIECES.map(p=>[p.id,p]));
+const WEAPONS=[
+  W("Shortsword","Shortsword",{kind:"sword",len:120},{free:true},"OneHanded",true),
+  W("Pitchfork","Pitchfork",{kind:"pole",len:200},{free:true},"Polearm",false),
+  W("Greatsword","Greatsword",{kind:"sword",len:190},{level:5,marks:1500},"TwoHanded",false),
+  W("Hammer","War Hammer",{kind:"hammer",len:130},{kills:40,family:"OneHanded",marks:1500},"OneHanded",true),
+  W("Halberd","Halberd",{kind:"pole",len:220},{kills:60,family:"Polearm",marks:2500},"Polearm",false),
+  W("Zweihander","Zweihander",{kind:"sword",len:210},{level:12,marks:2500},"TwoHanded",false),
+];
+function W(id,name,look,unlock,family,secondary){return {id,name,look,unlock,family,secondary}}
+const WEAPON=Object.fromEntries(WEAPONS.map(w=>[w.id,w]));
+const SKINS=[
+  S("Greatsword","Default","Common",null,"#d8dbe0","#8b6a3a"),S("Greatsword","Blackened","Rare","Bladesmith","#3a3d44","#2a2a2a"),S("Greatsword","Gilded","Legendary","Bladesmith","#f2e2b0","#c99a48"),S("Greatsword","Veteran","Epic","earned","#b8c0c8","#6a2a2a"),
+  S("Shortsword","Default","Common",null,"#d8dbe0","#5a3a1a"),S("Shortsword","Pitted","Common","Bladesmith","#9a9a8a","#4a3a2a"),S("Shortsword","Bluesteel","Rare","Bladesmith","#8aa8d8","#2a2a4a"),S("Shortsword","Crowfeather","Epic","Bladesmith","#2a2a30","#c99a48"),
+  S("Hammer","Default","Common",null,"#9a9a9a","#5a3a1a"),S("Hammer","Blackened","Rare","Hafted","#3a3d44","#2a2a2a"),S("Hammer","Bronze","Epic","Hafted","#c88a4a","#4a2a1a"),
+  S("Halberd","Default","Common",null,"#d8dbe0","#6a4a2a"),S("Halberd","Marshsteel","Rare","Hafted","#6a8a6a","#3a4a2a"),S("Halberd","Gilded","Legendary","Hafted","#f2e2b0","#c99a48"),
+  S("Pitchfork","Default","Common",null,"#8a8a8a","#7a5a3a"),S("Pitchfork","Ember","Rare","Hafted","#d86a3a","#3a2a1a"),
+  S("Zweihander","Default","Common",null,"#d8dbe0","#3a2a1a"),S("Zweihander","Nightsteel","Epic","Bladesmith","#2a2a44","#1a1a2a"),
+];
+function S(weapon,name,rarity,crate,blade,grip){return {id:weapon+":"+name,weapon,name,rarity,crate,blade,grip}}
+const SKIN=Object.fromEntries(SKINS.map(s=>[s.id,s]));
+const CRATES={Bladesmith:{name:"Bladesmith's Crate",desc:"Greatsword, shortsword and zweihander skins.",cost:60},Hafted:{name:"Hafted Crate",desc:"Hammer, halberd and pitchfork skins.",cost:60}};
+const ODDS={Common:60,Rare:28,Epic:10,Legendary:2}; const REFUND={Common:150,Rare:400,Epic:900,Legendary:2000};
+const PALETTE=[["Navy","#2f3f6e"],["Royal","#4a62a8"],["Crimson","#8a2c2c"],["Forest","#2f6b3a"],["Slate","#3a3a3a"],["Ash","#6e7580"],["Umber","#5a3a22"],["Ochre","#a07a2a"],["Moss","#5a6a3a"],["Plum","#5a2a5a"],["Rust","#8a4a2a"],["Teal","#2a5a5a"],["Gold","#e8b84a",true],["White","#f4f4f4",true],["Jet","#111111",true]];
+const COLOR=Object.fromEntries(PALETTE.map(([n,h,p])=>[n,{name:n,hex:h,premium:!!p}]));
+const HAIR=["Cropped","Swept back","Long, tied","Braids","Bald"], BEARD=[["None",0],["Stubble",0],["Full",0],["Braided",40]], FACES=["Stern","Grin","Scarred"];
+const SKINS_T=["#e9c9a4","#d9b48a","#c89a6e","#a97b55","#7b5236","#4b3222"], HAIRC=[["Black","#2a2a2a"],["Brown","#3a2a1a"],["Auburn","#7a4a1a"],["Blond","#c8a060"],["Grey","#8a8a8a"],["White","#e8e8e8",true],["Red","#a83a2a",true]];
+const TITLES=["Recruit","Man-at-Arms","of the Iron Crow","Squire of the Lists"];
+const MAPS={Warfront:["Bridge","Village","Keep"],Lists:["The Pit","Old Tiltyard"]};
+const TIPS=["Feint (Q) during the windup to bait a parry, then hit the real one.","A parry is a block raised at the last moment. It refunds stamina and opens a riposte.","Chamber: start the mirror of their attack while they swing, and yours goes through.","Kick (G) breaks a held block. Miss, and it costs you.","Missed swings cost more stamina than hits. Hit something.","Parties land on the same team. Bring friends, or make enemies.","A locked match can't be joined, even by a friend. Ranked is ranked.","Wear all three pieces of one pack for the matched-set title."];
+const LB={"1v1":[["Halvard",2410,"Warlord"],["Ysolde",2377],["Brannoc",2290],["Ket",2201],["Oswin",2188]],"2v2":[["Maren",2140],["Dagny",2097],["Halvard",2050],["Oswin",1990],["Ket",1960]],"3v3":[["Dagny",2010],["Ysolde",1980],["Brannoc",1940],["Maren",1900],["Halvard",1870]],"Warfront":[["Halvard",1412],["Oswin",1288],["Ket",1104],["Maren",990],["Brannoc",877]]};
+const FRIENDS=[{id:"brannoc",name:"Brannoc",where:"The Lists · 1v1",cls:"Vanguard"},{id:"ket",name:"Ket",where:"Courtyard",cls:"Footman"},{id:"ysolde",name:"Ysolde",where:"Courtyard",cls:"Vanguard"}];
+
+/* ========================= STATE ========================= */
+const DEF=()=>({
+  tab:"play",door:"courtyard",where:"menu", // menu | courtyard | match
+  wallet:{marks:2340,crowns:120},
+  profile:{level:7,xp:3120,name:"You",rating:{"1v1":1612,"2v2":1480,"3v3":1500},wins:{"1v1":[12,9]},killsBy:{Polearm:38,OneHanded:12,TwoHanded:210},kills:412},
+  appearance:{skin:2,hair:"Swept back",hairColor:"Brown",beard:"Full",face:"Grin",title:"of the Iron Crow"},
+  owned:{pieces:["PlateHelm","PlateCuirass","PlateLegs","Kettle","Gambeson","Hose","Bare","Tunic","Breeches","CrowGreatHelm","CrowCuirass","CrowGreaves"],skins:["Greatsword:Default","Shortsword:Default","Hammer:Default","Halberd:Default","Pitchfork:Default","Zweihander:Default","Greatsword:Blackened"],weapons:["Shortsword","Pitchfork","Greatsword"],colors:[],beards:[],hairColors:[]},
+  classes:{
+    Knight:{helmet:"CrowGreatHelm",top:"CrowCuirass",bottom:"CrowGreaves",colors:{Primary:"Navy",Secondary:"Slate",Accent:"Ochre",Metal:"Ash"},weapon:"Greatsword",weaponSkin:"Greatsword:Blackened",secondary:"Shortsword",secondarySkin:"Shortsword:Default"},
+    Footman:{helmet:"Kettle",top:"Gambeson",bottom:"Hose",colors:{Primary:"Forest",Secondary:"Umber",Accent:"Ochre",Metal:"Ash"},weapon:"Shortsword",weaponSkin:"Shortsword:Default",secondary:null,secondarySkin:null},
+    Vanguard:{helmet:"Bare",top:"Tunic",bottom:"Breeches",colors:{Primary:"Crimson",Secondary:"Umber",Accent:"Moss",Metal:"Ash"},weapon:"Pitchfork",weaponSkin:"Pitchfork:Default",secondary:null,secondarySkin:null}
+  },
+  active:"Knight",
+  party:[],invited:null,
+  crates:{Bladesmith:{opens:17,sinceLeg:3},Hafted:{opens:2,sinceLeg:2}},pulls:[],
+  contracts:[{t:"Land 20 parries",n:14,m:20,pay:150},{t:"Win a 2v2 with a friend",n:0,m:1,pay:300},{t:"Open 3 Tiltyard drills",n:3,m:3,pay:150,done:true}],
+  custom:{name:"",door:"Warfront",mode:"Free-for-all",map:"Bridge",limit:12,round:5,access:"Listed",ff:true,respawn:true,ground:true,cheats:false},
+  season:{days:12},
+});
+let st=DEF();
+try{const s=localStorage.getItem("courtyard-proto");if(s){const o=JSON.parse(s);Object.assign(st,o);st.where="menu";st.party=[];}}catch(e){}
+function save(){try{localStorage.setItem("courtyard-proto",JSON.stringify(st))}catch(e){}}
+let ui={classEdit:null,editing:"Knight",dirty:false,team:0,shopTab:"crates",crate:"Bladesmith",rolling:false,result:null,appDraft:null,appDirty:false,helmPreview:false,lbTab:"1v1",filters:{empty:true,full:false,custom:false,friends:false,door:"",map:""},customOpen:false,customFromPlay:false,bracket:"1v1",qtype:"RANKED",queue:null,facing:0,zoom:1,servers:null,hintPress:null,pause:false,board:false,lastMatch:null,match:null};
+
+/* ========================= HELPERS ========================= */
+const $=s=>document.querySelector(s);
+const fmt=n=>n.toLocaleString("en-US");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t,k=""){const el=document.createElement("div");el.className="toast "+k;el.textContent=t;$("#toasts").appendChild(el);setTimeout(()=>{el.style.opacity=0;setTimeout(()=>el.remove(),300)},3500)}
+function modal(html,onmount){const l=$("#layer");l.innerHTML=`<div class="overlay" data-act="closeModal"><div class="modal" onclick="event.stopPropagation()"><button class="x" data-act="closeModal" aria-label="Close">✕</button>${html}</div></div>`;if(onmount)onmount(l)}
+function closeModal(){$("#layer").innerHTML=""}
+function owned(kind,id){return st.owned[kind].includes(id)}
+function pieceOwned(id){return PIECE[id].marks===0||owned("pieces",id)}
+function weaponUnlocked(id){const w=WEAPON[id];if(w.unlock.free||owned("weapons",id))return true;if(w.unlock.level&&st.profile.level>=w.unlock.level)return true;if(w.unlock.kills&&(st.profile.killsBy[w.unlock.family]||0)>=w.unlock.kills)return true;return false}
+function unlockText(w){if(w.unlock.free)return"free";if(w.unlock.level)return`level ${w.unlock.level}`;return`${st.profile.killsBy[w.unlock.family]||0} / ${w.unlock.kills} ${w.unlock.family.toLowerCase()} kills`}
+function colorHex(name){return (COLOR[name]||COLOR.Slate).hex}
+function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;r=Math.round(r*f);g=Math.round(g*f);b=Math.round(b*f);return"#"+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,"0")).join("")}
+function activeLoadout(){return st.classes[st.active]}
+function matchedSet(lo){const a=PIECE[lo.helmet],b=PIECE[lo.top],c=PIECE[lo.bottom];return (a.pack===b.pack&&b.pack===c.pack)?PACKS[a.pack].name:null}
+function rankOf(r){const tiers=["Peasant","Levy","Squire","Knight","Banneret","Champion"];const i=Math.min(5,Math.max(0,Math.floor((r-1000)/250)));const sub=3-Math.floor(((r-1000)%250)/84);return tiers[i]+" "+["I","II","III"][Math.max(0,Math.min(2,sub-1))]}
+function pay(marks=0,crowns=0){if(st.wallet.marks<marks){toast("Not enough Marks","bad");return false}if(st.wallet.crowns<crowns){toast("Not enough Crowns","bad");return false}st.wallet.marks-=marks;st.wallet.crowns+=0;st.wallet.crowns-=crowns;save();return true}
+
+/* ========================= MANNEQUIN (SVG) ========================= */
+function mannequin(opts){
+  // opts: {lo, app, team, armor:true/false, weapon:true, helmetOverride}
+  const app=opts.app||st.appearance, lo=opts.lo, armor=opts.armor!==false;
+  const skin=SKINS_T[app.skin], hairc=(HAIRC.find(h=>h[0]===app.hairColor)||HAIRC[1])[1];
+  let prim="#8a6a4a",sec="#5a4a3a",acc="#a07a2a",met="#8a8f96";
+  let helm=null,top=null,bot=null;
+  if(armor&&lo){prim=colorHex(lo.colors.Primary);sec=colorHex(lo.colors.Secondary);acc=colorHex(lo.colors.Accent);met=colorHex(lo.colors.Metal);helm=PIECE[opts.helmetOverride||lo.helmet];top=PIECE[lo.top];bot=PIECE[lo.bottom];
+    if(opts.team){prim=opts.team==="A"?"#4a62a8":"#c83c32";sec=shade(prim,.55)}}
+  const hl=helm?helm.look:{type:"none",covers:[]};
+  const coversHair=hl.covers.includes("Hair"), coversFace=hl.covers.includes("Face");
+  const tl=top?top.look:{}, bl=bot?bot.look:{};
+  const rust=tl.rust||hl.rust, gilt=tl.gilt||hl.gilt;
+  const metal=rust?"#7a5a3a":(gilt?"#d8b25a":met);
+  let s="";
+  // legs
+  const legc=armor?(bl.greaves?met:(bl.gilt?sec:(bl.boots?"#4a3a2a":sec))):"#6b5a48";
+  s+=`<rect x="74" y="186" width="24" height="104" rx="6" fill="${legc}"/><rect x="102" y="186" width="24" height="104" rx="6" fill="${legc}"/>`;
+  if(armor&&bl.greaves){s+=`<rect x="74" y="230" width="24" height="60" rx="6" fill="${shade(met,1.15)}"/><rect x="102" y="230" width="24" height="60" rx="6" fill="${shade(met,1.15)}"/>`}
+  if(armor&&bl.boots){s+=`<rect x="72" y="250" width="28" height="42" rx="6" fill="#3a2a1a"/><rect x="100" y="250" width="28" height="42" rx="6" fill="#3a2a1a"/>`}
+  s+=`<rect x="70" y="286" width="30" height="10" rx="3" fill="#2a2420"/><rect x="100" y="286" width="30" height="10" rx="3" fill="#2a2420"/>`;
+  // torso
+  const torc=armor?(tl.plate?metal:(tl.leather?"#5a3a22":prim)):skin;
+  s+=`<rect x="66" y="92" width="68" height="100" rx="8" fill="${torc}"/>`;
+  if(armor&&tl.plate){s+=`<rect x="66" y="92" width="68" height="100" rx="8" fill="${prim}" opacity=".0"/><path d="M78 100h44v40q-22 14-44 0z" fill="${prim}"/><rect x="92" y="150" width="16" height="42" rx="3" fill="${acc}"/>`}
+  else if(armor&&tl.mail){s+=`<rect x="66" y="92" width="68" height="100" rx="8" fill="${prim}"/><rect x="66" y="92" width="68" height="100" rx="8" fill="url(#mail)"/><rect x="70" y="150" width="60" height="8" fill="${acc}"/>`}
+  else if(armor&&tl.leather){s+=`<rect x="74" y="96" width="52" height="94" rx="6" fill="${prim}" opacity=".85"/><rect x="70" y="150" width="60" height="8" fill="${acc}"/>`}
+  else if(armor){s+=`<rect x="70" y="150" width="60" height="8" fill="${acc}"/>`}
+  if(armor&&tl.coat){s+=`<rect x="62" y="150" width="76" height="60" rx="6" fill="${sec}"/>`}
+  // arms
+  const armc=armor?(tl.plate?metal:(tl.mail?prim:(tl.leather?skin:prim))):skin;
+  s+=`<rect x="40" y="96" width="22" height="84" rx="8" fill="${armc}"/><rect x="138" y="96" width="22" height="84" rx="8" fill="${armc}"/>`;
+  if(armor&&tl.pauldrons){s+=`<ellipse cx="51" cy="100" rx="18" ry="12" fill="${sec}"/><ellipse cx="149" cy="100" rx="18" ry="12" fill="${sec}"/>`}
+  s+=`<rect x="40" y="170" width="22" height="16" rx="6" fill="${skin}"/><rect x="138" y="170" width="22" height="16" rx="6" fill="${skin}"/>`;
+  // head
+  s+=`<rect x="92" y="78" width="16" height="16" fill="${skin}"/><rect x="72" y="22" width="56" height="60" rx="12" fill="${skin}"/>`;
+  // face
+  if(!coversFace){const ex=app.face==="Scarred"?`<path d="M112 36l-6 14" stroke="#8a4a3a" stroke-width="2"/>`:"";s+=`<circle cx="88" cy="48" r="2.5" fill="#222"/><circle cx="112" cy="48" r="2.5" fill="#222"/>${app.face==="Grin"?`<path d="M90 62q10 8 20 0" stroke="#5a3020" stroke-width="2" fill="none"/>`:`<path d="M90 63h20" stroke="#5a3020" stroke-width="2"/>`}${ex}`;
+    if(app.beard!=="None"){const h=app.beard==="Stubble"?10:(app.beard==="Braided"?30:22);s+=`<path d="M76 56v${h}q24 14 48 0v-${h}q-24 10 -48 0z" fill="${hairc}" opacity="${app.beard==="Stubble"?.55:1}"/>`;if(app.beard==="Braided")s+=`<rect x="96" y="80" width="8" height="18" rx="3" fill="${hairc}"/>`}}
+  if(!coversHair&&app.hair!=="Bald"){if(app.hair==="Cropped")s+=`<path d="M72 34q28-18 56 0v8H72z" fill="${hairc}"/>`;else if(app.hair==="Swept back")s+=`<path d="M70 36q30-22 60 0l-4 14q-26-10-52 0z" fill="${hairc}"/>`;else if(app.hair==="Long, tied")s+=`<path d="M70 36q30-22 60 0v30q-6 8-12 0V44H82v22q-6 8-12 0z" fill="${hairc}"/><rect x="92" y="70" width="16" height="30" rx="6" fill="${hairc}"/>`;else s+=`<path d="M70 36q30-22 60 0v10H70z" fill="${hairc}"/><rect x="74" y="44" width="8" height="40" rx="3" fill="${hairc}"/><rect x="118" y="44" width="8" height="40" rx="3" fill="${hairc}"/>`}
+  // helmet
+  if(armor&&helm){const t=hl.type;
+    if(t==="greathelm")s+=`<rect x="66" y="14" width="68" height="74" rx="14" fill="${metal}"/><rect x="76" y="46" width="48" height="4" fill="#111"/><rect x="98" y="30" width="4" height="40" fill="#111"/>${hl.crest?`<path d="M90 14q10-16 20 0z" fill="${acc}"/>`:""}`;
+    else if(t==="sallet")s+=`<path d="M64 46q36-40 72 0v10H64z" fill="${metal}"/><path d="M64 56h72v8q-36 10-72 0z" fill="${shade(metal,.8)}"/><rect x="128" y="44" width="12" height="18" rx="4" fill="${metal}"/>`;
+    else if(t==="bascinet")s+=`<path d="M68 40q32-32 64 0v12H68z" fill="${metal}"/><rect x="68" y="50" width="8" height="30" fill="${metal}"/><rect x="124" y="50" width="8" height="30" fill="${metal}"/>`;
+    else if(t==="cap")s+=`<ellipse cx="100" cy="30" rx="44" ry="10" fill="${metal}"/><path d="M72 30q28-26 56 0z" fill="${shade(metal,1.1)}"/>`;
+    else if(t==="hood")s+=`<path d="M66 40q34-36 68 0v30q-34 12-68 0z" fill="${sec}"/><path d="M80 48q20-14 40 0v22H80z" fill="${skin}"/>`;
+    else if(t==="mask")s+=`<rect x="74" y="50" width="52" height="30" rx="6" fill="${sec}"/>`;
+    else if(t==="circlet")s+=`<rect x="70" y="30" width="60" height="5" fill="${gilt?"#d8b25a":met}"/>`;}
+  // weapon
+  if(armor&&opts.weapon!==false&&lo&&lo.weapon){const w=WEAPON[lo.weapon],sk=SKIN[lo.weaponSkin]||SKIN[lo.weapon+":Default"];const L=w.look.len;
+    let g=`<g transform="translate(152 180) rotate(22)">`;
+    if(w.look.kind==="sword")g+=`<rect x="-4" y="-${L}" width="8" height="${L}" rx="2" fill="${sk.blade}"/><rect x="-14" y="-24" width="28" height="6" fill="${sk.grip}"/><rect x="-3" y="-18" width="6" height="22" fill="${sk.grip}"/>`;
+    else if(w.look.kind==="pole")g+=`<rect x="-3" y="-${L}" width="6" height="${L+10}" fill="${sk.grip}"/><path d="M-10 -${L}h20l-4-26h-12z" fill="${sk.blade}"/>`;
+    else g+=`<rect x="-3" y="-${L}" width="6" height="${L+10}" fill="${sk.grip}"/><rect x="-16" y="-${L}" width="32" height="18" rx="3" fill="${sk.blade}"/>`;
+    s+=g+"</g>"}
+  return `<svg viewBox="0 0 200 310" role="img" aria-label="fighter"><defs><pattern id="mail" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="2" fill="none" stroke="rgba(0,0,0,.35)"/></pattern></defs>${s}<ellipse cx="100" cy="300" rx="62" ry="9" fill="rgba(0,0,0,.45)"/></svg>`;
+}
+function mateHTML(o){return `<div class="mate ${o.ghost?"ghost":""}" style="transform:rotateY(${ui.facing}deg) scale(${ui.zoom})"><div class="tag">${esc(o.tag)}</div>${o.ghost?`<svg viewBox="0 0 200 310"><rect x="72" y="22" width="56" height="60" rx="12" fill="none" stroke="#5a5248" stroke-dasharray="6 4" stroke-width="2"/><rect x="66" y="92" width="68" height="100" rx="8" fill="none" stroke="#5a5248" stroke-dasharray="6 4" stroke-width="2"/><rect x="74" y="186" width="24" height="104" rx="6" fill="none" stroke="#5a5248" stroke-dasharray="6 4" stroke-width="2"/><rect x="102" y="186" width="24" height="104" rx="6" fill="none" stroke="#5a5248" stroke-dasharray="6 4" stroke-width="2"/></svg>`:mannequin(o)}</div>`}
+
+/* ========================= RENDER ========================= */
+const TABS=[["play","PLAY"],["appearance","APPEARANCE"],["classes","CLASSES"],["shop","SHOP"],["servers","SERVERS"],["settings","SETTINGS"]];
+function render(){
+  const app=$("#app");
+  if(st.where==="match"){renderMatch(app);return}
+  if(st.where==="courtyard"){app.innerHTML=`<div class="courtyard"><div class="scene">${mateHTML({lo:activeLoadout(),tag:"You · "+st.active})}${st.party.map(p=>mateHTML({lo:st.classes[p.cls],tag:p.name+" · "+p.cls})).join("")}</div><div class="note">You are walking the courtyard. <span class="key">M</span> opens the menu · <span class="key">E</span> near a dummy to train · <span class="key">E</span> near a player to challenge a duel</div><div style="position:absolute;right:24px;bottom:24px;display:flex;gap:6px"><button class="btn sm" data-act="duel">simulate: duel challenge</button><button class="btn sm" data-act="openMenu">open menu (M)</button></div></div>`;return}
+  const titles={play:["PLAY",`Season 1 · ${st.season.days} days left · ${st.active} · ${matchedSet(activeLoadout())?matchedSet(activeLoadout())+" (matched set)":"mixed pieces"}`],appearance:["APPEARANCE",ui.helmPreview?"Preview with the "+st.active+"'s helmet":"Armor and weapon come off while you edit"+(ui.appDirty?" · unsaved":"")],classes:["CLASSES",`${ui.editing} · ${CLASSES[ui.editing].weight}${ui.dirty?" · unsaved":""}`],shop:["SHOP","Packs rotate weekly · crates roll a weapon skin · duplicates refund Marks"],servers:["SERVERS","Quick join by door, or pick a server · custom lobbies with your own rules"],settings:["SETTINGS","Camera feel, keybinds, attack side · M is the menu key everywhere"]};
+  const [t,sub]=titles[st.tab];
+  app.innerHTML=`<div class="topbar"><div><h1>${t}</h1><div class="sub">${esc(sub)}</div></div><div class="wallet"><div class="coin marks"><i></i>${fmt(st.wallet.marks)} Marks</div><div class="coin crowns"><i></i>${fmt(st.wallet.crowns)} Crowns</div>${st.tab==="shop"?`<button class="btn gold sm" data-act="getCrowns">+ GET CROWNS</button>`:""}</div></div>
+  <div class="shell"><nav class="side">${TABS.map(([k,l])=>`<button class="tab ${st.tab===k?"on":""}" data-act="tab" data-v="${k}">${l}</button>`).join("")}<div class="grow"></div><div id="sidefoot">${sideFoot()}</div></nav><div class="content ${st.tab==="servers"||st.tab==="shop"?"full":""}" id="content">${({play:renderPlay,appearance:renderAppearance,classes:renderClasses,shop:renderShop,servers:renderServers,settings:renderSettings})[st.tab]()}</div></div>`;
+  bindStage();
+}
+function sideFoot(){
+  if(st.tab==="play"){const doors=[["courtyard","COURTYARD",`hub · ${31+st.party.length} here`],["tiltyard","TILTYARD","training · you + party"],["warfront","WARFRONT","Siege on Bridge · 38 / 40 · 2 servers"],["lists","THE LISTS","arena · ranked 1v1 · 2v2 · 3v3"]];
+    const big=st.door==="courtyard"?"ENTER COURTYARD ▸":(st.door==="lists"?"FIND MATCH ▸":"QUICK JOIN ▸");
+    return `<div class="mode"><p class="h">WHERE TO</p>${doors.map(([k,n,s])=>`<button class="card ${st.door===k?"on":""}" data-act="door" data-v="${k}">${n}<small>${s}</small></button>`).join("")}<button class="btn go" style="margin-top:10px" data-act="bigGo">${big}</button></div>`}
+  if(st.tab==="classes")return `<div style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-act="saveClass" ${ui.dirty?"":"disabled"}>${ui.dirty?"SAVE "+ui.editing.toUpperCase():"SAVED ✓"}</button><button class="btn" data-act="setActive">${st.active===ui.editing?"ACTIVE CLASS ★":"SET ACTIVE"}</button><button class="btn" data-act="team" style="${ui.team?"background:var(--sel)":""}">TEAM PREVIEW${ui.team?": "+(ui.team==="A"?"CROWN":"IRON"):""}</button></div>`;
+  if(st.tab==="appearance")return `<div style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-act="saveApp" ${ui.appDirty?"":"disabled"}>${ui.appDirty?"SAVE":"SAVED ✓"}</button><button class="btn" data-act="helmPreview" style="${ui.helmPreview?"background:var(--sel)":""}">${ui.helmPreview?"BACK TO EDITING":"PREVIEW WITH HELMET"}</button></div>`;
+  if(st.tab==="servers")return `<div style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-act="customToggle">${ui.customOpen?"CLOSE CUSTOM":"CREATE CUSTOM"}</button><button class="btn" data-act="refresh">REFRESH</button></div>`;
+  if(st.tab==="settings")return `<button class="btn" data-act="reset">RESET PROTOTYPE DATA</button>`;
+  return "";
+}
+function stageHTML(mates,hint){return `<div class="stagewrap"><div></div><div class="stage" id="stage">${mates.map(mateHTML).join("")}</div><div class="hint">${esc(hint)}</div></div>`}
+function bindStage(){const s=$("#stage");if(!s)return;let dragging=false,lx=0;s.addEventListener("pointerdown",e=>{dragging=true;lx=e.clientX;s.setPointerCapture(e.pointerId)});s.addEventListener("pointermove",e=>{if(!dragging)return;ui.facing+= (e.clientX-lx)*.6;lx=e.clientX;s.querySelectorAll(".mate").forEach(m=>m.style.transform=`rotateY(${ui.facing}deg) scale(${ui.zoom})`)});s.addEventListener("pointerup",()=>dragging=false);s.addEventListener("wheel",e=>{e.preventDefault();ui.zoom=Math.max(.7,Math.min(1.4,ui.zoom-e.deltaY*.0008));s.querySelectorAll(".mate").forEach(m=>m.style.transform=`rotateY(${ui.facing}deg) scale(${ui.zoom})`)},{passive:false})}
+
+/* ---- PLAY ---- */
+function renderPlay(){
+  const mates=[{lo:activeLoadout(),tag:"♛ You · "+st.active}];
+  st.party.forEach(p=>mates.push({lo:st.classes[p.cls],tag:`${p.name} · ${p.cls} · ${p.ready?"ready":"picking class…"}`}));
+  for(let i=mates.length;i<3;i++)mates.push({ghost:true,tag:"+ invite"});
+  const lb=LB[ui.lbTab];const myR=ui.lbTab==="Warfront"?st.profile.kills:st.profile.rating[ui.lbTab];
+  const left=`<div class="col"><div class="panel quiet lb"><p class="h">LEADERBOARD · ${ui.lbTab==="Warfront"?"WARFRONT KILLS":"RANKED "+ui.lbTab}</p><div class="chips">${["1v1","2v2","3v3","Warfront"].map(k=>`<button class="chip ${ui.lbTab===k?"on":""}" data-act="lbTab" data-v="${k}">${k}</button>`).join("")}</div>${lb.map((r,i)=>`<div class="r"><b>${i+1}</b><span>${r[0]}${r[2]?` <span class="rank" style="background:#7a3fb0;color:#fff;font-size:9px">${r[2].toUpperCase()}</span>`:""}</span><i>${fmt(r[1])}</i></div>`).join("")}<div class="dim" style="margin:6px 0">…</div><div class="r me"><b>${ui.lbTab==="Warfront"?"88":"142"}</b><span>You</span><i>${fmt(myR)}</i></div>${ui.lbTab!=="Warfront"?`<div style="margin-top:8px"><span class="rank">${rankOf(myR).toUpperCase()}</span> <span class="dim">${ui.lastMatch?ui.lastMatch.delta+" last match":""}</span></div>`:""}<div class="dim" style="margin-top:10px">Top 100 at season end get the Season 1 greatsword skin and a title.</div></div></div>`;
+  let right;
+  if(st.door==="lists"){right=renderListsCard()}
+  else{right=`<div class="col"><div class="panel"><p class="h">WARFRONT NOW</p><div class="dim">Siege on Bridge · round 2 of 3 · attackers at the gate · 38 / 40</div><div class="dim" style="margin-top:6px">Next vote in 6:12 · Team Deathmatch leading</div><button class="btn go" style="margin-top:10px" data-act="joinBattle">JOIN THIS BATTLE</button><button class="btn" style="margin-top:6px" data-act="browse">BROWSE SERVERS</button></div>
+  <div class="panel quiet"><p class="h">DAILY CONTRACTS</p>${st.contracts.map(c=>`<div class="row" style="${c.done?"opacity:.6":""}">${c.t}<span class="r">${c.done?"done ✓":`${c.n} / ${c.m} · ${c.pay}`}</span></div>`).join("")}</div>
+  <div class="panel quiet"><p class="h">FRIENDS</p>${FRIENDS.map(f=>{const inParty=st.party.some(p=>p.id===f.id);return`<div class="row">${f.name}<span class="r"><span class="dim">${f.where}</span>${inParty?"in party":(f.where.startsWith("Courtyard")?(st.party.length>=2?"":`<button class="btn sm" data-act="invite" data-v="${f.id}">INVITE</button>`):`<button class="btn sm" data-act="joinFriend" data-v="${f.id}">JOIN</button>`)}</span></div>`}).join("")}</div></div>`}
+  return `<div style="display:grid;grid-template-columns:210px 1fr;gap:16px;min-height:0">${left}${stageHTML(mates,st.party.length?`party of ${st.party.length+1} / 3 · leader picks where to · drag to turn, scroll to zoom`:"solo · drag to turn, scroll to zoom")}</div>${right}`;
+}
+function renderListsCard(){
+  const r=st.profile.rating[ui.bracket],q=ui.queue;const need=ui.bracket==="2v2"?1:(ui.bracket==="3v3"?2:0);
+  let mid;
+  if(ui.lastMatch&&!q)mid=`<div class="panel"><p class="h">LAST MATCH</p><div style="font-family:var(--display);font-size:20px;font-weight:800;color:${ui.lastMatch.win?"var(--green)":"var(--red2)"}">${ui.lastMatch.win?"VICTORY":"DEFEAT"} · ${ui.lastMatch.score}</div><div class="row">Rating<span class="r" style="color:${ui.lastMatch.win?"var(--green)":"var(--red2)"}">${ui.lastMatch.delta} → ${fmt(r)}</span></div><div class="row">Marks<span class="r">+${ui.lastMatch.marks}</span></div></div>`;
+  else if(q&&q.state==="searching")mid=`<div class="panel" style="border-color:var(--gold)"><p class="h">SEARCHING · ${ui.qtype} ${ui.bracket}</p><div style="font-size:30px;font-weight:900" id="qtime">0:00</div><div class="dim">rating window ±<span id="qwin">100</span> · widening</div><div class="bar" style="margin-top:12px"><i style="width:30%;animation:sweep 1.4s linear infinite;position:relative"></i></div><div class="dim" style="margin-top:10px">Browse the menu while you wait; the card follows you.</div><button class="btn" style="margin-top:12px" data-act="cancelQueue">CANCEL</button></div>`;
+  else if(q&&q.state==="found")mid=`<div class="panel" style="border-color:var(--green)"><p class="h">MATCH FOUND · ${ui.qtype} ${ui.bracket}</p><div style="display:flex;justify-content:space-between;margin-top:8px"><div><b>You</b> · ${fmt(r)}${st.party.slice(0,need).map(p=>`<br><b>${p.name}</b> · 1,580`).join("")}</div><div style="font-weight:900;font-size:22px;color:var(--gold)">VS</div><div style="text-align:right">${q.foes.map(f=>`<b>${f[0]}</b> · ${fmt(f[1])}`).join("<br>")}</div></div><div class="dim" style="margin-top:10px">Arena: ${q.map} · best of 5</div><div style="display:flex;gap:6px;margin-top:14px"><button class="btn go" data-act="acceptMatch">ACCEPT</button><button class="btn" data-act="cancelQueue">DECLINE</button></div><div class="dim" style="margin-top:8px"><span id="qleft">8</span> s · declining returns you to the queue with a 2-minute wait</div></div>`;
+  else mid=`<div class="panel quiet"><p class="h">HOW IT WORKS</p><div class="dim">Best of 5 rounds, 90 s each, no respawns. One on one means one on one: a third blade on a fight ends the round against that team.</div><div class="dim" style="margin-top:8px">${ui.qtype==="RANKED"?"Ranked: rating, ranks, seasons. Leaving counts as a loss and locks the queue for 10 minutes.":"Casual: no rating, just honor rules."}</div>${st.party.length?`<div class="dim" style="margin-top:8px">Party of ${st.party.length+1}: fits ${st.party.length+1}v${st.party.length+1}.</div>`:""}</div>`;
+  return `<div class="col"><div class="panel"><p class="h">BRACKET</p><div class="cls" style="margin-bottom:6px">${["1v1","2v2","3v3"].map(b=>`<button class="${ui.bracket===b?"on":""}" data-act="bracket" data-v="${b}">${b}</button>`).join("")}</div><div class="cls">${["CASUAL","RANKED"].map(k=>`<button class="${ui.qtype===k?"on":""}" style="${ui.qtype===k?"background:var(--sel);color:var(--fg)":""}" data-act="qtype" data-v="${k}">${k}</button>`).join("")}</div><div class="dim">${st.party.length<need?`${ui.bracket} needs a party of ${need+1}; you'll be solo-filled with a stranger.`:`Party of ${st.party.length+1} fits ${ui.bracket}.`}</div><button class="btn go" style="margin-top:10px" data-act="findMatch" ${q?"disabled":""}>FIND MATCH</button></div>${mid}<div class="panel quiet"><p class="h">YOUR RANK · ${ui.bracket}</p><span class="rank" style="font-size:13px">${rankOf(r).toUpperCase()}</span> <b style="margin-left:6px">${fmt(r)}</b><div class="bar" style="margin-top:10px"><i style="width:${((r-1000)%84)/84*100}%"></i></div><div class="dim" style="margin-top:4px">${84-((r-1000)%84)} to the next tier · 12 W · 9 L this season</div><div class="dim" style="margin-top:8px">Peasant · Levy · <b style="color:var(--fg)">Squire</b> · Knight · Banneret · Champion · Warlord (top 50)</div></div></div>`;
+}
+
+/* ---- APPEARANCE ---- */
+function renderAppearance(){
+  const a=ui.appDraft||(ui.appDraft={...st.appearance});
+  const rows=(items,cur,key)=>items.map(it=>{const[n,price]=Array.isArray(it)?it:[it,0];const lock=price&&!st.owned.beards.includes(n);return`<button class="row ${cur===n?"on":""}" data-act="app" data-k="${key}" data-v="${n}">${n}${lock?`<span class="r"><i class="i-c"></i>${price}</span>`:""}</button>`}).join("");
+  const mates=[ui.helmPreview?{lo:activeLoadout(),app:a,tag:"♛ You · "+st.active+" helmet on",weapon:false}:{lo:null,app:a,armor:false,tag:"♛ You"}];
+  return `${stageHTML(mates,ui.helmPreview?"the active class's helmet shows what it hides":"armor and weapon come off while you edit")}<div class="panel"><p class="h">HAIR</p>${rows(HAIR,a.hair,"hair")}<p class="h" style="margin-top:12px">BEARD</p>${rows(BEARD,a.beard,"beard")}<p class="h" style="margin-top:12px">FACE</p>${rows(FACES,a.face,"face")}<p class="h" style="margin-top:12px">SKIN</p><div class="sw">${SKINS_T.map((h,i)=>`<button class="${a.skin===i?"on":""}" style="background:${h}" data-act="app" data-k="skin" data-v="${i}" aria-label="skin ${i+1}"></button>`).join("")}</div><p class="h" style="margin-top:12px">HAIR COLOR</p><div class="sw">${HAIRC.map(([n,h,p])=>`<button class="${a.hairColor===n?"on":""} ${p&&!st.owned.hairColors.includes(n)?"lock":""}" style="background:${h}" data-act="app" data-k="hairColor" data-v="${n}" aria-label="${n}"></button>`).join("")}</div><div class="dim" style="margin-top:4px">white and red are premium · 40 Crowns once</div><p class="h" style="margin-top:12px">TITLE</p>${rows(TITLES,a.title,"title")}</div>`;
+}
+
+/* ---- CLASSES ---- */
+function renderClasses(){
+  const id=ui.editing,cls=CLASSES[id];const lo=ui.classEdit||(ui.classEdit=JSON.parse(JSON.stringify(st.classes[id])));
+  const list=(slot)=>PIECES.filter(p=>p.slot===slot&&p.weight===cls.weight).sort((a,b)=>(pieceOwned(b.id)-pieceOwned(a.id))).map(p=>`<button class="row ${lo[slot]===p.id?"on":""}" data-act="piece" data-slot="${slot}" data-v="${p.id}">${p.name}<span class="r"><span class="dim">${PACKS[p.pack].name}</span>${pieceOwned(p.id)?(slot==="helmet"?`<span class="dim">${p.look.covers.length?"covers "+p.look.covers.join("+").toLowerCase():"open"}</span>`:""):`<i class="i-m"></i>${p.marks}`}</span></button>`).join("");
+  const colorRow=(slot)=>`<div class="dim" style="margin:6px 0 4px">${slot}${slot==="Primary"?" · team color in team modes":""}</div><div class="sw">${PALETTE.map(([n,h,p])=>`<button class="${lo.colors[slot]===n?"on":""} ${p&&!st.owned.colors.includes(n)?"lock":""}" style="background:${h}" data-act="color" data-slot="${slot}" data-v="${n}" aria-label="${n}"></button>`).join("")}</div>`;
+  const weaponsAllowed=WEAPONS.filter(w=>weaponUnlocked(w.id));
+  const skinsFor=(wid)=>SKINS.filter(s=>s.weapon===wid&&owned("skins",s.id));
+  return `<div class="stagewrap"><div class="cls">${Object.keys(CLASSES).map(c=>`<button class="${ui.editing===c?"on":""}" data-act="editClass" data-v="${c}">${c.toUpperCase()}<small>${CLASSES[c].weight.toUpperCase()}${st.active===c?" ★":""}</small></button>`).join("")}</div><div class="stage" id="stage">${mateHTML({lo,tag:"♛ You · "+id,team:ui.team})}</div><div class="hint">${ui.team?"team preview: Primary forced to "+(ui.team==="A"?"Crown blue":"Iron red"):"every click re-dresses the mannequin · drag to turn"}</div></div>
+  <div class="panel"><p class="h">HELMET</p>${list("helmet")}<p class="h" style="margin-top:12px">TOP</p>${list("top")}<p class="h" style="margin-top:12px">BOTTOM</p>${list("bottom")}<p class="h" style="margin-top:12px">COLOR BLOCKS</p>${["Primary","Secondary","Accent","Metal"].map(colorRow).join("")}<p class="h" style="margin-top:12px">PRIMARY WEAPON</p>${weaponsAllowed.map(w=>`<button class="row ${lo.weapon===w.id?"on":""}" data-act="weapon" data-v="${w.id}">${w.name}<span class="r dim">${w.family}</span></button>`).join("")}<div class="dim">Skin</div>${skinsFor(lo.weapon).map(s=>`<button class="row ${lo.weaponSkin===s.id?"on":""}" data-act="wskin" data-v="${s.id}"><span class="rar r-${s.rarity}">${s.rarity[0]}</span>${s.name}</button>`).join("")}<p class="h" style="margin-top:12px">SECONDARY</p><button class="row ${!lo.secondary?"on":""}" data-act="secondary" data-v="">None</button>${weaponsAllowed.filter(w=>w.secondary&&w.id!==lo.weapon).map(w=>`<button class="row ${lo.secondary===w.id?"on":""}" data-act="secondary" data-v="${w.id}">${w.name}</button>`).join("")}<div class="dim" style="margin-top:12px">Weight ${cls.weight}: +${WEIGHTS[cls.weight].health} health · ${WEIGHTS[cls.weight].speed}% speed · ${WEIGHTS[cls.weight].prot}% protection on covered limbs. Pieces never change these.</div></div>`;
+}
+
+/* ---- SHOP ---- */
+function renderShop(){
+  const tabs=`<div class="tabs2">${[["crates","CRATES"],["packs","PACKS"],["weapons","WEAPONS"],["colors","COLORS"]].map(([k,l])=>`<button class="${ui.shopTab===k?"on":""}" data-act="shopTab" data-v="${k}">${l}</button>`).join("")}</div>`;
+  let body="";
+  if(ui.shopTab==="crates"){const c=CRATES[ui.crate],cc=st.crates[ui.crate];
+    body=`<div class="grid" style="grid-template-columns:1fr 320px"><div><div class="chips">${Object.keys(CRATES).map(k=>`<button class="chip ${ui.crate===k?"on":""}" data-act="crate" data-v="${k}">${CRATES[k].name}</button>`).join("")}</div><div class="drum" id="drum"><div class="mark"></div><div class="strip" id="strip">${drumCards()}</div></div><div class="dim" style="margin-top:6px;font-size:11px">${ui.rolling?"rolling…":"the drum slows over 4 s · the one under the line is yours"}</div><div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px"><div class="panel quiet"><p class="h">${c.name.toUpperCase()}</p><div class="dim">${c.desc} Legendary guaranteed within 20 opens (${cc.sinceLeg} since your last).</div><button class="btn gold" style="margin-top:10px" data-act="openCrate" ${ui.rolling?"disabled":""}>OPEN · ${c.cost} Crowns</button></div><div class="panel quiet"><p class="h">ODDS</p><div class="inline">${Object.entries(ODDS).map(([r,o])=>`<span class="rar r-${r}">${r.toUpperCase()} ${o}%</span>`).join("")}</div><div class="dim" style="margin-top:8px">Duplicate: refunded as Marks (common 150 · rare 400 · epic 900 · legendary 2,000).</div></div></div></div><div class="panel quiet"><p class="h">YOUR LAST PULLS</p>${st.pulls.length?st.pulls.slice(0,6).map(p=>`<div class="row"><span class="rar r-${p.rarity}">${p.rarity[0]}</span>${p.name}${p.dup?`<span class="r dim">dup +${p.refund}</span>`:""}</div>`).join(""):'<div class="dim">Nothing yet.</div>'}<p class="h" style="margin-top:14px">WEAPON UNLOCKS</p>${WEAPONS.filter(w=>!weaponUnlocked(w.id)).map(w=>`<div class="row">${w.name}<span class="r dim">${unlockText(w)}</span></div>`).join("")||'<div class="dim">All weapons unlocked.</div>'}</div></div>`}
+  else if(ui.shopTab==="packs"){body=`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${Object.entries(PACKS).filter(([k,p])=>!p.free).map(([k,p])=>{const pieces=PIECES.filter(x=>x.pack===k);const all=pieces.every(x=>pieceOwned(x.id));return`<button class="pack" style="background:${p.bg}" data-act="packDetail" data-v="${k}">${p.name}<small>${p.weight}${p.featured?" · featured this week":""}${all?" · owned":""}</small></button>`}).join("")}</div>`}
+  else if(ui.shopTab==="weapons"){body=`<div class="grid" style="grid-template-columns:1fr 1fr">${WEAPONS.map(w=>{const u=weaponUnlocked(w.id);return`<div class="panel quiet"><div style="display:flex;justify-content:space-between;align-items:center"><b>${w.name}</b><span class="dim">${w.family}</span></div><div class="dim" style="margin:4px 0 8px">${u?"unlocked":"unlock: "+unlockText(w)+(w.unlock.marks?` · or ${fmt(w.unlock.marks)} Marks`:"")}</div>${!u?`<button class="btn gold sm" data-act="buyWeapon" data-v="${w.id}">BUY · ${fmt(w.unlock.marks)} MARKS</button>`:""}<div class="dim" style="margin-top:8px">Skins</div>${SKINS.filter(s=>s.weapon===w.id).map(s=>`<div class="row"><span class="rar r-${s.rarity}">${s.rarity[0]}</span>${s.name}<span class="r dim">${owned("skins",s.id)?"owned":(s.crate==="earned"?"100 kills with it":s.crate+" crate")}</span></div>`).join("")}</div>`}).join("")}</div>`}
+  else{body=`<div class="grid" style="grid-template-columns:1fr 1fr"><div class="panel quiet"><p class="h">PREMIUM ARMOR COLORS</p>${PALETTE.filter(p=>p[2]).map(([n,h])=>`<div class="row"><span style="width:18px;height:18px;border-radius:4px;background:${h};display:inline-block"></span>${n}<span class="r">${st.owned.colors.includes(n)?"owned":`<button class="btn gold sm" data-act="buyColor" data-v="${n}">60 CROWNS</button>`}</span></div>`).join("")}<div class="dim">Bought once, usable on every slot of every class.</div></div><div class="panel quiet"><p class="h">PREMIUM HAIR COLORS & BEARDS</p>${HAIRC.filter(h=>h[2]).map(([n,h])=>`<div class="row"><span style="width:18px;height:18px;border-radius:4px;background:${h};display:inline-block"></span>${n} hair<span class="r">${st.owned.hairColors.includes(n)?"owned":`<button class="btn gold sm" data-act="buyHairColor" data-v="${n}">40 CROWNS</button>`}</span></div>`).join("")}<div class="row">Braided beard<span class="r">${st.owned.beards.includes("Braided")?"owned":`<button class="btn gold sm" data-act="buyBeard" data-v="Braided">40 CROWNS</button>`}</span></div></div></div>`}
+  return `<div class="panel quiet" style="overflow:auto">${tabs}${body}</div>`;
+}
+function drumCards(){const pool=SKINS.filter(s=>s.crate===ui.crate);const cards=[];for(let i=0;i<16;i++){cards.push(pool[i%pool.length])}return cards.map(s=>`<div class="dcard" style="border-color:${{Common:"#5d6b7a",Rare:"#2f6fb0",Epic:"#7a3fb0",Legendary:"#c99a48"}[s.rarity]}"><svg viewBox="0 0 70 110"><rect x="31" y="6" width="8" height="70" rx="2" fill="${s.blade}" transform="rotate(-12 35 40)"/><rect x="20" y="74" width="30" height="6" fill="${s.grip}"/><rect x="32" y="80" width="6" height="22" fill="${s.grip}"/></svg><span>${WEAPON[s.weapon].name.toUpperCase()}<br><span class="dim">${s.name}</span></span></div>`).join("")}
+
+/* ---- SERVERS ---- */
+function genServers(){const r=[];const mk=(name,door,mode,map,n,max,ping,custom,access,cheats)=>r.push({id:Math.random().toString(36).slice(2,8),name,door,mode,map,n,max,ping,custom,access,cheats});
+  mk("Warfront #3f2a1c","Warfront","Siege","Bridge",40,40,41,false,"Public");mk("Warfront #9b11e0","Warfront","Team Deathmatch","Village",22,40,63,false,"Public");mk("Warfront #c04d7a","Warfront","King of the Hill","Keep",0,40,88,false,"Public");
+  mk("Oswin's Melee Night","Warfront","Free-for-all","Village",9,12,38,true,"Listed");mk("Ket's sandbox","Warfront","Free-for-all","Village",3,8,52,true,"Invite code",true);
+  mk("Lists · casual 2v2","Lists","2v2 casual","The Pit",3,4,45,false,"Public");mk("Courtyard #a81f33","Courtyard","Hub","Courtyard",31,40,40,false,"Public",false);r[6].here=true;return r}
+function renderServers(){
+  if(!ui.servers)ui.servers=genServers();const f=ui.filters;
+  const rows=ui.servers.filter(s=>(!f.empty||s.n>0||s.here)&&(!f.full||s.n<s.max)&&(!f.custom||s.custom)&&(!f.friends||s.name.includes("Oswin"))&&(!f.door||s.door===f.door));
+  const chip=(k,l)=>`<button class="chip ${f[k]?"on":""}" data-act="filter" data-v="${k}">${l}</button>`;
+  const doorChip=(d)=>`<button class="chip ${f.door===d?"on":""}" data-act="filterDoor" data-v="${d}">${d.toUpperCase()}</button>`;
+  const list=`<div class="panel quiet" style="overflow:auto"><div class="chips">${chip("empty","HIDE EMPTY")}${chip("full","HIDE FULL")}${chip("custom","CUSTOM ONLY")}${chip("friends","FRIENDS IN")}<span class="dim" style="align-self:center">type:</span>${["Warfront","Lists","Courtyard"].map(doorChip).join("")}${f.door?`<button class="chip" data-act="filterDoor" data-v="">clear</button>`:""}</div>${ui.customFromPlay?`<div class="dim" style="margin-bottom:8px;color:var(--gold2)">Filtered to ${f.door.toUpperCase()} because it was selected on PLAY. Clear to see everything.</div>`:""}<div class="srv head"><span>SERVER</span><span>MODE</span><span>MAP</span><span>PLAYERS</span><span>PING</span><span></span></div>${rows.map(s=>`<div class="srv ${s.n>=s.max?"full":""}" style="${s.cheats?"opacity:.7":""}"><span>${s.custom?"⚑ ":""}${esc(s.name)}${s.custom?` <span class="dim">${s.cheats?"cheats · no rewards":"custom"}</span>`:""}</span><span>${s.mode}</span><span>${s.map}</span><span class="n">${s.n} / ${s.max}</span><span>${s.ping} ms</span><span>${s.here?'<span class="dim">HERE</span>':(s.access==="Invite code"?`<button class="btn sm" data-act="inviteCode" data-v="${s.id}">INVITE CODE</button>`:`<button class="btn go sm" data-act="joinServer" data-v="${s.id}">JOIN</button>`)}</span></div>`).join("")||'<div class="dim">Nothing matches these filters.</div>'}</div>`;
+  const c=st.custom;const sel=(k,label,opts)=>`<div class="sel-row"><span>${label}</span><select data-act="custom" data-k="${k}" id="c_${k}">${opts.map(o=>`<option ${String(c[k])===String(o)?"selected":""}>${o}</option>`).join("")}</select></div>`;
+  const tog=(k,label)=>`<div class="sel-row"><span>${label}</span><button class="tog ${c[k]?"on":""}" data-act="customTog" data-k="${k}" aria-label="${label}"></button></div>`;
+  const panel=ui.customOpen?`<div class="panel" style="overflow:auto"><button class="x" data-act="customToggle" aria-label="Close" style="position:absolute;right:10px;top:8px;width:28px;height:28px;border-radius:6px;background:var(--card);font-weight:800">✕</button><p class="h">CREATE CUSTOM SERVER</p><div class="sel-row"><span>Name</span><input id="c_name" data-act="custom" data-k="name" value="${esc(c.name)}" placeholder="${esc(st.profile.name)}'s server"></div>${sel("door","Door",["Warfront","Lists","Courtyard"])}${sel("mode","Mode",c.door==="Lists"?["1v1 casual","2v2 casual","3v3 casual"]:(c.door==="Courtyard"?["Hub"]:["Free-for-all","Team Deathmatch","King of the Hill","Siege","Last Stand"]))}${sel("map","Map",c.door==="Lists"?MAPS.Lists:(c.door==="Courtyard"?["Courtyard"]:MAPS.Warfront))}${sel("limit","Player limit",[2,4,6,8,12,16,24,32,40])}${sel("round","Round length",["3 min","5 min","8 min","15 min","no clock"])}${sel("access","Who can join",["Listed","Friends only","Invite code"])}${c.access==="Invite code"?`<div class="sel-row"><span>Invite code</span><b>BRAVO·K</b></div>`:""}${tog("ff","Friendly fire")}${tog("respawn","Respawns")}${tog("ground","Weapons on the ground")}${tog("cheats","Cheats / admin commands")}<div class="dim" style="margin-top:4px">${c.cheats?"Marked as a cheat server: god mode, fly, teleport, spawn weapons for the host. No Marks, XP or rating for anyone in it.":"Cheats give the host god mode, spawn weapons, fly, teleport. The server is marked and pays no Marks, XP or rating."}</div><button class="btn gold" style="margin-top:12px" data-act="reserve">RESERVE &amp; TRAVEL</button></div>`:"";
+  return `<div style="display:grid;grid-template-columns:${ui.customOpen?"1fr 330px":"1fr"};gap:16px;min-height:0">${list}${panel}</div>`;
+}
+
+/* ---- SETTINGS ---- */
+function renderSettings(){return `<div class="panel quiet"><p class="h">KEYS</p>${[["Menu","M"],["Swing","Mouse 1"],["Stab","Scroll up"],["Overhead","Scroll down"],["Underhand","X"],["Feint","Q"],["Opposite side (hold)","Left Alt"],["Kick","G"],["Sprint","Left Shift"],["Dodge","Space"],["Crouch","Left Ctrl"],["First / third person","Z"],["Pick up","V"],["Scoreboard (hold)","Tab"]].map(([a,k])=>`<div class="row">${a}<span class="r"><span class="key">${k}</span></span></div>`).join("")}<div class="dim" style="margin-top:8px">Escape belongs to Roblox's own menu, so M is the game's menu key everywhere: open the Courtyard menu, pause a match, close the top panel.</div></div><div class="panel quiet"><p class="h">CAMERA FEEL</p>${["Head bob","Weapon sway","Camera roll","Impact shake","Idle breathing","First-person FOV"].map(l=>`<div class="row">${l}<span class="r"><input type="range" min="0" max="100" value="60" style="width:120px" aria-label="${l}"></span></div>`).join("")}<p class="h" style="margin-top:12px">PROTOTYPE</p><div class="dim">This page keeps your wallet, purchases and classes in this browser only. RESET on the left wipes it.</div></div>`}
+
+/* ========================= MATCH (fake) ========================= */
+function renderMatch(app){const m=ui.match;
+  app.innerHTML=`<div class="match"><div class="strip-top">${m.title}<br><span class="dim" style="font-weight:600">${m.sub}</span><br>${m.teams?`<span style="color:var(--blue);font-weight:900">CROWN ${m.a}</span> &nbsp;—&nbsp; <span style="color:var(--iron);font-weight:900">${m.b} IRON</span>`:`<span style="font-weight:900">YOU ${m.a} — ${m.b} ${m.foe||"THEM"}</span>`}</div><div class="feed" id="feed"></div><div class="hud"><div class="bar hp"><i style="width:${m.hp}%"></i></div><div class="bar st"><i style="width:${m.st}%"></i></div></div><div class="ctrl"><button class="btn sm" data-act="simKill">simulate: you land a kill</button><button class="btn sm" data-act="simParry">simulate: parry</button><button class="btn sm" data-act="simHit">simulate: you get hit</button><button class="btn go sm" data-act="endMatch">end the ${m.lists?"match":"round"}</button><span class="dim" style="width:100%;text-align:right"><span class="key">M</span> pause · <span class="key">Tab</span> scoreboard</span></div>${ui.pause?pauseHTML():""}${ui.board?boardHTML():""}</div>`}
+function pauseHTML(){return `<div class="overlay"><div class="modal" style="width:360px"><h3>PAUSED · M</h3><button class="btn go" data-act="pause">RESUME</button><button class="btn" style="margin-top:6px" data-act="board">SCOREBOARD</button><button class="btn" style="margin-top:6px" disabled>SETTINGS</button><button class="btn" style="margin-top:6px" disabled>VOTE NEXT MODE · 6:12</button><button class="btn" style="margin-top:6px" data-act="leaveMatch">LEAVE TO COURTYARD</button><div class="dim" style="margin-top:8px">${ui.match.lists&&ui.match.ranked?"Ranked: leaving counts as a loss and locks the queue for 10 minutes.":"Casual: no penalty."}</div></div></div>`}
+function boardHTML(){const m=ui.match;return `<div class="overlay" style="align-items:flex-start;padding-top:100px"><div class="modal" style="width:620px"><h3 style="text-align:center">${m.title} · ${m.lists?"best of 5":"round 2 of 3"}</h3>${!m.lists?`<div class="dim" style="text-align:center">vote the next mode, then the map</div><div class="cls" style="margin:10px 0">${["SIEGE · 7","KING OF THE HILL · 3","FREE-FOR-ALL · 5"].map((v,i)=>`<button class="${i===0?"on":""}" data-act="vote">${v}</button>`).join("")}</div>`:""}<div class="srv head" style="grid-template-columns:3fr 1fr 1fr 1fr 0 0"><span>PLAYER</span><span>KILLS</span><span>DEATHS</span><span>PARRIES</span></div>${[["Halvard · WARLORD",14,3,21,"var(--blue)"],["You · "+st.appearance.title,m.kills,m.deaths,m.parries,"var(--blue)",true],["Oswin",8,9,12,"var(--iron)"]].map(r=>`<div class="srv" style="grid-template-columns:3fr 1fr 1fr 1fr 0 0;border-left:4px solid ${r[4]};${r[5]?"background:var(--sel)":""}"><span><b>${r[0]}</b></span><span>${r[1]}</span><span>${r[2]}</span><span>${r[3]}</span><span></span><span></span></div>`).join("")}<div class="dim" style="text-align:center;margin-top:8px">release Tab to close</div></div></div>`}
+function feedLine(t){const f=$("#feed");if(!f)return;const d=document.createElement("div");d.innerHTML=t;f.prepend(d);while(f.children.length>5)f.lastChild.remove();setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),400)},7000)}
+let feedTimer=null;
+function startMatch(m){ui.match={hp:100,st:100,kills:0,deaths:0,parries:0,a:0,b:0,...m};st.where="match";ui.pause=false;ui.board=false;render();
+  clearInterval(feedTimer);feedTimer=setInterval(()=>{if(st.where!=="match")return;const names=["Halvard","Oswin","Ket","Maren","Dagny","Brannoc"];const a=names[Math.random()*6|0],b=names[Math.random()*6|0];if(a!==b){feedLine(`<b style="color:var(--blue)">${a}</b> <span style="color:var(--red2)">${["cut down","skewered","beheaded","ran through"][Math.random()*4|0]}</span> <b style="color:var(--iron)">${b}</b>`);if(ui.match.teams){if(Math.random()<.5)ui.match.a++;else ui.match.b++;const s=$(".strip-top");if(s)render()}}},3000)}
+function endMatch(){clearInterval(feedTimer);const m=ui.match;const win=m.lists?(m.a>m.b):(m.a>=m.b);const marks=60+(win?60:0)+m.kills*10+m.parries*2;const xp=120+m.kills*30+m.parries*5;st.wallet.marks+=m.cheats?0:marks;st.profile.xp+=xp;let lvl=false;if(st.profile.xp>=4000){st.profile.xp-=4000;st.profile.level++;st.wallet.marks+=200;lvl=true}
+  st.profile.kills+=m.kills;st.profile.killsBy[WEAPON[activeLoadout().weapon].family]=(st.profile.killsBy[WEAPON[activeLoadout().weapon].family]||0)+m.kills;
+  let delta=null;if(m.lists&&m.ranked){const d=(win?1:-1)*(15+Math.round(Math.random()*10));st.profile.rating[m.bracket]+=d;delta=(d>0?"+":"")+d;ui.lastMatch={win,score:`${m.a} – ${m.b}`,delta,marks}}
+  const c=st.contracts[0];if(!c.done){c.n=Math.min(c.m,c.n+m.parries);if(c.n>=c.m){c.done=true;st.wallet.marks+=c.pay}}
+  save();st.where="menu";st.tab="play";render();
+  modal(`<h3 style="font-size:24px;color:${win?"var(--green)":"var(--red2)"}">${m.lists?(win?"VICTORY":"DEFEAT")+" · "+m.a+" – "+m.b:(m.teams?(win?"CROWN WINS":"IRON WINS")+" · "+m.a+" – "+m.b:"ROUND OVER")}</h3><div class="dim">${m.title} · ${m.sub}</div><div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px"><div><p class="h">YOU</p><div class="row">Kills<span class="r">${m.kills}</span></div><div class="row">Parries<span class="r">${m.parries}</span></div><div class="row">Deaths<span class="r">${m.deaths}</span></div></div><div><p class="h">REWARDS</p>${delta?`<div class="row">Rating<span class="r" style="color:${win?"var(--green)":"var(--red2)"}">${delta} → ${fmt(st.profile.rating[m.bracket])}</span></div>`:""}<div class="row">Marks<span class="r">${m.cheats?"none (cheats)":"+"+marks}</span></div><div class="row">XP<span class="r">+${xp}${lvl?" · level "+st.profile.level+"!":""}</span></div></div></div>${c.done&&c.n===c.m?`<div class="row" style="margin-top:8px">Contract: ${c.t}<span class="r">${c.n} / ${c.m} ✓ +${c.pay}</span></div>`:""}<div style="display:flex;gap:8px;margin-top:14px"><button class="btn go" data-act="${m.lists?"rematch":"stay"}">${m.lists?"REMATCH (1 / 2)":"STAY FOR THE NEXT ROUND"}</button><button class="btn" data-act="closeModal">BACK TO COURTYARD</button></div>`)}
+
+/* ========================= FLOWS ========================= */
+function travel(where,then){const l=$("#layer");l.innerHTML=`<div class="travel"><div class="t">TRAVELLING</div><div class="d">${esc(where)}</div><div class="track"><i></i></div><div class="tip"><b>TIP</b>${TIPS[Math.random()*TIPS.length|0]}</div></div>`;setTimeout(()=>{l.innerHTML="";then()},2600)}
+function quickJoin(){const d=st.door;
+  if(d==="courtyard"){st.where="courtyard";render();toast("You entered the courtyard · M opens the menu");return}
+  if(d==="tiltyard"){travel("Tiltyard · your own yard",()=>startMatch({title:"TILTYARD",sub:"drills · drill master: 'Parry trainer, when you're ready.'",teams:false,foe:"DUMMIES",lists:false,cheats:true}));return}
+  if(d==="warfront"){travel("Warfront · Siege · Bridge · joining 38 / 40",()=>startMatch({title:"SIEGE · BRIDGE",sub:"round 2 of 3 · attackers at the gate · 4:32",teams:true,a:34,b:21}));return}
+  if(d==="lists"){findMatch()}}
+let qTimer=null;
+function findMatch(){if(ui.queue)return;const need=ui.bracket==="2v2"?1:(ui.bracket==="3v3"?2:0);ui.queue={state:"searching",t0:Date.now()};render();
+  qTimer=setInterval(()=>{if(!ui.queue||ui.queue.state!=="searching")return;const s=Math.floor((Date.now()-ui.queue.t0)/1000);const a=$("#qtime"),w=$("#qwin");if(a)a.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;if(w)w.textContent=100+Math.floor(s/10)*50;if(s>=5){const names=[["Brannoc",1640],["Maren",1601],["Dagny",1588]];ui.queue={state:"found",foes:names.slice(0,need+1),map:MAPS.Lists[Math.random()*2|0],left:8};clearInterval(qTimer);render();qTimer=setInterval(()=>{if(!ui.queue||ui.queue.state!=="found")return clearInterval(qTimer);ui.queue.left--;const q=$("#qleft");if(q)q.textContent=ui.queue.left;if(ui.queue.left<=0){clearInterval(qTimer);ui.queue=null;toast("Match declined by timeout · back to the Courtyard","bad");render()}},1000)}},250)}
+function acceptMatch(){clearInterval(qTimer);const q=ui.queue;ui.queue=null;const ranked=ui.qtype==="RANKED";travel(`The Lists · ${ranked?"Ranked":"Casual"} ${ui.bracket} · ${q.map}`,()=>startMatch({title:"THE LISTS · "+q.map.toUpperCase(),sub:`${ranked?"ranked":"casual"} ${ui.bracket} · best of 5 · honor rules`,teams:false,lists:true,ranked,bracket:ui.bracket,foe:q.foes[0][0].toUpperCase()}))}
+function openCrate(){const k=ui.crate,c=CRATES[k],cc=st.crates[k];
+  modal(`<h3>OPEN ${c.name.toUpperCase()}</h3><div class="dim">${c.cost} Crowns · you have ${st.wallet.crowns}. One random skin from this crate; duplicates refund Marks. Odds shown on the crate.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gold" data-act="openCrateGo">OPEN FOR ${c.cost}</button><button class="btn" data-act="closeModal">NOT NOW</button></div>`)}
+function rollCrate(){const k=ui.crate,c=CRATES[k],cc=st.crates[k];if(!pay(0,c.cost))return;closeModal();
+  const pool=SKINS.filter(s=>s.crate===k);let rar;if(cc.sinceLeg>=19)rar="Legendary";else{const r=Math.random()*100;rar=r<2?"Legendary":(r<12?"Epic":(r<40?"Rare":"Common"))}
+  let pick=pool.filter(s=>s.rarity===rar);if(!pick.length)pick=pool;const win=pick[Math.random()*pick.length|0];
+  cc.opens++;cc.sinceLeg=win.rarity==="Legendary"?0:cc.sinceLeg+1;const dup=owned("skins",win.id);let refund=0;if(dup){refund=REFUND[win.rarity];st.wallet.marks+=refund}else st.owned.skins.push(win.id);
+  st.pulls.unshift({name:WEAPON[win.weapon].name+" · "+win.name,rarity:win.rarity,dup,refund});save();
+  ui.rolling=true;render();
+  const strip=$("#strip");const idx=10;strip.innerHTML="";const cards=[];for(let i=0;i<16;i++)cards.push(i===idx?win:pool[Math.random()*pool.length|0]);
+  strip.innerHTML=cards.map(s=>`<div class="dcard" style="border-color:${{Common:"#5d6b7a",Rare:"#2f6fb0",Epic:"#7a3fb0",Legendary:"#c99a48"}[s.rarity]}"><svg viewBox="0 0 70 110"><rect x="31" y="6" width="8" height="70" rx="2" fill="${s.blade}" transform="rotate(-12 35 40)"/><rect x="20" y="74" width="30" height="6" fill="${s.grip}"/><rect x="32" y="80" width="6" height="22" fill="${s.grip}"/></svg><span>${WEAPON[s.weapon].name.toUpperCase()}<br><span class="dim">${s.name}</span></span></div>`).join("");
+  const drumW=$("#drum").clientWidth;const target=-(idx*168+75-drumW/2);strip.style.transition="none";strip.style.transform="translateX(0)";requestAnimationFrame(()=>{strip.style.transition="transform 4s cubic-bezier(.12,.8,.2,1)";strip.style.transform=`translateX(${target}px)`});
+  setTimeout(()=>{ui.rolling=false;toast(`${win.rarity.toUpperCase()} · ${WEAPON[win.weapon].name} · ${win.name}${dup?` · duplicate, +${refund} Marks`:" · added to your skins"}`,win.rarity==="Legendary"?"rare":"good");render();if(!dup)modal(`<h3>${win.rarity.toUpperCase()} · ${WEAPON[win.weapon].name} · ${win.name}</h3><div class="dim">Added to your skins. Equip it on ${WEAPON[win.weapon].name} now?</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gold" data-act="equipSkin" data-v="${win.id}">EQUIP ON ${st.active.toUpperCase()}</button><button class="btn" data-act="closeModal">LATER</button></div>`)},4200)}
+function packDetail(k){const p=PACKS[k],pieces=PIECES.filter(x=>x.pack===k);const sumM=pieces.reduce((a,x)=>a+(pieceOwned(x.id)?0:x.marks),0),sumC=pieces.reduce((a,x)=>a+(pieceOwned(x.id)?0:x.crowns),0);const all=sumM===0;
+  modal(`<h3>${p.name.toUpperCase()} · ${p.weight.toUpperCase()}</h3>${pieces.map(x=>`<div class="row">${x.name}<span class="r"><span class="dim">${x.slot}</span>${pieceOwned(x.id)?"owned":`<i class="i-m"></i>${x.marks}`}</span></div>`).join("")}${all?`<div class="dim" style="margin-top:8px">All pieces are in your Classes lists. Wear the three together for the matched-set title.</div><button class="btn gold" style="margin-top:10px" data-act="goClasses">GO TO CLASSES</button>`:`<div class="dim" style="margin-top:8px">Bundle, 15% under the pieces you don't own:</div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn gold" data-act="buyPack" data-v="${k}" data-cur="marks">${fmt(Math.round(sumM*.85))} MARKS</button><button class="btn" data-act="buyPack" data-v="${k}" data-cur="crowns">${Math.round(sumC*.85)} CROWNS</button></div><div class="dim" style="margin-top:8px">Or buy pieces one at a time from Classes.</div>`}`)}
+
+/* ========================= EVENTS ========================= */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act,v=b.dataset.v;
+  const flash=()=>{b.classList.add("pressed");setTimeout(()=>b.classList.remove("pressed"),180)};
+  switch(a){
+    case"tab":st.tab=v;if(v==="classes"){ui.classEdit=null;ui.dirty=false;ui.editing=st.active;ui.team=0}if(v==="appearance"){ui.appDraft=null;ui.appDirty=false;ui.helmPreview=false}if(v!=="servers"){ui.customFromPlay=false;ui.filters.door=""}render();break;
+    case"door":st.door=v;render();break;
+    case"bigGo":flash();quickJoin();break;
+    case"joinBattle":travel("Warfront · Siege · Bridge · joining 38 / 40",()=>startMatch({title:"SIEGE · BRIDGE",sub:"round 2 of 3 · attackers at the gate · 4:32",teams:true,a:34,b:21}));break;
+    case"browse":st.tab="servers";ui.filters.door="Warfront";ui.customFromPlay=true;render();break;
+    case"lbTab":ui.lbTab=v;render();break;
+    case"invite":{const f=FRIENDS.find(x=>x.id===v);toast(`Invited ${f.name} · waiting…`);setTimeout(()=>{if(st.party.some(p=>p.id===v)||st.party.length>=2)return;st.party.push({id:f.id,name:f.name,cls:f.cls,ready:false});toast(`${f.name} joined the party`,"good");render();setTimeout(()=>{const p=st.party.find(x=>x.id===v);if(p){p.ready=true;render()}},2500)},1800);break}
+    case"joinFriend":travel("The Lists · joining Brannoc's match as a spectator",()=>{toast("Spectating: Brannoc is mid-match. You'll land in the Courtyard when it ends.","good");st.where="menu";render()});break;
+    case"bracket":ui.bracket=v;render();break;case"qtype":ui.qtype=v;render();break;
+    case"findMatch":flash();findMatch();break;case"cancelQueue":clearInterval(qTimer);ui.queue=null;render();break;case"acceptMatch":acceptMatch();break;
+    case"app":{const k=b.dataset.k;let val=v;if(k==="skin")val=+v;if(k==="hairColor"){const hc=HAIRC.find(h=>h[0]===v);if(hc[2]&&!st.owned.hairColors.includes(v)){modal(`<h3>${v.toUpperCase()} HAIR</h3><div class="dim">Premium hair color · 40 Crowns once, for good.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gold" data-act="buyHairColor" data-v="${v}">40 CROWNS</button><button class="btn" data-act="closeModal">NOT NOW</button></div>`);break}}if(k==="beard"){const bd=BEARD.find(x=>x[0]===v);if(bd[1]&&!st.owned.beards.includes(v)){modal(`<h3>${v.toUpperCase()} BEARD</h3><div class="dim">Premium beard · 40 Crowns once.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gold" data-act="buyBeard" data-v="${v}">40 CROWNS</button><button class="btn" data-act="closeModal">NOT NOW</button></div>`);break}}ui.appDraft[k]=val;ui.appDirty=true;render();break}
+    case"saveApp":st.appearance={...ui.appDraft};ui.appDirty=false;save();render();toast("Appearance saved · applies to every class","good");break;
+    case"helmPreview":ui.helmPreview=!ui.helmPreview;render();break;
+    case"editClass":if(ui.dirty&&!confirmSwitch())break;ui.editing=v;ui.classEdit=null;ui.dirty=false;render();break;
+    case"piece":{const p=PIECE[v];if(!pieceOwned(v)){modal(`<h3>${p.name.toUpperCase()}</h3><div class="dim">${p.weight} ${p.slot} · ${PACKS[p.pack].name} · <span class="rar r-${p.rarity}">${p.rarity.toUpperCase()}</span>${p.slot==="helmet"?` · ${p.look.covers.length?"covers "+p.look.covers.join(" and ").toLowerCase():"open face"}`:""}</div><div style="display:flex;gap:8px;margin:14px 0"><button class="btn gold" data-act="buyPiece" data-v="${v}" data-cur="marks">${fmt(p.marks)} MARKS</button><button class="btn" data-act="buyPiece" data-v="${v}" data-cur="crowns">${p.crowns} CROWNS</button></div><div class="dim">You have ${fmt(st.wallet.marks)} Marks and ${st.wallet.crowns} Crowns. Bought pieces are yours on every class of this weight.</div>`);break}ui.classEdit[b.dataset.slot]=v;ui.dirty=true;render();break}
+    case"buyPiece":{const p=PIECE[v];const ok=b.dataset.cur==="marks"?pay(p.marks,0):pay(0,p.crowns);if(!ok)break;st.owned.pieces.push(v);ui.classEdit[p.slot]=v;ui.dirty=true;save();closeModal();render();toast(`${p.name} bought · equipped`,"good");break}
+    case"color":{const slot=b.dataset.slot;const c=COLOR[v];if(c.premium&&!st.owned.colors.includes(v)){modal(`<h3>${v.toUpperCase()}</h3><div class="dim">Premium color · 60 Crowns once, usable on every slot of every class.</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn gold" data-act="buyColor" data-v="${v}">60 CROWNS</button><button class="btn" data-act="closeModal">NOT NOW</button></div>`);break}ui.classEdit.colors[slot]=v;ui.dirty=true;render();break}
+    case"buyColor":if(!pay(0,60))break;st.owned.colors.push(v);save();closeModal();render();toast(`${v} is yours`,"good");break;
+    case"buyHairColor":if(!pay(0,40))break;st.owned.hairColors.push(v);if(ui.appDraft){ui.appDraft.hairColor=v;ui.appDirty=true}save();closeModal();render();toast(`${v} hair is yours`,"good");break;
+    case"buyBeard":if(!pay(0,40))break;st.owned.beards.push(v);if(ui.appDraft){ui.appDraft.beard=v;ui.appDirty=true}save();closeModal();render();toast(`${v} beard is yours`,"good");break;
+    case"weapon":ui.classEdit.weapon=v;ui.classEdit.weaponSkin=v+":Default";if(ui.classEdit.secondary===v)ui.classEdit.secondary=null;ui.dirty=true;render();break;
+    case"wskin":ui.classEdit.weaponSkin=v;ui.dirty=true;render();break;
+    case"secondary":ui.classEdit.secondary=v||null;ui.classEdit.secondarySkin=v?v+":Default":null;ui.dirty=true;render();break;
+    case"team":ui.team=ui.team===0?"A":(ui.team==="A"?"B":0);render();break;
+    case"saveClass":st.classes[ui.editing]=JSON.parse(JSON.stringify(ui.classEdit));ui.dirty=false;save();render();toast(`${ui.editing} saved`,"good");break;
+    case"setActive":st.active=ui.editing;save();render();toast(`Spawning as ${st.active}`,"good");break;
+    case"shopTab":ui.shopTab=v;render();break;case"crate":ui.crate=v;render();break;
+    case"openCrate":flash();openCrate();break;case"openCrateGo":rollCrate();break;
+    case"equipSkin":{const s=SKIN[v];const lo=st.classes[st.active];if(lo.weapon===s.weapon){lo.weaponSkin=v;toast(`${s.name} equipped on your ${WEAPON[s.weapon].name}`,"good")}else if(lo.secondary===s.weapon){lo.secondarySkin=v;toast("Equipped on your secondary","good")}else toast(`${st.active} isn't carrying a ${WEAPON[s.weapon].name}; pick it in Classes`,"bad");save();closeModal();break}
+    case"packDetail":packDetail(v);break;
+    case"buyPack":{const pieces=PIECES.filter(x=>x.pack===v&&!pieceOwned(x.id));const sumM=Math.round(pieces.reduce((a,x)=>a+x.marks,0)*.85),sumC=Math.round(pieces.reduce((a,x)=>a+x.crowns,0)*.85);const ok=b.dataset.cur==="marks"?pay(sumM,0):pay(0,sumC);if(!ok)break;pieces.forEach(x=>st.owned.pieces.push(x.id));save();closeModal();render();toast(`${PACKS[v].name} bought`,"good");break}
+    case"goClasses":closeModal();st.tab="classes";ui.classEdit=null;ui.dirty=false;ui.editing=st.active;render();break;
+    case"buyWeapon":{const w=WEAPON[v];if(!pay(w.unlock.marks,0))break;st.owned.weapons.push(v);save();render();toast(`${w.name} unlocked`,"good");break}
+    case"getCrowns":modal(`<h3>GET CROWNS</h3><div class="grid" style="grid-template-columns:1fr 1fr 1fr">${[[100,99,""],[550,499,"+10%"],[1200,999,"+20%"]].map(([c,r,b2],i)=>`<button class="btn ${i===1?"gold":""}" style="padding:14px" data-act="buyCrowns" data-v="${c}">${c}<br><span style="font-size:11px;font-weight:600">${r} R$ ${b2}</span></button>`).join("")}</div><div class="dim" style="margin-top:10px">Opens Roblox's purchase prompt in the real game; here it just credits you.</div><p class="h" style="margin-top:16px">MARKS FOR CROWNS</p><div class="grid" style="grid-template-columns:1fr 1fr 1fr">${[[500,30],[1200,60],[3000,120]].map(([m,c])=>`<button class="btn" style="padding:12px" data-act="exchange" data-v="${m}" data-c="${c}">${fmt(m)} Marks<br><span style="font-size:11px;font-weight:600">${c} Crowns</span></button>`).join("")}</div><div class="dim" style="margin-top:8px">One way only: Crowns never come back out of Marks.</div>`);break;
+    case"buyCrowns":st.wallet.crowns+=+v;save();closeModal();render();toast(`+${v} Crowns`,"good");break;
+    case"exchange":if(!pay(0,+b.dataset.c))break;st.wallet.marks+=+v;save();closeModal();render();toast(`+${fmt(+v)} Marks for ${b.dataset.c} Crowns`,"good");break;
+    case"filter":ui.filters[v]=!ui.filters[v];render();break;case"filterDoor":ui.filters.door=v;ui.customFromPlay=false;render();break;
+    case"refresh":ui.servers=genServers();render();toast("Server list refreshed");break;
+    case"customToggle":ui.customOpen=!ui.customOpen;render();break;
+    case"customTog":st.custom[b.dataset.k]=!st.custom[b.dataset.k];save();render();break;
+    case"joinServer":{const s=ui.servers.find(x=>x.id===v);if(s.n>=s.max){toast("That server is full · try QUICK JOIN for the next one with room","bad");break}if(s.n+st.party.length+1>s.max){toast("No room for your whole party there","bad");break}travel(`${s.name} · ${s.mode} · ${s.map}`,()=>startMatch({title:s.mode.toUpperCase()+" · "+s.map.toUpperCase(),sub:s.custom?`custom server${s.cheats?" · cheats on · no rewards":""}`:"round 1 of 3",teams:s.mode!=="Free-for-all",cheats:s.cheats,a:0,b:0}));break}
+    case"inviteCode":modal(`<h3>INVITE CODE</h3><div class="dim">Ket's sandbox is invite only. Ask Ket for the six-letter code.</div><input id="code" style="width:100%;margin:12px 0;font-size:20px;letter-spacing:8px;text-align:center;font-weight:900" maxlength="6" placeholder="______"><button class="btn gold" data-act="codeGo">JOIN</button>`,l=>l.querySelector("#code").focus());break;
+    case"codeGo":{const c=$("#code").value.toUpperCase();if(c==="BRAVOK"){closeModal();travel("Ket's sandbox · cheats on",()=>startMatch({title:"FREE-FOR-ALL · VILLAGE",sub:"Ket's sandbox · cheats on · no rewards",teams:false,cheats:true,foe:"KET"}))}else toast("Wrong code","bad");break}
+    case"reserve":{const c=st.custom;const name=c.name||st.profile.name+"'s server";travel(`${name} · ${c.mode} · ${c.map} · new server`,()=>startMatch({title:c.mode.toUpperCase()+" · "+c.map.toUpperCase(),sub:`your custom server · ${c.access.toLowerCase()}${c.cheats?" · cheats on · no rewards":""}`,teams:c.mode!=="Free-for-all"&&c.door==="Warfront",cheats:c.cheats}));ui.customOpen=false;break}
+    case"openMenu":st.where="menu";render();break;
+    case"duel":toast("Ket accepts · both pulled into the duel circle","good");setTimeout(()=>startMatch({title:"HONOR DUEL · COURTYARD",sub:"first to 3 · the ring is closed to everyone else",teams:false,lists:true,ranked:false,bracket:"1v1",foe:"KET"}),800);break;
+    case"simKill":{const m=ui.match;m.kills++;m.a++;m.st=Math.max(0,m.st-12);feedLine(`<b style="color:var(--blue)">You</b> <span style="color:var(--red2)">cut down</span> <b style="color:var(--iron)">${m.foe||"Oswin"}</b>`);const h=$(".hud .st i");if(h)h.style.width=m.st+"%";if(m.lists&&m.a>=3){endMatch()}else render();break}
+    case"simParry":{const m=ui.match;m.parries++;m.st=Math.min(100,m.st+6);toast("PARRY ×"+m.parries+" +6","good");render();break}
+    case"simHit":{const m=ui.match;m.hp=Math.max(0,m.hp-35);if(m.hp===0){m.deaths++;m.b++;m.hp=100;m.st=100;feedLine(`<b style="color:var(--iron)">${m.foe||"Halvard"}</b> <span style="color:var(--red2)">skewered</span> <b style="color:var(--blue)">You</b>`);toast(m.lists?"Round lost":"You died · respawning in 6","bad");if(m.lists&&m.b>=3){endMatch();break}}render();break}
+    case"endMatch":endMatch();break;
+    case"pause":ui.pause=!ui.pause;render();break;case"board":ui.board=!ui.board;ui.pause=false;render();break;case"vote":toast("Vote counted · Siege");break;
+    case"leaveMatch":clearInterval(feedTimer);if(ui.match.lists&&ui.match.ranked){st.profile.rating[ui.match.bracket]-=20;toast("Left a ranked match · -20 · queue locked 10 min","bad")}st.where="menu";st.tab="play";render();break;
+    case"rematch":closeModal();toast("Waiting for the other side to accept… (1 / 2)");break;case"stay":closeModal();toast("Next round: Siege on Bridge");break;
+    case"closeModal":closeModal();break;
+    case"reset":try{localStorage.removeItem("courtyard-proto")}catch(e){}st=DEF();ui.classEdit=null;ui.appDraft=null;render();toast("Prototype reset");break;
+  }});
+function confirmSwitch(){return true}
+document.addEventListener("change",e=>{const el=e.target.closest("[data-act=custom]");if(!el)return;const k=el.dataset.k;let v=el.value;if(k==="limit")v=+v;st.custom[k]=v;if(k==="door"){st.custom.mode=v==="Lists"?"1v1 casual":(v==="Courtyard"?"Hub":"Free-for-all");st.custom.map=v==="Lists"?"The Pit":(v==="Courtyard"?"Courtyard":"Bridge")}save();render()});
+document.addEventListener("input",e=>{if(e.target.id==="c_name"){st.custom.name=e.target.value}});
+document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.key==="m"||e.key==="M"){if(st.where==="courtyard"){st.where="menu";render()}else if(st.where==="match"){ui.pause=!ui.pause;ui.board=false;render()}else if($("#layer").innerHTML){closeModal()}else if(ui.customOpen){ui.customOpen=false;render()}else if(st.where==="menu"&&st.door==="courtyard"&&!st.party.length){st.where="courtyard";render()}}
+  if(e.key==="Tab"&&st.where==="match"){e.preventDefault();if(!ui.board){ui.board=true;render()}}});
+document.addEventListener("keyup",e=>{if(e.key==="Tab"&&st.where==="match"&&ui.board){ui.board=false;render()}});
+render();
+</script>
