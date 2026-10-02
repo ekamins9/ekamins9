@@ -1,42 +1,52 @@
 --[[ HUB SERVER — everything the main menu (HubMenu) needs that isn't combat.
-     ONE PLACE: public servers are the Hub, every match is a RESERVED server
-     of this same place (see GameConfig). A server never changes mode.
-       • PLAY:    join a public match server of that mode with room, else
-                  reserve a fresh one and go (with the party). Studio has no
-                  teleports: PLAY switches the mode locally (Game.requestMode).
-       • HUB:     RETURN TO HUB — teleport with no code = a public server
-       • CUSTOM:  a named match server, listed (Public) or Friends-only
-       • SERVERS: the browser. Every server heartbeats itself into a
-                  MemoryStore SortedMap ("Servers") with mode / map / players /
-                  access / members / its access code; the menu lists the Public
-                  ones and joins through here (codes never reach a client)
-       • FRIENDS: who's online in this game, join them by instance
-       • PARTY:   invite / accept / leave; parties teleport together (carried
-                  in TeleportData and rebuilt on arrival) and the Party
-                  attribute keeps them on one team (Teams)
-       • ARMORY:  save a loadout per class, set the active class
+     ONE PLACE: public servers are the Hub (Courtyard); every match is a
+     RESERVED server of this same place (see GameConfig.DOORS). A server
+     never changes mode.
 
-       ReplicatedStorage.HubRemote (RemoteFunction) client -> op, ... -> result
-       ReplicatedStorage.HubEvent  (RemoteEvent)    server -> "Party", partyInfo | "Toast", text | "Invite", fromName, fromId
+       • PLAY door:  Courtyard → a public server.  Tiltyard → a Friends-only
+                     reserved server for you and your party.  Warfront → a
+                     public Warfront server with room, else a fresh one.
+                     The Lists → the matchmaking queue (Matchmaker).
+                     Studio has no teleports: PLAY switches this server's mode.
+       • PARTY:      invite / accept / leave, max GameConfig.PARTY_MAX, and
+                     READY-UP: every member readies, the leader's PLAY only
+                     goes when all are ready (reset on arrival and on leave)
+       • CUSTOM:     a named server with the host's settings (mode, map, limit,
+                     round length, access, friendly fire, respawns, ground
+                     weapons, cheats → no rewards)
+       • SERVERS:    the browser (MemoryStore SortedMap "Servers"; codes never
+                     reach a client)   • FRIENDS: online, join by instance
+       • SHOP:       Buy / OpenCrate / Exchange / BuyCrowns (Robux prompt)
+       • ARMORY:     SaveClass / SetActive / SaveAppearance
+       • BOARDS:     Leaderboard(bracket) from OrderedDataStores Scoreboard writes
 
-     MemoryStore / TeleportService need a published game; in Studio the browser
-     just shows this server. ]]
+       ReplicatedStorage.HubRemote (RemoteFunction)  client -> op, ... -> result
+       ReplicatedStorage.HubEvent  (RemoteEvent)     server -> "Party", info | "Toast", text | "Invite", name, id
+                                                     | "Profile", summary | "Travel", where | "TravelFailed"
+                                                     | "MatchFound", info | "Rewards", table | "Crate", result ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local MemoryStoreService = game:GetService("MemoryStoreService")
+local DataStoreService = game:GetService("DataStoreService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local Catalog    = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Game       = require(ServerScriptService:WaitForChild("Game"):WaitForChild("Game"))
 local Profile    = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
+local Economy    = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Economy"))
+local Stats      = require(ServerScriptService.Economy:WaitForChild("Stats"))
+local Matchmaker = require(script.Parent:WaitForChild("Matchmaker"))
 
 local STUDIO = RunService:IsStudio()
-local PARTY_MAX = 6
-local PENDING_TTL = 90   -- a freshly reserved server is advertised for this long until it heartbeats itself
+local PARTY_MAX = GameConfig.PARTY_MAX or 3
+local PENDING_TTL = 90      -- a freshly reserved server is advertised for this long until it heartbeats itself
+local MATCH_OVER_DELAY = 12 -- seconds a finished Lists match shows its result before everyone goes home
 
 local function log(...) DebugFlags.log("Hub", ...) end
 
@@ -48,6 +58,12 @@ event.Name = "HubEvent"
 event.Parent = ReplicatedStorage
 
 local function toast(plr, text) event:FireClient(plr, "Toast", text) end
+local function pushProfile(plr) if plr.Parent then event:FireClient(plr, "Profile", Profile.summary(plr)) end end
+Economy.changed.Event:Connect(pushProfile)
+Stats.changed.Event:Connect(function(plr, text, pay)
+	toast(plr, (pay or 0) > 0 and string.format("CONTRACT DONE  ·  %s  ·  +%d Marks", text, pay) or text)
+	pushProfile(plr)
+end)
 
 --------------------------------------------------------------------
 --  SERVER REGISTRY (browser)
@@ -55,21 +71,23 @@ local function toast(plr, text) event:FireClient(plr, "Toast", text) end
 local HEARTBEAT, EXPIRY = 20, 60
 local registry
 pcall(function() registry = MemoryStoreService:GetSortedMap("Servers") end)
--- a reserved server learns its access code from the first arrival's
--- TeleportData (only HubServer ever sets it) and advertises it in the registry
-local accessCode = nil
+local accessCode = nil   -- a reserved server learns its code from its first arrival's TeleportData
 
 local function entry()
 	local node, sv = Game.node, Game.server
 	local def = GameConfig.MODES[sv.mode or "Hub"]
 	local members = {}
 	for _, p in ipairs(Players:GetPlayers()) do table.insert(members, p.UserId) end
+	local st = sv.settings
 	return {
 		jobId = game.JobId, placeId = game.PlaceId, reserved = sv.reserved,
 		mode = sv.mode or node:GetAttribute("Mode") or "", modeName = node:GetAttribute("ModeName") or "",
 		category = node:GetAttribute("Category") or "", map = node:GetAttribute("Map") or "",
-		players = #Players:GetPlayers(), max = def and def.maxPlayers or Players.MaxPlayers,
+		door = sv.door or "Warfront", bracket = sv.bracket, ranked = sv.ranked == true,
+		players = #Players:GetPlayers(), max = (st and tonumber(st.limit)) or (def and def.maxPlayers) or Players.MaxPlayers,
 		custom = sv.custom, name = sv.name or "", access = sv.access, hostId = sv.hostId,
+		cheats = st and st.cheats == true or false, friendlyFire = not (st and st.friendlyFire == false),
+		respawns = not (st and st.respawns == false),
 		accessCode = accessCode, members = members,
 		state = node:GetAttribute("State") or "", updated = os.time(),
 	}
@@ -87,7 +105,6 @@ game:BindToClose(function()
 	if registry then pcall(function() registry:RemoveAsync(myKey()) end) end
 end)
 
--- every live entry (server side: codes included)
 local function listServers()
 	local out = {}
 	if registry then
@@ -112,7 +129,7 @@ end
 local function listForClient()
 	local out = {}
 	for _, e in ipairs(listServers()) do
-		if e.access == "Public" or e.here then
+		if (e.access == "Public" or e.here) and not (e.door == "Lists" and not e.here) then
 			local c = {}
 			for k, v in pairs(e) do if k ~= "accessCode" and k ~= "members" then c[k] = v end end
 			table.insert(out, c)
@@ -131,12 +148,10 @@ local function hasMember(e, userId)
 	return false
 end
 
--- may this player enter that server (as the registry describes it)?
 local function mayEnter(plr, e)
 	if (e.players or 0) >= (e.max or 1) then return false, "that server is full" end
 	if e.access == "Public" or not e.reserved then return true end
 	if e.access == "Locked" then return false, "that match is locked" end
-	-- Friends: a friend of someone inside
 	for _, id in ipairs(e.members or {}) do
 		local ok, f = pcall(plr.IsFriendsWith, plr, id)
 		if ok and f then return true end
@@ -145,9 +160,9 @@ local function mayEnter(plr, e)
 end
 
 --------------------------------------------------------------------
---  PARTY
+--  PARTY (with ready-up)
 --------------------------------------------------------------------
-local parties = {}   -- [leaderUserId] = {leader = Player, members = {Player...}}
+local parties = {}   -- [leaderUserId] = {leader = Player, members = {Player...}, ready = {[Player]=true}}
 local invites = {}   -- [invitee Player] = leaderUserId
 local carried = {}   -- [original leader UserId] = party, for a party arriving by teleport
 
@@ -156,17 +171,31 @@ local function partyOf(plr)
 	return id and parties[id] or nil
 end
 
+local function allReady(party)
+	if #party.members <= 1 then return true end
+	for _, m in ipairs(party.members) do if m ~= party.leader and not party.ready[m] then return false end end
+	return true
+end
+
 local function partyInfo(party)
 	if not party then return nil end
-	local names = {}
-	for _, m in ipairs(party.members) do table.insert(names, {name = m.DisplayName, id = m.UserId, leader = m == party.leader}) end
-	return {leaderId = party.leader.UserId, leaderName = party.leader.DisplayName, members = names}
+	local list = {}
+	for _, m in ipairs(party.members) do
+		local p = Profile.get(m)
+		table.insert(list, {name = m.DisplayName, id = m.UserId, leader = m == party.leader,
+			ready = m == party.leader or party.ready[m] == true, class = p.active, level = p.level})
+	end
+	return {leaderId = party.leader.UserId, leaderName = party.leader.DisplayName, members = list,
+		allReady = allReady(party), max = PARTY_MAX, queue = party.ticket and Matchmaker.status(party.ticket) or nil,
+		bracket = party.bracket, ranked = party.ranked}
 end
 
 local function broadcast(party)
 	local info = partyInfo(party)
 	for _, m in ipairs(party.members) do event:FireClient(m, "Party", info) end
 end
+
+local function unready(party) party.ready = {}; end
 
 local function setLeader(party, plr)
 	parties[party.leader.UserId] = nil
@@ -175,11 +204,14 @@ local function setLeader(party, plr)
 	for _, m in ipairs(party.members) do m:SetAttribute("Party", plr.UserId) end
 end
 
+local cancelQueue   -- forward
 local function leaveParty(plr)
 	local party = partyOf(plr)
 	plr:SetAttribute("Party", nil)
 	if not party then return end
+	if party.ticket then cancelQueue(party, "a member left the party") end
 	for i, m in ipairs(party.members) do if m == plr then table.remove(party.members, i); break end end
+	party.ready[plr] = nil
 	event:FireClient(plr, "Party", nil)
 	if #party.members == 0 then
 		parties[party.leader.UserId] = nil
@@ -187,12 +219,13 @@ local function leaveParty(plr)
 		return
 	end
 	if party.leader == plr then setLeader(party, party.members[1]) end
+	unready(party)
 	broadcast(party)
 end
 
 local function createParty(plr)
 	leaveParty(plr)
-	local party = {leader = plr, members = {plr}}
+	local party = {leader = plr, members = {plr}, ready = {}}
 	parties[plr.UserId] = party
 	plr:SetAttribute("Party", plr.UserId)
 	broadcast(party)
@@ -201,8 +234,10 @@ end
 
 local function joinParty(party, plr)
 	leaveParty(plr)
+	if party.ticket then cancelQueue(party, "the party changed") end
 	table.insert(party.members, plr)
 	plr:SetAttribute("Party", party.leader.UserId)
+	unready(party)
 	broadcast(party)
 end
 
@@ -211,7 +246,7 @@ local function invite(plr, targetId)
 	if not target or target == plr then return false, "they're not in this server" end
 	local party = partyOf(plr) or createParty(plr)
 	if party.leader ~= plr then return false, "only the leader invites" end
-	if #party.members >= PARTY_MAX then return false, "party is full" end
+	if #party.members >= PARTY_MAX then return false, "party is full (" .. PARTY_MAX .. ")" end
 	invites[target] = plr.UserId
 	event:FireClient(target, "Invite", plr.DisplayName, plr.UserId)
 	return true, "invited " .. target.DisplayName
@@ -225,6 +260,26 @@ local function accept(plr)
 	if #party.members >= PARTY_MAX then return false, "party is full" end
 	joinParty(party, plr)
 	return true, "joined " .. party.leader.DisplayName .. "'s party"
+end
+
+local function setReady(plr, ready)
+	local party = partyOf(plr)
+	if not party then return false, "you're not in a party" end
+	if party.leader == plr then return false, "the leader is always ready — press PLAY when everyone is" end
+	party.ready[plr] = ready and true or nil
+	broadcast(party)
+	if allReady(party) then toast(party.leader, "Everyone is ready") end
+	return true, ready and "ready" or "not ready"
+end
+
+local function kickFromParty(plr, targetId)
+	local party = partyOf(plr)
+	if not party or party.leader ~= plr then return false, "only the leader can remove members" end
+	local target = Players:GetPlayerByUserId(targetId)
+	if not target or target == plr or partyOf(target) ~= party then return false, "they're not in your party" end
+	leaveParty(target)
+	toast(target, "You were removed from the party")
+	return true, "removed " .. target.DisplayName
 end
 
 -- a party that teleported here together: TeleportData.party = {leader=, members={ids}}
@@ -244,13 +299,17 @@ end
 Players.PlayerRemoving:Connect(function(plr) leaveParty(plr); invites[plr] = nil end)
 
 --------------------------------------------------------------------
---  TRAVEL: play / hub / custom / join
+--  TRAVEL
 --------------------------------------------------------------------
--- who travels: the leader takes the party; a member goes alone (and leaves it)
+-- who travels: the leader takes the party (everyone ready); a member goes alone (and leaves it)
 local function groupFor(plr, leaderOnly)
 	local party = partyOf(plr)
 	if not party then return {plr} end
-	if party.leader == plr then return party.members end
+	if party.leader == plr then
+		if not allReady(party) then return nil, "not everyone is ready" end
+		if party.ticket then return nil, "you're in the queue — cancel it first" end
+		return party.members
+	end
 	if leaderOnly then return nil, "only the party leader picks where you go" end
 	leaveParty(plr)
 	return {plr}
@@ -259,8 +318,7 @@ end
 local function teleport(players, placeId, data, jobId, code, where)
 	local opts = Instance.new("TeleportOptions")
 	data = data or {}
-	if code then data.code = code end   -- the reserved server advertises its own code
-	-- the travel screen goes up now, before Roblox starts the teleport
+	if code then data.code = code end
 	for _, p in ipairs(players) do event:FireClient(p, "Travel", where or "") end
 	if #players > 1 then
 		local ids = {}
@@ -277,81 +335,117 @@ local function teleport(players, placeId, data, jobId, code, where)
 	return ok, ok and "travelling…" or "teleport failed (published game only)"
 end
 
--- joining a known match server: repeat its identity in the teleport data, so
--- even an arrival that beats the creator there fixes the right mode
 local function identityOf(e)
-	return {mode = e.mode, access = e.access, name = e.name, custom = e.custom, host = e.hostId}
+	return {mode = e.mode, access = e.access, name = e.name, custom = e.custom, host = e.hostId, door = e.door}
 end
 local function whereOf(e)
 	return ((e.name or "") ~= "" and (e.name .. "  ·  ") or "") .. (e.modeName or e.mode or "") .. ((e.map or "") ~= "" and ("  ·  " .. e.map) or "")
 end
 
--- reserve a fresh match server and send the group; advertise it at once so
--- others can join it before its own first heartbeat (PENDING_TTL)
-local function reserve(group, modeId, access, name, custom)
+local function reserve(group, modeId, access, name, custom, door, settings, where)
 	local ok, code = pcall(TeleportService.ReserveServer, TeleportService, game.PlaceId)
 	if not ok then warn("[Hub] ReserveServer failed:", code); return false, "could not reserve a server" end
 	local def = GameConfig.MODES[modeId]
 	local ids = {}
 	for _, p in ipairs(group) do table.insert(ids, p.UserId) end
 	local data = {mode = modeId, access = access, name = name or "", custom = custom == true, host = group[1].UserId,
-		allowed = access ~= "Public" and ids or nil}
+		allowed = access ~= "Public" and ids or nil, door = door, settings = settings}
 	if registry then
 		pcall(function()
 			registry:SetAsync("pending:" .. code:sub(1, 24), {
 				jobId = "pending:" .. code:sub(1, 24), placeId = game.PlaceId, reserved = true, pending = true,
-				mode = modeId, modeName = def.name, category = def.category, map = "",
-				players = #group, max = def.maxPlayers or Players.MaxPlayers,
+				mode = modeId, modeName = def.name, category = def.category, map = settings and settings.map or "",
+				door = door, players = #group, max = (settings and tonumber(settings.limit)) or def.maxPlayers or Players.MaxPlayers,
 				custom = custom == true, name = name or "", access = access, hostId = group[1].UserId,
+				cheats = settings and settings.cheats == true or false,
 				accessCode = code, members = ids, state = "Round", updated = os.time(),
 			}, PENDING_TTL)
 		end)
 	end
-	return teleport(group, game.PlaceId, data, nil, code, (custom and (name .. "  ·  ") or "") .. def.name .. "  ·  new server")
+	return teleport(group, game.PlaceId, data, nil, code, where or ((custom and (name .. "  ·  ") or "") .. def.name .. "  ·  new server"))
 end
 
-local function play(plr, modeId)
-	local def = GameConfig.MODES[modeId]
-	if not def then return false, "no such mode" end
-	local group, why = groupFor(plr, true)
-	if not group then return false, why end
-	if STUDIO then
-		-- no teleports in Studio: switch this server instead (dev convenience)
-		local ok, msg = Game.requestMode(plr, modeId)
-		return ok, ok and ("Studio: switching this server — " .. msg) or msg
-	end
-	if modeId == Game.server.mode then return false, "you're already in " .. def.name end
-	if modeId == "Hub" then return teleport(group, game.PlaceId, {}, nil, nil, "Hub") end
-	-- a public server of that mode with room for the whole group: the fullest first
-	for _, e in ipairs(listServers()) do
-		if e.mode == modeId and e.access == "Public" and e.reserved and e.accessCode and not e.here
-			and (e.players or 0) + #group <= (e.max or 0) then
-			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, def.name .. (e.map ~= "" and ("  ·  " .. e.map) or ""))
-		end
-	end
-	return reserve(group, modeId, "Public", "", false)
+-- Studio: no teleports; switch this server instead
+local function studioSwitch(plr, modeId, extra)
+	local sv = Game.server
+	if extra then for k, v in pairs(extra) do sv[k] = v end end
+	local ok, msg = Game.requestMode(plr, modeId)
+	return ok, ok and ("Studio: switching this server — " .. msg) or msg
 end
 
 local function goHub(plr)
-	if Game.server.mode == "Hub" then return false, "you're in the Hub" end
 	local group = groupFor(plr, false)
 	if STUDIO then
-		local ok, msg = Game.requestMode(plr, "Hub")
-		return ok, ok and ("Studio: switching this server — " .. msg) or msg
+		if Game.server.mode == "Hub" then return false, "you're in the Courtyard" end
+		return studioSwitch(plr, "Hub", {door = "Courtyard", settings = nil, noRewards = false, sides = nil, bracket = nil, ranked = false})
 	end
-	-- no code = Roblox picks a public server, and public servers are the Hub
-	return teleport(group, game.PlaceId, {}, nil, nil, "Hub")
+	if Game.server.mode == "Hub" then return false, "you're in the Courtyard" end
+	return teleport(group, game.PlaceId, {}, nil, nil, "Courtyard")
 end
 
-local function custom(plr, modeId, name, listed)
-	local def = GameConfig.MODES[modeId]
-	if not def or modeId == "Hub" then return false, "no such mode" end
+local joinQueue   -- forward
+local function play(plr, doorId, opts)
+	local door = GameConfig.DOORS[doorId]
+	if not door then return false, "no such door" end
+	opts = type(opts) == "table" and opts or {}
+	if doorId == "Courtyard" then return goHub(plr) end
+	if doorId == "Lists" then return joinQueue(plr, opts.bracket, opts.ranked == true) end
 	local group, why = groupFor(plr, true)
 	if not group then return false, why end
-	if STUDIO then return false, "custom servers need a published game" end
-	name = type(name) == "string" and name:gsub("^%s+", ""):gsub("%s+$", ""):sub(1, 32) or ""
-	if name == "" then name = plr.DisplayName .. "'s server" end
-	return reserve(group, modeId, listed == true and "Public" or "Friends", name, true)
+	local modeId = door.mode or (door.modes and door.modes[1])
+	if doorId == "Tiltyard" then
+		if STUDIO then return studioSwitch(plr, "Tiltyard", {door = "Tiltyard", settings = nil, noRewards = false}) end
+		if Game.server.door == "Tiltyard" then return false, "you're in your Tiltyard" end
+		return reserve(group, modeId, "Friends", plr.DisplayName .. "'s Tiltyard", false, "Tiltyard", nil, "Tiltyard")
+	end
+	-- Warfront
+	if STUDIO then
+		local m = GameConfig.MODES[opts.mode] and opts.mode or modeId
+		return studioSwitch(plr, m, {door = "Warfront", settings = nil, noRewards = false})
+	end
+	if Game.server.door == "Warfront" and not Game.server.custom then return false, "you're on the Warfront" end
+	for _, e in ipairs(listServers()) do
+		if e.door == "Warfront" and not e.custom and e.access == "Public" and e.reserved and e.accessCode and not e.here
+			and (e.players or 0) + #group <= (e.max or 0) then
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, "Warfront  ·  " .. (e.modeName or "") .. (e.map ~= "" and ("  ·  " .. e.map) or ""))
+		end
+	end
+	return reserve(group, modeId, "Public", "", false, "Warfront", nil, "Warfront  ·  new server")
+end
+
+-- custom server: settings = GameConfig.CUSTOM_DEFAULTS keys (clamped here)
+local function cleanSettings(s)
+	s = type(s) == "table" and s or {}
+	local D = GameConfig.CUSTOM_DEFAULTS
+	local out = {}
+	out.door = GameConfig.DOORS[s.door] and s.door ~= "Courtyard" and s.door ~= "Lists" and s.door or D.door
+	local allowed = {}
+	if out.door == "Tiltyard" then allowed = {"Tiltyard"} else allowed = GameConfig.DOORS.Warfront.modes end
+	out.mode = allowed[1]
+	for _, m in ipairs(allowed) do if m == s.mode then out.mode = m end end
+	local def = GameConfig.MODES[out.mode]
+	out.map = ""
+	for _, m in ipairs(def.maps or {}) do if m == s.map then out.map = m end end
+	out.limit = math.clamp(math.floor(tonumber(s.limit) or D.limit), 2, def.maxPlayers or 24)
+	out.roundLength = math.clamp(math.floor(tonumber(s.roundLength) or D.roundLength), 60, 20 * 60)
+	out.access = (s.access == "Friends" or s.access == "Locked") and s.access or "Public"
+	out.friendlyFire = s.friendlyFire ~= false
+	out.respawns = s.respawns ~= false
+	out.groundWeapons = s.groundWeapons ~= false
+	out.cheats = s.cheats == true
+	out.name = type(s.name) == "string" and s.name:gsub("^%s+", ""):gsub("%s+$", ""):sub(1, 32) or ""
+	return out
+end
+
+local function custom(plr, settings)
+	local s = cleanSettings(settings)
+	local group, why = groupFor(plr, true)
+	if not group then return false, why end
+	if s.name == "" then s.name = plr.DisplayName .. "'s server" end
+	if STUDIO then
+		return studioSwitch(plr, s.mode, {door = s.door, custom = true, name = s.name, hostId = plr.UserId, settings = s, noRewards = s.cheats})
+	end
+	return reserve(group, s.mode, s.access, s.name, true, s.door, s, s.name .. "  ·  " .. GameConfig.MODES[s.mode].name)
 end
 
 local function joinServer(plr, jobId)
@@ -394,7 +488,6 @@ local function joinFriend(plr, userId)
 		end
 		return teleport(group, placeId, {}, jobId, nil, whereOf(e))
 	end
-	-- not in the registry: a public (Hub) server we can reach by instance, or one just starting
 	return teleport(group, placeId, {}, jobId, nil, "a friend's server")
 end
 
@@ -407,7 +500,6 @@ local function friendsOnline(plr)
 			table.insert(out, {id = f.VisitorId, name = f.UserName, inGame = f.GameId == game.GameId or here, here = here, placeId = f.PlaceId})
 		end
 	end
-	-- in Studio GetFriendsOnline is empty: list the other players here instead
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p ~= plr then
 			local dup = false
@@ -419,17 +511,150 @@ local function friendsOnline(plr)
 end
 
 --------------------------------------------------------------------
---  ARMORY
+--  THE LISTS: queue + match found
 --------------------------------------------------------------------
-local function catalog() return _G.LoadoutCatalog end
+local tickets = {}   -- [ticketId] = party
+local nextTicket = 0
 
-local function saveClass(plr, classId, loadout)
-	local C = catalog()
-	if not C or not GameConfig.CLASSES[classId] then return false, "no such class" end
-	local valid = C.validate(classId, loadout)
-	if not valid then return false, "invalid loadout" end
-	Profile.setClass(plr, classId, valid)
-	return true, valid
+local function bracketSize(b) return tonumber(tostring(b):match("^(%d)v%d$")) or 0 end
+
+function cancelQueue(party, why)
+	if not party.ticket then return end
+	Matchmaker.dequeue(party.ticket)
+	tickets[party.ticket] = nil
+	party.ticket = nil
+	for _, m in ipairs(party.members) do toast(m, "Left the queue" .. (why and (" — " .. why) or "")) end
+	broadcast(party)
+end
+
+function joinQueue(plr, bracket, ranked)
+	local door = GameConfig.DOORS.Lists
+	local okB = false
+	for _, b in ipairs(door.brackets or {}) do if b == bracket then okB = true end end
+	if not okB then return false, "pick a bracket" end
+	local party = partyOf(plr) or createParty(plr)
+	if party.leader ~= plr then return false, "only the party leader queues" end
+	if party.ticket then return false, "already in the queue" end
+	if not allReady(party) then return false, "not everyone is ready" end
+	local size = bracketSize(bracket)
+	if #party.members > size then return false, string.format("%s takes a party of at most %d", bracket, size) end
+	if Game.server.door == "Lists" then return false, "finish this match first" end
+	local p = Profile.get(plr)
+	local lockUntil = p.queueLock and p.queueLock[bracket] or 0
+	if ranked and os.time() < lockUntil then return false, string.format("ranked locked for %d more min (abandoned match)", math.ceil((lockUntil - os.time()) / 60)) end
+	local ids, sum = {}, 0
+	for _, m in ipairs(party.members) do table.insert(ids, m.UserId); sum += Profile.rating(m, bracket) end
+	nextTicket += 1
+	local id = string.format("%s:%d:%d", myKey(), os.time(), nextTicket)
+	party.ticket, party.bracket, party.ranked = id, bracket, ranked
+	tickets[id] = party
+	local ok, msg = Matchmaker.enqueue({id = id, bracket = bracket, ranked = ranked, players = ids, rating = math.floor(sum / #ids)})
+	if not ok then party.ticket = nil; tickets[id] = nil; return false, msg end
+	broadcast(party)
+	return true, "searching…"
+end
+
+Matchmaker.onMatch = function(ticketId, match)
+	local party = tickets[ticketId]
+	tickets[ticketId] = nil
+	if not party then return end
+	party.ticket = nil
+	local group = {}
+	for _, m in ipairs(party.members) do if m.Parent then table.insert(group, m) end end
+	if #group == 0 then return end
+	local info = {bracket = match.bracket, ranked = match.ranked, sides = match.sides}
+	for _, m in ipairs(group) do event:FireClient(m, "MatchFound", info) end
+	broadcast(party)
+	task.delay(3, function()
+		if match.studio or STUDIO then
+			studioSwitch(group[1], "Lists", {door = "Lists", bracket = match.bracket, ranked = match.ranked,
+				sides = (function() local s = {A = {}, B = {}}; for _, id in ipairs(match.sides.A) do s.A[id] = true end; for _, id in ipairs(match.sides.B) do s.B[id] = true end; return s end)(),
+				settings = nil, noRewards = false})
+			return
+		end
+		local data = {mode = "Lists", door = "Lists", access = "Locked", allowed = match.players, host = match.players[1],
+			sides = match.sides, bracket = match.bracket, ranked = match.ranked, name = ""}
+		teleport(group, game.PlaceId, data, nil, match.code, "The Lists  ·  " .. match.bracket .. (match.ranked and "  ·  RANKED" or ""))
+	end)
+end
+
+-- a finished Lists match: everyone back to a Courtyard
+do
+	Game.node:GetAttributeChangedSignal("MatchOver"):Connect(function()
+		if Game.node:GetAttribute("MatchOver") ~= true then return end
+		task.delay(MATCH_OVER_DELAY, function()
+			local all = Players:GetPlayers()
+			if #all == 0 then return end
+			if STUDIO then Game.node:SetAttribute("MatchOver", false); studioSwitch(all[1], "Hub", {door = "Courtyard", sides = nil, bracket = nil, ranked = false}); return end
+			teleport(all, game.PlaceId, {}, nil, nil, "Courtyard")
+		end)
+	end)
+end
+
+--------------------------------------------------------------------
+--  LEADERBOARDS (Scoreboard writes LB_<bracket> ratings and LB_Warfront kills)
+--------------------------------------------------------------------
+local boardCache = {}   -- [name] = {at, rows}
+local nameCache = {}
+local function nameOf(userId)
+	if nameCache[userId] then return nameCache[userId] end
+	local here = Players:GetPlayerByUserId(userId)
+	local name = here and here.DisplayName
+	if not name then local ok, n = pcall(Players.GetNameFromUserIdAsync, Players, userId); name = ok and n or ("#" .. userId) end
+	nameCache[userId] = name
+	return name
+end
+local function leaderboard(plr, which)
+	which = type(which) == "string" and which:gsub("[^%w]", ""):sub(1, 12) or "Warfront"
+	local name = "LB_" .. which
+	local c = boardCache[name]
+	if c and os.time() - c.at < 60 then return c.rows end
+	local rows = {}
+	pcall(function()
+		local ds = DataStoreService:GetOrderedDataStore(name)
+		local page = ds:GetSortedAsync(false, 10)
+		for i, it in ipairs(page:GetCurrentPage()) do
+			table.insert(rows, {rank = i, id = tonumber(it.key), name = nameOf(tonumber(it.key) or 0), value = it.value})
+		end
+	end)
+	-- Studio / empty boards: show the players here so the column isn't blank
+	if #rows == 0 then
+		for i, p in ipairs(Players:GetPlayers()) do
+			local pr = Profile.get(p)
+			local v = which == "Warfront" and (pr.stats.kill or 0) or (pr.rating[which] or Catalog.ECONOMY.ratingStart)
+			table.insert(rows, {rank = i, id = p.UserId, name = p.DisplayName, value = v})
+		end
+		table.sort(rows, function(a, b) return a.value > b.value end)
+		for i, r in ipairs(rows) do r.rank = i end
+	end
+	boardCache[name] = {at = os.time(), rows = rows}
+	return rows
+end
+
+--------------------------------------------------------------------
+--  SHOP
+--------------------------------------------------------------------
+local function buyCrowns(plr, index)
+	local prod = Catalog.ECONOMY.products[tonumber(index) or 0]
+	if not prod then return false, "no such bundle" end
+	if prod.id == 0 then return false, "Crown bundles aren't set up yet (Catalog/Economy products)" end
+	local ok, err = pcall(MarketplaceService.PromptProductPurchase, MarketplaceService, plr, prod.id)
+	return ok, ok and "purchase prompt opened" or ("could not open the purchase: " .. tostring(err))
+end
+
+--------------------------------------------------------------------
+--  STATE
+--------------------------------------------------------------------
+local function state(plr)
+	local sv = Game.server
+	local party = partyOf(plr)
+	return {ok = true, studio = STUDIO, placeId = game.PlaceId, jobId = game.JobId,
+		mode = sv.mode, door = sv.door, reserved = sv.reserved, access = sv.access, name = sv.name, custom = sv.custom,
+		bracket = sv.bracket, ranked = sv.ranked, hostId = sv.hostId, isHost = sv.hostId == plr.UserId,
+		settings = sv.settings, noRewards = sv.noRewards,
+		party = partyInfo(party), partyMax = PARTY_MAX,
+		profile = Profile.summary(plr), contracts = Stats.contracts(plr),
+		players = #Players:GetPlayers()}
 end
 
 --------------------------------------------------------------------
@@ -437,43 +662,51 @@ end
 --------------------------------------------------------------------
 local lastCall = {}
 remote.OnServerInvoke = function(plr, op, a, b, c)
-	-- light rate limit
 	local now = os.clock()
-	if now - (lastCall[plr] or 0) < 0.15 then return {ok = false, msg = "slow down"} end
+	if now - (lastCall[plr] or 0) < 0.08 then return {ok = false, msg = "slow down"} end
 	lastCall[plr] = now
 
-	if op == "State" then
-		local sv = Game.server
-		return {ok = true, studio = STUDIO, placeId = game.PlaceId, jobId = game.JobId,
-			mode = sv.mode, reserved = sv.reserved, access = sv.access, name = sv.name, custom = sv.custom,
-			party = partyInfo(partyOf(plr)),
-			profile = {active = Profile.get(plr).active, stats = Profile.get(plr).stats}}
-	elseif op == "Servers" then
-		return {ok = true, servers = listForClient()}
-	elseif op == "Friends" then
-		return {ok = true, friends = friendsOnline(plr)}
-	elseif op == "Play" then
-		local ok, msg = play(plr, a); return {ok = ok, msg = msg}
-	elseif op == "Hub" then
-		local ok, msg = goHub(plr); return {ok = ok, msg = msg}
-	elseif op == "Custom" then
-		local ok, msg = custom(plr, a, b, c); return {ok = ok, msg = msg}
-	elseif op == "Join" then
-		local ok, msg = joinServer(plr, a); return {ok = ok, msg = msg}
-	elseif op == "JoinFriend" then
-		local ok, msg = joinFriend(plr, a); return {ok = ok, msg = msg}
-	elseif op == "PartyCreate" then
-		createParty(plr); return {ok = true, party = partyInfo(partyOf(plr))}
-	elseif op == "PartyInvite" then
-		local ok, msg = invite(plr, a); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
-	elseif op == "PartyAccept" then
-		local ok, msg = accept(plr); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
-	elseif op == "PartyLeave" then
-		leaveParty(plr); return {ok = true}
+	if op == "State" then return state(plr)
+	elseif op == "Servers" then return {ok = true, servers = listForClient()}
+	elseif op == "Friends" then return {ok = true, friends = friendsOnline(plr)}
+	elseif op == "Leaderboard" then return {ok = true, rows = leaderboard(plr, a)}
+	elseif op == "Play" then local ok, msg = play(plr, a, b); return {ok = ok, msg = msg}
+	elseif op == "Hub" then local ok, msg = goHub(plr); return {ok = ok, msg = msg}
+	elseif op == "Custom" then local ok, msg = custom(plr, a); return {ok = ok, msg = msg}
+	elseif op == "Join" then local ok, msg = joinServer(plr, a); return {ok = ok, msg = msg}
+	elseif op == "JoinFriend" then local ok, msg = joinFriend(plr, a); return {ok = ok, msg = msg}
+	elseif op == "QueueCancel" then
+		local party = partyOf(plr)
+		if party and party.ticket and party.leader == plr then cancelQueue(party); return {ok = true} end
+		return {ok = false, msg = "not queued"}
+	elseif op == "PartyCreate" then createParty(plr); return {ok = true, party = partyInfo(partyOf(plr))}
+	elseif op == "PartyInvite" then local ok, msg = invite(plr, a); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
+	elseif op == "PartyAccept" then local ok, msg = accept(plr); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
+	elseif op == "PartyLeave" then leaveParty(plr); return {ok = true}
+	elseif op == "PartyReady" then local ok, msg = setReady(plr, a ~= false); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
+	elseif op == "PartyKick" then local ok, msg = kickFromParty(plr, a); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
 	elseif op == "SaveClass" then
-		local ok, res = saveClass(plr, a, b); return {ok = ok, loadout = ok and res or nil, msg = (not ok) and res or nil}
+		if not GameConfig.CLASSES[a] then return {ok = false, msg = "no such class"} end
+		local lo = Profile.validateLoadout(plr, a, b)
+		Profile.setClass(plr, a, lo)
+		local party = partyOf(plr)
+		if party and party.leader ~= plr and party.ready[plr] then party.ready[plr] = nil; broadcast(party) end
+		return {ok = true, loadout = lo, profile = Profile.summary(plr)}
 	elseif op == "SetActive" then
-		Profile.setActive(plr, a); return {ok = true}
+		Profile.setActive(plr, a)
+		local party = partyOf(plr); if party then broadcast(party) end
+		return {ok = true, profile = Profile.summary(plr)}
+	elseif op == "SaveAppearance" then
+		local app = Profile.validateAppearance(plr, a)
+		Profile.setAppearance(plr, app)
+		return {ok = true, appearance = app, profile = Profile.summary(plr)}
+	elseif op == "Buy" then local ok, msg = Economy.buy(plr, a, b, c); return {ok = ok, msg = msg, profile = Profile.summary(plr)}
+	elseif op == "OpenCrate" then
+		local res, msg = Economy.openCrate(plr, a)
+		if not res then return {ok = false, msg = msg} end
+		return {ok = true, result = res, profile = Profile.summary(plr)}
+	elseif op == "Exchange" then local ok, msg = Economy.exchange(plr, tonumber(a) or 0); return {ok = ok, msg = msg, profile = Profile.summary(plr)}
+	elseif op == "BuyCrowns" then local ok, msg = buyCrowns(plr, a); return {ok = ok, msg = msg}
 	end
 	return {ok = false, msg = "unknown op"}
 end
@@ -486,17 +719,15 @@ local function onArrival(plr)
 		if accessCode == nil and Game.server.reserved and type(td.code) == "string" then accessCode = td.code end
 		arrivedWithParty(plr, td)
 	end
-	-- the door: access level + room (a party member arriving with the host is let through by mayJoin)
 	local allowed, why = Game.mayJoin(plr)
 	if not allowed then
 		log("kicked", plr.Name, "-", why)
-		plr:Kick(why .. " Rejoin from the Hub.")
+		plr:Kick(why .. " Rejoin from the Courtyard.")
 		return
 	end
-	-- heartbeat straight away so the browser's player count is fresh
 	if registry then task.spawn(function() pcall(function() registry:SetAsync(myKey(), entry(), EXPIRY) end) end) end
 end
 Players.PlayerAdded:Connect(onArrival)
 for _, p in ipairs(Players:GetPlayers()) do onArrival(p) end
 
-log("ready —", Game.server.reserved and "reserved server" or "public server (Hub)", STUDIO and "(Studio: no teleports)" or "")
+log("ready —", Game.server.reserved and "reserved server" or "public server (Courtyard)", STUDIO and "(Studio: no teleports)" or "")

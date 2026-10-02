@@ -20,17 +20,45 @@
      MODES: each is a plugin in ServerScriptService.Game.Modes/<id>. `maps`
      names Models in ServerStorage.Maps (see MapLoader for what a map needs).
 
-     CLASSES: what the Armory lets a player build. `armorType` picks which
-     ServerStorage.Armor sets qualify (their Config.Type); `weapons` is a list
-     of Tool names in ServerStorage.Weapons or "any". Players save one loadout
-     per class and pick a class when they spawn. ]]
+     DOORS: the four cards on the Play screen — Courtyard (hub), Tiltyard
+     (training), Warfront (big battles, modes rotate by vote), The Lists
+     (arena brackets, casual or ranked). Each names the mode(s) its servers
+     run and the access level of those servers.
+
+     CLASSES: a class is a WEIGHT (Light / Medium / Heavy — stats in
+     Catalog ▸ Weights) plus a saved look (pieces, colors, weapons; see
+     Catalog). `weapons` is "any" or a list of weapon ids from Catalog ▸ Weapons. ]]
 
 local GameConfig = {}
 
 GameConfig.STUDIO_MODE = "Hub"   -- what Studio starts in (live: public = Hub, reserved = teleport data)
 GameConfig.ACCESS = {Public = "public", Friends = "friends only", Locked = "locked"}
 
+-- the Play screen's doors
+GameConfig.DOORS = {
+	Courtyard = {name = "Courtyard", mode = "Hub",      access = "Public",  hub = true,
+		blurb = "Talk, show off, hit the dummies, duel in the ring."},
+	Tiltyard  = {name = "Tiltyard",  mode = "Tiltyard", access = "Friends", maxPlayers = 3,
+		blurb = "Your own yard, you and your party. Drills and dummies."},
+	Warfront  = {name = "Warfront",  modes = {"FFA", "TDM", "KOTH", "LTS"}, access = "Public", vote = true,
+		blurb = "The big fight. The mode changes between rounds by vote."},
+	Lists     = {name = "The Lists", mode = "Lists",    access = "Locked",  brackets = {"1v1", "2v2", "3v3"},
+		blurb = "1v1, 2v2, 3v3. Casual or ranked. Honor rules."},
+}
+GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Lists"}
+GameConfig.PARTY_MAX = 3
+
 GameConfig.MODES = {
+	Tiltyard = {
+		name = "Tiltyard", category = "Training", teams = 0, maxPlayers = 3,
+		description = "Drills with the drill master and dummies. Finish a drill once for Marks.",
+		maps = {"Tiltyard", "Courtyard"}, roundLength = 0, intermission = 0, hidden = true,
+	},
+	Lists = {
+		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
+		description = "Best of 5 rounds, no respawns, one on one means one on one.",
+		maps = {"Arena"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
 		description = "The courtyard: walk around, talk, practice on the dummies. Pick a mode to fight.",
@@ -74,18 +102,23 @@ GameConfig.TEAMS = {
 }
 
 GameConfig.CLASSES = {
-	Knight   = {name = "Knight",   armorType = "Heavy",  weapons = "any",
+	Knight   = {name = "Knight",   weight = "Heavy",  armorType = "Heavy",  weapons = "any",
 		description = "Plate from head to toe. Slow, hard to cut, hits like a wall falling on you."},
-	Footman  = {name = "Footman",  armorType = "Medium", weapons = "any",
+	Footman  = {name = "Footman",  weight = "Medium", armorType = "Medium", weapons = "any",
 		description = "Mail and gambeson. The all-rounder — quick enough, tough enough."},
-	Vanguard = {name = "Vanguard", armorType = "Light",  weapons = "any",
+	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any",
 		description = "No armor to speak of. Fast, long reach, one mistake from death."},
 }
 GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard"}
 GameConfig.DEFAULT_CLASS = "Footman"
 
--- friendly fire: damage dealt to a teammate is multiplied by this (0 = none)
+-- friendly fire: damage dealt to a teammate is multiplied by this (0 = none);
+-- a custom server's settings may override it (Round attribute FriendlyFire)
 GameConfig.FRIENDLY_FIRE = 0.5
+
+-- custom server settings a host may choose (defaults; limits enforced server-side)
+GameConfig.CUSTOM_DEFAULTS = {door = "Warfront", mode = "FFA", map = "", limit = 12, roundLength = 5 * 60,
+	access = "Public", friendlyFire = true, respawns = true, groundWeapons = true, cheats = false}
 
 --------------------------------------------------------------------
 function GameConfig.mode(id) return GameConfig.MODES[id] end

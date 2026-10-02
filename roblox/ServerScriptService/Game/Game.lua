@@ -46,6 +46,8 @@ end
 Game.server = {
 	reserved = GameConfig.isReserved(), mode = nil, access = "Public", name = "", custom = false,
 	hostId = 0, allowed = nil,   -- allowed: set of user ids (Friends / Locked)
+	door = "Courtyard", bracket = nil, ranked = false, sides = nil,   -- sides = {A = {id=true}, B = {…}} (The Lists)
+	settings = nil, noRewards = false,                                -- custom server settings (GameConfig.CUSTOM_DEFAULTS)
 }
 local STUDIO = game:GetService("RunService"):IsStudio()
 
@@ -55,6 +57,7 @@ function Game.identify(plr)
 	-- a public server needs nobody to know what it is: the Hub (Studio: STUDIO_MODE)
 	if not sv.reserved then
 		sv.mode = (STUDIO and GameConfig.MODES[GameConfig.STUDIO_MODE]) and GameConfig.STUDIO_MODE or "Hub"
+		sv.door = sv.mode == "Hub" and "Courtyard" or (sv.mode == "Tiltyard" and "Tiltyard" or (sv.mode == "Lists" and "Lists" or "Warfront"))
 		log("this server:", sv.mode, "(public)")
 		return sv
 	end
@@ -72,6 +75,19 @@ function Game.identify(plr)
 			for _, id in ipairs(td.allowed) do if type(id) == "number" then sv.allowed[id] = true end end
 			sv.allowed[sv.hostId] = true
 		end
+		sv.door = GameConfig.DOORS[td.door] and td.door or "Warfront"
+		sv.bracket = type(td.bracket) == "string" and td.bracket or nil
+		sv.ranked = td.ranked == true
+		if type(td.sides) == "table" then
+			sv.sides = {A = {}, B = {}}
+			for _, id in ipairs(td.sides.A or {}) do sv.sides.A[id] = true end
+			for _, id in ipairs(td.sides.B or {}) do sv.sides.B[id] = true end
+		end
+		if type(td.settings) == "table" then
+			sv.settings = {}
+			for k, v in pairs(GameConfig.CUSTOM_DEFAULTS) do sv.settings[k] = td.settings[k] ~= nil and td.settings[k] or v end
+			sv.noRewards = sv.settings.cheats == true
+		end
 	else
 		sv.mode = (STUDIO and GameConfig.MODES[GameConfig.STUDIO_MODE]) and GameConfig.STUDIO_MODE or "Hub"
 	end
@@ -83,7 +99,8 @@ end
 function Game.mayJoin(plr)
 	local sv = Game.identify(plr)
 	local def = GameConfig.MODES[sv.mode]
-	if def and def.maxPlayers and #Players:GetPlayers() > def.maxPlayers then return false, "This server is full." end
+	local limit = (sv.settings and tonumber(sv.settings.limit)) or (def and def.maxPlayers)
+	if limit and #Players:GetPlayers() > limit then return false, "This server is full." end
 	if sv.access == "Locked" then
 		if sv.allowed and sv.allowed[plr.UserId] then return true end
 		return false, "That match is locked."
@@ -216,11 +233,15 @@ end
 function Game.clearRequests() requests = {} end
 Players.PlayerRemoving:Connect(function(p) requests[p] = nil end)
 
+local spawnedThisRound = {}
 function Game.canSpawn(plr)
 	if node:GetAttribute("State") ~= "Round" then return false, "Waiting for the next round" end
+	if Game.server.settings and Game.server.settings.respawns == false and spawnedThisRound[plr] then return false, "No respawns on this server — wait for the next round" end
 	if Game.current then return Game.current:canSpawn(plr) end
 	return true
 end
+function Game.noteSpawn(plr) spawnedThisRound[plr] = true end
+function Game.resetSpawns() spawnedThisRound = {} end
 
 function Game.spawnCFrame(plr)
 	if Game.current then return Game.current:spawnCFrame(plr) end
@@ -237,6 +258,12 @@ end
 
 function Game.respawnDelay()
 	return Game.current and Game.current.def.respawnDelay or 4
+end
+-- the round length this server runs (custom settings may override the mode's)
+function Game.roundLength(def)
+	local s = Game.server.settings
+	if s and s.roundLength ~= nil and Game.server.door == "Warfront" then return tonumber(s.roundLength) or def.roundLength or 0 end
+	return def.roundLength or 0
 end
 
 function Game.teamOf(plr) return Teams.keyOf(plr) end

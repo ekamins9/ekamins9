@@ -81,6 +81,8 @@ function Teams.mark(char, key)
 	if old then old:Destroy() end
 	local torso = char:FindFirstChild("Torso")
 	if not (key and torso) then return end
+	-- armor with color blocks already wears the team color (Dresser): no plate
+	if char:GetAttribute("TeamPainted") == true then return end
 	local def = GameConfig.TEAMS[key]
 	local plate = Instance.new("Part")
 	plate.Name = "Tabard"

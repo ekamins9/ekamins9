@@ -140,6 +140,9 @@ function CombatServer.friendlyMult(a, b)
 	local ta = a and a:GetAttribute("Team")
 	if ta == nil or ta == "" then return 1 end
 	if ta ~= (b and b:GetAttribute("Team")) then return 1 end
+	local node = ReplicatedStorage:FindFirstChild("Round")
+	local override = node and node:GetAttribute("FriendlyFire")
+	if override == false then return 0 end
 	return math.clamp(tonumber(GameConfig.FRIENDLY_FIRE) or 0, 0, 1)
 end
 -- who hurt whom last, for kill credit (Scoreboard reads these on death)
@@ -809,6 +812,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- PARRY: attacker punished, defender gets a riposte; costs a fraction of a block
 				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
+				if _G.StatHook then _G.StatHook(target, "parry") end
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
 				-- streak: parries close together pay out more (1vX)
 				local streak = (now - (target:GetAttribute("LastParryAt") or -1e9) <= cfg.PARRY_STREAK_WINDOW)
@@ -868,6 +872,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				setAttr("ChamberedAt", now)   -- doBlockStart lets us guard at once against the counter
 				drainStamina(target, (info.blockCost or 0) * cfg.CHAMBER_COST_MULT)
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
+				if _G.StatHook then _G.StatHook(target, "chamber") end
 				target:SetAttribute("GuardText", "CHAMBER")
 				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
 				cancelSwing("chambered")

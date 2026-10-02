@@ -29,9 +29,17 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Game/MapLoader.lua` | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript |
 | `ServerScriptService/Game/Teams.lua` | `ServerScriptService` → `Game` → `Teams` | ModuleScript |
 | `ServerScriptService/Game/GameServer.server.lua` | `ServerScriptService` → `Game` → `GameServer` | Script |
-| `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH` | ModuleScript each |
+| `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `Tiltyard`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH`, `Lists` | ModuleScript each |
 | `ServerScriptService/Hub/HubServer.server.lua` | `ServerScriptService` → `Hub` (Folder) → `HubServer` | Script |
+| `ServerScriptService/Hub/Matchmaker.lua` | `ServerScriptService` → `Hub` → `Matchmaker` | ModuleScript |
+| `ServerScriptService/Hub/Cheats.server.lua` | `ServerScriptService` → `Hub` → `Cheats` | Script |
+| `ServerScriptService/Economy/Economy.lua` | `ServerScriptService` → `Economy` (Folder) → `Economy` | ModuleScript |
+| `ServerScriptService/Economy/Stats.lua` | `ServerScriptService` → `Economy` → `Stats` | ModuleScript |
+| `ServerScriptService/Economy/EconomyServer.server.lua` | `ServerScriptService` → `Economy` → `EconomyServer` | Script |
 | `ServerScriptService/Loadout/Profile.lua` | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript |
+| `ReplicatedStorage/Catalog.lua` | `ReplicatedStorage` → `Catalog` | ModuleScript |
+| `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts` (children of the Catalog ModuleScript) | ModuleScript each |
+| `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
@@ -66,40 +74,56 @@ delete it; `Game/GameServer` replaced it.
 menu clones the chosen one into your Backpack when you spawn. Empty StarterPack, or
 you'll spawn with two.
 
-## Classes + the class screen
+## Classes, pieces, the Dresser
 
 `LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they pick a
-**class** and press SPAWN. Classes live in `GameConfig.CLASSES`: each fixes an **armor type**
-(`Knight` = Heavy, `Footman` = Medium, `Vanguard` = Light — a set qualifies when its
-`Config.Type` matches) and which weapons it may carry (`weapons = "any"` or a list of Tool
-names). You save **one loadout per class** (armor set, primary, optional secondary) in the
-Armory; the class screen shows the three cards with their saved loadouts and spawns you.
-Saved loadouts and stats live in `Profile` (DataStore `Profiles_v1`; in Studio without API
-access they last the session). The class screen comes back after the mode's `respawnDelay`.
+**class** and press SPAWN. A class (`GameConfig.CLASSES`) is a **weight** — `Knight` = Heavy,
+`Footman` = Medium, `Vanguard` = Light — and every piece of a weight gives the same stats
+(`Catalog ▸ Weights`: health, speed, footstep weight, protection on covered limbs), so looks
+never buy power. You save **one loadout per class**: a helmet, a top and a bottom of that
+weight, four **color blocks** (Primary / Secondary / Accent / Metal — parts with attribute
+`ColorSlot`; Primary turns team-colored in team modes), a primary weapon with a skin, an
+optional secondary. `Profile.validateLoadout` is the only thing that decides what you may
+wear (owned pieces, unlocked weapons, owned colors / skins); `Dresser.dress` puts it on —
+on the server for real spawns and on the client for every menu mannequin, so what you see is
+what spawns. Profiles are DataStore `Profiles_v2` (v1 saves migrate: armor set → its three
+pieces). **Adding content is config only: see [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
 
 ## Hub menu (M)
 
-`HubMenu` is the front door: press **M** anywhere (it also opens by itself when you arrive in
-the courtyard). Behind it a cinematic camera circles the map whenever you have no body — on
-arrival, after a death or a reset, in a match or the Hub — and the Hub opens the menu by itself
-until you close it.
-Tabs — **PLAY**: every mode from `GameConfig.MODE_ORDER` with live player counts across
-servers and a QUICK PLAY; **SERVERS**: the browser — filters *hide empty*, *custom only*,
-*type of gameplay* (mode category), JOIN — plus friends online in the game, JOIN / INVITE;
-**ARMORY**: per-class loadouts (armor filtered to the class's type, weapons to what it may
-carry), SAVE, SET ACTIVE; **PARTY**: create / invite / accept / leave — a party travels
-together and lands on the same team; **SETTINGS**: camera feel, attack side, keybinds.
-**ENTER COURTYARD** (Hub only) spawns you to walk around; **RETURN TO HUB** (any match)
-teleports you back. **CUSTOM** on a mode card reserves a fresh, named server of that mode for
-you and your party, *LISTED* (public, in the browser under *custom only*) or *FRIENDS ONLY*
-(unlisted; friends of anyone inside can join through JOIN FRIEND). Every teleport puts up the
-**travel screen** (`TravelScreen`): full screen, destination, a sweeping bar and rotating tips,
-from the moment the server says go until the new server has loaded (it is also registered as
-the teleport GUI, so Roblox keeps it up during the load). Joining an existing server takes a
-few seconds; a freshly reserved server has to boot first, which is Roblox's cold-start time. `HubServer` answers all of it (`HubRemote`), heartbeats this server into a
-MemoryStore `Servers` map every 20 s for the browser, and teleports through `TeleportService`
-— both need a published game; in Studio the browser shows only this server and PLAY switches
-this server's mode locally so every mode can still be tested.
+`HubMenu` is the front door: **M** anywhere (Escape belongs to Roblox). It opens by itself
+when you have no body in the Courtyard, over the cinematic camera; in a match M pauses with the
+same menu (RESUME · RETURN TO COURTYARD). The side bar holds the four **doors**
+(`GameConfig.DOORS`): **Courtyard** (the hub, public servers), **Tiltyard** (a friends-only
+reserved server for you and your party), **Warfront** (public battle servers; the mode is voted
+between rounds from `DOORS.Warfront.modes`, then the map), **The Lists** (1v1 · 2v2 · 3v3,
+casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the stage with
+**ready-up** (every member readies, the leader's PLAY only goes when all are ready; a party is
+at most `PARTY_MAX` = 3 and always travels together), the leaderboard (ranked ratings per
+bracket, Warfront kills), daily contracts, friends; on The Lists the bracket / casual-ranked
+card with FIND MATCH and the queue. **APPEARANCE**: hair, beard, face, skin, hair color, title.
+**CLASSES**: the loadout editor with a live mannequin and TEAM PREVIEW. **SHOP**: crates (the
+drum: odds, pity, duplicate refunds), packs, weapons, premium colors; **GET CROWNS** opens the
+Robux bundles and the Crowns → Marks exchange. **SERVERS**: the browser with filters and
+**CREATE CUSTOM** (door, mode, map, player limit, round length, who may join, friendly fire,
+respawns, ground weapons, cheats — a cheat server gives the host `/god /heal /speed /tp
+/bring /give /kick` and pays nobody). **SETTINGS**: camera feel, attack side, keybinds.
+Every teleport puts up the **travel screen** (`TravelScreen`). `HubServer` answers all of it
+(`HubRemote` / `HubEvent`), heartbeats this server into a MemoryStore `Servers` map for the
+browser, and teleports through `TeleportService` — both need a published game; in Studio the
+browser shows only this server and PLAY switches this server's mode locally.
+
+**Money.** Marks are earned (`Catalog ▸ Economy ▸ earn`: round, win, kills, parries, chambers,
+drills, first win of the day; paid by `Scoreboard` at round end through `Economy.award`, with a
+pay card on screen) or exchanged from Crowns; Crowns come from Robux Developer Products
+(`EconomyServer` handles receipts once each). Contracts (`Catalog ▸ Contracts`, three dailies
++ one weekly drawn per date) and weapon unlocks (level or kill counts) come from `Stats`.
+**Ranked.** The Lists queue is a MemoryStore ticket per party and bracket; one server at a time
+pairs tickets within a rating window that widens while you wait, reserves a server, and each
+server teleports its own players with the sides in the teleport data (`Matchmaker`). Matches
+are `Locked` (only those user ids), best of 5, forfeited by a leaver; ratings are Elo
+(`Scoreboard`, `LB_<bracket>` OrderedDataStores), ranks from `Economy.rankTiers`, leaving a
+ranked match early locks the queue for `queueLockMinutes`.
 
 ## Game modes, maps, places (`GameConfig`)
 
@@ -146,45 +170,35 @@ credit and reads TEAMKILLED in the feed.
 ```
 ServerStorage
 └─ Armor (Folder)
-   └─ KnightSkin (Model or Folder — its name is the armor id)
-      ├─ Config            ModuleScript (see below)
+   └─ KnightSkin (Model or Folder — its name is the set id)
+      ├─ Config            ModuleScript (Type = "Heavy" is the only required key)
       ├─ HeadClothing      Model  ┐ each has a Part named Middle, the same size as
       ├─ TorsoClothing     Model  │ the limb it dresses, plus any other parts built
-      ├─ LeftArmClothing   Model  │ around it. Any slot may be missing (a peasant
-      ├─ RightArmClothing  Model  │ has no HeadClothing → bare head, full damage).
+      ├─ LeftArmClothing   Model  │ around it. Any slot may be missing.
+      ├─ RightArmClothing  Model  │
       ├─ LeftLegClothing   Model  │
       └─ RightLegClothing  Model  ┘
 ```
 
-On equip, `Middle` is welded exactly onto the limb and every other part is welded at the
+The server mirrors the folder into `ReplicatedStorage ▸ Cosmetics ▸ Armor` and the catalog
+auto-imports every set as three **pieces** — `<Set>_Helm`, `<Set>_Top`, `<Set>_Legs` — of the
+weight in `Config.Type`. `Config` may also set `Name`, `Pack`, `Rarity`, `PriceMarks`,
+`PriceCrowns`, `Covers` (`{"Hair"}`, `{"Hair", "Face"}`), per-piece names and a description;
+stats never come from a set (`Catalog ▸ Weights`). Color blocks are parts with attribute
+`ColorSlot` = `Primary` / `Secondary` / `Accent` / `Metal`. Full details and every other kind
+of content: [CONTENT_GUIDE.md](CONTENT_GUIDE.md).
+
+On dress, `Middle` is welded exactly onto the limb and every other part is welded at the
 offset it had from `Middle` in the template — build the set on a dummy in place and it
 lands the same way on the player. All pieces end up massless, non-colliding, `Middle`
-invisible, inside `Character.Armor`. Each clothing model gets a `Limb` attribute
-(`"Head"`, `"Left Arm"`, …) so other systems can find it.
-
-`Config` (only list what differs from `Armor.DEFAULTS`):
-
-```lua
-return {
-	Name        = "Knight Skin",
-	Description = "A beautiful shiny suit of armor, worn only by the finest of knights.",
-	Type        = "Heavy",   -- Light | Medium | Heavy (badge + menu order)
-	Health      = 50,        -- added to MaxHealth
-	SpeedMult   = 0.75,      -- WalkSpeed multiplier → SpeedMult_Armor
-	ClunkMult   = 1.8,       -- footstep weight → ClunkMult_Armor
-	Protection  = 0.35,      -- 35% less damage on limbs this set covers
-}
-```
-
-Rules the sets play by:
+invisible, inside `Character.Armor`; each clothing model gets a `Limb` attribute so the
+per-limb protection check finds it. Rules the pieces play by:
 - **Protection is per limb.** A hit only gets the reduction if that limb has a clothing
   model on it. No helmet = full head damage (and heads already take `HEAD_DAMAGE_MULT`).
-  Hits on hats/clothing count as the limb underneath.
-- A face-stab execute still kills through any helmet (it's a finisher, not a damage roll).
+- A face-stab execute still kills through any helmet.
 - Severed limbs take their armor with them; a skewered head takes its helmet onto the blade.
 - Helmets (`HeadClothing`) are hidden in first person like hats.
-- Test dummies wear whatever you're wearing; `/spawn attack Pitchfork PeasantSkin`
-  picks a weapon and set, `/spawn attack Pitchfork none` strips it.
+- Test dummies still wear whole sets: `/spawn attack Pitchfork PeasantSkin`.
 
 ## Making a new weapon
 

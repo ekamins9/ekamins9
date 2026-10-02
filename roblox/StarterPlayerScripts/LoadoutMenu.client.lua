@@ -203,7 +203,7 @@ local function fetchCatalog()
 	for id, c in pairs(cards) do
 		local cls = catalog and catalog.classes and catalog.classes[id]
 		local sm = cls and cls.summary
-		c.sum.Text = sm and (sm.armor .. "\n" .. sm.weapon .. (sm.secondary and ("  +  " .. sm.secondary) or "")) or "—"
+		c.sum.Text = sm and ((sm.helmet or "—") .. "  ·  " .. (sm.top or "—") .. "  ·  " .. (sm.bottom or "—") .. "\n" .. sm.weapon .. (sm.weaponSkin and ("  (" .. sm.weaponSkin .. ")") or "") .. (sm.secondary and ("  +  " .. sm.secondary) or "")) or "—"
 	end
 end
 

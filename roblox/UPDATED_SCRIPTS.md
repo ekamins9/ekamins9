@@ -2,85 +2,84 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Last change:** the `Wall` sound slot now ships SILENT (`rbxassetid://0`) — the metal clang you heard on plain parts was the block sound standing in for it. Wall hits make no sound until you give `Wall` an id (then it is re-pitched per material family) or put per-material Sounds in a `ClangSounds` folder.
-
-**Before that:** clangs by material, and wall hits are silent on the HUD. When the blade meets
-the world the client now reports the material it hit; the server plays a clang for it — from a
-`ClangSounds` folder (`SoundService` or `ReplicatedStorage`) holding a `Sound` per material
-name (`Slate`, `Wood`, `Metal`…) or per family (`Stone`, `Metal`, `Wood`, `Ground`, `Glass`)
-— without the folder the `Wall` sound slot is re-pitched per family so stone rings, metal
-rings higher, wood knocks, dirt thuds. **A material in no family is silent** (no sound, no
-sparks): that's `Plastic` / `SmoothPlastic` and anything not listed in `WALL_FAMILY` at the top of
-CombatServer — add a material there to give it a family. Stone and metal spark, the rest don't.
-No "BLOCKED" (or anything) pops up for a wall or floor hit; the camera still kicks.
-
-| File | Roblox Studio location | Type | What changed |
-|---|---|---|---|
-| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `WALL_FAMILY` / `WALL_FEEL`, `CombatServer.clang`, `Wall` sound slot, `onWall(token, pos, material)` |
-| [ReplicatedStorage/Combat/CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | `ReplicatedStorage` → `Combat` → `CombatClient` | ModuleScript | sends the material with the Wall report; impact kind `wall` |
-| [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript | `wall` impact kick |
-| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | comment only (wall hits never popped here; the client used to send "block") |
-| [README.md](README.md) | — | doc | Sound slots: `Wall`, `ClangSounds` folder |
-
-**Also recent (replace if you haven't):** [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) · [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) (orbit camera, auto-open) · [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) · [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) · [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) · [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua).
-
----
-
-**Previous change (one-place servers):** public servers are the Hub, every match is a
-**reserved server** of the same place that gets its mode from the teleport data and never
-changes it; PLAY joins a match server with room or reserves a fresh one; RETURN TO HUB; CUSTOM
-servers LISTED / FRIENDS ONLY; access levels Public / Friends / Locked enforced on arrival.
-Files: GameConfig, Game, GameServer, HubServer, HubMenu, README (all sent earlier).
+**Last change: the whole menu / cosmetics / economy system.** Doors (Courtyard · Tiltyard ·
+Warfront · The Lists), parties of 3 with **ready-up**, matchmaking queue + ranked ratings,
+appearance (hair / beard / face / skin / hair color / title), weight-based classes with
+helmet / top / bottom pieces and color blocks, weapon unlocks + skins, the shop (crates with
+odds / pity / duplicate refunds, packs, premium colors, GET CROWNS with Robux products and
+Crowns → Marks), custom servers with every setting (cheats → host commands, no rewards), end-of-
+round pay, daily / weekly contracts, mode votes on the Warfront. **Adding content is config
+only — read [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
 
 ## Studio setup (once)
 
-1. Delete `ServerScriptService` → `RoundServer` (replaced by `Game` → `GameServer`).
-2. Create folders `ServerScriptService` → `Game`, `Game` → `Modes`, `ServerScriptService` → `Hub`.
-3. Create `ServerStorage` → `Maps` (Folder). Each map is a **Model** named as in
-   `GameConfig.MODES[...].maps` (`Courtyard`, `Arena`, `Village`, `Bridge` — rename to taste in
-   `GameConfig`). Inside: a `Spawns` folder of parts (attribute `Team` = `A` / `B` for team
-   spawns, none for anyone), an optional `MenuCamera` part (menu camera sits there, looks along
-   its front), for KOTH a `Zones` folder with a `Hill` part, and the geometry. No map yet → the
-   game plays on whatever is in workspace (your current place), so nothing breaks meanwhile.
-4. One place is all you need: an empty world with a skybox. Publish it; matches are reserved
-   servers of it. In Studio PLAY switches the mode locally (no teleports there); custom servers
-   and the browser need the published game with API access.
+1. `ReplicatedStorage` → make a ModuleScript **`Catalog`** (paste `Catalog.lua`), then make
+   these ModuleScripts **as children of it**: `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`,
+   `Body`, `Palette`, `Crates`, `Economy`, `Contracts` (from `ReplicatedStorage/Catalog/*.lua`).
+2. `ReplicatedStorage` → ModuleScript **`Dresser`**.
+3. `ServerScriptService` → Folder **`Economy`** with ModuleScripts `Economy`, `Stats` and Script
+   `EconomyServer`.
+4. `ServerScriptService` → `Hub` → add ModuleScript **`Matchmaker`** and Script **`Cheats`**.
+5. `ServerScriptService` → `Game` → `Modes` → add ModuleScripts **`Lists`** and **`Tiltyard`**.
+6. Replace every file in the table below. Delete `ServerScriptService` → `Loadout` → `Armor` if
+   you like (`Dresser` replaced it; `TestDummies` still works either way).
+7. Give your weapons' blade / grip parts an attribute `SkinPart` = `"Blade"` / `"Grip"` so skins
+   tint them, and put a display copy of each weapon in `ReplicatedStorage` → `Cosmetics` →
+   `Weapons` → `<ToolName>` (a Model with a `Handle`) for the menu mannequin. `Cosmetics` and
+   its folders are created by the server on first run.
+8. For Robux Crowns: make Developer Products and paste the ids into `Catalog ▸ Economy`.
+
+Profiles move to DataStore `Profiles_v2`; old v1 saves migrate on first load.
 
 ## New files
 
 | File | Roblox Studio location | Type | What it is |
 |---|---|---|---|
-| [ReplicatedStorage/GameConfig.lua](ReplicatedStorage/GameConfig.lua) | `ReplicatedStorage` → `GameConfig` | ModuleScript | places, modes + their maps, teams, classes, friendly fire |
-| [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) | `ServerScriptService` → `Game` (Folder) → `Game` | ModuleScript | mode runner + `Game.Mode` base class, Round attributes |
-| [ServerScriptService/Game/MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript | loads `ServerStorage/Maps/<Name>` into `workspace.Map`, spawns, MenuCamera, zones |
-| [ServerScriptService/Game/Teams.lua](ServerScriptService/Game/Teams.lua) | `ServerScriptService` → `Game` → `Teams` | ModuleScript | Crown / Iron, party-aware balance, `Team` attribute + tabard |
-| [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | `ServerScriptService` → `Game` → `GameServer` | Script | the round loop, map vote (`VoteRemote`), intermissions |
-| [ServerScriptService/Game/Modes/Hub.lua](ServerScriptService/Game/Modes/Hub.lua) | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub` | ModuleScript | courtyard: no clock, ends when a mode is picked |
-| [ServerScriptService/Game/Modes/FFA.lua](ServerScriptService/Game/Modes/FFA.lua) | `…` → `Modes` → `FFA` | ModuleScript | free-for-all |
-| [ServerScriptService/Game/Modes/Duel.lua](ServerScriptService/Game/Modes/Duel.lua) | `…` → `Modes` → `Duel` | ModuleScript | duel yard |
-| [ServerScriptService/Game/Modes/TDM.lua](ServerScriptService/Game/Modes/TDM.lua) | `…` → `Modes` → `TDM` | ModuleScript | team deathmatch, tickets |
-| [ServerScriptService/Game/Modes/LTS.lua](ServerScriptService/Game/Modes/LTS.lua) | `…` → `Modes` → `LTS` | ModuleScript | last team standing, one life, rounds to win |
-| [ServerScriptService/Game/Modes/KOTH.lua](ServerScriptService/Game/Modes/KOTH.lua) | `…` → `Modes` → `KOTH` | ModuleScript | king of the hill (`Zones/Hill`) |
-| [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | `ServerScriptService` → `Hub` (Folder) → `HubServer` | Script | browser registry (MemoryStore), friends, party, play/join teleports, class saving |
-| [ServerScriptService/Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript | saved classes + stats per player (DataStore) |
-| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | the menu (M): PLAY · SERVERS · ARMORY · PARTY · SETTINGS, cinematic camera, toasts, invites |
+| [ReplicatedStorage/Catalog.lua](ReplicatedStorage/Catalog.lua) | `ReplicatedStorage` → `Catalog` | ModuleScript | the content catalog (auto-imports armor sets as pieces) |
+| [ReplicatedStorage/Catalog/Weights.lua](ReplicatedStorage/Catalog/Weights.lua) | `Catalog` → `Weights` | ModuleScript | Light / Medium / Heavy stats |
+| [ReplicatedStorage/Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | `Catalog` → `Packs` | ModuleScript | packs |
+| [ReplicatedStorage/Catalog/Pieces.lua](ReplicatedStorage/Catalog/Pieces.lua) | `Catalog` → `Pieces` | ModuleScript | explicit pieces (usually empty) |
+| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `Catalog` → `Weapons` | ModuleScript | weapons + unlocks |
+| [ReplicatedStorage/Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | `Catalog` → `Skins` | ModuleScript | weapon skins |
+| [ReplicatedStorage/Catalog/Body.lua](ReplicatedStorage/Catalog/Body.lua) | `Catalog` → `Body` | ModuleScript | hair, beards, faces, skin, hair colors, titles |
+| [ReplicatedStorage/Catalog/Palette.lua](ReplicatedStorage/Catalog/Palette.lua) | `Catalog` → `Palette` | ModuleScript | armor colors |
+| [ReplicatedStorage/Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | `Catalog` → `Crates` | ModuleScript | crates |
+| [ReplicatedStorage/Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | `Catalog` → `Economy` | ModuleScript | earn table, products, exchange, levels, ranks |
+| [ReplicatedStorage/Catalog/Contracts.lua](ReplicatedStorage/Catalog/Contracts.lua) | `Catalog` → `Contracts` | ModuleScript | contracts |
+| [ReplicatedStorage/Dresser.lua](ReplicatedStorage/Dresser.lua) | `ReplicatedStorage` → `Dresser` | ModuleScript | dresses a character / mannequin: pieces, colors, body, skins |
+| [ServerScriptService/Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) | `ServerScriptService` → `Economy` (Folder) → `Economy` | ModuleScript | awards, buying, crates, exchange, products |
+| [ServerScriptService/Economy/Stats.lua](ServerScriptService/Economy/Stats.lua) | `ServerScriptService` → `Economy` → `Stats` | ModuleScript | counters, contracts, earned skins |
+| [ServerScriptService/Economy/EconomyServer.server.lua](ServerScriptService/Economy/EconomyServer.server.lua) | `ServerScriptService` → `Economy` → `EconomyServer` | Script | Robux receipts (`ProcessReceipt`) |
+| [ServerScriptService/Hub/Matchmaker.lua](ServerScriptService/Hub/Matchmaker.lua) | `ServerScriptService` → `Hub` → `Matchmaker` | ModuleScript | The Lists queue (MemoryStore), pairing, match records |
+| [ServerScriptService/Hub/Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | `ServerScriptService` → `Hub` → `Cheats` | Script | host commands on cheat servers |
+| [ServerScriptService/Game/Modes/Lists.lua](ServerScriptService/Game/Modes/Lists.lua) | `ServerScriptService` → `Game` → `Modes` → `Lists` | ModuleScript | arena matches: sides from the matchmaker, best of 5, forfeit |
+| [ServerScriptService/Game/Modes/Tiltyard.lua](ServerScriptService/Game/Modes/Tiltyard.lua) | `…` → `Modes` → `Tiltyard` | ModuleScript | the training yard |
+| [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | **how to add sets, pieces, packs, weapons, skins, crates, body models, colors, products, contracts, maps** |
 
-## Updated files (replace the whole script)
+## Replaced files
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript | now the **class screen**: three class cards with saved loadouts, SPAWN, MENU / ARMORY / SETTINGS buttons; settings moved to the Hub menu |
-| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | spawns by class through the game mode (may you spawn, where, which team), tabard, spawn protection, intermission pull-out |
-| [StarterPlayerScripts/Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript | mode · map · clock strip, objective line, team scores, map vote buttons, team colours on the board, TEAMKILLED in the feed |
-| [ServerScriptService/Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | `ServerScriptService` → `Scoreboard` | Script | reports deaths to the game mode, profile stats, teamkills get no credit, board resets per round |
-| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | friendly fire (`GameConfig.FRIENDLY_FIRE`) on swings and kicks, TEAMMATE damage text |
-| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | TEAMMATE damage number (orange) |
-| [StarterCharacterScripts/CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript | FOV dial remapped: 70 = the old 110 look, 110 wider still (more FOV + eye pull-back) |
-| [ReplicatedStorage/ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | `ReplicatedStorage` → `ClientSettings` | ModuleScript | FOV slider hint/default for the new range |
-| [README.md](README.md) | — | doc | placement table + new sections: classes, hub menu, modes / maps / places, teams |
+| [ReplicatedStorage/GameConfig.lua](ReplicatedStorage/GameConfig.lua) | `ReplicatedStorage` → `GameConfig` | ModuleScript | `DOORS`, `DOOR_ORDER`, `PARTY_MAX`, modes `Tiltyard` + `Lists`, classes have `weight`, `CUSTOM_DEFAULTS` |
+| [ServerScriptService/Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript | profile v2: wallet, level, appearance, owned, piece loadouts, ratings, crates, contracts; validation |
+| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | mirrors sets into Cosmetics, dresses through `Dresser`, weapon skins, no-respawn servers |
+| [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | `ServerScriptService` → `Hub` → `HubServer` | Script | doors, party **ready-up** (`PartyReady` / `PartyKick`), queue, custom settings, shop ops, leaderboards, profile pushes, match-over send-home |
+| [ServerScriptService/Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | `ServerScriptService` → `Scoreboard` | Script | round-end pay (`Economy.award` → "Rewards"), stats + contracts, ranked Elo + `LB_<bracket>` / `LB_Warfront` boards, ranked queue lock on leave |
+| [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) | `ServerScriptService` → `Game` → `Game` | ModuleScript | server identity: door, bracket, ranked, sides, custom settings; no-respawn rule; `roundLength` |
+| [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | `ServerScriptService` → `Game` → `GameServer` | Script | Warfront **mode vote** (`ModeVote1..3`), `VoteRemote ("mode"|"map", i)`, per-round attributes (`FriendlyFire`, `NoRewards`, `Door`, `Bracket`, `Ranked`, `ServerName`), `MatchOver` |
+| [ServerScriptService/Game/Teams.lua](ServerScriptService/Game/Teams.lua) | `ServerScriptService` → `Game` → `Teams` | ModuleScript | no tabard when the armor is team-painted |
+| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | friendly fire off on custom servers; reports parries / chambers to `_G.StatHook` |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | **the whole new menu** (PLAY · APPEARANCE · CLASSES · SHOP · SERVERS · SETTINGS, mannequins, ready-up, queue, crates drum, custom panel) |
+| [StarterPlayerScripts/Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript | mode vote buttons, bracket / ranked / no-rewards strip, match over |
+| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript | class cards show helm · top · legs · weapon (skin) |
+| [README.md](README.md) | — | doc | classes / pieces / Dresser, the new menu, money + ranked, armor sets, placement table |
 
-## Removed
+## Remotes (for reference)
 
-| File | Roblox Studio location |
-|---|---|
-| `ServerScriptService/RoundServer.server.lua` | `ServerScriptService` → `RoundServer` — **delete it** |
+`HubRemote` ops: `State`, `Servers`, `Friends`, `Leaderboard(which)`, `Play(door, {bracket, ranked, mode})`,
+`Hub`, `Custom(settings)`, `Join(jobId)`, `JoinFriend(userId)`, `QueueCancel`, `PartyCreate`,
+`PartyInvite(id)`, `PartyAccept`, `PartyLeave`, `PartyReady(bool)`, `PartyKick(id)`,
+`SaveClass(classId, loadout)`, `SetActive(classId)`, `SaveAppearance(app)`,
+`Buy(kind, id, currency)`, `OpenCrate(crateId)`, `Exchange(tier)`, `BuyCrowns(index)`.
+`HubEvent` to the client: `Party`, `Toast`, `Invite`, `Profile`, `Travel`, `TravelFailed`,
+`MatchFound`, `Rewards`.

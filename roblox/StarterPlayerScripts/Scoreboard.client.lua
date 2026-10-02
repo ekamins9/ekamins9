@@ -216,10 +216,11 @@ banner.Visible = false
 local voteBox = Instance.new("Frame")
 voteBox.BackgroundTransparency = 1
 voteBox.Size = UDim2.new(1, 0, 0, 62)
-voteBox.LayoutOrder = -2
+voteBox.LayoutOrder = -1
 voteBox.Visible = false
 voteBox.Parent = board
 local voteTitle = label(voteBox, "VOTE FOR THE NEXT MAP", 12, FONT, COL_DIM)
+voteTitle.Name = "VoteTitle"
 voteTitle.Size = UDim2.new(1, 0, 0, 16)
 voteTitle.TextXAlignment = Enum.TextXAlignment.Center
 local voteRow = Instance.new("Frame")
@@ -249,10 +250,53 @@ for i = 1, 3 do
 	b.Activated:Connect(function()
 		if voteRemote and roundNode:GetAttribute("Vote" .. i) ~= "" then
 			myVote = i
-			voteRemote:FireServer(i)
+			voteRemote:FireServer("map", i)
 		end
 	end)
 	voteBtns[i] = b
+end
+
+-- Warfront: the next MODE is voted too (ModeVote1..3), above the map vote
+local modeBox = Instance.new("Frame")
+modeBox.BackgroundTransparency = 1
+modeBox.Size = UDim2.new(1, 0, 0, 62)
+modeBox.LayoutOrder = -2
+modeBox.Visible = false
+modeBox.Parent = board
+local modeTitle = label(modeBox, "VOTE FOR THE NEXT MODE", 12, FONT, COL_DIM)
+modeTitle.Size = UDim2.new(1, 0, 0, 16)
+modeTitle.TextXAlignment = Enum.TextXAlignment.Center
+local modeRow = Instance.new("Frame")
+modeRow.BackgroundTransparency = 1
+modeRow.Position = UDim2.new(0, 0, 0, 20)
+modeRow.Size = UDim2.new(1, 0, 0, 40)
+modeRow.Parent = modeBox
+local mrl = Instance.new("UIListLayout", modeRow)
+mrl.FillDirection = Enum.FillDirection.Horizontal
+mrl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+mrl.Padding = UDim.new(0, 8)
+mrl.SortOrder = Enum.SortOrder.LayoutOrder
+local modeBtns = {}
+local myModeVote = nil
+for i = 1, 3 do
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0.33, -8, 1, 0)
+	b.LayoutOrder = i
+	b.BackgroundColor3 = COL_ROW
+	b.BorderSizePixel = 0
+	b.Font = FONT
+	b.TextSize = 14
+	b.TextColor3 = COL_TEXT
+	b.Text = ""
+	b.Parent = modeRow
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+	b.Activated:Connect(function()
+		if voteRemote and roundNode:GetAttribute("ModeVote" .. i) ~= "" then
+			myModeVote = i
+			voteRemote:FireServer("mode", i)
+		end
+	end)
+	modeBtns[i] = b
 end
 
 local COLS = {{"PLAYER", 0.52, Enum.TextXAlignment.Left}, {"KILLS", 0.16, Enum.TextXAlignment.Right},
@@ -371,10 +415,31 @@ local function refreshRound()
 			end
 		end
 		voteBox.Visible = any and voteRemote ~= nil
+		local anyMode = false
+		for i = 1, 3 do
+			local name = roundNode:GetAttribute("ModeVote" .. i) or ""
+			local n = roundNode:GetAttribute("ModeVotes" .. i) or 0
+			modeBtns[i].Visible = name ~= ""
+			if name ~= "" then
+				anyMode = true
+				modeBtns[i].Text = string.format("%s   %d", name, n)
+				modeBtns[i].BackgroundColor3 = myModeVote == i and COL_ROW_ON or COL_ROW
+			end
+		end
+		modeBox.Visible = anyMode and voteRemote ~= nil
+		if roundNode:GetAttribute("MatchOver") == true then
+			voteBox.Visible = false; modeBox.Visible = false
+			timer.Text = "MATCH OVER  ·  back to the Courtyard"
+		end
 	else
 		myVote = nil
-		local clock = (roundNode:GetAttribute("Mode") == "Hub") and "" or string.format("   %d:%02d", m, sec)
-		timer.Text = string.format("%s%s%s", string.upper(modeName), map ~= "" and ("  ·  " .. string.upper(map)) or "", clock)
+		myModeVote = nil
+		local clock = (roundNode:GetAttribute("Mode") == "Hub" or roundNode:GetAttribute("Mode") == "Tiltyard") and "" or string.format("   %d:%02d", m, sec)
+		local bracket = roundNode:GetAttribute("Bracket") or ""
+		local tag = bracket ~= "" and ("  ·  " .. bracket .. (roundNode:GetAttribute("Ranked") == true and " RANKED" or "")) or ""
+		local server = roundNode:GetAttribute("ServerName") or ""
+		if roundNode:GetAttribute("NoRewards") == true then tag = tag .. "  ·  NO REWARDS" end
+		timer.Text = string.format("%s%s%s%s%s", server ~= "" and (string.upper(server) .. "  ·  ") or "", string.upper(modeName), map ~= "" and ("  ·  " .. string.upper(map)) or "", tag, clock)
 		timer.TextColor3 = COL_TEXT
 		objective.Text = obj
 		banner.Visible = false
