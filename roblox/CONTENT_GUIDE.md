@@ -6,7 +6,7 @@ You add content by editing those modules and dropping models in; no script chang
 
 ```
 ReplicatedStorage
-├─ Catalog               ModuleScript  (the aggregator — never edit)
+├─ Catalog               ModuleScript  (the aggregator — never edit; `Catalog/init.lua` in the repo)
 │  ├─ Weights            Light / Medium / Heavy stats (the ONLY place armor stats live)
 │  ├─ Packs              named releases of pieces (starter packs are free)
 │  ├─ Pieces             helmets / tops / bottoms — usually empty: sets auto-import

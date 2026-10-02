@@ -2,6 +2,8 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
+**Now synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md). The tables below still say where each file lives.
+
 **Last change: the whole menu / cosmetics / economy system.** Doors (Courtyard · Tiltyard ·
 Warfront · The Lists), parties of 3 with **ready-up**, matchmaking queue + ranked ratings,
 appearance (hair / beard / face / skin / hair color / title), weight-based classes with
@@ -13,7 +15,7 @@ only — read [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
 
 ## Studio setup (once)
 
-1. `ReplicatedStorage` → make a ModuleScript **`Catalog`** (paste `Catalog.lua`), then make
+1. `ReplicatedStorage` → make a ModuleScript **`Catalog`** (paste `Catalog/init.lua`), then make
    these ModuleScripts **as children of it**: `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`,
    `Body`, `Palette`, `Crates`, `Economy`, `Contracts` (from `ReplicatedStorage/Catalog/*.lua`).
 2. `ReplicatedStorage` → ModuleScript **`Dresser`**.
@@ -35,7 +37,7 @@ Profiles move to DataStore `Profiles_v2`; old v1 saves migrate on first load.
 
 | File | Roblox Studio location | Type | What it is |
 |---|---|---|---|
-| [ReplicatedStorage/Catalog.lua](ReplicatedStorage/Catalog.lua) | `ReplicatedStorage` → `Catalog` | ModuleScript | the content catalog (auto-imports armor sets as pieces) |
+| [ReplicatedStorage/Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | `ReplicatedStorage` → `Catalog` | ModuleScript | the content catalog (auto-imports armor sets as pieces) |
 | [ReplicatedStorage/Catalog/Weights.lua](ReplicatedStorage/Catalog/Weights.lua) | `Catalog` → `Weights` | ModuleScript | Light / Medium / Heavy stats |
 | [ReplicatedStorage/Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | `Catalog` → `Packs` | ModuleScript | packs |
 | [ReplicatedStorage/Catalog/Pieces.lua](ReplicatedStorage/Catalog/Pieces.lua) | `Catalog` → `Pieces` | ModuleScript | explicit pieces (usually empty) |

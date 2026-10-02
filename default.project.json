@@ -1,0 +1,49 @@
+{
+  "name": "R6Mordhau",
+  "globIgnorePaths": ["**/*.md", "**/.gitkeep"],
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "$path": "roblox/ReplicatedStorage"
+    },
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "$path": "roblox/ServerScriptService"
+    },
+
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "$ignoreUnknownInstances": true,
+      "Armor": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "$path": "roblox/ServerStorage/Armor"
+      },
+      "Weapons": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "$path": "roblox/Tools"
+      }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "$path": "roblox/StarterPlayerScripts"
+      },
+      "StarterCharacterScripts": {
+        "$className": "StarterCharacterScripts",
+        "$ignoreUnknownInstances": true,
+        "$path": "roblox/StarterCharacterScripts"
+      }
+    }
+  }
+}
