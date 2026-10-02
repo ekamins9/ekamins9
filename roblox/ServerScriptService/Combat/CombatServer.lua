@@ -478,7 +478,9 @@ CombatServer.DEFAULTS = {
 	PARRY_CHAIN_WINDOW= 1.5,   -- after a SUCCESSFUL parry you can re-guard at once with a fresh parry
 	                           --    window (no BLOCK_COOLDOWN, no PARRY_RETRY) for this long; a missed
 	                           --    parry keeps the normal cooldown
-	PARRY_PUNISH_STUN = 1.50,
+	PARRY_PUNISH_STUN = 0,     -- being parried does NOT stun you: your swing dies (RECOIL) and you may
+	                           --    guard at once, so you can parry the riposte. The parrier's edge is
+	                           --    the riposte itself (quicker windup) plus their stamina refund.
 	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
 	RIPOSTE_SPEED     = 1.6,   --    itself plays at normal speed — there's still a windup, just a quick one)
 	FEINT_COST        = 12,
@@ -822,8 +824,9 @@ function CombatServer.attach(Tool, weaponConfig)
 				return
 			end
 			if (target:GetAttribute("ParryUntil") or 0) > now then
-				-- PARRY: attacker punished, defender gets a riposte; costs a fraction of a block
-				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
+				-- PARRY: the swing dies, the defender gets a riposte; costs a fraction of a block.
+				-- No stun by default (PARRY_PUNISH_STUN 0): the attacker may guard at once
+				if cfg.PARRY_PUNISH_STUN > 0 then setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN) end
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
 				statHook(target, "parry")
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
@@ -849,7 +852,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				sfx("Block", part)
 				Injury.sparks(hitPos, 1)
 				-- the blade stops dead on a guard, same as a parry — the parry's
-				-- extra punish is the attacker's stun and the defender's riposte
+				-- extra reward is the defender's riposte and refund
 				cancelSwing("blocked")
 				if m <= 0 then
 					target:SetAttribute("Blocking", false)
