@@ -103,7 +103,8 @@ casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the 
 up front in the middle, teammates and open slots (shadows) around you; the leader clicks a
 shadow to invite and the ✕ over a teammate to remove them — with **ready-up** (every member
 readies, the leader's PLAY only goes when all are ready; a party is at most `PARTY_MAX` = 3 and
-always travels together). In a courtyard, the Courtyard card's button spawns you instead of
+always travels together; friends in other servers can be invited too — the invite crosses
+servers by MessagingService and accepting teleports them to the leader). In a courtyard, the Courtyard card's button spawns you instead of
 travelling, the leaderboard (ranked ratings per
 bracket, Warfront kills), daily contracts, friends; on The Lists the bracket / casual-ranked
 card with FIND MATCH and the queue. **APPEARANCE**: hair, beard, face, skin, hair color, title.

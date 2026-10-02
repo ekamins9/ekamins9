@@ -561,25 +561,27 @@ local function roundState() return roundNode:GetAttribute("State") or "" end
 -- ownership, mirroring Profile.has on the server
 local function owns(kind, id)
 	local p = state.profile
-	if kind == "pieces" then local pc = Catalog.PIECE[id]; if pc and Catalog.isFree(pc) then return true end end
-	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
-	if kind == "weapons" then
-		local w = Catalog.WEAPON[id]
-		if w and w.unlock.free then return true end
-		if w and w.unlock.level and p and (p.level or 1) >= w.unlock.level then return true end
-		if w and w.unlock.kills and p and ((p.stats or {})["kill_" .. (w.unlock.family or "")] or 0) >= w.unlock.kills then return true end
+	if kind == "pieces" then
+		local pc = Catalog.PIECE[id]
+		if pc and Catalog.isFree(pc) then return true end
+		if pc and pc.unlock and Catalog.unlocked(pc.unlock, p) then return true end
 	end
+	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
+	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
 	if kind == "beards" then for _, b in ipairs(Catalog.BODY.beards) do if b.id == id and not b.crowns then return true end end end
-	if kind == "titles" then for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end end
+	if kind == "titles" then
+		for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end
+		for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do if t.title == id and Catalog.unlocked(t.unlock, p) then return true end end
+	end
 	return p ~= nil and p.owned ~= nil and p.owned[kind] ~= nil and p.owned[kind][id] == true
 end
-local function unlockText(w)
-	if w.unlock.free then return "free" end
-	if w.unlock.level then return "level " .. w.unlock.level end
-	if w.unlock.kills then return string.format("%d kills with %s weapons", w.unlock.kills, string.lower(w.unlock.family or "")) end
-	return "?"
+local function unlockText(w) return Catalog.unlockText(w.unlock) end
+-- "37 / 100" for an unlock, or "" when it has no counter
+local function progressText(u)
+	local have, need = Catalog.unlockProgress(u, state.profile)
+	return need and string.format("%s / %s", fmt(have), fmt(need)) or ""
 end
 local function rankOf(r)
 	local tiers = ECON.rankTiers or {"Peasant", "Levy", "Squire", "Knight", "Banneret", "Champion"}
@@ -946,7 +948,7 @@ local function inviteModal()
 				local inParty = false
 				if state.party then for _, m in ipairs(state.party.members) do if m.id == other.UserId then inParty = true end end end
 				row(box, other.DisplayName, inParty and "in your party" or "INVITE", false, (not inParty) and function()
-					local r = call("PartyInvite", other.UserId)
+					local r = call("PartyInvite", other.UserId, other.DisplayName)
 					toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
 					if r.party then state.party = r.party end
 					closeModal(); rerender()
@@ -954,14 +956,44 @@ local function inviteModal()
 			end
 		end
 		if n == 0 then dim(box, "Nobody else is in this server yet.") end
+		local away = {}
+		for _, fd in ipairs(state.friends) do
+			local inParty = false
+			if state.party then for _, m in ipairs(state.party.members) do if m.id == fd.id then inParty = true end end end
+			if fd.inGame and not fd.here and not inParty then table.insert(away, fd) end
+		end
+		if #away > 0 then
+			heading(box, "FRIENDS IN OTHER SERVERS")
+			dim(box, "They get the invite there; accepting brings them to this server.")
+			for _, fd in ipairs(away) do
+				row(box, fd.name, "INVITE", false, function()
+					local r = call("PartyInvite", fd.id, fd.name)
+					toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
+					if r.party then state.party = r.party end
+					closeModal(); rerender()
+				end, COL_GOOD)
+			end
+		end
 	end)
 end
 
+local function partySize() return state.party and state.party.members and #state.party.members or 1 end
 local function findMatch()
 	if state.queue then return end
+	local size = tonumber(ui.bracket:match("^(%d)")) or 1
+	local n = partySize()
+	if n > size then
+		modal("PARTY TOO BIG FOR " .. ui.bracket, string.format("%s takes a party of at most %d and yours is %d. Remove someone (the ✕ over their head on PLAY) or pick a bigger bracket.", ui.bracket, size, n),
+			{{"PICK " .. (n <= 2 and "2v2" or "3v3"), COL_CARD_ON, function() ui.bracket = n <= 2 and "2v2" or "3v3"; closeModal(); render.PLAY() end}})
+		return
+	end
 	local r = call("Play", "Lists", {bracket = ui.bracket, ranked = ui.ranked})
-	toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
-	if r.ok then state.queue = {bracket = ui.bracket, ranked = ui.ranked, since = os.clock(), waiting = 0, window = 100} end
+	if r.ok then
+		toast(r.msg or "", COL_GOOD)
+		state.queue = {bracket = ui.bracket, ranked = ui.ranked, since = os.clock(), waiting = 0, window = 100}
+	else
+		modal("CAN'T QUEUE", r.msg or "no answer", nil)
+	end
 	rerender()
 end
 local function cancelQueue()
@@ -1170,9 +1202,14 @@ do
 				n += 1
 				local inParty = false
 				if state.party then for _, m in ipairs(state.party.members) do if m.id == fd.id then inParty = true end end end
-				row(fr, fd.name, inParty and "in party" or (fd.here and "INVITE" or (fd.inGame and "JOIN" or "online")), false,
-					(not inParty and fd.here) and function() local r = call("PartyInvite", fd.id); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.party then state.party = r.party end end
-					or ((not inParty and fd.inGame) and function() local r = call("JoinFriend", fd.id); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD) end or nil),
+				row(fr, fd.name, inParty and "in party" or (fd.here and "INVITE" or (fd.inGame and "INVITE · JOIN" or "online")), false,
+					(not inParty and fd.here) and function() local r = call("PartyInvite", fd.id, fd.name); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.party then state.party = r.party end end
+					or ((not inParty and fd.inGame) and function()
+						modal(fd.name, "In another server of this game. Invite them to your party (they travel here when they accept), or go to them.", {
+							{"INVITE TO MY PARTY", COL_CARD_ON, function() local r = call("PartyInvite", fd.id, fd.name); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.party then state.party = r.party end; closeModal() end},
+							{"JOIN THEM", COL_GO_ON, function() local r = call("JoinFriend", fd.id); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); closeModal() end},
+						})
+					end or nil),
 					(fd.here or fd.inGame) and COL_GOOD or COL_DIM)
 			end
 			if n == 0 then dim(fr, "No friends online in the game.") end
@@ -1272,7 +1309,17 @@ do
 		local titles = {}
 		for _, t in ipairs(Catalog.BODY.titles) do titles[t] = true end
 		if state.profile and state.profile.owned and state.profile.owned.titles then for t in pairs(state.profile.owned.titles) do titles[t] = true end end
-		for t in pairs(titles) do row(p, t, "", a.title == t, function() set("title", t) end) end
+		local ordered = {}
+		for t in pairs(titles) do table.insert(ordered, t) end
+		table.sort(ordered)
+		for _, t in ipairs(ordered) do row(p, t, "", a.title == t, function() set("title", t) end) end
+		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do
+			if owns("titles", et.title) then
+				if not titles[et.title] then row(p, et.title, "earned", a.title == et.title, function() set("title", et.title) end, COL_GOOD) end
+			else
+				row(p, "🔒 " .. et.title, Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock), false, nil, COL_DIM)
+			end
+		end
 		renderStage()
 		renderSide()
 	end
@@ -1334,6 +1381,10 @@ do
 	end
 	local function buyPiece(pc)
 		local opts = {}
+		if pc.unlock then
+			modal(pc.name, (pc.description or "") .. string.format("\n%s  ·  %s\nEarned: %s  ·  %s", pc.weight, pc.rarity or "Common", Catalog.unlockText(pc.unlock), progressText(pc.unlock)), nil)
+			return
+		end
 		if (pc.marks or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL_CARD_ON, function()
 			local r = call("Buy", "piece", pc.id, "marks"); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.profile then state.profile = r.profile; refreshWallet() end; closeModal(); render.CLASSES() end}) end
 		if (pc.crowns or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function()
@@ -1365,7 +1416,8 @@ do
 				local have = owns("pieces", pc.id)
 				local pk = Catalog.PACKS[pc.pack]
 				local rightText = have and ((slot == "helmet" and (#(pc.covers or {}) > 0 and ("covers " .. string.lower(table.concat(pc.covers, "+"))) or "open")) or (pk and pk.name or "")) or
-					((pc.marks or 0) > 0 and (fmt(pc.marks) .. " M") or "") .. ((pc.crowns or 0) > 0 and ("  " .. fmt(pc.crowns) .. " C") or "")
+					(pc.unlock and ("🔒 " .. Catalog.unlockText(pc.unlock)) or
+					((pc.marks or 0) > 0 and (fmt(pc.marks) .. " M") or "") .. ((pc.crowns or 0) > 0 and ("  " .. fmt(pc.crowns) .. " C") or ""))
 				row(p, pc.name, rightText, lo[slot] == pc.id, function() if have then choose(slot, pc.id) else buyPiece(pc) end end, have and COL_DIM or COL_MARKS)
 			end
 			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet: drop a set with Config.Type = \"" .. cls.weight .. "\" into ServerStorage ▸ Armor.") end
@@ -1590,14 +1642,17 @@ do
 			local pieces = {}
 			local all = true
 			for _, pc in ipairs(Catalog.PIECES) do if pc.pack == k then table.insert(pieces, pc); if not owns("pieces", pc.id) then all = false end end end
+			local skins = {}
+			for _, sk in ipairs(Catalog.SKINS) do if sk.pack == k then table.insert(skins, sk); if not owns("skins", sk.id) then all = false end end end
 			local b = button(grid, "", 14, pk.color or COL_CARD)
 			b.LayoutOrder = i
 			b.AutoButtonColor = false
 			local n = label(b, pk.name, 16, FONT_BLACK, COL_TEXT); n.Position = UDim2.new(0, 10, 0, 8); n.Size = UDim2.new(1, -20, 0, 40); n.TextYAlignment = Enum.TextYAlignment.Top
-			local s = label(b, (pk.weight or "") .. (pk.featured and "  ·  featured" or "") .. (all and "  ·  owned" or "") .. string.format("  ·  %d piece%s", #pieces, #pieces == 1 and "" or "s"), 11, FONT, COL_TEXT); s.Position = UDim2.new(0, 10, 1, -24); s.Size = UDim2.new(1, -20, 0, 16)
+			local s = label(b, (pk.weight or "") .. (pk.featured and "  ·  featured" or "") .. (all and "  ·  owned" or "") .. string.format("  ·  %d piece%s", #pieces, #pieces == 1 and "" or "s") .. (#skins > 0 and string.format("  ·  %d skin%s", #skins, #skins == 1 and "" or "s") or ""), 11, FONT, COL_TEXT); s.Position = UDim2.new(0, 10, 1, -24); s.Size = UDim2.new(1, -20, 0, 16)
 			b.Activated:Connect(function()
 				local m, c = 0, 0
 				for _, pc in ipairs(pieces) do if not owns("pieces", pc.id) then m += pc.marks or 0; c += pc.crowns or 0 end end
+				for _, sk in ipairs(skins) do if not owns("skins", sk.id) then m += sk.marks or 0; c += sk.crowns or 0 end end
 				local disc = 1 - (pk.bundle or 0)
 				modal(pk.name, string.format("%s pack. Buy pieces one by one, or the rest of the pack at %d%% off.", pk.weight or "", math.floor((pk.bundle or 0) * 100 + 0.5)), (not all) and {
 					m > 0 and {"ALL  ·  " .. fmt(math.floor(m * disc + 0.5)) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "pack", k, "marks")) end} or nil,
@@ -1611,10 +1666,42 @@ do
 								(pc.crowns or 0) > 0 and {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns")) end} or nil})
 						end or nil, have and COL_GOOD or COL_MARKS)
 					end
-					if #pieces == 0 then dim(box, "No pieces name this pack yet.") end
+					for _, sk in ipairs(skins) do
+						local have = owns("skins", sk.id)
+						row(box, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "owned" or (fmt(sk.marks or 0) .. " M  ·  " .. fmt(sk.crowns or 0) .. " C"), false, (not have) and function()
+							modal(sk.name, sk.rarity or "", {
+								(sk.marks or 0) > 0 and {"BUY  ·  " .. fmt(sk.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "skin", sk.id, "marks")) end} or nil,
+								(sk.crowns or 0) > 0 and {"BUY  ·  " .. fmt(sk.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "skin", sk.id, "crowns")) end} or nil})
+						end or nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_MARKS))
+					end
+					if #pieces == 0 and #skins == 0 then dim(box, "Nothing names this pack yet.") end
 				end)
 			end)
 		end
+		-- earned in battle: pieces, skins and titles with a kill / win / level requirement
+		local e = panel(list, "EARNED IN BATTLE", true)
+		local any = false
+		for _, pc in ipairs(Catalog.PIECES) do
+			if pc.unlock then
+				any = true
+				local have = owns("pieces", pc.id)
+				row(e, pc.name .. "  ·  " .. pc.weight .. " " .. pc.slot, have and "earned ✓" or (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)), false, nil, have and COL_GOOD or COL_DIM)
+			end
+		end
+		for _, sk in ipairs(Catalog.SKINS) do
+			if sk.crate == "earned" then
+				any = true
+				local have = owns("skins", sk.id)
+				local u = {kills = sk.kills, weapon = sk.weapon}
+				row(e, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "earned ✓" or (Catalog.unlockText(u) .. "  ·  " .. progressText(u)), false, nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_DIM))
+			end
+		end
+		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do
+			any = true
+			local have = owns("titles", et.title)
+			row(e, "Title: " .. et.title, have and "earned ✓" or (Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock)), false, nil, have and COL_GOOD or COL_DIM)
+		end
+		if not any then dim(e, "Nothing to earn yet.") end
 	end
 
 	local function weapons()
@@ -2259,7 +2346,7 @@ end)
 --  SERVER EVENTS
 --------------------------------------------------------------------
 local pendingInvite = nil
-hubEvent.OnClientEvent:Connect(function(what, a, b)
+hubEvent.OnClientEvent:Connect(function(what, a, b, c)
 	if what == "Toast" then
 		toast(a)
 	elseif what == "Party" then
@@ -2274,7 +2361,7 @@ hubEvent.OnClientEvent:Connect(function(what, a, b)
 		end
 	elseif what == "Invite" then
 		pendingInvite = b
-		inviteText.Text = tostring(a) .. " invited you to their party"
+		inviteText.Text = tostring(a) .. " invited you to their party" .. ((type(c) == "table" and c.remote) and "  ·  another server: accepting travels there" or "")
 		inviteCard.Visible = true
 		task.delay(30, function() if pendingInvite == b then pendingInvite = nil; inviteCard.Visible = false end end)
 	elseif what == "Profile" then

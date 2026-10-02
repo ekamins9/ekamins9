@@ -11,6 +11,7 @@
        Catalog.pieceModels(id)               {ModelName = Model} to weld on (see Dresser)
        Catalog.skinModel(skinId) / weaponModel(weaponId) / bodyModel(kind, id)
        Catalog.rig()                         the preview rig template (Cosmetics.Rig) or nil
+       Catalog.unlocked(unlock, profile) / unlockProgress / unlockText   kill / level / win unlocks
 
      ARMOR SETS ARE AUTO-IMPORTED: every set folder in Cosmetics ▸ Armor (the
      server mirrors ServerStorage ▸ Armor there) becomes three pieces —
@@ -132,7 +133,50 @@ Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name]
 --------------------------------------------------------------------
 --  QUERIES
 --------------------------------------------------------------------
-function Catalog.isFree(piece) return (piece.marks or 0) == 0 and (piece.crowns or 0) == 0 end
+-- free = costs nothing and is not earned (earned pieces carry an `unlock`)
+function Catalog.isFree(piece) return (piece.marks or 0) == 0 and (piece.crowns or 0) == 0 and piece.unlock == nil end
+
+--------------------------------------------------------------------
+--  UNLOCKS — shared by weapons, earned pieces and earned titles
+--    {free = true} | {level = n} | {kills = n[, family = F | weapon = W]}
+--    | {wins = n[, bracket = "1v1"]} | {stat = "parry", n = 500}
+--  p is a profile (server) or its summary (client): level + stats
+--------------------------------------------------------------------
+local function unlockKey(u)
+	if u.kills then
+		if u.weapon then return nil, u.kills end
+		return u.family and ("kill_" .. u.family) or "kill", u.kills
+	elseif u.wins then return u.bracket and ("win_" .. u.bracket) or "win", u.wins
+	elseif u.stat then return u.stat, u.n or 1 end
+	return nil, nil
+end
+-- have, need (need = nil for free / level unlocks)
+function Catalog.unlockProgress(u, p)
+	if not u or u.free then return 1, nil end
+	local stats = p and p.stats or {}
+	if u.level then return p and p.level or 1, u.level end
+	local key, need = unlockKey(u)
+	if u.kills and u.weapon then return (stats.byWeapon or {})[u.weapon] or 0, need end
+	return key and (stats[key] or 0) or 0, need
+end
+function Catalog.unlocked(u, p)
+	if not u or u.free then return true end
+	if not p then return false end
+	local have, need = Catalog.unlockProgress(u, p)
+	return need ~= nil and have >= need
+end
+local FAMILY_WORD = {OneHanded = "one-handed", TwoHanded = "two-handed", Polearm = "polearm"}
+function Catalog.unlockText(u)
+	if not u or u.free then return "free" end
+	if u.level then return "level " .. u.level end
+	if u.kills then
+		if u.weapon then return string.format("%d kills with the %s", u.kills, Catalog.WEAPON and Catalog.WEAPON[u.weapon] and Catalog.WEAPON[u.weapon].name or u.weapon) end
+		return string.format("%d %skills", u.kills, u.family and (FAMILY_WORD[u.family] or string.lower(u.family)) .. " " or "")
+	end
+	if u.wins then return string.format("%d %swins", u.wins, u.bracket and (u.bracket .. " ") or "round ") end
+	if u.stat then return string.format("%d × %s", u.n or 1, u.stat) end
+	return "?"
+end
 
 function Catalog.piecesFor(slot, weight)
 	local out = {}
@@ -217,8 +261,11 @@ if RunService:IsServer() then
 			if not Catalog.WEAPON[s.weapon] then warn("[Catalog] skin", s.id, "names unknown weapon", s.weapon) end
 			if s.crate and s.crate ~= "earned" and not Catalog.CRATES[s.crate] then warn("[Catalog] skin", s.id, "names unknown crate", s.crate) end
 		end
-		for _, w in ipairs(Catalog.WEAPONS) do
-			if w.unlock and w.unlock.kills and not w.unlock.family then warn("[Catalog] weapon", w.id, "kills unlock needs a family") end
+		for _, p in ipairs(Catalog.PIECES) do
+			if p.unlock and ((p.marks or 0) > 0 or (p.crowns or 0) > 0) then warn("[Catalog] piece", p.id, "is both earned and priced; the unlock wins") end
+		end
+		for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do
+			if not t.title or not t.unlock then warn("[Catalog] earned title needs title + unlock") end
 		end
 	end)
 end

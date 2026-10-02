@@ -122,18 +122,20 @@ Profile.save = save
 --------------------------------------------------------------------
 function Profile.has(plr, kind, id)
 	local p = Profile.get(plr)
-	if kind == "pieces" then local pc = Catalog.PIECE[id]; if pc and Catalog.isFree(pc) then return true end end
-	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
-	if kind == "weapons" then
-		local w = Catalog.WEAPON[id]
-		if w and w.unlock.free then return true end
-		if w and w.unlock.level and p.level >= w.unlock.level then return true end
-		if w and w.unlock.kills and (p.stats["kill_" .. (w.unlock.family or "")] or 0) >= w.unlock.kills then return true end
+	if kind == "pieces" then
+		local pc = Catalog.PIECE[id]
+		if pc and Catalog.isFree(pc) then return true end
+		if pc and pc.unlock and Catalog.unlocked(pc.unlock, p) then return true end
 	end
+	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
+	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
 	if kind == "beards" then for _, b in ipairs(Catalog.BODY.beards) do if b.id == id and not b.crowns then return true end end end
-	if kind == "titles" then for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end end
+	if kind == "titles" then
+		for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end
+		for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do if t.title == id and Catalog.unlocked(t.unlock, p) then return true end end
+	end
 	return p.owned[kind] and p.owned[kind][id] == true
 end
 function Profile.grant(plr, kind, id)

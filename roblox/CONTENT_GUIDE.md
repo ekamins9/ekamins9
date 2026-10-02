@@ -79,6 +79,12 @@ PIECES = {
 An entry with the same id as an auto piece (e.g. `KnightSkin_Helm`) overrides that
 piece's fields — the way to reprice one piece of a set.
 
+**Earned pieces.** Give the entry `unlock` instead of a price and put it in pack `"Earned"`:
+`{level = 10}`, `{kills = 100}`, `{kills = 100, family = "Polearm"}`, `{kills = 50, weapon = "Hammer"}`,
+`{wins = 25}`, `{wins = 10, bracket = "1v1"}` or `{stat = "parry", n = 200}`. It is never sold;
+the shop's EARNED IN BATTLE panel shows the progress and the CLASSES list shows a 🔒 with the
+requirement until it is met.
+
 ## 3. A pack
 
 A pack is just a key in `Catalog ▸ Packs`; pieces (or a set's `Config.Pack`) name it:
@@ -117,7 +123,8 @@ Add a line to `Catalog ▸ Skins` (every weapon already has a free "Default"):
 ```
 
 - `crate = "Bladesmith"` → rolled from that crate · `crate = "earned", kills = 100` → earned by
-  kills with that weapon · no `crate` + `marks` / `crowns` → sold in the shop.
+  kills with that weapon · no `crate` + `marks` / `crowns` → sold in the shop · add
+  `pack = "IronCrow"` to sell it inside that pack (counted in the bundle price).
 - **Tints:** parts in the Tool with attribute `SkinPart` = `"Blade"` or `"Grip"` are recolored
   with `blade` / `grip`. Put that attribute on your weapons' parts once.
 - **Models:** for a real re-model, put a Model in `Cosmetics ▸ Skins ▸ <Weapon> ▸ <SkinName>`
@@ -146,7 +153,8 @@ either a Model with a part named `Middle` the size of the Head (like a `HeadClot
 an Accessory-style Model with a `Handle` and a `HairAttachment` / `FaceFrontAttachment`.
 Hair parts are recolored with the hair color unless a part has attribute `KeepColor = true`.
 An id with no model still lists (nothing shows) so you can set up the catalog first.
-Faces are `{id, name, texture}` with a decal id (`"rbxassetid://…"`) or `""` to keep the
+`earnedTitles` are `{title, unlock}` with the same `unlock` forms as pieces; a title shows
+locked with its requirement until it is met. Faces are `{id, name, texture}` with a decal id (`"rbxassetid://…"`) or `""` to keep the
 rig's face. `skins` are skin-tone Color3s. Helmets hide hair when their `covers` has `"Hair"`,
 beard and face when it has `"Face"`.
 
@@ -185,7 +193,12 @@ server keeps: `kill`, `parry`, `chamber`, `win`, `round`, `drill`, `kill_<Family
 - **Door:** `GameConfig.DOORS` + `DOOR_ORDER` (the four cards on PLAY).
 - **Class:** `GameConfig.CLASSES` — a name, a `weight`, optional weapon list.
 
-## 12. Checking your work
+## 12. The first release
+
+[RELEASE_CONTENT.md](RELEASE_CONTENT.md) lists every model the shipped catalog expects, with
+its Studio location, price and unlock.
+
+## 13. Checking your work
 
 Run the place once with the Output open. `Catalog` warns about every piece without models,
 every skin naming an unknown weapon or crate, every weapon with a bad unlock. The menu
