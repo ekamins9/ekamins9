@@ -4,17 +4,17 @@ Rewritten after every change — only what the **last** change touched. Links op
 
 **Now synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md).
 
-**Last change: no stun when you get parried.** `PARRY_PUNISH_STUN` is 0: a parried swing just
-dies and eases back (`RECOIL`), and you can raise guard at once, so the riposte can be parried or
-chambered back. The parrier keeps the riposte (quicker windup for `RIPOSTE_DURATION`) and the
-stamina refund. Being blocked never stunned. Set the constant above 0 to bring a stun back.
+**Last change: the parry–riposte rhythm.** Being parried never stuns; for `PARRIED_GUARD_WINDOW`
+(0.8 s) after it your guard comes up at once with a fresh parry window, cooldown or not — the
+riposte can be parried back, and that one back again. The riposte is the NEXT swing only
+(`RIPOSTE_DURATION` 3 → 1.2 s, windup 1.6× quicker). `PARRY_WINDOW` 0.35 → 0.4 s.
 
 ## Changed files
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `PARRY_PUNISH_STUN = 0`, stun only applied when > 0 |
-| [README.md](README.md) | — | doc | fencing layer note |
+| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | `PARRIED_GUARD_WINDOW`, `ParriedAt`, riposte 1.2 s, parry window 0.4 |
+| [README.md](README.md) | — | doc | fencing layer |
 
 ## Studio
 

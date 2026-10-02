@@ -466,7 +466,7 @@ CombatServer.DEFAULTS = {
 	BLOCK_BREAK_STUN  = 2.50,
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
-	PARRY_WINDOW      = 0.35,
+	PARRY_WINDOW      = 0.40,  -- a guard raised within this of the hit is a parry
 	BLOCK_COOLDOWN    = 0.50,  -- after lowering your guard, how long before you can raise it again
 	PARRY_RETRY       = 0.90,  -- …and how long it must have been DOWN to earn a fresh parry window.
 	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
@@ -481,7 +481,9 @@ CombatServer.DEFAULTS = {
 	PARRY_PUNISH_STUN = 0,     -- being parried does NOT stun you: your swing dies (RECOIL) and you may
 	                           --    guard at once, so you can parry the riposte. The parrier's edge is
 	                           --    the riposte itself (quicker windup) plus their stamina refund.
-	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
+	PARRIED_GUARD_WINDOW = 0.8,-- for this long after being parried your guard comes up at once (no
+	                           --    cooldown) with a fresh parry window: the riposte can be parried back
+	RIPOSTE_DURATION  = 1.20,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
 	RIPOSTE_SPEED     = 1.6,   --    itself plays at normal speed — there's still a windup, just a quick one)
 	FEINT_COST        = 12,
 	FEINT_RECOVERY    = 0.25,
@@ -827,6 +829,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- PARRY: the swing dies, the defender gets a riposte; costs a fraction of a block.
 				-- No stun by default (PARRY_PUNISH_STUN 0): the attacker may guard at once
 				if cfg.PARRY_PUNISH_STUN > 0 then setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN) end
+				setAttr("ParriedAt", now)   -- doBlockStart lets us guard at once against the riposte
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
 				statHook(target, "parry")
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
@@ -1506,8 +1509,9 @@ function CombatServer.attach(Tool, weaponConfig)
 		if attr("Blocking") then return end
 		-- a successful parry just now: straight back up with a fresh window (parry, parry, parry)
 		local chained = now - (attr("LastParryAt") or -1e9) <= cfg.PARRY_CHAIN_WINDOW
-			-- …or we just got chambered: their counter is coming and must be answerable
+			-- …or we just got chambered / parried: their counter is coming and must be answerable
 			or now - (attr("ChamberedAt") or -1e9) <= cfg.CHAMBER_PARRY_WINDOW
+			or now - (attr("ParriedAt") or -1e9) <= cfg.PARRIED_GUARD_WINDOW
 		-- a feint already paid for this guard: the re-guard cooldown doesn't apply
 		if not feinted and not chained and now < state.nextBlockTime then dprint("block denied: cooldown"); return end
 		CombatServer.dropProtection(character)
