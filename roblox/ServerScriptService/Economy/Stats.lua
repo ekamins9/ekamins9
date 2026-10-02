@@ -15,7 +15,8 @@ local Stats = {}
 Stats.changed = Instance.new("BindableEvent")   -- (plr, contractText) when a contract completes
 
 local function dayKey() return os.date("!%Y-%m-%d") end
-local function weekKey() return os.date("!%Y-W%V") end
+-- week of the year, Sunday-based: Roblox os.date has no %V (ISO week); it errors on it
+local function weekKey() return os.date("!%Y-W%U") end
 
 -- deterministic pick of N contract ids for a date
 local function pick(seedStr, n, weekly)

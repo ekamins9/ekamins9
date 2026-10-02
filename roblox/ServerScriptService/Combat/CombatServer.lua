@@ -283,6 +283,19 @@ end
 
 -- does `mine` (in windup) chamber `theirs` (in its swing)? Same type, opposite
 -- side; an unsided attack matches either side; stabs chamber stabs regardless.
+-- parries and chambers are counted by Economy/Stats through _G.StatHook.
+-- Called off the combat thread and guarded: a slow or failing stats path must
+-- never delay or abort the hit resolution (the HUD text, the clang, the
+-- cancelled swing all come after it).
+local function statHook(char, key)
+	local hook = _G.StatHook
+	if not hook then return end
+	task.defer(function()
+		local ok, err = pcall(hook, char, key)
+		if not ok then warn("[CombatServer] StatHook failed:", err) end
+	end)
+end
+
 function CombatServer.chamberMatch(theirs, theirKind, mine, myKind)
 	if theirKind == "stab" or myKind == "stab" then return theirKind == "stab" and myKind == "stab" end
 	local ts, tt = CombatServer.sideType(theirs)
@@ -812,7 +825,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- PARRY: attacker punished, defender gets a riposte; costs a fraction of a block
 				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
-				if _G.StatHook then _G.StatHook(target, "parry") end
+				statHook(target, "parry")
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
 				-- streak: parries close together pay out more (1vX)
 				local streak = (now - (target:GetAttribute("LastParryAt") or -1e9) <= cfg.PARRY_STREAK_WINDOW)
@@ -872,7 +885,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				setAttr("ChamberedAt", now)   -- doBlockStart lets us guard at once against the counter
 				drainStamina(target, (info.blockCost or 0) * cfg.CHAMBER_COST_MULT)
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
-				if _G.StatHook then _G.StatHook(target, "chamber") end
+				statHook(target, "chamber")
 				target:SetAttribute("GuardText", "CHAMBER")
 				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
 				cancelSwing("chambered")
