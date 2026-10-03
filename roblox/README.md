@@ -289,10 +289,16 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   `WALL_RECOVERY`) with no penalty and no refund. Kick: land = `KICK_REFUND` back, whiff =
   `KICK_MISS_COST` + longer recovery, kick a wall = neither. A dodge that makes a swing miss you
   refunds `DODGE_REFUND`.
-- **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds `PARRY_REFUND` ×
-  your streak — parries within `PARRY_STREAK_WINDOW` (2 s) of each other stack up to
-  `PARRY_STREAK_MAX`, so 1vX parry-parry-parry is 6, 12, 18… Holding block still pays the full
-  `blockCost` every hit (the turtle tax) and can't attack while up.
+- **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds the attacker's swing
+  cost (at least `PARRY_REFUND`), growing by `PARRY_STREAK_STEP` (50 %) per parry within
+  `PARRY_STREAK_WINDOW` (2 s) up to `PARRY_STREAK_MAX` — 1vX parry-parry-parry is 10, 15, 20…; the
+  HUD word and the sparks grow with it. Holding block pays the full `blockCost` every hit **and**
+  `BLOCK_HOLD_DRAIN` (3/s) while it is up (the turtle tax), and can't attack while up.
+- **Exhausted**: a swing needs its `staminaCost` in the bank and a kick needs `KICK_COST`; at 0
+  stamina you can only guard and walk (the HUD says EXHAUSTED). No more stabbing on empty.
+- **Health regen**: `CharacterSystems` heals 2.5/s once stamina is full, you are not blocking,
+  attacking or sprinting, and nothing has happened for 5 s. Health never slows you
+  (`WalkSpeedGovernor` `MIN_HEALTH_F` 1): clutch at 5 HP at full speed.
 - **Being parried doesn't stun you** (`PARRY_PUNISH_STUN` 0): your swing dies and eases back
   (`RECOIL`), and for `PARRIED_GUARD_WINDOW` (0.8 s) your guard comes up at once with a fresh parry
   window, cooldown or not — so the riposte can be parried or chambered right back. The riposte is

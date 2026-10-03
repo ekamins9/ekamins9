@@ -1,7 +1,7 @@
 --[[ WALKSPEED GOVERNOR — the ONE place WalkSpeed is set. Everything else
      publishes INPUTS (attributes on the character); this composes them:
 
-        WalkSpeed = BASE_SPEED × healthFactor × Π(SpeedMult_*)
+        WalkSpeed = BASE_SPEED × healthFactor × Π(SpeedMult_*)   (healthFactor is 1 unless MIN_HEALTH_F < 1)
 
      No other script should write Humanoid.WalkSpeed. To slow or speed a
      player from any system, publish a SpeedMult_<Source> attribute on the
@@ -20,7 +20,8 @@ require(ReplicatedStorage:WaitForChild("DebugFlags"))  -- creates ReplicatedStor
 
 --------------------------------------------------------------------
 local BASE_SPEED   = MovementConfig.BASE_SPEED  -- full-health, no-modifiers walk speed
-local MIN_HEALTH_F = 6/16   -- speed factor at near-death (old MIN_SPEED / MAX_SPEED)
+local MIN_HEALTH_F = 1      -- speed factor at near-death. 1 = health never slows you (clutch
+                            --    moments at 5 HP); the old 6/16 crawl is one number away
 --------------------------------------------------------------------
 
 local function govern(char)
