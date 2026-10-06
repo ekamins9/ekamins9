@@ -39,8 +39,41 @@ function MapLoader.exists(name)
 	return f ~= nil and f:FindFirstChild(name) ~= nil
 end
 
+-- maps built by Build ▸ MapKit carry a TerrainRegion ("Terrain") plus the
+-- corner it was copied from, and Light_* attributes (ClockTime, FogEnd,
+-- FogColor, Ambient, OutdoorAmbient, Brightness, ColorShift_Top…)
+local Lighting = game:GetService("Lighting")
+local terrainRegion = nil
+local lightingBefore = nil
+local function pasteTerrain(m)
+	local tr = m:FindFirstChild("Terrain")
+	local corner = m:GetAttribute("TerrainCorner")
+	if not (tr and tr:IsA("TerrainRegion") and typeof(corner) == "Vector3") then return end
+	local c = Vector3int16.new(math.floor(corner.X / 4), math.floor(corner.Y / 4), math.floor(corner.Z / 4))
+	pcall(function() workspace.Terrain:PasteRegion(tr, c, true) end)
+	local size = m:GetAttribute("TerrainSize") or Vector3.new(0, 0, 0)
+	terrainRegion = Region3.new(corner, corner + size):ExpandToGrid(4)
+end
+local function clearTerrain()
+	if terrainRegion then pcall(function() workspace.Terrain:FillRegion(terrainRegion, 4, Enum.Material.Air) end) end
+	terrainRegion = nil
+end
+local function applyLighting(m)
+	if not lightingBefore then
+		lightingBefore = {}
+		for _, k in ipairs({"ClockTime", "FogEnd", "FogStart", "FogColor", "Ambient", "OutdoorAmbient", "Brightness", "ColorShift_Top", "ColorShift_Bottom", "ExposureCompensation"}) do lightingBefore[k] = Lighting[k] end
+	end
+	local any = false
+	for k, v in pairs(m:GetAttributes()) do
+		local prop = k:match("^Light_(.+)$")
+		if prop then any = true; pcall(function() Lighting[prop] = v end) end
+	end
+	if not any then for k, v in pairs(lightingBefore) do pcall(function() Lighting[k] = v end) end end
+end
+
 function MapLoader.unload()
 	if MapLoader.current then MapLoader.current:Destroy() end
+	clearTerrain()
 	MapLoader.current, MapLoader.name = nil, nil
 end
 
@@ -77,6 +110,8 @@ function MapLoader.load(name)
 		end
 	end
 	m.Parent = workspace
+	pasteTerrain(m)
+	applyLighting(m)
 	MapLoader.current, MapLoader.name = m, name
 	log("loaded", name)
 	return true

@@ -57,7 +57,7 @@ GameConfig.MODES = {
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
-		maps = {"Arena"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		maps = {"Sandpit", "Arena"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -67,29 +67,29 @@ GameConfig.MODES = {
 	FFA = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
 		description = "Everyone for themselves. Most kills when the clock runs out wins.",
-		maps = {"Arena", "Village"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
+		maps = {"Sandpit", "Millfield", "Arena", "Village"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
 	},
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Honor rules: one on one. Stay out of other people's fights.",
-		maps = {"Arena"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"Sandpit", "Arena"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
 	},
 	TDM = {
 		name = "Team Deathmatch", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Two armies, one ticket pool each. Bleed theirs dry first.",
-		maps = {"Village", "Bridge"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Highbridge", "Millfield", "Village", "Bridge"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		tickets = 60, waveSpawn = 8,
 	},
 	LTS = {
 		name = "Last Team Standing", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 2,
 		description = "No respawns. Win the round by wiping the other side. First to 4 rounds.",
-		maps = {"Arena", "Bridge"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
+		maps = {"Highbridge", "Sandpit", "Arena", "Bridge"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
 		roundsToWin = 4,
 	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
-		maps = {"Village"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Millfield", "Village"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
