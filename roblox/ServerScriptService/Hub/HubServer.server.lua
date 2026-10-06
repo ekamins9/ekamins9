@@ -463,6 +463,11 @@ local function play(plr, doorId, opts)
 		if Game.server.door == "Tiltyard" then return false, "you're in your Tiltyard" end
 		return reserve(group, modeId, "Friends", plr.DisplayName .. "'s Tiltyard", false, "Tiltyard", nil, "Tiltyard")
 	end
+	if doorId == "Horde" then
+		if STUDIO then return studioSwitch(plr, "Horde", {door = "Horde", settings = nil, noRewards = false}) end
+		if Game.server.door == "Horde" then return false, "you're holding off the horde already" end
+		return reserve(group, modeId, "Friends", plr.DisplayName .. "'s Horde", false, "Horde", nil, "Horde")
+	end
 	-- Warfront
 	if STUDIO then
 		local m = GameConfig.MODES[opts.mode] and opts.mode or modeId

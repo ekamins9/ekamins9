@@ -221,7 +221,7 @@ if Game then
 		for _, p in ipairs(Players:GetPlayers()) do
 			local c = roundCount[p] or {}
 			local won = wonBy(p, winner)
-			local events = {round = 1, win = won and 1 or 0, kill = c.kill or 0, parry = c.parry or 0, chamber = c.chamber or 0, objective = c.objective or 0}
+			local events = {round = 1, win = won and 1 or 0, kill = c.kill or 0, parry = c.parry or 0, chamber = c.chamber or 0, objective = c.objective or 0, wave = c.wave or 0}
 			local pay = Economy and Economy.award(p, events) or {marks = 0, xp = 0, levels = 0}
 			if Stats and not (Economy and pay.blocked) then
 				Stats.add(p, "round", 1)

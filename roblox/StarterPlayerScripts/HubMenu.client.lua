@@ -2395,6 +2395,16 @@ do
 		cam.FieldOfView = 40
 		cam.CFrame = CFrame.lookAt(Vector3.new(0, 4.5, -17), Vector3.new(0, -0.5, 2))
 	end
+	SCENES.Horde = function(world, cam)
+		-- two back to back, the horde closing in
+		ground(world, 30, Color3.fromRGB(196, 168, 110))
+		soldier(world, 1, {pos = Vector3.new(0.9, 0, 0), yaw = -60, team = "A", pose = POSE.guard})
+		soldier(world, 2, {pos = Vector3.new(-0.9, 0, 0.2), yaw = 120, team = "A", pose = POSE.swing})
+		local ring = {{5, 2, -100}, {4.2, -2.6, -60}, {-4.6, 2.6, 110}, {-5.2, -1.6, 70}, {1.6, 5, -150}, {-1.8, 5.4, 160}}
+		for i, r in ipairs(ring) do soldier(world, i + 2, {pos = Vector3.new(r[1], 0, r[2]), yaw = r[3], team = "B", pose = (i % 2 == 0) and POSE.lunge or POSE.swing}) end
+		cam.FieldOfView = 44
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 6.5, -14), Vector3.new(0, -0.6, 1.5))
+	end
 	SCENES.Training = function(world, cam)
 		ground(world, 20, Color3.fromRGB(150, 130, 90))
 		soldier(world, 3, {pos = Vector3.new(1.4, 0, 0), yaw = 70, pose = POSE.swing})
@@ -2525,14 +2535,17 @@ do
 		return nil
 	end
 	-- row 1: Warfront · Training · Courtyard
-	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Big battles  ·  the mode changes by vote", big = true, color = Color3.fromRGB(214, 70, 60),
-		pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.5, -8, 0.46, -6), scene = "Warfront", tag = "POPULAR", tagColor = COL.RED,
+	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Big battles  ·  vote the next battle", big = true, color = Color3.fromRGB(214, 70, 60),
+		pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.4, -8, 0.46, -6), scene = "Warfront", tag = "POPULAR", tagColor = COL.RED,
 		onClick = function() goDoor("Warfront") end})
+	tiles.Horde = tile({key = "Horde", title = "HORDE", sub = "You + party vs waves of bots", color = Color3.fromRGB(150, 110, 60),
+		pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.2, -10, 0.46, -6), scene = "Horde", tag = "NEW", tagColor = COL.GOLD,
+		onClick = function() goDoor("Horde") end})
 	tiles.Training = tile({key = "Training", title = "TRAINING", sub = "Your own yard  ·  drills pay Marks", color = Color3.fromRGB(70, 150, 90),
-		pos = UDim2.new(0.5, 8, 0, 0), size = UDim2.new(0.25, -12, 0.46, -6), scene = "Training",
+		pos = UDim2.new(0.6, 4, 0, 0), size = UDim2.new(0.2, -8, 0.46, -6), scene = "Training",
 		onClick = function() goDoor("Tiltyard") end})
 	tiles.Courtyard = tile({key = "Courtyard", title = "COURTYARD", sub = "Hang out  ·  duel in the ring", color = Color3.fromRGB(70, 120, 210),
-		pos = UDim2.new(0.75, 4, 0, 0), size = UDim2.new(0.25, -4, 0.46, -6), scene = "Courtyard",
+		pos = UDim2.new(0.8, 4, 0, 0), size = UDim2.new(0.2, -4, 0.46, -6), scene = "Courtyard",
 		onClick = function()
 			if inHub() then
 				if alive() then hide() else enterCourtyard() end
@@ -2623,7 +2636,8 @@ do
 		tiles.Warfront.count.Text = string.format("%d FIGHTING  ·  %d SERVER%s", counts.Warfront or 0, servers.Warfront or 0, (servers.Warfront or 0) == 1 and "" or "S")
 		tiles.Courtyard.count.Text = string.format("%d HERE", counts.Courtyard or #Players:GetPlayers())
 		tiles.Training.count.Text = "YOU + PARTY"
-		for _, key in ipairs({"Warfront", "Training"}) do
+		tiles.Horde.count.Text = "YOU + PARTY  ·  BOTS"
+		for _, key in ipairs({"Warfront", "Training", "Horde"}) do
 			local why = partyLock(nil)
 			tiles[key].lock.Visible = why ~= nil
 			tiles[key].lockText.Text = why or ""

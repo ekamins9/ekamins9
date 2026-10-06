@@ -42,10 +42,12 @@ GameConfig.DOORS = {
 		blurb = "Your own yard, you and your party. Drills and dummies."},
 	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS"}, access = "Public", vote = true,
 		blurb = "The big fight. The mode changes between rounds by vote."},
+	Horde     = {name = "Horde",     mode = "Horde",    access = "Friends", maxPlayers = 6,
+		blurb = "You and your party against waves of bots. Hold out as long as you can."},
 	Lists     = {name = "The Lists", mode = "Lists",    access = "Locked",  brackets = {"1v1", "2v2", "3v3"},
 		blurb = "1v1, 2v2, 3v3. Casual or ranked. Honor rules."},
 }
-GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Lists"}
+GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -58,7 +60,7 @@ GameConfig.MODES = {
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
-		maps = {"Sandpit"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		maps = {"Sandpit", "Colosseum"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -69,7 +71,7 @@ GameConfig.MODES = {
 	FFA = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
 		description = "Everyone for themselves. Most kills when the clock runs out wins.",
-		maps = {"Sandpit", "Millfield", "Highbridge"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
+		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
 	},
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
@@ -85,8 +87,14 @@ GameConfig.MODES = {
 	LTS = {
 		name = "Last Team Standing", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 2,
 		description = "No respawns. Win the round by wiping the other side. First to 4 rounds.",
-		maps = {"Highbridge", "Sandpit", "Millfield"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
+		maps = {"Highbridge", "Sandpit", "Millfield", "Colosseum"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
 		roundsToWin = 4,
+	},
+	Horde = {
+		name = "Horde", category = "Horde", teams = 0, maxPlayers = 6, minPlayers = 1,
+		description = "You and your party against waves of bots, bigger and better trained each time; every fifth wave brings a Warlord. The fallen come back between waves.",
+		maps = {"Colosseum", "Sandpit"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
+		pvp = false,   -- the party can't hurt each other; the bots can hurt you
 	},
 	Siege = {
 		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,
@@ -97,13 +105,13 @@ GameConfig.MODES = {
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
-		maps = {"Millfield"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Millfield", "Colosseum"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
 -- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
 GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Frostgate = "Frostgate",
-	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield"}
+	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- order on the Play tab

@@ -168,7 +168,11 @@ if ok and objEvent then
 		local col = teamOf(info.team) and teamOf(info.team).rgb or Theme.ACCENT
 		bannerText.Text = tostring(info.text or "")
 		bannerText.TextColor3 = col:Lerp(Color3.new(1, 1, 1), 0.35)
-		if info.final then
+		if info.horde then
+			-- the horde: a wave coming, or a wave beaten
+			bannerText.TextColor3 = info.team == "B" and Color3.fromRGB(255, 120, 90) or Theme.GOOD
+			bannerSub.Text = info.team == "B" and string.format("%d FOES ARE COMING", info.count or 0) or "THE FALLEN CAN SPAWN AGAIN  ·  GET READY"
+		elseif info.final then
 			bannerSub.Text = mine and "THE CASTLE IS OURS" or "THE CASTLE HAS FALLEN"
 		elseif (info.add or 0) > 0 then
 			bannerSub.Text = string.format("+%s ON THE CLOCK  ·  %s", fmtTime(info.add), mine and "PRESS ON!" or "FALL BACK AND HOLD!")
@@ -204,8 +208,19 @@ RunService.RenderStepped:Connect(function()
 	local kind = round:GetAttribute("ObjKind")
 	local live = kind ~= nil and round:GetAttribute("State") == "Round"
 	panel.Visible = live and not hubMenuUp()
-	bb.Enabled = live
+	bb.Enabled = live and kind ~= "Horde"
 	if not live then return end
+	if kind == "Horde" then
+		role.Text = "HORDE"
+		role.BackgroundColor3 = Color3.fromRGB(150, 110, 60)
+		line.Text = string.format("%s   ·   %d OF YOU STANDING", string.upper(round:GetAttribute("ObjLabel") or ""), round:GetAttribute("ObjAttack") or 0)
+		barFill.BackgroundColor3 = round:GetAttribute("ObjState") == "break" and Theme.GOOD or Color3.fromRGB(230, 170, 60)
+		barFill.Size = UDim2.fromScale(math.clamp(round:GetAttribute("ObjProgress") or 0, 0, 1), 1)
+		barText.Text = round:GetAttribute("ObjNote") or ""
+		for _, pp in ipairs(pipList) do pp:Destroy() end
+		pipList = {}
+		return
+	end
 	local atk = round:GetAttribute("Attackers") or "A"
 	local def = atk == "A" and "B" or "A"
 	local me = myKey()

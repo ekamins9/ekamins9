@@ -51,6 +51,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Defight.lua` | `ReplicatedStorage` → `Defight` | ModuleScript |
 | `ServerScriptService/Game/Modes/Siege.lua` | `ServerScriptService` → `Game` → `Modes` → `Siege` | ModuleScript |
 | `ServerScriptService/Build/MapFrostgate.lua` | `ServerScriptService` → `Build` → `MapFrostgate` | ModuleScript |
+| `ServerScriptService/Build/MapColosseum.lua` | `ServerScriptService` → `Build` → `MapColosseum` | ModuleScript |
+| `ServerScriptService/Game/Modes/Horde.lua` | `ServerScriptService` → `Game` → `Modes` → `Horde` | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
 | `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
 | `ReplicatedStorage/Companions.lua` | `ReplicatedStorage` → `Companions` (creatures and eggs built from parts) | ModuleScript |
@@ -528,6 +530,22 @@ lists its stages in `Map ▸ Objectives` (MapKit `K.objective`), each with a `La
   camp up the road to the gatehouse, stage 2 takes the bailey (stables, forge, well), stage 3
   storms the great hall, stage 4 slays Jarl Hrolf at his throne. Snow falls; pines, ruins and a
   frozen pond on the field.
+
+## Horde (after Mordhau's Horde)
+
+The HORDE door (PLAY board): you and your party against waves of bots, in a Friends server like
+the Training Yard. A short breather, then wave 1 pours in through the map's gates (`Spots ▸
+HordeGate1..n`): each wave bigger and better trained (Knights from wave 3, Champions from 6), a
+**Warlord** every fifth wave. At most 10 bots are on the field at once; the rest wait their turn.
+The fallen spawn again between waves (12 s); when everyone is down at once the horde wins and the
+round ends. Players can't hurt each other and bots don't hurt each other. Each wave beaten pays
+everyone `wave` (15 Marks, 30 XP), each bot killed pays `kill`, and your best wave is kept
+(`stats.hordeBest`). The HUD shows the wave, the foes left and the countdown between waves.
+
+**The Colosseum** (`Build ▸ MapColosseum`): a round sand arena behind a podium wall, four tiers of
+stands, a two-storey arcade of arches with red and white awnings, and four gates where the horde
+comes in. A dais in the middle is the King of the Hill's hill, and broken columns give cover.
+Used by Horde, the Lists, Last Team Standing, FFA and King of the Hill.
 
 ## Rounds
 
