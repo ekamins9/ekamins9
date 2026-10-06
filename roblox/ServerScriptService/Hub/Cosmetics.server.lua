@@ -43,6 +43,8 @@ emote.OnServerEvent:Connect(function(plr, what, id)
 	local char = plr.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not (hum and hum.Health > 0) then return end
+	-- not mid-swing, mid-kick, mid-dodge or behind a block
+	if char:GetAttribute("Acting") or char:GetAttribute("Blocking") then fx:FireAllClients("EmoteStop", plr, id); return end
 	fx:FireAllClients("Emote", plr, id, workspace:GetServerTimeNow())
 end)
 Players.PlayerRemoving:Connect(function(plr) last[plr] = nil end)

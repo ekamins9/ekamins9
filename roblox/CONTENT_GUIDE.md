@@ -222,10 +222,22 @@ makes parts that fly, spin, grow and fade around the body (so the same effect pl
 and in the menu preview) and can hide or tint the body locally. Particles and lights are
 world-only extras.
 
-**Emotes** (`Catalog ▸ Emotes`): played from the emote wheel (**B**, rebindable), up to six on
-the wheel (ARMORY ▸ EMOTES). The `id` must match a motion in `ReplicatedStorage ▸ Emotes`: a few
-keyframes of joint angles (shoulders, hips, neck, root) plus the weapon's spin in the hand, e.g.
-the Flourish twirls the sword twice and salutes. Moving or attacking ends an emote.
+**Emotes** (`Catalog ▸ Emotes`): played from the emote wheel (hold **B**, point, let go;
+rebindable), up to six on the wheel (ARMORY ▸ EMOTES). The `id` must match a motion in
+`ReplicatedStorage ▸ Emotes`: a duration and keyframes `{time, pose}`. A pose is in degrees, each
+joint turned in its parent's frame:
+- `rs` / `ls` / `neck`: x+ swings an arm forward; z+ lifts the right arm out (z- the left).
+- `waist`: a bend at the hips that keeps the feet planted.
+- `rh` / `lh`: the legs, for dances and kneels.
+- `root`: the whole body turns (a spin). `rootY`: the body sinks or rises, in studs. `hopY`: a hop
+  that only plays while standing.
+- The weapon: `blade = {x, y, z}` (where it points, in the body's frame), `plantW = 1` (tip to the
+  ground ahead), `twirl` (a wheel beside the body) and `rotor` (flat overhead), plus `toss` (it
+  flies).
+
+Mark arms-only emotes `upper = true` so they play while walking. Attacking, blocking, kicking or
+dodging ends any emote; moving ends a whole-body one. Start and end on the resting pose
+(`{blade = {0, 0, -1}}`) so it blends in and out.
 
 **Where they come from** (both lists): `free = true` (everyone has it) · `crate = "Relic"` ·
 `pass = true` (a season-pass reward names it: `{killfx = "ShadowRift"}` / `{emote = "WarCry"}`)

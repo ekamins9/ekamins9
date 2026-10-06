@@ -184,11 +184,24 @@ ranked match early locks the queue for `queueLockMinutes`.
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
   effect and fires `FxEvent "Kill"` to everyone; each client (`Cosmetics.client`) builds it on
   the body in `workspace.LocalFX` and hides the body locally.
-- **Emotes** (`Emotes` + `Catalog ▸ Emotes`): **B** opens the wheel (`EmoteWheel`; 1–6 or click).
-  The client starts the emote at once and asks `EmoteRemote "Play"`; the server checks ownership
-  and that you are alive, then relays `FxEvent "Emote"` with its start time to everyone. The pose
-  is layered over `RigPose` (`Emotes.modify`), so it shows for every player exactly like the
-  combat pose does, and the weapon spins in the hand (the `ToolGrip`). Moving or attacking ends it.
+- **Emotes** (`Emotes` + `Catalog ▸ Emotes`): hold **B**, point the mouse at an emote and let go
+  (or tap B and click one). There are no number keys, because 1–9 are the backpack's weapon slots.
+  The client starts the emote at once and asks `EmoteRemote "Play"`. The server checks ownership,
+  that you are alive and that you are not mid-fight, then relays `FxEvent "Emote"` with its start
+  time to everyone. The pose is layered over `RigPose` (`Emotes.modify`), so every player sees it
+  the way they see the combat pose.
+  - **Arms-only emotes** (`upper = true`: Salute, Cheer, Flourish, Wave, Shrug, Beckon, Laugh,
+    War Cry, Blade Toss) play while you walk; the legs keep the walk animation. **Whole-body ones**
+    (Bow, Kneel, Jig, Windmill, Champion) need you standing still and end when you move.
+  - **Fighting ends emotes:** attacking, blocking, kicking or dodging ends any emote at once (the
+    keys locally, the character's `Acting` / `Blocking` flags for everyone), and no emote starts
+    mid-fight.
+  - **Feet stay planted:** a bend at the `waist` pivots on the hip line, and the legs are posed
+    back to exactly where they were.
+  - **The weapon:** it is steered by where the blade should point in the grip's own frame, so a
+    dagger and a greatsword both salute upright, and a planted tip just meets the ground for any
+    blade length. The animation (the weapon's idle guard) fades out and back in over 0.2 s, so
+    nothing snaps.
 
 ## Game modes, maps, places (`GameConfig`)
 
