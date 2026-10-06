@@ -6,6 +6,8 @@ edit lands in the open Studio place live. Models (weapon Tools, armor sets, maps
 only in Studio; the repo holds scripts and config.
 
 ## Read first
+- `docs/HANDOFF.md` — **start here**: setup (Rojo, Studio MCP, Blender MCP), what exists,
+  what is unverified, what to do next. Reference screenshots for the look are in `docs/reference/`.
 - `roblox/README.md` — every system, Studio placement table, conventions.
 - `roblox/CONTENT_GUIDE.md` — adding sets, pieces, packs, weapons, skins, crates, body
   models, colors, products, contracts, maps: config only, never code.
