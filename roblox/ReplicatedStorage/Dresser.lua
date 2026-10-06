@@ -6,7 +6,7 @@
                             appearance = {skin, hair, hairColor, beard, face},
                             weight = "Heavy", team = "A"|"B"|nil, preview = bool})
        Dresser.undress(char)              removes armor + body, resets stats
-       Dresser.applySkin(tool, skinId)    recolors / re-models a real weapon Tool
+       Dresser.applySkin(tool, skinId)    recolors a weapon Tool and adds the skin's trim (SkinTrims)
        Dresser.attachWeapon(rig, weaponId, skinId)   preview only: welds Cosmetics ▸ Weapons ▸ <id> to the right hand
 
      Welding follows the armor convention: every clothing model has a part
@@ -20,6 +20,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
+local SkinTrims = require(ReplicatedStorage:WaitForChild("SkinTrims"))
 
 local Dresser = {}
 
@@ -217,10 +218,12 @@ end
 --------------------------------------------------------------------
 --  WEAPON SKINS
 --------------------------------------------------------------------
--- real Tool on the server (or a preview copy): tint SkinPart parts, or swap
--- in the skin model's parts around the Handle
+-- real Tool on the server (or a preview copy): tint SkinPart parts (or swap
+-- in the skin model's parts around the Handle), then build the skin's trim —
+-- the parts that change the weapon's shape (SkinTrims)
 function Dresser.applySkin(tool, skinId)
 	local skin = skinId and Catalog.SKIN[skinId]
+	SkinTrims.clear(tool)
 	if not skin or skin.name == "Default" then return false end
 	tool:SetAttribute("Skin", skin.name)   -- the HUD's weapon chip shows it
 	local handle = tool:FindFirstChild("Handle")
@@ -253,6 +256,7 @@ function Dresser.applySkin(tool, skinId)
 			elseif part == "Grip" and skin.grip then p.Color = skin.grip; n += 1 end
 		end
 	end
+	if SkinTrims.apply(tool, skin) then n += 1 end
 	return n > 0
 end
 

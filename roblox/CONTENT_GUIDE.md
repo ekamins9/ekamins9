@@ -11,7 +11,7 @@ ReplicatedStorage
 │  ├─ Packs              named releases of pieces (starter packs are free)
 │  ├─ Pieces             helmets / tops / bottoms — usually empty: sets auto-import
 │  ├─ Weapons            which Tools exist and how each unlocks
-│  ├─ Skins              weapon skins (crate / earned / shop)
+│  ├─ Skins              weapon skins (crate / earned / task / pack / daily shelf), generated
 │  ├─ Body               hair, beards, faces, skin tones, hair colors, titles
 │  ├─ Palette            armor colors (premium ones cost Crowns)
 │  ├─ Crates             loot tables, odds, pity, duplicate refunds
@@ -146,21 +146,42 @@ default entry, so you can skip this step for free sets.
 
 ## 5. A weapon skin
 
-Add a line to `Catalog ▸ Skins` (every weapon already has a free "Default"):
+`Catalog ▸ Skins` is generated: edit the tables in `scripts/gen_content.py` (`TINTS`,
+`SHOP_STYLES`, `TASK_SKINS`) or the hand-written lines in `scripts/skins_handmade.part`, then
+run `python scripts/gen_content.py --skins`. A line looks like this (every weapon already has
+a free "Default"):
 
 ```lua
 {weapon = "Falchion", name = "Bluesteel", rarity = "Rare", crate = "Bladesmith",
- blade = Color3.fromRGB(138, 168, 216), grip = Color3.fromRGB(42, 42, 74)},
+ blade = Color3.fromRGB(138, 168, 216), grip = Color3.fromRGB(42, 42, 74),
+ trim = "fuller", accent = Color3.fromRGB(70, 120, 220)},
 ```
 
-- `crate = "Bladesmith"` → rolled from that crate · `crate = "earned", kills = 100` → earned by
-  kills with that weapon · no `crate` + `marks` / `crowns` → sold in the shop · add
-  `pack = "IronCrow"` to sell it inside that pack (counted in the bundle price).
+**Where it comes from. Skins are never sold at will:**
+- `crate = "Bladesmith"`: rolled from that crate, and from nowhere else.
+- `crate = "earned", kills = 100`: unlocked by 100 kills with that weapon.
+- `unlock = {stat = "contract", n = 20}`: unlocked by finishing 20 daily tasks. Any unlock
+  works here, e.g. `{level = 10}` or `{stat = "parry", n = 500}`.
+- `pack = "IronCrow"` plus `marks` / `crowns`: sold with that pack, on the days the pack is in the
+  store. It counts toward the bundle price.
+- `marks` / `crowns` alone: a **WEAPONS shelf** skin. It is sold only on the days the store offers
+  it. That is `skinSlots` offers a day, drawn by the date, one weapon and one style each, the first
+  an Epic or Legendary headliner. Pin a day's lineup with `skinPins` in `Catalog ▸ Store`, or take
+  a skin off the shelf for good with `skinRetired`.
+
+**How it looks:**
 - **Tints:** parts in the Tool with attribute `SkinPart` = `"Blade"` or `"Grip"` are recolored
   with `blade` / `grip`. Put that attribute on your weapons' parts once.
-- **Models:** for a real re-model, put a Model in `Cosmetics ▸ Skins ▸ <Weapon> ▸ <SkinName>`
-  with its own `Handle`; its parts replace the Tool's visible ones (welded by their offset
-  from the model's Handle). Hitbox and guard parts stay as they are.
+- **Trim (the shape change):** `trim` names a builder in `ReplicatedStorage ▸ SkinTrims`. The
+  builders are `wrap rivets rings fuller studs notch laurel feather spikes flame frost runes royal
+  crown halo bone serpent wave thunder`. The trim adds parts around the weapon (winged guards,
+  gems, thorns, flames, a halo, a crown…), fitted from the weapon's own Blade / Grip boxes, so
+  one trim fits every weapon. `accent` colors its metal (default: gold on Epic / Legendary, steel
+  below) and `glow` its Neon. Legendary trims also shed sparkles in the world. Add a new trim by
+  writing a builder in `SkinTrims` and naming it in a skin.
+- **Models:** for a full re-model, put a Model in `Cosmetics ▸ Skins ▸ <Weapon> ▸ <SkinName>`
+  with its own `Handle`. Its parts replace the Tool's visible ones (welded by their offset from
+  the model's Handle). Hitbox and guard parts stay as they are.
 
 ## 6. A crate
 

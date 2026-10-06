@@ -712,7 +712,7 @@ end
 -- today's store (Catalog ▸ Store): the packs on sale and when the day turns
 local function storeInfo()
 	local packs, day, endsAt = Catalog.storeFor()
-	return {packs = packs, day = day, endsAt = endsAt, serverTime = os.time()}
+	return {packs = packs, skins = Catalog.skinOffers(day), day = day, endsAt = endsAt, serverTime = os.time()}
 end
 
 local function state(plr)

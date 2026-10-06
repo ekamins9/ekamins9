@@ -139,10 +139,14 @@ function Economy.buy(plr, kind, id, currency)
 		local ok, msg = Economy.spend(plr, w.marks, 0); if not ok then return false, msg end
 		Profile.grant(plr, "weapons", id); Economy.changed:Fire(plr); return true, w.name .. " unlocked"
 	elseif kind == "skin" then
+		-- skins are never sold at will: only today's WEAPONS offers and the
+		-- skins of a pack that is in the store today (Catalog.skinOnSale)
 		local sk = Catalog.SKIN[id]; if not sk then return false, "no such skin" end
-		if sk.crate then return false, "that skin comes from a crate" end
-		if sk.pack and not Catalog.onSale(sk.pack) then return false, "not in today's store" end
 		if Profile.has(plr, "skins", id) then return false, "already owned" end
+		local src = Catalog.skinSource(sk)
+		if src == "earned" then return false, "that skin is earned by playing" end
+		if src == "crate" then return false, "that skin comes from a crate" end
+		if not Catalog.skinOnSale(id) then return false, "not in today's shop" end
 		local m, c = price(sk.marks, sk.crowns, currency); if not m then return false, c end
 		local ok, msg = Economy.spend(plr, m, c); if not ok then return false, msg end
 		Profile.grant(plr, "skins", id); Economy.changed:Fire(plr); return true, sk.name .. " bought"

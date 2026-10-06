@@ -128,6 +128,7 @@ function Profile.has(plr, kind, id)
 		if pc and pc.unlock and Catalog.unlocked(pc.unlock, p) then return true end
 	end
 	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
+	if kind == "skins" then local s = Catalog.SKIN[id]; if s and s.unlock and Catalog.unlocked(s.unlock, p) then return true end end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end

@@ -130,20 +130,22 @@ def gen_catalog_weapons():
     lines.append('}')
     write(os.path.join(ROOT, "ReplicatedStorage", "Catalog", "Weapons.lua"), "\n".join(lines) + "\n")
 
-# skin palettes: name -> (rarity, blade rgb, grip rgb)
+# skin palettes: name -> rarity, blade / grip rgb, the trim (ReplicatedStorage >
+# SkinTrims: the parts that change the weapon's shape) and optional accent / glow
 TINTS = {
- "Blackened":  ("Rare",      (58, 61, 68),    (42, 42, 42)),
- "Bluesteel":  ("Rare",      (138, 168, 216), (42, 42, 74)),
- "Pitted":     ("Common",    (154, 154, 138), (74, 58, 42)),
- "Oiled":      ("Common",    (120, 126, 136), (58, 42, 26)),
- "Bronzed":    ("Common",    (176, 120, 72),  (74, 42, 26)),
- "Crowfeather":("Epic",      (42, 42, 48),    (201, 154, 72)),
- "Bloodrust":  ("Epic",      (120, 48, 40),   (40, 30, 26)),
- "Gilded":     ("Legendary", (242, 226, 176), (201, 154, 72)),
- "Frostbite":  ("Legendary", (200, 236, 255), (60, 90, 140)),
- "Ember":      ("Rare",      (216, 106, 58),  (58, 42, 26)),
- "Verdigris":  ("Rare",      (96, 160, 140),  (74, 58, 42)),
- "Royal":      ("Epic",      (226, 232, 240), (70, 90, 200)),
+ "Blackened":  dict(rarity="Rare",      blade=(58, 61, 68),    grip=(42, 42, 42),   trim="studs", accent=(40, 40, 44)),
+ "Bluesteel":  dict(rarity="Rare",      blade=(138, 168, 216), grip=(42, 42, 74),   trim="fuller", accent=(70, 120, 220)),
+ "Pitted":     dict(rarity="Common",    blade=(154, 154, 138), grip=(74, 58, 42),   trim="wrap"),
+ "Oiled":      dict(rarity="Common",    blade=(120, 126, 136), grip=(58, 42, 26),   trim="rings", accent=(60, 62, 68)),
+ "Bronzed":    dict(rarity="Common",    blade=(176, 120, 72),  grip=(74, 42, 26),   trim="rivets", accent=(196, 140, 80)),
+ "Crowfeather":dict(rarity="Epic",      blade=(42, 42, 48),    grip=(201, 154, 72), trim="feather"),
+ "Bloodrust":  dict(rarity="Epic",      blade=(120, 48, 40),   grip=(40, 30, 26),   trim="spikes", accent=(110, 44, 36)),
+ "Gilded":     dict(rarity="Legendary", blade=(242, 226, 176), grip=(201, 154, 72), trim="crown", glow=(220, 40, 60)),
+ "Frostbite":  dict(rarity="Legendary", blade=(200, 236, 255), grip=(60, 90, 140),  trim="frost", glow=(190, 236, 255)),
+ "Ember":      dict(rarity="Rare",      blade=(216, 106, 58),  grip=(58, 42, 26),   trim="fuller", glow=(255, 130, 40)),
+ "Verdigris":  dict(rarity="Rare",      blade=(96, 160, 140),  grip=(74, 58, 42),   trim="laurel", accent=(90, 170, 120)),
+ "Royal":      dict(rarity="Epic",      blade=(226, 232, 240), grip=(70, 90, 200),  trim="royal", glow=(60, 120, 255)),
+ "Veteran":    dict(rarity="Epic",      blade=(184, 192, 200), grip=(106, 42, 42),  trim="laurel"),
 }
 SWORDS = {"Shortsword", "Greatsword", "ArmingSword", "Dagger", "Longsword", "Falchion", "Messer", "Estoc", "Rapier", "Zweihander", "Executioner", "Cleaver"}
 # per weapon: list of (skin, crate) ; crate None = shop skin (marks), "earned" = kill skin
@@ -156,32 +158,89 @@ def skins_for(wid):
     if wid in ("Spear", "Quarterstaff", "Pitchfork", "Shortsword", "WarAxe", "ArmingSword"): base.append(("Verdigris", None))
     return base
 
+# THE DAILY STORE'S WEAPONS SHELF: every weapon gets two of these (one plain,
+# one showy), sold only on the days Catalog > Store offers them
+SHOP_STYLES = {
+ "Hunter":     dict(rarity="Common",    marks=500,              blade=(110, 116, 104), grip=(60, 80, 48),  trim="wrap", accent=(70, 96, 52)),
+ "Ashen":      dict(rarity="Common",    marks=500,              blade=(150, 148, 146), grip=(70, 70, 72),  trim="rivets", accent=(120, 118, 116)),
+ "Duelist":    dict(rarity="Rare",      marks=900,  crowns=45,  blade=(226, 228, 232), grip=(150, 30, 40), trim="fuller", accent=(170, 30, 44)),
+ "Wyrmscale":  dict(rarity="Rare",      marks=900,  crowns=45,  blade=(70, 110, 80),   grip=(40, 60, 40),  trim="studs", accent=(150, 120, 60)),
+ "Thornguard": dict(rarity="Epic",      marks=1600, crowns=80,  blade=(40, 36, 34),    grip=(120, 80, 40), trim="spikes", accent=(180, 120, 60)),
+ "Nightfall":  dict(rarity="Epic",      marks=1600, crowns=80,  blade=(30, 30, 44),    grip=(60, 40, 90),  trim="runes", glow=(160, 110, 255)),
+ "Sunsteel":   dict(rarity="Legendary", crowns=150,             blade=(255, 224, 150), grip=(180, 120, 50), trim="halo", glow=(255, 220, 120)),
+ "Hellforged": dict(rarity="Legendary", crowns=150,             blade=(40, 30, 28),    grip=(90, 20, 10),  trim="flame", glow=(255, 120, 30)),
+}
+SHOP_PAIRS = [("Hunter", "Thornguard"), ("Duelist", "Sunsteel"), ("Ashen", "Nightfall"), ("Wyrmscale", "Hellforged")]
+
+# TASK SKINS: earned by finishing daily tasks (contracts), counted for life
+TASK_SKINS = [
+ ("ArmingSword", "Squire's Oath", "Rare",      3,  dict(blade=(236, 238, 244), grip=(50, 80, 170),  trim="rings", accent=(232, 184, 74))),
+ ("Spear",       "Wayfarer",      "Rare",      7,  dict(blade=(220, 224, 232), grip=(60, 90, 170),  trim="wrap", accent=(232, 184, 74))),
+ ("Longsword",   "Oathbound",     "Epic",      12, dict(blade=(240, 242, 248), grip=(40, 70, 160),  trim="laurel")),
+ ("WarAxe",      "Ironvow",       "Epic",      20, dict(blade=(210, 214, 222), grip=(40, 60, 140),  trim="studs", accent=(232, 184, 74))),
+ ("Mace",        "Lionheart",     "Epic",      30, dict(blade=(246, 230, 180), grip=(150, 30, 40),  trim="royal", glow=(220, 40, 60))),
+ ("Halberd",     "Warden's Vow",  "Legendary", 45, dict(blade=(236, 240, 250), grip=(40, 60, 150),  trim="halo", glow=(170, 210, 255))),
+ ("Zweihander",  "Dawnbringer",   "Legendary", 60, dict(blade=(255, 240, 200), grip=(230, 230, 236), trim="flame", glow=(255, 236, 170))),
+ ("Maul",        "Last Bastion",  "Legendary", 80, dict(blade=(225, 228, 236), grip=(36, 50, 120),  trim="crown", glow=(60, 120, 255))),
+]
+
+def rgb(t): return "Color3.fromRGB(%d, %d, %d)" % tuple(t)
+def looks(d):
+    out = 'blade = %s, grip = %s, trim = "%s"' % (rgb(d["blade"]), rgb(d["grip"]), d["trim"])
+    if d.get("accent"): out += ', accent = ' + rgb(d["accent"])
+    if d.get("glow"): out += ', glow = ' + rgb(d["glow"])
+    return out
+
+SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERATED by
+     scripts/gen_content.py: the four original weapons are hand-written in
+     scripts/skins_handmade.part, the rest come from TINTS, SHOP_STYLES and TASK_SKINS.
+     Every weapon gets a free "Default" skin automatically, so only extras are listed.
+       weapon   the weapon id       name    unique within the weapon
+       rarity   Common | Rare | Epic | Legendary
+     WHERE A SKIN COMES FROM (never bought at will):
+       crate    "Bladesmith" / "Hafted" / "Royal": rolled from that crate
+       crate = "earned", kills = n        n kills with the weapon unlock it
+       unlock = {stat = "contract", n = n}  n daily tasks finished unlock it
+       pack + marks / crowns              sold with the pack, on the days it is in the store
+       marks / crowns alone               the store's WEAPONS shelf, on the days it is offered
+     LOOKS:
+       blade / grip   tints for parts with attribute SkinPart = "Blade" / "Grip"
+       trim     the shape change (ReplicatedStorage ▸ SkinTrims): wrap rivets rings fuller
+                studs notch laurel feather spikes flame frost runes royal crown halo
+                bone serpent wave thunder
+       accent / glow  the trim's metal and its Neon (defaults by rarity)
+       model    optional Model in Cosmetics ▸ Skins ▸ <weapon> ▸ <model or name> that
+                replaces the Tool's visible parts (welded by offset from its Handle) ]]
+local C = Color3.fromRGB
+return {"""
+
 def gen_catalog_skins():
-    lines = ['--[[ WEAPON SKINS — looks for a weapon; never stats. GENERATED by',
-             '     scripts/gen_content.py: the four original weapons are hand-written in',
-             '     scripts/skins_handmade.part, the rest come from TINTS + skins_for. Every weapon gets a free',
-             '     "Default" skin automatically, so only extras are listed.',
-             '       weapon   the weapon id       name    unique within the weapon',
-             '       rarity   Common | Rare | Epic | Legendary',
-             '       crate    which crate rolls it ("Bladesmith" / "Hafted" / "Royal"), "earned"',
-             '                for kill-count skins, or nil = sold in the shop for `marks` / `crowns`',
-             '       kills    for crate = "earned": kills with that weapon that unlock it',
-             '       blade / grip   Color3 tints for parts with attribute SkinPart = "Blade" / "Grip"',
-             '       model    optional Model in Cosmetics ▸ Skins ▸ <weapon> ▸ <model or name> that',
-             '                replaces the Tool\'s visible parts (welded by offset from its Handle) ]]',
-             'local C = Color3.fromRGB', 'return {']
+    import re
+    lines = [SKINS_HEADER]
     lines.append('\t-- HAND-WRITTEN (scripts/skins_handmade.part): the four original weapons')
-    with open(os.path.join(os.path.dirname(__file__), "skins_handmade.part"), encoding="utf-8") as f: lines.append(f.read().rstrip("\n"))
-    lines.append('\t-- GENERATED for every other weapon')
+    with open(os.path.join(os.path.dirname(__file__), "skins_handmade.part"), encoding="utf-8") as f:
+        hand = f.read().rstrip("\n")
+    lines.append(hand)
+    handWeapons = set(re.findall(r'weapon = "(\w+)"', hand))
+    lines.append('\t-- GENERATED: crate / kill skins for every other weapon')
     for (wid, name, *_rest) in WEAPONS:
-        if wid in EXISTING: continue
+        if wid in EXISTING or wid in handWeapons: continue
         for skin, crate in skins_for(wid):
+            d = TINTS[skin]
             if skin == "Veteran":
-                lines.append(f'\t{{weapon = "{wid}", name = "Veteran", rarity = "Epic", crate = "earned", kills = 100, blade = Color3.fromRGB(184, 192, 200), grip = Color3.fromRGB(106, 42, 42)}},')
+                lines.append('\t{weapon = "%s", name = "Veteran", rarity = "Epic", crate = "earned", kills = 100, %s},' % (wid, looks(d)))
                 continue
-            rar, b, g = TINTS[skin]
-            c = f'crate = "{crate}"' if crate else 'marks = 600'
-            lines.append(f'\t{{weapon = "{wid}", name = "{skin}", rarity = "{rar}", {c}, blade = Color3.fromRGB{b}, grip = Color3.fromRGB{g}}},')
+            c = 'crate = "%s"' % crate if crate else 'marks = 600'
+            lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", %s, %s},' % (wid, skin, d["rarity"], c, looks(d)))
+    lines.append('\t-- GENERATED: the WEAPONS shelf of the daily store (two per weapon)')
+    for i, (wid, name, *_rest) in enumerate(WEAPONS):
+        for style in SHOP_PAIRS[i % len(SHOP_PAIRS)]:
+            d = SHOP_STYLES[style]
+            price = ", ".join(x for x in (("marks = %d" % d["marks"]) if d.get("marks") else "", ("crowns = %d" % d["crowns"]) if d.get("crowns") else "") if x)
+            lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", %s, %s},' % (wid, style, d["rarity"], price, looks(d)))
+    lines.append('\t-- GENERATED: task skins (finish daily tasks to earn them)')
+    for (wid, sname, rar, n, d) in TASK_SKINS:
+        lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", unlock = {stat = "contract", n = %d}, %s},' % (wid, sname, rar, n, looks(d)))
     lines.append('}')
     write(os.path.join(ROOT, "ReplicatedStorage", "Catalog", "Skins.lua"), "\n".join(lines) + "\n")
 
@@ -219,5 +278,9 @@ def gen_sets():
         write(os.path.join(d, "init.meta.json"), json.dumps({"ignoreUnknownInstances": True}, indent=2) + "\n")
 
 if __name__ == "__main__":
-    gen_tools(); gen_catalog_weapons(); gen_catalog_skins()
-    print("generated", len([w for w in WEAPONS if w[0] not in EXISTING]), "tools")
+    import sys
+    if "--skins" in sys.argv:
+        gen_catalog_skins(); print("generated Catalog/Skins.lua")
+    else:
+        gen_tools(); gen_catalog_weapons(); gen_catalog_skins()
+        print("generated", len([w for w in WEAPONS if w[0] not in EXISTING]), "tools")

@@ -11,7 +11,14 @@
        Catalog.pieceModels(id)               {ModelName = Model} to weld on (see Dresser)
        Catalog.skinModel(skinId) / weaponModel(weaponId) / bodyModel(kind, id)
        Catalog.rig()                         the preview rig template (Cosmetics.Rig) or nil
-       Catalog.unlocked(unlock, profile) / unlockProgress / unlockText   kill / level / win unlocks
+       Catalog.unlocked(unlock, profile) / unlockProgress / unlockText   kill / level / win / task unlocks
+       Catalog.skinSource(skin)              "crate" | "earned" | "pack" | "shop" | "free"
+       Catalog.skinOffers(day) / skinOnSale(id, day)   the store's daily WEAPONS section
+
+     SKINS ARE NEVER SOLD AT WILL: a skin comes out of a crate, is earned
+     (kills with the weapon, daily tasks done: its `unlock`), comes with a pack
+     on the days the pack is in the store, or is one of the day's WEAPONS
+     offers (a priced skin with no crate / pack / unlock; Catalog ▸ Store).
 
      ARMOR SETS ARE AUTO-IMPORTED: every set folder in Cosmetics ▸ Armor (the
      server mirrors ServerStorage ▸ Armor there) becomes three pieces —
@@ -128,7 +135,13 @@ end
 Catalog.rebuild()
 
 Catalog.WEAPON = {} for _, w in ipairs(Catalog.WEAPONS) do Catalog.WEAPON[w.id] = w end
-Catalog.SKIN = {}   for _, s in ipairs(Catalog.SKINS) do s.id = s.weapon .. ":" .. s.name; Catalog.SKIN[s.id] = s end
+Catalog.SKIN = {}
+for _, s in ipairs(Catalog.SKINS) do
+	s.id = s.weapon .. ":" .. s.name
+	-- kill-count skins are unlocks like any other earned thing
+	if s.crate == "earned" and not s.unlock then s.unlock = {kills = s.kills or 100, weapon = s.weapon} end
+	Catalog.SKIN[s.id] = s
+end
 Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name] = c end
 
 --------------------------------------------------------------------
@@ -167,6 +180,8 @@ function Catalog.unlocked(u, p)
 	return need ~= nil and have >= need
 end
 local FAMILY_WORD = {OneHanded = "one-handed", TwoHanded = "two-handed", Polearm = "polearm"}
+local STAT_WORD = {contract = "daily tasks done", parry = "parries", chamber = "chambers", drill = "Tiltyard drills",
+	round = "rounds played", hill = "seconds holding the hill", win = "round wins", kill = "kills"}
 function Catalog.unlockText(u)
 	if not u or u.free then return "free" end
 	if u.level then return "level " .. u.level end
@@ -175,7 +190,7 @@ function Catalog.unlockText(u)
 		return string.format("%d %skills", u.kills, u.family and (FAMILY_WORD[u.family] or string.lower(u.family)) .. " " or "")
 	end
 	if u.wins then return string.format("%d %swins", u.wins, u.bracket and (u.bracket .. " ") or "round ") end
-	if u.stat then return string.format("%d × %s", u.n or 1, u.stat) end
+	if u.stat then return string.format("%d %s", u.n or 1, STAT_WORD[u.stat] or ("× " .. u.stat)) end
 	return "?"
 end
 
@@ -280,6 +295,65 @@ function Catalog.onSale(packKey, dateKey)
 	return false
 end
 
+--------------------------------------------------------------------
+--  SKIN SOURCES + the store's daily WEAPONS section
+--------------------------------------------------------------------
+function Catalog.skinSource(s)
+	if not s then return "free" end
+	if s.unlock then return "earned" end
+	if s.crate then return "crate" end
+	if s.pack then return "pack" end
+	if (s.marks or 0) > 0 or (s.crowns or 0) > 0 then return "shop" end
+	return "free"
+end
+
+-- today's WEAPONS offers (skin ids; the first is the headliner, Epic or
+-- better when the pool has one). Drawn by the date from the shop skins, one
+-- per weapon, so everyone sees the same; Store.skinPins fixes a day.
+function Catalog.skinOffers(dateKey)
+	dateKey = dateKey or os.date("!%Y-%m-%d")
+	local S = Catalog.STORE or {}
+	local retired = {}
+	for _, id in ipairs(S.skinRetired or {}) do retired[id] = true end
+	local out = {}
+	local pinned = S.skinPins and S.skinPins[dateKey]
+	if pinned then
+		for _, id in ipairs(pinned) do if Catalog.SKIN[id] and not retired[id] then table.insert(out, id) end end
+		return out
+	end
+	local pool = {}
+	for _, s in ipairs(Catalog.SKINS) do
+		if Catalog.skinSource(s) == "shop" and not retired[s.id] then table.insert(pool, s) end
+	end
+	table.sort(pool, function(a, b) return a.id < b.id end)
+	local rng = Random.new(dayNumber(dateKey) * 7919 + 17)
+	for i = #pool, 2, -1 do local j = rng:NextInteger(1, i); pool[i], pool[j] = pool[j], pool[i] end
+	local slots = math.max(1, S.skinSlots or 4)
+	-- one weapon and one style each, so the shelf is never four of a kind
+	local usedWeapon, usedName = {}, {}
+	local function take(s) table.insert(out, s.id); usedWeapon[s.weapon] = true; usedName[s.name] = true end
+	for _, s in ipairs(pool) do
+		if s.rarity == "Legendary" or s.rarity == "Epic" then take(s); break end
+	end
+	for _, s in ipairs(pool) do
+		if #out >= slots then break end
+		if not usedWeapon[s.weapon] and not usedName[s.name] then take(s) end
+	end
+	return out
+end
+
+-- can this skin be bought today (alone, or as part of its pack)?
+function Catalog.skinOnSale(skinId, dateKey)
+	local s = Catalog.SKIN[skinId]
+	if not s then return false end
+	local src = Catalog.skinSource(s)
+	if src == "pack" then return Catalog.onSale(s.pack, dateKey) end
+	if src == "shop" then
+		for _, id in ipairs(Catalog.skinOffers(dateKey)) do if id == skinId then return true end end
+	end
+	return false
+end
+
 function Catalog.crateSkins(crateId)
 	local c = Catalog.CRATES[crateId]
 	local out = {}
@@ -301,9 +375,16 @@ if RunService:IsServer() then
 			if not Catalog.PACKS[p.pack] then warn("[Catalog] piece", p.id, "names unknown pack", p.pack) end
 			if next(Catalog.pieceModels(p.id)) == nil then warn("[Catalog] piece", p.id, "has no models (Cosmetics ▸ Pieces ▸ " .. (p.model or p.id) .. " or its set folder)") end
 		end
+		local okT, SkinTrims = pcall(require, ReplicatedStorage:WaitForChild("SkinTrims", 5))
+		local trims = {}
+		if okT and SkinTrims then for _, n in ipairs(SkinTrims.NAMES) do trims[n] = true end end
+		local seen = {}
 		for _, s in ipairs(Catalog.SKINS) do
 			if not Catalog.WEAPON[s.weapon] then warn("[Catalog] skin", s.id, "names unknown weapon", s.weapon) end
 			if s.crate and s.crate ~= "earned" and not Catalog.CRATES[s.crate] then warn("[Catalog] skin", s.id, "names unknown crate", s.crate) end
+			if s.trim and okT and not trims[s.trim] then warn("[Catalog] skin", s.id, "names unknown trim", s.trim) end
+			if seen[s.id] then warn("[Catalog] skin", s.id, "is listed twice") end
+			seen[s.id] = true
 		end
 		for _, p in ipairs(Catalog.PIECES) do
 			if p.unlock and ((p.marks or 0) > 0 or (p.crowns or 0) > 0) then warn("[Catalog] piece", p.id, "is both earned and priced; the unlock wins") end

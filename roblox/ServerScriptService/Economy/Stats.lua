@@ -66,6 +66,15 @@ local function progress(plr, key, n)
 				it.done = true
 				p.wallet.marks += def.pay
 				Stats.changed:Fire(plr, def.text, def.pay)
+				-- every finished task counts toward the task skins (Catalog ▸ Skins, unlock = {stat = "contract"})
+				Profile.addStat(plr, "contract", 1)
+				local done = p.stats.contract or 0
+				for _, s in ipairs(Catalog.SKINS) do
+					if s.unlock and s.unlock.stat == "contract" and (s.unlock.n or 1) == done then
+						local w = Catalog.WEAPON[s.weapon]
+						Stats.changed:Fire(plr, "Skin earned: " .. (w and w.name or s.weapon) .. " · " .. s.name, 0)
+					end
+				end
 			end
 			Profile.markDirty(plr)
 		end
