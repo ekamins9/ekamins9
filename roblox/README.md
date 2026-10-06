@@ -21,6 +21,10 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/Injury.lua` | `ServerScriptService` → `Combat` → `Injury` | ModuleScript |
 | `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
 | `ServerScriptService/Combat/Pickup.lua` | `ServerScriptService` → `Combat` → `Pickup` | ModuleScript |
+| `ServerScriptService/Combat/Bots.lua`, `R6.lua` | `ServerScriptService` → `Combat` → `Bots`, `R6` (AI fighters; a plain R6 rig) | ModuleScript each |
+| `ServerScriptService/Game/Training.lua` | `ServerScriptService` → `Game` → `Training` (the training yard's dummies, Drill Master, lessons, ring) | ModuleScript |
+| `ServerScriptService/Build/MapTraining.lua` | `ServerScriptService` → `Build` → `MapTraining` (the training yard map) | ModuleScript |
+| `StarterPlayerScripts/Training.client.lua`, `NpcAnimator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Training`, `NpcAnimator` | LocalScript each |
 | `ServerScriptService/MovementServer.server.lua` | `ServerScriptService` → `MovementServer` | Script |
 | `ServerScriptService/SettingsServer.server.lua` | `ServerScriptService` → `SettingsServer` | Script |
 | `ReplicatedStorage/ClientSettings.lua` | `ReplicatedStorage` → `ClientSettings` | ModuleScript |
@@ -497,6 +501,36 @@ your chest front, legs and feet, never the top surface of your chest. Stored in
 `ReplicatedStorage.ClientSettings`, read live by CameraRig / CombatClient / Movement, and
 saved per player by `SettingsServer` (DataStore; in Studio enable *Allow Studio access to API
 services* or it just lasts the session).
+
+## The training yard (Tiltyard mode) and bots
+
+The training yard is a peaceful map: players can't hurt each other, but dummies and bots can be
+hit (`GameConfig.MODES.Tiltyard.pvp = false`, the same as the Courtyard). `Game ▸ Training` runs
+it from the map's `Spots`:
+- **Straw dummies** on six posts: they take hits, never strike back, and pop back up.
+- **Sir Aldric, the Drill Master**: press E for the lesson board. There are 13 lessons
+  (`Catalog ▸ Drills`), from the swing, stab and overhead to both sides, blocks, parries,
+  ripostes, feints, morphs, kicks, dodges and chambers, then a first win in the ring. Each lesson
+  watches the combat system's own signals (which attack landed, GuardTick, ParryTick, FeintTick,
+  MorphTick, KickTick, LastDodgeAt, a CHAMBER guard). The first finish of each pays a drill
+  (`earn.drill`, the drill stat for tasks and the Drill Master title). A card on the right shows
+  the lesson in your own key binds, and he says it over his head.
+- **Drill dummies** for the guard lessons: one swings slowly at you, the other never drops its
+  guard (so you can learn to kick it).
+- **The sparring ring**: press E at the sign and pick a Squire, Knight or Champion bot. After a
+  3-2-1 it's a fight to the death; leaving the ring forfeits. A first win at each level pays
+  (`Catalog ▸ Drills ▸ spar`); wins are kept per level.
+
+**Bots** (`Combat ▸ Bots`) fight on the real combat system: they carry a normal weapon Tool whose
+controller runs in NPC mode.
+- **Brain** (10 Hz): close in, circle at sword length, strike (swings, stabs, overheads; feints
+  and morphs when skilled), step in to land, raise the guard against your windup (late enough to
+  parry, when skilled), and kick a turtle.
+- **Skill presets:** Squire / Knight / Champion. Drill and Guard are the training dummies.
+- **Look:** dressed by the Dresser in their weight's starter armor. Clients draw their walk
+  (`NpcAnimator`).
+- `Combat ▸ R6` builds a plain R6 rig from parts for bots, dummies and NPCs.
+- Studio: `/bot Knight Longsword`, `/bot clear`.
 
 ## Test dummies (chat)
 

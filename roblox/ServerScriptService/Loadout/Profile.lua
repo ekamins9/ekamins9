@@ -17,6 +17,7 @@
        eggs        {[eggId] = count}  waiting to be set in a nest
        nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
        companion   the companion out with you ("" = none)   stars  {[companionId] = 1..5}
+       drills      {[lessonId] = true} the Drill Master's lessons done   spars  {[skill] = wins in the ring}
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -59,7 +60,7 @@ local function default()
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
-		play = {}, eggs = {}, nests = {}, companion = "", stars = {}}
+		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -224,7 +225,7 @@ function Profile.summary(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
 		login = p.login, killfx = p.killfx, emotes = p.emotes,
-		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars}
+		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars}
 end
 
 Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)

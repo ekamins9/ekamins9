@@ -223,7 +223,7 @@ end
 
 local function refreshModeLine()
 	local mode = roundNode:GetAttribute("ModeName") or ""
-	local map = roundNode:GetAttribute("Map") or ""
+	local map = roundNode:GetAttribute("MapName") or roundNode:GetAttribute("Map") or ""
 	local def = GameConfig.MODES[roundNode:GetAttribute("Mode") or ""]
 	modeLine.Text = string.format("%s%s%s%s", mode, map ~= "" and ("  on  " .. map) or "", teamInfo(),
 		def and def.description and ("\n" .. def.description) or "")

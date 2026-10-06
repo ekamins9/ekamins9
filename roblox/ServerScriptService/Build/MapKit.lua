@@ -12,6 +12,7 @@
      Helpers:  K.new(name)  K.box  K.wedge  K.cyl  K.ball  K.wall  K.tower
      K.arch  K.stairs  K.awning  K.tent  K.banner  K.pole  K.crate  K.barrel
      K.torch  K.tree  K.rock  K.hay  K.fence  K.spawn  K.camera  K.hill
+     K.spot  K.palisade  K.rope  K.rack  K.torchPost
      K.cone  K.lighting  K.terrainColors  K.terrain  K.finish ]]
 
 local ServerStorage = game:GetService("ServerStorage")
@@ -324,6 +325,70 @@ function K.spawn(ctx, pos, team, look)
 	p.Parent = ctx.Spawns
 	return p
 end
+-- a marker the game scripts look for (Map ▸ Spots ▸ <name>): where an NPC
+-- stands, where a sign is, the middle of a ring… attrs become attributes
+function K.spot(ctx, name, frame, attrs)
+	if not ctx.Spots then
+		local fo = Instance.new("Folder"); fo.Name = "Spots"; fo.Parent = ctx.model; ctx.Spots = fo
+	end
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = Vector3.new(1, 1, 1)
+	p.CFrame = typeof(frame) == "Vector3" and CFrame.new(frame) or frame
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Transparency = true, false, false, false, 1
+	for k, v in pairs(attrs or {}) do p:SetAttribute(k, v) end
+	p.Parent = ctx.Spots
+	return p
+end
+-- a palisade of upright logs from a to b (on the ground), h tall, with a binding rail
+function K.palisade(ctx, a, b, h, gap)
+	h = h or 7
+	local d = b - a
+	local len = d.Magnitude
+	local n = math.max(1, math.floor(len / (gap or 1.9)))
+	for i = 0, n do
+		local p = a + d * (i / n)
+		local hh = h + ((i * 7919) % 5) * 0.18
+		K.cyl(ctx, "Log", 1.8, hh, p + Vector3.new(0, hh / 2, 0), (i % 3 == 0) and K.C.DARKWOOD or K.C.WOOD, K.M.Wood)
+		K.cone(ctx, "LogTip", p + Vector3.new(0, hh, 0), 0.9, 0.9, K.C.DARKWOOD, K.M.Wood, nil, true, 4)
+	end
+	local look = CFrame.lookAt((a + b) / 2, b)
+	K.box(ctx, "Rail", Vector3.new(0.5, 0.5, len), look * CFrame.new(0, h * 0.75, -0.95), K.C.DARKWOOD, K.M.Wood).CanCollide = false
+end
+-- a rope strung between two points (in the air)
+function K.rope(ctx, a, b, color)
+	local d = b - a
+	local r = K.box(ctx, "Rope", Vector3.new(0.18, 0.18, d.Magnitude), CFrame.lookAt((a + b) / 2, b), color or K.C.ROPE, K.M.Fabric)
+	r.CanCollide = false
+	return r
+end
+-- a weapon rack: two posts, a bar, swords and spears leaning on it
+function K.rack(ctx, frame)
+	for _, x in ipairs({-2.2, 2.2}) do K.box(ctx, "RackPost", Vector3.new(0.4, 3.2, 0.4), frame * CFrame.new(x, 1.6, 0), K.C.DARKWOOD, K.M.Wood) end
+	K.box(ctx, "RackBar", Vector3.new(5, 0.3, 0.3), frame * CFrame.new(0, 2.6, 0), K.C.DARKWOOD, K.M.Wood)
+	K.box(ctx, "RackFoot", Vector3.new(5, 0.3, 1.2), frame * CFrame.new(0, 0.15, 0.4), K.C.DARKWOOD, K.M.Wood)
+	for i = -2, 2 do
+		local x = i * 0.9
+		local tall = (i % 2 == 0)
+		local len = tall and 5.4 or 3.6
+		local w = K.box(ctx, tall and "Spear" or "Sword", Vector3.new(tall and 0.16 or 0.3, len, tall and 0.16 or 0.08), frame * CFrame.new(x, len / 2, 0.55) * CFrame.Angles(math.rad(-12), 0, 0), tall and K.C.WOOD or Color3.fromRGB(196, 200, 210), tall and K.M.Wood or K.M.Metal)
+		w.CanCollide = false
+		if tall then K.box(ctx, "SpearHead", Vector3.new(0.3, 0.7, 0.1), w.CFrame * CFrame.new(0, len / 2 + 0.3, 0), Color3.fromRGB(196, 200, 210), K.M.Metal).CanCollide = false
+		else K.box(ctx, "Guard", Vector3.new(1, 0.15, 0.2), w.CFrame * CFrame.new(0, -len / 2 + 0.8, 0), K.C.DARKWOOD, K.M.Wood).CanCollide = false end
+	end
+end
+-- a torch on a tall post (a brazier bowl, fire, light)
+function K.torchPost(ctx, pos, h)
+	h = h or 6
+	K.cyl(ctx, "TorchPost", 0.5, h, pos + Vector3.new(0, h / 2, 0), K.C.DARKWOOD, K.M.Wood)
+	K.cyl(ctx, "TorchBowl", 1.4, 0.6, pos + Vector3.new(0, h + 0.3, 0), K.C.IRON, K.M.Metal)
+	local flame = K.ball(ctx, "Flame", 0.9, pos + Vector3.new(0, h + 0.8, 0), K.C.FIRE, K.M.Neon)
+	flame.CanCollide = false
+	local light = Instance.new("PointLight"); light.Color = K.C.FIRE; light.Range = 16; light.Brightness = 1.4; light.Parent = flame
+	local fire = Instance.new("Fire"); fire.Size = 2.5; fire.Heat = 5; fire.Parent = flame
+	return flame
+end
+
 function K.camera(ctx, pos, look)
 	local p = Instance.new("Part")
 	p.Name = string.format("Shot%d", #ctx.MenuCameras:GetChildren() + 1)

@@ -592,6 +592,14 @@ function CombatClient.attach(Tool, weaponConfig)
 	local function sendAttack(kind)
 		local name = resolveAttack(kind)
 		if not name then return end
+		-- the Courtyard is peaceful: swing all you like, but say why nobody gets hurt
+		local round = game:GetService("ReplicatedStorage"):FindFirstChild("Round")
+		if round and round:GetAttribute("Peaceful") and round:GetAttribute("Mode") == "Hub" and os.clock() - (CombatClient.peaceNoticeAt or -1e9) > 20 then
+			CombatClient.peaceNoticeAt = os.clock()
+			pcall(function()
+				game:GetService("StarterGui"):SetCore("SendNotification", {Title = "No fighting here", Text = "Players can't hurt each other here. Pick a mode from PLAY to fight.", Duration = 4})
+			end)
+		end
 		local char = player.Character
 		if char then char:SetAttribute("LocalAttackName", name) end
 		remote:FireServer("Attack", name)

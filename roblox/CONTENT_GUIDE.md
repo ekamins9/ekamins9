@@ -331,8 +331,16 @@ accent, glow, style, fx, egg, pass, description}`.
 ## 11. Maps, modes, doors
 
 - **Map:** a Model in `ServerStorage ▸ Maps ▸ <Name>` with a `Spawns` folder (parts; attribute
-  `Team = "A"/"B"` for team spawns), optional `Zones ▸ Hill`; add its name to a mode's `maps`
-  in `GameConfig.MODES`.
+  `Team = "A"/"B"` for team spawns), optional `Zones ▸ Hill`, and optional `Spots` (named marker
+  parts the mode scripts look for; `K.spot` makes them). Add its name to a mode's `maps` in
+  `GameConfig.MODES`, and its on-screen name to `GameConfig.MAP_TITLES`. Maps built from code
+  live in `Build ▸ Maps` (newer ones in `Build ▸ Map<Name>`).
+- **Peaceful mode:** `pvp = false` on a mode means players can't hurt each other there (dummies
+  and bots still can be hit).
+- **Lessons:** `Catalog ▸ Drills ▸ lessons`. Each is `{id, title, text, goal, event, kind,
+  setup}`. The `text` may name key binds as `{Swing}`, `{Stab}`, `{Kick}` and so on, and the
+  events are listed at the top of the file. `spar` sets what a win in the ring pays at each
+  level.
 - **Mode:** a ModuleScript in `ServerScriptService ▸ Game ▸ Modes ▸ <Id>` built on
   `Game.Mode`, plus an entry in `GameConfig.MODES`; list it in `GameConfig.DOORS.Warfront.modes`
   to put it in the Warfront vote.

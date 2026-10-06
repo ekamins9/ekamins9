@@ -250,7 +250,7 @@ pcall(function()
 			if round then
 				local t0 = os.clock()
 				while os.clock() - t0 < 10 and (round:GetAttribute("Mode") or "") == "" do task.wait(0.1) end
-				dest.Text = (round:GetAttribute("ModeName") or "") .. ((round:GetAttribute("Map") or "") ~= "" and ("  ·  " .. round:GetAttribute("Map")) or "")
+				dest.Text = (round:GetAttribute("ModeName") or "") .. ((round:GetAttribute("Map") or "") ~= "" and ("  ·  " .. (round:GetAttribute("MapName") or round:GetAttribute("Map"))) or "")
 			end
 			task.wait(0.6)
 			hide("arrived")

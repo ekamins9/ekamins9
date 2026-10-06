@@ -1,46 +1,47 @@
-# Updated scripts: playtime gifts, the Hatchery, companions
+# Updated scripts: a peaceful Courtyard, bots, the new training yard
 
-Cosmetic things to do in the Courtyard, from the retention research: reasons to come back
-(offline incubation, daily gifts) and reasons to stay (AFK at the Hatchery). Nothing changes
-combat.
-
-- **Playtime gifts** — six a day for minutes played on any server (5, 10, 20, 30, 45 and 60
-  minutes: Marks, a Speckled Egg, a free crate open, a Mossy Egg, Crowns). A chip at the top
-  left counts down and claims; the lobby has a panel too.
-- **The Hatchery** — a thatched pavilion with three nests, built into the Courtyard's open
-  square. Eggs incubate in real time, even while you're offline or in a match. Standing by the
-  Hatchery doubles the speed. Your own eggs sit in the nests with timers; press E to hatch.
-- **Eggs:** Speckled (30 min, 400 Marks), Mossy (2 h, 1,200 Marks), Ember (6 h, 60 Crowns) and
-  Royal (12 h; gifts, login days and the pass only). HATCH NOW skips the wait for Crowns.
-- **Companions** — 21 creatures built from parts: birds, beasts, hoppers, wisps and drakes,
-  from a sparrow to a griffin. They follow you around, and duplicates add stars (five stars
-  sparkle). The Iron Hound is a season pass reward.
-- **HATCHERY screen** (new dock tile with a ready-egg badge): NESTS and COMPANIONS (the
-  collection, silhouettes for the ones not found yet, take along / send home).
-- **Login days** no longer restart after a missed day; they pause. Login days 2 and 6 and pass
-  tiers 6, 16, 19, 21 and 26 now give eggs or the Iron Hound.
-- **SETTINGS:** Companions All / Mine / None.
-- **Studio cheats:** `/egg <Id> [n]`, `/ripen`, `/playtime <minutes>`.
+- **No fighting in the Courtyard.** The Hub and the training yard are peaceful
+  (`GameConfig.MODES.<id>.pvp = false`): one player's hits and kicks can't touch another's.
+  Dummies and bots can still be hit, and a bot can hit you. Swinging at someone in the Courtyard
+  shows a short notice once in a while.
+- **Bots** (`Combat ▸ Bots`): AI fighters on the real combat system (a normal weapon in NPC mode).
+  They close in, circle at sword's length, swing, stab and do overheads, step in to land, block
+  and parry your windups (better at higher skill), feint and morph (Knight, Champion), and kick a
+  turtle. Squire / Knight / Champion, plus two training dummies. Clients animate their walk
+  (`NpcAnimator`). Studio: `/bot Knight Longsword`, `/bot clear`.
+- **The Training Yard** — a new map (built from code; it replaces the old Tiltyard map): a
+  palisaded field below a castle wall. It has the Drill Master's platform and a lesson circle with
+  log benches, six straw dummies, pells, a roped sparring ring with a challenge sign, tents, a
+  weapon cart, racks, archery butts and torches.
+- **The Drill Master** (Sir Aldric): 13 lessons (`Catalog ▸ Drills`), from the swing, stab and
+  overhead to both sides, the block, parry, riposte, feint, morph, kick, dodge and chamber, ending
+  with a first win in the ring. They're checked from the combat signals; a card shows each lesson
+  in your own key binds and he says it aloud. Each first finish pays a drill (Marks + XP), which
+  counts for tasks and the Drill Master title.
+- **The sparring ring:** challenge a Squire, Knight or Champion bot. After a 3-2-1 it's a fight to
+  the death, and leaving the ring forfeits. A first win at each level pays 100 / 250 / 600 Marks,
+  later wins pay a little, and wins are kept.
+- **Readable names on screen:** the mode reads "Training Yard" and maps get titles
+  (`GameConfig.MAP_TITLES`, Round attribute `MapName`).
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Catalog/Gifts.lua](ReplicatedStorage/Catalog/Gifts.lua) | ReplicatedStorage ▸ Catalog ▸ Gifts | ModuleScript | **new**: the six daily gifts |
-| [Catalog/Eggs.lua](ReplicatedStorage/Catalog/Eggs.lua) | ReplicatedStorage ▸ Catalog ▸ Eggs | ModuleScript | **new**: nests, boost, the Hatchery's spot, the four eggs |
-| [Catalog/Companions.lua](ReplicatedStorage/Catalog/Companions.lua) | ReplicatedStorage ▸ Catalog ▸ Companions | ModuleScript | **new**: 21 companions |
-| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `GIFTS` / `EGG` / `COMPANION`, `eggPool`, `companionSource`, checks |
-| [Catalog/Login.lua](ReplicatedStorage/Catalog/Login.lua), [Catalog/Pass.lua](ReplicatedStorage/Catalog/Pass.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | eggs and the Iron Hound as rewards |
-| [Companions.lua](ReplicatedStorage/Companions.lua) | ReplicatedStorage ▸ Companions | ModuleScript | **new**: builds and animates companions and eggs |
-| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | the Companions choice |
-| [Pastimes.lua](ServerScriptService/Economy/Pastimes.lua) | ServerScriptService ▸ Economy ▸ Pastimes | ModuleScript | **new**: gifts, eggs, nests, hatching, companions |
-| [Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy ▸ Economy | ModuleScript | egg / companion rewards; login runs pause |
-| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | play, eggs, nests, companion, stars |
-| [Pastimes.server.lua](ServerScriptService/Hub/Pastimes.server.lua) | ServerScriptService ▸ Hub ▸ Pastimes | Script | **new**: the playtime clock, the Hatchery (built in the Courtyard), player attributes |
-| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | ops GiftClaim, Hatchery, EggBuy, EggPlace, Hatch, Companion; state carries gifts + hatchery |
-| [Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | ServerScriptService ▸ Hub ▸ Cheats | Script | `/egg`, `/ripen`, `/playtime` |
-| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Pastimes | LocalScript | **new**: companions following, the gift chip, your eggs in the nests, hatching in the world |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | HATCHERY screen and dock tile, lobby gifts panel, egg / companion reward cards |
-| [ui_icons.py](../blender/ui_icons.py) | (repo only) | Blender script | the Hatchery icon (a nest with two eggs) |
-| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | (docs) | | pastimes, eggs, companions, gifts |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | **new**: AI fighters |
+| [R6.lua](ServerScriptService/Combat/R6.lua) | ServerScriptService ▸ Combat ▸ R6 | ModuleScript | **new**: a plain R6 rig from parts |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | `peaceful()`; LastHitAttack, FeintTick, MorphTick, KickTick for the lessons |
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat ▸ CombatClient | ModuleScript | the Courtyard's no-fighting notice |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | `pvp = false` for the Hub and the yard; the yard's map and name; `MAP_TITLES` |
+| [Game.lua](ServerScriptService/Game/Game.lua), [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | ModuleScript / Script | Round `Peaceful` and `MapName` |
+| [Training.lua](ServerScriptService/Game/Training.lua) | ServerScriptService ▸ Game ▸ Training | ModuleScript | **new**: dummies, the Drill Master, lessons, the sparring ring |
+| [Tiltyard.lua](ServerScriptService/Game/Modes/Tiltyard.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Tiltyard | ModuleScript | starts and stops Training |
+| [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ReplicatedStorage ▸ Catalog ▸ Drills | ModuleScript | **new**: the lessons and ring rewards |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ReplicatedStorage ▸ Catalog, ServerScriptService ▸ Loadout | ModuleScript | `DRILLS`; profile `drills`, `spars` |
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua), [Maps.lua](ServerScriptService/Build/Maps.lua), [MapTraining.lua](ServerScriptService/Build/MapTraining.lua) | ServerScriptService ▸ Build | ModuleScript | `K.spot`, `K.palisade`, `K.rope`, `K.rack`, `K.torchPost`; **new** map module |
+| [Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | ServerScriptService ▸ Hub ▸ Cheats | Script | `/bot` |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Training | LocalScript | **new**: lesson card, lesson board, his bubble, ring board, banners |
+| [NpcAnimator.client.lua](StarterPlayerScripts/NpcAnimator.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ NpcAnimator | LocalScript | **new**: bots' walk |
+| [HubMenu](StarterPlayerScripts/HubMenu.client.lua), [LoadoutMenu](StarterPlayerScripts/LoadoutMenu.client.lua), [Scoreboard](StarterPlayerScripts/Scoreboard.client.lua), [TravelScreen](StarterPlayerScripts/TravelScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | show `MapName` |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | (docs) | | the training yard, bots, peaceful modes, spots |
 
-Studio-only: `ReplicatedStorage ▸ Cosmetics ▸ Icons ▸ Hatchery` (the dock icon decal). Save the
-place so it stays.
+Studio-only: `ServerStorage ▸ Maps ▸ TrainingYard` (built by `Build ▸ Maps.build("TrainingYard")`).
+Save the place so it stays.

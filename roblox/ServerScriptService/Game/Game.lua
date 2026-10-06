@@ -204,6 +204,8 @@ function Game.load(id)
 	node:SetAttribute("ModeName", def.name)
 	node:SetAttribute("Category", def.category)
 	node:SetAttribute("Teams", def.teams or 0)
+	-- peaceful: players can't hurt each other (the Courtyard, the training yard)
+	node:SetAttribute("Peaceful", def.pvp == false)
 	return mode
 end
 

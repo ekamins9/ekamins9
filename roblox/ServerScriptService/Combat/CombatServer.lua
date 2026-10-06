@@ -154,9 +154,17 @@ function CombatServer.credit(target, attacker, weaponName, kind)
 	target:SetAttribute("LastHitKind", kind or "")
 	target:SetAttribute("LastHitAt", os.clock())
 end
+-- a peaceful place (the Courtyard, the training yard: Round.Peaceful): one
+-- player's character can't hurt another's. Dummies and bots are fair game, and
+-- a bot may hit a player.
+function CombatServer.peaceful(attacker, target)
+	local node = ReplicatedStorage:FindFirstChild("Round")
+	if not (node and node:GetAttribute("Peaceful")) then return false end
+	return Players:GetPlayerFromCharacter(attacker) ~= nil and Players:GetPlayerFromCharacter(target) ~= nil
+end
 function CombatServer.eachTarget(character, fn)
 	for _, p in ipairs(Players:GetPlayers()) do
-		if p.Character and p.Character ~= character then fn(p.Character) end
+		if p.Character and p.Character ~= character and not CombatServer.peaceful(character, p.Character) then fn(p.Character) end
 	end
 	local npcs = workspace:FindFirstChild("NPCs")
 	if npcs then
@@ -323,6 +331,7 @@ function CombatServer.resolveKick(character, cfg, hooks)
 		if to.Magnitude > cfg.KICK_RANGE or to.Magnitude < 1e-3 then return end
 		if hrp.CFrame.LookVector:Dot(to.Unit) < cosCone then return end
 		landed = true
+		character:SetAttribute("KickTick", (character:GetAttribute("KickTick") or 0) + 1)
 		if hooks.sfx then hooks.sfx("KickHit", thrp) end
 		Sounds.voice("Hurt", m:FindFirstChild("Head") or thrp)
 		CombatServer.flinch(m, to.Unit)
@@ -923,6 +932,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		markCombat(character)
 		markCombat(target)
 		CombatServer.credit(target, character, weaponName, info.kind == "stab" and (region == "head" and "facestab" or "stab") or (region == "head" and "headslash" or "slash"))
+		target:SetAttribute("LastHitAttack", state.attackName or "")
 
 		-- damage: a number (× HEAD/LEG mult) or {head=, body=, legs=}
 		local dmg
@@ -998,6 +1008,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if typeof(model) ~= "Instance" or not model:IsA("Model") or model == character then return end
 		if typeof(part) ~= "Instance" or not part:IsA("BasePart") or not part:IsDescendantOf(model) then return end
 		if typeof(hitPos) ~= "Vector3" then return end
+		if CombatServer.peaceful(character, model) then dprint("hit rejected: no fighting here"); return end
 		local hum = model:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health <= 0 or state.alreadyHit[hum] then return end
 		local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -1427,6 +1438,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		local remaining = math.max(cfg.MIN_PHASE, windup * cfg.MORPH_WINDUP)
 		state.attack, state.attackName = info, name
 		state.morphs += 1
+		setAttr("MorphTick", (character:GetAttribute("MorphTick") or 0) + 1)
 		state.chambered = false
 		state.phase = "windup"   -- a morph from the grace window steps back out of release
 		state.windupEnd  = now + remaining
@@ -1491,6 +1503,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if stamina() < cfg.FEINT_COST then dprint("feint denied: stamina"); return end
 		spend(cfg.FEINT_COST)
 		cancelSwing("feint")
+		setAttr("FeintTick", (character:GetAttribute("FeintTick") or 0) + 1)
 		state.nextActionTime = os.clock() + cfg.FEINT_RECOVERY
 		sfx("Swing", nil, {Speed = 1.5, Volume = 0.5})
 		tell("Feinted")
@@ -1516,6 +1529,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			if stamina() < cfg.FEINT_COST then dprint("feint-to-parry denied: stamina"); return end
 			spend(cfg.FEINT_COST)
 			cancelSwing("feint")
+			setAttr("FeintTick", (character:GetAttribute("FeintTick") or 0) + 1)
 			state.nextActionTime = now + cfg.FEINT_RECOVERY
 			feinted = true
 			sfx("Swing", nil, {Speed = 1.5, Volume = 0.5})

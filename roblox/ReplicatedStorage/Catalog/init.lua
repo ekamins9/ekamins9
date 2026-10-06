@@ -1,7 +1,7 @@
 --[[ CATALOG — everything the game can sell, equip or roll, read from the
      config ModuleScripts INSIDE this module (Catalog ▸ Weights, Packs, Pieces,
      Weapons, Skins, Body, Palette, Crates, Economy, Contracts, Store, Pass,
-     Login, KillFX, Emotes, Gifts, Eggs, Companions). Server and
+     Login, KillFX, Emotes, Gifts, Eggs, Companions, Drills). Server and
      client both require it. To add content you edit those children and drop
      models into ReplicatedStorage ▸ Cosmetics — never this file.
 
@@ -51,6 +51,7 @@ Catalog.EMOTES    = child("Emotes")
 Catalog.GIFTS     = child("Gifts")
 Catalog.EGGS      = child("Eggs")
 Catalog.COMPANIONS = child("Companions")
+Catalog.DRILLS    = child("Drills")
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears

@@ -134,6 +134,7 @@ task.spawn(function()
 		end
 		MapLoader.load(map)
 		node:SetAttribute("Map", map)
+		node:SetAttribute("MapName", GameConfig.mapTitle(map))
 		node:SetAttribute("Number", (node:GetAttribute("Number") or 0) + 1)
 		node:SetAttribute("Winner", "")
 		for i = 1, 3 do node:SetAttribute("Vote" .. i, ""); node:SetAttribute("Votes" .. i, 0); node:SetAttribute("ModeVote" .. i, ""); node:SetAttribute("ModeVotes" .. i, 0) end

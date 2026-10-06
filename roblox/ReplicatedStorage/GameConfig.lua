@@ -50,9 +50,10 @@ GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
 	Tiltyard = {
-		name = "Tiltyard", category = "Training", teams = 0, maxPlayers = 3,
-		description = "Drills with the drill master and dummies. Finish a drill once for Marks.",
-		maps = {"Tiltyard", "Courtyard"}, roundLength = 0, intermission = 0, hidden = true,
+		name = "Training Yard", category = "Training", teams = 0, maxPlayers = 3,
+		description = "The training yard: the Drill Master's lessons, straw dummies, and bots to spar in the ring.",
+		maps = {"TrainingYard"}, roundLength = 0, intermission = 0, hidden = true,
+		pvp = false,   -- players can't hurt each other here: dummies and bots only
 	},
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
@@ -61,8 +62,9 @@ GameConfig.MODES = {
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
-		description = "The courtyard: walk around, talk, practice on the dummies. Pick a mode to fight.",
+		description = "The courtyard: walk around, talk, hatch eggs, show off. Pick a mode to fight.",
 		maps = {"Courtyard"}, roundLength = 0, intermission = 0, hidden = true,
+		pvp = false,   -- a place to talk: no fighting
 	},
 	FFA = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
@@ -93,6 +95,10 @@ GameConfig.MODES = {
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
+-- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
+GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard"}
+function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
+
 -- order on the Play tab
 GameConfig.MODE_ORDER = {"FFA", "Duel", "TDM", "LTS", "KOTH"}
 

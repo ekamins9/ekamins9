@@ -2195,7 +2195,7 @@ do
 
 	local function where()
 		local modeName = roundNode:GetAttribute("ModeName") or ""
-		local map = roundNode:GetAttribute("Map") or ""
+		local map = roundNode:GetAttribute("MapName") or roundNode:GetAttribute("Map") or ""
 		if inHub() then return string.format("COURTYARD  ·  %d HERE", #Players:GetPlayers()) end
 		return string.upper(((state.name or "") ~= "" and (state.name .. "  ·  ") or "") .. modeName .. (map ~= "" and ("  ·  " .. map) or ""))
 	end

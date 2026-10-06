@@ -389,7 +389,7 @@ local function refreshRound()
 	local left = roundNode:GetAttribute("TimeLeft") or 0
 	local m, sec = math.floor(left / 60), left % 60
 	local modeName = roundNode:GetAttribute("ModeName") or ""
-	local map = roundNode:GetAttribute("Map") or ""
+	local map = roundNode:GetAttribute("MapName") or roundNode:GetAttribute("Map") or ""
 	local teams = roundNode:GetAttribute("Teams") or 0
 	local obj = roundNode:GetAttribute("Objective") or ""
 	local number = roundNode:GetAttribute("Number") or 1

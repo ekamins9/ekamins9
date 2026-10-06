@@ -6,7 +6,8 @@
         /kick <name>  remove a player
      TESTING (Studio only, any server): /marks <n>  /crowns <n>  /xp <n>  /level <n>  /passxp <n>
         add that much to your wallet / XP (level = level-ups) / season pass XP, e.g. /marks 5000
-        /egg <Id> [n]  eggs for the Hatchery   /ripen  every nest ready   /playtime <minutes> ]]
+        /egg <Id> [n]  eggs for the Hatchery   /ripen  every nest ready   /playtime <minutes>
+        /bot [Squire|Knight|Champion] [Weapon]  a practice bot that fights you   /bot clear ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -42,10 +43,21 @@ local function handle(plr, text)
 	local cmd, rest = text:match("^/(%a+)%s*(.*)$")
 	if not cmd then return end
 	cmd = cmd:lower()
-	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, xp = 1, level = 1, passxp = 1, egg = 1, ripen = 1, playtime = 1})[cmd] then return end
+	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, xp = 1, level = 1, passxp = 1, egg = 1, ripen = 1, playtime = 1, bot = 1})[cmd] then return end
 	if os.clock() - (last[plr] or -1e9) < 0.3 then return end
 	last[plr] = os.clock()
 	-- testing cheats: Studio only, no server setting needed
+	if cmd == "bot" then
+		if not STUDIO then return end
+		local Bots = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Bots"))
+		local skill, weapon = rest:match("^(%S*)%s*(%S*)")
+		if skill == "clear" then for _, b in ipairs(Bots.list()) do b:destroy() end; return end
+		local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+		local at = hrp.CFrame * CFrame.new(0, 0, -12)
+		Bots.spawn({at = CFrame.lookAt(at.Position, hrp.Position), skill = (skill ~= "" and skill) or "Squire", weapon = (weapon ~= "" and weapon) or "Longsword", target = plr.Character})
+		return
+	end
 	if cmd == "egg" or cmd == "ripen" or cmd == "playtime" then
 		if not STUDIO then return end
 		local Pastimes = require(ServerScriptService.Economy:WaitForChild("Pastimes"))
@@ -91,7 +103,7 @@ local function handle(plr, text)
 	end
 end
 pcall(function()
-	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "xp", "level", "passxp", "egg", "ripen", "playtime"}) do
+	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "xp", "level", "passxp", "egg", "ripen", "playtime", "bot"}) do
 		local c = Instance.new("TextChatCommand"); c.Name = "Cheat_" .. name; c.PrimaryAlias = "/" .. name; c.Parent = TextChatService
 		c.Triggered:Connect(function(source, text) local p = Players:GetPlayerByUserId(source.UserId); if p then handle(p, text) end end)
 	end

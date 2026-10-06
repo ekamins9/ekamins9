@@ -262,13 +262,16 @@ function Maps.Millfield()
 	return K.finish(ctx)
 end
 
+-- the newer maps live in their own modules (Build ▸ Map<Name>)
+function Maps.TrainingYard() return require(script.Parent:WaitForChild("MapTraining"))(K) end
+
 function Maps.build(name)
 	local fn = Maps[name]
 	if type(fn) ~= "function" then error("no map called " .. tostring(name)) end
 	return fn()
 end
 function Maps.buildAll()
-	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield"}) do Maps.build(n) end
+	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield", "TrainingYard"}) do Maps.build(n) end
 end
 
 return Maps
