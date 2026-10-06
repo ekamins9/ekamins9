@@ -484,6 +484,7 @@ local tabBtn, tabFrame, render = {}, {}, {}
 local currentTab = "PLAY"
 for i, name in ipairs(TABS) do
 	local b = button(side, name, 15, COL_CARD)
+	b.Name = "Tab_" .. name
 	b.Size = UDim2.new(1, 0, 0, 38)
 	b.LayoutOrder = i
 	b.TextXAlignment = Enum.TextXAlignment.Left
@@ -633,7 +634,8 @@ end
 local function loadState()
 	local r = call("State")
 	if r.ok then
-		for _, k in ipairs({"studio", "reserved", "access", "name", "custom", "door", "mode", "bracket", "ranked", "isHost", "noRewards", "party", "partyMax", "profile", "contracts", "settings"}) do state[k] = r[k] end
+		for _, k in ipairs({"studio", "reserved", "access", "name", "custom", "door", "mode", "bracket", "ranked", "isHost", "noRewards", "party", "partyMax", "profile", "contracts", "settings", "store"}) do state[k] = r[k] end
+		if state.store then state.store.at = os.clock() end
 		state.activeClass = r.profile and r.profile.active or state.activeClass
 		if r.party and r.party.queue then state.queue = {bracket = r.party.bracket, ranked = r.party.ranked, waiting = r.party.queue.waiting, window = r.party.queue.window}
 		elseif r.party == nil or r.party.queue == nil then state.queue = nil end
@@ -1514,184 +1516,221 @@ do
 end
 
 --------------------------------------------------------------------
---  SHOP TAB
+--  SHOP TAB — STORE (today's packs, 3D previews) · CRATES (weapon on a stage,
+--  skin strip, the drum) · ARMORY (every weapon, its skins, equip) · COLORS
 --------------------------------------------------------------------
+-- a small 3D view of a dressed mannequin (a pack's set) facing the camera
+local function mannequinThumb(parent, loadout, weight, size, colors)
+	local holder = frame(parent, COL_CARD2, 8)
+	holder.Size = size or UDim2.new(1, 0, 0, 160)
+	holder.ClipsDescendants = true
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = UDim2.fromScale(1, 1)
+	vp.Ambient = Color3.fromRGB(125, 118, 108)
+	vp.LightColor = Color3.fromRGB(255, 240, 220)
+	vp.LightDirection = Vector3.new(-0.5, -1, 0.6)
+	vp.Parent = holder
+	local world = Instance.new("WorldModel"); world.Parent = vp
+	local cam = Instance.new("Camera"); cam.Parent = vp
+	vp.CurrentCamera = cam
+	local rig = makeRig()
+	rig.Parent = world
+	local lo = {}
+	for k, v in pairs(loadout or {}) do lo[k] = v end
+	lo.colors = lo.colors or colors or {Primary = "Royal Blue", Secondary = "Slate", Accent = "Gold", Metal = "Steel"}
+	pcall(Dresser.dress, rig, {loadout = lo, appearance = Catalog.BODY.defaults, weight = weight, preview = true})
+	settle(rig)
+	for _, d in ipairs(rig:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
+	rig:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(20), 0))
+	cam.FieldOfView = 40
+	cam.CFrame = CFrame.lookAt(Vector3.new(0.4, 0.6, -8.2), Vector3.new(0, -0.5, 0))
+	return holder, rig
+end
+
+-- the loadout a pack dresses: its helm / top / legs (first piece per slot)
+local function packLoadout(packKey)
+	local lo = {}
+	for _, pc in ipairs(Catalog.PIECES) do
+		if pc.pack == packKey and not lo[pc.slot] then lo[pc.slot] = pc.id end
+	end
+	return lo
+end
+local function packSkins(packKey)
+	local out = {}
+	for _, sk in ipairs(Catalog.SKINS) do if sk.pack == packKey then table.insert(out, sk) end end
+	return out
+end
+local function packPieces(packKey)
+	local out = {}
+	for _, pc in ipairs(Catalog.PIECES) do if pc.pack == packKey then table.insert(out, pc) end end
+	return out
+end
+local function packRarity(packKey)
+	local r = "Common"
+	local order = {Common = 1, Rare = 2, Epic = 3, Legendary = 4}
+	for _, pc in ipairs(packPieces(packKey)) do if (order[pc.rarity] or 1) > (order[r] or 1) then r = pc.rarity end end
+	return r
+end
+local function packOwned(packKey)
+	local all, any = true, false
+	for _, pc in ipairs(packPieces(packKey)) do if owns("pieces", pc.id) then any = true else all = false end end
+	for _, sk in ipairs(packSkins(packKey)) do if owns("skins", sk.id) then any = true else all = false end end
+	return all, any
+end
+local function packPrice(packKey)
+	local m, c = 0, 0
+	for _, pc in ipairs(packPieces(packKey)) do if not owns("pieces", pc.id) then m += pc.marks or 0; c += pc.crowns or 0 end end
+	for _, sk in ipairs(packSkins(packKey)) do if not owns("skins", sk.id) then m += sk.marks or 0; c += sk.crowns or 0 end end
+	local disc = 1 - (Catalog.PACKS[packKey].bundle or 0)
+	return math.floor(m * disc + 0.5), math.floor(c * disc + 0.5)
+end
+local function skinSource(s)
+	if s.crate == "earned" then return tostring(s.kills) .. " kills" end
+	if s.crate then return (Catalog.CRATES[s.crate] and Catalog.CRATES[s.crate].name or s.crate) end
+	if s.pack then return (Catalog.PACKS[s.pack] and Catalog.PACKS[s.pack].name or s.pack) .. " pack" end
+	if (s.marks or 0) > 0 then return fmt(s.marks) .. " Marks" end
+	if (s.crowns or 0) > 0 then return fmt(s.crowns) .. " Crowns" end
+	return "free"
+end
+-- "13h 22m" until the store turns (server clock)
+local function storeCountdown()
+	local st = state.store
+	if not (st and st.endsAt and st.serverTime) then return "" end
+	local left = math.max(0, st.endsAt - (st.serverTime + (os.clock() - (st.at or 0))))
+	local h, m = math.floor(left / 3600), math.floor(left % 3600 / 60)
+	return h > 0 and string.format("%dh %02dm", h, m) or string.format("%dm", m)
+end
+
 do
 	local f = tabFrame.SHOP
-	local tabs = frame(f, COL_PANEL); tabs.BackgroundTransparency = 1; tabs.Size = UDim2.new(1, 0, 0, 30)
+	local tabs = frame(f, COL_PANEL); tabs.BackgroundTransparency = 1; tabs.Size = UDim2.new(1, 0, 0, 34)
 	hlist(tabs, 6)
-	local body = frame(f, COL_PANEL); body.BackgroundTransparency = 1; body.Position = UDim2.new(0, 0, 0, 38); body.Size = UDim2.new(1, 0, 1, -38)
-	local SHOP_TABS = {{"crates", "CRATES"}, {"packs", "PACKS"}, {"weapons", "WEAPONS"}, {"colors", "COLORS"}}
+	local body = frame(f, COL_PANEL); body.BackgroundTransparency = 1; body.Position = UDim2.new(0, 0, 0, 42); body.Size = UDim2.new(1, 0, 1, -42)
+	local SHOP_TABS = {{"store", "TODAY'S STORE"}, {"crates", "CRATES"}, {"weapons", "ARMORY"}, {"colors", "COLORS"}}
+	ui.shopTab = "store"
+	ui.shopWeapon = ui.shopWeapon or "Longsword"
+	ui.shopSkin = nil
+	ui.crateSkin = nil
 
 	local function afterBuy(r) toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.profile then state.profile = r.profile; refreshWallet() end; closeModal(); render.SHOP() end
+	local function priceText(m, c)
+		local bits = {}
+		if (m or 0) > 0 then table.insert(bits, fmt(m) .. " M") end
+		if (c or 0) > 0 then table.insert(bits, fmt(c) .. " C") end
+		return #bits > 0 and table.concat(bits, "  ·  ") or "free"
+	end
+	local function rarityTag(parent, rarity)
+		local t = label(parent, string.upper(rarity or "Common"), 10, FONT, COL_TEXT)
+		t.BackgroundTransparency = 0
+		t.BackgroundColor3 = RARITY_COL[rarity] or COL_DIM
+		t.TextXAlignment = Enum.TextXAlignment.Center
+		t.Size = UDim2.fromOffset(74, 18)
+		Instance.new("UICorner", t).CornerRadius = UDim.new(0, 5)
+		return t
+	end
 
 	local function renderTabs()
 		clear(tabs)
 		for i, t in ipairs(SHOP_TABS) do
 			local on = ui.shopTab == t[1]
 			local b = button(tabs, t[2], 13, on and COL_CARD_ON or COL_CARD)
-			b.Size = UDim2.fromOffset(120, 30); b.LayoutOrder = i; b.TextColor3 = on and COL_TEXT or COL_DIM
+			b.Size = UDim2.fromOffset(t[1] == "store" and 150 or 110, 34); b.LayoutOrder = i; b.TextColor3 = on and COL_TEXT or COL_DIM
 			b.Activated:Connect(function() ui.shopTab = t[1]; render.SHOP() end)
 		end
 	end
 
-	-- the drum: a strip of skin cards that scrolls and stops under the mark
-	local function crates()
-		local left = frame(body, COL_PANEL); left.BackgroundTransparency = 1; left.Size = UDim2.new(1, -332, 1, 0)
-		local leftList = scroll(left, 8)
-		local right = frame(body, COL_PANEL); right.BackgroundTransparency = 1; right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 320, 1, 0)
-		local rightList = scroll(right, 8)
-		local names = {}
-		for k, c in pairs(Catalog.CRATES) do table.insert(names, {text = c.name, id = k}) end
-		table.sort(names, function(a, b) return a.id < b.id end)
-		chips(leftList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; render.SHOP() end)
-		local crate = Catalog.CRATES[ui.crate]
-		if not crate then dim(leftList, "No crates in Catalog › Crates."); return end
-		local pool = Catalog.crateSkins(ui.crate)
-		-- drum
-		local drum = frame(leftList, COL_CARD2, 10)
-		drum.Size = UDim2.new(1, 0, 0, 150)
-		drum.LayoutOrder = nextOrder()
-		drum.ClipsDescendants = true
-		local strip = frame(drum, COL_CARD2); strip.BackgroundTransparency = 1; strip.Size = UDim2.new(0, 0, 1, 0); strip.AutomaticSize = Enum.AutomaticSize.X; strip.Position = UDim2.new(0, 0, 0, 0)
-		local sl = hlist(strip, 8); sl.VerticalAlignment = Enum.VerticalAlignment.Center
-		padding(strip, 8, 8, 0, 0)
-		local CARD_W, CARD_GAP = 118, 8
-		local N = 24
-		local cards = {}
-		-- a card: the skin's weapon in 3D, its rarity as the border, its name below
-		local function fillCard(c, s)
-			clear(c)
-			local st = c:FindFirstChildOfClass("UIStroke"); if st then st.Color = RARITY_COL[s.rarity] or COL_DIM end
-			local th = weaponThumb(c, s.weapon, s.id, UDim2.new(1, -12, 0, 78)); th.Position = UDim2.new(0, 6, 0, 6)
-			local t = label(c, string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. "\n" .. s.name, 11, FONT, COL_TEXT); t.Position = UDim2.new(0, 6, 0, 86); t.Size = UDim2.new(1, -12, 0, 36); t.TextXAlignment = Enum.TextXAlignment.Center
-		end
-		if #pool > 0 then
-			for i = 1, N do
-				local s = pool[(i - 1) % #pool + 1]
-				local c = frame(strip, COL_CARD, 8)
-				c.Size = UDim2.fromOffset(CARD_W, 130)
-				c.LayoutOrder = i
-				local st = Instance.new("UIStroke", c); st.Thickness = 2
-				fillCard(c, s)
-				cards[i] = {frame = c, skin = s}
+	----------------------------------------------------------------
+	--  PACK DETAIL (modal): big mannequin, pieces, skins, buy
+	----------------------------------------------------------------
+	local function packDetail(k)
+		local pk = Catalog.PACKS[k]
+		local pieces, skins = packPieces(k), packSkins(k)
+		local all = packOwned(k)
+		local m, c = packPrice(k)
+		local onSale = Catalog.onSale(k, state.store and state.store.day)
+		local buttons = (not all and onSale) and {
+			m > 0 and {"WHOLE PACK  ·  " .. fmt(m) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "pack", k, "marks")) end} or nil,
+			c > 0 and {"WHOLE PACK  ·  " .. fmt(c) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "pack", k, "crowns")) end} or nil,
+		} or nil
+		modal(pk.name, string.format("%s  ·  %s  ·  %s", pk.weight or "", packRarity(k), all and "owned" or (onSale and string.format("%d%% off the whole pack", math.floor((pk.bundle or 0) * 100 + 0.5)) or "not in today's store")), buttons, function(box)
+			local two = frame(box, COL_PANEL); two.BackgroundTransparency = 1; two.Size = UDim2.new(1, 0, 0, 230); two.LayoutOrder = 5
+			local th = mannequinThumb(two, packLoadout(k), pk.weight, UDim2.new(0, 190, 1, 0))
+			th.Position = UDim2.new(0, 0, 0, 0)
+			local right = frame(two, COL_PANEL); right.BackgroundTransparency = 1; right.Position = UDim2.new(0, 200, 0, 0); right.Size = UDim2.new(1, -200, 1, 0)
+			local rl = scroll(right, 4)
+			for _, pc in ipairs(pieces) do
+				local have = owns("pieces", pc.id)
+				row(rl, pc.name .. "  ·  " .. pc.slot, have and "owned" or priceText(pc.marks, pc.crowns), false, (not have and onSale) and function()
+					modal(pc.name, pc.description or "", {
+						(pc.marks or 0) > 0 and {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "piece", pc.id, "marks")) end} or nil,
+						(pc.crowns or 0) > 0 and {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns")) end} or nil})
+				end or nil, have and COL_GOOD or COL_MARKS)
 			end
-		else
-			dim(drum, "This crate has no skins yet: point some skins at it in Catalog › Skins.")
-		end
-		local mark = frame(drum, COL_GOLD); mark.AnchorPoint = Vector2.new(0.5, 0); mark.Position = UDim2.new(0.5, 0, 0, 0); mark.Size = UDim2.new(0, 3, 1, 0); mark.ZIndex = 5
-		local function centerOn(index, tweenTime)
-			local x = -(8 + (index - 1) * (CARD_W + CARD_GAP) + CARD_W / 2) + drum.AbsoluteSize.X / 2
-			if tweenTime then TweenService:Create(strip, TweenInfo.new(tweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, x, 0, 0)}):Play()
-			else strip.Position = UDim2.new(0, x, 0, 0) end
-		end
-		task.defer(function() centerOn(3) end)
-		local rollNote = dim(leftList, ui.rolling and "rolling…" or "the drum slows over 4 s  ·  the one under the line is yours")
-		local two = frame(leftList, COL_PANEL); two.BackgroundTransparency = 1; two.AutomaticSize = Enum.AutomaticSize.Y; two.Size = UDim2.new(1, 0, 0, 0); two.LayoutOrder = nextOrder()
-		local tl2 = hlist(two, 8)
-		local c1 = panel(two, crate.name, true); c1.Size = UDim2.new(0.5, -4, 0, 0)
-		local cc = state.profile and state.profile.crates and state.profile.crates[ui.crate] or {opens = 0, sinceLegendary = 0}
-		dim(c1, (crate.description or "") .. string.format(" Legendary guaranteed within %d opens (%d since your last).", crate.pity or 20, cc.sinceLegendary or 0))
-		local openBtn = bigBtn(c1, "OPEN  ·  " .. tostring(crate.cost) .. " CROWNS", COL_GOLD)
-		openBtn.TextColor3 = Color3.fromRGB(30, 22, 10)
-		local c2 = panel(two, "ODDS", true); c2.Size = UDim2.new(0.5, -4, 0, 0)
-		local oddsLine = {}
-		for _, r in ipairs(Catalog.RARITIES) do if crate.odds[r] then table.insert(oddsLine, string.format("%s %d%%", r, crate.odds[r])) end end
-		dim(c2, table.concat(oddsLine, "  ·  "))
-		local rf = {}
-		for _, r in ipairs(Catalog.RARITIES) do if crate.refund and crate.refund[r] then table.insert(rf, string.lower(r) .. " " .. fmt(crate.refund[r])) end end
-		dim(c2, "Duplicate: refunded as Marks (" .. table.concat(rf, " · ") .. ").")
-		openBtn.Activated:Connect(function()
-			if ui.rolling or #pool == 0 then return end
-			ui.rolling = true
-			openBtn.Active = false
-			rollNote.Text = "rolling…"
-			local r = call("OpenCrate", ui.crate)
-			if not r.ok then ui.rolling = false; openBtn.Active = true; toast(r.msg or "", COL_BAD); rollNote.Text = r.msg or ""; return end
-			if r.profile then state.profile = r.profile; refreshWallet() end
-			local res = r.result
-			-- put the winning skin on a card near the end of the strip and tween to it
-			local target = N - 4
-			for i = target, N do
-				local c = cards[i]
-				if c then
-					local s = i == target and Catalog.SKIN[res.skinId] or pool[(i * 7) % #pool + 1]
-					if s then c.skin = s; fillCard(c.frame, s) end
-				end
+			for _, sk in ipairs(skins) do
+				local have = owns("skins", sk.id)
+				local r = row(rl, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "owned" or priceText(sk.marks, sk.crowns), false, (not have and onSale) and function()
+					modal(sk.name, sk.rarity or "", {
+						(sk.marks or 0) > 0 and {"BUY  ·  " .. fmt(sk.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "skin", sk.id, "marks")) end} or nil,
+						(sk.crowns or 0) > 0 and {"BUY  ·  " .. fmt(sk.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "skin", sk.id, "crowns")) end} or nil},
+						function(b2) local th2 = weaponThumb(b2, sk.weapon, sk.id, UDim2.new(1, 0, 0, 140)); th2.LayoutOrder = 5 end)
+				end or nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_MARKS))
 			end
-			centerOn(2)
-			task.wait(0.05)
-			centerOn(target, 4)
-			task.wait(4.2)
-			ui.rolling = false
-			table.insert(ui.pulls, 1, res)
-			local won = Catalog.SKIN[res.skinId]
-			modal(string.upper(res.rarity) .. "  ·  " .. res.name, res.dup and string.format("Duplicate — refunded %s Marks.", fmt(res.refund)) or "New skin! Equip it on CLASSES under the weapon's skins.",
-				{{"OK", COL_CARD_ON, closeModal}}, function(box)
-					local th = weaponThumb(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 150)); th.LayoutOrder = 5
-					local st = Instance.new("UIStroke", th); st.Color = RARITY_COL[res.rarity] or COL_DIM; st.Thickness = 2
-				end)
-			render.SHOP()
+			if #pieces == 0 and #skins == 0 then dim(rl, "Nothing names this pack yet.") end
 		end)
-		openBtn.Name = "OpenBtn"
-		-- right: pulls + unlocks
-		local pl = panel(rightList, "YOUR PULLS THIS SESSION", true)
-		if #ui.pulls == 0 then dim(pl, "Nothing yet.") end
-		for i, pu in ipairs(ui.pulls) do if i <= 8 then row(pl, pu.name, pu.dup and ("dup +" .. fmt(pu.refund)) or pu.rarity, false, nil, RARITY_COL[pu.rarity]) end end
-		local un = panel(rightList, "WEAPON UNLOCKS", true)
-		local any = false
-		for _, w in ipairs(Catalog.WEAPONS) do if not owns("weapons", w.id) then any = true; row(un, w.name, unlockText(w), false, nil) end end
-		if not any then dim(un, "All weapons unlocked.") end
 	end
 
-	local function packs()
-		local list = scroll(body, 8)
+	----------------------------------------------------------------
+	--  TODAY'S STORE: hero cards for the packs on sale, the countdown,
+	--  and the earned-in-battle ledger
+	----------------------------------------------------------------
+	local function store()
+		local list = scroll(body, 10)
+		local head = frame(list, COL_PANEL); head.BackgroundTransparency = 1; head.Size = UDim2.new(1, 0, 0, 30); head.LayoutOrder = nextOrder()
+		local t = label(head, "TODAY'S STORE", 22, FONT_BLACK, COL_ACCENT); t.Size = UDim2.new(0.5, 0, 1, 0)
+		local cd = label(head, "", 13, FONT, COL_DIM); cd.AnchorPoint = Vector2.new(1, 0); cd.Position = UDim2.new(1, 0, 0, 0); cd.Size = UDim2.new(0.5, 0, 1, 0); cd.TextXAlignment = Enum.TextXAlignment.Right
+		local function tick() cd.Text = "NEW PACKS IN  " .. storeCountdown() .. "   ·   rotates daily" end
+		tick()
+		task.spawn(function() while cd.Parent do task.wait(20); tick() end end)
+		local onSale = state.store and state.store.packs or {}
 		local grid = frame(list, COL_PANEL); grid.BackgroundTransparency = 1; grid.AutomaticSize = Enum.AutomaticSize.Y; grid.Size = UDim2.new(1, 0, 0, 0); grid.LayoutOrder = nextOrder()
-		local g = Instance.new("UIGridLayout", grid); g.CellSize = UDim2.new(0.25, -8, 0, 120); g.CellPadding = UDim2.fromOffset(8, 8); g.SortOrder = Enum.SortOrder.LayoutOrder
-		local names = {}
-		for k, p in pairs(Catalog.PACKS) do if not p.free then table.insert(names, k) end end
-		table.sort(names, function(a, b) local pa, pb = Catalog.PACKS[a], Catalog.PACKS[b]; if (pa.featured == true) ~= (pb.featured == true) then return pa.featured == true end; return pa.name < pb.name end)
-		if #names == 0 then dim(list, "No paid packs yet. A pack is a key in Catalog › Packs that pieces (or a set's Config.Pack) name.") end
-		for i, k in ipairs(names) do
+		local g = Instance.new("UIGridLayout", grid); g.CellSize = UDim2.new(1 / math.max(1, math.min(3, #onSale)), -10, 0, 300); g.CellPadding = UDim2.fromOffset(10, 10); g.SortOrder = Enum.SortOrder.LayoutOrder
+		if #onSale == 0 then dim(list, "Nothing on sale today. Fill Catalog › Store › queue.") end
+		for i, k in ipairs(onSale) do
 			local pk = Catalog.PACKS[k]
-			local pieces = {}
-			local all = true
-			for _, pc in ipairs(Catalog.PIECES) do if pc.pack == k then table.insert(pieces, pc); if not owns("pieces", pc.id) then all = false end end end
-			local skins = {}
-			for _, sk in ipairs(Catalog.SKINS) do if sk.pack == k then table.insert(skins, sk); if not owns("skins", sk.id) then all = false end end end
-			local b = button(grid, "", 14, pk.color or COL_CARD)
-			b.LayoutOrder = i
-			b.AutoButtonColor = false
-			local n = label(b, pk.name, 16, FONT_BLACK, COL_TEXT); n.Position = UDim2.new(0, 10, 0, 8); n.Size = UDim2.new(1, -20, 0, 40); n.TextYAlignment = Enum.TextYAlignment.Top
-			local s = label(b, (pk.weight or "") .. (pk.featured and "  ·  featured" or "") .. (all and "  ·  owned" or "") .. string.format("  ·  %d piece%s", #pieces, #pieces == 1 and "" or "s") .. (#skins > 0 and string.format("  ·  %d skin%s", #skins, #skins == 1 and "" or "s") or ""), 11, FONT, COL_TEXT); s.Position = UDim2.new(0, 10, 1, -24); s.Size = UDim2.new(1, -20, 0, 16)
-			b.Activated:Connect(function()
-				local m, c = 0, 0
-				for _, pc in ipairs(pieces) do if not owns("pieces", pc.id) then m += pc.marks or 0; c += pc.crowns or 0 end end
-				for _, sk in ipairs(skins) do if not owns("skins", sk.id) then m += sk.marks or 0; c += sk.crowns or 0 end end
-				local disc = 1 - (pk.bundle or 0)
-				modal(pk.name, string.format("%s pack. Buy pieces one by one, or the rest of the pack at %d%% off.", pk.weight or "", math.floor((pk.bundle or 0) * 100 + 0.5)), (not all) and {
-					m > 0 and {"ALL  ·  " .. fmt(math.floor(m * disc + 0.5)) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "pack", k, "marks")) end} or nil,
-					c > 0 and {"ALL  ·  " .. fmt(math.floor(c * disc + 0.5)) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "pack", k, "crowns")) end} or nil,
-				} or nil, function(box)
-					for _, pc in ipairs(pieces) do
-						local have = owns("pieces", pc.id)
-						row(box, pc.name .. "  ·  " .. pc.slot, have and "owned" or (fmt(pc.marks or 0) .. " M  ·  " .. fmt(pc.crowns or 0) .. " C"), false, (not have) and function()
-							modal(pc.name, pc.description or "", {
-								(pc.marks or 0) > 0 and {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "piece", pc.id, "marks")) end} or nil,
-								(pc.crowns or 0) > 0 and {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns")) end} or nil})
-						end or nil, have and COL_GOOD or COL_MARKS)
-					end
-					for _, sk in ipairs(skins) do
-						local have = owns("skins", sk.id)
-						row(box, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "owned" or (fmt(sk.marks or 0) .. " M  ·  " .. fmt(sk.crowns or 0) .. " C"), false, (not have) and function()
-							modal(sk.name, sk.rarity or "", {
-								(sk.marks or 0) > 0 and {"BUY  ·  " .. fmt(sk.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "skin", sk.id, "marks")) end} or nil,
-								(sk.crowns or 0) > 0 and {"BUY  ·  " .. fmt(sk.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "skin", sk.id, "crowns")) end} or nil})
-						end or nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_MARKS))
-					end
-					if #pieces == 0 and #skins == 0 then dim(box, "Nothing names this pack yet.") end
-				end)
-			end)
+			local all, any = packOwned(k)
+			local m, c = packPrice(k)
+			local card = button(grid, "", 14, COL_CARD)
+			card.LayoutOrder = i
+			card.AutoButtonColor = false
+			local st = Instance.new("UIStroke", card); st.Color = RARITY_COL[packRarity(k)] or COL_DIM; st.Thickness = 2; st.Transparency = 0.2
+			-- a colour wash in the pack's colour behind the mannequin
+			local wash = frame(card, pk.color or COL_CARD2, 10); wash.Size = UDim2.new(1, 0, 0, 200); wash.BackgroundTransparency = 0.35
+			local th = mannequinThumb(card, packLoadout(k), pk.weight, UDim2.new(1, 0, 0, 200))
+			th.BackgroundTransparency = 1
+			local tag = rarityTag(card, packRarity(k)); tag.Position = UDim2.new(0, 10, 0, 10)
+			if pk.featured then local ft = label(card, "FEATURED", 11, FONT, COL_ACCENT); ft.AnchorPoint = Vector2.new(1, 0); ft.Position = UDim2.new(1, -10, 0, 10); ft.Size = UDim2.fromOffset(90, 18); ft.TextXAlignment = Enum.TextXAlignment.Right end
+			local n = label(card, pk.name, 20, FONT_BLACK, COL_TEXT); n.Position = UDim2.new(0, 12, 0, 206); n.Size = UDim2.new(1, -24, 0, 26)
+			local s = label(card, string.format("%s  ·  %d pieces%s", pk.weight or "", #packPieces(k), #packSkins(k) > 0 and string.format("  ·  %d weapon skin%s", #packSkins(k), #packSkins(k) == 1 and "" or "s") or ""), 12, FONT_BODY, COL_DIM); s.Position = UDim2.new(0, 12, 0, 232); s.Size = UDim2.new(1, -24, 0, 18)
+			local price = label(card, all and "OWNED" or (any and ("REST  ·  " .. priceText(m, c)) or priceText(m, c)), 15, FONT, all and COL_GOOD or COL_ACCENT); price.Position = UDim2.new(0, 12, 0, 258); price.Size = UDim2.new(1, -24, 0, 22)
+			card.Activated:Connect(function() packDetail(k) end)
+		end
+		-- what is coming (the next days), so the player knows what to wait for
+		local S = Catalog.STORE
+		if S and S.queue and #S.queue > 0 then
+			local nx = panel(list, "COMING UP", true)
+			local today = state.store and state.store.day or os.date("!%Y-%m-%d")
+			local y, mo, d = today:match("^(%d+)%-(%d+)%-(%d+)$")
+			local base = os.time({year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = 12})
+			local names = {}
+			for dayOffset = 1, 2 do
+				local key = os.date("!%Y-%m-%d", base + dayOffset * 86400)
+				local packs = Catalog.storeFor(key)
+				local n2 = {}
+				for _, k in ipairs(packs) do table.insert(n2, Catalog.PACKS[k].name) end
+				table.insert(names, (dayOffset == 1 and "Tomorrow" or "In 2 days") .. ":  " .. table.concat(n2, "  ·  "))
+			end
+			for _, line in ipairs(names) do dim(nx, line) end
 		end
 		-- earned in battle: pieces, skins and titles with a kill / win / level requirement
 		local e = panel(list, "EARNED IN BATTLE", true)
@@ -1719,34 +1758,243 @@ do
 		if not any then dim(e, "Nothing to earn yet.") end
 	end
 
-	local function weapons()
-		local list = scroll(body, 8)
-		local grid = frame(list, COL_PANEL); grid.BackgroundTransparency = 1; grid.AutomaticSize = Enum.AutomaticSize.Y; grid.Size = UDim2.new(1, 0, 0, 0); grid.LayoutOrder = nextOrder()
-		local gl = Instance.new("UIGridLayout", grid); gl.CellSize = UDim2.new(0.5, -6, 0, 0); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
-		for i, w in ipairs(Catalog.WEAPONS) do
-			local have = owns("weapons", w.id)
-			local p = panel(grid, nil, true)
-			p.LayoutOrder = i
-			p.AutomaticSize = Enum.AutomaticSize.Y
-			local t = label(p, w.name .. "   ·   " .. w.family .. (w.secondary and "  ·  secondary ok" or ""), 15, FONT, COL_TEXT); t.Size = UDim2.new(1, 0, 0, 20); t.LayoutOrder = nextOrder()
-			dim(p, have and "unlocked" or ("unlock: " .. unlockText(w) .. ((w.marks or 0) > 0 and ("  ·  or " .. fmt(w.marks) .. " Marks") or "")))
-			if not have and (w.marks or 0) > 0 then
-				local b = bigBtn(p, "BUY  ·  " .. fmt(w.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "weapon", w.id, "marks")) end)
-			end
-			dim(p, "Skins")
-			local n = 0
-			for _, s in ipairs(Catalog.skinsFor(w.id)) do
-				n += 1
-				local src = owns("skins", s.id) and "owned" or (s.crate == "earned" and (tostring(s.kills) .. " kills with it") or (s.crate and ((Catalog.CRATES[s.crate] and Catalog.CRATES[s.crate].name or s.crate)) or ((s.marks or 0) > 0 and (fmt(s.marks) .. " M") or ((s.crowns or 0) > 0 and (fmt(s.crowns) .. " C") or "shop"))))
-				local buyable = not owns("skins", s.id) and not s.crate and ((s.marks or 0) > 0 or (s.crowns or 0) > 0)
-				row(p, s.name, src, false, buyable and function()
-					modal(w.name .. "  ·  " .. s.name, s.rarity, {
-						(s.marks or 0) > 0 and {"BUY  ·  " .. fmt(s.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "skin", s.id, "marks")) end} or nil,
-						(s.crowns or 0) > 0 and {"BUY  ·  " .. fmt(s.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "skin", s.id, "crowns")) end} or nil})
-				end or nil, RARITY_COL[s.rarity])
-			end
-			if n == 0 then dim(p, "No skins yet.") end
+	----------------------------------------------------------------
+	--  a strip of skin cards (horizontal scroll) with the selected one lit
+	----------------------------------------------------------------
+	local function skinStrip(parent, pool, selectedId, onPick, height)
+		local holder = frame(parent, COL_CARD2, 10)
+		holder.Size = UDim2.new(1, 0, 0, height or 150)
+		local sf = Instance.new("ScrollingFrame")
+		sf.BackgroundTransparency = 1
+		sf.BorderSizePixel = 0
+		sf.Size = UDim2.fromScale(1, 1)
+		sf.CanvasSize = UDim2.new(0, 0, 0, 0)
+		sf.AutomaticCanvasSize = Enum.AutomaticSize.X
+		sf.ScrollingDirection = Enum.ScrollingDirection.X
+		sf.ScrollBarThickness = 6
+		sf.ScrollBarImageColor3 = COL_DIM
+		sf.Parent = holder
+		local lay = hlist(sf, 8); lay.VerticalAlignment = Enum.VerticalAlignment.Center
+		padding(sf, 8, 8, 6, 6)
+		for i, s in ipairs(pool) do
+			local have = owns("skins", s.id)
+			local on = s.id == selectedId
+			local c = button(sf, "", 12, on and COL_CARD_ON or COL_CARD)
+			c.AutoButtonColor = false
+			c.Size = UDim2.fromOffset(112, (height or 150) - 24)
+			c.LayoutOrder = i
+			local st = Instance.new("UIStroke", c); st.Thickness = 2; st.Color = RARITY_COL[s.rarity] or COL_DIM; st.Transparency = on and 0 or 0.4
+			local th = weaponThumb(c, s.weapon, s.id, UDim2.new(1, -12, 0, 70)); th.Position = UDim2.new(0, 6, 0, 6); th.BackgroundTransparency = 1
+			local t = label(c, s.name, 11, FONT, COL_TEXT); t.Position = UDim2.new(0, 6, 0, 80); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
+			local sub = label(c, have and "owned" or skinSource(s), 10, FONT_BODY, have and COL_GOOD or COL_DIM); sub.Position = UDim2.new(0, 6, 0, 97); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
+			if not have then local lk = label(c, "🔒", 12, FONT, COL_TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -4, 0, 2); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
+			c.Activated:Connect(function() onPick(s) end)
 		end
+		return holder, sf
+	end
+
+	-- the big stage: one weapon with a skin, large, slowly turning
+	local function weaponStage(parent, weaponId, skinId, size)
+		local holder = frame(parent, COL_CARD2, 10)
+		holder.Size = size or UDim2.new(1, 0, 1, 0)
+		holder.ClipsDescendants = true
+		local t = weaponId and Catalog.weaponModel(weaponId)
+		if not t then dim(holder, "no display model"); return holder end
+		local vp = Instance.new("ViewportFrame")
+		vp.BackgroundTransparency = 1
+		vp.Size = UDim2.fromScale(1, 1)
+		vp.Ambient = Color3.fromRGB(120, 115, 105)
+		vp.LightColor = Color3.fromRGB(255, 244, 226)
+		vp.LightDirection = Vector3.new(-0.4, -1, 0.5)
+		vp.Parent = holder
+		local world = Instance.new("WorldModel"); world.Parent = vp
+		local cam = Instance.new("Camera"); cam.Parent = vp
+		vp.CurrentCamera = cam
+		local m = t:Clone()
+		for _, d in ipairs(m:GetDescendants()) do if d:IsA("LuaSourceContainer") then d:Destroy() end end
+		m.Parent = world
+		if skinId then pcall(Dresser.applySkin, m, skinId) end
+		settle(m)
+		for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
+		local cf, sz = m:GetBoundingBox()
+		local longest = math.max(sz.X, sz.Y, sz.Z, 1)
+		-- lay it diagonally, tip up-right, and spin it slowly about its own axis
+		local center = cf.Position
+		local base = CFrame.Angles(0, 0, math.rad(-30))
+		m:PivotTo(base * CFrame.new(-center) * m:GetPivot())
+		local d = (longest * 0.58) / math.tan(math.rad(16))
+		cam.FieldOfView = 32
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 0, -d), Vector3.zero)
+		local t0 = os.clock()
+		local pivot0 = m:GetPivot()
+		task.spawn(function()
+			while holder.Parent do
+				local a = (os.clock() - t0) * 0.5
+				m:PivotTo(base * CFrame.Angles(0, a, 0) * base:Inverse() * pivot0)
+				task.wait(1 / 30)
+			end
+		end)
+		local n = label(holder, (Catalog.WEAPON[weaponId] and Catalog.WEAPON[weaponId].name or weaponId) .. (skinId and Catalog.SKIN[skinId] and ("  ·  " .. Catalog.SKIN[skinId].name) or ""), 18, FONT_BLACK, COL_TEXT)
+		n.Position = UDim2.new(0, 14, 0, 10); n.Size = UDim2.new(1, -28, 0, 24)
+		return holder
+	end
+
+	----------------------------------------------------------------
+	--  CRATES: stage + strip on the left, crate card on the right
+	----------------------------------------------------------------
+	local function crates()
+		local left = frame(body, COL_PANEL); left.BackgroundTransparency = 1; left.Size = UDim2.new(1, -312, 1, 0)
+		local right = frame(body, COL_PANEL); right.BackgroundTransparency = 1; right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 300, 1, 0)
+		local rightList = scroll(right, 8)
+		local crate = Catalog.CRATES[ui.crate]
+		if not crate then dim(left, "No crates in Catalog › Crates."); return end
+		local pool = Catalog.crateSkins(ui.crate)
+		table.sort(pool, function(a, b)
+			local o = {Legendary = 1, Epic = 2, Rare = 3, Common = 4}
+			if (o[a.rarity] or 5) ~= (o[b.rarity] or 5) then return (o[a.rarity] or 5) < (o[b.rarity] or 5) end
+			return a.id < b.id
+		end)
+		local sel = ui.crateSkin and Catalog.SKIN[ui.crateSkin]
+		if not sel or sel.crate ~= ui.crate then sel = pool[1]; ui.crateSkin = sel and sel.id end
+		-- stage
+		local stageH = frame(left, COL_PANEL); stageH.BackgroundTransparency = 1; stageH.Size = UDim2.new(1, 0, 1, -170)
+		if sel then
+			local stg = weaponStage(stageH, sel.weapon, sel.id)
+			local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -12, 0, 12)
+			local have = owns("skins", sel.id)
+			local note = label(stg, have and "owned" or ("drops from " .. crate.name .. "  ·  " .. string.format("%d%% per open", crate.odds[sel.rarity] or 0)), 12, FONT_BODY, have and COL_GOOD or COL_DIM)
+			note.AnchorPoint = Vector2.new(0, 1); note.Position = UDim2.new(0, 14, 1, -10); note.Size = UDim2.new(1, -28, 0, 16)
+		else
+			dim(stageH, "This crate has no skins yet: point some skins at it in Catalog › Skins.")
+		end
+		-- strip
+		local stripH = frame(left, COL_PANEL); stripH.BackgroundTransparency = 1; stripH.AnchorPoint = Vector2.new(0, 1); stripH.Position = UDim2.new(0, 0, 1, 0); stripH.Size = UDim2.new(1, 0, 0, 160)
+		local strip, sf = skinStrip(stripH, pool, sel and sel.id, function(s) ui.crateSkin = s.id; render.SHOP() end, 160)
+		-- right: crate chips, open, odds, pulls
+		local names = {}
+		for k, c in pairs(Catalog.CRATES) do table.insert(names, {text = c.name, id = k}) end
+		table.sort(names, function(a, b) return a.id < b.id end)
+		chips(rightList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; ui.crateSkin = nil; render.SHOP() end)
+		local c1 = panel(rightList, crate.name, true)
+		local cc = state.profile and state.profile.crates and state.profile.crates[ui.crate] or {opens = 0, sinceLegendary = 0}
+		dim(c1, crate.description or "")
+		local oddsLine = {}
+		for _, r in ipairs(Catalog.RARITIES) do if crate.odds[r] then table.insert(oddsLine, string.format("%s %d%%", r, crate.odds[r])) end end
+		dim(c1, table.concat(oddsLine, "  ·  "))
+		dim(c1, string.format("Legendary guaranteed within %d opens  ·  %d since your last.", crate.pity or 20, cc.sinceLegendary or 0))
+		local rf = {}
+		for _, r in ipairs(Catalog.RARITIES) do if crate.refund and crate.refund[r] then table.insert(rf, string.lower(r) .. " " .. fmt(crate.refund[r])) end end
+		dim(c1, "Duplicates refund Marks: " .. table.concat(rf, " · ") .. ".")
+		local openBtn = bigBtn(c1, "OPEN  ·  " .. tostring(crate.cost) .. " CROWNS", COL_GOLD)
+		openBtn.TextColor3 = Color3.fromRGB(30, 22, 10)
+		local rollNote = dim(c1, ui.rolling and "rolling…" or "")
+		openBtn.Activated:Connect(function()
+			if ui.rolling or #pool == 0 then return end
+			ui.rolling = true
+			openBtn.Active = false
+			rollNote.Text = "rolling…"
+			local r = call("OpenCrate", ui.crate)
+			if not r.ok then ui.rolling = false; openBtn.Active = true; toast(r.msg or "", COL_BAD); rollNote.Text = r.msg or ""; return end
+			if r.profile then state.profile = r.profile; refreshWallet() end
+			local res = r.result
+			-- the strip spins: flick through the pool fast, slow down, stop on the win
+			local wonIndex = 1
+			for i, s in ipairs(pool) do if s.id == res.skinId then wonIndex = i end end
+			local cardW = 120
+			local total = #pool * 3 + wonIndex - 1
+			local t0 = os.clock()
+			local dur = 3.6
+			while os.clock() - t0 < dur do
+				local f = (os.clock() - t0) / dur
+				local eased = 1 - (1 - f) * (1 - f) * (1 - f)
+				local pos = eased * total * cardW
+				sf.CanvasPosition = Vector2.new(pos % (#pool * cardW), 0)
+				task.wait()
+			end
+			sf.CanvasPosition = Vector2.new((wonIndex - 1) * cardW, 0)
+			task.wait(0.4)
+			ui.rolling = false
+			table.insert(ui.pulls, 1, res)
+			ui.crateSkin = res.skinId
+			local won = Catalog.SKIN[res.skinId]
+			modal(string.upper(res.rarity) .. "  ·  " .. res.name, res.dup and string.format("Duplicate — refunded %s Marks.", fmt(res.refund)) or "New skin! Equip it from the ARMORY or on CLASSES.",
+				{{"OK", COL_CARD_ON, closeModal}}, function(box)
+					local th = weaponThumb(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 170)); th.LayoutOrder = 5
+					local st = Instance.new("UIStroke", th); st.Color = RARITY_COL[res.rarity] or COL_DIM; st.Thickness = 2
+				end)
+			render.SHOP()
+		end)
+		local pl = panel(rightList, "YOUR PULLS THIS SESSION", true)
+		if #ui.pulls == 0 then dim(pl, "Nothing yet.") end
+		for i, pu in ipairs(ui.pulls) do if i <= 8 then row(pl, pu.name, pu.dup and ("dup +" .. fmt(pu.refund)) or pu.rarity, false, nil, RARITY_COL[pu.rarity]) end end
+	end
+
+	----------------------------------------------------------------
+	--  ARMORY: every weapon on the left, the chosen one on a stage,
+	--  its skins underneath, equip / buy
+	----------------------------------------------------------------
+	local function weapons()
+		local left = frame(body, COL_PANEL); left.BackgroundTransparency = 1; left.Size = UDim2.new(0, 230, 1, 0)
+		local leftList = scroll(left, 4)
+		local right = frame(body, COL_PANEL); right.BackgroundTransparency = 1; right.Position = UDim2.new(0, 240, 0, 0); right.Size = UDim2.new(1, -240, 1, 0)
+		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}}
+		if not Catalog.WEAPON[ui.shopWeapon] then ui.shopWeapon = Catalog.WEAPONS[1] and Catalog.WEAPONS[1].id end
+		for _, g in ipairs(groups) do
+			heading(leftList, g[2])
+			for _, w in ipairs(Catalog.WEAPONS) do
+				if w.family == g[1] then
+					local have = owns("weapons", w.id)
+					local on = w.id == ui.shopWeapon
+					local skinsOwned, skinsAll = 0, 0
+					for _, s in ipairs(Catalog.skinsFor(w.id)) do skinsAll += 1; if owns("skins", s.id) then skinsOwned += 1 end end
+					local r = row(leftList, w.name, have and string.format("%d/%d", skinsOwned, skinsAll) or "🔒", on, function() ui.shopWeapon = w.id; ui.shopSkin = nil; render.SHOP() end, have and COL_DIM or COL_BAD)
+				end
+			end
+		end
+		local w = Catalog.WEAPON[ui.shopWeapon]
+		if not w then return end
+		local have = owns("weapons", w.id)
+		local pool = Catalog.skinsFor(w.id)
+		table.insert(pool, 1, {id = w.id .. ":Default", name = "Default", weapon = w.id, rarity = "Common"})
+		local sel = ui.shopSkin and Catalog.SKIN[ui.shopSkin]
+		if not sel or sel.weapon ~= w.id then sel = pool[1]; ui.shopSkin = sel.id end
+		local stageH = frame(right, COL_PANEL); stageH.BackgroundTransparency = 1; stageH.Size = UDim2.new(1, 0, 1, -236)
+		local stg = weaponStage(stageH, w.id, sel.id ~= w.id .. ":Default" and sel.id or nil)
+		local info = label(stg, w.family .. (w.secondary and "  ·  can be the secondary" or "") .. "  ·  " .. (have and "unlocked" or ("unlock: " .. unlockText(w) .. ((w.marks or 0) > 0 and ("  ·  or " .. fmt(w.marks) .. " Marks") or ""))), 12, FONT_BODY, COL_DIM)
+		info.Position = UDim2.new(0, 14, 0, 36); info.Size = UDim2.new(1, -28, 0, 16)
+		local desc = state.catalog and state.catalog.weapons and state.catalog.weapons[w.id] and state.catalog.weapons[w.id].description
+		if desc then local d2 = label(stg, desc, 12, FONT_BODY, COL_TEXT); d2.AnchorPoint = Vector2.new(0, 1); d2.Position = UDim2.new(0, 14, 1, -44); d2.Size = UDim2.new(0.7, 0, 0, 34); d2.TextYAlignment = Enum.TextYAlignment.Bottom end
+		-- action row under the stage
+		local act = frame(right, COL_PANEL); act.BackgroundTransparency = 1; act.Position = UDim2.new(0, 0, 1, -228); act.Size = UDim2.new(1, 0, 0, 40)
+		local al = hlist(act, 8)
+		local skinHave = owns("skins", sel.id)
+		if not have and (w.marks or 0) > 0 then
+			bigBtn(act, "UNLOCK  ·  " .. fmt(w.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "weapon", w.id, "marks")) end).Size = UDim2.fromOffset(240, 40)
+		elseif have and skinHave then
+			local cls = GameConfig.CLASSES[state.activeClass] and GameConfig.CLASSES[state.activeClass].name or state.activeClass
+			bigBtn(act, "EQUIP ON " .. string.upper(cls), COL_GO, function()
+				local lo = {}
+				for k2, v2 in pairs(classLoadout(state.activeClass)) do lo[k2] = v2 end
+				lo.weapon = w.id; lo.weaponSkin = sel.id
+				local r = call("SaveClass", state.activeClass, lo)
+				if r.ok then toast(w.name .. " · " .. sel.name .. " equipped on " .. cls, COL_GOOD); if r.profile then state.profile = r.profile end; loadCatalog() else toast(r.msg or "", COL_BAD) end
+			end).Size = UDim2.fromOffset(240, 40)
+		elseif have and not skinHave and not sel.crate and ((sel.marks or 0) > 0 or (sel.crowns or 0) > 0) then
+			local onSale = not sel.pack or Catalog.onSale(sel.pack, state.store and state.store.day)
+			if (sel.marks or 0) > 0 then bigBtn(act, "BUY  ·  " .. fmt(sel.marks) .. " MARKS", COL_CARD_ON, function() if onSale then afterBuy(call("Buy", "skin", sel.id, "marks")) else toast("not in today's store", COL_BAD) end end).Size = UDim2.fromOffset(200, 40) end
+			if (sel.crowns or 0) > 0 then bigBtn(act, "BUY  ·  " .. fmt(sel.crowns) .. " CROWNS", COL_GOLD, function() if onSale then afterBuy(call("Buy", "skin", sel.id, "crowns")) else toast("not in today's store", COL_BAD) end end).Size = UDim2.fromOffset(200, 40) end
+		elseif have and not skinHave then
+			local src = sel.crate == "earned" and (tostring(sel.kills) .. " kills with the " .. w.name .. "  ·  " .. progressText({kills = sel.kills, weapon = w.id})) or (sel.crate and ("drops from the " .. (Catalog.CRATES[sel.crate] and Catalog.CRATES[sel.crate].name or sel.crate)) or skinSource(sel))
+			local l = label(act, src, 13, FONT, COL_DIM); l.Size = UDim2.new(1, 0, 1, 0); l.TextYAlignment = Enum.TextYAlignment.Center
+			if sel.crate and sel.crate ~= "earned" then bigBtn(act, "GO TO CRATE", COL_CARD, function() ui.shopTab = "crates"; ui.crate = sel.crate; ui.crateSkin = sel.id; render.SHOP() end).Size = UDim2.fromOffset(150, 40) end
+		end
+		-- the strip of this weapon's skins
+		local stripH = frame(right, COL_PANEL); stripH.BackgroundTransparency = 1; stripH.AnchorPoint = Vector2.new(0, 1); stripH.Position = UDim2.new(0, 0, 1, 0); stripH.Size = UDim2.new(1, 0, 0, 180)
+		local owned, total = 0, 0
+		for _, s in ipairs(pool) do total += 1; if owns("skins", s.id) then owned += 1 end end
+		local h = label(stripH, string.format("SKINS  ·  %d / %d owned", owned, total), 12, FONT, COL_DIM); h.Size = UDim2.new(1, 0, 0, 18)
+		local sh = frame(stripH, COL_PANEL); sh.BackgroundTransparency = 1; sh.Position = UDim2.new(0, 0, 0, 20); sh.Size = UDim2.new(1, 0, 1, -20)
+		skinStrip(sh, pool, sel.id, function(s) ui.shopSkin = s.id; render.SHOP() end, 160)
 	end
 
 	local function colors()
@@ -1788,7 +2036,7 @@ do
 	render.SHOP = function()
 		renderTabs()
 		clear(body)
-		if ui.shopTab == "crates" then crates() elseif ui.shopTab == "packs" then packs() elseif ui.shopTab == "weapons" then weapons() else colors() end
+		if ui.shopTab == "store" then store() elseif ui.shopTab == "crates" then crates() elseif ui.shopTab == "weapons" then weapons() else colors() end
 		renderSide()
 	end
 

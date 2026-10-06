@@ -709,6 +709,12 @@ end
 --------------------------------------------------------------------
 --  STATE
 --------------------------------------------------------------------
+-- today's store (Catalog ▸ Store): the packs on sale and when the day turns
+local function storeInfo()
+	local packs, day, endsAt = Catalog.storeFor()
+	return {packs = packs, day = day, endsAt = endsAt, serverTime = os.time()}
+end
+
 local function state(plr)
 	local sv = Game.server
 	local party = partyOf(plr)
@@ -718,6 +724,7 @@ local function state(plr)
 		settings = sv.settings, noRewards = sv.noRewards,
 		party = partyInfo(party), partyMax = PARTY_MAX,
 		profile = Profile.summary(plr), contracts = Stats.contracts(plr),
+		store = storeInfo(),
 		players = #Players:GetPlayers()}
 end
 
@@ -731,6 +738,7 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	lastCall[plr] = now
 
 	if op == "State" then return state(plr)
+	elseif op == "Store" then return {ok = true, store = storeInfo()}
 	elseif op == "Servers" then return {ok = true, servers = listForClient()}
 	elseif op == "Friends" then return {ok = true, friends = friendsOnline(plr)}
 	elseif op == "Leaderboard" then return {ok = true, rows = leaderboard(plr, a)}

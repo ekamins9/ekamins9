@@ -35,6 +35,7 @@ Catalog.PALETTE   = child("Palette")
 Catalog.CRATES    = child("Crates")
 Catalog.ECONOMY   = child("Economy")
 Catalog.CONTRACTS = child("Contracts")
+Catalog.STORE     = child("Store")
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears
@@ -234,6 +235,49 @@ function Catalog.skinsFor(weaponId)
 	local out = {}
 	for _, s in ipairs(Catalog.SKINS) do if s.weapon == weaponId then table.insert(out, s) end end
 	return out
+end
+
+--------------------------------------------------------------------
+--  STORE — which packs are on sale on a given UTC day (Catalog ▸ Store)
+--------------------------------------------------------------------
+local function dayNumber(dateKey)   -- "YYYY-MM-DD" → days since 1970 (UTC)
+	local y, m, d = dateKey:match("^(%d+)%-(%d+)%-(%d+)$")
+	if not y then return 0 end
+	return math.floor(os.time({year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12}) / 86400)
+end
+-- the packs on sale on `dateKey` (default: today, UTC) and when that day ends
+function Catalog.storeFor(dateKey)
+	dateKey = dateKey or os.date("!%Y-%m-%d")
+	local S = Catalog.STORE or {}
+	local retired = {}
+	for _, k in ipairs(S.retired or {}) do retired[k] = true end
+	local out, seen = {}, {}
+	local function add(k) if Catalog.PACKS[k] and not retired[k] and not seen[k] then seen[k] = true; table.insert(out, k) end end
+	for _, k in ipairs(S.always or {}) do add(k) end
+	local pinned = S.pins and S.pins[dateKey]
+	if pinned then
+		for _, k in ipairs(pinned) do add(k) end
+	else
+		local queue = {}
+		for _, k in ipairs(S.queue or {}) do if not retired[k] then table.insert(queue, k) end end
+		local n, slots = #queue, math.max(1, S.slots or 3)
+		if n > 0 then
+			local day = dayNumber(dateKey) - dayNumber(S.epoch or "2026-01-01")
+			local start = (day * slots) % n
+			for i = 0, math.min(slots, n) - 1 do add(queue[(start + i) % n + 1]) end
+		end
+	end
+	-- the day ends at the next UTC midnight
+	local now = os.time()
+	local endsAt = (math.floor(now / 86400) + 1) * 86400
+	return out, dateKey, endsAt
+end
+function Catalog.onSale(packKey, dateKey)
+	local pk = Catalog.PACKS[packKey]
+	if not pk then return false end
+	if pk.free or pk.earned then return true end
+	for _, k in ipairs((Catalog.storeFor(dateKey))) do if k == packKey then return true end end
+	return false
 end
 
 function Catalog.crateSkins(crateId)

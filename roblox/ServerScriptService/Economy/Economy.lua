@@ -95,11 +95,13 @@ function Economy.buy(plr, kind, id, currency)
 	if kind == "piece" then
 		local pc = Catalog.PIECE[id]; if not pc then return false, "no such piece" end
 		if Profile.has(plr, "pieces", id) then return false, "already owned" end
+		if not Catalog.isFree(pc) and not Catalog.onSale(pc.pack) then return false, "not in today's store" end
 		local m, c = price(pc.marks, pc.crowns, currency); if not m then return false, c end
 		local ok, msg = Economy.spend(plr, m, c); if not ok then return false, msg end
 		Profile.grant(plr, "pieces", id); Economy.changed:Fire(plr); return true, pc.name .. " bought"
 	elseif kind == "pack" then
 		local pk = Catalog.PACKS[id]; if not pk then return false, "no such pack" end
+		if not Catalog.onSale(id) then return false, "not in today's store" end
 		local m, c, list = 0, 0, {}
 		for _, pc in ipairs(Catalog.PIECES) do
 			if pc.pack == id and not Profile.has(plr, "pieces", pc.id) then table.insert(list, pc); m += pc.marks; c += pc.crowns end
@@ -139,6 +141,7 @@ function Economy.buy(plr, kind, id, currency)
 	elseif kind == "skin" then
 		local sk = Catalog.SKIN[id]; if not sk then return false, "no such skin" end
 		if sk.crate then return false, "that skin comes from a crate" end
+		if sk.pack and not Catalog.onSale(sk.pack) then return false, "not in today's store" end
 		if Profile.has(plr, "skins", id) then return false, "already owned" end
 		local m, c = price(sk.marks, sk.crowns, currency); if not m then return false, c end
 		local ok, msg = Economy.spend(plr, m, c); if not ok then return false, msg end
