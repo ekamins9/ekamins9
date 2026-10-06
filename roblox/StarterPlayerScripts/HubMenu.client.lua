@@ -940,6 +940,35 @@ local function weaponThumb(parent, weaponId, skinId, size)
 	return holder
 end
 
+-- a small 3D view of a dressed mannequin (a pack's set) facing the camera
+local function mannequinThumb(parent, loadout, weight, size, colors)
+	local holder = frame(parent, COL_CARD2, 8)
+	holder.Size = size or UDim2.new(1, 0, 0, 160)
+	holder.ClipsDescendants = true
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = UDim2.fromScale(1, 1)
+	vp.Ambient = Color3.fromRGB(125, 118, 108)
+	vp.LightColor = Color3.fromRGB(255, 240, 220)
+	vp.LightDirection = Vector3.new(-0.5, -1, 0.6)
+	vp.Parent = holder
+	local world = Instance.new("WorldModel"); world.Parent = vp
+	local cam = Instance.new("Camera"); cam.Parent = vp
+	vp.CurrentCamera = cam
+	local rig = makeRig()
+	rig.Parent = world
+	local lo = {}
+	for k, v in pairs(loadout or {}) do lo[k] = v end
+	lo.colors = lo.colors or colors or {Primary = "Royal Blue", Secondary = "Slate", Accent = "Gold", Metal = "Steel"}
+	pcall(Dresser.dress, rig, {loadout = lo, appearance = Catalog.BODY.defaults, weight = weight, preview = true})
+	settle(rig)
+	for _, d in ipairs(rig:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
+	rig:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(20), 0))
+	cam.FieldOfView = 40
+	cam.CFrame = CFrame.lookAt(Vector3.new(0.4, 0.6, -8.2), Vector3.new(0, -0.5, 0))
+	return holder, rig
+end
+
 --------------------------------------------------------------------
 --  SHARED ACTIONS
 --------------------------------------------------------------------
@@ -1357,9 +1386,9 @@ end
 do
 	local f = tabFrame.CLASSES
 	local left = frame(f, COL_PANEL); left.BackgroundTransparency = 1; left.Size = UDim2.new(1, -332, 1, 0)
-	local classRow = frame(left, COL_PANEL); classRow.BackgroundTransparency = 1; classRow.Size = UDim2.new(1, 0, 0, 52)
+	local classRow = frame(left, COL_PANEL); classRow.BackgroundTransparency = 1; classRow.Size = UDim2.new(1, 0, 0, 108)
 	hlist(classRow, 8)
-	local stageHolder = frame(left, COL_PANEL); stageHolder.BackgroundTransparency = 1; stageHolder.Position = UDim2.new(0, 0, 0, 60); stageHolder.Size = UDim2.new(1, 0, 1, -60)
+	local stageHolder = frame(left, COL_PANEL); stageHolder.BackgroundTransparency = 1; stageHolder.Position = UDim2.new(0, 0, 0, 116); stageHolder.Size = UDim2.new(1, 0, 1, -116)
 	local _, stage, stageHint = stageBlock(stageHolder, "")
 	local right = frame(f, COL_PANEL); right.BackgroundTransparency = 1; right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 320, 1, 0)
 	local list = scroll(right, 8)
@@ -1382,6 +1411,8 @@ do
 		stageHint.Text = ui.team and ("team preview: Primary forced to " .. (GameConfig.TEAMS[ui.team] and GameConfig.TEAMS[ui.team].name or ui.team) .. ", Secondary darkened")
 			or "every click re-dresses the mannequin  ·  drag to turn, scroll to zoom"
 	end
+	-- class cards: a 3D thumbnail of that class's saved look, the name, the
+	-- weight, and the three stats the weight gives (Catalog ▸ Weights)
 	local function renderClassRow()
 		clear(classRow)
 		for i, id in ipairs(GameConfig.CLASS_ORDER) do
@@ -1391,8 +1422,29 @@ do
 			b.Size = UDim2.new(1 / #GameConfig.CLASS_ORDER, -6, 1, 0)
 			b.LayoutOrder = i
 			b.AutoButtonColor = false
-			local n = label(b, string.upper(def.name) .. (state.activeClass == id and "  ★" or ""), 15, FONT_BLACK, COL_TEXT); n.Size = UDim2.new(1, 0, 0, 24); n.Position = UDim2.new(0, 10, 0, 6)
-			local w = label(b, string.upper(def.weight) .. (ui.dirty[id] and "  ·  unsaved" or ""), 11, FONT, TYPE_COL[def.weight] or COL_DIM); w.Size = UDim2.new(1, 0, 0, 14); w.Position = UDim2.new(0, 10, 0, 30)
+			local st = Instance.new("UIStroke", b); st.Color = TYPE_COL[def.weight] or COL_DIM; st.Thickness = 2; st.Transparency = on and 0 or 0.6
+			local lo = ui.classEdit[id] or classLoadout(id)
+			local th = mannequinThumb(b, lo, def.weight, UDim2.fromOffset(84, 96), lo.colors)
+			th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
+			local n = label(b, string.upper(def.name), 17, FONT_BLACK, COL_TEXT); n.Size = UDim2.new(1, -100, 0, 22); n.Position = UDim2.new(0, 96, 0, 8)
+			local w = label(b, string.upper(def.weight) .. (ui.dirty[id] and "  ·  unsaved" or ""), 11, FONT, TYPE_COL[def.weight] or COL_DIM); w.Size = UDim2.new(1, -100, 0, 14); w.Position = UDim2.new(0, 96, 0, 30)
+			local wt = Catalog.WEIGHTS[def.weight] or {}
+			local stats = label(b, string.format("HP +%d   ·   SPEED %d%%   ·   ARMOR %d%%", wt.health or 0, math.floor((wt.speed or 1) * 100 + 0.5), math.floor((wt.prot or 0) * 100 + 0.5)), 10, FONT, COL_DIM)
+			stats.Size = UDim2.new(1, -100, 0, 14); stats.Position = UDim2.new(0, 96, 0, 48)
+			-- the stat bars: HP / speed / armor out of the heaviest
+			local maxHp, minSpeed, maxProt = 0, 1, 0
+			for _, ww in pairs(Catalog.WEIGHTS) do maxHp = math.max(maxHp, ww.health or 0); minSpeed = math.min(minSpeed, ww.speed or 1); maxProt = math.max(maxProt, ww.prot or 0) end
+			local bars = {{"HP", (100 + (wt.health or 0)) / (100 + maxHp), COL_GOOD}, {"SPD", ((wt.speed or 1) - minSpeed * 0.8) / (1 - minSpeed * 0.8), COL_CROWNS}, {"ARM", maxProt > 0 and (wt.prot or 0) / maxProt or 0, COL_ACCENT}}
+			for j, bar in ipairs(bars) do
+				local track = frame(b, COL_BACK, 3); track.Position = UDim2.new(0, 96 + (j - 1) * 64, 0, 68); track.Size = UDim2.fromOffset(56, 6); track.BackgroundTransparency = 0.4
+				local fill = frame(track, bar[3], 3); fill.Size = UDim2.new(math.clamp(bar[2], 0.08, 1), 0, 1, 0)
+				local l = label(b, bar[1], 9, FONT, COL_DIM); l.Position = UDim2.new(0, 96 + (j - 1) * 64, 0, 76); l.Size = UDim2.fromOffset(56, 12)
+			end
+			if state.activeClass == id then
+				local chipA = label(b, "★ ACTIVE", 10, FONT, Theme.INK); chipA.BackgroundTransparency = 0; chipA.BackgroundColor3 = COL_ACCENT
+				chipA.AnchorPoint = Vector2.new(1, 0); chipA.Position = UDim2.new(1, -8, 0, 8); chipA.Size = UDim2.fromOffset(66, 18); chipA.TextXAlignment = Enum.TextXAlignment.Center
+				Instance.new("UICorner", chipA).CornerRadius = UDim.new(0, 5)
+			end
 			b.Activated:Connect(function() ui.editing = id; render.CLASSES() end)
 		end
 	end
@@ -1407,7 +1459,7 @@ do
 		if (pc.crowns or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function()
 			local r = call("Buy", "piece", pc.id, "crowns"); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.profile then state.profile = r.profile; refreshWallet() end; closeModal(); render.CLASSES() end}) end
 		local pk = Catalog.PACKS[pc.pack]
-		if pk and not pk.free then table.insert(opts, {"SEE THE " .. string.upper(pk.name) .. " PACK", COL_CARD2, function() closeModal(); ui.shopTab = "packs"; selectTab("SHOP") end}) end
+		if pk and not pk.free then table.insert(opts, {"SEE THE " .. string.upper(pk.name) .. " PACK", COL_CARD2, function() closeModal(); ui.shopTab = "store"; selectTab("SHOP") end}) end
 		modal(pc.name, (pc.description or "") .. string.format("\n%s  ·  %s  ·  %s", pc.weight, pk and pk.name or pc.pack, pc.rarity or "Common"), opts)
 	end
 	local function choose(k, v)
@@ -1519,35 +1571,6 @@ end
 --  SHOP TAB — STORE (today's packs, 3D previews) · CRATES (weapon on a stage,
 --  skin strip, the drum) · ARMORY (every weapon, its skins, equip) · COLORS
 --------------------------------------------------------------------
--- a small 3D view of a dressed mannequin (a pack's set) facing the camera
-local function mannequinThumb(parent, loadout, weight, size, colors)
-	local holder = frame(parent, COL_CARD2, 8)
-	holder.Size = size or UDim2.new(1, 0, 0, 160)
-	holder.ClipsDescendants = true
-	local vp = Instance.new("ViewportFrame")
-	vp.BackgroundTransparency = 1
-	vp.Size = UDim2.fromScale(1, 1)
-	vp.Ambient = Color3.fromRGB(125, 118, 108)
-	vp.LightColor = Color3.fromRGB(255, 240, 220)
-	vp.LightDirection = Vector3.new(-0.5, -1, 0.6)
-	vp.Parent = holder
-	local world = Instance.new("WorldModel"); world.Parent = vp
-	local cam = Instance.new("Camera"); cam.Parent = vp
-	vp.CurrentCamera = cam
-	local rig = makeRig()
-	rig.Parent = world
-	local lo = {}
-	for k, v in pairs(loadout or {}) do lo[k] = v end
-	lo.colors = lo.colors or colors or {Primary = "Royal Blue", Secondary = "Slate", Accent = "Gold", Metal = "Steel"}
-	pcall(Dresser.dress, rig, {loadout = lo, appearance = Catalog.BODY.defaults, weight = weight, preview = true})
-	settle(rig)
-	for _, d in ipairs(rig:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
-	rig:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(20), 0))
-	cam.FieldOfView = 40
-	cam.CFrame = CFrame.lookAt(Vector3.new(0.4, 0.6, -8.2), Vector3.new(0, -0.5, 0))
-	return holder, rig
-end
-
 -- the loadout a pack dresses: its helm / top / legs (first piece per slot)
 local function packLoadout(packKey)
 	local lo = {}
