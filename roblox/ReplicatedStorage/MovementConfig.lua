@@ -26,6 +26,15 @@ return {
 	DODGE_REFUND   = 8,    -- stamina back when a dodge makes a swing miss you (CombatServer decides)
 	DODGE_REFUND_RANGE = 2.5, -- …if the swing's reach came within this of you
 
-	-- jumping is disabled: JumpPower 0 on the server, Jumping state off on the client
-	NO_JUMP = true,
+	-- dodge keys: the Dodge bind (F) with a direction, or double-tap A / D / S
+	-- (setting DodgeTap) within DODGE_TAP seconds
+	DODGE_TAP      = 0.25,
+
+	-- jump: a short hop on the Jump bind (Space), not a leap. Roblox's own jump
+	-- stays switched off so holding the key can't bunny-hop; Movement turns it on
+	-- for one hop at a time. Not while attacking, blocking, crouched or down.
+	-- The same key stands you up from a seat.
+	JUMP_POWER     = 28,   -- ≈ 2 studs up (height = power² / (2 × gravity))
+	JUMP_COST      = 6,    -- stamina
+	JUMP_COOLDOWN  = 0.9,
 }

@@ -20,9 +20,9 @@ return function(K)
 	local COBBLE = Color3.fromRGB(150, 140, 128)
 	local MARBLE = Color3.fromRGB(226, 222, 212)
 
-	K.terrain(ctx, V3(-160, -40, -160), V3(320, 100, 320), function(T)
+	K.terrain(ctx, V3(-192, -64, -200), V3(384, 124, 360), function(T)
 		T:FillBlock(CFrame.new(0, -6, 0), V3(300, 12, 300), Enum.Material.Grass)
-		T:FillBlock(CFrame.new(0, -2, 0), V3(214, 4, 180), Enum.Material.Cobblestone)
+		T:FillBlock(CFrame.new(0, -2, 0), V3(228, 4, 196), Enum.Material.Cobblestone)
 		-- the road out of the gate
 		T:FillBlock(CFrame.new(0, -2, 120), V3(20, 4, 60), Enum.Material.Cobblestone)
 		for i = -3, 3 do T:FillBall(V3(i * 46, -18, -150), 44, Enum.Material.Grass) end
@@ -33,28 +33,30 @@ return function(K)
 	-- the walls, the corner towers, the gatehouse, the keep
 	----------------------------------------------------------------
 	local W, Z = 108, 90
-	K.wall(ctx, V3(-W, 0, -Z), V3(W, 0, -Z), 20, 5, {crenels = true, base = true})
-	K.wall(ctx, V3(-W, 0, -Z), V3(-W, 0, Z), 20, 5, {crenels = true, base = true})
-	K.wall(ctx, V3(W, 0, -Z), V3(W, 0, Z), 20, 5, {crenels = true, base = true})
-	K.wall(ctx, V3(-W, 0, Z), V3(-16, 0, Z), 20, 5, {crenels = true, base = true})
-	K.wall(ctx, V3(16, 0, Z), V3(W, 0, Z), 20, 5, {crenels = true, base = true})
+	local WALL = {crenels = true, base = true, baseH = 2.8, baseW = 2.4}
+	K.wall(ctx, V3(-W, 0, -Z), V3(W, 0, -Z), 20, 5, WALL)
+	K.wall(ctx, V3(-W, 0, -Z), V3(-W, 0, Z), 20, 5, WALL)
+	K.wall(ctx, V3(W, 0, -Z), V3(W, 0, Z), 20, 5, WALL)
+	K.wall(ctx, V3(-W, 0, Z), V3(-16, 0, Z), 20, 5, WALL)
+	K.wall(ctx, V3(16, 0, Z), V3(W, 0, Z), 20, 5, WALL)
 	for _, x in ipairs({-W, W}) do
-		for _, z in ipairs({-Z, Z}) do K.tower(ctx, V3(x, 0, z), 10, 30, {roof = true, roofColor = C.BLUE, windows = true}) end
+		for _, z in ipairs({-Z, Z}) do K.tower(ctx, V3(x, 0, z), 10, 30, {roof = true, roofColor = C.BLUE, windows = true, base = 3.4}) end
 	end
 	-- the gatehouse: two towers and a closed portcullis
-	for _, x in ipairs({-16, 16}) do K.tower(ctx, V3(x, 0, Z), 7, 27, {roof = true, roofColor = C.RED, windows = true}) end
+	for _, x in ipairs({-16, 16}) do K.tower(ctx, V3(x, 0, Z), 7, 27, {roof = true, roofColor = C.RED, windows = true, base = 3.4}) end
 	K.box(ctx, "GateArchTop", V3(26, 6, 6), V3(0, 21, Z), C.STONE, M.Slate)
 	for i = -4, 4 do K.box(ctx, "Portcullis", V3(0.4, 18, 0.4), V3(i * 2.2, 9, Z - 1), C.IRON, M.Metal) end
 	for j = 1, 6 do K.box(ctx, "PortcullisBar", V3(18, 0.4, 0.4), V3(0, j * 2.8, Z - 1), C.IRON, M.Metal) end
 	-- the keep behind the north wall
 	K.box(ctx, "Keep", V3(80, 44, 26), V3(0, 22, -Z - 18), C.STONE, M.Slate)
+	K.box(ctx, "KeepFooting", V3(83, 3.4, 29), V3(0, 1.7, -Z - 18), C.STONEDARK, M.Slate)
 	K.box(ctx, "KeepTop", V3(84, 1.4, 30), V3(0, 44.7, -Z - 18), C.STONEDARK, M.Slate)
 	for i = -9, 9 do K.box(ctx, "KeepCrenel", V3(2, 2.2, 2), V3(i * 4.4, 46.5, -Z - 3.4), C.STONE, M.Slate) end
 	for i = -3, 3 do
 		K.box(ctx, "KeepWindow", V3(2.4, 6, 0.6), V3(i * 10, 30, -Z - 4.8), Color3.fromRGB(26, 30, 44), M.SmoothPlastic)
 		K.box(ctx, "KeepWindowArch", V3(3.2, 0.8, 0.8), V3(i * 10, 33.4, -Z - 4.6), C.STONEDARK, M.Slate)
 	end
-	for _, x in ipairs({-44, 44}) do K.tower(ctx, V3(x, 0, -Z - 18), 9, 56, {roof = true, roofColor = C.BLUE, roofH = 22, windows = true}) end
+	for _, x in ipairs({-44, 44}) do K.tower(ctx, V3(x, 0, -Z - 18), 9, 56, {roof = true, roofColor = C.BLUE, roofH = 22, windows = true, base = 4}) end
 	-- great banners hanging down the keep
 	for _, x in ipairs({-25, 25}) do
 		local b = K.box(ctx, "KeepBanner", V3(7, 18, 0.3), V3(x, 30, -Z - 4.6), C.BLUE, M.Fabric)
@@ -92,31 +94,65 @@ return function(K)
 	----------------------------------------------------------------
 	-- the wishing fountain, benches round it
 	----------------------------------------------------------------
-	K.cyl(ctx, "FountainBasin", 20, 1.8, V3(0, 0.9, 0), MARBLE, M.Marble)
-	K.nocollide(K.cyl(ctx, "FountainWater", 18.4, 0.2, V3(0, 1.6, 0), C.WATER, M.Glass)).Transparency = 0.25
-	K.cyl(ctx, "FountainRim", 20.6, 0.4, V3(0, 1.9, 0), C.STONEDARK, M.Slate).CanCollide = false
-	K.cyl(ctx, "FountainPillar", 2.6, 6, V3(0, 3, 0), MARBLE, M.Marble)
-	K.cyl(ctx, "FountainBowl", 7, 0.9, V3(0, 6.2, 0), MARBLE, M.Marble)
-	K.nocollide(K.cyl(ctx, "FountainBowlWater", 6.2, 0.2, V3(0, 6.6, 0), C.WATER, M.Glass)).Transparency = 0.2
-	K.cyl(ctx, "FountainTop", 1.2, 3, V3(0, 8.1, 0), MARBLE, M.Marble)
-	K.ball(ctx, "FountainCrown", 1.8, V3(0, 10, 0), C.GOLD, M.Metal)
-	-- falling water: thin sheets round the bowl
-	for i = 0, 7 do
-		local a = i / 8 * math.pi * 2
-		local sheet = K.box(ctx, "Fall", V3(0.9, 4.4, 0.1), CFrame.new(math.cos(a) * 3.2, 4.4, math.sin(a) * 3.2) * CFrame.Angles(0, -a + math.pi / 2, 0), C.WATER, M.Glass)
-		sheet.CanCollide = false; sheet.Transparency = 0.45
+	-- a stepped platform, a deep basin, two tiers of bowls and a gilded spire:
+	-- about eighteen studs from the cobbles to the tip
+	K.cyl(ctx, "FountainStep", 31, 0.8, V3(0, 0.4, 0), C.STONEDARK, M.Slate)
+	K.cyl(ctx, "FountainStep", 27, 0.8, V3(0, 1.2, 0), MARBLE, M.Marble)
+	K.cyl(ctx, "FountainBasin", 23, 2.6, V3(0, 2.9, 0), MARBLE, M.Marble)
+	K.cyl(ctx, "FountainRim", 23.8, 0.5, V3(0, 4.45, 0), C.STONEDARK, M.Slate)
+	K.nocollide(K.cyl(ctx, "FountainWater", 21.6, 0.2, V3(0, 3.9, 0), C.WATER, M.Glass)).Transparency = 0.25
+	for i = 0, 7 do   -- carved panels round the basin
+		local a = i / 8 * math.pi * 2 + math.pi / 8
+		K.box(ctx, "BasinPanel", V3(3.4, 1.6, 0.3), CFrame.new(math.cos(a) * 11.6, 2.9, math.sin(a) * 11.6) * CFrame.Angles(0, -a + math.pi / 2, 0), C.STONEDARK, M.Slate)
 	end
-	K.spot(ctx, "WellSpot", CFrame.new(0, 2, 0))
+	K.cyl(ctx, "FountainPillar", 3.6, 5.6, V3(0, 6.4, 0), MARBLE, M.Marble)
+	K.cyl(ctx, "FountainBowl", 11, 1.1, V3(0, 9.6, 0), MARBLE, M.Marble)
+	K.cyl(ctx, "FountainBowlLip", 11.6, 0.4, V3(0, 10.3, 0), C.GOLD, M.Metal).CanCollide = false
+	K.nocollide(K.cyl(ctx, "FountainBowlWater", 10.2, 0.2, V3(0, 10.2, 0), C.WATER, M.Glass)).Transparency = 0.2
+	K.cyl(ctx, "FountainUpper", 1.8, 3.6, V3(0, 11.9, 0), MARBLE, M.Marble)
+	K.cyl(ctx, "FountainCup", 5, 0.8, V3(0, 14, 0), MARBLE, M.Marble)
+	K.nocollide(K.cyl(ctx, "FountainCupWater", 4.4, 0.2, V3(0, 14.35, 0), C.WATER, M.Glass)).Transparency = 0.2
+	K.ball(ctx, "FountainCrown", 1.6, V3(0, 15.4, 0), C.GOLD, M.Metal)
+	K.cone(ctx, "FountainSpire", V3(0, 16, 0), 0.5, 2.2, C.GOLD, M.Metal, nil, true, 6)
+	-- falling water: sheets from each bowl into the one below
+	for i = 0, 11 do
+		local a = i / 12 * math.pi * 2
+		local sheet = K.box(ctx, "Fall", V3(1.4, 5.9, 0.1), CFrame.new(math.cos(a) * 5.4, 7.1, math.sin(a) * 5.4) * CFrame.Angles(0, -a + math.pi / 2, 0), C.WATER, M.Glass)
+		sheet.CanCollide = false; sheet.Transparency = 0.5
+	end
+	for i = 0, 5 do
+		local a = i / 6 * math.pi * 2
+		local sheet = K.box(ctx, "Fall", V3(1, 3.6, 0.1), CFrame.new(math.cos(a) * 2.4, 12.3, math.sin(a) * 2.4) * CFrame.Angles(0, -a + math.pi / 2, 0), C.WATER, M.Glass)
+		sheet.CanCollide = false; sheet.Transparency = 0.5
+	end
+	-- a spray off the top
+	do
+		local jet = K.nocollide(K.box(ctx, "FountainJet", V3(0.4, 0.4, 0.4), V3(0, 17.4, 0), C.WATER, M.Glass))
+		jet.Transparency = 1
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.Color = ColorSequence.new(Color3.fromRGB(200, 230, 255))
+		e.Size = NumberSequence.new(0.35, 0.1)
+		e.Transparency = NumberSequence.new(0.2, 1)
+		e.Lifetime = NumberRange.new(0.8, 1.2)
+		e.Speed = NumberRange.new(5, 8)
+		e.SpreadAngle = Vector2.new(18, 18)
+		e.Acceleration = Vector3.new(0, -24, 0)
+		e.Rate = 30
+		e.LightEmission = 0.4
+		e.Parent = jet
+	end
+	K.spot(ctx, "WellSpot", CFrame.new(0, 4.2, 0))
 	for i, a in ipairs({45, 135, 225, 315}) do
 		local r = math.rad(a)
-		local pos = V3(math.cos(r) * 15, 0, math.sin(r) * 15)
+		local pos = V3(math.cos(r) * 20, 0, math.sin(r) * 20)
 		local look = CFrame.lookAt(pos, V3(0, 0, 0))
 		K.box(ctx, "BenchSeat", V3(6, 0.5, 1.8), look * CFrame.new(0, 1.3, 0), C.WOOD, M.WoodPlanks)
 		K.box(ctx, "BenchBack", V3(6, 1.6, 0.3), look * CFrame.new(0, 2.3, 0.85), C.WOOD, M.WoodPlanks)
 		for _, dx in ipairs({-2.4, 2.4}) do K.box(ctx, "BenchLeg", V3(0.4, 1.1, 1.6), look * CFrame.new(dx, 0.55, 0), C.IRON, M.Metal) end
 		for _, dx in ipairs({-1.5, 1.5}) do
 			local seat = Instance.new("Seat"); seat.Name = "Seat"; seat.Size = V3(2, 0.3, 1.6); seat.Transparency = 1; seat.Anchored = true; seat.CanCollide = false
-			seat.CFrame = look * CFrame.new(dx, 1.6, 0) * CFrame.Angles(0, math.pi, 0); seat.Parent = ctx.Props
+			seat.CFrame = look * CFrame.new(dx, 1.6, 0); seat.Parent = ctx.Props
 		end
 	end
 
@@ -182,7 +218,7 @@ return function(K)
 			K.box(ctx, "TableBench", V3(6, 0.4, 1.2), t * CFrame.new(0, 1.5, s * 2.6), C.WOOD, M.WoodPlanks)
 			for _, dx in ipairs({-1.8, 0, 1.8}) do
 				local seat = Instance.new("Seat"); seat.Name = "Seat"; seat.Size = V3(1.6, 0.3, 1.2); seat.Transparency = 1; seat.Anchored = true; seat.CanCollide = false
-				seat.CFrame = t * CFrame.new(dx, 1.75, s * 2.6) * CFrame.Angles(0, s > 0 and math.pi or 0, 0); seat.Parent = ctx.Props
+				seat.CFrame = t * CFrame.new(dx, 1.75, s * 2.6) * CFrame.Angles(0, s < 0 and math.pi or 0, 0); seat.Parent = ctx.Props
 			end
 		end
 		K.cyl(ctx, "Tankard", 0.5, 0.7, t * CFrame.new(1, 3.15, 0.4), Color3.fromRGB(120, 90, 60), M.Wood).CanCollide = false
@@ -230,16 +266,39 @@ return function(K)
 	----------------------------------------------------------------
 	-- trees in planters, lamps, banners
 	----------------------------------------------------------------
+	-- big oaks in raised stone planters: a thick trunk, two boughs, a wide crown
 	local function oak(pos, h)
-		K.box(ctx, "Planter", V3(8, 1.6, 8), pos + V3(0, 0.8, 0), C.STONEDARK, M.Slate)
-		K.nocollide(K.box(ctx, "PlanterSoil", V3(7, 0.2, 7), pos + V3(0, 1.62, 0), Color3.fromRGB(80, 60, 40), M.Ground))
-		K.cyl(ctx, "Trunk", 1.2, h * 0.55, pos + V3(0, 1.6 + h * 0.275, 0), C.DARKWOOD, M.Wood)
-		for _, o in ipairs({V3(0, h * 0.75, 0), V3(1.6, h * 0.62, 0.8), V3(-1.4, h * 0.65, -1), V3(0.4, h * 0.88, -0.6)}) do
-			K.nocollide(K.ball(ctx, "Leaves", h * 0.42, pos + V3(0, 1.6, 0) + o, (o.X > 0) and C.LEAF or C.LEAFDARK, M.Grass))
+		K.box(ctx, "Planter", V3(10, 1.8, 10), pos + V3(0, 0.9, 0), C.STONEDARK, M.Slate)
+		K.box(ctx, "PlanterCap", V3(10.6, 0.4, 10.6), pos + V3(0, 2.0, 0), MARBLE, M.Marble)
+		K.nocollide(K.box(ctx, "PlanterSoil", V3(9, 0.2, 9), pos + V3(0, 2.12, 0), Color3.fromRGB(80, 60, 40), M.Ground))
+		local base = pos + V3(0, 2.2, 0)
+		K.cyl(ctx, "Trunk", 2.2, h * 0.55, base + V3(0, h * 0.275, 0), C.DARKWOOD, M.Wood)
+		K.cyl(ctx, "Bough", 1.1, h * 0.3, CFrame.new(base + V3(1.4, h * 0.5, 0)) * CFrame.Angles(0, 0, math.rad(-35)), C.DARKWOOD, M.Wood)
+		K.cyl(ctx, "Bough", 1.0, h * 0.28, CFrame.new(base + V3(-1.2, h * 0.52, 0.6)) * CFrame.Angles(math.rad(20), 0, math.rad(32)), C.DARKWOOD, M.Wood)
+		for _, o in ipairs({V3(0, h * 0.78, 0), V3(3.2, h * 0.66, 1.2), V3(-3, h * 0.68, -1.4), V3(1, h * 0.92, -1.6), V3(-1.6, h * 0.86, 2.4), V3(2.2, h * 0.84, 2.6)}) do
+			K.nocollide(K.ball(ctx, "Leaves", h * 0.48, base + o, (o.X > 0) and C.LEAF or C.LEAFDARK, M.Grass))
 		end
 	end
-	for _, p in ipairs({V3(-34, 0, -30), V3(34, 0, -30), V3(-34, 0, 30), V3(34, 0, 30), V3(-86, 0, -60), V3(86, 0, -60)}) do oak(p, 11) end
-	for _, p in ipairs({V3(-24, 0, 12), V3(24, 0, 12), V3(-24, 0, -18), V3(24, 0, -18), V3(-50, 0, 66), V3(50, 0, 66), V3(-86, 0, 10), V3(86, 0, 18)}) do K.torchPost(ctx, p, 6) end
+	for _, p in ipairs({V3(-34, 0, -30), V3(34, 0, -30), V3(-34, 0, 34), V3(34, 0, 34), V3(-86, 0, -60), V3(86, 0, -60)}) do oak(p, 17) end
+	for _, p in ipairs({V3(-28, 0, 14), V3(28, 0, 14), V3(-28, 0, -16), V3(28, 0, -16), V3(-50, 0, 66), V3(50, 0, 66), V3(-86, 0, 10), V3(86, 0, 18)}) do K.torchPost(ctx, p, 8.5) end
+
+	-- paved walks of pale flagstones: a ring round the fountain and roads to
+	-- the Hall, the Gates, the Hatchery and the stone circle
+	local FLAG = Color3.fromRGB(196, 188, 172)
+	local function walk(a, b, w)
+		local len = (b - a).Magnitude
+		local slab = K.box(ctx, "Path", V3(w, 0.16, len), CFrame.lookAt((a + b) / 2, b) + V3(0, 0.08, 0), FLAG, M.Pavement)
+		K.box(ctx, "PathEdge", V3(w + 1, 0.12, len), slab.CFrame - V3(0, 0.02, 0), C.STONEDARK, M.Slate)
+	end
+	for i = 0, 23 do   -- the ring: 24 segments
+		local a0, a1 = i / 24 * math.pi * 2, (i + 1) / 24 * math.pi * 2
+		walk(V3(math.cos(a0) * 25.5, 0, math.sin(a0) * 25.5), V3(math.cos(a1) * 25.5, 0, math.sin(a1) * 25.5), 6)
+	end
+	walk(V3(0, 0, -27), V3(0, 0, -47), 10)    -- to the Hall's stairs
+	walk(V3(0, 0, 27), V3(0, 0, 33), 10)      -- to the Notice Board
+	walk(V3(0, 0, 42), V3(0, 0, 68), 10)      -- and on to the Warfront gate
+	walk(V3(-27, 0, 0), V3(-56, 0, -8), 8)    -- to the Hatchery
+	walk(V3(27, 0, 0), V3(55, 0, -8), 8)      -- to the stone circle
 	for _, x in ipairs({-80, -60, 60, 80}) do K.banner(ctx, V3(x, 0, 84), 11, C.BLUE) end
 
 	-- arrive round the south side of the fountain, facing the Hall

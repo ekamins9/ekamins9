@@ -35,10 +35,9 @@ local function setup(char)
 	if not hum then return end
 	hum.BreakJointsOnDeath = false   -- Ragdoll needs the joints intact
 	hum.RequiresNeck = false         -- disabling the Neck motor for a ragdoll must not count as death
-	if MovementConfig.NO_JUMP then
-		hum.UseJumpPower = true
-		hum.JumpPower = 0              -- (the client also disables the Jumping state)
-	end
+	-- the short hop (the client keeps Roblox's own jump switched off between hops)
+	hum.UseJumpPower = true
+	hum.JumpPower = MovementConfig.JUMP_POWER or 0
 	if char:GetAttribute("BlockMeter") == nil then char:SetAttribute("BlockMeter", STAMINA_MAX) end
 	if char:GetAttribute("BlockMax")   == nil then char:SetAttribute("BlockMax",   STAMINA_MAX) end
 	DebugFlags.log("CharacterSystems", "setup", char.Name)

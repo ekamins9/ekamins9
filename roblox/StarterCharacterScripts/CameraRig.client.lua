@@ -274,30 +274,11 @@ camRay.FilterType = Enum.RaycastFilterType.Exclude
 --------------------------------------------------------------------
 --  FOOTSTEPS — per-material, one shot per step (the clunk drives the
 --  timing, so these are fired on the step impulse rather than looped).
---  Put a folder named FootstepSounds in SoundService (or ReplicatedStorage)
---  holding one Sound per Enum.Material name: Grass, Slate, Metal, Wood…
---  A "Default" entry, if present, covers anything missing. With no folder
---  at all it falls back to SoundConfig.Footstep.
+--  The sounds live in ReplicatedStorage.Footsteps; Roblox's own looping
+--  run sound is muted by StarterPlayerScripts.Footsteps. (Jumping is
+--  Movement's: a short hop on its own key.)
 --------------------------------------------------------------------
-local footstepFolder = SoundService:FindFirstChild("FootstepSounds")
-	or ReplicatedStorage:FindFirstChild("FootstepSounds")
-
-local function footstepFor(material)
-	if not footstepFolder then return nil end
-	local name = material and material.Name or "Air"
-	local s = footstepFolder:FindFirstChild(name) or footstepFolder:FindFirstChild("Default")
-	return (s and s:IsA("Sound")) and s or nil
-end
-
--- Roblox's own looping run sound would play underneath ours
-local running = HRP:FindFirstChild("Running")
-if running then running:Destroy() end
-
--- no jumping (Space is the dodge); the server zeroes JumpPower too
-if MovementConfig.NO_JUMP then
-	Humanoid.JumpPower = 0
-	Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-end
+local Footsteps = require(ReplicatedStorage:WaitForChild("Footsteps"))
 
 player.CameraMode = Enum.CameraMode.Classic
 
@@ -518,11 +499,9 @@ local function loopBody(dt)
 		sStepX.v = sStepX.v + stepSide * BOB_CAM_X * 20 * bobAmt * heaviness * clunkMult * bobS
 		sKick.v  = sKick.v  - FP_KICK_AMT * 26 * bobAmt * heaviness * clunkMult * bobS * S("FPClunk")
 		-- one shot per step, using the sound for whatever we're standing on
-		local template = footstepFor(Humanoid.FloorMaterial)
-		Sounds.play(template and template.SoundId or SoundConfig.Footstep, HRP, {
-			Volume = (template and template.Volume or 1)
-				* FOOTSTEP_VOLUME * math.clamp(heaviness * clunkMult / BASE_CLUNK, 0.4, 2),
-			Speed  = (template and template.PlaybackSpeed or 1) / heaviness ^ 0.3,
+		Footsteps.play(HRP, Humanoid.FloorMaterial, {
+			Volume = FOOTSTEP_VOLUME * math.clamp(heaviness * clunkMult / BASE_CLUNK, 0.4, 2),
+			Speed  = 1 / heaviness ^ 0.3,
 		})
 	end
 

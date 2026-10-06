@@ -275,7 +275,7 @@ shade.MouseButton1Click:Connect(close)
 
 -- the binds that fight: pressing any of them ends an emote at once (the
 -- server's Acting / Blocking flags end it for everyone a moment later)
-local FIGHT = {Swing = true, Stab = true, Overhead = true, Underhand = true, Feint = true, Kick = true, Dodge = true, Pickup = true}
+local FIGHT = {Swing = true, Stab = true, Overhead = true, Underhand = true, Feint = true, Kick = true, Dodge = true, Jump = true, Pickup = true}
 local function fightInput(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton2 then return true end   -- block
 	local name = ClientSettings.inputName(input)

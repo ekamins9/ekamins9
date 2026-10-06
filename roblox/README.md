@@ -24,7 +24,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/Bots.lua`, `R6.lua` | `ServerScriptService` → `Combat` → `Bots`, `R6` (AI fighters; a plain R6 rig) | ModuleScript each |
 | `ServerScriptService/Game/Training.lua` | `ServerScriptService` → `Game` → `Training` (the training yard's dummies, Drill Master, lessons, ring) | ModuleScript |
 | `ServerScriptService/Build/MapTraining.lua` | `ServerScriptService` → `Build` → `MapTraining` (the training yard map) | ModuleScript |
-| `StarterPlayerScripts/Training.client.lua`, `NpcAnimator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Training`, `NpcAnimator` | LocalScript each |
+| `StarterPlayerScripts/Training.client.lua`, `NpcAnimator.client.lua`, `Footsteps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Training`, `NpcAnimator`, `Footsteps` | LocalScript each |
+| `ReplicatedStorage/Footsteps.lua` | `ReplicatedStorage` → `Footsteps` | ModuleScript |
 | `ServerScriptService/MovementServer.server.lua` | `ServerScriptService` → `MovementServer` | Script |
 | `ServerScriptService/SettingsServer.server.lua` | `ServerScriptService` → `SettingsServer` | Script |
 | `ReplicatedStorage/ClientSettings.lua` | `ReplicatedStorage` → `ClientSettings` | ModuleScript |
@@ -369,9 +370,11 @@ work on them too.
 **LMB swing · scroll up stab · scroll down overhead · X underhand** — hold **LeftAlt** for the
 left-side version (default side Right; both are settings) · **Q feint** · RMB block (feint-to-parry
 during windup) · G kick (works unarmed too) · LeftShift sprint (forward / forward-diagonal only) ·
-Space dodge (a ~2-stud sidestep, side or back, 10 stamina) · LeftControl/C crouch · **Z first /
-third person** (no scroll zoom any more) · V pick up a weapon · Tab leaderboard · **B emote
-wheel**. **There is no jumping.** Walking backwards is 35% slower and sideways 20% slower — dodge to reposition fast.
+**F dodge** (or double-tap A / D / S; a ~2-stud sidestep, side or back, 10 stamina) · **Space
+jump** (a short ~2-stud hop, 6 stamina; also stands you up from a seat) · LeftControl/C crouch ·
+**Z first / third person** (no scroll zoom any more) · V pick up a weapon · Tab leaderboard ·
+**B emote wheel**. Walking backwards is 35% slower and sideways 20% slower — dodge to reposition
+fast. Settings saved before the jump existed had dodge on Space; they move to F on load.
 
 Binds take keys, left / middle mouse, scroll up / down. Roblox does not expose Mouse 4 / 5 to
 games — bind them to a key in your mouse software (e.g. Mouse4 → X) and bind that key here.
@@ -552,7 +555,7 @@ controller runs in NPC mode.
   parry, when skilled), and kick a turtle.
 - **Skill presets:** Squire / Knight / Champion. Drill and Guard are the training dummies.
 - **Look:** dressed by the Dresser in their weight's starter armor. Clients draw their walk
-  (`NpcAnimator`).
+  (`NpcAnimator`: hips swing from how far the root moved each frame) and play their footsteps.
 - `Combat ▸ R6` builds a plain R6 rig from parts for bots, dummies and NPCs.
 - Studio: `/bot Knight Longsword`, `/bot clear`.
 
@@ -637,13 +640,16 @@ Only list slots you've filled: an `rbxassetid://0` entry overrides the default w
 Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`, `Impale`,
 `Bleed`, `Disarm`, `Pickup`, `Dodge`, `HeadThrow`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
 
-**Footsteps by material:** put a folder named `FootstepSounds` in `SoundService`
-(or `ReplicatedStorage`) containing one `Sound` per `Enum.Material` name — `Grass`,
-`Slate`, `Metal`, `Wood`, `Sand`, … plus an optional `Default`. `CameraRig` fires one
-of these per step (the stepped clunk drives the timing, so they're one-shots rather
-than loops) and falls back to `SoundConfig.Footstep` if the folder isn't there. Each
-sound's own `Volume` and `PlaybackSpeed` are used as the baseline, then scaled by
-step weight. Roblox's built-in looping `Running` sound is removed automatically.
+**Footsteps by material** (`ReplicatedStorage ▸ Footsteps`): one sound per step, picked by
+what's underfoot. `SOUNDS` holds Grass, Metal/DiamondPlate, Pebble, Wood/WoodPlanks,
+Plastic/SmoothPlastic, Sand and Rock; `LIKE` sends every other material to the closest one
+(Slate, Cobblestone, Brick, Marble… sound like Rock; Ground and Mud like Grass; Snow like a
+lower Sand). Each step is cut after `MAX_LENGTH` (0.45 s), so a clip that holds a run of steps
+can't patter on after you stop. Your own steps are timed by `CameraRig` on the step bob; everyone
+else's (other players, bots) by `StarterPlayerScripts ▸ Footsteps`, from how far their root
+moved, heard within 70 studs. A `FootstepSounds` folder in `SoundService` (one `Sound` per
+material name, plus `Default`) still overrides the table. Roblox's own looping `Running` and
+`Climbing` sounds are muted on every character.
 
 ## Movement modifiers (composable)
 

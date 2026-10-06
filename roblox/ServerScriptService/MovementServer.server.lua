@@ -6,6 +6,7 @@
          client -> "Sprint", held(bool)        wants to sprint while this is true
          client -> "Dodge", dx, dz             local-space direction (x right, z back)
          client -> "Kick"                      unarmed kick (no Tool equipped)
+         client -> "Jump"                      a hop happened: charge JUMP_COST stamina
          server -> "Kick", cap, windup         play the procedural kick
          server -> "DodgeDenied", reason
 
@@ -164,6 +165,19 @@ local function kick(plr, char)
 end
 
 --------------------------------------------------------------------
+--  JUMP: the hop is the client's (it owns its physics); the stamina is ours
+--------------------------------------------------------------------
+local jumpReady = setmetatable({}, {__mode = "k"})
+local function jump(plr, char)
+	local ok = alive(char)
+	if not ok then return end
+	local now = os.clock()
+	if now < (jumpReady[char] or 0) then return end
+	jumpReady[char] = now + M.JUMP_COOLDOWN * 0.8   -- a little slack for latency
+	CombatServer.drainStamina(char, M.JUMP_COST, char:GetAttribute("BlockMax"))
+end
+
+--------------------------------------------------------------------
 remote.OnServerEvent:Connect(function(plr, what, a, b)
 	local char = plr.Character
 	if not char then return end
@@ -171,6 +185,8 @@ remote.OnServerEvent:Connect(function(plr, what, a, b)
 		sprintHeld[char] = a == true or nil
 	elseif what == "Dodge" then
 		dodge(plr, char, a, b)
+	elseif what == "Jump" then
+		jump(plr, char)
 	elseif what == "Kick" then
 		kick(plr, char)
 	end

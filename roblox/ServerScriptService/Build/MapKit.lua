@@ -98,7 +98,8 @@ end
 --  ARCHITECTURE
 --------------------------------------------------------------------
 -- a straight wall from a to b (Vector3s on the ground), height h, thickness t;
--- opts: crenels (battlements), color, material, base (a wider footing), cap
+-- opts: crenels (battlements), color, material, base (a wider footing: baseH
+-- tall, baseW wider than the wall; a tall one makes a wall look founded, not sunk), cap
 function K.wall(ctx, a, b, h, t, opts)
 	opts = opts or {}
 	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Slate
@@ -108,7 +109,11 @@ function K.wall(ctx, a, b, h, t, opts)
 	local look = CFrame.lookAt(mid, b)
 	local frame = look * CFrame.new(0, h / 2, 0)
 	K.box(ctx, "Wall", Vector3.new(t, h, len), frame, color, mat)
-	if opts.base then K.box(ctx, "Footing", Vector3.new(t + 1.2, 1.2, len), look * CFrame.new(0, 0.6, 0), opts.baseColor or K.C.STONEDARK, mat) end
+	if opts.base then
+		local bh, bw = opts.baseH or 1.2, opts.baseW or 1.2
+		K.box(ctx, "Footing", Vector3.new(t + bw, bh, len), look * CFrame.new(0, bh / 2, 0), opts.baseColor or K.C.STONEDARK, mat)
+		if bh >= 2 then K.box(ctx, "FootingCap", Vector3.new(t + bw * 0.6, 0.4, len), look * CFrame.new(0, bh + 0.2, 0), opts.baseColor or K.C.STONEDARK, mat) end
+	end
 	if opts.crenels then
 		local n = math.max(1, math.floor(len / 3.2))
 		for i = 0, n do
@@ -120,11 +125,16 @@ function K.wall(ctx, a, b, h, t, opts)
 	return frame
 end
 
--- a round tower: body, a wider top ring with crenels, an optional cone roof
+-- a round tower: body, a wider top ring with crenels, an optional cone roof;
+-- opts.base = a footing ring that many studs tall
 function K.tower(ctx, pos, r, h, opts)
 	opts = opts or {}
 	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Slate
 	K.cyl(ctx, "Tower", r * 2, h, pos + Vector3.new(0, h / 2, 0), color, mat)
+	if opts.base then
+		K.cyl(ctx, "TowerFooting", r * 2 + 2.4, opts.base, pos + Vector3.new(0, opts.base / 2, 0), opts.baseColor or K.C.STONEDARK, mat)
+		K.cyl(ctx, "TowerFootingCap", r * 2 + 1.4, 0.4, pos + Vector3.new(0, opts.base + 0.2, 0), opts.baseColor or K.C.STONEDARK, mat)
+	end
 	K.cyl(ctx, "TowerTop", r * 2 + 1.6, 1.0, pos + Vector3.new(0, h + 0.5, 0), opts.topColor or K.C.STONEDARK, mat)
 	local n = math.max(6, math.floor(r * 2))
 	for i = 1, n do
@@ -428,8 +438,14 @@ end
 function K.terrain(ctx, corner, size, paint)
 	local region = Region3.new(corner, corner + size):ExpandToGrid(4)
 	Terrain:FillRegion(region, 4, Enum.Material.Air)
+	-- a brush that reaches past the region (a hill ball near the edge) would
+	-- leave voxels in the place for good, under every map: the band around the
+	-- region is put back exactly as it was before painting
+	local SPILL = 96
+	local outer = Region3.new(corner - Vector3.one * SPILL, corner + size + Vector3.one * SPILL):ExpandToGrid(4)
+	local keepM, keepO = Terrain:ReadVoxels(outer, 4)
 	local ok, err = pcall(paint, Terrain)
-	if not ok then Terrain:FillRegion(region, 4, Enum.Material.Air); error(err) end
+	if not ok then Terrain:WriteVoxels(outer, 4, keepM, keepO); error(err) end
 	-- CopyRegion wants voxel coordinates (studs / 4)
 	local lo = region.CFrame.Position - region.Size / 2
 	local hi = region.CFrame.Position + region.Size / 2
@@ -440,7 +456,8 @@ function K.terrain(ctx, corner, size, paint)
 	local c = region.CFrame.Position - region.Size / 2
 	ctx.model:SetAttribute("TerrainCorner", c)
 	ctx.model:SetAttribute("TerrainSize", region.Size)
-	Terrain:FillRegion(region, 4, Enum.Material.Air)
+	-- the region was empty before, so this clears it and undoes any spill
+	Terrain:WriteVoxels(outer, 4, keepM, keepO)
 end
 
 function K.finish(ctx)

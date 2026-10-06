@@ -30,7 +30,7 @@ local HINTS = {
 	"Heavy armor turns cuts into bruises. Light armor turns you into a ghost.",
 	"A stab to the face is a finisher, whatever the health bar says.",
 	"Sprint is forward only. Backpedalling is slow — turn and run.",
-	"Dodge (Space) sideways out of an overhead. It costs stamina; don't spam it.",
+	"Dodge (F, or double-tap A / D / S) sideways out of an overhead. It costs stamina; don't spam it.",
 	"Look down: yes, those are your own legs.",
 	"Friendly fire is on. Half damage, no kill credit, and everyone sees the feed.",
 	"Hold Tab for the board. Press M for the menu, anywhere.",

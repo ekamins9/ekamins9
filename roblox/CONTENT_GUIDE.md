@@ -336,6 +336,16 @@ accent, glow, style, fx, egg, pass, description}`.
   parts the mode scripts look for; `K.spot` makes them). Add its name to a mode's `maps` in
   `GameConfig.MODES`, and its on-screen name to `GameConfig.MAP_TITLES`. Maps built from code
   live in `Build ▸ Maps` (newer ones in `Build ▸ Map<Name>`).
+- **Terrain:** `K.terrain(ctx, corner, size, paint)` paints inside that box and stores it with the
+  map. Whatever a brush paints *outside* the box is undone when the build finishes (so a build can
+  never leave hills behind in the place), so make the box big enough to hold every hill whole.
+  Ground is at y = 0; `mound(T, centre, top, plateau, foot, material)` in `Build ▸ Maps` makes a
+  flat-topped hill whose top is exactly `top` studs up (stand buildings on it at that height).
+- **Seats:** a `Seat` faces its front (`LookVector`); the sitter's back is to the seat's back.
+  The Jump key stands you up and steps you off the front.
+- **Footstep sounds:** `ReplicatedStorage ▸ Footsteps`: `SOUNDS[material name] = sound id`;
+  `LIKE` sends other materials to one of those (`Slate = "Rock"`); `PITCH` / `VOLUME` tune a
+  material. Or drop Sounds named after materials into a `FootstepSounds` folder in SoundService.
 - **Peaceful mode:** `pvp = false` on a mode means players can't hurt each other there (dummies
   and bots still can be hit).
 - **Lessons:** `Catalog ▸ Drills ▸ lessons`. Each is `{id, title, text, goal, event, kind,

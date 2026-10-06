@@ -15,7 +15,7 @@ return function(K)
 	local C, M = K.C, K.M
 	local V3 = Vector3.new
 	local ctx = K.new("TrainingYard")
-	K.terrain(ctx, V3(-200, -40, -200), V3(400, 80, 400), function(T)
+	K.terrain(ctx, V3(-208, -72, -240), V3(416, 112, 448), function(T)
 		T:FillBlock(CFrame.new(0, -6, 0), V3(380, 12, 380), Enum.Material.Grass)
 		-- the yard: packed sand inside the palisade, a dirt road out of the gate
 		T:FillBlock(CFrame.new(0, 0.1, 0), V3(158, 0.4, 128), Enum.Material.Sand)

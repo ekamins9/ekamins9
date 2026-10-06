@@ -17,6 +17,25 @@ local V3, cf = Vector3.new, K.cf
 
 local Maps = {}
 
+-- a terrain mound: a flat top `top` studs high and `plateau` wide, sloping to
+-- the ground at `foot` (stacked one-stud discs; the voxels smooth the steps).
+-- Built up from y = 0, so whatever stands on the plateau sits at y = top.
+local function mound(T, at, top, plateau, foot, mat)
+	local steps = math.max(1, math.ceil(top))
+	for i = 0, steps - 1 do
+		local y0, y1 = i * top / steps, (i + 1) * top / steps
+		local r = foot - (foot - plateau) * ((i + 1) / steps)
+		T:FillCylinder(CFrame.new(at.X, (y0 + y1) / 2, at.Z), y1 - y0, r, mat)
+	end
+end
+-- props kept off a mound: pushed out to `r` from its middle
+local function offMound(p, r)
+	local flat = Vector3.new(p.X, 0, p.Z)
+	if flat.Magnitude >= r then return p end
+	local dir = flat.Magnitude > 0.1 and flat.Unit or Vector3.new(1, 0, 0)
+	return Vector3.new(dir.X * r, p.Y, dir.Z * r)
+end
+
 --------------------------------------------------------------------
 --  SANDPIT
 --------------------------------------------------------------------
@@ -26,10 +45,11 @@ function Maps.Sandpit()
 	K.terrain(ctx, V3(-176, -48, -176), V3(352, 96, 352), function(T)
 		T:FillBlock(CFrame.new(0, -6, 0), V3(300, 12, 300), Enum.Material.Sand)
 		local r = Random.new(3)
+		-- dunes well outside the walls (R = 70): they never reach in over them
 		for i = 1, 26 do
 			local a = i / 26 * 2 * math.pi
-			local d = 108 + r:NextNumber(-8, 14)
-			T:FillBall(V3(math.cos(a) * d, -4 + r:NextNumber(0, 6), math.sin(a) * d), r:NextNumber(18, 34), Enum.Material.Sand)
+			local d = 132 + r:NextNumber(-6, 14)
+			T:FillBall(V3(math.cos(a) * d, -10 + r:NextNumber(0, 5), math.sin(a) * d), r:NextNumber(16, 26), Enum.Material.Sand)
 		end
 		-- the pit: a bowl in the middle
 		T:FillBall(V3(0, 5, 0), 22, Enum.Material.Air)
@@ -189,34 +209,34 @@ function Maps.Millfield()
 	local ctx = K.new("Millfield")
 	K.terrain(ctx, V3(-192, -64, -192), V3(384, 128, 384), function(T)
 		T:FillBlock(CFrame.new(0, -6, 0), V3(340, 12, 340), Enum.Material.Grass)
-		-- the hill in the middle
-		T:FillBall(V3(0, -12, 0), 44, Enum.Material.Grass)
-		T:FillBall(V3(0, -4, 0), 30, Enum.Material.Grass)
+		-- the hill in the middle: a plateau 8 studs up (the windmill's foot), sloping out to 38
+		mound(T, V3(0, 0, 0), 8, 17, 38, Enum.Material.Grass)
 		-- a stream across the south, cut into the ground
 		T:FillBlock(CFrame.new(0, -2, 70) * CFrame.Angles(0, math.rad(8), 0), V3(300, 5, 12), Enum.Material.Air)
 		T:FillBlock(CFrame.new(0, -4, 70) * CFrame.Angles(0, math.rad(8), 0), V3(300, 2, 12), Enum.Material.Water)
 		T:FillBlock(CFrame.new(0, -5, 70) * CFrame.Angles(0, math.rad(8), 0), V3(300, 1, 14), Enum.Material.Mud)
 		-- dirt paths
-		T:FillBlock(CFrame.new(0, 0.2, 40), V3(6, 0.6, 90), Enum.Material.Ground)
-		T:FillBlock(CFrame.new(0, 0.2, -40), V3(6, 0.6, 90), Enum.Material.Ground)
-		T:FillBlock(CFrame.new(60, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0), V3(6, 0.6, 120), Enum.Material.Ground)
+		T:FillBlock(CFrame.new(0, 0.2, 62), V3(6, 0.6, 46), Enum.Material.Ground)
+		T:FillBlock(CFrame.new(0, 0.2, -62), V3(6, 0.6, 46), Enum.Material.Ground)
+		T:FillBlock(CFrame.new(80, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0), V3(6, 0.6, 80), Enum.Material.Ground)
 		-- wheat fields: slightly raised sand-coloured patches
 		T:FillBlock(CFrame.new(-70, 0.3, -30), V3(50, 0.8, 40), Enum.Material.Sand)
 		T:FillBlock(CFrame.new(70, 0.3, -50), V3(40, 0.8, 40), Enum.Material.Sand)
 	end)
 	K.terrainColors(ctx, {Sand = Color3.fromRGB(214, 186, 112), Grass = Color3.fromRGB(104, 146, 72), Ground = Color3.fromRGB(120, 96, 70)})
-	-- the windmill on the hill: a stone base, a wooden cap, four sails
+	-- the windmill on the hill (its plateau is 8 up): a stone base, a wooden cap, four sails
 	K.cyl(ctx, "MillBase", 12, 14, V3(0, 7 + 8, 0), C.STONE, M.Cobblestone)
 	K.cyl(ctx, "MillCap", 13, 3, V3(0, 7 + 15.5, 0), C.DARKWOOD, M.WoodPlanks)
 	K.cone(ctx, "CapRoof", V3(0, 7 + 17, 0), 7, 6, C.RED, M.Fabric)
 	K.cyl(ctx, "Axle", 1, 4, CFrame.new(0, 7 + 16, -7.5) * CFrame.Angles(math.rad(90), 0, 0), C.DARKWOOD, M.Wood)
 	for i = 0, 3 do
-		local s = K.box(ctx, "Sail", V3(2.6, 16, 0.3), CFrame.new(0, 7 + 16, -9.5) * CFrame.Angles(0, 0, math.rad(90 * i + 20)) * CFrame.new(0, 8, 0), C.WHITE, M.Fabric)
+		-- (13 long: the lowest tip clears the plateau)
+		local s = K.box(ctx, "Sail", V3(2.6, 13, 0.3), CFrame.new(0, 7 + 16, -9.5) * CFrame.Angles(0, 0, math.rad(90 * i + 20)) * CFrame.new(0, 6.5, 0), C.WHITE, M.Fabric)
 		s.CanCollide = false
-		K.box(ctx, "SailFrame", V3(0.4, 16.4, 0.5), s.CFrame * CFrame.new(-1.2, 0, 0), C.DARKWOOD, M.Wood).CanCollide = false
+		K.box(ctx, "SailFrame", V3(0.4, 13.4, 0.5), s.CFrame * CFrame.new(-1.2, 0, 0), C.DARKWOOD, M.Wood).CanCollide = false
 	end
-	K.box(ctx, "MillDoor", V3(2.4, 3.6, 0.3), V3(0, 7 + 1.8, 6), C.DARKWOOD, M.Wood).CanCollide = false
-	K.hill(ctx, V3(0, 7, 0), 16, 10)
+	K.box(ctx, "MillDoor", V3(2.4, 3.6, 0.3), V3(0, 8 + 1.8, 6.05), C.DARKWOOD, M.Wood).CanCollide = false
+	K.hill(ctx, V3(0, 8, 0), 16, 10)
 	-- farmhouses around the hill
 	K.house(ctx, CFrame.new(-50, 0, 40) * CFrame.Angles(0, math.rad(30), 0), 14, 18, 7, C.WHITE, C.DARKWOOD)
 	K.house(ctx, CFrame.new(55, 0, 35) * CFrame.Angles(0, math.rad(-40), 0), 12, 16, 6.5, Color3.fromRGB(226, 212, 190), C.THATCH)
@@ -239,13 +259,14 @@ function Maps.Millfield()
 		K.tree(ctx, V3(math.cos(a) * d, 0, math.sin(a) * d), r:NextNumber(10, 18))
 	end
 	for i = 1, 8 do K.tree(ctx, V3(r:NextNumber(-100, 100), 0, r:NextNumber(85, 120)), r:NextNumber(10, 16)) end
-	for i = 1, 10 do K.rock(ctx, V3(r:NextNumber(-90, 90), 0, r:NextNumber(-90, 50)), r:NextNumber(2, 5)) end
-	for i = 1, 5 do K.crate(ctx, V3(r:NextNumber(-60, 60), 0, r:NextNumber(20, 50)), 3, r:NextNumber(0, 90)) end
-	-- a well
-	K.cyl(ctx, "Well", 5, 2.4, V3(30, 1.2, 10), C.STONE, M.Cobblestone)
-	K.cyl(ctx, "WellHole", 3.4, 2.5, V3(30, 1.3, 10), Color3.fromRGB(20, 25, 30), M.SmoothPlastic).CanCollide = false
-	K.box(ctx, "WellRoof", V3(6, 0.4, 6), V3(30, 6, 10), C.DARKWOOD, M.WoodPlanks)
-	K.pole(ctx, V3(27.5, 2.4, 7.5), 3.6); K.pole(ctx, V3(32.5, 2.4, 12.5), 3.6)
+	-- (nothing small on the hill's slope: rocks and crates keep to the flat)
+	for i = 1, 10 do K.rock(ctx, offMound(V3(r:NextNumber(-90, 90), 0, r:NextNumber(-90, 50)), 42), r:NextNumber(2, 5)) end
+	for i = 1, 5 do K.crate(ctx, offMound(V3(r:NextNumber(-60, 60), 0, r:NextNumber(20, 50)), 42), 3, r:NextNumber(0, 90)) end
+	-- a well, at the foot of the hill
+	K.cyl(ctx, "Well", 5, 2.4, V3(44, 1.2, 22), C.STONE, M.Cobblestone)
+	K.cyl(ctx, "WellHole", 3.4, 2.5, V3(44, 1.3, 22), Color3.fromRGB(20, 25, 30), M.SmoothPlastic).CanCollide = false
+	K.box(ctx, "WellRoof", V3(6, 0.4, 6), V3(44, 6, 22), C.DARKWOOD, M.WoodPlanks)
+	K.pole(ctx, V3(41.5, 2.4, 19.5), 3.6); K.pole(ctx, V3(46.5, 2.4, 24.5), 3.6)
 	-- spawns: A west, B east, free around
 	for i = -2, 2 do
 		K.spawn(ctx, V3(-110, 1, i * 8), "A", V3(0, 7, 0))

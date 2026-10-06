@@ -48,7 +48,8 @@ ClientSettings.KEYS = {
 	{key = "SideFlip",   label = "Opposite side (hold)", default = "LeftAlt"},
 	{key = "Kick",       label = "Kick",             default = "G"},
 	{key = "Sprint",     label = "Sprint",           default = "LeftShift"},
-	{key = "Dodge",      label = "Dodge",            default = "Space"},
+	{key = "Dodge",      label = "Dodge",            default = "F"},
+	{key = "Jump",       label = "Jump / stand up",  default = "Space"},
 	{key = "Crouch",     label = "Crouch",           default = "LeftControl"},
 	{key = "View",       label = "First / third person", default = "Z"},
 	{key = "Pickup",     label = "Pick up weapon",   default = "V"},
@@ -64,11 +65,13 @@ ClientSettings.CHOICES = {
 		hint = "Modifier mode: the side you get without the Opposite-side key held. Mouse mode: what a held Opposite-side key flips away from."},
 	{key = "Companions", label = "Companions", options = {"All", "Mine", "None"},
 		hint = "Whose companions you see following them around: everyone's, only yours, or none."},
+	{key = "DodgeTap",   label = "Double-tap dodge", options = {"On", "Off"},
+		hint = "Double-tap A, D or S to dodge that way (the Dodge key works either way)."},
 }
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70,
-	SideMode = "Modifier", DefaultSide = "Right", Companions = "All",
+	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 
@@ -216,6 +219,8 @@ function ClientSettings.load()
 	if not rf then return end
 	local ok, saved = pcall(rf.InvokeServer, rf, "Load")
 	if ok and type(saved) == "table" then
+		-- settings saved before there was a jump had dodge on Space: Space is the jump now
+		if saved.Key_Jump == nil and saved.Key_Dodge == "Space" then saved.Key_Dodge = ClientSettings.DEFAULTS.Key_Dodge end
 		for k, v in pairs(saved) do
 			if valid(k, v) then
 				values[k] = v
