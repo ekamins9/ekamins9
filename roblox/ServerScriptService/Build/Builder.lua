@@ -34,6 +34,7 @@ B.C = {
 	LEATHER    = Color3.fromRGB(110, 72, 44),
 	DARKLEATHER= Color3.fromRGB(62, 42, 28),
 	ROPE       = Color3.fromRGB(190, 160, 110),
+	STRAW      = Color3.fromRGB(214, 184, 116),
 	CLOTH      = Color3.fromRGB(70, 110, 220),   -- Primary default (team blue)
 	CLOTH2     = Color3.fromRGB(42, 62, 120),    -- Secondary default
 	ACCENT     = Color3.fromRGB(232, 184, 74),   -- Accent default

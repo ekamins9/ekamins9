@@ -26,9 +26,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
 
 local DEFAULTS = {
-	Logs      = true,
+	Logs      = false,   -- on in Studio when you need the combat chatter
 	Rays      = false,
-	GuardHull = true,
+	GuardHull = false,   -- the translucent block hull; a debug view, not a look
 	Hitbox    = false,
 	TurnCap   = false,
 }

@@ -70,17 +70,17 @@ end
 -- could be fighting it (an older camera script left in the character or in
 -- StarterPlayerScripts is the usual reason a new feature "does nothing")
 local VERSION = "v4"
-print(string.format("[CameraRig %s] running from %s", VERSION, script:GetFullName()))
+if DebugFlags.get("Logs") then print(string.format("[CameraRig %s] running from %s", VERSION, script:GetFullName())) end
 for _, s in ipairs(character:GetDescendants()) do
 	if s:IsA("LocalScript") and s ~= script then
-		print("[CameraRig] other LocalScript in character:", s:GetFullName())
+		if DebugFlags.get("Logs") then print("[CameraRig] other LocalScript in character:", s:GetFullName()) end
 	end
 end
 local ps = player:FindFirstChild("PlayerScripts")
 if ps then
 	for _, s in ipairs(ps:GetChildren()) do
 		if s:IsA("LocalScript") and s.Name ~= "PlayerScriptsLoader" and s.Name ~= "RbxCharacterSounds" then
-			print("[CameraRig] LocalScript in PlayerScripts:", s.Name)
+			if DebugFlags.get("Logs") then print("[CameraRig] LocalScript in PlayerScripts:", s.Name) end
 		end
 	end
 end
@@ -695,7 +695,7 @@ RunService:BindToRenderStep(LOOP_NAME, CAM, function(dt)
 		warn("[CameraRig] LOOP ERROR (repeating every frame): " .. tostring(err))
 	end
 end)
-print("[CameraRig " .. VERSION .. "] loop bound as " .. LOOP_NAME)
+if DebugFlags.get("Logs") then print("[CameraRig " .. VERSION .. "] loop bound as " .. LOOP_NAME) end
 
 --------------------------------------------------------------------
 --  DEATH — first person from inside the head, wherever it ends up

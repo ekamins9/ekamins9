@@ -384,10 +384,36 @@ A_.GambesonSkin = {
 	LeftLegClothing = leg(trousers(C.CLOTH2, S), boot()),
 	RightLegClothing = leg(trousers(C.CLOTH2, S), boot()),
 }
+-- the free Light starter: a wide straw hat, a long tunic with a rope belt and a
+-- pouch, rolled sleeves, hose with linen shin wraps and soft turnshoes
+local function strawHat()
+	return {middle(HEAD),
+		B.cyl("Brim", 2.35, 0.08, cf(0, 0.56, 0), C.STRAW, M.FABRIC),
+		B.cyl("Crown", 1.36, 0.5, cf(0, 0.84, 0), C.STRAW, M.FABRIC),
+		B.cyl("CrownTop", 1.1, 0.12, cf(0, 1.12, 0), C.STRAW, M.FABRIC),
+		B.cyl("Band", 1.4, 0.12, cf(0, 0.66, 0), C.CLOTH, M.FABRIC, A),
+	}
+end
+local function shinWraps(color)
+	local out = {}
+	for i = 1, 3 do out[#out + 1] = B.box("Wrap", v(1.12, 0.16, 1.12), cf(0, -0.62 + (i - 1) * 0.24, 0, 0, 0, (i % 2 == 0) and 4 or -4), color or C.LINEN, M.FABRIC) end
+	return out
+end
 A_.PeasantSkin = {
-	TorsoClothing = B.join({middle(TORSO), B.box("Tunic", v(2.12, 2.06, 1.1), cf(), C.LINEN, M.FABRIC, P)}, belt(-0.6, C.IRON)),
-	LeftArmClothing = arm(sleeve(C.LINEN, P)),
-	RightArmClothing = arm(sleeve(C.LINEN, P)),
+	HeadClothing = strawHat(),
+	TorsoClothing = B.join({middle(TORSO),
+		B.box("Tunic", v(2.12, 2.06, 1.1), cf(), C.LINEN, M.FABRIC, P),
+		B.box("Skirt", v(2.16, 0.5, 1.14), cf(0, -1.15, 0), C.LINEN, M.FABRIC, P),
+		B.box("Collar", v(1.0, 0.14, 1.12), cf(0, 0.98, 0), C.LINEN, M.FABRIC, S),
+		B.box("Rope", v(2.2, 0.14, 1.16), cf(0, -0.62, 0), C.ROPE, M.FABRIC),
+		B.box("Knot", v(0.2, 0.36, 0.1), cf(-0.35, -0.8, -0.6, 0, 0, 10), C.ROPE, M.FABRIC),
+		B.box("Pouch", v(0.42, 0.42, 0.22), cf(0.65, -0.86, -0.62), C.LEATHER, M.LEATHER),
+		B.box("PouchFlap", v(0.44, 0.16, 0.24), cf(0.65, -0.7, -0.63), C.DARKLEATHER, M.LEATHER),
+	}),
+	LeftArmClothing = arm(sleeve(C.LINEN, P), B.box("Cuff", v(1.14, 0.22, 1.14), cf(0, -0.25, 0), C.LINEN, M.FABRIC, S)),
+	RightArmClothing = arm(sleeve(C.LINEN, P), B.box("Cuff", v(1.14, 0.22, 1.14), cf(0, -0.25, 0), C.LINEN, M.FABRIC, S)),
+	LeftLegClothing = B.join(leg(trousers(C.LEATHER, S), B.box("Shoe", v(1.1, 0.4, 1.2), cf(0, -0.82, -0.05), C.DARKLEATHER, M.LEATHER)), shinWraps()),
+	RightLegClothing = B.join(leg(trousers(C.LEATHER, S), B.box("Shoe", v(1.1, 0.4, 1.2), cf(0, -0.82, -0.05), C.DARKLEATHER, M.LEATHER)), shinWraps()),
 }
 
 --------------------------------------------------------------------
