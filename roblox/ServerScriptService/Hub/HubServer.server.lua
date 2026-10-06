@@ -701,7 +701,7 @@ end
 local function buyCrowns(plr, index)
 	local prod = Catalog.ECONOMY.products[tonumber(index) or 0]
 	if not prod then return false, "no such bundle" end
-	if prod.id == 0 then return false, "Crown bundles aren't set up yet (Catalog/Economy products)" end
+	if (prod.id or 0) == 0 then return false, string.format("no Developer Product named \"%s\" yet (Creator Dashboard ▸ Monetization)", prod.product or (tostring(prod.crowns) .. " Crowns")) end
 	local ok, err = pcall(MarketplaceService.PromptProductPurchase, MarketplaceService, plr, prod.id)
 	return ok, ok and "purchase prompt opened" or ("could not open the purchase: " .. tostring(err))
 end

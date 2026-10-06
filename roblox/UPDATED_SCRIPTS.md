@@ -2,63 +2,80 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md). Stop and re-run Play after a pull so the server scripts restart.
+**Synced with Rojo:** `rojo serve` on your PC (binary at `~/.local/bin/rojo.exe`, see
+[ROJO_SETUP.md](ROJO_SETUP.md)) puts all of this into Studio live. Stop and re-run Play after a
+pull so the server scripts restart.
 
-**Last change: the cosmetic side, built.** This merges two streams of work: the desktop
-session's *first-release catalog* (12 armor sets, 9 earned pieces, 40 skins for the four
-original weapons, titles, palette, balance pass) and this session's **blueprints + 22 new
-weapons + the bright theme**. Together: 26 weapons with bodies, every set and earned piece
-with clothing models, 9 hairs, 6 beards, 6 faces, skins for every weapon across the
-Bladesmith / Hafted / Royal Armoury crates — all built from parts at server start wherever
-you haven't made a model yet, plus the new look on every screen.
+**Last change: the first local session.** Studio and Blender are wired up, the game runs
+without errors, every weapon is a real mesh, the first armor set is a mesh, and the shop is a
+rotating store. In order:
 
-## What happens when you press Play
-
-`LoadoutServer` runs `Build ▸ Blueprints.ensureAll()` first. It gives every weapon Tool
-without a Handle its body (Handle, Hitbox, blade / haft / head parts welded to the Handle,
-`SkinPart` attributes), every armor set Model without clothing models its six (with
-`ColorSlot` color blocks), every earned piece its folder in `Cosmetics ▸ Pieces`, fills
-`Cosmetics ▸ Body ▸ Hair / Beard / Face`, and drops a display copy of every weapon in
-`Cosmetics ▸ Weapons`. Your hand-made Shortsword / Pitchfork / Greatsword / Hammer and the
-Knight / Gambeson / Peasant sets are untouched. Editable copies in Studio: run that same line
-in the command bar in edit mode — [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0.
+1. **Fixes found by pressing Play.** `Catalog ▸ Skins` called `C()` without defining it, which
+   broke the whole Catalog (menu, economy, loadouts). Blueprint weapon Handles were cylinders
+   (a Roblox cylinder's axis is X, so blades stuck out sideways from the fist) — Handles are
+   boxes now. Glyphs Gotham can't draw (`▸ ✕ ✓ ♛ ◀ ▶ ↻ × − ±`) swapped for ones every UI font
+   has. The Hub side bar's spacer went negative on short viewports (doors covered the tabs).
+   Stale `MomentumLean` / duplicate `RigReplicator` moved to `ServerStorage ▸ Legacy`.
+   Free-model weld scripts in the stamped castle models (`require(<dead asset>).weld()`) are
+   removed by `Sanitize` at start and whenever one appears.
+2. **Mesh weapons.** `blender/weapons.py` builds all 26 weapons procedurally in headless
+   Blender (two meshes each: Blade + Grip, vertex-coloured), `scripts/upload_asset.py` pushes
+   them through Open Cloud (key in `.env`, gitignored), `scripts/build_weapons.py` runs the lot
+   and writes an assembly snippet, `Build ▸ MeshTool.build{}` turns the meshes into a Tool
+   (invisible box Handle at the fist, blade along +Y, Hitbox, `SkinPart` attributes, white
+   MeshParts so vertex colors and skin tints show). All 26 Tools in `ServerStorage ▸ Weapons`
+   are mesh Tools now, including the four originals.
+3. **Mesh armor / hair / beards / faces.** `blender/parts2mesh.py` converts the Lua blueprints
+   (exported from Studio as JSON) into beveled single meshes per colour region;
+   `scripts/build_armor.py` uploads and writes the snippet; `Build ▸ MeshArmor.build{}` builds
+   the clothing / body Models (Middle box + MeshParts carrying `ColorSlot` / `KeepColor`).
+   Road Levy is in; the rest were uploading when this was written (run the snippet in
+   `blender/out/armor/assemble_armor.lua`).
+4. **Roster.** Free: Shortsword, Arming Sword, Greatsword, War Hammer, Spear. Everything else
+   by level or Marks (Pitchfork lvl 2, War Axe / Quarterstaff lvl 3).
+5. **Faces** are whole faces now (eyes, brows, mouth, compact around the middle of the head)
+   and the Roblox face decal hides under them.
+6. **Daily store.** `Catalog ▸ Store` (slots, queue, pins, retired, always, epoch) decides
+   which packs are on sale each UTC day; Economy only sells what is on sale; the Hub state
+   carries today's packs and the countdown.
+7. **Shop rebuilt.** TODAY'S STORE (hero cards with a dressed 3D mannequin per pack, countdown,
+   coming-up, earned ledger) · CRATES (chosen skin on a turning stage, scrolling skin strip
+   that spins on open, odds + pity) · ARMORY (every weapon with owned-skin counts, stage, skin
+   strip, unlock / buy / equip on the active class) · COLORS.
+8. **Testing cheats** (Studio): `/marks 5000` `/crowns 500` `/xp 1000` `/level 3`.
+9. **Crown bundles** link themselves to Developer Products **by name** at server start: make
+   products on the Creator Dashboard named `100 Crowns`, `550 Crowns`, `1200 Crowns`,
+   `2600 Crowns` (prices 99 / 499 / 999 / 1999 R$) and nothing needs pasting.
 
 ## Studio notes
 
-- Rojo creates the 22 new Tools in `ServerStorage ▸ Weapons` and the folder
-  `ServerScriptService ▸ Build`; nothing to make by hand. The armor set Models were already there.
-- Your four original weapons: give their blade / grip parts an attribute `SkinPart` = `"Blade"` /
-  `"Grip"` so skins tint them (generated weapons have it already).
-- New module `ReplicatedStorage ▸ Theme` (the look). Default face is now a Face overlay model.
+- Enable **Game Settings ▸ Security ▸ Allow Studio access to API services** so profiles and
+  settings save in Studio (every Play currently logs `StudioAccessToApisNotAllowed`).
+- Meshes live in the place (ServerStorage ▸ Weapons Tools, ServerStorage ▸ Armor models,
+  Cosmetics ▸ Body); their asset ids are in `blender/out/*.json` (gitignored), never in code.
+- The menu has test hooks: set attribute `Tab` (PLAY / SHOP / …) or `ShopTab`
+  (store / crates / weapons / colors) on `PlayerGui ▸ HubMenu` to switch screens.
 
 ## New files
 
 | File | Roblox Studio location | Type | What it is |
 |---|---|---|---|
-| [ServerScriptService/Build/Builder.lua](ServerScriptService/Build/Builder.lua) | `ServerScriptService` → `Build` (Folder) → `Builder` | ModuleScript | part factory + shared palette |
-| [ServerScriptService/Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | `Build` → `Weapons` | ModuleScript | 26 weapon blueprints (swords, blunt, axes, polearms) |
-| [ServerScriptService/Build/Armor.lua](ServerScriptService/Build/Armor.lua) | `Build` → `Armor` | ModuleScript | the 12 release sets, 3 starter fallbacks, 9 earned pieces |
-| [ServerScriptService/Build/Body.lua](ServerScriptService/Build/Body.lua) | `Build` → `Body` | ModuleScript | 9 hairs, 6 beards, 6 face overlays (ids = Catalog ▸ Body) |
-| [ServerScriptService/Build/Blueprints.lua](ServerScriptService/Build/Blueprints.lua) | `Build` → `Blueprints` | ModuleScript | `ensureAll()`: fills every gap, weapon display copies |
-| [ReplicatedStorage/Theme.lua](ReplicatedStorage/Theme.lua) | `ReplicatedStorage` → `Theme` | ModuleScript | the UI palette + fonts |
-| `Tools/<Weapon>/…` (22 folders) | `ServerStorage` → `Weapons` → `ArmingSword`, `Dagger`, `Longsword`, `Mace`, `Cleaver`, `Falchion`, `BattleAxe`, `MorningStar`, `Halberd`, `Messer`, `Maul`, `Billhook`, `Estoc`, `Rapier`, `Glaive`, `Poleaxe`, `Bardiche`, `Zweihander`, `Executioner`, `WarAxe`, `Spear`, `Quarterstaff` | Tool with Config / Server / Client | generated by `scripts/gen_content.py` |
-| [scripts/gen_content.py](../scripts/gen_content.py) + `scripts/skins_handmade.part` | — (repo tooling) | python | generates the Tool folders, `Catalog ▸ Weapons` and `Catalog ▸ Skins` (hand-written skins for the four originals are kept in the .part file) |
+| [ServerScriptService/Build/MeshTool.lua](ServerScriptService/Build/MeshTool.lua) | `ServerScriptService` → `Build` → `MeshTool` | ModuleScript | assembles a weapon Tool from uploaded meshes |
+| [ServerScriptService/Build/MeshArmor.lua](ServerScriptService/Build/MeshArmor.lua) | `Build` → `MeshArmor` | ModuleScript | assembles clothing / hair / beard / face Models from meshes |
+| [ServerScriptService/Sanitize.server.lua](ServerScriptService/Sanitize.server.lua) | `ServerScriptService` → `Sanitize` | Script | removes free-model weld scripts |
+| [ReplicatedStorage/Catalog/Store.lua](ReplicatedStorage/Catalog/Store.lua) | `Catalog` → `Store` | ModuleScript | the daily pack rotation |
+| [blender/weapons.py](../blender/weapons.py) · [blender/parts2mesh.py](../blender/parts2mesh.py) · [blender/render.py](../blender/render.py) | — | python (Blender) | procedural weapons; blueprint → mesh converter; preview render |
+| [scripts/upload_asset.py](../scripts/upload_asset.py) · [scripts/build_weapons.py](../scripts/build_weapons.py) · [scripts/build_armor.py](../scripts/build_armor.py) | — | python | Open Cloud upload; whole pipelines |
 
 ## Replaced files
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `Catalog` → `Weapons` | ModuleScript | 26 weapons; the four originals + Arming Sword, War Axe, Spear, Quarterstaff free, the rest by level (2–18) or Marks |
-| [ReplicatedStorage/Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | `Catalog` → `Skins` | ModuleScript | the 40 release skins + 6–8 per new weapon (Royal Armoury holds Gilded / Royal / Frostbite) |
-| [ReplicatedStorage/Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | `Catalog` → `Crates` | ModuleScript | Bladesmith · Hafted · Royal Armoury |
-| [ReplicatedStorage/Dresser.lua](ReplicatedStorage/Dresser.lua) | `ReplicatedStorage` → `Dresser` | ModuleScript | face models as overlays on the head |
-| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | runs the Blueprints first; `Body ▸ Face` folder; auto-spawn in no-respawn rounds (desktop) |
-| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | Theme colors, dark text on bright buttons, card outlines (on top of the desktop session's party stage / shop fixes) |
-| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) · [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) · [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | `StarterPlayerScripts` | LocalScript | Theme |
-| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | navy panel (plus the desktop session's EXHAUSTED / parry streak) |
-| [README.md](README.md) · [CONTENT_GUIDE.md](CONTENT_GUIDE.md) · [RELEASE_CONTENT.md](RELEASE_CONTENT.md) | — | docs | weapons roster, blueprints (§0), Theme |
-
-**Also in this merge (from the desktop session):** the balance pass — exhausted gate, weight
-rebalance (Heavy +35 / 35 %), parry refund by swing cost, block-hold drain, health regen,
-auto-spawn in no-respawn rounds; cross-server party invites; earned gear + titles; the 12 release
-sets as Models with Configs.
+| [ReplicatedStorage/Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | `ReplicatedStorage` → `Catalog` | ModuleScript | `STORE`, `storeFor(day)`, `onSale(pack)` |
+| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) · [Skins.lua](ReplicatedStorage/Catalog/Skins.lua) · [Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | `Catalog` → … | ModuleScript | roster; `local C`; product names |
+| [ReplicatedStorage/Dresser.lua](ReplicatedStorage/Dresser.lua) | `ReplicatedStorage` → `Dresser` | ModuleScript | decal hidden under a Face model |
+| [ServerScriptService/Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) · [Body.lua](ServerScriptService/Build/Body.lua) · [Blueprints.lua](ServerScriptService/Build/Blueprints.lua) | `Build` → … | ModuleScript | box Handles; full compact faces; display copies keep the Handle |
+| [ServerScriptService/Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) · [EconomyServer.server.lua](ServerScriptService/Economy/EconomyServer.server.lua) | `ServerScriptService` → `Economy` | ModuleScript / Script | store gating; products linked by name |
+| [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) · [Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | `ServerScriptService` → `Hub` | Script | `store` in State + `"Store"` op; `/marks /crowns /xp /level` |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) · [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) · [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → … | LocalScript | new SHOP; side bar spacer; glyphs; test hooks |
+| `Tools/<Weapon>/…` (26) | `ServerStorage` → `Weapons` → each Tool | Config / Server / Client | all generated by `scripts/gen_content.py` (the four originals too) |

@@ -2045,9 +2045,9 @@ do
 		modal("GET CROWNS", "Crowns are bought with Robux. Marks are earned by playing, or exchanged from Crowns (one way).", nil, function(box)
 			heading(box, "CROWN BUNDLES  ·  ROBUX")
 			for i, pr in ipairs(ECON.products or {}) do
-				row(box, string.format("%s Crowns%s", fmt(pr.crowns), pr.bonus and ("  ·  " .. pr.bonus) or ""), pr.id == 0 and "not set up yet" or ("R$ " .. fmt(pr.robux)), false, function()
+				row(box, string.format("%s Crowns%s", fmt(pr.crowns), pr.bonus and ("  ·  " .. pr.bonus) or ""), "R$ " .. fmt(pr.robux), false, function()
 					local r = call("BuyCrowns", i); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
-				end, pr.id == 0 and COL_DIM or COL_CROWNS)
+				end, COL_CROWNS)
 			end
 			heading(box, "CROWNS › MARKS")
 			for i, ex in ipairs(ECON.exchange or {}) do

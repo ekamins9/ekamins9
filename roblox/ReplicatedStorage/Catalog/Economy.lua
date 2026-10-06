@@ -1,8 +1,9 @@
 --[[ ECONOMY — the two currencies and what feeds them.
      Marks: earned by playing, or bought with Crowns.  Crowns: Robux only.
        earn       Marks and XP per event (server-paid at round end; never trusted from a client)
-       products   Developer Products (Creator Dashboard ▸ Monetization): paste the ids;
-                  0 = not set up yet (the button says so)
+       products   Robux bundles. Make a Developer Product on the Creator Dashboard
+                  (Monetization ▸ Developer Products) named exactly `product`; the
+                  server links it by name at start (or paste its id as `id`)
        exchange   Crowns → Marks tiers, one way
        levels     XP needed for each level-up (index = level reached); past the list, the last value repeats
        levelMarks Marks paid per level-up
@@ -19,9 +20,10 @@ return {
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
 	products = {
-		{crowns = 100,  robux = 99,  id = 0},
-		{crowns = 550,  robux = 499, id = 0, bonus = "+10%"},
-		{crowns = 1200, robux = 999, id = 0, bonus = "+20%"},
+		{crowns = 100,  robux = 99,  id = 0, product = "100 Crowns"},
+		{crowns = 550,  robux = 499, id = 0, product = "550 Crowns", bonus = "+10%"},
+		{crowns = 1200, robux = 999, id = 0, product = "1200 Crowns", bonus = "+20%"},
+		{crowns = 2600, robux = 1999, id = 0, product = "2600 Crowns", bonus = "+30%"},
 	},
 	exchange = {
 		{marks = 500,  crowns = 30},
