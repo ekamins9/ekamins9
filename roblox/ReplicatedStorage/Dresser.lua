@@ -223,6 +223,7 @@ end
 function Dresser.applySkin(tool, skinId)
 	local skin = skinId and Catalog.SKIN[skinId]
 	if not skin or skin.name == "Default" then return false end
+	tool:SetAttribute("Skin", skin.name)   -- the HUD's weapon chip shows it
 	local handle = tool:FindFirstChild("Handle")
 	local model = Catalog.skinModel(skinId)
 	if model and handle then

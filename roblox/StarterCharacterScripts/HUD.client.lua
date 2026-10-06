@@ -1,5 +1,5 @@
---[[ HUD — health and stamina bars, bottom-left. Built from Instances so
-     there's nothing to upload. Reads Humanoid.Health and the BlockMeter /
+--[[ HUD — chunky Health / Energy bars at the bottom centre and a weapon chip
+     bottom-right. Built from Instances so there's nothing to upload. Reads Humanoid.Health and the BlockMeter /
      BlockMax attributes (stamina); pulses when stamina is low, flashes the
      health bar while bleeding. ]]
 
@@ -11,13 +11,14 @@ local character = script.Parent
 local Humanoid  = character:WaitForChild("Humanoid")
 
 --------------------------------------------------------------------
-local BAR_W, BAR_H   = 260, 18
+local BAR_W, BAR_H   = 330, 30
 local LOW_STAMINA    = 0.2
 local LERP_SPEED     = 10
-local HP_HIGH  = Color3.fromRGB(105, 205, 120)
-local HP_LOW   = Color3.fromRGB(215, 70, 60)
-local STA_COL  = Color3.fromRGB(235, 190, 80)
-local BG_COL   = Color3.fromRGB(13, 30, 64)
+local HP_HIGH  = Color3.fromRGB(255, 118, 48)    -- health: orange-red, like the references
+local HP_LOW   = Color3.fromRGB(215, 50, 40)
+local STA_COL  = Color3.fromRGB(64, 138, 255)    -- energy: bright blue
+local BG_COL   = Color3.fromRGB(10, 22, 48)
+local FONT_BIG = Enum.Font.FredokaOne
 --------------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
@@ -25,30 +26,25 @@ gui.Name = "HUD"
 gui.ResetOnSpawn = true
 gui.DisplayOrder = 10
 
+-- the two bars sit side by side at the bottom centre: HEALTH left, ENERGY right
 local root = Instance.new("Frame")
 root.Name = "Bars"
-root.AnchorPoint = Vector2.new(0, 1)
-root.Position = UDim2.new(0, 24, 1, -24)
-root.Size = UDim2.fromOffset(BAR_W + 24, BAR_H * 2 + 36)
-root.BackgroundColor3 = BG_COL
-root.BackgroundTransparency = 0.35
-root.BorderSizePixel = 0
+root.AnchorPoint = Vector2.new(0.5, 1)
+root.Position = UDim2.new(0.5, 0, 1, -26)
+root.Size = UDim2.fromOffset(BAR_W * 2 + 16, BAR_H)
+root.BackgroundTransparency = 1
 root.Parent = gui
-Instance.new("UICorner", root).CornerRadius = UDim.new(0, 12)
-local stroke = Instance.new("UIStroke", root)
-stroke.Color = Color3.fromRGB(255, 255, 255)
-stroke.Transparency = 0.85
-stroke.Thickness = 1
 
-local function makeBar(y, color, label)
+local function makeBar(x, color, label, alignRight)
 	local track = Instance.new("Frame")
-	track.Position = UDim2.fromOffset(12, y)
+	track.Position = UDim2.fromOffset(x, 0)
 	track.Size = UDim2.fromOffset(BAR_W, BAR_H)
-	track.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	track.BackgroundTransparency = 0.5
+	track.BackgroundColor3 = BG_COL
+	track.BackgroundTransparency = 0.25
 	track.BorderSizePixel = 0
 	track.Parent = root
 	Instance.new("UICorner", track).CornerRadius = UDim.new(0, 8)
+	local st = Instance.new("UIStroke", track); st.Color = Color3.new(1, 1, 1); st.Transparency = 0.7; st.Thickness = 2
 
 	local fill = Instance.new("Frame")
 	fill.Size = UDim2.fromScale(1, 1)
@@ -58,24 +54,70 @@ local function makeBar(y, color, label)
 	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 8)
 	local grad = Instance.new("UIGradient", fill)
 	grad.Rotation = 90
-	grad.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(190, 190, 190))
+	grad.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 170))
+	-- a thin highlight along the top
+	local shine = Instance.new("Frame"); shine.Size = UDim2.new(1, -8, 0, 3); shine.Position = UDim2.fromOffset(4, 3); shine.BackgroundColor3 = Color3.new(1, 1, 1); shine.BackgroundTransparency = 0.6; shine.BorderSizePixel = 0; shine.Parent = fill
+	Instance.new("UICorner", shine).CornerRadius = UDim.new(1, 0)
 
+	local num = Instance.new("TextLabel")
+	num.BackgroundTransparency = 1
+	num.Size = UDim2.new(0.5, 0, 1, 0)
+	num.Position = UDim2.fromOffset(12, 0)
+	num.Font = FONT_BIG
+	num.TextSize = 22
+	num.TextColor3 = Color3.new(1, 1, 1)
+	num.TextStrokeTransparency = 0.5
+	num.TextXAlignment = Enum.TextXAlignment.Left
+	num.Text = "100"
+	num.ZIndex = 3
+	num.Parent = track
 	local text = Instance.new("TextLabel")
 	text.BackgroundTransparency = 1
-	text.Size = UDim2.fromScale(1, 1)
-	text.Position = UDim2.fromOffset(8, 0)
-	text.Font = Enum.Font.GothamBold
-	text.TextSize = 12
+	text.Size = UDim2.new(0.5, -12, 1, 0)
+	text.Position = UDim2.new(0.5, 0, 0, 0)
+	text.Font = FONT_BIG
+	text.TextSize = 18
 	text.TextColor3 = Color3.new(1, 1, 1)
-	text.TextStrokeTransparency = 0.6
-	text.TextXAlignment = Enum.TextXAlignment.Left
+	text.TextStrokeTransparency = 0.5
+	text.TextXAlignment = Enum.TextXAlignment.Right
 	text.Text = label
+	text.ZIndex = 3
 	text.Parent = track
-	return fill, text
+	return fill, num, text
 end
 
-local hpFill,  hpText  = makeBar(10,          HP_HIGH, "HP")
-local staFill, staText = makeBar(BAR_H + 22,  STA_COL, "STAMINA")
+local hpFill,  hpText,  hpLabel  = makeBar(0,          HP_HIGH, "Health")
+local staFill, staText, staLabel = makeBar(BAR_W + 16, STA_COL, "Energy")
+
+-- weapon chip, bottom right: what is in your hands
+local chip = Instance.new("Frame")
+chip.AnchorPoint = Vector2.new(1, 1)
+chip.Position = UDim2.new(1, -24, 1, -26)
+chip.Size = UDim2.fromOffset(220, 46)
+chip.BackgroundColor3 = BG_COL
+chip.BackgroundTransparency = 0.25
+chip.BorderSizePixel = 0
+chip.Parent = gui
+Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 10)
+do local st = Instance.new("UIStroke", chip); st.Color = Color3.new(1, 1, 1); st.Transparency = 0.75; st.Thickness = 2 end
+local chipName = Instance.new("TextLabel")
+chipName.BackgroundTransparency = 1; chipName.Size = UDim2.new(1, -24, 0, 24); chipName.Position = UDim2.fromOffset(12, 4)
+chipName.Font = FONT_BIG; chipName.TextSize = 18; chipName.TextColor3 = Color3.new(1, 1, 1); chipName.TextXAlignment = Enum.TextXAlignment.Left; chipName.TextTruncate = Enum.TextTruncate.AtEnd
+chipName.Text = "Unarmed"; chipName.Parent = chip
+local chipSub = Instance.new("TextLabel")
+chipSub.BackgroundTransparency = 1; chipSub.Size = UDim2.new(1, -24, 0, 16); chipSub.Position = UDim2.fromOffset(12, 26)
+chipSub.Font = Enum.Font.GothamMedium; chipSub.TextSize = 11; chipSub.TextColor3 = Color3.fromRGB(168, 190, 230); chipSub.TextXAlignment = Enum.TextXAlignment.Left
+chipSub.Text = "1 · 2 to switch  ·  G kick  ·  M menu"; chipSub.Parent = chip
+local function refreshChip()
+	local tool = character:FindFirstChildOfClass("Tool")
+	if not tool then chipName.Text = "Unarmed"; return end
+	local ok, cfg = pcall(function() return require(tool:WaitForChild("Config", 1)) end)
+	local skin = tool:GetAttribute("Skin")
+	chipName.Text = (ok and cfg and cfg.Name or tool.Name) .. (skin and skin ~= "" and skin ~= "Default" and ("  ·  " .. skin) or "")
+end
+character.ChildAdded:Connect(function(c) if c:IsA("Tool") then task.defer(refreshChip) end end)
+character.ChildRemoved:Connect(function(c) if c:IsA("Tool") then task.defer(refreshChip) end end)
+refreshChip()
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local hpShown, staShown = 1, 1
