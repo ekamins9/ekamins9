@@ -1,13 +1,16 @@
-"""Contact sheet of the face textures on skin-coloured discs (a quick review
-of blender/faces.py output):
+"""Contact sheet of rendered textures (a quick review): the faces on
+skin-coloured discs, or any folder of icons on navy with --src DIR --plain:
 
-    blender.exe -b --python blender/face_sheet.py -- [--out blender/out/faces/_sheet.png]
+    blender.exe -b --python blender/face_sheet.py -- [--src blender/out/ui --plain] [--out sheet.png]
 """
 import bpy, glob, math, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "blender", "out", "faces")
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+if "--src" in argv:
+    SRC = argv[argv.index("--src") + 1]
+PLAIN = "--plain" in argv
 out = os.path.join(SRC, "_sheet.png")
 if "--out" in argv:
     out = argv[argv.index("--out") + 1]
@@ -55,7 +58,7 @@ for i, f in enumerate(files):
     cy = -(i // cols - (rows - 1) / 2) * 1.45
     bpy.ops.mesh.primitive_circle_add(vertices=64, radius=0.58, fill_type="NGON", location=(cx, cy, 0))
     disc = bpy.context.active_object
-    disc.data.materials.append(emission_mat("Skin%d" % i, SKINS[i % len(SKINS)]))
+    disc.data.materials.append(emission_mat("Skin%d" % i, (0.12, 0.17, 0.32) if PLAIN else SKINS[i % len(SKINS)]))
     bpy.ops.mesh.primitive_plane_add(size=1.0, location=(cx, cy, 0.01))
     pl = bpy.context.active_object
     pl.data.materials.append(emission_mat("Face%d" % i, image=f))
