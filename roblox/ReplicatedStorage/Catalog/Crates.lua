@@ -17,9 +17,9 @@ return {
 		cost = 60, odds = {Common = 55, Rare = 30, Epic = 12, Legendary = 3}, pity = 20,
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000},
 	},
-	Treasury = {
-		name = "Royal Treasury", description = "Gilded, Royal and Frostbite skins only. Expensive, and worth it.",
-		cost = 120, odds = {Common = 0, Rare = 0, Epic = 55, Legendary = 45}, pity = 5,
-		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000},
+	Royal = {
+		name = "Royal Armoury", description = "No Commons. Heraldic steel for every weapon and the four crown jewels.",
+		cost = 120, odds = {Rare = 50, Epic = 38, Legendary = 12}, pity = 10,
+		refund = {Rare = 500, Epic = 1200, Legendary = 3000},
 	},
 }

@@ -110,13 +110,18 @@ same menu (RESUME · RETURN TO COURTYARD). The side bar holds the four **doors**
 (`GameConfig.DOORS`): **Courtyard** (the hub, public servers), **Tiltyard** (a friends-only
 reserved server for you and your party), **Warfront** (public battle servers; the mode is voted
 between rounds from `DOORS.Warfront.modes`, then the map), **The Lists** (1v1 · 2v2 · 3v3,
-casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the stage with
-**ready-up** (every member readies, the leader's PLAY only goes when all are ready; a party is
-at most `PARTY_MAX` = 3 and always travels together), the leaderboard (ranked ratings per
+casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the stage — you stand
+up front in the middle, teammates and open slots (shadows) around you; the leader clicks a
+shadow to invite and the ✕ over a teammate to remove them — with **ready-up** (every member
+readies, the leader's PLAY only goes when all are ready; a party is at most `PARTY_MAX` = 3 and
+always travels together; friends in other servers can be invited too — the invite crosses
+servers by MessagingService and accepting teleports them to the leader). In a courtyard, the Courtyard card's button spawns you instead of
+travelling, the leaderboard (ranked ratings per
 bracket, Warfront kills), daily contracts, friends; on The Lists the bracket / casual-ranked
 card with FIND MATCH and the queue. **APPEARANCE**: hair, beard, face, skin, hair color, title.
 **CLASSES**: the loadout editor with a live mannequin and TEAM PREVIEW. **SHOP**: crates (the
-drum: odds, pity, duplicate refunds), packs, weapons, premium colors; **GET CROWNS** opens the
+drum shows each skin on its weapon in 3D — a display model in Cosmetics ▸ Weapons ▸ <id>,
+flat colors until one exists — with odds, pity, duplicate refunds), packs, weapons, premium colors; **GET CROWNS** opens the
 Robux bundles and the Crowns → Marks exchange. **SERVERS**: the browser with filters and
 **CREATE CUSTOM** (door, mode, map, player limit, round length, who may join, friendly fire,
 respawns, ground weapons, cheats — a cheat server gives the host `/god /heal /speed /tp
@@ -224,10 +229,12 @@ blade / haft / head, skin-tintable parts) is built from `Build ▸ Weapons` when
 Handle, and a display copy lands in `Cosmetics ▸ Weapons` for the menu mannequin. Stats
 (speed, reach, damage per attack, one- or two-handed, weight) live in each Tool's `Config`;
 unlocks and prices in `Catalog ▸ Weapons`; both are generated from `scripts/gen_content.py`.
-Armor sets work the same way: `Build ▸ Armor` has a blueprint for every set in
-`ServerStorage ▸ Armor` (Marsh Warden, Brigand, Woodsman · Gilded Court, Sergeant, Freelancer ·
-Iron Crow, Templar, Royal Guard, plus fallbacks for Knight, Gambeson and Peasant), and
-`Build ▸ Body` has hair, beards and faces. See [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0.
+Armor sets work the same way: `Build ▸ Armor` has a blueprint for every release set in
+`ServerStorage ▸ Armor` (Road Levy, Marsh Wardens, Harriers of the Coast, Night Hunters ·
+Sellswords, River Guard, Gilded Court, Wolf Company · Tourney Knight, Iron Crow, Blackguard,
+Knights of the Sun), for the nine earned pieces (Wolf Pelt Hood, Champion's Great Helm…) and
+fallbacks for Knight, Gambeson and Peasant; `Build ▸ Body` has every hair, beard and face in
+`Catalog ▸ Body`. See [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0 and [RELEASE_CONTENT.md](RELEASE_CONTENT.md).
 
 ## Making a new weapon
 
@@ -311,10 +318,21 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   `WALL_RECOVERY`) with no penalty and no refund. Kick: land = `KICK_REFUND` back, whiff =
   `KICK_MISS_COST` + longer recovery, kick a wall = neither. A dodge that makes a swing miss you
   refunds `DODGE_REFUND`.
-- **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds `PARRY_REFUND` ×
-  your streak — parries within `PARRY_STREAK_WINDOW` (2 s) of each other stack up to
-  `PARRY_STREAK_MAX`, so 1vX parry-parry-parry is 6, 12, 18… Holding block still pays the full
-  `blockCost` every hit (the turtle tax) and can't attack while up.
+- **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds the attacker's swing
+  cost (at least `PARRY_REFUND`), growing by `PARRY_STREAK_STEP` (50 %) per parry within
+  `PARRY_STREAK_WINDOW` (2 s) up to `PARRY_STREAK_MAX` — 1vX parry-parry-parry is 10, 15, 20…; the
+  HUD word and the sparks grow with it. Holding block pays the full `blockCost` every hit **and**
+  `BLOCK_HOLD_DRAIN` (3/s) while it is up (the turtle tax), and can't attack while up.
+- **Exhausted**: a swing needs its `staminaCost` in the bank and a kick needs `KICK_COST`; at 0
+  stamina you can only guard and walk (the HUD says EXHAUSTED). No more stabbing on empty.
+- **Health regen**: `CharacterSystems` heals 2.5/s once stamina is full, you are not blocking,
+  attacking or sprinting, and nothing has happened for 5 s. Health never slows you
+  (`WalkSpeedGovernor` `MIN_HEALTH_F` 1): clutch at 5 HP at full speed.
+- **Being parried doesn't stun you** (`PARRY_PUNISH_STUN` 0): your swing dies and eases back
+  (`RECOIL`), and for `PARRIED_GUARD_WINDOW` (0.8 s) your guard comes up at once with a fresh parry
+  window, cooldown or not — so the riposte can be parried or chambered right back. The riposte is
+  the parrier's edge: for `RIPOSTE_DURATION` (1.2 s, i.e. the next swing) windups are `RIPOSTE_SPEED`
+  (1.6×) quicker; a parry is a `PARRY_WINDOW` (0.4 s) guard.
 - **Parry chain**: after a *successful* parry you can re-guard instantly with a fresh parry window
   for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A guard that comes
   down without having parried **breaks the chain** (and the streak): back to the normal cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing

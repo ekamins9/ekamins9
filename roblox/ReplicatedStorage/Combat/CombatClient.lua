@@ -601,6 +601,10 @@ function CombatClient.attach(Tool, weaponConfig)
 		equipped = true
 		dprint("equipped")
 	end))
+	-- first equip: the server's Setup can go out before this script is listening
+	-- (the tool is equipped the moment it is handed over). Ask for it again.
+	if Tool.Parent == player.Character then equipped = true end
+	remote:FireServer("Ready")
 	table.insert(conns, Tool.Unequipped:Connect(function()
 		equipped = false
 		remote:FireServer("BlockStop")

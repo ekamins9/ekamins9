@@ -12,7 +12,7 @@ return {
 
 	-- animations
 	HIT_ID   = "rbxassetid://0",   -- optional flinch clip when a hit interrupts you (blended in and out)
-	IDLE_ID  = "rbxassetid://135659407369438",
+	IDLE_ID  = "rbxassetid://132465214430348",
 	BLOCK_ID = "rbxassetid://72812411957933",
 
 	-- feel

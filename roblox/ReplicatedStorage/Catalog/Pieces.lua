@@ -22,14 +22,35 @@
      put a folder Cosmetics ▸ Pieces ▸ <id> holding just the models that slot
      wears (helmet: HeadClothing · top: TorsoClothing, LeftArmClothing,
      RightArmClothing · bottom: LeftLegClothing, RightLegClothing). Fields:
-        id, name, slot ("helmet"|"top"|"bottom"), pack, rarity, marks, crowns,
-        covers (helmets), model (folder name if not the id), description
+        id, name, slot ("helmet"|"top"|"bottom"), weight, pack, rarity, marks, crowns,
+        covers (helmets), model (folder name if not the id), description,
+        unlock   = {level = n} | {kills = n[, family = "Polearm" | weapon = "Hammer"]}
+                 | {wins = n[, bracket = "1v1"]} | {stat = "parry", n = 200}
+                   → EARNED, never sold (put it in pack "Earned")
      An explicit entry with the same id as an auto piece overrides its fields
      (so you can reprice one auto piece without touching the set). ]]
 
 return {
 	AUTO_FROM_SETS = true,
 	PIECES = {
-		-- {id = "Sallet", name = "Sallet", slot = "helmet", pack = "IronCrow", rarity = "Epic", marks = 900, crowns = 45, covers = {"Hair"}},
+		-- EARNED IN BATTLE (Cosmetics ▸ Pieces ▸ <id>)
+		{id = "WolfPeltHood",       name = "Wolf Pelt Hood",        slot = "helmet", weight = "Light",  pack = "Earned", rarity = "Epic",      covers = {"Hair"},
+		 unlock = {kills = 100, family = "Polearm"},  description = "The pelt of the first wolf you ever ran down with a fork."},
+		{id = "RunnersWraps",       name = "Runner's Wraps",        slot = "bottom", weight = "Light",  pack = "Earned", rarity = "Rare",
+		 unlock = {stat = "parry", n = 200},          description = "Wrapped legs of a fighter who turns every blade aside."},
+		{id = "HuntersCloak",       name = "Hunter's Cloak",        slot = "top",    weight = "Light",  pack = "Earned", rarity = "Epic",
+		 unlock = {level = 10},                       description = "A green cloak over a quilted jack. Level 10."},
+		{id = "BloodiedKettle",     name = "Bloodied Kettle Helm",  slot = "helmet", weight = "Medium", pack = "Earned", rarity = "Epic",      covers = {"Hair"},
+		 unlock = {kills = 150, family = "OneHanded"}, description = "A kettle hat that has seen too many swords."},
+		{id = "SergeantsSurcoat",   name = "Sergeant's Surcoat",    slot = "top",    weight = "Medium", pack = "Earned", rarity = "Rare",
+		 unlock = {wins = 25},                        description = "Worn by those who have carried a round to its end, twenty-five times."},
+		{id = "DuelistsSallet",     name = "Duelist's Sallet",      slot = "helmet", weight = "Medium", pack = "Earned", rarity = "Legendary", covers = {"Hair", "Face"},
+		 unlock = {wins = 10, bracket = "1v1"},       description = "Visored and silent. Ten wins alone in The Lists."},
+		{id = "ChampionsGreatHelm", name = "Champion's Great Helm", slot = "helmet", weight = "Heavy",  pack = "Earned", rarity = "Legendary", covers = {"Hair", "Face"},
+		 unlock = {kills = 200, family = "TwoHanded"}, description = "A crested great helm for the two-hander who has felled two hundred."},
+		{id = "BanneretsTabard",    name = "Banneret's Tabard",     slot = "top",    weight = "Heavy",  pack = "Earned", rarity = "Epic",
+		 unlock = {level = 25},                       description = "Plate under a banner-cloth. Level 25."},
+		{id = "VeteransChausses",   name = "Veteran's Chausses",    slot = "bottom", weight = "Heavy",  pack = "Earned", rarity = "Epic",
+		 unlock = {kills = 500},                      description = "Scarred mail legs. Five hundred kills, any weapon."},
 	},
 }

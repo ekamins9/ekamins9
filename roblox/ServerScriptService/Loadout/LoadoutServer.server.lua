@@ -183,7 +183,15 @@ Game.intermissionStarted.Event:Connect(function()
 	end
 end)
 Game.roundStarted.Event:Connect(function()
-	for _, plr in ipairs(Players:GetPlayers()) do if not isAlive(plr) then show(plr) end end
+	-- a round with no respawns (The Lists, Last Team Standing) is lost by not being in it:
+	-- everyone spawns as their active class at once, no SPAWN press needed
+	local def = Game.current and Game.current.def
+	local noRespawns = def and (def.respawnDelay == 0 or def.roundsToWin ~= nil)
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if not isAlive(plr) then
+			if noRespawns then task.spawn(spawnAs, plr, Profile.get(plr).active) else show(plr) end
+		end
+	end
 end)
 
 local function onPlayer(plr) if plr.Character then plr.Character:Destroy() end end

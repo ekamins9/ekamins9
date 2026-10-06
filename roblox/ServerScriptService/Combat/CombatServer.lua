@@ -283,6 +283,19 @@ end
 
 -- does `mine` (in windup) chamber `theirs` (in its swing)? Same type, opposite
 -- side; an unsided attack matches either side; stabs chamber stabs regardless.
+-- parries and chambers are counted by Economy/Stats through _G.StatHook.
+-- Called off the combat thread and guarded: a slow or failing stats path must
+-- never delay or abort the hit resolution (the HUD text, the clang, the
+-- cancelled swing all come after it).
+local function statHook(char, key)
+	local hook = _G.StatHook
+	if not hook then return end
+	task.defer(function()
+		local ok, err = pcall(hook, char, key)
+		if not ok then warn("[CombatServer] StatHook failed:", err) end
+	end)
+end
+
 function CombatServer.chamberMatch(theirs, theirKind, mine, myKind)
 	if theirKind == "stab" or myKind == "stab" then return theirKind == "stab" and myKind == "stab" end
 	local ts, tt = CombatServer.sideType(theirs)
@@ -447,28 +460,38 @@ CombatServer.DEFAULTS = {
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
 	BLOCK_MAX         = 100,
+	BLOCK_HOLD_DRAIN  = 3,     -- stamina per second while the guard is HELD (the turtle tax; a timed
+	                           --    parry costs nothing) — ticked by CharacterSystems
+	EXHAUSTED_MIN     = 1,     -- you need at least the attack's staminaCost (and this) to start a swing;
+	                           --    at 0 stamina you cannot attack or kick — only guard and walk
 	BLOCK_REGEN       = 15,    -- per second…
-	STAMINA_REGEN_DELAY = 2.5, -- …but only this long after the last combat event (attack, feint,
+	STAMINA_REGEN_DELAY = 1.8, -- …but only this long after the last combat event (attack, feint,
 	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing
 	BLOCK_BREAK_STUN  = 2.50,
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
-	PARRY_WINDOW      = 0.35,
+	PARRY_WINDOW      = 0.40,  -- a guard raised within this of the hit is a parry
 	BLOCK_COOLDOWN    = 0.50,  -- after lowering your guard, how long before you can raise it again
 	PARRY_RETRY       = 0.90,  -- …and how long it must have been DOWN to earn a fresh parry window.
 	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
 	PARRY_COST_MULT   = 0,     -- a timed parry costs this fraction of the attack's blockCost (0: parries are free;
 	                           --    holding block still pays the full blockCost — the turtle tax)
-	PARRY_REFUND      = 6,     -- …and REFUNDS this × your streak: parries within PARRY_STREAK_WINDOW of
-	PARRY_STREAK_WINDOW = 2.0, --    each other stack (1vX: parry, parry, parry = 6, 12, 18…)
+	PARRY_REFUND      = 6,     -- …and REFUNDS the attacker's swing cost (PARRY_REFUND if the attack has
+	                           --    less) × (1 + PARRY_STREAK_STEP × (streak − 1)): parries within PARRY_STREAK_WINDOW of
+	PARRY_STREAK_STEP = 0.5,   --    each other grow the payout (1vX: 10, 15, 20, 25, 30)
+	PARRY_STREAK_WINDOW = 2.0,
 	PARRY_STREAK_MAX  = 5,
 	PARRY_CHAIN_WINDOW= 1.5,   -- after a SUCCESSFUL parry you can re-guard at once with a fresh parry
 	                           --    window (no BLOCK_COOLDOWN, no PARRY_RETRY) for this long; a missed
 	                           --    parry keeps the normal cooldown
-	PARRY_PUNISH_STUN = 1.50,
-	RIPOSTE_DURATION  = 3.00,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
+	PARRY_PUNISH_STUN = 0,     -- being parried does NOT stun you: your swing dies (RECOIL) and you may
+	                           --    guard at once, so you can parry the riposte. The parrier's edge is
+	                           --    the riposte itself (quicker windup) plus their stamina refund.
+	PARRIED_GUARD_WINDOW = 0.8,-- for this long after being parried your guard comes up at once (no
+	                           --    cooldown) with a fresh parry window: the riposte can be parried back
+	RIPOSTE_DURATION  = 1.20,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
 	RIPOSTE_SPEED     = 1.6,   --    itself plays at normal speed — there's still a windup, just a quick one)
-	FEINT_COST        = 12,
+	FEINT_COST        = 16,    -- a feint is a real stamina gamble next to a 10-stamina swing
 	FEINT_RECOVERY    = 0.25,
 
 	-- kick: short, unblockable, staggers a held block. Leg animation is
@@ -809,10 +832,12 @@ function CombatServer.attach(Tool, weaponConfig)
 				return
 			end
 			if (target:GetAttribute("ParryUntil") or 0) > now then
-				-- PARRY: attacker punished, defender gets a riposte; costs a fraction of a block
-				setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN)
+				-- PARRY: the swing dies, the defender gets a riposte; costs a fraction of a block.
+				-- No stun by default (PARRY_PUNISH_STUN 0): the attacker may guard at once
+				if cfg.PARRY_PUNISH_STUN > 0 then setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN) end
+				setAttr("ParriedAt", now)   -- doBlockStart lets us guard at once against the riposte
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
-				if _G.StatHook then _G.StatHook(target, "parry") end
+				statHook(target, "parry")
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
 				-- streak: parries close together pay out more (1vX)
 				local streak = (now - (target:GetAttribute("LastParryAt") or -1e9) <= cfg.PARRY_STREAK_WINDOW)
@@ -820,10 +845,11 @@ function CombatServer.attach(Tool, weaponConfig)
 				target:SetAttribute("ParryStreak", streak)
 				target:SetAttribute("LastParryAt", now)
 				drainStamina(target, (info.blockCost or 0) * cfg.PARRY_COST_MULT)
-				CombatServer.refundStamina(target, cfg.PARRY_REFUND * streak)
-				dprint("parry streak", streak, "+" .. cfg.PARRY_REFUND * streak, "stamina to", target.Name)
-				guardText(string.format("PARRY%s  +%d", streak > 1 and ("  ×" .. streak) or "", cfg.PARRY_REFUND * streak))
-				Injury.sparks(hitPos, 2)   -- big, white: unmistakably a parry
+				local refund = math.floor(math.max(info.staminaCost or 0, cfg.PARRY_REFUND) * (1 + cfg.PARRY_STREAK_STEP * (streak - 1)) + 0.5)
+				CombatServer.refundStamina(target, refund)
+				dprint("parry streak", streak, "+" .. refund, "stamina to", target.Name)
+				guardText(string.format("PARRY%s  +%d", streak > 1 and ("  ×" .. streak) or "", refund))
+				Injury.sparks(hitPos, 2 + 0.5 * (streak - 1))   -- big, white, and bigger with every parry in a row
 				cancelSwing("parried")
 				sfx("Parry", part)
 				Sounds.voice("Parry", target:FindFirstChild("Head"))
@@ -836,7 +862,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				sfx("Block", part)
 				Injury.sparks(hitPos, 1)
 				-- the blade stops dead on a guard, same as a parry — the parry's
-				-- extra punish is the attacker's stun and the defender's riposte
+				-- extra reward is the defender's riposte and refund
 				cancelSwing("blocked")
 				if m <= 0 then
 					target:SetAttribute("Blocking", false)
@@ -872,7 +898,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				setAttr("ChamberedAt", now)   -- doBlockStart lets us guard at once against the counter
 				drainStamina(target, (info.blockCost or 0) * cfg.CHAMBER_COST_MULT)
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
-				if _G.StatHook then _G.StatHook(target, "chamber") end
+				statHook(target, "chamber")
 				target:SetAttribute("GuardText", "CHAMBER")
 				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
 				cancelSwing("chambered")
@@ -1350,7 +1376,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				spend(((state.attack and state.attack.staminaCost) or 0) * cfg.MISS_COST_MULT)
 				dodgeRefunds()
 			end
-			if state.queued and not isStunned() then
+			if state.queued and not isStunned() and canAfford(state.queued) then
 				local q = state.queued
 				state.queued = nil
 				startAttack(q, true)   -- combo: straight into the next swing, no windup, no recovery
@@ -1424,10 +1450,21 @@ function CombatServer.attach(Tool, weaponConfig)
 		tell("Retime", state.windupEnd - now, active, recovery, state.token)
 	end
 
+	-- no stamina, no swing: the HUD says EXHAUSTED and you can only guard
+	local function canAfford(name)
+		local info = cfg.ATTACKS[name]
+		local need = math.max(cfg.EXHAUSTED_MIN, info and info.staminaCost or 0)
+		if stamina() >= need then return true end
+		if character then character:SetAttribute("ExhaustedTick", (character:GetAttribute("ExhaustedTick") or 0) + 1) end
+		dprint("attack denied: exhausted (" .. math.floor(stamina()) .. " < " .. need .. ")")
+		return false
+	end
+
 	local function doAttack(name)
 		if not character or not usable(name) then dprint("attack denied: no such attack / no clip:", tostring(name)); return end
 		if isIncapacitated() then dprint("attack denied: incapacitated"); return end
 		if attr("Blocking")   then dprint("attack denied: blocking");      return end
+		if not inWindup() and not canAfford(name) then return end
 		if inWindup() then morph(name); return end
 		if state.phase == "release" or state.phase == "recovery" then
 			if not state.attack then return end
@@ -1490,8 +1527,9 @@ function CombatServer.attach(Tool, weaponConfig)
 		if attr("Blocking") then return end
 		-- a successful parry just now: straight back up with a fresh window (parry, parry, parry)
 		local chained = now - (attr("LastParryAt") or -1e9) <= cfg.PARRY_CHAIN_WINDOW
-			-- …or we just got chambered: their counter is coming and must be answerable
+			-- …or we just got chambered / parried: their counter is coming and must be answerable
 			or now - (attr("ChamberedAt") or -1e9) <= cfg.CHAMBER_PARRY_WINDOW
+			or now - (attr("ParriedAt") or -1e9) <= cfg.PARRIED_GUARD_WINDOW
 		-- a feint already paid for this guard: the re-guard cooldown doesn't apply
 		if not feinted and not chained and now < state.nextBlockTime then dprint("block denied: cooldown"); return end
 		CombatServer.dropProtection(character)
@@ -1550,6 +1588,10 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not Injury.hasLimb(character, "Right Leg") then dprint("kick denied: no right leg"); return end
 		local now = os.clock()
 		if state.phase ~= "idle" or now < state.nextActionTime then dprint("kick denied: busy"); return end
+		if stamina() < math.max(cfg.EXHAUSTED_MIN, cfg.KICK_COST) then
+			character:SetAttribute("ExhaustedTick", (character:GetAttribute("ExhaustedTick") or 0) + 1)
+			dprint("kick denied: exhausted"); return
+		end
 		if now < state.nextKickTime then dprint("kick denied: cooldown"); return end
 		state.token += 1
 		local token = state.token
@@ -1595,6 +1637,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			return
 		end
 		dprint("recv", action, a)
+		if action == "Ready" then
+			-- the client's script came up after our Setup (first equip): send it again
+			if character and Tool.Parent == character then tell("Setup", cfg.IDLE_ID, cfg.BLOCK_ID, animId(cfg.HIT_ID)); if attr("Blocking") then tell("Block", true) end end
+			return
+		end
 		if action == "Attack"         then doAttack(a)
 		elseif action == "Feint"      then doFeint()
 		elseif action == "BlockStart" then doBlockStart()
@@ -1623,6 +1670,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- weapon leaves the hand); it reads these
 		character:SetAttribute("StaminaRegen", cfg.BLOCK_REGEN)
 		character:SetAttribute("StaminaRegenDelay", cfg.STAMINA_REGEN_DELAY)
+		character:SetAttribute("BlockHoldDrain", cfg.BLOCK_HOLD_DRAIN)
 		character:SetAttribute("Blocking", false)
 		setGuard(false)
 		-- weapon weight: composes with armor etc. via ReplicatedStorage.Modifiers

@@ -12,8 +12,8 @@
 return {
 	{id = "Shortsword", name = "Shortsword", family = "OneHanded", secondary = true, unlock = {free = true}},
 	{id = "Pitchfork", name = "Pitchfork", family = "Polearm", secondary = false, unlock = {free = true}},
-	{id = "Greatsword", name = "Greatsword", family = "TwoHanded", secondary = false, unlock = {level = 5}, marks = 1500},
-	{id = "Hammer", name = "War Hammer", family = "OneHanded", secondary = true, unlock = {kills = 40, family = 'OneHanded'}, marks = 1500},
+	{id = "Greatsword", name = "Greatsword", family = "TwoHanded", secondary = false, unlock = {free = true}},
+	{id = "Hammer", name = "War Hammer", family = "OneHanded", secondary = true, unlock = {free = true}},
 	{id = "ArmingSword", name = "Arming Sword", family = "OneHanded", secondary = true, unlock = {free = true}},
 	{id = "Dagger", name = "Rondel Dagger", family = "OneHanded", secondary = true, unlock = {level = 2}, marks = 500},
 	{id = "Longsword", name = "Longsword", family = "TwoHanded", secondary = false, unlock = {level = 3}, marks = 900},

@@ -2,32 +2,34 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md).
+**Synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md). Stop and re-run Play after a pull so the server scripts restart.
 
-**Last change: the cosmetic side, complete.** 22 new weapons (26 total, the Mordhau /
-Chivalry armory), 9 new armor sets across the three weights, 8 hair styles, 5 beards, 7 faces,
-skins for every weapon (3 crates), 7 packs — and every one of them has a **blueprint**, so the
-game builds the models itself where you haven't made one yet (`ServerScriptService ▸ Build`).
-Plus the bright, friendly look (`ReplicatedStorage ▸ Theme`) across every screen.
+**Last change: the cosmetic side, built.** This merges two streams of work: the desktop
+session's *first-release catalog* (12 armor sets, 9 earned pieces, 40 skins for the four
+original weapons, titles, palette, balance pass) and this session's **blueprints + 22 new
+weapons + the bright theme**. Together: 26 weapons with bodies, every set and earned piece
+with clothing models, 9 hairs, 6 beards, 6 faces, skins for every weapon across the
+Bladesmith / Hafted / Royal Armoury crates — all built from parts at server start wherever
+you haven't made a model yet, plus the new look on every screen.
 
 ## What happens when you press Play
 
-`LoadoutServer` calls `Build ▸ Blueprints.ensureAll()` first. It gives every weapon Tool
-without a Handle its body (Handle, Hitbox, welded parts, `SkinPart` attributes), every armor
-set folder without clothing models its six models (with `ColorSlot` color blocks), fills
+`LoadoutServer` runs `Build ▸ Blueprints.ensureAll()` first. It gives every weapon Tool
+without a Handle its body (Handle, Hitbox, blade / haft / head parts welded to the Handle,
+`SkinPart` attributes), every armor set Model without clothing models its six (with
+`ColorSlot` color blocks), every earned piece its folder in `Cosmetics ▸ Pieces`, fills
 `Cosmetics ▸ Body ▸ Hair / Beard / Face`, and drops a display copy of every weapon in
-`Cosmetics ▸ Weapons`. Your hand-made Shortsword / Pitchfork / Greatsword / Hammer and your
-three sets are untouched (they already have models). To get **editable** copies in Studio,
-run that same line in the command bar in edit mode — see [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0.
+`Cosmetics ▸ Weapons`. Your hand-made Shortsword / Pitchfork / Greatsword / Hammer and the
+Knight / Gambeson / Peasant sets are untouched. Editable copies in Studio: run that same line
+in the command bar in edit mode — [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0.
 
 ## Studio notes
 
-- Rojo creates the 22 new Tools in `ServerStorage ▸ Weapons` and the 9 set folders in
-  `ServerStorage ▸ Armor` from the repo; nothing to make by hand.
-- Your four existing weapons: give their blade / grip parts an attribute `SkinPart` = `"Blade"`
-  / `"Grip"` so skins tint them (the generated weapons already have it).
-- New folder `ServerScriptService ▸ Build` (Rojo makes it). New module `ReplicatedStorage ▸ Theme`.
-- Profiles: new default face is `Calm`; old saves keep working.
+- Rojo creates the 22 new Tools in `ServerStorage ▸ Weapons` and the folder
+  `ServerScriptService ▸ Build`; nothing to make by hand. The armor set Models were already there.
+- Your four original weapons: give their blade / grip parts an attribute `SkinPart` = `"Blade"` /
+  `"Grip"` so skins tint them (generated weapons have it already).
+- New module `ReplicatedStorage ▸ Theme` (the look). Default face is now a Face overlay model.
 
 ## New files
 
@@ -35,28 +37,28 @@ run that same line in the command bar in edit mode — see [CONTENT_GUIDE.md](CO
 |---|---|---|---|
 | [ServerScriptService/Build/Builder.lua](ServerScriptService/Build/Builder.lua) | `ServerScriptService` → `Build` (Folder) → `Builder` | ModuleScript | part factory + shared palette |
 | [ServerScriptService/Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | `Build` → `Weapons` | ModuleScript | 26 weapon blueprints (swords, blunt, axes, polearms) |
-| [ServerScriptService/Build/Armor.lua](ServerScriptService/Build/Armor.lua) | `Build` → `Armor` | ModuleScript | 12 armor set blueprints (helms, plate, gambeson, mail, hoods…) |
-| [ServerScriptService/Build/Body.lua](ServerScriptService/Build/Body.lua) | `Build` → `Body` | ModuleScript | 8 hairs, 5 beards, 7 face overlays |
-| [ServerScriptService/Build/Blueprints.lua](ServerScriptService/Build/Blueprints.lua) | `Build` → `Blueprints` | ModuleScript | `ensureAll()`: builds what is missing, weapon display copies |
+| [ServerScriptService/Build/Armor.lua](ServerScriptService/Build/Armor.lua) | `Build` → `Armor` | ModuleScript | the 12 release sets, 3 starter fallbacks, 9 earned pieces |
+| [ServerScriptService/Build/Body.lua](ServerScriptService/Build/Body.lua) | `Build` → `Body` | ModuleScript | 9 hairs, 6 beards, 6 face overlays (ids = Catalog ▸ Body) |
+| [ServerScriptService/Build/Blueprints.lua](ServerScriptService/Build/Blueprints.lua) | `Build` → `Blueprints` | ModuleScript | `ensureAll()`: fills every gap, weapon display copies |
 | [ReplicatedStorage/Theme.lua](ReplicatedStorage/Theme.lua) | `ReplicatedStorage` → `Theme` | ModuleScript | the UI palette + fonts |
 | `Tools/<Weapon>/…` (22 folders) | `ServerStorage` → `Weapons` → `ArmingSword`, `Dagger`, `Longsword`, `Mace`, `Cleaver`, `Falchion`, `BattleAxe`, `MorningStar`, `Halberd`, `Messer`, `Maul`, `Billhook`, `Estoc`, `Rapier`, `Glaive`, `Poleaxe`, `Bardiche`, `Zweihander`, `Executioner`, `WarAxe`, `Spear`, `Quarterstaff` | Tool with Config / Server / Client | generated by `scripts/gen_content.py` |
-| `ServerStorage/Armor/<Set>/Config.lua` (9 folders) | `ServerStorage` → `Armor` → `MarshWarden`, `Brigand`, `Woodsman`, `GildedCourt`, `Sergeant`, `Freelancer`, `IronCrow`, `Templar`, `RoyalGuard` | ModuleScript | set configs (weight, pack, price, covers) |
-| [scripts/gen_content.py](../scripts/gen_content.py) | — (repo tooling) | python | generates the Tool folders, set folders, `Catalog ▸ Weapons` and `Catalog ▸ Skins` from tables |
+| [scripts/gen_content.py](../scripts/gen_content.py) + `scripts/skins_handmade.part` | — (repo tooling) | python | generates the Tool folders, `Catalog ▸ Weapons` and `Catalog ▸ Skins` (hand-written skins for the four originals are kept in the .part file) |
 
 ## Replaced files
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `Catalog` → `Weapons` | ModuleScript | all 26 weapons with unlocks (free / level / kills) and prices |
-| [ReplicatedStorage/Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | `Catalog` → `Skins` | ModuleScript | 6–8 skins per weapon across Bladesmith / Hafted / Treasury, Veteran at 100 kills |
-| [ReplicatedStorage/Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | `Catalog` → `Packs` | ModuleScript | Marsh Wardens, Outlaws, Gilded Court, Garrison, Iron Crow (featured), Holy Order, Royal Guard |
-| [ReplicatedStorage/Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | `Catalog` → `Crates` | ModuleScript | Royal Treasury crate (Epic / Legendary only) |
-| [ReplicatedStorage/Catalog/Body.lua](ReplicatedStorage/Catalog/Body.lua) | `Catalog` → `Body` | ModuleScript | 8 hairs, 6 beards, 7 faces; default face Calm |
+| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `Catalog` → `Weapons` | ModuleScript | 26 weapons; the four originals + Arming Sword, War Axe, Spear, Quarterstaff free, the rest by level (2–18) or Marks |
+| [ReplicatedStorage/Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | `Catalog` → `Skins` | ModuleScript | the 40 release skins + 6–8 per new weapon (Royal Armoury holds Gilded / Royal / Frostbite) |
+| [ReplicatedStorage/Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | `Catalog` → `Crates` | ModuleScript | Bladesmith · Hafted · Royal Armoury |
 | [ReplicatedStorage/Dresser.lua](ReplicatedStorage/Dresser.lua) | `ReplicatedStorage` → `Dresser` | ModuleScript | face models as overlays on the head |
-| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | runs the Blueprints first; `Body ▸ Face` folder |
-| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | Theme colors, dark text on bright buttons, card outlines |
-| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `…` → `LoadoutMenu` | LocalScript | Theme |
-| [StarterPlayerScripts/Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | `…` → `Scoreboard` | LocalScript | Theme |
-| [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | `…` → `TravelScreen` | LocalScript | Theme |
-| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | navy panel |
-| [README.md](README.md) · [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | weapons roster, blueprints (§0), Theme |
+| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | runs the Blueprints first; `Body ▸ Face` folder; auto-spawn in no-respawn rounds (desktop) |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | Theme colors, dark text on bright buttons, card outlines (on top of the desktop session's party stage / shop fixes) |
+| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) · [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) · [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | `StarterPlayerScripts` | LocalScript | Theme |
+| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | navy panel (plus the desktop session's EXHAUSTED / parry streak) |
+| [README.md](README.md) · [CONTENT_GUIDE.md](CONTENT_GUIDE.md) · [RELEASE_CONTENT.md](RELEASE_CONTENT.md) | — | docs | weapons roster, blueprints (§0), Theme |
+
+**Also in this merge (from the desktop session):** the balance pass — exhausted gate, weight
+rebalance (Heavy +35 / 35 %), parry refund by swing cost, block-hold drain, health regen,
+auto-spawn in no-respawn rounds; cross-server party invites; earned gear + titles; the 12 release
+sets as Models with Configs.

@@ -10,7 +10,10 @@
                      Studio has no teleports: PLAY switches this server's mode.
        • PARTY:      invite / accept / leave, max GameConfig.PARTY_MAX, and
                      READY-UP: every member readies, the leader's PLAY only
-                     goes when all are ready (reset on arrival and on leave)
+                     goes when all are ready (reset on arrival and on leave).
+                     Friends in OTHER servers can be invited too: the invite
+                     travels by MessagingService, accepting teleports them
+                     here with TeleportData.joinParty = the leader's id
        • CUSTOM:     a named server with the host's settings (mode, map, limit,
                      round length, access, friendly fire, respawns, ground
                      weapons, cheats → no rewards)
@@ -32,6 +35,7 @@ local MemoryStoreService = game:GetService("MemoryStoreService")
 local DataStoreService = game:GetService("DataStoreService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local TeleportService = game:GetService("TeleportService")
+local MessagingService = game:GetService("MessagingService")
 local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -165,6 +169,11 @@ end
 local parties = {}   -- [leaderUserId] = {leader = Player, members = {Player...}, ready = {[Player]=true}}
 local invites = {}   -- [invitee Player] = leaderUserId
 local carried = {}   -- [original leader UserId] = party, for a party arriving by teleport
+local remoteInvites = {}   -- [invitee Player] = {leader=, name=, jobId=, code=, placeId=, at=}  an invite from another server
+local expected = {}        -- [userId] = {leader=, at=}  someone we invited from another server, due to arrive
+local INVITE_TOPIC = "PartyInvite"
+local INVITE_TTL = 90
+local teleport, identityOf   -- forward (TRAVEL)
 
 local function partyOf(plr)
 	local id = plr:GetAttribute("Party")
@@ -241,18 +250,60 @@ local function joinParty(party, plr)
 	broadcast(party)
 end
 
-local function invite(plr, targetId)
+local function invite(plr, targetId, targetName)
+	if type(targetId) ~= "number" or targetId == plr.UserId then return false, "bad user" end
 	local target = Players:GetPlayerByUserId(targetId)
-	if not target or target == plr then return false, "they're not in this server" end
 	local party = partyOf(plr) or createParty(plr)
 	if party.leader ~= plr then return false, "only the leader invites" end
 	if #party.members >= PARTY_MAX then return false, "party is full (" .. PARTY_MAX .. ")" end
-	invites[target] = plr.UserId
-	event:FireClient(target, "Invite", plr.DisplayName, plr.UserId)
-	return true, "invited " .. target.DisplayName
+	if target then
+		invites[target] = plr.UserId
+		event:FireClient(target, "Invite", plr.DisplayName, plr.UserId)
+		return true, "invited " .. target.DisplayName
+	end
+	-- not here: a friend in another server. The invite rides MessagingService;
+	-- accepting teleports them to this server, where joinInvited seats them.
+	local okF, isFriend = pcall(plr.IsFriendsWith, plr, targetId)
+	if not (okF and isFriend) then return false, "only friends can be invited from other servers" end
+	if Game.server.door == "Lists" then return false, "no invites into a match" end
+	if Game.server.access == "Locked" then return false, "this server is locked" end
+	if Game.server.reserved and not accessCode then return false, "this server can't be joined from outside" end
+	if STUDIO then return false, "cross-server invites need a published game" end
+	expected[targetId] = {leader = plr.UserId, at = os.time()}
+	local ok, err = pcall(MessagingService.PublishAsync, MessagingService, INVITE_TOPIC,
+		{to = targetId, from = plr.UserId, name = plr.DisplayName, jobId = game.JobId, code = accessCode, placeId = game.PlaceId, at = os.time()})
+	if not ok then expected[targetId] = nil; warn("[Hub] invite publish failed:", err); return false, "could not reach their server" end
+	return true, "invited " .. tostring(targetName or targetId) .. " — they travel here when they accept"
 end
 
+-- an invite from another server lands here if its target is with us
+pcall(function()
+	MessagingService:SubscribeAsync(INVITE_TOPIC, function(msg)
+		local d = type(msg) == "table" and msg.Data
+		if type(d) ~= "table" or d.jobId == game.JobId then return end
+		local target = Players:GetPlayerByUserId(d.to)
+		if not target then return end
+		remoteInvites[target] = {leader = d.from, name = d.name, jobId = d.jobId, code = d.code, placeId = d.placeId, at = os.time()}
+		invites[target] = nil
+		event:FireClient(target, "Invite", d.name, d.from, {remote = true})
+	end)
+end)
+
 local function accept(plr)
+	local ri = remoteInvites[plr]
+	if ri and not invites[plr] then
+		remoteInvites[plr] = nil
+		if os.time() - ri.at > INVITE_TTL then return false, "that invite expired" end
+		if STUDIO then return false, "no teleports in Studio" end
+		local party = partyOf(plr)
+		if party and party.leader == plr and #party.members > 1 then return false, "you lead a party — leave it first" end
+		leaveParty(plr)
+		local e = findServer(ri.jobId)
+		local data = e and identityOf(e) or {}
+		data.joinParty = ri.leader
+		if ri.code then return teleport({plr}, ri.placeId or game.PlaceId, data, nil, ri.code, ri.name .. "'s party") end
+		return teleport({plr}, ri.placeId or game.PlaceId, data, ri.jobId, nil, ri.name .. "'s party")
+	end
 	local leaderId = invites[plr]
 	local party = leaderId and parties[leaderId]
 	invites[plr] = nil
@@ -296,7 +347,20 @@ local function arrivedWithParty(plr, td)
 	if plr.UserId == info.leader and party.leader ~= plr then setLeader(party, plr); broadcast(party) end
 end
 
-Players.PlayerRemoving:Connect(function(plr) leaveParty(plr); invites[plr] = nil end)
+-- someone we invited from another server has arrived (TeleportData.joinParty)
+local function joinInvited(plr, leaderId)
+	local exp = expected[plr.UserId]
+	expected[plr.UserId] = nil
+	local party = parties[leaderId]
+	if not exp or exp.leader ~= leaderId or os.time() - exp.at > INVITE_TTL * 2 then toast(plr, "That invite expired"); return end
+	if not party then toast(plr, "That party is gone"); return end
+	if #party.members >= PARTY_MAX then toast(plr, "That party is full now"); return end
+	joinParty(party, plr)
+	toast(plr, "Joined " .. party.leader.DisplayName .. "'s party")
+	toast(party.leader, plr.DisplayName .. " joined your party")
+end
+
+Players.PlayerRemoving:Connect(function(plr) leaveParty(plr); invites[plr] = nil; remoteInvites[plr] = nil end)
 
 --------------------------------------------------------------------
 --  TRAVEL
@@ -315,7 +379,7 @@ local function groupFor(plr, leaderOnly)
 	return {plr}
 end
 
-local function teleport(players, placeId, data, jobId, code, where)
+function teleport(players, placeId, data, jobId, code, where)
 	local opts = Instance.new("TeleportOptions")
 	data = data or {}
 	if code then data.code = code end
@@ -335,7 +399,7 @@ local function teleport(players, placeId, data, jobId, code, where)
 	return ok, ok and "travelling…" or "teleport failed (published game only)"
 end
 
-local function identityOf(e)
+function identityOf(e)
 	return {mode = e.mode, access = e.access, name = e.name, custom = e.custom, host = e.hostId, door = e.door}
 end
 local function whereOf(e)
@@ -680,7 +744,7 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		if party and party.ticket and party.leader == plr then cancelQueue(party); return {ok = true} end
 		return {ok = false, msg = "not queued"}
 	elseif op == "PartyCreate" then createParty(plr); return {ok = true, party = partyInfo(partyOf(plr))}
-	elseif op == "PartyInvite" then local ok, msg = invite(plr, a); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
+	elseif op == "PartyInvite" then local ok, msg = invite(plr, a, type(b) == "string" and b:sub(1, 32) or nil); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
 	elseif op == "PartyAccept" then local ok, msg = accept(plr); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
 	elseif op == "PartyLeave" then leaveParty(plr); return {ok = true}
 	elseif op == "PartyReady" then local ok, msg = setReady(plr, a ~= false); return {ok = ok, msg = msg, party = partyInfo(partyOf(plr))}
@@ -718,6 +782,7 @@ local function onArrival(plr)
 	if type(td) == "table" then
 		if accessCode == nil and Game.server.reserved and type(td.code) == "string" then accessCode = td.code end
 		arrivedWithParty(plr, td)
+		if type(td.joinParty) == "number" then task.defer(joinInvited, plr, td.joinParty) end
 	end
 	local allowed, why = Game.mayJoin(plr)
 	if not allowed then

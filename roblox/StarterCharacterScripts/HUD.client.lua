@@ -91,7 +91,7 @@ local TEXT_COL = {
 	BLOCK = Color3.fromRGB(200, 200, 200), ["GUARD BROKEN"] = Color3.fromRGB(230, 80, 60), DISARMED = Color3.fromRGB(230, 80, 60),
 	PARRIED = Color3.fromRGB(230, 80, 60), CHAMBERED = Color3.fromRGB(230, 80, 60),
 	BLOCKED = Color3.fromRGB(200, 200, 200), HIT = Color3.fromRGB(240, 240, 240), FEINT = Color3.fromRGB(170, 170, 190), WALL = Color3.fromRGB(170, 170, 170),
-	DODGED = Color3.fromRGB(120, 200, 120),
+	DODGED = Color3.fromRGB(120, 200, 120), EXHAUSTED = Color3.fromRGB(230, 80, 60),
 	DEALT = Color3.fromRGB(255, 240, 200), HEAD = Color3.fromRGB(255, 200, 90), KILL = Color3.fromRGB(255, 90, 70),
 	TAKEN = Color3.fromRGB(230, 70, 60), TEAMMATE = Color3.fromRGB(200, 140, 60),
 }
@@ -99,13 +99,15 @@ local popupOrder = 0
 local function popup(text, big, colorKey, offsetX)
 	popupOrder += 1
 	local key = colorKey or text:match("^(GUARD BROKEN)") or text:match("^(%u+)")
+	-- a parry streak grows: PARRY ×2, ×3… get bigger each time
+	local streak = tonumber(text:match("×(%d+)")) or 1
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
 	l.AnchorPoint = Vector2.new(0.5, 0.5)
 	l.Position = UDim2.new(0.5, offsetX or 0, 0.5, 70 + (popupOrder % 3) * 4)
 	l.Size = UDim2.fromOffset(400, 40)
 	l.Font = Enum.Font.GothamBlack
-	l.TextSize = big and 30 or 20
+	l.TextSize = (big and 30 or 20) + (streak - 1) * 5
 	l.TextColor3 = TEXT_COL[key] or Color3.new(1, 1, 1)
 	l.TextStrokeTransparency = 0.4
 	l.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -126,6 +128,7 @@ character:GetAttributeChangedSignal("GuardTick"):Connect(function()
 	popup(t, t:sub(1, 5) == "PARRY" or t:sub(1, 7) == "CHAMBER")
 end)
 character:GetAttributeChangedSignal("DodgeRefundTick"):Connect(function() popup("DODGED  +8", false) end)
+character:GetAttributeChangedSignal("ExhaustedTick"):Connect(function() popup("EXHAUSTED", false) end)
 -- attacker side (CombatClient stamps LocalImpactKind; the damage number comes from the server)
 character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
 	local k = character:GetAttribute("LocalImpactKind")

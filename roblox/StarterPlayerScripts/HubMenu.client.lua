@@ -318,6 +318,7 @@ local toastGui = Instance.new("ScreenGui")
 toastGui.Name = "HubToasts"
 toastGui.ResetOnSpawn = false
 toastGui.IgnoreGuiInset = true
+toastGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 toastGui.DisplayOrder = 2200
 toastGui.Parent = playerGui
 
@@ -406,6 +407,7 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "HubMenu"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 2050
 gui.Enabled = false
 gui.Parent = playerGui
@@ -508,6 +510,8 @@ modalBack.BackgroundTransparency = 0.5
 modalBack.Visible = false
 modalBack.Active = true
 modalBack.ZIndex = 50
+local modalCatch = Instance.new("TextButton")
+modalCatch.BackgroundTransparency = 1; modalCatch.Text = ""; modalCatch.Size = UDim2.fromScale(1, 1); modalCatch.ZIndex = 50; modalCatch.Parent = modalBack
 local modalBox = frame(modalBack, COL_PANEL, 12)
 modalBox.AnchorPoint = Vector2.new(0.5, 0.5)
 modalBox.Position = UDim2.fromScale(0.5, 0.5)
@@ -518,6 +522,7 @@ do local s = Instance.new("UIStroke", modalBox); s.Color = COL_ACCENT; s.Transpa
 padding(modalBox, 18, 18, 16, 16)
 vlist(modalBox, 8)
 local function closeModal() modalBack.Visible = false; clear(modalBox) end
+modalCatch.Activated:Connect(closeModal)
 -- modal(title, bodyText, buttons = {{text, color, fn}}, extra = function(box) end)
 local function modal(mtitle, body, buttons, extra)
 	clear(modalBox)
@@ -562,25 +567,27 @@ local function roundState() return roundNode:GetAttribute("State") or "" end
 -- ownership, mirroring Profile.has on the server
 local function owns(kind, id)
 	local p = state.profile
-	if kind == "pieces" then local pc = Catalog.PIECE[id]; if pc and Catalog.isFree(pc) then return true end end
-	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
-	if kind == "weapons" then
-		local w = Catalog.WEAPON[id]
-		if w and w.unlock.free then return true end
-		if w and w.unlock.level and p and (p.level or 1) >= w.unlock.level then return true end
-		if w and w.unlock.kills and p and ((p.stats or {})["kill_" .. (w.unlock.family or "")] or 0) >= w.unlock.kills then return true end
+	if kind == "pieces" then
+		local pc = Catalog.PIECE[id]
+		if pc and Catalog.isFree(pc) then return true end
+		if pc and pc.unlock and Catalog.unlocked(pc.unlock, p) then return true end
 	end
+	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
+	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
 	if kind == "beards" then for _, b in ipairs(Catalog.BODY.beards) do if b.id == id and not b.crowns then return true end end end
-	if kind == "titles" then for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end end
+	if kind == "titles" then
+		for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end
+		for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do if t.title == id and Catalog.unlocked(t.unlock, p) then return true end end
+	end
 	return p ~= nil and p.owned ~= nil and p.owned[kind] ~= nil and p.owned[kind][id] == true
 end
-local function unlockText(w)
-	if w.unlock.free then return "free" end
-	if w.unlock.level then return "level " .. w.unlock.level end
-	if w.unlock.kills then return string.format("%d kills with %s weapons", w.unlock.kills, string.lower(w.unlock.family or "")) end
-	return "?"
+local function unlockText(w) return Catalog.unlockText(w.unlock) end
+-- "37 / 100" for an unlock, or "" when it has no counter
+local function progressText(u)
+	local have, need = Catalog.unlockProgress(u, state.profile)
+	return need and string.format("%s / %s", fmt(have), fmt(need)) or ""
 end
 local function rankOf(r)
 	local tiers = ECON.rankTiers or {"Peasant", "Levy", "Squire", "Knight", "Banneret", "Champion"}
@@ -697,6 +704,19 @@ end
 
 local Stage = {}
 Stage.__index = Stage
+
+-- where a world point lands inside the viewport, in pixels (the viewport's
+-- own camera has no screen, so the projection is done by hand)
+local function project(cam, absSize, pos)
+	local rel = cam.CFrame:PointToObjectSpace(pos)
+	local z = math.max(0.01, -rel.Z)
+	local tanY = math.tan(math.rad(cam.FieldOfView) * 0.5)
+	local aspect = math.max(1, absSize.X) / math.max(1, absSize.Y)
+	local nx = (rel.X / z) / (tanY * aspect)
+	local ny = (rel.Y / z) / tanY
+	return (nx * 0.5 + 0.5) * absSize.X, (0.5 - ny * 0.5) * absSize.Y
+end
+
 -- parent: where the viewport goes (it fills it). Returns a stage with :set(slots)
 function Stage.new(parent)
 	local self = setmetatable({}, Stage)
@@ -715,18 +735,18 @@ function Stage.new(parent)
 	vp.CurrentCamera = cam
 	self.vp, self.world, self.cam = vp, world, cam
 	self.rigs = {}
-	self.tags = {}
 	self.dist = 7.5
-	local tagRow = frame(parent, COL_CARD)
-	tagRow.BackgroundTransparency = 1
-	tagRow.AnchorPoint = Vector2.new(0, 1)
-	tagRow.Position = UDim2.new(0, 0, 1, -6)
-	tagRow.Size = UDim2.new(1, 0, 0, 18)
-	tagRow.ZIndex = 3
-	self.tagRow = tagRow
-	-- drag to turn, wheel to zoom
+	-- the overlay carries every name tag, status line and slot button; it is
+	-- re-placed over the rigs whenever they move or the viewport resizes
+	local overlay = frame(parent, COL_CARD)
+	overlay.BackgroundTransparency = 1
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.ZIndex = 3
+	self.overlay = overlay
+	vp:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() self:place() end)
+	-- drag to turn, wheel to zoom (on the overlay: it sits over the viewport)
 	local dragging, lastX = false, 0
-	vp.InputBegan:Connect(function(input)
+	overlay.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true; lastX = input.Position.X end
 	end)
 	UserInputService.InputChanged:Connect(function(input)
@@ -739,7 +759,7 @@ function Stage.new(parent)
 	UserInputService.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 	end)
-	vp.InputChanged:Connect(function(input)
+	overlay.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseWheel then
 			ui.zoom = math.clamp(ui.zoom - input.Position.Z * 0.08, 0.7, 1.5)
 			self:place()
@@ -748,33 +768,46 @@ function Stage.new(parent)
 	return self
 end
 
+-- slot i stands left to right; `back` slots stand a step behind, turned
+-- toward the middle, so the middle one (you) is the one up front
 function Stage:place()
 	local n = #self.rigs
-	local gap = 3.2
-	for i, rig in ipairs(self.rigs) do
-		local x = (i - (n + 1) / 2) * gap
-		rig.model:PivotTo(CFrame.new(x, 0, 0) * CFrame.Angles(0, math.rad(ui.facing), 0))
+	local gap = 3.4
+	local abs = self.vp.AbsoluteSize
+	local anyBack = false
+	for i, r in ipairs(self.rigs) do
+		local x = -(i - (n + 1) / 2) * gap      -- world -X is screen-right for this camera
+		local z = r.slot.back and 1.4 or 0
+		local turn = r.slot.back and math.sign(x) * 18 or 0
+		r.model:PivotTo(CFrame.new(x, 0, z) * CFrame.Angles(0, math.rad(ui.facing + turn), 0))
+		r.x, r.z = x, z
+		if r.slot.back then anyBack = true end
 	end
-	local width = math.max(1, n) * gap
-	local d = (self.dist + (n - 1) * 1.6) / ui.zoom
+	local d = (self.dist + (n - 1) * 1.6 + (anyBack and 0.6 or 0)) / ui.zoom
 	self.cam.CFrame = CFrame.lookAt(Vector3.new(0, -0.3, -d), Vector3.new(0, -0.6, 0))
 	self.cam.FieldOfView = 50
-	for i, t in ipairs(self.tags) do
-		t.Position = UDim2.new((i - 0.5) / n, 0, 0, 0)
-		t.Size = UDim2.new(1 / n, 0, 1, 0)
+	for _, r in ipairs(self.rigs) do
+		local ov = r.overlay
+		local fx, fy = project(self.cam, abs, Vector3.new(r.x, -3.35, r.z))
+		ov.foot.Position = UDim2.fromOffset(fx, fy)
+		if ov.mid then local mx, my = project(self.cam, abs, Vector3.new(r.x, 0.3, r.z)); ov.mid.Position = UDim2.fromOffset(mx, my) end
+		if ov.top then local hx, hy = project(self.cam, abs, Vector3.new(r.x, 2.9, r.z)); ov.top.Position = UDim2.fromOffset(hx, hy) end
 	end
 end
 
--- slots: list of {loadout=, appearance=, weight=, team=, armor=bool(default true), weapon=bool(default true), tag=, ghost=bool}
+-- slots: list of {loadout=, appearance=, weight=, team=, armor=bool(default true), weapon=bool(default true),
+--   tag=, sub=, subColor=, ghost=bool, back=bool,
+--   buttons = {{text, color, fn}}   small buttons under the name
+--   onInvite = fn                   a big + on the (ghost) body
+--   onKick = fn                     an ✕ over the head }
 function Stage:set(slots)
 	for _, r in ipairs(self.rigs) do r.model:Destroy() end
 	self.rigs = {}
-	clear(self.tagRow)
-	self.tags = {}
+	clear(self.overlay)
 	for i, s in ipairs(slots) do
 		local m = makeRig()
 		if s.ghost then
-			for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Transparency = 0.85; d.Color = Color3.fromRGB(90, 82, 72) elseif d:IsA("Decal") then d.Transparency = 1 end end
+			for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Transparency = 0.8; d.Color = Color3.fromRGB(90, 82, 72) elseif d:IsA("Decal") then d.Transparency = 1 end end
 		else
 			local lo = s.loadout or {}
 			if s.armor == false then lo = {colors = lo.colors} end
@@ -783,13 +816,53 @@ function Stage:set(slots)
 			settle(m)
 		end
 		m.Parent = self.world
-		table.insert(self.rigs, {model = m})
-		local t = label(self.tagRow, s.tag or "", 12, FONT, s.ghost and COL_DIM or COL_TEXT)
-		t.TextXAlignment = Enum.TextXAlignment.Center
-		t.TextStrokeTransparency = 0.6
-		t.TextWrapped = false
-		t.TextTruncate = Enum.TextTruncate.AtEnd
-		table.insert(self.tags, t)
+		local ov = {}
+		-- under the feet: name, status, buttons
+		local foot = frame(self.overlay, COL_CARD)
+		foot.BackgroundTransparency = 1
+		foot.AnchorPoint = Vector2.new(0.5, 0)
+		foot.Size = UDim2.fromOffset(190, 96)
+		foot.ZIndex = 4
+		local fl = vlist(foot, 4); fl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		local t = label(foot, s.tag or "", 13, FONT, s.ghost and COL_DIM or COL_TEXT)
+		t.Size = UDim2.new(1, 0, 0, 16); t.LayoutOrder = 1; t.ZIndex = 4
+		t.TextXAlignment = Enum.TextXAlignment.Center; t.TextStrokeTransparency = 0.6; t.TextWrapped = false; t.TextTruncate = Enum.TextTruncate.AtEnd
+		if s.sub and s.sub ~= "" then
+			local sb = label(foot, s.sub, 11, FONT, s.subColor or COL_DIM)
+			sb.Size = UDim2.new(1, 0, 0, 14); sb.LayoutOrder = 2; sb.ZIndex = 4
+			sb.TextXAlignment = Enum.TextXAlignment.Center; sb.TextStrokeTransparency = 0.6; sb.TextWrapped = false
+		end
+		for j, b in ipairs(s.buttons or {}) do
+			local btn = button(foot, b[1], 11, b[2] or COL_CARD2)
+			btn.Size = UDim2.fromOffset(124, 24); btn.LayoutOrder = 10 + j; btn.ZIndex = 5
+			if b[3] then btn.Activated:Connect(b[3]) end
+		end
+		ov.foot = foot
+		if s.onInvite then
+			local mid = frame(self.overlay, COL_CARD)
+			mid.BackgroundTransparency = 1
+			mid.AnchorPoint = Vector2.new(0.5, 0.5)
+			mid.Size = UDim2.fromOffset(120, 84)
+			mid.ZIndex = 4
+			local plus = button(mid, "+", 30, COL_CARD_ON)
+			plus.AnchorPoint = Vector2.new(0.5, 0); plus.Position = UDim2.new(0.5, 0, 0, 0); plus.Size = UDim2.fromOffset(56, 56); plus.ZIndex = 5
+			plus.TextColor3 = COL_ACCENT
+			plus:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(1, 0)
+			local st = Instance.new("UIStroke", plus); st.Color = COL_ACCENT; st.Thickness = 2; st.Transparency = 0.3
+			local cap = label(mid, "INVITE", 11, FONT, COL_ACCENT)
+			cap.Position = UDim2.new(0, 0, 0, 62); cap.Size = UDim2.new(1, 0, 0, 16); cap.ZIndex = 5
+			cap.TextXAlignment = Enum.TextXAlignment.Center; cap.TextStrokeTransparency = 0.6
+			plus.Activated:Connect(s.onInvite)
+			ov.mid = mid
+		end
+		if s.onKick then
+			local x = button(self.overlay, "✕", 14, COL_BAD)
+			x.AnchorPoint = Vector2.new(0.5, 1); x.Size = UDim2.fromOffset(28, 28); x.ZIndex = 5
+			x:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(1, 0)
+			x.Activated:Connect(s.onKick)
+			ov.top = x
+		end
+		table.insert(self.rigs, {model = m, slot = s, overlay = ov})
 	end
 	self:place()
 end
@@ -811,10 +884,55 @@ local function stageBlock(parent, hintText)
 	return holder, st, h
 end
 
+-- a small 3D view of a weapon (Cosmetics ▸ Weapons ▸ <id>) wearing a skin,
+-- laid diagonally across the card. No display model yet → a flat drawing.
+local function weaponThumb(parent, weaponId, skinId, size)
+	local holder = frame(parent, COL_CARD2, 8)
+	holder.Size = size or UDim2.new(1, 0, 0, 72)
+	holder.ClipsDescendants = true
+	local skin = skinId and Catalog.SKIN[skinId]
+	local t = weaponId and Catalog.weaponModel(weaponId)
+	if t then
+		local vp = Instance.new("ViewportFrame")
+		vp.BackgroundTransparency = 1
+		vp.Size = UDim2.fromScale(1, 1)
+		vp.Ambient = Color3.fromRGB(130, 122, 110)
+		vp.LightColor = Color3.fromRGB(255, 240, 220)
+		vp.LightDirection = Vector3.new(-0.5, -1, 0.6)
+		vp.Parent = holder
+		local world = Instance.new("WorldModel"); world.Parent = vp
+		local cam = Instance.new("Camera"); cam.Parent = vp
+		vp.CurrentCamera = cam
+		local m = t:Clone()
+		for _, d in ipairs(m:GetDescendants()) do if d:IsA("LuaSourceContainer") then d:Destroy() end end
+		m.Parent = world
+		if skin then pcall(Dresser.applySkin, m, skinId) end
+		settle(m)
+		for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
+		-- the model's longest side becomes the card's diagonal
+		local cf, sz = m:GetBoundingBox()
+		local axis = (sz.X >= sz.Y and sz.X >= sz.Z) and Vector3.xAxis or (sz.Y >= sz.Z and Vector3.yAxis or Vector3.zAxis)
+		local longest = math.max(sz.X, sz.Y, sz.Z, 0.5)
+		local along = cf:VectorToWorldSpace(axis)
+		local up = math.abs(along.Y) < 0.9 and Vector3.yAxis or Vector3.zAxis
+		local vy = (up - along * up:Dot(along)).Unit
+		local box = CFrame.fromMatrix(cf.Position, along, vy)
+		local target = CFrame.Angles(0, 0, math.rad(-28))
+		m:PivotTo(target * box:Inverse() * m:GetPivot())
+		local d = (longest * 0.6) / math.tan(math.rad(14))
+		cam.FieldOfView = 28
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, d * 0.22, -d), Vector3.zero)
+	else
+		local blade = frame(holder, skin and skin.blade or Color3.fromRGB(180, 180, 180)); blade.AnchorPoint = Vector2.new(0.5, 0.5); blade.Position = UDim2.new(0.5, 0, 0.5, -6); blade.Size = UDim2.fromOffset(8, 48); blade.Rotation = -28
+		local grip = frame(holder, skin and skin.grip or Color3.fromRGB(80, 60, 40)); grip.AnchorPoint = Vector2.new(0.5, 0.5); grip.Position = UDim2.new(0.5, -14, 0.5, 20); grip.Size = UDim2.fromOffset(24, 6); grip.Rotation = -28
+	end
+	return holder
+end
+
 --------------------------------------------------------------------
 --  SHARED ACTIONS
 --------------------------------------------------------------------
-local renderSide, selectTab   -- forward
+local renderSide, selectTab, hide   -- forward
 local function rerender() if render[currentTab] then task.spawn(render[currentTab]) end; renderSide() end
 
 local function doorCounts()
@@ -836,7 +954,7 @@ local function inviteModal()
 				local inParty = false
 				if state.party then for _, m in ipairs(state.party.members) do if m.id == other.UserId then inParty = true end end end
 				row(box, other.DisplayName, inParty and "in your party" or "INVITE", false, (not inParty) and function()
-					local r = call("PartyInvite", other.UserId)
+					local r = call("PartyInvite", other.UserId, other.DisplayName)
 					toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
 					if r.party then state.party = r.party end
 					closeModal(); rerender()
@@ -844,14 +962,44 @@ local function inviteModal()
 			end
 		end
 		if n == 0 then dim(box, "Nobody else is in this server yet.") end
+		local away = {}
+		for _, fd in ipairs(state.friends) do
+			local inParty = false
+			if state.party then for _, m in ipairs(state.party.members) do if m.id == fd.id then inParty = true end end end
+			if fd.inGame and not fd.here and not inParty then table.insert(away, fd) end
+		end
+		if #away > 0 then
+			heading(box, "FRIENDS IN OTHER SERVERS")
+			dim(box, "They get the invite there; accepting brings them to this server.")
+			for _, fd in ipairs(away) do
+				row(box, fd.name, "INVITE", false, function()
+					local r = call("PartyInvite", fd.id, fd.name)
+					toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
+					if r.party then state.party = r.party end
+					closeModal(); rerender()
+				end, COL_GOOD)
+			end
+		end
 	end)
 end
 
+local function partySize() return state.party and state.party.members and #state.party.members or 1 end
 local function findMatch()
 	if state.queue then return end
+	local size = tonumber(ui.bracket:match("^(%d)")) or 1
+	local n = partySize()
+	if n > size then
+		modal("PARTY TOO BIG FOR " .. ui.bracket, string.format("%s takes a party of at most %d and yours is %d. Remove someone (the ✕ over their head on PLAY) or pick a bigger bracket.", ui.bracket, size, n),
+			{{"PICK " .. (n <= 2 and "2v2" or "3v3"), COL_CARD_ON, function() ui.bracket = n <= 2 and "2v2" or "3v3"; closeModal(); render.PLAY() end}})
+		return
+	end
 	local r = call("Play", "Lists", {bracket = ui.bracket, ranked = ui.ranked})
-	toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
-	if r.ok then state.queue = {bracket = ui.bracket, ranked = ui.ranked, since = os.clock(), waiting = 0, window = 100} end
+	if r.ok then
+		toast(r.msg or "", COL_GOOD)
+		state.queue = {bracket = ui.bracket, ranked = ui.ranked, since = os.clock(), waiting = 0, window = 100}
+	else
+		modal("CAN'T QUEUE", r.msg or "no answer", nil)
+	end
 	rerender()
 end
 local function cancelQueue()
@@ -878,10 +1026,8 @@ do
 	local right = frame(f, COL_PANEL); right.BackgroundTransparency = 1; right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 320, 1, 0)
 	local rightList = scroll(right, 8)
 
-	local stageHolder = frame(center, COL_PANEL); stageHolder.BackgroundTransparency = 1; stageHolder.Size = UDim2.new(1, 0, 1, -132)
+	local stageHolder = frame(center, COL_PANEL); stageHolder.BackgroundTransparency = 1; stageHolder.Size = UDim2.new(1, 0, 1, 0)
 	local _, stage, stageHint = stageBlock(stageHolder, "")
-	local mates = frame(center, COL_PANEL); mates.BackgroundTransparency = 1; mates.AnchorPoint = Vector2.new(0, 1); mates.Position = UDim2.new(0, 0, 1, 0); mates.Size = UDim2.new(1, 0, 0, 124)
-	local ml = hlist(mates, 8)
 
 	local function partyMembers()
 		local list = {}
@@ -894,11 +1040,14 @@ do
 		return list
 	end
 	local function isLeader() return not state.party or state.party.leaderId == player.UserId end
+	local function inParty() return state.party ~= nil and #(state.party.members or {}) > 1 end
 
+	-- you up front in the middle; teammates and open slots (shadows) around
+	-- you. Click a shadow to invite, the ✕ over a teammate to remove them.
 	local function renderStage()
 		local list = partyMembers()
-		local slots = {}
-		for _, m in ipairs(list) do
+		local leader, party = isLeader(), inParty()
+		local function memberSlot(m)
 			local mine = m.id == player.UserId
 			local cls = m.class or GameConfig.DEFAULT_CLASS
 			local lo = mine and classLoadout(cls) or nil
@@ -906,63 +1055,50 @@ do
 			if not lo then
 				lo = {helmet = (Catalog.defaultPiece("helmet", weightOf(cls)) or {}).id, top = (Catalog.defaultPiece("top", weightOf(cls)) or {}).id, bottom = (Catalog.defaultPiece("bottom", weightOf(cls)) or {}).id, colors = {Primary = "Slate", Secondary = "Umber", Accent = "Ochre", Metal = "Ash"}}
 			end
-			table.insert(slots, {loadout = lo, appearance = mine and state.profile and state.profile.appearance or nil, weight = weightOf(cls),
-				tag = (m.leader and "♛ " or "") .. (mine and "You" or m.name) .. "  ·  " .. (GameConfig.CLASSES[cls] and GameConfig.CLASSES[cls].name or cls)})
-		end
-		for i = #slots + 1, state.partyMax do table.insert(slots, {ghost = true, tag = "+ invite"}) end
-		stage:set(slots)
-		stageHint.Text = (#list > 1) and string.format("party of %d / %d  ·  everyone readies, the leader presses PLAY  ·  drag to turn", #list, state.partyMax) or "solo  ·  drag to turn, scroll to zoom"
-		-- mate cards
-		clear(mates)
-		for i = 1, state.partyMax do
-			local m = list[i]
-			local card = frame(mates, COL_CARD, 8)
-			card.Size = UDim2.new(1 / state.partyMax, -6, 1, 0)
-			card.LayoutOrder = i
-			padding(card, 10, 10, 8, 8)
-			if m then
-				local mine = m.id == player.UserId
-				local n = label(card, (m.leader and "♛  " or "") .. (mine and "You" or m.name), 14, FONT, m.leader and COL_ACCENT or COL_TEXT); n.Size = UDim2.new(1, 0, 0, 18); n.TextWrapped = false; n.TextTruncate = Enum.TextTruncate.AtEnd
-				local c = label(card, string.format("%s  ·  lvl %d", GameConfig.CLASSES[m.class or ""] and GameConfig.CLASSES[m.class].name or "—", m.level or 1), 12, FONT_BODY, COL_DIM); c.Position = UDim2.new(0, 0, 0, 18); c.Size = UDim2.new(1, 0, 0, 16)
-				local st = label(card, "", 12, FONT, COL_DIM); st.Position = UDim2.new(0, 0, 0, 36); st.Size = UDim2.new(1, 0, 0, 16)
-				if #list <= 1 then st.Text = "no party" elseif m.leader then st.Text = "leader" elseif m.ready then st.Text = "READY ✓"; st.TextColor3 = COL_GOOD else st.Text = "not ready"; st.TextColor3 = COL_BAD end
-				local b = button(card, "", 12, COL_CARD2)
-				b.AnchorPoint = Vector2.new(0, 1); b.Position = UDim2.new(0, 0, 1, 0); b.Size = UDim2.new(1, 0, 0, 28)
-				if mine and #list > 1 and not m.leader then
-					b.Text = m.ready and "UNREADY" or "READY UP"
-					b.BackgroundColor3 = m.ready and COL_CARD2 or COL_GO_ON
-					b.Activated:Connect(function()
-						local r = call("PartyReady", not m.ready)
-						if r.party then state.party = r.party end
-						if not r.ok then toast(r.msg or "", COL_BAD) end
-						renderStage(); renderSide()
-					end)
-				elseif mine and #list > 1 then
-					b.Text = "LEAVE PARTY"
-					b.Activated:Connect(function() call("PartyLeave"); state.party = nil; state.queue = nil; toast("left the party", COL_DIM); rerender() end)
-				elseif mine then
-					b.Text = "INVITE"
-					b.BackgroundColor3 = COL_CARD_ON
-					b.Activated:Connect(inviteModal)
-				elseif isLeader() then
-					b.Text = "REMOVE"
-					b.Activated:Connect(function()
-						local r = call("PartyKick", m.id)
-						toast(r.msg or "", r.ok and COL_DIM or COL_BAD)
-						if r.party then state.party = r.party end
-						renderStage(); renderSide()
-					end)
-				else
-					b.Text = m.leader and "LEADER" or "MEMBER"; b.AutoButtonColor = false
-				end
-			else
-				card.BackgroundTransparency = 0.5
-				local n = label(card, "open slot", 13, FONT_BODY, COL_DIM); n.Size = UDim2.new(1, 0, 0, 36); n.TextXAlignment = Enum.TextXAlignment.Center
-				local b = button(card, "+ INVITE", 12, COL_CARD2)
-				b.AnchorPoint = Vector2.new(0, 1); b.Position = UDim2.new(0, 0, 1, 0); b.Size = UDim2.new(1, 0, 0, 28)
-				if isLeader() then b.Activated:Connect(inviteModal) else b.Text = "leader invites"; b.AutoButtonColor = false end
+			local sub, subColor = "", nil
+			if party then
+				if m.leader then sub, subColor = "party leader", COL_ACCENT
+				elseif m.ready then sub, subColor = "READY ✓", COL_GOOD
+				else sub, subColor = "not ready", COL_BAD end
 			end
+			local buttons = {}
+			if mine and party and not m.leader then
+				table.insert(buttons, {m.ready and "UNREADY" or "READY UP", m.ready and COL_CARD2 or COL_GO_ON, function()
+					local r = call("PartyReady", not m.ready)
+					if r.party then state.party = r.party end
+					if not r.ok then toast(r.msg or "", COL_BAD) end
+					renderStage(); renderSide()
+				end})
+			end
+			if mine and party then
+				table.insert(buttons, {"LEAVE PARTY", COL_CARD2, function() call("PartyLeave"); state.party = nil; state.queue = nil; toast("left the party", COL_DIM); rerender() end})
+			end
+			local clsName = GameConfig.CLASSES[cls] and GameConfig.CLASSES[cls].name or cls
+			return {
+				loadout = lo, appearance = mine and state.profile and state.profile.appearance or nil, weight = weightOf(cls), back = not mine,
+				tag = (m.leader and "♛ " or "") .. (mine and "You" or m.name) .. "  ·  " .. clsName .. (mine and "" or string.format("  ·  lvl %d", m.level or 1)),
+				sub = sub, subColor = subColor, buttons = buttons,
+				onKick = (leader and not mine) and function()
+					local r = call("PartyKick", m.id)
+					toast(r.msg or "", r.ok and COL_DIM or COL_BAD)
+					if r.party then state.party = r.party end
+					renderStage(); renderSide()
+				end or nil,
+			}
 		end
+		local function ghostSlot()
+			return {ghost = true, back = true, tag = "open slot", sub = leader and "" or "the leader invites", onInvite = leader and inviteModal or nil}
+		end
+		local me, others = nil, {}
+		for _, m in ipairs(list) do if m.id == player.UserId then me = m else table.insert(others, m) end end
+		local slots, mid, k = {}, math.ceil(state.partyMax / 2), 1
+		for i = 1, state.partyMax do
+			if i == mid then table.insert(slots, me and memberSlot(me) or ghostSlot())
+			else table.insert(slots, others[k] and memberSlot(others[k]) or ghostSlot()); k += 1 end
+		end
+		stage:set(slots)
+		stageHint.Text = party and string.format("party of %d / %d  ·  everyone readies, the leader presses PLAY  ·  drag to turn", #list, state.partyMax)
+			or "click a shadow to invite someone  ·  drag to turn, scroll to zoom"
 	end
 
 	local function renderLeaderboard()
@@ -1053,7 +1189,13 @@ do
 					or "No Warfront running right now — PLAY starts one.")
 				dim(p, "The mode changes between rounds by vote: " .. table.concat((function() local t = {}; for _, m in ipairs(door.modes or {}) do table.insert(t, GameConfig.MODES[m] and GameConfig.MODES[m].name or m) end; return t end)(), ", ") .. ".")
 			end
-			bigBtn(p, ui.door == "Courtyard" and "GO TO A COURTYARD" or (ui.door == "Tiltyard" and "OPEN YOUR TILTYARD" or "JOIN THIS BATTLE"), COL_GO_ON, function() goDoor(ui.door) end)
+			if ui.door == "Courtyard" and inHub() then
+				-- already in a courtyard: this button just puts you in it
+				if alive() then bigBtn(p, "BACK TO THE COURTYARD", COL_GO_ON, hide)
+				else bigBtn(p, "ENTER THE COURTYARD", COL_GO_ON, function() loadoutEvent:FireServer("Spawn", state.activeClass) end) end
+			else
+				bigBtn(p, ui.door == "Courtyard" and "GO TO A COURTYARD" or (ui.door == "Tiltyard" and "OPEN YOUR TILTYARD" or "JOIN THIS BATTLE"), COL_GO_ON, function() goDoor(ui.door) end)
+			end
 			bigBtn(p, "BROWSE SERVERS", COL_CARD2, function() ui.filters.door = ui.door ~= "Courtyard" and ui.door or nil; selectTab("SERVERS") end)
 			local c = panel(rightList, "DAILY CONTRACTS", true)
 			for _, ct in ipairs(state.contracts or {}) do
@@ -1066,9 +1208,14 @@ do
 				n += 1
 				local inParty = false
 				if state.party then for _, m in ipairs(state.party.members) do if m.id == fd.id then inParty = true end end end
-				row(fr, fd.name, inParty and "in party" or (fd.here and "INVITE" or (fd.inGame and "JOIN" or "online")), false,
-					(not inParty and fd.here) and function() local r = call("PartyInvite", fd.id); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.party then state.party = r.party end end
-					or ((not inParty and fd.inGame) and function() local r = call("JoinFriend", fd.id); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD) end or nil),
+				row(fr, fd.name, inParty and "in party" or (fd.here and "INVITE" or (fd.inGame and "INVITE · JOIN" or "online")), false,
+					(not inParty and fd.here) and function() local r = call("PartyInvite", fd.id, fd.name); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.party then state.party = r.party end end
+					or ((not inParty and fd.inGame) and function()
+						modal(fd.name, "In another server of this game. Invite them to your party (they travel here when they accept), or go to them.", {
+							{"INVITE TO MY PARTY", COL_CARD_ON, function() local r = call("PartyInvite", fd.id, fd.name); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.party then state.party = r.party end; closeModal() end},
+							{"JOIN THEM", COL_GO_ON, function() local r = call("JoinFriend", fd.id); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); closeModal() end},
+						})
+					end or nil),
 					(fd.here or fd.inGame) and COL_GOOD or COL_DIM)
 			end
 			if n == 0 then dim(fr, "No friends online in the game.") end
@@ -1168,7 +1315,17 @@ do
 		local titles = {}
 		for _, t in ipairs(Catalog.BODY.titles) do titles[t] = true end
 		if state.profile and state.profile.owned and state.profile.owned.titles then for t in pairs(state.profile.owned.titles) do titles[t] = true end end
-		for t in pairs(titles) do row(p, t, "", a.title == t, function() set("title", t) end) end
+		local ordered = {}
+		for t in pairs(titles) do table.insert(ordered, t) end
+		table.sort(ordered)
+		for _, t in ipairs(ordered) do row(p, t, "", a.title == t, function() set("title", t) end) end
+		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do
+			if owns("titles", et.title) then
+				if not titles[et.title] then row(p, et.title, "earned", a.title == et.title, function() set("title", et.title) end, COL_GOOD) end
+			else
+				row(p, "🔒 " .. et.title, Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock), false, nil, COL_DIM)
+			end
+		end
 		renderStage()
 		renderSide()
 	end
@@ -1230,6 +1387,10 @@ do
 	end
 	local function buyPiece(pc)
 		local opts = {}
+		if pc.unlock then
+			modal(pc.name, (pc.description or "") .. string.format("\n%s  ·  %s\nEarned: %s  ·  %s", pc.weight, pc.rarity or "Common", Catalog.unlockText(pc.unlock), progressText(pc.unlock)), nil)
+			return
+		end
 		if (pc.marks or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL_CARD_ON, function()
 			local r = call("Buy", "piece", pc.id, "marks"); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD); if r.profile then state.profile = r.profile; refreshWallet() end; closeModal(); render.CLASSES() end}) end
 		if (pc.crowns or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function()
@@ -1261,7 +1422,8 @@ do
 				local have = owns("pieces", pc.id)
 				local pk = Catalog.PACKS[pc.pack]
 				local rightText = have and ((slot == "helmet" and (#(pc.covers or {}) > 0 and ("covers " .. string.lower(table.concat(pc.covers, "+"))) or "open")) or (pk and pk.name or "")) or
-					((pc.marks or 0) > 0 and (fmt(pc.marks) .. " M") or "") .. ((pc.crowns or 0) > 0 and ("  " .. fmt(pc.crowns) .. " C") or "")
+					(pc.unlock and ("🔒 " .. Catalog.unlockText(pc.unlock)) or
+					((pc.marks or 0) > 0 and (fmt(pc.marks) .. " M") or "") .. ((pc.crowns or 0) > 0 and ("  " .. fmt(pc.crowns) .. " C") or ""))
 				row(p, pc.name, rightText, lo[slot] == pc.id, function() if have then choose(slot, pc.id) else buyPiece(pc) end end, have and COL_DIM or COL_MARKS)
 			end
 			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet: drop a set with Config.Type = \"" .. cls.weight .. "\" into ServerStorage ▸ Armor.") end
@@ -1385,19 +1547,24 @@ do
 		local strip = frame(drum, COL_CARD2); strip.BackgroundTransparency = 1; strip.Size = UDim2.new(0, 0, 1, 0); strip.AutomaticSize = Enum.AutomaticSize.X; strip.Position = UDim2.new(0, 0, 0, 0)
 		local sl = hlist(strip, 8); sl.VerticalAlignment = Enum.VerticalAlignment.Center
 		padding(strip, 8, 8, 0, 0)
-		local CARD_W, CARD_GAP = 110, 8
-		local N = 28
+		local CARD_W, CARD_GAP = 118, 8
+		local N = 24
 		local cards = {}
+		-- a card: the skin's weapon in 3D, its rarity as the border, its name below
+		local function fillCard(c, s)
+			clear(c)
+			local st = c:FindFirstChildOfClass("UIStroke"); if st then st.Color = RARITY_COL[s.rarity] or COL_DIM end
+			local th = weaponThumb(c, s.weapon, s.id, UDim2.new(1, -12, 0, 78)); th.Position = UDim2.new(0, 6, 0, 6)
+			local t = label(c, string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. "\n" .. s.name, 11, FONT, COL_TEXT); t.Position = UDim2.new(0, 6, 0, 86); t.Size = UDim2.new(1, -12, 0, 36); t.TextXAlignment = Enum.TextXAlignment.Center
+		end
 		if #pool > 0 then
 			for i = 1, N do
 				local s = pool[(i - 1) % #pool + 1]
 				local c = frame(strip, COL_CARD, 8)
-				c.Size = UDim2.fromOffset(CARD_W, 126)
+				c.Size = UDim2.fromOffset(CARD_W, 130)
 				c.LayoutOrder = i
-				local st = Instance.new("UIStroke", c); st.Color = RARITY_COL[s.rarity] or COL_DIM; st.Thickness = 2
-				local blade = frame(c, s.blade or Color3.fromRGB(180, 180, 180)); blade.AnchorPoint = Vector2.new(0.5, 0); blade.Position = UDim2.new(0.5, 0, 0, 10); blade.Size = UDim2.fromOffset(8, 62); blade.Rotation = -12
-				local grip = frame(c, s.grip or Color3.fromRGB(80, 60, 40)); grip.AnchorPoint = Vector2.new(0.5, 0); grip.Position = UDim2.new(0.5, 0, 0, 70); grip.Size = UDim2.fromOffset(30, 6)
-				local t = label(c, string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. "\n" .. s.name, 11, FONT, COL_TEXT); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 38); t.TextXAlignment = Enum.TextXAlignment.Center
+				local st = Instance.new("UIStroke", c); st.Thickness = 2
+				fillCard(c, s)
 				cards[i] = {frame = c, skin = s}
 			end
 		else
@@ -1440,16 +1607,7 @@ do
 				local c = cards[i]
 				if c then
 					local s = i == target and Catalog.SKIN[res.skinId] or pool[(i * 7) % #pool + 1]
-					if s then
-						c.skin = s
-						local st = c.frame:FindFirstChildOfClass("UIStroke"); if st then st.Color = RARITY_COL[s.rarity] or COL_DIM end
-						local kids = c.frame:GetChildren()
-						for _, k in ipairs(kids) do
-							if k:IsA("TextLabel") then k.Text = string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. "\n" .. s.name
-							elseif k:IsA("Frame") and k.Size.Y.Offset == 62 then k.BackgroundColor3 = s.blade or k.BackgroundColor3
-							elseif k:IsA("Frame") and k.Size.Y.Offset == 6 then k.BackgroundColor3 = s.grip or k.BackgroundColor3 end
-						end
-					end
+					if s then c.skin = s; fillCard(c.frame, s) end
 				end
 			end
 			centerOn(2)
@@ -1458,9 +1616,12 @@ do
 			task.wait(4.2)
 			ui.rolling = false
 			table.insert(ui.pulls, 1, res)
-			local rc = RARITY_COL[res.rarity] or COL_TEXT
+			local won = Catalog.SKIN[res.skinId]
 			modal(string.upper(res.rarity) .. "  ·  " .. res.name, res.dup and string.format("Duplicate — refunded %s Marks.", fmt(res.refund)) or "New skin! Equip it on CLASSES under the weapon's skins.",
-				{{"OK", COL_CARD_ON, closeModal}})
+				{{"OK", COL_CARD_ON, closeModal}}, function(box)
+					local th = weaponThumb(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 150)); th.LayoutOrder = 5
+					local st = Instance.new("UIStroke", th); st.Color = RARITY_COL[res.rarity] or COL_DIM; st.Thickness = 2
+				end)
 			render.SHOP()
 		end)
 		openBtn.Name = "OpenBtn"
@@ -1487,14 +1648,17 @@ do
 			local pieces = {}
 			local all = true
 			for _, pc in ipairs(Catalog.PIECES) do if pc.pack == k then table.insert(pieces, pc); if not owns("pieces", pc.id) then all = false end end end
+			local skins = {}
+			for _, sk in ipairs(Catalog.SKINS) do if sk.pack == k then table.insert(skins, sk); if not owns("skins", sk.id) then all = false end end end
 			local b = button(grid, "", 14, pk.color or COL_CARD)
 			b.LayoutOrder = i
 			b.AutoButtonColor = false
 			local n = label(b, pk.name, 16, FONT_BLACK, COL_TEXT); n.Position = UDim2.new(0, 10, 0, 8); n.Size = UDim2.new(1, -20, 0, 40); n.TextYAlignment = Enum.TextYAlignment.Top
-			local s = label(b, (pk.weight or "") .. (pk.featured and "  ·  featured" or "") .. (all and "  ·  owned" or "") .. string.format("  ·  %d piece%s", #pieces, #pieces == 1 and "" or "s"), 11, FONT, COL_TEXT); s.Position = UDim2.new(0, 10, 1, -24); s.Size = UDim2.new(1, -20, 0, 16)
+			local s = label(b, (pk.weight or "") .. (pk.featured and "  ·  featured" or "") .. (all and "  ·  owned" or "") .. string.format("  ·  %d piece%s", #pieces, #pieces == 1 and "" or "s") .. (#skins > 0 and string.format("  ·  %d skin%s", #skins, #skins == 1 and "" or "s") or ""), 11, FONT, COL_TEXT); s.Position = UDim2.new(0, 10, 1, -24); s.Size = UDim2.new(1, -20, 0, 16)
 			b.Activated:Connect(function()
 				local m, c = 0, 0
 				for _, pc in ipairs(pieces) do if not owns("pieces", pc.id) then m += pc.marks or 0; c += pc.crowns or 0 end end
+				for _, sk in ipairs(skins) do if not owns("skins", sk.id) then m += sk.marks or 0; c += sk.crowns or 0 end end
 				local disc = 1 - (pk.bundle or 0)
 				modal(pk.name, string.format("%s pack. Buy pieces one by one, or the rest of the pack at %d%% off.", pk.weight or "", math.floor((pk.bundle or 0) * 100 + 0.5)), (not all) and {
 					m > 0 and {"ALL  ·  " .. fmt(math.floor(m * disc + 0.5)) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "pack", k, "marks")) end} or nil,
@@ -1508,10 +1672,42 @@ do
 								(pc.crowns or 0) > 0 and {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns")) end} or nil})
 						end or nil, have and COL_GOOD or COL_MARKS)
 					end
-					if #pieces == 0 then dim(box, "No pieces name this pack yet.") end
+					for _, sk in ipairs(skins) do
+						local have = owns("skins", sk.id)
+						row(box, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "owned" or (fmt(sk.marks or 0) .. " M  ·  " .. fmt(sk.crowns or 0) .. " C"), false, (not have) and function()
+							modal(sk.name, sk.rarity or "", {
+								(sk.marks or 0) > 0 and {"BUY  ·  " .. fmt(sk.marks) .. " MARKS", COL_CARD_ON, function() afterBuy(call("Buy", "skin", sk.id, "marks")) end} or nil,
+								(sk.crowns or 0) > 0 and {"BUY  ·  " .. fmt(sk.crowns) .. " CROWNS", COL_GOLD, function() afterBuy(call("Buy", "skin", sk.id, "crowns")) end} or nil})
+						end or nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_MARKS))
+					end
+					if #pieces == 0 and #skins == 0 then dim(box, "Nothing names this pack yet.") end
 				end)
 			end)
 		end
+		-- earned in battle: pieces, skins and titles with a kill / win / level requirement
+		local e = panel(list, "EARNED IN BATTLE", true)
+		local any = false
+		for _, pc in ipairs(Catalog.PIECES) do
+			if pc.unlock then
+				any = true
+				local have = owns("pieces", pc.id)
+				row(e, pc.name .. "  ·  " .. pc.weight .. " " .. pc.slot, have and "earned ✓" or (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)), false, nil, have and COL_GOOD or COL_DIM)
+			end
+		end
+		for _, sk in ipairs(Catalog.SKINS) do
+			if sk.crate == "earned" then
+				any = true
+				local have = owns("skins", sk.id)
+				local u = {kills = sk.kills, weapon = sk.weapon}
+				row(e, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "earned ✓" or (Catalog.unlockText(u) .. "  ·  " .. progressText(u)), false, nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_DIM))
+			end
+		end
+		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do
+			any = true
+			local have = owns("titles", et.title)
+			row(e, "Title: " .. et.title, have and "earned ✓" or (Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock)), false, nil, have and COL_GOOD or COL_DIM)
+		end
+		if not any then dim(e, "Nothing to earn yet.") end
 	end
 
 	local function weapons()
@@ -1910,7 +2106,6 @@ end
 --------------------------------------------------------------------
 --  SIDE FOOT (per tab) + HEADER
 --------------------------------------------------------------------
-local hide   -- forward
 local function doorSub(id)
 	local counts, servers = doorCounts()
 	if id == "Courtyard" then return string.format("hub  ·  %d here", counts.Courtyard or 0) end
@@ -2157,7 +2352,7 @@ end)
 --  SERVER EVENTS
 --------------------------------------------------------------------
 local pendingInvite = nil
-hubEvent.OnClientEvent:Connect(function(what, a, b)
+hubEvent.OnClientEvent:Connect(function(what, a, b, c)
 	if what == "Toast" then
 		toast(a)
 	elseif what == "Party" then
@@ -2172,7 +2367,7 @@ hubEvent.OnClientEvent:Connect(function(what, a, b)
 		end
 	elseif what == "Invite" then
 		pendingInvite = b
-		inviteText.Text = tostring(a) .. " invited you to their party"
+		inviteText.Text = tostring(a) .. " invited you to their party" .. ((type(c) == "table" and c.remote) and "  ·  another server: accepting travels there" or "")
 		inviteCard.Visible = true
 		task.delay(30, function() if pendingInvite == b then pendingInvite = nil; inviteCard.Visible = false end end)
 	elseif what == "Profile" then

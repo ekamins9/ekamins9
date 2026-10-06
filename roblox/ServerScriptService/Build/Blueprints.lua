@@ -95,6 +95,28 @@ function Blueprints.ensureSet(setFolder)
 	return true
 end
 
+-- earned pieces: Cosmetics ▸ Pieces ▸ <id> holding only that slot's models
+function Blueprints.ensurePieces(piecesFolder)
+	local n = 0
+	for id, slots in pairs(ArmorBP.PIECES or {}) do
+		local f = piecesFolder:FindFirstChild(id)
+		if not f then
+			f = Instance.new("Folder"); f.Name = id; f.Parent = piecesFolder
+		end
+		local has = false
+		for _, sn in ipairs(SLOTS) do if f:FindFirstChild(sn) then has = true end end
+		if not has then
+			for sn, specs in pairs(slots) do
+				local m = B.build(sn, specs, {primary = "Middle"})
+				m:SetAttribute("Built", true)
+				m.Parent = f
+			end
+			n += 1
+		end
+	end
+	return n
+end
+
 --------------------------------------------------------------------
 --  BODY
 --------------------------------------------------------------------
@@ -118,7 +140,7 @@ end
 --  ALL
 --------------------------------------------------------------------
 function Blueprints.ensureAll()
-	local built = {tools = 0, sets = 0, body = 0, displays = 0}
+	local built = {tools = 0, sets = 0, body = 0, displays = 0, pieces = 0}
 	local weapons = ServerStorage:FindFirstChild("Weapons")
 	if weapons then
 		for _, t in ipairs(weapons:GetChildren()) do if Blueprints.completeTool(t) then built.tools += 1 end end
@@ -131,6 +153,7 @@ function Blueprints.ensureAll()
 	for _, n in ipairs({"Armor", "Pieces", "Skins", "Weapons", "Body"}) do folder(cos, n) end
 	for _, n in ipairs({"Hair", "Beard", "Face"}) do folder(cos.Body, n) end
 	built.body = Blueprints.ensureBody(cos.Body)
+	built.pieces = Blueprints.ensurePieces(cos.Pieces)
 	if weapons then
 		for _, t in ipairs(weapons:GetChildren()) do
 			if t:IsA("Tool") and not cos.Weapons:FindFirstChild(t.Name) then
@@ -139,7 +162,7 @@ function Blueprints.ensureAll()
 			end
 		end
 	end
-	log(string.format("built %d weapon bodies, %d armor sets, %d body models, %d weapon displays", built.tools, built.sets, built.body, built.displays))
+	log(string.format("built %d weapon bodies, %d armor sets, %d earned pieces, %d body models, %d weapon displays", built.tools, built.sets, built.pieces, built.body, built.displays))
 	return built
 end
 

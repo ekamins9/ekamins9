@@ -23,7 +23,12 @@ local DEATH_SHOVE = 10   -- studs/s the corpse falls away from the last hit
 -- BlockMax / StaminaRegen / StaminaRegenDelay attributes it publishes on equip
 local STAMINA_MAX   = 100
 local STAMINA_REGEN = 15    -- per second…
-local STAMINA_DELAY = 2.5   -- …starting this long after the last combat event
+local STAMINA_DELAY = 1.8   -- …starting this long after the last combat event
+local HOLD_DRAIN    = 3     -- stamina per second while the guard is held (weapon overrides via BlockHoldDrain)
+-- health regen: slow, and only when you are truly out of the fight — full stamina,
+-- not blocking / attacking / sprinting, nothing happened for HEALTH_DELAY
+local HEALTH_REGEN  = 2.5   -- health per second
+local HEALTH_DELAY  = 5.0   -- seconds after the last combat event
 
 local function setup(char)
 	local hum = char:WaitForChild("Humanoid", 10)
@@ -54,6 +59,22 @@ local function setup(char)
 			return
 		end
 		Injury.tick(char, dt)
+		-- holding the guard costs stamina (a timed parry is free): the turtle tax
+		if hum.Health > 0 and char:GetAttribute("Blocking") then
+			local drain = char:GetAttribute("BlockHoldDrain") or HOLD_DRAIN
+			if drain > 0 then
+				local m = char:GetAttribute("BlockMeter") or (char:GetAttribute("BlockMax") or STAMINA_MAX)
+				if m > 0 then char:SetAttribute("BlockMeter", math.max(0, m - drain * dt)) end
+			end
+		end
+		-- health regen: full stamina, idle, out of combat for HEALTH_DELAY
+		if hum.Health > 0 and hum.Health < hum.MaxHealth
+			and not char:GetAttribute("Blocking") and not char:GetAttribute("Acting")
+			and char:GetAttribute("SpeedMult_Sprint") == nil
+			and (char:GetAttribute("BlockMeter") or 0) >= (char:GetAttribute("BlockMax") or STAMINA_MAX) - 0.01
+			and os.clock() - (char:GetAttribute("LastCombatAt") or -1e9) >= HEALTH_DELAY then
+			hum.Health = math.min(hum.MaxHealth, hum.Health + HEALTH_REGEN * dt)
+		end
 		-- stamina regen: not while blocking, mid-action, stunned, dead, or
 		-- within the delay of any combat event (attack, dodge, hit taken…)
 		if hum.Health > 0
