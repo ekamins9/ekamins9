@@ -1,30 +1,29 @@
-# Updated scripts: the menu, rebuilt as a lobby
+# Updated scripts: the maps, fixed
 
-The Hub menu is rewritten from scratch as a lobby, built like the big Roblox shooters but
-for this game. Your party stands on glowing platforms in the middle. Daily tasks and friends
-are on the left, the leaderboard and today's shop on the right. A dock of 3D icons runs along
-the bottom, and the big green **PLAY** opens the **MODES** board of 3D-scene tiles: Warfront,
-Training, Courtyard, 1v1 / 2v2 / 3v3, and Ranked.
+Sandpit, Highbridge and Millfield are rebuilt (already in `ServerStorage ▸ Maps`).
 
-New screens:
-- **ARMORY** has WEAPONS (each weapon on a stage with its skins, and where each skin comes
-  from) and ARMOR (every set worn by you, piece by piece, buy / equip).
-- **TASKS** has the daily and weekly tasks, the task-skin track, and mastery.
-- **SHOP DAILY** gains the WEAPONS shelf.
-- **LOADOUT** lets you try on anything locked.
-
-The crates screen keeps its stage, strip and spinning drum. M closes a pop-up, then a screen,
-then the menu. Everything is drawn on a 1600×900 canvas that a UIScale fits to the screen.
+- **Roofs and pines are real cones now.** The old four-wedge "cones" had their wedges facing
+  the wrong way and read as boxes. `K.cone` builds a 12-sided spire from wedges whose tall faces
+  meet at the axis, with a gold finial on towers. Pines use three 8-sided tiers.
+- **Gates are open round arches.** `K.arch` is two piers, a ring of voussoirs with a keystone,
+  stepped fill in the corners and a lintel course. The old solid disc and fill box looked like
+  a closed gate. `K.archRing` (the ring alone) puts real arches under Highbridge's deck.
+- **Sandpit:**
+  - The gate arch now runs along the wall, which closes in from both towers.
+  - The pit stairs start on the floor and climb out to the rim, through gaps in the rim blocks.
+  - The terrain box is big enough that no dune is cut off or left behind.
+  - The sand is a warm colour.
+- **Highbridge:** the bridge-side gatehouse wall is open at the gate (it was solid), both flanks
+  are walled (one side used to drop into the void), and the torches are moved off the piers.
+- **Millfield:** the windmill has a cone cap, house gables are real triangles (two mirrored
+  wedges), the terrain box is bigger, and the field and path colours are set.
+- **Terrain colours per map:** `K.terrainColors` stores `TerrainColor_<Material>` attributes.
+  MapLoader applies them on load and restores the old colours on unload.
+- **Smaller fixes:** banner tips point down, and `K.terrain` clears its box even if painting
+  fails.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | **rewritten**: lobby, MODES, LOADOUT (try-on), ARMORY (weapons + armor), SHOP (daily + shelf, crates, crowns, colors), TASKS, WARDROBE (face grid), SERVERS, SETTINGS; posed 3D scenes; test hooks `Tab` / `ShopTab` / `ArmoryTab` / `OpenCrowns` |
-| [Theme.lua](ReplicatedStorage/Theme.lua) | ReplicatedStorage ▸ Theme | ModuleScript | dark-glass palette; GLASS / GLASS2 / OUTLINE / GREEN / BLUE / RED / YELLOW / PURPLE; GO is green |
-| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | auto pieces carry `setName` (the ARMOR tab's set names) |
-| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ LoadoutMenu | LocalScript | its menu buttons open MENU / LOADOUT / SETTINGS |
-| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Scoreboard | LocalScript | the round strip hides while the menu is up |
-| [HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ HUD | LocalScript | the bars and weapon chip hide while the menu is up |
-| [README.md](README.md) | (docs) | | the menu and the look |
-
-Studio-only (already in the place): the dock icons in `ReplicatedStorage ▸ Cosmetics ▸ Icons`
-(Loadout, Armory, Shop, Tasks, Wardrobe, Settings), rendered by `blender/ui_icons.py`.
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build ▸ MapKit | ModuleScript | `K.cone`, `K.archRing`, round `K.arch`, cone spires + finials, cone pines, gables, banner tips, `K.terrainColors`, safe `K.terrain` |
+| [Maps.lua](ServerScriptService/Build/Maps.lua) | ServerScriptService ▸ Build ▸ Maps | ModuleScript | Sandpit gate / stairs / rim / terrain box / colours; Highbridge gate walls, flanks, under-deck arches; Millfield cone cap, terrain box, colours |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game ▸ MapLoader | ModuleScript | applies and restores `TerrainColor_*` |

@@ -58,6 +58,23 @@ local function clearTerrain()
 	if terrainRegion then pcall(function() workspace.Terrain:FillRegion(terrainRegion, 4, Enum.Material.Air) end) end
 	terrainRegion = nil
 end
+-- TerrainColor_<Material> attributes recolour that terrain material while the
+-- map is up (sand that reads as sand, not white); unload puts the old colours back
+local terrainColorsBefore = {}
+local function applyTerrainColors(m)
+	for mat, c in pairs(terrainColorsBefore) do pcall(function() workspace.Terrain:SetMaterialColor(Enum.Material[mat], c) end) end
+	terrainColorsBefore = {}
+	if not m then return end
+	for k, v in pairs(m:GetAttributes()) do
+		local mat = k:match("^TerrainColor_(.+)$")
+		if mat and typeof(v) == "Color3" and Enum.Material[mat] then
+			pcall(function()
+				terrainColorsBefore[mat] = workspace.Terrain:GetMaterialColor(Enum.Material[mat])
+				workspace.Terrain:SetMaterialColor(Enum.Material[mat], v)
+			end)
+		end
+	end
+end
 local function applyLighting(m)
 	if not lightingBefore then
 		lightingBefore = {}
@@ -74,6 +91,7 @@ end
 function MapLoader.unload()
 	if MapLoader.current then MapLoader.current:Destroy() end
 	clearTerrain()
+	applyTerrainColors(nil)
 	MapLoader.current, MapLoader.name = nil, nil
 end
 
@@ -111,6 +129,7 @@ function MapLoader.load(name)
 	end
 	m.Parent = workspace
 	pasteTerrain(m)
+	applyTerrainColors(m)
 	applyLighting(m)
 	MapLoader.current, MapLoader.name = m, name
 	log("loaded", name)
