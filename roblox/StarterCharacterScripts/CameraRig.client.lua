@@ -350,6 +350,68 @@ UIS.InputChanged:Connect(function(input)
 		mouseDY = mouseDY + input.Delta.Y
 	end
 end)
+-- FREE MOUSE (the Cursor bind, T): the cursor is let go so the screen can be
+-- clicked (the gift, the boards); the camera holds still and the body turns
+-- the way it walks. Any fight input locks it again with the camera snapped
+-- behind the body, never the body spun to the camera: a free mouse can't be
+-- used to whip a swing round by tapping the move keys.
+local cursorFree = false
+local freeHint
+local function showFreeHint(on)
+	if on and not freeHint then
+		local g = Instance.new("ScreenGui")
+		g.Name = "FreeMouseHint"
+		g.ResetOnSpawn = true
+		local l = Instance.new("TextLabel")
+		l.AnchorPoint = Vector2.new(0.5, 1)
+		l.Position = UDim2.new(0.5, 0, 1, -150)
+		l.Size = UDim2.fromOffset(300, 28)
+		l.BackgroundColor3 = Color3.fromRGB(20, 18, 16)
+		l.BackgroundTransparency = 0.35
+		l.Font = Enum.Font.GothamBold
+		l.TextSize = 14
+		l.TextColor3 = Color3.fromRGB(240, 232, 214)
+		l.Parent = g
+		Instance.new("UICorner", l).CornerRadius = UDim.new(0, 8)
+		g.Parent = player:WaitForChild("PlayerGui")
+		freeHint = g
+	end
+	if freeHint then
+		freeHint.Enabled = on
+		local key = ClientSettings.get("Key_Cursor")
+		freeHint.TextLabel.Text = string.format("MOUSE FREE  ·  %s TO LOCK THE CAMERA", string.upper(tostring(key)))
+	end
+end
+local function setCursorFree(on)
+	if cursorFree == on then return end
+	cursorFree = on
+	if not on then
+		-- the camera swings round behind the body (the body stays put)
+		local lv = HRP.CFrame.LookVector
+		rot = Vector2.new(rot.X, math.atan2(-lv.X, -lv.Z))
+		mouseDX, mouseDY = 0, 0
+	end
+	showFreeHint(on)
+end
+local FIGHT_ACTIONS = {Swing = true, Stab = true, Overhead = true, Underhand = true, Feint = true, Kick = true, Dodge = true, Pickup = true}
+UIS.InputBegan:Connect(function(input, gp)
+	if UIS:GetFocusedTextBox() then return end
+	local action = ClientSettings.actionForInput(input)
+	if action == "Cursor" and not gp then setCursorFree(not cursorFree); return end
+	if not cursorFree or gp then return end
+	if FIGHT_ACTIONS[action] or input.UserInputType == Enum.UserInputType.MouseButton2 then setCursorFree(false) end
+end)
+UIS.InputChanged:Connect(function(input, gp)
+	if cursorFree and not gp and input.UserInputType == Enum.UserInputType.MouseWheel and FIGHT_ACTIONS[ClientSettings.actionForInput(input) or ""] then setCursorFree(false) end
+end)
+-- a swing or a guard that started some other way locks it too
+for _, attr in ipairs({"Acting", "Blocking"}) do
+	character:GetAttributeChangedSignal(attr):Connect(function()
+		if cursorFree and character:GetAttribute(attr) then setCursorFree(false) end
+	end)
+end
+script.Destroying:Connect(function() if freeHint then freeHint:Destroy() end end)
+
 -- first / third person toggle (rebindable; any bind type)
 local function viewInput(input, gp)
 	if gp or UIS:GetFocusedTextBox() then return end
@@ -410,12 +472,14 @@ local function loopBody(dt)
 	local dtc = math.min(dt, 1/30)
 	local now = os.clock()
 
-	-- typing in chat / a TextBox: release the mouse and ignore look input
+	-- typing in chat / a TextBox, or the mouse set free: release the mouse and ignore look input
 	local typing = UIS:GetFocusedTextBox() ~= nil
+	local loose = typing or cursorFree
 	Camera.CameraType   = Enum.CameraType.Scriptable
-	UIS.MouseBehavior   = typing and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
-	UIS.MouseIconEnabled = typing   -- no cursor over the crosshair-less view while we're alive
-	Humanoid.AutoRotate = false
+	UIS.MouseBehavior   = loose and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
+	UIS.MouseIconEnabled = loose   -- no cursor over the crosshair-less view while we're alive
+	-- a free mouse: the body turns the way it walks; locked: it faces the camera (below)
+	Humanoid.AutoRotate = cursorFree
 
 	-- turn cap: LOCAL timer only. The server's TurnCapUntil is on the
 	-- server's os.clock(), which is a different clock — never compare it here.
@@ -425,7 +489,7 @@ local function loopBody(dt)
 
 	local rawDX, rawDY = mouseDX, mouseDY
 	mouseDX, mouseDY = 0, 0
-	if typing then rawDX, rawDY = 0, 0 end
+	if loose then rawDX, rawDY = 0, 0 end
 	local sens   = SENSITIVITY * GameSettings.MouseSensitivity
 	local dYaw   = -rawDX * sens
 	local dPitch = -rawDY * sens
@@ -448,7 +512,7 @@ local function loopBody(dt)
 	-- body faces camera yaw (capped via rot.Y) — unless physics owns the body
 	-- (knocked down / seated), in which case forcing it upright every frame
 	-- would fight the ragdoll or the seat
-	local bodyFree = Humanoid.PlatformStand or Humanoid.Sit or character:GetAttribute("Ragdolled") == true
+	local bodyFree = Humanoid.PlatformStand or Humanoid.Sit or character:GetAttribute("Ragdolled") == true or cursorFree
 	if not bodyFree then
 		HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, rot.Y, 0)
 	end

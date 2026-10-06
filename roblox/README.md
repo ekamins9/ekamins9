@@ -382,8 +382,10 @@ during windup) · G kick (works unarmed too) · LeftShift sprint (forward / forw
 **F dodge** (or double-tap A / D / S; a ~2-stud sidestep, side or back, 10 stamina) · **Space
 jump** (a short ~2-stud hop, 6 stamina; also stands you up from a seat) · LeftControl/C crouch ·
 **Z first / third person** (no scroll zoom any more) · V pick up a weapon · Tab leaderboard ·
-**B emote wheel**. Walking backwards is 35% slower and sideways 20% slower — dodge to reposition
-fast. Settings saved before the jump existed had dodge on Space; they move to F on load.
+**B emote wheel** · **T frees the mouse** (toggle: click the screen, the gift, the boards; the
+camera holds still and you turn the way you walk; any attack, block, kick or dodge locks it again
+with the camera swung behind you, so a free mouse can't whip a swing round). Walking backwards is
+35% slower and sideways 20% slower — dodge to reposition fast. Settings saved before the jump existed had dodge on Space; they move to F on load.
 
 Binds take keys, left / middle mouse, scroll up / down. Roblox does not expose Mouse 4 / 5 to
 games — bind them to a key in your mouse software (e.g. Mouse4 → X) and bind that key here.
