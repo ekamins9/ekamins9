@@ -6,6 +6,9 @@
        Economy.exchange(plr, tier)       Crowns -> Marks
        Economy.grantProduct(plr, productId, receiptId)   Robux Crown bundles (EconomyServer's ProcessReceipt)
        Economy.levelFor(xp)
+       Economy.grantReward(plr, reward)  {marks | crowns | skin | title | crate | piece | color} (pass, login)
+       Economy.passState(plr) / addPassXP(plr, n) / passClaim(plr, tier, track) / passBuy(plr)
+       Economy.loginStatus(plr) / loginClaim(plr)
      Nothing here trusts a client: prices and odds come from Catalog, results
      are decided before the client is told. A server flagged noRewards
      (cheats on) pays nothing. ]]
@@ -51,6 +54,9 @@ function Economy.addXP(plr, xp)
 	return leveled
 end
 
+-- forward: round XP also climbs the pass
+local addPassXP
+
 function Economy.award(plr, events)
 	if noRewards() then return {marks = 0, xp = 0, levels = 0, blocked = true} end
 	local p = Profile.get(plr)
@@ -66,6 +72,7 @@ function Economy.award(plr, events)
 	end
 	p.wallet.marks += marks
 	local levels = Economy.addXP(plr, xp)
+	addPassXP(plr, xp)
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
 	return {marks = marks, xp = xp, levels = levels, firstWin = firstWin, level = p.level}
@@ -145,6 +152,7 @@ function Economy.buy(plr, kind, id, currency)
 		if Profile.has(plr, "skins", id) then return false, "already owned" end
 		local src = Catalog.skinSource(sk)
 		if src == "earned" then return false, "that skin is earned by playing" end
+		if src == "pass" then return false, "that skin comes from the season pass" end
 		if src == "crate" then return false, "that skin comes from a crate" end
 		if not Catalog.skinOnSale(id) then return false, "not in today's shop" end
 		local m, c = price(sk.marks, sk.crowns, currency); if not m then return false, c end
@@ -157,7 +165,7 @@ end
 --------------------------------------------------------------------
 --  CRATES
 --------------------------------------------------------------------
-function Economy.openCrate(plr, crateId)
+function Economy.openCrate(plr, crateId, free)
 	local crate = Catalog.CRATES[crateId]
 	if not crate then return nil, "no such crate" end
 	local pool = Catalog.crateSkins(crateId)
@@ -165,7 +173,9 @@ function Economy.openCrate(plr, crateId)
 	local p = Profile.get(plr)
 	p.crates[crateId] = p.crates[crateId] or {opens = 0, sinceLegendary = 0}
 	local cc = p.crates[crateId]
-	local ok, msg = Economy.spend(plr, 0, crate.cost); if not ok then return nil, msg end
+	if not free then
+		local ok, msg = Economy.spend(plr, 0, crate.cost); if not ok then return nil, msg end
+	end
 	-- rarity by odds, pity overrides
 	local rarity
 	if cc.sinceLegendary >= (crate.pity or 20) - 1 then rarity = "Legendary"
@@ -192,6 +202,137 @@ function Economy.openCrate(plr, crateId)
 	log(plr.Name, "opened", crateId, "->", win.id, win.rarity, dup and ("dup +" .. refund) or "")
 	return {skinId = win.id, weapon = win.weapon, name = Catalog.WEAPON[win.weapon].name .. " · " .. win.name, rarity = win.rarity, dup = dup, refund = refund,
 		sinceLegendary = cc.sinceLegendary, opens = cc.opens}
+end
+
+--------------------------------------------------------------------
+--  REWARDS (the pass, login gifts)
+--------------------------------------------------------------------
+-- grant one reward; returns a line for the toast and, for a crate, its result
+function Economy.grantReward(plr, r)
+	local p = Profile.get(plr)
+	local bits, crateResult = {}, nil
+	if r.marks then p.wallet.marks += r.marks; table.insert(bits, string.format("+%d Marks", r.marks)) end
+	if r.crowns then p.wallet.crowns += r.crowns; table.insert(bits, string.format("+%d Crowns", r.crowns)) end
+	if r.skin and Catalog.SKIN[r.skin] then
+		Profile.grant(plr, "skins", r.skin)
+		local s = Catalog.SKIN[r.skin]
+		table.insert(bits, (Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. " · " .. s.name .. " skin")
+	end
+	if r.title then Profile.grant(plr, "titles", r.title); table.insert(bits, "the title " .. r.title) end
+	if r.piece and Catalog.PIECE[r.piece] then Profile.grant(plr, "pieces", r.piece); table.insert(bits, Catalog.PIECE[r.piece].name) end
+	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
+	if r.crate then
+		crateResult = Economy.openCrate(plr, r.crate, true)
+		if crateResult then table.insert(bits, crateResult.name .. (crateResult.dup and string.format(" (dup, +%d Marks)", crateResult.refund) or "")) end
+	end
+	Profile.markDirty(plr)
+	Economy.changed:Fire(plr)
+	return table.concat(bits, "  ·  "), crateResult
+end
+
+-- the pass record for this season (a new season starts it over)
+local function passRecord(plr)
+	local p = Profile.get(plr)
+	local P = Catalog.PASS
+	if type(p.pass) ~= "table" or p.pass.season ~= P.season then
+		p.pass = {season = P.season, xp = 0, premium = false, claimed = {free = {}, premium = {}}}
+		Profile.markDirty(plr)
+	end
+	p.pass.claimed = p.pass.claimed or {free = {}, premium = {}}
+	p.pass.claimed.free = p.pass.claimed.free or {}
+	p.pass.claimed.premium = p.pass.claimed.premium or {}
+	return p.pass
+end
+function Economy.passState(plr)
+	local P = Catalog.PASS
+	local rec = passRecord(plr)
+	local tier = math.min(#P.tiers, math.floor(rec.xp / P.tierXP))
+	-- claimed tiers are kept under string keys ("3" = true): DataStore JSON and remotes both need that
+	local cf, cp = {}, {}
+	for k in pairs(rec.claimed.free) do cf[tostring(k)] = true end
+	for k in pairs(rec.claimed.premium) do cp[tostring(k)] = true end
+	return {season = P.season, xp = rec.xp, tier = tier, premium = rec.premium == true, claimedFree = cf, claimedPremium = cp}
+end
+addPassXP = function(plr, n)
+	if (n or 0) <= 0 then return end
+	local P = Catalog.PASS
+	local rec = passRecord(plr)
+	local before = math.floor(rec.xp / P.tierXP)
+	rec.xp = math.min(rec.xp + n, #P.tiers * P.tierXP)
+	Profile.markDirty(plr)
+	return math.floor(rec.xp / P.tierXP) - before
+end
+Economy.addPassXP = addPassXP
+function Economy.passClaim(plr, tier, track)
+	local P = Catalog.PASS
+	tier = tonumber(tier)
+	local t = tier and P.tiers[tier]
+	if not t then return false, "no such tier" end
+	track = track == "premium" and "premium" or "free"
+	local rec = passRecord(plr)
+	if math.floor(rec.xp / P.tierXP) < tier then return false, "reach tier " .. tier .. " first" end
+	if track == "premium" and not rec.premium then return false, "the premium track needs the pass" end
+	if rec.claimed[track][tostring(tier)] then return false, "already claimed" end
+	local reward = t[track]
+	if not reward then return false, "nothing on that tier" end
+	rec.claimed[track][tostring(tier)] = true
+	local line, crate = Economy.grantReward(plr, reward)
+	return true, "TIER " .. tier .. "  ·  " .. line, crate
+end
+-- every reward you reached and haven't taken, in one go
+function Economy.passClaimAll(plr)
+	local P = Catalog.PASS
+	local rec = passRecord(plr)
+	local reached = math.min(#P.tiers, math.floor(rec.xp / P.tierXP))
+	local lines, crates = {}, {}
+	for tier = 1, reached do
+		for _, track in ipairs({"free", "premium"}) do
+			local reward = P.tiers[tier][track]
+			if reward and not rec.claimed[track][tostring(tier)] and (track == "free" or rec.premium) then
+				rec.claimed[track][tostring(tier)] = true
+				local line, crate = Economy.grantReward(plr, reward)
+				table.insert(lines, line)
+				if crate then table.insert(crates, crate) end
+			end
+		end
+	end
+	if #lines == 0 then return false, "nothing to claim yet", {}, {} end
+	return true, string.format("%d rewards claimed", #lines), lines, crates
+end
+
+function Economy.passBuy(plr)
+	local P = Catalog.PASS
+	local rec = passRecord(plr)
+	if rec.premium then return false, "you already have the pass" end
+	local ok, msg = Economy.spend(plr, 0, P.price); if not ok then return false, msg end
+	rec.premium = true
+	Profile.markDirty(plr); Economy.changed:Fire(plr)
+	return true, P.name .. "  ·  premium unlocked"
+end
+
+-- login gifts: one a day, the streak breaks on a missed day
+local function dayKey(offsetDays) return os.date("!%Y-%m-%d", os.time() + (offsetDays or 0) * 86400) end
+function Economy.loginStatus(plr)
+	local p = Profile.get(plr)
+	local L = p.login or {}
+	p.login = L
+	local today, yesterday = dayKey(0), dayKey(-1)
+	local streak = L.streak or 0
+	local claimed = L.claimed == today
+	local nextStreak = claimed and streak or ((L.claimed == yesterday) and streak + 1 or 1)
+	local n = #Catalog.LOGIN.days
+	return {day = (nextStreak - 1) % n + 1, claimed = claimed, streak = nextStreak}
+end
+function Economy.loginClaim(plr)
+	local st = Economy.loginStatus(plr)
+	if st.claimed then return false, "already claimed today: come back tomorrow" end
+	local reward = Catalog.LOGIN.days[st.day]
+	if not reward then return false, "no reward today" end
+	local p = Profile.get(plr)
+	p.login.streak = st.streak
+	p.login.claimed = dayKey(0)
+	local line, crate = Economy.grantReward(plr, reward)
+	return true, "DAY " .. st.day .. "  ·  " .. line, crate
 end
 
 function Economy.exchange(plr, tier)

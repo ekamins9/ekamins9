@@ -8,6 +8,7 @@
        crate    "Bladesmith" / "Hafted" / "Royal": rolled from that crate
        crate = "earned", kills = n        n kills with the weapon unlock it
        unlock = {stat = "contract", n = n}  n daily tasks finished unlock it
+       pass = true                        a season pass reward (Catalog ▸ Pass)
        pack + marks / crowns              sold with the pack, on the days it is in the store
        marks / crowns alone               the store's WEAPONS shelf, on the days it is offered
      LOOKS:
@@ -264,6 +265,19 @@ return {
 	{weapon = "Spear", name = "Thornguard", rarity = "Epic", marks = 1600, crowns = 80, blade = Color3.fromRGB(40, 36, 34), grip = Color3.fromRGB(120, 80, 40), trim = "spikes", accent = Color3.fromRGB(180, 120, 60)},
 	{weapon = "Quarterstaff", name = "Duelist", rarity = "Rare", marks = 900, crowns = 45, blade = Color3.fromRGB(226, 228, 232), grip = Color3.fromRGB(150, 30, 40), trim = "fuller", accent = Color3.fromRGB(170, 30, 44)},
 	{weapon = "Quarterstaff", name = "Sunsteel", rarity = "Legendary", crowns = 150, blade = Color3.fromRGB(255, 224, 150), grip = Color3.fromRGB(180, 120, 50), trim = "halo", glow = Color3.fromRGB(255, 220, 120)},
+	-- GENERATED: season pass skins (Catalog > Pass gives them out)
+	{weapon = "ArmingSword", name = "Ironclad", rarity = "Rare", pass = true, blade = Color3.fromRGB(150, 154, 164), grip = Color3.fromRGB(46, 46, 54), trim = "rivets", accent = Color3.fromRGB(232, 184, 74)},
+	{weapon = "Spear", name = "Crownspike", rarity = "Rare", pass = true, blade = Color3.fromRGB(150, 154, 164), grip = Color3.fromRGB(90, 30, 30), trim = "spikes", accent = Color3.fromRGB(232, 184, 74)},
+	{weapon = "Shortsword", name = "Iron Oath", rarity = "Rare", pass = true, blade = Color3.fromRGB(176, 180, 188), grip = Color3.fromRGB(60, 40, 30), trim = "rings", accent = Color3.fromRGB(110, 112, 120)},
+	{weapon = "WarAxe", name = "Ironbark", rarity = "Epic", pass = true, blade = Color3.fromRGB(120, 124, 132), grip = Color3.fromRGB(70, 50, 34), trim = "studs", accent = Color3.fromRGB(232, 184, 74)},
+	{weapon = "Longsword", name = "Crownguard", rarity = "Epic", pass = true, blade = Color3.fromRGB(200, 204, 212), grip = Color3.fromRGB(110, 24, 30), trim = "royal", glow = Color3.fromRGB(255, 200, 80)},
+	{weapon = "Mace", name = "Iron Lion", rarity = "Epic", pass = true, blade = Color3.fromRGB(110, 112, 120), grip = Color3.fromRGB(46, 46, 54), trim = "laurel", accent = Color3.fromRGB(232, 184, 74)},
+	{weapon = "Pitchfork", name = "Iron Tines", rarity = "Epic", pass = true, blade = Color3.fromRGB(96, 100, 108), grip = Color3.fromRGB(80, 56, 36), trim = "notch"},
+	{weapon = "Halberd", name = "Kingsguard", rarity = "Epic", pass = true, blade = Color3.fromRGB(196, 200, 210), grip = Color3.fromRGB(120, 20, 30), trim = "royal", glow = Color3.fromRGB(220, 40, 60)},
+	{weapon = "Greatsword", name = "Last Light", rarity = "Legendary", pass = true, blade = Color3.fromRGB(236, 238, 244), grip = Color3.fromRGB(40, 40, 52), trim = "halo", glow = Color3.fromRGB(255, 240, 190)},
+	{weapon = "Maul", name = "Anvil of Kings", rarity = "Legendary", pass = true, blade = Color3.fromRGB(70, 72, 80), grip = Color3.fromRGB(40, 30, 24), trim = "thunder", glow = Color3.fromRGB(255, 196, 80)},
+	{weapon = "Dagger", name = "Crown's Fang", rarity = "Epic", pass = true, blade = Color3.fromRGB(180, 184, 192), grip = Color3.fromRGB(30, 30, 36), trim = "serpent", accent = Color3.fromRGB(232, 184, 74), glow = Color3.fromRGB(255, 60, 60)},
+	{weapon = "Zweihander", name = "The Iron Crown", rarity = "Legendary", pass = true, blade = Color3.fromRGB(140, 144, 154), grip = Color3.fromRGB(30, 30, 36), trim = "crown", glow = Color3.fromRGB(255, 40, 60)},
 	-- GENERATED: task skins (finish daily tasks to earn them)
 	{weapon = "ArmingSword", name = "Squire's Oath", rarity = "Rare", unlock = {stat = "contract", n = 3}, blade = Color3.fromRGB(236, 238, 244), grip = Color3.fromRGB(50, 80, 170), trim = "rings", accent = Color3.fromRGB(232, 184, 74)},
 	{weapon = "Spear", name = "Wayfarer", rarity = "Rare", unlock = {stat = "contract", n = 7}, blade = Color3.fromRGB(220, 224, 232), grip = Color3.fromRGB(60, 90, 170), trim = "wrap", accent = Color3.fromRGB(232, 184, 74)},

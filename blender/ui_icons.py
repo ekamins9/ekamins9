@@ -5,7 +5,8 @@ art in blender/icons.py (Cycles + Freestyle ink):
 
 names (default all): loadout (a great helm), armory (crossed longswords),
 shop (a treasure chest), tasks (a sealed scroll), wardrobe (a tabard on a
-hanger), settings (a gear). Output: 512x512 RGBA PNGs in blender/out/ui/.
+hanger), settings (a gear), pass (a crowned banner). Output: 512x512 RGBA
+PNGs in blender/out/ui/.
 """
 import bpy, bmesh, math, os, random, sys
 from mathutils import Vector, Matrix
@@ -244,8 +245,37 @@ def gear():
     return [g, ring]
 
 
+def pass_banner():
+    """the season pass: a swallowtail banner on a pole with a crown on it"""
+    m = I.mats()
+    red = I.material("Banner", (0.5, 0.02, 0.035), rough=0.65)
+    wood = I.material("Wood", WOOD_DARK, rough=0.6)
+    objs = []
+    bm = bmesh.new()
+    pts = [(-0.62, 0.72), (0.62, 0.72), (0.62, -0.98), (0.0, -0.58), (-0.62, -0.98)]
+    face = bm.faces.new([bm.verts.new((x, 0, z)) for x, z in pts])
+    ext = bmesh.ops.extrude_face_region(bm, geom=[face])
+    bmesh.ops.translate(bm, vec=(0, 0.07, 0), verts=[e for e in ext["geom"] if isinstance(e, bmesh.types.BMVert)])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    cloth = I.mesh_obj("Cloth", bm); cloth.location = (0, 0, -0.04)
+    bv = cloth.modifiers.new("Bevel", "BEVEL"); bv.width = 0.02; bv.segments = 2
+    I.link(cloth, red, smooth=False); objs.append(cloth)
+    # gold trim down both sides and along the top
+    for x in (-0.53, 0.53):
+        objs.append(box("Trim", (0.07, 0.09, 1.36), (x, -0.02, 0.02), m["gold"], bevel=0.012))
+    objs.append(box("TopTrim", (1.18, 0.09, 0.07), (0, -0.02, 0.62), m["gold"], bevel=0.012))
+    # the pole across the top, gold finials
+    objs.append(cyl("Pole", 0.07, 1.7, (0, 0.03, 0.8), wood, rot=(0, math.pi / 2, 0)))
+    for x in (-0.88, 0.88):
+        objs.append(sphere("Finial", 0.12, (x, 0.03, 0.8), m["gold"]))
+    # the crown, standing out from the cloth
+    objs += I.crown((0, -0.32, -0.26), 0.36, m["gold"], m["velvet"], m["gem_blue"], m["gem_red"])
+    return objs
+
+
 MODELS = {"loadout": (helmet, 0.92, 0.0), "armory": (crossed_swords, 0.9, -0.55), "shop": (chest, 0.92, -0.55),
-          "tasks": (scroll, 0.92, -0.3), "wardrobe": (wardrobe, 0.92, -0.3), "settings": (gear, 0.95, -0.4)}
+          "tasks": (scroll, 0.92, -0.3), "wardrobe": (wardrobe, 0.92, -0.3), "settings": (gear, 0.95, -0.4),
+          "pass": (pass_banner, 0.92, -0.25)}
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []

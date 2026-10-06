@@ -67,7 +67,9 @@ local function progress(plr, key, n)
 				p.wallet.marks += def.pay
 				Stats.changed:Fire(plr, def.text, def.pay)
 				-- every finished task counts toward the task skins (Catalog ▸ Skins, unlock = {stat = "contract"})
+				-- and climbs the season pass
 				Profile.addStat(plr, "contract", 1)
+				Economy.addPassXP(plr, (Catalog.PASS.taskXP or 0) * (def.weekly and 3 or 1))
 				local done = p.stats.contract or 0
 				for _, s in ipairs(Catalog.SKINS) do
 					if s.unlock and s.unlock.stat == "contract" and (s.unlock.n or 1) == done then

@@ -234,6 +234,24 @@ are drawn from the pool per date (everyone gets the same ones). `stat` is any co
 server keeps: `kill`, `parry`, `chamber`, `win`, `round`, `drill`, `kill_<Family>`,
 `win_<bracket>`.
 
+## 10b. The season pass and login rewards
+
+**Season pass:** `Catalog ▸ Pass`.
+- `season` is the id; a new id starts everyone at tier 0. `name` and `ends` (a UTC date) are
+  shown on the PASS screen.
+- `price` is the premium track in Crowns. `tierXP` is the pass XP per tier. Every round's XP
+  counts as pass XP, and each finished daily task adds `taskXP` (three times that for the weekly).
+- `tiers` is a list of `{free = reward, premium = reward}`. A reward is `{marks = n}`,
+  `{crowns = n}`, `{skin = "Weapon:Name"}`, `{title = "..."}` or `{crate = "Royal"}`. A crate
+  reward is one free open, rolled on the server.
+- Skins a pass gives should carry `pass = true` in `Catalog ▸ Skins` (`PASS_SKINS` in
+  `scripts/gen_content.py`), so nothing else sells them.
+- Testing in Studio: `/passxp 5000`.
+
+**Login rewards:** `Catalog ▸ Login`. `days` holds one reward per day, seven in a row. A
+player can claim once per UTC day. A missed day restarts the streak at day 1, and after day 7
+it loops. The pop-up shows itself on the first menu open of the day.
+
 ## 11. Maps, modes, doors
 
 - **Map:** a Model in `ServerStorage ▸ Maps ▸ <Name>` with a `Spawns` folder (parts; attribute

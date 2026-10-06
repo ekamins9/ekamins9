@@ -141,6 +141,12 @@ and a UIScale fits it to any screen.
   Marks. **COLORS** has the premium colours.
 - **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
   tasks), and **mastery** (kill-count skins, earned armor, earned titles) with progress bars.
+- **PASS**: the season pass (`Catalog ▸ Pass`), 30 tiers climbed with every round's XP plus a
+  bonus per finished task. The free track is everyone's; the premium track (Crowns) adds
+  exclusive skins and a title, and covers the tiers already reached. Rewards can be claimed one
+  at a time or with CLAIM ALL. The dock's PASS badge counts what is waiting.
+- **Login rewards**: a pop-up on the first open of each day with a seven-day streak
+  (`Catalog ▸ Login`). Missing a day restarts the streak.
 - **WARDROBE**: faces as a picture grid, hair, hair colour, beard, skin, title.
 - **SERVERS**: the browser with filters and **CREATE CUSTOM**: door, mode, map, player limit,
   round length, who may join, friendly fire, respawns, ground weapons, and cheats. A cheat

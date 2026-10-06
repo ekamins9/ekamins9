@@ -184,6 +184,24 @@ TASK_SKINS = [
  ("Maul",        "Last Bastion",  "Legendary", 80, dict(blade=(225, 228, 236), grip=(36, 50, 120),  trim="crown", glow=(60, 120, 255))),
 ]
 
+# SEASON PASS SKINS (Catalog > Pass names them): pass = true, so nothing else sells them.
+# Season 1, The Iron Crown: dark iron with gold.
+IRON, IRONGRIP, CROWNGOLD = (150, 154, 164), (46, 46, 54), (232, 184, 74)
+PASS_SKINS = [
+ ("ArmingSword", "Ironclad",          "Rare",      dict(blade=IRON, grip=IRONGRIP, trim="rivets", accent=CROWNGOLD)),
+ ("Spear",       "Crownspike",        "Rare",      dict(blade=IRON, grip=(90, 30, 30), trim="spikes", accent=CROWNGOLD)),
+ ("Shortsword",  "Iron Oath",         "Rare",      dict(blade=(176, 180, 188), grip=(60, 40, 30), trim="rings", accent=(110, 112, 120))),
+ ("WarAxe",      "Ironbark",          "Epic",      dict(blade=(120, 124, 132), grip=(70, 50, 34), trim="studs", accent=CROWNGOLD)),
+ ("Longsword",   "Crownguard",        "Epic",      dict(blade=(200, 204, 212), grip=(110, 24, 30), trim="royal", glow=(255, 200, 80))),
+ ("Mace",        "Iron Lion",         "Epic",      dict(blade=(110, 112, 120), grip=IRONGRIP, trim="laurel", accent=CROWNGOLD)),
+ ("Pitchfork",   "Iron Tines",        "Epic",      dict(blade=(96, 100, 108), grip=(80, 56, 36), trim="notch")),
+ ("Halberd",     "Kingsguard",        "Epic",      dict(blade=(196, 200, 210), grip=(120, 20, 30), trim="royal", glow=(220, 40, 60))),
+ ("Greatsword",  "Last Light",        "Legendary", dict(blade=(236, 238, 244), grip=(40, 40, 52), trim="halo", glow=(255, 240, 190))),
+ ("Maul",        "Anvil of Kings",    "Legendary", dict(blade=(70, 72, 80), grip=(40, 30, 24), trim="thunder", glow=(255, 196, 80))),
+ ("Dagger",      "Crown's Fang",      "Epic",      dict(blade=(180, 184, 192), grip=(30, 30, 36), trim="serpent", accent=CROWNGOLD, glow=(255, 60, 60))),
+ ("Zweihander",  "The Iron Crown",    "Legendary", dict(blade=(140, 144, 154), grip=(30, 30, 36), trim="crown", glow=(255, 40, 60))),
+]
+
 def rgb(t): return "Color3.fromRGB(%d, %d, %d)" % tuple(t)
 def looks(d):
     out = 'blade = %s, grip = %s, trim = "%s"' % (rgb(d["blade"]), rgb(d["grip"]), d["trim"])
@@ -201,6 +219,7 @@ SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERAT
        crate    "Bladesmith" / "Hafted" / "Royal": rolled from that crate
        crate = "earned", kills = n        n kills with the weapon unlock it
        unlock = {stat = "contract", n = n}  n daily tasks finished unlock it
+       pass = true                        a season pass reward (Catalog ▸ Pass)
        pack + marks / crowns              sold with the pack, on the days it is in the store
        marks / crowns alone               the store's WEAPONS shelf, on the days it is offered
      LOOKS:
@@ -238,6 +257,9 @@ def gen_catalog_skins():
             d = SHOP_STYLES[style]
             price = ", ".join(x for x in (("marks = %d" % d["marks"]) if d.get("marks") else "", ("crowns = %d" % d["crowns"]) if d.get("crowns") else "") if x)
             lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", %s, %s},' % (wid, style, d["rarity"], price, looks(d)))
+    lines.append('\t-- GENERATED: season pass skins (Catalog > Pass gives them out)')
+    for (wid, sname, rar, d) in PASS_SKINS:
+        lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", pass = true, %s},' % (wid, sname, rar, looks(d)))
     lines.append('\t-- GENERATED: task skins (finish daily tasks to earn them)')
     for (wid, sname, rar, n, d) in TASK_SKINS:
         lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", unlock = {stat = "contract", n = %d}, %s},' % (wid, sname, rar, n, looks(d)))

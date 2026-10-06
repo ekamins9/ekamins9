@@ -922,7 +922,7 @@ end
 local function loadState()
 	local r = call("State")
 	if r.ok then
-		for _, k in ipairs({"studio", "reserved", "access", "name", "custom", "door", "mode", "bracket", "ranked", "isHost", "noRewards", "party", "partyMax", "profile", "contracts", "settings", "store"}) do state[k] = r[k] end
+		for _, k in ipairs({"studio", "reserved", "access", "name", "custom", "door", "mode", "bracket", "ranked", "isHost", "noRewards", "party", "partyMax", "profile", "contracts", "settings", "store", "pass", "login"}) do state[k] = r[k] end
 		if state.store then state.store.at = os.clock() end
 		state.activeClass = r.profile and r.profile.active or state.activeClass
 		if r.party and r.party.queue then state.queue = {bracket = r.party.bracket, ranked = r.party.ranked, waiting = r.party.queue.waiting, window = r.party.queue.window, since = os.clock() - (r.party.queue.waiting or 0)}
@@ -1404,6 +1404,7 @@ local SCREEN_DEF = {
 	APPEARANCE = {title = "WARDROBE", icon = "Wardrobe"},
 	SERVERS    = {title = "SERVERS",  icon = "Tasks"},
 	SETTINGS   = {title = "SETTINGS", icon = "Settings"},
+	PASS       = {title = "SEASON PASS", icon = "Pass"},
 }
 -- old tab names and the names other scripts send over the bus
 local ALIAS = {LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY"}
@@ -1417,6 +1418,7 @@ for name in pairs(SCREEN_DEF) do
 end
 
 local renderSide, selectTab, hide, show   -- forward
+local passClaimable                      -- forward (the PASS screen defines it; the dock badge reads it)
 local function rerender() if render[currentTab] then task.spawn(render[currentTab]) end; renderSide() end
 
 local function doorCounts()
@@ -1590,7 +1592,13 @@ local function skinWhere(s)
 	if not s or s.name == "Default" then return "free", "owned" end
 	if owns("skins", s.id) then return "owned", "owned" end
 	local src = Catalog.skinSource(s)
-	if src == "earned" then
+	if src == "pass" then
+		for i, t in ipairs(Catalog.PASS.tiers or {}) do
+			if (t.free and t.free.skin == s.id) then return "season pass reward  ·  tier " .. i .. " (free)", "pass" end
+			if (t.premium and t.premium.skin == s.id) then return "season pass reward  ·  tier " .. i .. " (premium)", "pass" end
+		end
+		return "a season pass reward", "pass"
+	elseif src == "earned" then
 		return "earn it: " .. Catalog.unlockText(s.unlock) .. "  ·  " .. progressText(s.unlock), "earned"
 	elseif src == "crate" then
 		return "drops from the " .. (Catalog.CRATES[s.crate] and Catalog.CRATES[s.crate].name or s.crate), "crate"
@@ -1871,9 +1879,9 @@ do
 	local dock = clearFrame(lobby)
 	dock.AnchorPoint = Vector2.new(0, 1)
 	dock.Position = UDim2.new(0, 24, 1, -22)
-	dock.Size = UDim2.fromOffset(6 * 112 + 5 * 16, 112)
-	hlist(dock, 16)
-	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"SHOP", "Shop", "SHOP"},
+	dock.Size = UDim2.fromOffset(7 * 112 + 6 * 14, 112)
+	hlist(dock, 14)
+	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
 		{"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
@@ -1973,6 +1981,8 @@ do
 		-- dock badges: NEW on the shop when the day turned since you looked, open tasks
 		local sb = dockBadges.SHOP
 		if sb then sb.Visible = state.store ~= nil and ui.shopSeen ~= state.store.day; sb.Text = "NEW" end
+		local pb = dockBadges.PASS
+		if pb and passClaimable then local n = passClaimable(); pb.Visible = n > 0; pb.Text = tostring(n) end
 		local tb = dockBadges.TASKS
 		if tb then
 			local left = 0
@@ -2654,7 +2664,7 @@ local function skinStrip(parent, pool, selectedId, onPick, height, showWeapon)
 		local th = weaponThumb(c, s.weapon, s.name ~= "Default" and s.id or nil, UDim2.new(1, -12, 0, 76), 1.45); th.Position = UDim2.new(0, 6, 0, 6); th.BackgroundTransparency = 1
 		local t = title(c, s.name, 13); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
 		local text, kind = skinWhere(s)
-		local subText = have and "OWNED" or (kind == "crate" and "CRATE" or (kind == "earned" and "EARN" or (kind == "buy" and "IN SHOP" or (kind == "pack" and "PACK" or "SHOP"))))
+		local subText = have and "OWNED" or (kind == "crate" and "CRATE" or (kind == "earned" and "EARN" or (kind == "buy" and "IN SHOP" or (kind == "pack" and "PACK" or (kind == "pass" and "PASS" or "SHOP")))))
 		if showWeapon then subText = string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. (have and "  ✔" or "") end
 		local sub = title(c, subText, 11, have and COL.GOOD or (kind == "buy" and COL.ACCENT or COL.DIM)); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center
 		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
@@ -2804,6 +2814,8 @@ do
 			for _, b in ipairs(skinBuyButtons(sel, render.ARMORY)) do fat(b[1], b[2], b[3], 240) end
 		elseif kind == "crate" then
 			fat("OPEN THE CRATE", COL.GOLD, function() ui.shopTab = "crates"; ui.crate = sel.crate; ui.crateSkin = sel.id; selectTab("SHOP") end)
+		elseif kind == "pass" then
+			fat("SEE THE PASS", COL.GOLD, function() selectTab("PASS") end)
 		elseif kind == "earned" then
 			local hold = clearFrame(act); hold.Size = UDim2.fromOffset(300, 30); hold.LayoutOrder = nextOrder()
 			progressBar(hold, progressFrac(sel.unlock), COL.PURPLE, progressText(sel.unlock), 24)
@@ -3367,7 +3379,7 @@ do
 			if not ct.weekly then n += 1; if ct.done then done += 1 end; taskCard(p, ct) end
 		end
 		if n == 0 then dim(p, "Tasks load with your profile.") end
-		dim(p, string.format("%d of %d done today. Every finished task pays Marks and moves you along the task-skin track.", done, n), 13)
+		dim(p, string.format("%d of %d done today. Every finished task pays Marks, moves you along the task-skin track and gives %d season pass XP.", done, n, Catalog.PASS and Catalog.PASS.taskXP or 0), 13)
 		local w = panel(leftList, nil)
 		local wt = title(w, "THIS WEEK", 24); wt.Size = UDim2.new(1, 0, 0, 30); wt.LayoutOrder = 0
 		local any = false
@@ -3602,6 +3614,267 @@ do
 			render.APPEARANCE()
 		else toast(r.msg or "save failed", COL.BAD) end
 	end
+end
+
+--------------------------------------------------------------------
+--  REWARDS (shared by the pass and the login gifts)
+--------------------------------------------------------------------
+-- a reward's look inside a card: a skin on its weapon, a currency, a crate, a title
+local function rewardVisual(parent, r, h)
+	h = h or 110
+	if r.skin and Catalog.SKIN[r.skin] then
+		local s = Catalog.SKIN[r.skin]
+		local th = weaponThumb(parent, s.weapon, s.id, UDim2.new(1, -8, 0, h), 1.5)
+		th.Position = UDim2.fromOffset(4, 4); th.BackgroundTransparency = 1
+		return s.name, RARITY_COL[s.rarity], (Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon)
+	end
+	local icon, text, col, sub
+	if r.marks then icon, text, col, sub = "Marks", fmt(r.marks), COL.MARKS, "MARKS"
+	elseif r.crowns then icon, text, col, sub = "Crowns", fmt(r.crowns), COL.CROWNS, "CROWNS"
+	elseif r.crate then icon, text, col, sub = "Shop", "FREE OPEN", COL.PURPLE, string.upper(Catalog.CRATES[r.crate] and Catalog.CRATES[r.crate].name or r.crate)
+	elseif r.title then icon, text, col, sub = "Wardrobe", r.title, COL.ACCENT, "TITLE"
+	else icon, text, col, sub = "Shop", "?", COL.DIM, "" end
+	local img = iconImage(parent, icon, math.floor(h * 0.72))
+	img.AnchorPoint = Vector2.new(0.5, 0); img.Position = UDim2.new(0.5, 0, 0, 2)
+	return text, col, sub
+end
+
+-- one reward card. state: "claimed" | "claim" | "locked" | "premium-locked"
+local function rewardCard(parent, r, state, onClaim, premium)
+	local card = frame(parent, premium and Color3.fromRGB(58, 42, 14) or COL.GLASS2, 14)
+	card.BackgroundTransparency = state == "claimed" and 0.45 or 0.05
+	border(card, state == "claim" and COL.GREEN or (premium and COL.GOLD or WHITE), state == "claim" and 3 or 2, state == "claim" and 0 or (premium and 0.3 or 0.8))
+	local text, col, sub = rewardVisual(card, r, 96)
+	local t = title(card, text or "", 15, col or COL.TEXT)
+	t.Position = UDim2.new(0, 6, 0, 104); t.Size = UDim2.new(1, -12, 0, 18); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
+	local s2 = title(card, sub or "", 11, COL.DIM)
+	s2.Position = UDim2.new(0, 6, 0, 122); s2.Size = UDim2.new(1, -12, 0, 14); s2.TextXAlignment = Enum.TextXAlignment.Center; s2.TextTruncate = Enum.TextTruncate.AtEnd
+	if state == "claim" then
+		local b = button(card, "CLAIM", 15, COL.GREEN)
+		b.AnchorPoint = Vector2.new(0.5, 1); b.Position = UDim2.new(0.5, 0, 1, -6); b.Size = UDim2.new(1, -12, 0, 30)
+		b.Activated:Connect(onClaim)
+	elseif state == "claimed" then
+		local c = title(card, "✔", 26, COL.GOOD); c.AnchorPoint = Vector2.new(0.5, 1); c.Position = UDim2.new(0.5, 0, 1, -4); c.Size = UDim2.new(1, 0, 0, 30); c.TextXAlignment = Enum.TextXAlignment.Center
+	else
+		local lock = frame(card, Color3.new(0, 0, 0), 14); lock.Size = UDim2.fromScale(1, 1); lock.BackgroundTransparency = 0.55
+		local l = title(lock, "🔒", 26); l.AnchorPoint = Vector2.new(0.5, 1); l.Position = UDim2.new(0.5, 0, 1, -6); l.Size = UDim2.new(1, 0, 0, 30); l.TextXAlignment = Enum.TextXAlignment.Center
+	end
+	return card
+end
+
+-- days and hours until a UTC date ("2026-11-17"), by the server's clock
+local function untilDate(dateKey)
+	local y, mo, d = (dateKey or ""):match("^(%d+)%-(%d+)%-(%d+)$")
+	if not y then return "" end
+	local st = state.store
+	local now = st and st.serverTime and (st.serverTime + (os.clock() - (st.at or 0))) or os.time()
+	local ends = os.time({year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = 0}) - (os.time() - os.time(os.date("!*t", os.time())))
+	local left = math.max(0, ends - now)
+	local days, hours = math.floor(left / 86400), math.floor(left % 86400 / 3600)
+	return days > 0 and string.format("%dd %dh", days, hours) or string.format("%dh", hours)
+end
+
+passClaimable = function()
+	local P, ps = Catalog.PASS, state.pass
+	if not (P and ps) then return 0 end
+	local n = 0
+	for i = 1, math.min(ps.tier or 0, #P.tiers) do
+		if P.tiers[i].free and not (ps.claimedFree or {})[tostring(i)] then n += 1 end
+		if ps.premium and P.tiers[i].premium and not (ps.claimedPremium or {})[tostring(i)] then n += 1 end
+	end
+	return n
+end
+
+--------------------------------------------------------------------
+--  SEASON PASS — tiers climbed by playing and finishing tasks; a free
+--  track and a premium one (Catalog ▸ Pass)
+--------------------------------------------------------------------
+do
+	local f = tabFrame.PASS
+	local head = clearFrame(f); head.Size = UDim2.new(1, 0, 0, 132)
+	local track = clearFrame(f); track.Position = UDim2.new(0, 0, 0, 144); track.Size = UDim2.new(1, 0, 1, -144)
+	local claiming = false
+
+	local function claim(tier, kind)
+		if claiming then return end
+		claiming = true
+		local r = call("PassClaim", tier, kind)
+		claiming = false
+		toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+		if r.pass then state.pass = r.pass end
+		if r.profile then state.profile = r.profile; refreshWallet() end
+		if r.crate and r.crate.skinId then
+			local won = Catalog.SKIN[r.crate.skinId]
+			modal(string.upper(r.crate.rarity) .. "!  " .. r.crate.name, r.crate.dup and string.format("Duplicate — %s Marks back.", fmt(r.crate.refund)) or "A free crate open from the pass.", nil, function(box)
+				local th = weaponStage(box, won and won.weapon or r.crate.weapon, r.crate.skinId, UDim2.new(1, 0, 0, 220)); th.LayoutOrder = 5
+				border(th, RARITY_COL[r.crate.rarity] or COL.DIM, 3, 0)
+			end, 520)
+		end
+		render.PASS(true)
+	end
+
+	render.PASS = function(fresh)
+		if not fresh then loadState() end
+		local P = Catalog.PASS
+		local ps = state.pass or {xp = 0, tier = 0, premium = false, claimedFree = {}, claimedPremium = {}}
+		clear(head); clear(track)
+		-- the header: your tier, the bar to the next, the season clock, premium
+		local box = frame(head, COL.GLASS, 16); box.BackgroundTransparency = 0.1; box.Size = UDim2.new(1, 0, 1, 0)
+		border(box, WHITE, 1.5, 0.85)
+		padding(box, 22, 22, 14, 14)
+		local tierT = title(box, "TIER " .. tostring(ps.tier or 0), 46, COL.ACCENT); tierT.Size = UDim2.fromOffset(260, 52)
+		local nm = title(box, string.upper(P.name or ""), 18); nm.Position = UDim2.fromOffset(270, 4); nm.Size = UDim2.new(0.5, 0, 0, 24); nm.TextTruncate = Enum.TextTruncate.AtEnd
+		local endsT = title(box, "ENDS IN " .. untilDate(P.ends), 14, COL.DIM); endsT.Position = UDim2.fromOffset(270, 30); endsT.Size = UDim2.new(0.5, 0, 0, 18)
+		local maxTier = #P.tiers
+		local into = (ps.tier or 0) >= maxTier and P.tierXP or ((ps.xp or 0) - (ps.tier or 0) * P.tierXP)
+		local barH = clearFrame(box); barH.Position = UDim2.fromOffset(0, 66); barH.Size = UDim2.new(0.6, 0, 0, 24)
+		progressBar(barH, into / P.tierXP, COL.GOLD, (ps.tier or 0) >= maxTier and "MAX TIER" or string.format("%s / %s XP TO TIER %d", fmt(into), fmt(P.tierXP), (ps.tier or 0) + 1), 24)
+		local how = title(box, string.format("EVERY ROUND'S XP COUNTS  ·  +%d PER DAILY TASK, x3 FOR THE WEEKLY", P.taskXP or 0), 12, COL.DIM)
+		how.Position = UDim2.fromOffset(0, 94); how.Size = UDim2.new(0.6, 0, 0, 16)
+		if ps.premium then
+			local pb = title(box, "★ PREMIUM", 28, COL.GOLD); pb.AnchorPoint = Vector2.new(1, 0); pb.Position = UDim2.new(1, 0, 0, 10); pb.Size = UDim2.fromOffset(320, 34); pb.TextXAlignment = Enum.TextXAlignment.Right
+			local pbs = title(box, "EVERY PREMIUM REWARD IS YOURS AS YOU CLIMB", 12, COL.DIM); pbs.AnchorPoint = Vector2.new(1, 0); pbs.Position = UDim2.new(1, 0, 0, 46); pbs.Size = UDim2.fromOffset(380, 16); pbs.TextXAlignment = Enum.TextXAlignment.Right
+		else
+			local bh, bb = fatButton(box, "UNLOCK PREMIUM  ·  " .. tostring(P.price) .. " CROWNS", COL.GOLD, 20)
+			bh.AnchorPoint = Vector2.new(1, 0); bh.Position = UDim2.new(1, 0, 0, 0); bh.Size = UDim2.fromOffset(400, 62)
+			local skins = 0
+			for _, t in ipairs(P.tiers) do if t.premium and t.premium.skin then skins += 1 end end
+			local bs = title(box, string.format("%d PREMIUM REWARDS  ·  %d EXCLUSIVE SKINS  ·  TIERS YOU REACHED COUNT", maxTier, skins), 12, COL.DIM)
+			bs.AnchorPoint = Vector2.new(1, 0); bs.Position = UDim2.new(1, 0, 0, 70); bs.Size = UDim2.fromOffset(420, 16); bs.TextXAlignment = Enum.TextXAlignment.Right
+			bb.Activated:Connect(function()
+				modal("UNLOCK THE PREMIUM PASS?", string.format("%s for %d Crowns: the premium track's %d rewards, including %d exclusive skins. Tiers you already reached unlock right away.", P.name, P.price, maxTier, skins),
+					{{"UNLOCK  ·  " .. tostring(P.price) .. " CROWNS", COL.GOLD, function()
+						local r = call("PassBuy")
+						toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+						if r.pass then state.pass = r.pass end
+						if r.profile then state.profile = r.profile; refreshWallet() end
+						closeModal()
+						if not r.ok and r.msg == "not enough Crowns" then openCrowns() else render.PASS(true) end
+					end}})
+			end)
+		end
+		local claimAll = passClaimable()
+		if claimAll > 0 then
+			local ch, cb = fatButton(box, "CLAIM ALL  ·  " .. claimAll, COL.GREEN, 18)
+			if ps.premium then ch.AnchorPoint = Vector2.new(1, 1); ch.Position = UDim2.new(1, 0, 1, 4)
+			else ch.AnchorPoint = Vector2.new(1, 0); ch.Position = UDim2.new(1, -414, 0, 0) end
+			ch.Size = UDim2.fromOffset(220, ps.premium and 44 or 62)
+			cb.Activated:Connect(function()
+				if claiming then return end
+				claiming = true
+				local r = call("PassClaimAll")
+				claiming = false
+				if r.pass then state.pass = r.pass end
+				if r.profile then state.profile = r.profile; refreshWallet() end
+				if not r.ok then toast(r.msg or "", COL.BAD); return end
+				toast(r.msg or "", COL.GOOD)
+				render.PASS(true)
+				-- what came out: every line, and the skins the free crate opens rolled
+				modal("REWARDS CLAIMED", table.concat(r.lines or {}, "\n"), nil, function(box2)
+					local crates = r.crates or {}
+					if #crates > 0 then
+						local strip = clearFrame(box2); strip.Size = UDim2.new(1, 0, 0, 130); strip.LayoutOrder = 5
+						hlist(strip, 8)
+						for i, c in ipairs(crates) do
+							if i > 4 then break end
+							local s = Catalog.SKIN[c.skinId]
+							local th = weaponThumb(strip, s and s.weapon or c.weapon, c.skinId, UDim2.fromOffset(120, 120), 1.4)
+							th.LayoutOrder = i
+							border(th, RARITY_COL[c.rarity] or COL.DIM, 2, 0.1)
+						end
+					end
+				end, 560)
+			end)
+		end
+		-- the track: one column per tier, free on top, premium below
+		local labels = clearFrame(track); labels.Size = UDim2.new(0, 96, 1, 0)
+		local fl = title(labels, "FREE", 18); fl.Position = UDim2.fromOffset(0, 66); fl.Size = UDim2.new(1, -8, 0, 24)
+		local pl = title(labels, "PREMIUM", 18, COL.GOLD); pl.Position = UDim2.fromOffset(0, 66 + 214); pl.Size = UDim2.new(1, -8, 0, 24)
+		local sf = Instance.new("ScrollingFrame")
+		sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0
+		sf.Position = UDim2.new(0, 100, 0, 0); sf.Size = UDim2.new(1, -100, 1, 0)
+		sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.X; sf.ScrollingDirection = Enum.ScrollingDirection.X
+		sf.ScrollBarThickness = 8; sf.ScrollBarImageColor3 = COL.DIM
+		sf.Parent = track
+		hlist(sf, 12)
+		padding(sf, 4, 4, 4, 12)
+		for i, t in ipairs(P.tiers) do
+			local col = clearFrame(sf); col.Size = UDim2.fromOffset(158, 444); col.LayoutOrder = i
+			local reached = (ps.tier or 0) >= i
+			local num = title(col, tostring(i), 22, reached and COL.ACCENT or COL.DIM)
+			num.BackgroundTransparency = 0; num.BackgroundColor3 = reached and Color3.fromRGB(70, 56, 14) or COL.GLASS
+			num.AnchorPoint = Vector2.new(0.5, 0); num.Position = UDim2.new(0.5, 0, 0, 0); num.Size = UDim2.fromOffset(46, 34); num.TextXAlignment = Enum.TextXAlignment.Center
+			Instance.new("UICorner", num).CornerRadius = UDim.new(0, 10)
+			local line = frame(col, reached and COL.GOLD or COL.GLASS2); line.Position = UDim2.new(0, -6, 0, 40); line.Size = UDim2.new(1, 12, 0, 6)
+			if t.free then
+				local done = (ps.claimedFree or {})[tostring(i)]
+				local st = done and "claimed" or (reached and "claim" or "locked")
+				local c = rewardCard(col, t.free, st, function() claim(i, "free") end, false)
+				c.Position = UDim2.fromOffset(0, 54); c.Size = UDim2.new(1, 0, 0, 180)
+			end
+			if t.premium then
+				local done = (ps.claimedPremium or {})[tostring(i)]
+				local st = done and "claimed" or ((reached and ps.premium) and "claim" or "locked")
+				local c = rewardCard(col, t.premium, st, function() claim(i, "premium") end, true)
+				c.Position = UDim2.fromOffset(0, 54 + 194); c.Size = UDim2.new(1, 0, 0, 180)
+			end
+		end
+		-- open on your tier
+		task.defer(function()
+			-- the first unclaimed reward, or a little before your tier
+			local first = nil
+			for i = 1, math.min(ps.tier or 0, maxTier) do
+				if (P.tiers[i].free and not (ps.claimedFree or {})[tostring(i)]) or (ps.premium and P.tiers[i].premium and not (ps.claimedPremium or {})[tostring(i)]) then first = i; break end
+			end
+			local x = math.max(0, ((first or (ps.tier or 0)) - 2) * 170)
+			sf.CanvasPosition = Vector2.new(x, 0)
+		end)
+		renderSide()
+	end
+end
+
+--------------------------------------------------------------------
+--  LOGIN REWARDS — the pop-up on the first open of the day
+--------------------------------------------------------------------
+local loginShownDay = nil
+local function loginPopup()
+	local L = state.login
+	local days = Catalog.LOGIN and Catalog.LOGIN.days or {}
+	if not L or #days == 0 then return end
+	modal("DAILY LOGIN REWARDS", L.claimed and "Today's gift is yours. Come back tomorrow: the streak goes on." or "A gift for every day you come back. Miss a day and the streak starts again at day 1.",
+		(not L.claimed) and {{"CLAIM DAY " .. tostring(L.day), COL.GREEN, function()
+			local r = call("LoginClaim")
+			toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+			if r.login then state.login = r.login end
+			if r.profile then state.profile = r.profile; refreshWallet() end
+			closeModal()
+			if r.crate and r.crate.skinId then
+				local won = Catalog.SKIN[r.crate.skinId]
+				modal(string.upper(r.crate.rarity) .. "!  " .. r.crate.name, r.crate.dup and string.format("Duplicate — %s Marks back.", fmt(r.crate.refund)) or "Your free crate open.", nil, function(box)
+					local th = weaponStage(box, won and won.weapon or r.crate.weapon, r.crate.skinId, UDim2.new(1, 0, 0, 220)); th.LayoutOrder = 5
+				end, 520)
+			end
+			renderSide()
+		end}} or nil, function(box)
+			local row7 = clearFrame(box); row7.Size = UDim2.new(1, 0, 0, 178); row7.LayoutOrder = 5
+			local l = hlist(row7, 8); l.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			for i, r in ipairs(days) do
+				local past = i < L.day or (i == L.day and L.claimed)
+				local today = i == L.day and not L.claimed
+				local c = frame(row7, today and Color3.fromRGB(28, 70, 40) or COL.GLASS2, 12)
+				c.Size = UDim2.fromOffset(98, 172); c.LayoutOrder = i
+				c.BackgroundTransparency = past and 0.45 or 0.05
+				border(c, today and COL.GREEN or (i == #days and COL.GOLD or WHITE), today and 3 or 2, today and 0 or (i == #days and 0.2 or 0.8))
+				local d = title(c, "DAY " .. i, 15, today and COL.GOOD or COL.TEXT); d.Position = UDim2.fromOffset(0, 6); d.Size = UDim2.new(1, 0, 0, 18); d.TextXAlignment = Enum.TextXAlignment.Center
+				local holder = clearFrame(c); holder.Position = UDim2.fromOffset(4, 26); holder.Size = UDim2.new(1, -8, 0, 92)
+				local text, col, sub = rewardVisual(holder, r, 84)
+				local t = title(c, text or "", 14, col or COL.TEXT); t.Position = UDim2.fromOffset(4, 120); t.Size = UDim2.new(1, -8, 0, 18); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
+				local s2 = title(c, sub or "", 10, COL.DIM); s2.Position = UDim2.fromOffset(4, 138); s2.Size = UDim2.new(1, -8, 0, 14); s2.TextXAlignment = Enum.TextXAlignment.Center; s2.TextTruncate = Enum.TextTruncate.AtEnd
+				if past then local ck = title(c, "✔", 30, COL.GOOD); ck.Position = UDim2.fromOffset(0, 40); ck.Size = UDim2.new(1, 0, 0, 40); ck.TextXAlignment = Enum.TextXAlignment.Center end
+			end
+			local streak = title(box, string.format("STREAK: %d DAY%s", L.streak or 1, (L.streak or 1) == 1 and "" or "S"), 14, COL.ACCENT)
+			streak.Size = UDim2.new(1, 0, 0, 18); streak.LayoutOrder = 6; streak.TextXAlignment = Enum.TextXAlignment.Center
+		end, 780)
 end
 
 --------------------------------------------------------------------
@@ -3953,6 +4226,7 @@ local function refreshHeader()
 			APPEARANCE = ui.appDirty and "UNSAVED CHANGES" or "YOUR FACE, HAIR AND TITLE",
 			SERVERS = "PICK A SERVER, OR MAKE YOUR OWN",
 			SETTINGS = "CAMERA FEEL · KEYBINDS · ATTACK SIDE  ·  M IS THE MENU KEY",
+			PASS = state.pass and string.format("TIER %d / %d  ·  PLAY AND FINISH TASKS TO CLIMB", state.pass.tier or 0, #(Catalog.PASS.tiers or {})) or "PLAY AND FINISH TASKS TO CLIMB",
 		}
 		sTitle.Text = def.title
 		sIcon.Image = iconTexture(def.icon)
@@ -4096,6 +4370,11 @@ show = function(tab)
 		loadCatalog()
 	end
 	selectTab(tab or "PLAY")
+	local day = storeDay()
+	if state.login and not state.login.claimed and day and loginShownDay ~= day then
+		loginShownDay = day
+		task.delay(0.4, loginPopup)
+	end
 end
 
 hide = function()

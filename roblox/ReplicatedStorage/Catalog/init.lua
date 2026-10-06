@@ -43,6 +43,8 @@ Catalog.CRATES    = child("Crates")
 Catalog.ECONOMY   = child("Economy")
 Catalog.CONTRACTS = child("Contracts")
 Catalog.STORE     = child("Store")
+Catalog.PASS      = child("Pass")
+Catalog.LOGIN     = child("Login")
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears
@@ -300,6 +302,7 @@ end
 --------------------------------------------------------------------
 function Catalog.skinSource(s)
 	if not s then return "free" end
+	if s.pass then return "pass" end
 	if s.unlock then return "earned" end
 	if s.crate then return "crate" end
 	if s.pack then return "pack" end
@@ -392,6 +395,12 @@ if RunService:IsServer() then
 		for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do
 			if not t.title or not t.unlock then warn("[Catalog] earned title needs title + unlock") end
 		end
+		local function checkReward(where, r)
+			if r and r.skin and not Catalog.SKIN[r.skin] then warn("[Catalog]", where, "names unknown skin", r.skin) end
+			if r and r.crate and not Catalog.CRATES[r.crate] then warn("[Catalog]", where, "names unknown crate", r.crate) end
+		end
+		for i, t in ipairs(Catalog.PASS.tiers or {}) do checkReward("pass tier " .. i .. " free", t.free); checkReward("pass tier " .. i .. " premium", t.premium) end
+		for i, d in ipairs(Catalog.LOGIN.days or {}) do checkReward("login day " .. i, d) end
 	end)
 end
 

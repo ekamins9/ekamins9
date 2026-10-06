@@ -10,6 +10,8 @@
        crates      {[crateId] = {opens, sinceLegendary}}
        contracts   {day = "2026-10-02", items = {{id, n, done}}, week = "2026-W40", weekly = {id, n, done}}
        receipts    {[receiptId] = true}       lastWinDay
+       pass        {season, xp, premium, claimed = {free = {["3"] = true}, premium = {}}}
+       login       {streak, claimed = "YYYY-MM-DD"}
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -50,7 +52,8 @@ local function default()
 	local p = {version = 2, wallet = {marks = 500, crowns = 0}, level = 1, xp = 0,
 		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}},
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
-		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {}}
+		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
+		pass = {}, login = {}}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -211,7 +214,8 @@ function Profile.setRating(plr, bracket, r) Profile.get(plr).rating[bracket] = r
 function Profile.summary(plr)
 	local p = Profile.get(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
-		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts}
+		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
+		login = p.login}
 end
 
 Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)

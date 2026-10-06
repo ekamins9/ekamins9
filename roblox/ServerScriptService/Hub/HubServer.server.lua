@@ -724,7 +724,7 @@ local function state(plr)
 		settings = sv.settings, noRewards = sv.noRewards,
 		party = partyInfo(party), partyMax = PARTY_MAX,
 		profile = Profile.summary(plr), contracts = Stats.contracts(plr),
-		store = storeInfo(),
+		store = storeInfo(), pass = Economy.passState(plr), login = Economy.loginStatus(plr),
 		players = #Players:GetPlayers()}
 end
 
@@ -785,6 +785,18 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		if not res then return {ok = false, msg = msg} end
 		return {ok = true, result = res, profile = Profile.summary(plr)}
 	elseif op == "Exchange" then local ok, msg = Economy.exchange(plr, tonumber(a) or 0); return {ok = ok, msg = msg, profile = Profile.summary(plr)}
+	elseif op == "PassClaim" then
+		local ok, msg, crate = Economy.passClaim(plr, a, b)
+		return {ok = ok, msg = msg, crate = crate, pass = Economy.passState(plr), profile = Profile.summary(plr)}
+	elseif op == "PassClaimAll" then
+		local ok, msg, lines, crates = Economy.passClaimAll(plr)
+		return {ok = ok, msg = msg, lines = lines, crates = crates, pass = Economy.passState(plr), profile = Profile.summary(plr)}
+	elseif op == "PassBuy" then
+		local ok, msg = Economy.passBuy(plr)
+		return {ok = ok, msg = msg, pass = Economy.passState(plr), profile = Profile.summary(plr)}
+	elseif op == "LoginClaim" then
+		local ok, msg, crate = Economy.loginClaim(plr)
+		return {ok = ok, msg = msg, crate = crate, login = Economy.loginStatus(plr), profile = Profile.summary(plr)}
 	elseif op == "BuyCrowns" then local ok, msg = buyCrowns(plr, a); return {ok = ok, msg = msg}
 	end
 	return {ok = false, msg = "unknown op"}
