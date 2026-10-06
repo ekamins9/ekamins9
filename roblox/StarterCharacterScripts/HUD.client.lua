@@ -30,7 +30,7 @@ gui.DisplayOrder = 10
 local root = Instance.new("Frame")
 root.Name = "Bars"
 root.AnchorPoint = Vector2.new(0.5, 1)
-root.Position = UDim2.new(0.5, 0, 1, -26)
+root.Position = UDim2.new(0.5, 0, 1, -84)   -- above the Roblox hotbar
 root.Size = UDim2.fromOffset(BAR_W * 2 + 16, BAR_H)
 root.BackgroundTransparency = 1
 root.Parent = gui
@@ -92,7 +92,7 @@ local staFill, staText, staLabel = makeBar(BAR_W + 16, STA_COL, "Energy")
 -- weapon chip, bottom right: what is in your hands
 local chip = Instance.new("Frame")
 chip.AnchorPoint = Vector2.new(1, 1)
-chip.Position = UDim2.new(1, -24, 1, -26)
+chip.Position = UDim2.new(1, -24, 1, -84)
 chip.Size = UDim2.fromOffset(220, 46)
 chip.BackgroundColor3 = BG_COL
 chip.BackgroundTransparency = 0.25
@@ -202,7 +202,7 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 		col = col:Lerp(Color3.new(1, 1, 1), 0.25 + 0.25 * math.sin(t * 9))
 	end
 	hpFill.BackgroundColor3 = col
-	hpText.Text = string.format("HP  %d", math.ceil(Humanoid.Health))
+	hpText.Text = string.format("+ %d", math.ceil(Humanoid.Health))
 
 	local staMax = character:GetAttribute("BlockMax") or 100
 	local sta = math.clamp((character:GetAttribute("BlockMeter") or staMax) / staMax, 0, 1)
@@ -213,7 +213,8 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 	else
 		staFill.BackgroundTransparency = 0
 	end
-	staText.Text = string.format("STAMINA  %d", math.floor(sta * staMax + 0.5))
+	staText.Text = string.format("%d +", math.floor(sta * staMax + 0.5))
+		staLabel.Text = (character:GetAttribute("BlockMeter") ~= nil and sta <= 0) and "EXHAUSTED" or "Energy"
 end)
 
 script.Destroying:Connect(function() conn:Disconnect() end)

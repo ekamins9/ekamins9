@@ -324,6 +324,11 @@ local function applyVisibility(d, inFP)
 			d.LocalTransparencyModifier = (inFP and not isLeg) and 1 or 0
 			if isTorso then torsoPieces[d] = inFP or nil end
 			d.CastShadow = true
+		elseif d:FindFirstAncestor("Body") and d:FindFirstAncestor("Body").Parent == character then
+			-- hair, beard and the face overlay sit on the head: they would fill
+			-- the camera in first person
+			d.LocalTransparencyModifier = inFP and 1 or 0
+			d.CastShadow = true
 		else
 			d.LocalTransparencyModifier = 0
 		end
