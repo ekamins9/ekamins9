@@ -113,6 +113,8 @@ function B.build(name, specs, opts)
 		if opts.primary and p.Name == opts.primary then m.PrimaryPart = p end
 	end
 	if not m.PrimaryPart then m.PrimaryPart = m:FindFirstChildWhichIsA("BasePart") end
+	-- faces laid flush on faces flicker (z-fighting): nudge them apart
+	require(script.Parent:FindFirstChild("Defight") or game:GetService("ReplicatedStorage"):WaitForChild("Defight")).run(m)
 	return m
 end
 

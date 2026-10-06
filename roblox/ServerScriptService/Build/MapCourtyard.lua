@@ -285,20 +285,24 @@ return function(K)
 	-- paved walks of pale flagstones: a ring round the fountain and roads to
 	-- the Hall, the Gates, the Hatchery and the stone circle
 	local FLAG = Color3.fromRGB(196, 188, 172)
-	local function walk(a, b, w)
+	-- (overlapping slabs never share a top: they'd flicker. Alternate ring
+	-- stones sit 0.05 apart, the edging well below, the roads above the ring)
+	local function walk(a, b, w, lift)
 		local len = (b - a).Magnitude
-		local slab = K.box(ctx, "Path", V3(w, 0.16, len), CFrame.lookAt((a + b) / 2, b) + V3(0, 0.08, 0), FLAG, M.Pavement)
-		K.box(ctx, "PathEdge", V3(w + 1, 0.12, len), slab.CFrame - V3(0, 0.02, 0), C.STONEDARK, M.Slate)
+		local h = 0.16 + (lift or 0)
+		local slab = K.box(ctx, "Path", V3(w, h, len), CFrame.lookAt((a + b) / 2, b) + V3(0, h / 2, 0), FLAG, M.Pavement)
+		K.box(ctx, "PathEdge", V3(w + 1, 0.07, len), CFrame.lookAt((a + b) / 2, b) + V3(0, 0.035, 0), C.STONEDARK, M.Slate)
+		return slab
 	end
 	for i = 0, 23 do   -- the ring: 24 segments
 		local a0, a1 = i / 24 * math.pi * 2, (i + 1) / 24 * math.pi * 2
-		walk(V3(math.cos(a0) * 25.5, 0, math.sin(a0) * 25.5), V3(math.cos(a1) * 25.5, 0, math.sin(a1) * 25.5), 6)
+		walk(V3(math.cos(a0) * 25.5, 0, math.sin(a0) * 25.5), V3(math.cos(a1) * 25.5, 0, math.sin(a1) * 25.5), 6, (i % 2) * 0.05)
 	end
-	walk(V3(0, 0, -27), V3(0, 0, -47), 10)    -- to the Hall's stairs
-	walk(V3(0, 0, 27), V3(0, 0, 33), 10)      -- to the Notice Board
-	walk(V3(0, 0, 42), V3(0, 0, 68), 10)      -- and on to the Warfront gate
-	walk(V3(-27, 0, 0), V3(-56, 0, -8), 8)    -- to the Hatchery
-	walk(V3(27, 0, 0), V3(55, 0, -8), 8)      -- to the stone circle
+	walk(V3(0, 0, -27), V3(0, 0, -47), 10, 0.12)    -- to the Hall's stairs
+	walk(V3(0, 0, 27), V3(0, 0, 33), 10, 0.12)      -- to the Notice Board
+	walk(V3(0, 0, 42), V3(0, 0, 68), 10, 0.12)      -- and on to the Warfront gate
+	walk(V3(-27, 0, 0), V3(-56, 0, -8), 8, 0.12)    -- to the Hatchery
+	walk(V3(27, 0, 0), V3(55, 0, -8), 8, 0.12)      -- to the stone circle
 	for _, x in ipairs({-80, -60, 60, 80}) do K.banner(ctx, V3(x, 0, 84), 11, C.BLUE) end
 
 	-- arrive round the south side of the fountain, facing the Hall

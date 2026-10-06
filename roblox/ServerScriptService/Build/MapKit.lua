@@ -112,7 +112,7 @@ function K.wall(ctx, a, b, h, t, opts)
 	if opts.base then
 		local bh, bw = opts.baseH or 1.2, opts.baseW or 1.2
 		K.box(ctx, "Footing", Vector3.new(t + bw, bh, len), look * CFrame.new(0, bh / 2, 0), opts.baseColor or K.C.STONEDARK, mat)
-		if bh >= 2 then K.box(ctx, "FootingCap", Vector3.new(t + bw * 0.6, 0.4, len), look * CFrame.new(0, bh + 0.2, 0), opts.baseColor or K.C.STONEDARK, mat) end
+		if bh >= 2 then K.box(ctx, "FootingCap", Vector3.new(t + bw * 0.6, 0.4, len - 0.3), look * CFrame.new(0, bh + 0.2, 0), opts.baseColor or K.C.STONEDARK, mat) end
 	end
 	if opts.crenels then
 		local n = math.max(1, math.floor(len / 3.2))
@@ -621,9 +621,12 @@ function K.finish(ctx)
 	maps.Name = "Maps"; maps.Parent = ServerStorage
 	local old = maps:FindFirstChild(ctx.name)
 	if old then old:Destroy() end
+	-- faces laid flush on faces (a path over a path, a trim on a wall) flicker: nudge them apart
+	-- (a Defight beside this module wins: a fresh copy for a build run from the command bar)
+	local fixed = require(script.Parent:FindFirstChild("Defight") or game:GetService("ReplicatedStorage"):WaitForChild("Defight")).run(ctx.model)
 	ctx.model:SetAttribute("Built", true)
 	ctx.model.Parent = maps
-	print(string.format("[MapKit] %s: %d parts", ctx.name, ctx.n))
+	print(string.format("[MapKit] %s: %d parts, %d flush faces nudged apart", ctx.name, ctx.n, fixed))
 	return ctx.model
 end
 

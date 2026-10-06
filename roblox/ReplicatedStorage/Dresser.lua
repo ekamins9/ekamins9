@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local SkinTrims = require(ReplicatedStorage:WaitForChild("SkinTrims"))
 local SkinFX = require(ReplicatedStorage:WaitForChild("SkinFX"))
+local Defight = require(ReplicatedStorage:WaitForChild("Defight"))
 
 local Dresser = {}
 
@@ -195,6 +196,8 @@ function Dresser.dress(char, opts)
 		end
 	end
 	container.Parent = char
+	-- layers that sit flush (a glove as wide as its sleeve) would flicker: nudge them apart
+	Defight.run(container)
 	local painted = Dresser.paint(container, lo.colors, opts.team)
 	applyBody(char, opts.appearance, coversHair, coversFace)
 
