@@ -18,15 +18,10 @@ local V3, cf = Vector3.new, K.cf
 local Maps = {}
 
 -- a terrain mound: a flat top `top` studs high and `plateau` wide, sloping to
--- the ground at `foot` (stacked one-stud discs; the voxels smooth the steps).
--- Built up from y = 0, so whatever stands on the plateau sits at y = top.
+-- the ground at `foot`. Whatever stands on the plateau sits at y = top.
+-- (MapKit's brush writes it voxel by voxel: see K.terrain.)
 local function mound(T, at, top, plateau, foot, mat)
-	local steps = math.max(1, math.ceil(top))
-	for i = 0, steps - 1 do
-		local y0, y1 = i * top / steps, (i + 1) * top / steps
-		local r = foot - (foot - plateau) * ((i + 1) / steps)
-		T:FillCylinder(CFrame.new(at.X, (y0 + y1) / 2, at.Z), y1 - y0, r, mat)
-	end
+	T:Mound(at, top, plateau, foot, mat)
 end
 -- props kept off a mound: pushed out to `r` from its middle
 local function offMound(p, r)
@@ -216,12 +211,12 @@ function Maps.Millfield()
 		T:FillBlock(CFrame.new(0, -4, 70) * CFrame.Angles(0, math.rad(8), 0), V3(300, 2, 12), Enum.Material.Water)
 		T:FillBlock(CFrame.new(0, -5, 70) * CFrame.Angles(0, math.rad(8), 0), V3(300, 1, 14), Enum.Material.Mud)
 		-- dirt paths
-		T:FillBlock(CFrame.new(0, 0.2, 62), V3(6, 0.6, 46), Enum.Material.Ground)
-		T:FillBlock(CFrame.new(0, 0.2, -62), V3(6, 0.6, 46), Enum.Material.Ground)
-		T:FillBlock(CFrame.new(80, 0.2, 0) * CFrame.Angles(0, math.rad(90), 0), V3(6, 0.6, 80), Enum.Material.Ground)
-		-- wheat fields: slightly raised sand-coloured patches
-		T:FillBlock(CFrame.new(-70, 0.3, -30), V3(50, 0.8, 40), Enum.Material.Sand)
-		T:FillBlock(CFrame.new(70, 0.3, -50), V3(40, 0.8, 40), Enum.Material.Sand)
+		T:FillBlock(CFrame.new(0, -2, 62), V3(6, 4, 46), Enum.Material.Ground)
+		T:FillBlock(CFrame.new(0, -2, -62), V3(6, 4, 46), Enum.Material.Ground)
+		T:FillBlock(CFrame.new(80, -2, 0) * CFrame.Angles(0, math.rad(90), 0), V3(6, 4, 80), Enum.Material.Ground)
+		-- wheat fields: sand-coloured patches (flush with the ground: every fill ends at y = 0)
+		T:FillBlock(CFrame.new(-70, -2, -30), V3(50, 4, 40), Enum.Material.Sand)
+		T:FillBlock(CFrame.new(70, -2, -50), V3(40, 4, 40), Enum.Material.Sand)
 	end)
 	K.terrainColors(ctx, {Sand = Color3.fromRGB(214, 186, 112), Grass = Color3.fromRGB(104, 146, 72), Ground = Color3.fromRGB(120, 96, 70)})
 	-- the windmill on the hill (its plateau is 8 up): a stone base, a wooden cap, four sails
@@ -286,6 +281,7 @@ end
 -- the newer maps live in their own modules (Build ▸ Map<Name>)
 function Maps.TrainingYard() return require(script.Parent:WaitForChild("MapTraining"))(K) end
 function Maps.Courtyard() return require(script.Parent:WaitForChild("MapCourtyard"))(K) end
+function Maps.Frostgate() return require(script.Parent:WaitForChild("MapFrostgate"))(K) end
 
 function Maps.build(name)
 	local fn = Maps[name]
@@ -293,7 +289,7 @@ function Maps.build(name)
 	return fn()
 end
 function Maps.buildAll()
-	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield", "TrainingYard", "Courtyard"}) do Maps.build(n) end
+	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield", "TrainingYard", "Courtyard", "Frostgate"}) do Maps.build(n) end
 end
 
 return Maps

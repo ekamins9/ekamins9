@@ -16,4 +16,6 @@ return {
 	Breathing = "rbxassetid://0",   -- client: looped heavy breathing while stamina is low (louder at 0)
 	HeadThrow = "rbxassetid://0",   -- server: skewered head launched off the blade
 	BodyFall  = "rbxassetid://0",   -- server: a body hitting the ground (Ragdoll.knockdown callers)
+	RamHit    = "rbxasset://sounds/action_jump_land.mp3",      -- server: the siege ram hits the gate (played deep)
+	GateBreak = "rbxasset://sounds/impact_explosion_03.mp3",   -- server: the gate bursts (played slow)
 }

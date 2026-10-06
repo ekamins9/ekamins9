@@ -80,10 +80,12 @@ end
 --------------------------------------------------------------------
 --  THE BRAIN
 --------------------------------------------------------------------
-local function nearestPlayer(pos)
+-- the nearest living player not on `team` (a bot's own side)
+local function nearestPlayer(pos, team)
 	local best, bestD = nil, math.huge
 	for _, p in ipairs(Players:GetPlayers()) do
 		local c = p.Character
+		if team and c and c:GetAttribute("Team") == team then c = nil end
 		local hrp = c and c:FindFirstChild("HumanoidRootPart")
 		local hum = c and c:FindFirstChildOfClass("Humanoid")
 		if hrp and hum and hum.Health > 0 then
@@ -121,7 +123,7 @@ function Bot:think()
 	local hum, hrp, ctrl, sk = self.hum, self.hrp, self.ctrl, self.skill
 	if not self.alive or hum.Health <= 0 or self.model:GetAttribute("Ragdolled") then hum:Move(Vector3.zero); return end
 	local target = self.target
-	if not (target and target.Parent) then target = nearestPlayer(hrp.Position) end
+	if not (target and target.Parent) then target = nearestPlayer(hrp.Position, self.model:GetAttribute("Team")) end
 	local thrp = target and target:FindFirstChild("HumanoidRootPart")
 	local thum = target and target:FindFirstChildOfClass("Humanoid")
 	if not (thrp and thum and thum.Health > 0) then hum:Move(Vector3.zero); self.facing = nil; return end

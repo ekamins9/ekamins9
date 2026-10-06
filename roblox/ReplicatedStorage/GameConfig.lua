@@ -40,7 +40,7 @@ GameConfig.DOORS = {
 		blurb = "Talk, show off, hit the dummies, duel in the ring."},
 	Tiltyard  = {name = "Tiltyard",  mode = "Tiltyard", access = "Friends", maxPlayers = 3,
 		blurb = "Your own yard, you and your party. Drills and dummies."},
-	Warfront  = {name = "Warfront",  modes = {"FFA", "TDM", "KOTH", "LTS"}, access = "Public", vote = true,
+	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS"}, access = "Public", vote = true,
 		blurb = "The big fight. The mode changes between rounds by vote."},
 	Lists     = {name = "The Lists", mode = "Lists",    access = "Locked",  brackets = {"1v1", "2v2", "3v3"},
 		blurb = "1v1, 2v2, 3v3. Casual or ranked. Honor rules."},
@@ -58,7 +58,7 @@ GameConfig.MODES = {
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
-		maps = {"Sandpit", "Arena"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		maps = {"Sandpit"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -69,38 +69,45 @@ GameConfig.MODES = {
 	FFA = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
 		description = "Everyone for themselves. Most kills when the clock runs out wins.",
-		maps = {"Sandpit", "Millfield", "Arena", "Village"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
+		maps = {"Sandpit", "Millfield", "Highbridge"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
 	},
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Honor rules: one on one. Stay out of other people's fights.",
-		maps = {"Sandpit", "Arena"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"Sandpit", "Millfield"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
 	},
 	TDM = {
 		name = "Team Deathmatch", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Two armies, one ticket pool each. Bleed theirs dry first.",
-		maps = {"Highbridge", "Millfield", "Village", "Bridge"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Highbridge", "Millfield", "Sandpit"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		tickets = 60, waveSpawn = 8,
 	},
 	LTS = {
 		name = "Last Team Standing", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 2,
 		description = "No respawns. Win the round by wiping the other side. First to 4 rounds.",
-		maps = {"Highbridge", "Sandpit", "Arena", "Bridge"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
+		maps = {"Highbridge", "Sandpit", "Millfield"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
 		roundsToWin = 4,
+	},
+	Siege = {
+		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,
+		description = "Attackers push the ram, break the gate and take the castle stage by stage. Defenders hold until the clock runs out. Every stage taken adds time; sides swap each round.",
+		maps = {"Frostgate"}, roundLength = 4 * 60, intermission = 15, respawnDelay = 3,
+		waveSpawn = 10,   -- reinforcements come in waves (after the first moments of a round)
 	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
-		maps = {"Millfield", "Village"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Millfield"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
 -- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
-GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard"}
+GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Frostgate = "Frostgate",
+	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- order on the Play tab
-GameConfig.MODE_ORDER = {"FFA", "Duel", "TDM", "LTS", "KOTH"}
+GameConfig.MODE_ORDER = {"Siege", "FFA", "Duel", "TDM", "LTS", "KOTH"}
 
 GameConfig.TEAMS = {
 	A = {name = "Crown", color = BrickColor.new("Bright blue"), rgb = Color3.fromRGB(70, 110, 220)},

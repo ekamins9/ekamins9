@@ -126,6 +126,17 @@ local function spawnAs(plr, classId)
 	if not GameConfig.CLASSES[classId] then classId = Profile.get(plr).active end
 	local ok, why = Game.canSpawn(plr)
 	if not ok then show(plr, why); return end
+	-- reinforcements come in waves (a mode's waveSpawn): wait for your side's next one
+	local wave = Game.waveWait(plr)
+	if wave > 0.4 then
+		spawning[plr] = true
+		event:FireClient(plr, "Wave", wave)
+		task.wait(wave)
+		spawning[plr] = nil
+		if not plr.Parent or isAlive(plr) then return end
+		local ok2, why2 = Game.canSpawn(plr)
+		if not ok2 then show(plr, why2); return end
+	end
 	local p = Profile.get(plr)
 	local lo = Profile.validateLoadout(plr, classId, p.classes[classId])
 	Profile.setActive(plr, classId)

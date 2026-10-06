@@ -18,8 +18,8 @@ return function(K)
 	K.terrain(ctx, V3(-208, -72, -240), V3(416, 112, 448), function(T)
 		T:FillBlock(CFrame.new(0, -6, 0), V3(380, 12, 380), Enum.Material.Grass)
 		-- the yard: packed sand inside the palisade, a dirt road out of the gate
-		T:FillBlock(CFrame.new(0, 0.1, 0), V3(158, 0.4, 128), Enum.Material.Sand)
-		T:FillBlock(CFrame.new(0, 0.15, 110), V3(16, 0.5, 100), Enum.Material.Ground)
+		T:FillBlock(CFrame.new(0, -2, 0), V3(158, 4, 128), Enum.Material.Sand)
+		T:FillBlock(CFrame.new(0, -2, 110), V3(16, 4, 100), Enum.Material.Ground)
 		-- hills behind the castle
 		for i = -3, 3 do T:FillBall(V3(i * 50, -20, -170 - (i % 2) * 12), 48, Enum.Material.Grass) end
 	end)

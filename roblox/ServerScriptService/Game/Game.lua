@@ -146,6 +146,7 @@ end
 function Mode:start(mapName)
 	self.roundNumber += 1
 	self.kills = {}
+	self.startedAt = os.clock()
 	if self.def.teams == 2 then Teams.assignAll() else Teams.clearAll() end
 end
 function Mode:stop() end
@@ -156,6 +157,17 @@ end
 function Mode:onDeath(victimPlr) end
 -- may this player (re)spawn right now? false, reason otherwise
 function Mode:canSpawn(plr) return true end
+-- seconds this player waits for their side's next reinforcement wave
+-- (def.waveSpawn): free for the first waveGrace s of a round, then waves on a
+-- fixed beat, the two sides half a beat apart
+function Mode:waveWait(plr)
+	local w = self.def.waveSpawn
+	if not w or w <= 0 or not self.startedAt then return 0 end
+	local t = os.clock() - self.startedAt
+	if t < (self.def.waveGrace or 12) then return 0 end
+	local offset = Teams.keyOf(plr) == "B" and w / 2 or 0
+	return (w - ((t - offset) % w)) % w
+end
 -- where; default = the team's spawn farthest from enemies
 function Mode:spawnCFrame(plr)
 	local team = self.def.teams == 2 and Teams.keyOf(plr) or nil
@@ -256,6 +268,11 @@ function Game.onDeath(victimPlr, killerPlr, victimChar)
 	if killerPlr and killerPlr ~= victimPlr then Game.current:onKill(killerPlr, victimPlr, victimChar) end
 	Game.current:onDeath(victimPlr)
 	Game.current:publishScores()
+end
+
+function Game.waveWait(plr)
+	if Game.current and Game.current.waveWait then return Game.current:waveWait(plr) end
+	return 0
 end
 
 function Game.respawnDelay()

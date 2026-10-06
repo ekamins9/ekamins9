@@ -6,7 +6,8 @@
 
        ReplicatedStorage.LoadoutRemote  "Catalog" -> {classes, order, active, …}
        ReplicatedStorage.LoadoutEvent   out: "Ready" · "Spawn", classId
-                                        in:  "Show", activeClass, waitReason · "Spawned"
+                                        in:  "Show", activeClass, waitReason · "Spawned" ·
+                                             "Wave", seconds (the next reinforcement wave)
 
      In the courtyard (Hub mode) this screen steps aside and opens the Hub
      menu instead — there you ENTER COURTYARD. The two talk over _G.MenuBus:
@@ -235,6 +236,7 @@ end
 local open = false        -- we want to be on screen (dead, in a match)
 local hubOpen = false     -- the Hub menu is covering us
 local waitReason = nil
+local waveAt = nil   -- os.clock() when our reinforcement wave lands
 local mouseConn
 
 -- CameraRig fades to black when we die and, with no auto-respawn, nothing
@@ -307,6 +309,10 @@ RunService.Heartbeat:Connect(function()
 		spawnBtn.BackgroundColor3 = COL_SPAWN
 		local nxt = GameConfig.MODES[roundNode:GetAttribute("NextMode") or ""]
 		waitLine.Text = nxt and ("next:  " .. string.upper(nxt.name)) or (waitReason or "")
+	elseif waveAt and os.clock() < waveAt then
+		spawnBtn.Text = string.format("REINFORCEMENTS IN %d", math.ceil(waveAt - os.clock()))
+		spawnBtn.BackgroundColor3 = COL_SPAWN
+		waitLine.Text = "you join the next wave"
 	elseif spawnBtn.Text:sub(1, 4) == "NEXT" then
 		spawnBtn.Text = "SPAWN"
 		spawnBtn.BackgroundColor3 = COL_SPAWN_ON
@@ -319,6 +325,7 @@ end)
 
 spawnBtn.Activated:Connect(function()
 	if not open or roundNode:GetAttribute("State") == "Intermission" then return end
+	if waveAt and os.clock() < waveAt then return end   -- already waiting for the wave
 	if not GameConfig.CLASSES[selected] then return end
 	spawnBtn.Text = "SPAWNING…"
 	event:FireServer("Spawn", selected)
@@ -326,9 +333,13 @@ end)
 
 event.OnClientEvent:Connect(function(what, a, b)
 	if what == "Show" then
+		waveAt = nil
 		show(a, b)
 	elseif what == "Spawned" then
+		waveAt = nil
 		hide()
+	elseif what == "Wave" then
+		waveAt = os.clock() + (tonumber(a) or 0)
 	end
 end)
 

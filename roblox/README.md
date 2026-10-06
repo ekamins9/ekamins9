@@ -45,6 +45,9 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Hub/Courtyard.server.lua`, `Leaderboards.lua` | `ServerScriptService` → `Hub` → `Courtyard` (Script), `Leaderboards` (ModuleScript) | Script / ModuleScript |
 | `ServerScriptService/Build/MapCourtyard.lua` | `ServerScriptService` → `Build` → `MapCourtyard` (the hub map) | ModuleScript |
 | `StarterPlayerScripts/Courtyard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Courtyard` | LocalScript |
+| `StarterPlayerScripts/Objectives.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Objectives` | LocalScript |
+| `ServerScriptService/Game/Modes/Siege.lua` | `ServerScriptService` → `Game` → `Modes` → `Siege` | ModuleScript |
+| `ServerScriptService/Build/MapFrostgate.lua` | `ServerScriptService` → `Build` → `MapFrostgate` | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
 | `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
 | `ReplicatedStorage/Companions.lua` | `ReplicatedStorage` → `Companions` (creatures and eggs built from parts) | ModuleScript |
@@ -274,7 +277,7 @@ MemoryStore registry and never reaches a client or the Roblox page, so **access 
 join), `Locked` (only the user ids the server was made for — ranked matches; `Game.mayJoin`
 kicks anyone else). One place means one set of scripts to update. Studio has no teleports, so it
 runs `STUDIO_MODE` (Hub) and PLAY switches the mode locally. `GameConfig.MODES`: `Hub` (courtyard, no clock),
-`FFA`, `Duel`, `TDM` (tickets), `LTS` (one life per round, first to `roundsToWin`), `KOTH`
+`Siege` (below), `FFA`, `Duel`, `TDM` (tickets), `LTS` (one life per round, first to `roundsToWin`), `KOTH`
 (`Zones/Hill`, `pointsToWin`) — each with `maps`, `roundLength`, `intermission`,
 `respawnDelay`, `teams` (0 or 2), `maxPlayers`, a `category` (the browser's *type of
 gameplay*). Every place is an empty world with a skybox: the map is cloned in at runtime.
@@ -290,8 +293,14 @@ server is the Hub and loads its map the moment it starts, so there is a courtyar
 before anyone has spawned. `MapLoader` clones one into `workspace.Map` per round
 and picks the spawn farthest from enemies; no such map → whatever is in workspace, and
 `SpawnLocation`s. `GameServer` runs the loop: mode → map (vote or rotation) → round (mode
-ticks, clock, early end) → result → intermission with the board up and a 3-map vote
-(Round `Vote1..3` / `Votes1..3`, `VoteRemote`). State is on `ReplicatedStorage.Round`
+ticks, clock, early end) → result → intermission with the board up and a vote on three cards
+(Round `Vote1..3` maps, `VoteMode1..3` modes, `Votes1..3` counts, `VoteRemote`). On the
+**Warfront** each card is a *battle*, a mode on one of its maps (three different modes, not the
+map just played if it can help it); elsewhere the cards are maps for the same mode. A tie goes to
+one of the tied cards at random. A mode can add time to the clock (`mode.bonusTime`), and
+**reinforcement waves** come with a mode's `waveSpawn` (seconds): after the first `waveGrace`
+(12 s) of a round you spawn with your side's next wave, the two sides half a beat apart (the class
+screen counts it down). State is on `ReplicatedStorage.Round`
 (`State`, `TimeLeft`, `Number`, `Mode`, `ModeName`, `Category`, `Map`, `Teams`, `ScoreA/B`,
 `Objective`, `Winner`, `WinnerKills`, `NextMode`).
 
@@ -466,11 +475,39 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - A whiffed kick recovers `KICK_MISS_EXTRA` longer. Spawn protection: a `ForceField` for
   `SPAWN_PROTECT` s (LoadoutServer); attacking, kicking or blocking ends it early.
 
+## Siege (Team Objective, after Chivalry 2)
+
+The attackers take a castle stage by stage; the defenders hold until the clock runs out. Every
+stage taken adds time (`AddTime`), sides swap each round, and the scores count rounds won. A map
+lists its stages in `Map ▸ Objectives` (MapKit `K.objective`), each with a `Label` for the HUD:
+- **Ram:** push the ram (`K.ram`) along its `Path` (`K.path`). It rolls while more attackers than
+  defenders stand within `Radius` (13) of it, faster with more (up to 1.75×), and stops when
+  they're even. At the gate it swings its log every `Interval` s while the attackers hold it,
+  `Hits` blows break the `Gate` (`K.gate`) and the doors burst inward.
+- **Capture:** stand in the `Zone` (`K.zone`): attackers with no defender in it fill it in
+  `Time` s (faster with more), defenders alone push it back, both = contested. The disc turns
+  from the defenders' colour to the attackers'.
+- **Slay:** the defenders' champion, a Champion bot in heavy armour (`Name`, `Weapon`, `Health`
+  + `PerAttacker` × attackers), rises at `At` and fights inside `ArenaRadius`; kill him.
+- **Spawns** carry `Side` (Attack / Defend) and `Stage`: a side spawns at its highest stage that
+  isn't past the current one, so the front moves forward. Reinforcements come in waves (10 s).
+- **Pay:** everyone of the attackers at an objective when it falls earns `objective`
+  (25 Marks, 50 XP) at round end, as does the champion's killer.
+- **HUD** (`StarterPlayerScripts ▸ Objectives`): ATTACK / DEFEND, the stage, a bar in the
+  attackers' colour with what's happening there (PUSHING 3 v 1, CONTESTED, BATTERING · GATE 4 / 10,
+  CAPTURING 63%), a pip per stage, a marker over the objective with its distance, and a banner
+  when a stage falls ("THE GATE IS BROKEN · +2:30 ON THE CLOCK").
+- **Frostgate** (`Build ▸ MapFrostgate`): a snowbound castle. Stage 1 pushes the ram from the
+  camp up the road to the gatehouse, stage 2 takes the bailey (stables, forge, well), stage 3
+  storms the great hall, stage 4 slays Jarl Hrolf at his throne. Snow falls; pines, ruins and a
+  frozen pond on the field.
+
 ## Rounds
 
 See *Game modes, maps, places* above. The top-centre strip shows the mode, the map, the
 clock, the mode's objective line and (team modes) both scores. At the end everyone is pulled
-out, the board comes up with the result and the map vote, then the class screen returns.
+out, the board comes up with the result, your pay for the round and the vote, then the class
+screen returns.
 
 ## Voice
 

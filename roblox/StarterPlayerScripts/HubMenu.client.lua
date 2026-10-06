@@ -583,6 +583,8 @@ do
 	local rewardTitle = title(rewardCard, "", 24, COL.GOLD); rewardTitle.Size = UDim2.new(1, 0, 0, 30); rewardTitle.TextXAlignment = Enum.TextXAlignment.Center
 	local rewardBody = title(rewardCard, "", 15); rewardBody.Position = UDim2.new(0, 0, 0, 34); rewardBody.Size = UDim2.new(1, 0, 0, 52); rewardBody.TextXAlignment = Enum.TextXAlignment.Center; rewardBody.TextWrapped = true
 	showRewards = function(r)
+		-- in a match the scoreboard shows the pay under the result, beside the vote
+		if roundNode:GetAttribute("State") == "Intermission" and roundNode:GetAttribute("Mode") ~= "Hub" then return end
 		if r.blocked then
 			rewardTitle.Text = "ROUND OVER"; rewardBody.Text = "No rewards on a cheat server."
 		else

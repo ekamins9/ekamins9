@@ -17,6 +17,7 @@ return {
 		parry   = {marks = 2,   xp = 5},
 		chamber = {marks = 3,   xp = 8},
 		drill   = {marks = 50,  xp = 60},    -- Tiltyard drill finished (once each)
+		objective = {marks = 25, xp = 50},   -- there when a siege stage fell (ram, gate, zone, champion)
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
 	products = {

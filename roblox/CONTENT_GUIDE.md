@@ -341,6 +341,13 @@ accent, glow, style, fx, egg, pass, description}`.
   never leave hills behind in the place), so make the box big enough to hold every hill whole.
   Ground is at y = 0; `mound(T, centre, top, plateau, foot, material)` in `Build ▸ Maps` makes a
   flat-topped hill whose top is exactly `top` studs up (stand buildings on it at that height).
+  Roblox draws a terrain surface 2 studs above where a fill ends; the brush `K.terrain` hands
+  you is lowered by those 2 studs, so fill to y = 0 and the ground stands at y = 0 (checked in
+  game). **Paint surface materials as whole voxel rows that end at y = 0**, e.g. a sand yard is
+  `T:FillBlock(CFrame.new(x, -2, z), Vector3.new(w, 4, l), Enum.Material.Sand)`: a thin layer laid
+  *on top* lifts the ground, and a thin one *inside* a full row doesn't change its material. For
+  a hill use `T:Mound(centre, top, plateau, foot, material)` (exact top height), not stacked
+  thin fills (they round each part-filled voxel up to full).
 - **Seats:** a `Seat` faces its front (`LookVector`); the sitter's back is to the seat's back.
   The Jump key stands you up and steps you off the front.
 - **Footstep sounds:** `ReplicatedStorage ▸ Footsteps`: `SOUNDS[material name] = sound id`;
@@ -352,9 +359,17 @@ accent, glow, style, fx, egg, pass, description}`.
   setup}`. The `text` may name key binds as `{Swing}`, `{Stab}`, `{Kick}` and so on, and the
   events are listed at the top of the file. `spar` sets what a win in the ring pays at each
   level.
+- **A siege map:** stages in order with `K.objective(ctx, n, kind, {Label, AddTime, …})` and
+  their pieces inside: a Ram stage gets `K.path(ctx, stage, points)`, `K.ram(ctx, stage, frame)`
+  (facing down the road) and `K.gate(ctx, stage, frame, w, h, hits)`; a Capture stage gets
+  `K.zone(ctx, stage, "Zone", pos, radius, height)`; a Slay stage gets a Part named `At` (where
+  the champion rises; attribute `ArenaRadius`). Spawns get attributes `Side` ("Attack" /
+  "Defend") and `Stage`. See `Build ▸ MapFrostgate`, and the Siege section of the README for
+  every attribute.
 - **Mode:** a ModuleScript in `ServerScriptService ▸ Game ▸ Modes ▸ <Id>` built on
   `Game.Mode`, plus an entry in `GameConfig.MODES`; list it in `GameConfig.DOORS.Warfront.modes`
-  to put it in the Warfront vote.
+  to put it in the Warfront vote (the battle cards). `waveSpawn = 10` gives it reinforcement
+  waves; setting `self.bonusTime` adds seconds to the clock.
 - **Door:** `GameConfig.DOORS` + `DOOR_ORDER` (the four cards on PLAY).
 - **Class:** `GameConfig.CLASSES` — a name, a `weight`, optional weapon list.
 

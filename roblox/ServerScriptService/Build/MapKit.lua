@@ -399,6 +399,128 @@ function K.torchPost(ctx, pos, h)
 	return flame
 end
 
+--------------------------------------------------------------------
+--  SIEGE PIECES (Game ▸ Modes ▸ Siege reads Map ▸ Objectives)
+--------------------------------------------------------------------
+-- a stage: Objectives ▸ <order>, a Configuration whose attributes are the
+-- stage's settings (Kind, Label, AddTime…); its pieces go inside it
+function K.objective(ctx, order, kind, attrs)
+	if not ctx.Objectives then
+		local fo = Instance.new("Folder"); fo.Name = "Objectives"; fo.Parent = ctx.model; ctx.Objectives = fo
+	end
+	local c = Instance.new("Configuration")
+	c.Name = tostring(order)
+	c:SetAttribute("Order", order)
+	c:SetAttribute("Kind", kind)
+	for k, v in pairs(attrs or {}) do c:SetAttribute(k, v) end
+	c.Parent = ctx.Objectives
+	return c
+end
+
+-- a capture zone: a flat see-through disc on the ground (radius r; h tall for the inside test)
+function K.zone(ctx, parent, name, pos, r, h)
+	local z = Instance.new("Part")
+	z.Name = name or "Zone"
+	z.Shape = Enum.PartType.Cylinder
+	z.Size = Vector3.new(0.3, r * 2, r * 2)
+	z.CFrame = CFrame.new(pos + Vector3.new(0, 0.18, 0)) * CFrame.Angles(0, 0, DEG(90))
+	z.Anchored, z.CanCollide, z.CanQuery, z.CanTouch = true, false, false, false
+	z.Material = K.M.Neon
+	z.Color = K.C.WHITE
+	z.Transparency = 0.8
+	z:SetAttribute("Radius", r)
+	z:SetAttribute("Height", h or 10)
+	z.Parent = parent or ctx.Zones
+	return z
+end
+
+-- the road a ram rolls along: invisible markers P1..Pn on the ground
+function K.path(ctx, parent, points)
+	local f = Instance.new("Folder"); f.Name = "Path"; f.Parent = parent
+	for i, p in ipairs(points) do
+		local m = Instance.new("Part"); m.Name = "P" .. i; m.Size = Vector3.new(1, 1, 1); m.CFrame = CFrame.new(p)
+		m.Anchored, m.CanCollide, m.CanQuery, m.CanTouch, m.Transparency = true, false, false, false, 1
+		m.Parent = f
+	end
+	return f
+end
+
+-- a battering ram: a wheeled frame under a peaked hide roof, the log hung on
+-- chains. A Model whose PrimaryPart "Body" is its pivot; parts with attribute
+-- Swing (the log, its head, the chains) are what swings at the gate. It faces
+-- the frame's -Z (look): stand it at the start of its path looking down the road.
+function K.ram(ctx, parent, frame)
+	local m = Instance.new("Model"); m.Name = "Ram"; m.Parent = parent
+	local function part(name, size, cf, color, mat, collide)
+		local p = K.box(ctx, name, size, frame * cf, color, mat, m)
+		p.CanCollide = collide ~= false
+		return p
+	end
+	local body = part("Body", Vector3.new(6.4, 0.8, 15), CFrame.new(0, 1.6, 0), K.C.DARKWOOD, K.M.WoodPlanks)
+	m.PrimaryPart = body
+	for _, x in ipairs({-2.9, 2.9}) do
+		part("Rail", Vector3.new(0.7, 0.7, 15.4), CFrame.new(x, 2.3, 0), K.C.WOOD, K.M.Wood)
+		for _, z in ipairs({-6.6, 0, 6.6}) do part("Post", Vector3.new(0.6, 6.2, 0.6), CFrame.new(x, 5.1, z), K.C.WOOD, K.M.Wood) end
+		part("Beam", Vector3.new(0.6, 0.6, 15), CFrame.new(x, 8.2, 0), K.C.WOOD, K.M.Wood)
+	end
+	for _, z in ipairs({-6.6, 0, 6.6}) do part("CrossBeam", Vector3.new(6.4, 0.5, 0.5), CFrame.new(0, 8.2, z), K.C.WOOD, K.M.Wood) end
+	-- the roof: two sloped planked sides under a stitched hide
+	for _, s in ipairs({-1, 1}) do
+		part("Roof", Vector3.new(4.4, 0.35, 15.8), CFrame.new(s * 1.8, 9.3, 0) * CFrame.Angles(0, 0, DEG(-s * 33)), K.C.DARKWOOD, K.M.WoodPlanks)
+		part("Hide", Vector3.new(4.5, 0.12, 16.2), CFrame.new(s * 1.84, 9.52, 0) * CFrame.Angles(0, 0, DEG(-s * 33)), Color3.fromRGB(120, 92, 66), K.M.Fabric, false)
+	end
+	part("RoofRidge", Vector3.new(0.5, 0.5, 16.2), CFrame.new(0, 10.5, 0), K.C.DARKWOOD, K.M.Wood)
+	-- wheels (axles across, X)
+	for _, x in ipairs({-3.6, 3.6}) do
+		for _, z in ipairs({-5, 5}) do
+			K.cyl(ctx, "Wheel", 3.2, 0.7, frame * CFrame.new(x, 1.6, z) * CFrame.Angles(0, 0, DEG(90)), K.C.DARKWOOD, K.M.Wood, m)
+			K.cyl(ctx, "Hub", 1, 0.9, frame * CFrame.new(x, 1.6, z) * CFrame.Angles(0, 0, DEG(90)), K.C.IRON, K.M.Metal, m)
+		end
+	end
+	-- the log on its chains, an iron ram's head at the front
+	local log = K.cyl(ctx, "Log", 1.7, 16, frame * CFrame.new(0, 4.6, -1.2) * CFrame.Angles(DEG(-90), 0, 0), Color3.fromRGB(110, 78, 46), K.M.Wood, m)
+	log.CanCollide = false; log:SetAttribute("Swing", true)
+	local head = K.cyl(ctx, "RamHead", 2.3, 2.2, frame * CFrame.new(0, 4.6, -9.9) * CFrame.Angles(DEG(-90), 0, 0), K.C.IRON, K.M.Metal, m)
+	head.CanCollide = false; head:SetAttribute("Swing", true)
+	local tip = K.cone(ctx, "RamTip", Vector3.zero, 1.15, 1.4, K.C.IRON, K.M.Metal, m, true, 8)
+	for _, d in ipairs(m:GetChildren()) do
+		if d.Name == "RamTip" then
+			-- the cone was built at the origin pointing up: lay it at the head pointing forward
+			d.CFrame = frame * CFrame.new(0, 4.6, -11) * CFrame.Angles(DEG(-90), 0, 0) * d.CFrame
+			d:SetAttribute("Swing", true)
+		end
+	end
+	for _, z in ipairs({-5.8, 3.4}) do
+		for _, x in ipairs({-1.1, 1.1}) do
+			local ch = K.box(ctx, "Chain", Vector3.new(0.18, 3.4, 0.18), frame * CFrame.new(x * 0.9, 6.3, z) * CFrame.Angles(0, 0, DEG(x * 9)), K.C.IRON, K.M.Metal, m)
+			ch.CanCollide = false; ch:SetAttribute("Swing", true)
+		end
+	end
+	return m
+end
+
+-- a gate the ram breaks: two studded doors with iron bands, w × h, in a Model
+-- "Gate" (attribute Hits = blows it takes). The frame is the middle of the
+-- doorway at ground level; its +Z faces the attackers (studs outside, the bar inside).
+function K.gate(ctx, parent, frame, w, h, hits)
+	local m = Instance.new("Model"); m.Name = "Gate"; m.Parent = parent
+	m:SetAttribute("Hits", hits or 10)
+	for _, s in ipairs({-1, 1}) do
+		local door = K.box(ctx, "Door", Vector3.new(w / 2 - 0.1, h, 1.4), frame * CFrame.new(s * w / 4, h / 2, 0), Color3.fromRGB(96, 66, 40), K.M.WoodPlanks, m)
+		for _, y in ipairs({0.18, 0.5, 0.82}) do
+			K.box(ctx, "Band", Vector3.new(w / 2 - 0.3, 0.7, 1.6), frame * CFrame.new(s * w / 4, h * y, 0), K.C.IRON, K.M.Metal, m)
+		end
+		for i = 0, 3 do
+			for j = 0, 5 do
+				K.ball(ctx, "Stud", 0.4, frame * CFrame.new(s * (0.9 + i * (w / 2 - 1.8) / 3), 1.4 + j * (h - 2.8) / 5, 0.8), K.C.IRON, K.M.Metal, m).CanCollide = false
+			end
+		end
+		door:SetAttribute("Side", s)
+	end
+	K.box(ctx, "Bar", Vector3.new(w - 0.6, 0.9, 0.8), frame * CFrame.new(0, h * 0.5, -1.1), K.C.DARKWOOD, K.M.Wood, m)
+	return m
+end
+
 function K.camera(ctx, pos, look)
 	local p = Instance.new("Part")
 	p.Name = string.format("Shot%d", #ctx.MenuCameras:GetChildren() + 1)
@@ -444,7 +566,41 @@ function K.terrain(ctx, corner, size, paint)
 	local SPILL = 96
 	local outer = Region3.new(corner - Vector3.one * SPILL, corner + size + Vector3.one * SPILL):ExpandToGrid(4)
 	local keepM, keepO = Terrain:ReadVoxels(outer, 4)
-	local ok, err = pcall(paint, Terrain)
+	-- Roblox draws a terrain surface half a voxel (2 studs) above where a fill
+	-- ends: ground filled up to y = 0 stands at y = 2, burying everything built
+	-- on y = 0. The brushes the maps paint with are lowered by those 2 studs, so
+	-- a map's numbers mean what they say: fill to y = 0 and the ground is at 0.
+	local DROP = Vector3.new(0, 2, 0)
+	local brush = {}
+	function brush:FillBlock(cf, sz, mat) return Terrain:FillBlock(cf - DROP, sz, mat) end
+	function brush:FillBall(c, r, mat) return Terrain:FillBall(c - DROP, r, mat) end
+	function brush:FillCylinder(cf, h, r, mat) return Terrain:FillCylinder(cf - DROP, h, r, mat) end
+	function brush:FillWedge(cf, sz, mat) return Terrain:FillWedge(cf - DROP, sz, mat) end
+	function brush:FillRegion(r, res, mat) return Terrain:FillRegion(r, res, mat) end
+	-- a flat-topped hill written voxel by voxel, so its top stands at exactly
+	-- `top` studs above c (stacked thin fills round each part-filled voxel up
+	-- to full, which lifts a hill by up to a whole voxel): flat out to
+	-- `plateau`, an eased slope down to the ground at `foot`
+	function brush:Mound(c, top, plateau, foot, mat)
+		local region = Region3.new(c - Vector3.new(foot + 4, 8, foot + 4), c + Vector3.new(foot + 4, top + 8, foot + 4)):ExpandToGrid(4)
+		local mats, occs = Terrain:ReadVoxels(region, 4)
+		local lo = region.CFrame.Position - region.Size / 2
+		for ix = 1, mats.Size.X do
+			for iz = 1, mats.Size.Z do
+				local d = Vector2.new(lo.X + (ix - 0.5) * 4 - c.X, lo.Z + (iz - 0.5) * 4 - c.Z).Magnitude
+				if d < foot then
+					local t = math.clamp((d - plateau) / math.max(foot - plateau, 1), 0, 1)
+					local s = c.Y + top * (1 - t * t * (3 - 2 * t)) - DROP.Y   -- where the fill ends for the surface to stand there
+					for iy = 1, mats.Size.Y do
+						local o = math.clamp((s - (lo.Y + (iy - 1) * 4)) / 4, 0, 1)
+						if o > occs[ix][iy][iz] then occs[ix][iy][iz] = o; mats[ix][iy][iz] = mat end
+					end
+				end
+			end
+		end
+		Terrain:WriteVoxels(region, 4, mats, occs)
+	end
+	local ok, err = pcall(paint, brush)
 	if not ok then Terrain:WriteVoxels(outer, 4, keepM, keepO); error(err) end
 	-- CopyRegion wants voxel coordinates (studs / 4)
 	local lo = region.CFrame.Position - region.Size / 2
