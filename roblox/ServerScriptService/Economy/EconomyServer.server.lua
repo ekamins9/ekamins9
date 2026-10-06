@@ -16,7 +16,7 @@ task.spawn(function()
 	local ok, err = pcall(function()
 		local pages = MarketplaceService:GetDeveloperProductsAsync()
 		while true do
-			for _, p in ipairs(pages:GetCurrentPage()) do byName[string.lower(p.Name or "")] = p.ProductId end
+			for _, p in ipairs(pages:GetCurrentPage()) do byName[string.lower(p.Name or "")] = p end
 			if pages.IsFinished then break end
 			pages:AdvanceToNextPageAsync()
 		end
@@ -24,9 +24,13 @@ task.spawn(function()
 	if not ok then warn("[Economy] could not list Developer Products:", err); return end
 	local found = 0
 	for _, prod in ipairs(Catalog.ECONOMY.products) do
-		if (prod.id or 0) == 0 then
-			local name = string.lower(prod.product or (tostring(prod.crowns) .. " Crowns"))
-			if byName[name] then prod.id = byName[name]; found += 1 end
+		local entry = byName[string.lower(prod.product or (tostring(prod.crowns) .. " Crowns"))]
+		if entry then
+			if (prod.id or 0) == 0 then prod.id = entry.ProductId end
+			found += 1
+			-- the dashboard is the truth for the price and the bundle art
+			prod.robux = entry.PriceInRobux or prod.robux
+			prod.icon = entry.IconImageAssetId
 		end
 	end
 	print(string.format("[Economy] %d / %d Crown bundles linked to Developer Products", found, #Catalog.ECONOMY.products))

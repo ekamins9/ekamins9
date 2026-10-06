@@ -739,6 +739,13 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 
 	if op == "State" then return state(plr)
 	elseif op == "Store" then return {ok = true, store = storeInfo()}
+	elseif op == "Products" then
+		-- the Crown bundles as linked at start (EconomyServer): price and art from the dashboard
+		local list = {}
+		for i, pr in ipairs(Catalog.ECONOMY.products) do
+			list[i] = {crowns = pr.crowns, robux = pr.robux, bonus = pr.bonus, icon = pr.icon, ready = (pr.id or 0) ~= 0}
+		end
+		return {ok = true, products = list}
 	elseif op == "Servers" then return {ok = true, servers = listForClient()}
 	elseif op == "Friends" then return {ok = true, friends = friendsOnline(plr)}
 	elseif op == "Leaderboard" then return {ok = true, rows = leaderboard(plr, a)}

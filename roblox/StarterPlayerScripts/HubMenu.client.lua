@@ -436,6 +436,32 @@ subtitle.Position = UDim2.new(0, 0, 0, 30)
 subtitle.Size = UDim2.new(0.6, 0, 0, 18)
 subtitle.TextWrapped = false
 subtitle.TextTruncate = Enum.TextTruncate.AtEnd
+-- currency marks: Decals in ReplicatedStorage ▸ Cosmetics ▸ Icons (Crowns, Marks)
+local function iconTexture(key)
+	local cos = ReplicatedStorage:FindFirstChild("Cosmetics")
+	local f = cos and cos:FindFirstChild("Icons")
+	local d = f and f:FindFirstChild(key)
+	return (d and d:IsA("Decal")) and d.Texture or ""
+end
+local function iconImage(parent, key, px)
+	local img = Instance.new("ImageLabel")
+	img.BackgroundTransparency = 1
+	img.Size = UDim2.fromOffset(px or 24, px or 24)
+	img.ScaleType = Enum.ScaleType.Fit
+	img.Image = iconTexture(key)
+	img.Parent = parent
+	if img.Image == "" then   -- Cosmetics may replicate after the menu is built
+		task.spawn(function()
+			for _ = 1, 30 do
+				task.wait(0.5)
+				if not img.Parent then return end
+				img.Image = iconTexture(key)
+				if img.Image ~= "" then return end
+			end
+		end)
+	end
+	return img
+end
 local wallet = frame(header, COL_PANEL)
 wallet.BackgroundTransparency = 1
 wallet.AnchorPoint = Vector2.new(1, 0)
@@ -444,20 +470,24 @@ wallet.Size = UDim2.new(0.45, 0, 0, 34)
 local wl = hlist(wallet, 8)
 wl.HorizontalAlignment = Enum.HorizontalAlignment.Right
 wl.VerticalAlignment = Enum.VerticalAlignment.Center
-local function coin(text, color, order)
+local function coin(text, color, order, iconKey)
 	local c = frame(wallet, COL_CARD, 8)
 	c.AutomaticSize = Enum.AutomaticSize.X
 	c.Size = UDim2.fromOffset(0, 30)
 	c.LayoutOrder = order
-	padding(c, 12, 12, 0, 0)
+	padding(c, iconKey and 6 or 12, 12, 0, 0)
+	local row = hlist(c, 6)
+	row.VerticalAlignment = Enum.VerticalAlignment.Center
+	if iconKey then iconImage(c, iconKey, 24).LayoutOrder = 0 end
 	local t = label(c, text, 14, FONT, color)
 	t.AutomaticSize = Enum.AutomaticSize.X
 	t.Size = UDim2.new(0, 0, 1, 0)
 	t.TextWrapped = false
+	t.LayoutOrder = 1
 	return t
 end
-local marksText = coin("0 Marks", COL_MARKS, 1)
-local crownsText = coin("0 Crowns", COL_CROWNS, 2)
+local marksText = coin("0 Marks", COL_MARKS, 1, "Marks")
+local crownsText = coin("0 Crowns", COL_CROWNS, 2, "Crowns")
 local getCrownsBtn = button(wallet, "+ GET CROWNS", 12, COL_GOLD)
 getCrownsBtn.Size = UDim2.fromOffset(120, 30)
 getCrownsBtn.LayoutOrder = 3
@@ -534,8 +564,9 @@ vlist(modalBox, 8)
 local function closeModal() modalBack.Visible = false; clear(modalBox) end
 modalCatch.Activated:Connect(closeModal)
 -- modal(title, bodyText, buttons = {{text, color, fn}}, extra = function(box) end)
-local function modal(mtitle, body, buttons, extra)
+local function modal(mtitle, body, buttons, extra, width)
 	clear(modalBox)
+	modalBox.Size = UDim2.fromOffset(width or 420, 0)
 	local t = label(modalBox, mtitle, 18, FONT_BLACK, COL_ACCENT); t.Size = UDim2.new(1, 0, 0, 26); t.LayoutOrder = 1
 	if body and body ~= "" then local d = dim(modalBox, body, 13); d.LayoutOrder = 2 end
 	if extra then extra(modalBox) end
@@ -618,8 +649,9 @@ local function weightOf(classId) local c = GameConfig.CLASSES[classId]; return c
 
 local function refreshWallet()
 	local p = state.profile
-	marksText.Text = fmt(p and p.wallet and p.wallet.marks or 0) .. " Marks"
-	crownsText.Text = fmt(p and p.wallet and p.wallet.crowns or 0) .. " Crowns"
+	-- with the icons in place the number alone reads; without them keep the word
+	marksText.Text = fmt(p and p.wallet and p.wallet.marks or 0) .. (iconTexture("Marks") ~= "" and "" or " Marks")
+	crownsText.Text = fmt(p and p.wallet and p.wallet.crowns or 0) .. (iconTexture("Crowns") ~= "" and "" or " Crowns")
 	levelText.Text = "LVL " .. tostring(p and p.level or 1)
 	getCrownsBtn.Visible = currentTab == "SHOP"
 end
@@ -2063,21 +2095,51 @@ do
 		renderSide()
 	end
 
-	-- GET CROWNS: Robux products + Crowns › Marks
-	getCrownsBtn.Activated:Connect(function()
-		modal("GET CROWNS", "Crowns are bought with Robux. Marks are earned by playing, or exchanged from Crowns (one way).", nil, function(box)
-			heading(box, "CROWN BUNDLES  ·  ROBUX")
+	-- GET CROWNS: Robux bundles as cards (art + price come from the Developer
+	-- Products via the server) and the one-way Crowns › Marks exchange
+	local function openGetCrowns()
+		local r = call("Products")
+		local products = (r.ok and r.products) or {}
+		modal("GET CROWNS", "Crowns buy crates, packs and premium colours. Marks are earned by playing, or exchanged from Crowns (one way).", nil, function(box)
+			local grid = frame(box, COL_PANEL); grid.BackgroundTransparency = 1; grid.LayoutOrder = 3
+			grid.Size = UDim2.new(1, 0, 0, 0); grid.AutomaticSize = Enum.AutomaticSize.Y
+			local gl = Instance.new("UIGridLayout", grid)
+			gl.CellSize = UDim2.new(0.25, -9, 0, 236); gl.CellPadding = UDim2.fromOffset(12, 12); gl.SortOrder = Enum.SortOrder.LayoutOrder
+			local tierCol = {RARITY_COL.Common, RARITY_COL.Rare, RARITY_COL.Epic, RARITY_COL.Legendary}
 			for i, pr in ipairs(ECON.products or {}) do
-				row(box, string.format("%s Crowns%s", fmt(pr.crowns), pr.bonus and ("  ·  " .. pr.bonus) or ""), "R$ " .. fmt(pr.robux), false, function()
-					local r = call("BuyCrowns", i); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
-				end, COL_CROWNS)
+				local live = products[i] or {}
+				local card = frame(grid, COL_CARD, 12); card.LayoutOrder = i
+				local st = Instance.new("UIStroke", card); st.Color = tierCol[math.min(i, #tierCol)] or COL_DIM; st.Thickness = 2
+				local glow = frame(card, COL_CARD2, 10); glow.Position = UDim2.fromOffset(8, 8); glow.Size = UDim2.new(1, -16, 0, 120)
+				local img = Instance.new("ImageLabel"); img.BackgroundTransparency = 1; img.ScaleType = Enum.ScaleType.Fit
+				img.Size = UDim2.new(1, -16, 0, 120); img.Position = UDim2.fromOffset(8, 8)
+				img.Image = live.icon and ("rbxassetid://" .. tostring(live.icon)) or iconTexture("Crowns")
+				img.Parent = card
+				if pr.bonus then
+					local b = label(card, pr.bonus .. " BONUS", 10, FONT, Theme.INK); b.BackgroundTransparency = 0; b.BackgroundColor3 = COL_GOOD
+					b.Size = UDim2.fromOffset(78, 18); b.Position = UDim2.fromOffset(12, 12); b.TextXAlignment = Enum.TextXAlignment.Center
+					Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
+				end
+				local n = label(card, fmt(pr.crowns), 28, FONT_BLACK, COL_TEXT); n.Position = UDim2.fromOffset(0, 130); n.Size = UDim2.new(1, 0, 0, 32); n.TextXAlignment = Enum.TextXAlignment.Center
+				local w = label(card, "CROWNS", 11, FONT, COL_CROWNS); w.Position = UDim2.fromOffset(0, 160); w.Size = UDim2.new(1, 0, 0, 14); w.TextXAlignment = Enum.TextXAlignment.Center
+				local price = live.robux or pr.robux
+				local buy = button(card, live.ready == false and "COMING SOON" or ("R$ " .. fmt(price)), 15, live.ready == false and COL_CARD2 or COL_GO)
+				buy.AnchorPoint = Vector2.new(0.5, 1); buy.Position = UDim2.new(0.5, 0, 1, -10); buy.Size = UDim2.new(1, -20, 0, 38)
+				buy.TextColor3 = Theme.textOn(buy.BackgroundColor3)
+				buy.Activated:Connect(function()
+					local res = call("BuyCrowns", i)
+					toast(res.msg or "", res.ok and COL_GOOD or COL_BAD)
+				end)
 			end
 			heading(box, "CROWNS › MARKS")
 			for i, ex in ipairs(ECON.exchange or {}) do
 				row(box, fmt(ex.marks) .. " Marks", fmt(ex.crowns) .. " Crowns", false, function() afterBuy(call("Exchange", i)) end, COL_MARKS)
 			end
-		end)
-	end)
+		end, 860)
+	end
+	getCrownsBtn.Activated:Connect(openGetCrowns)
+	-- testing hook (like Tab / ShopTab): set attribute OpenCrowns on the ScreenGui
+	gui:GetAttributeChangedSignal("OpenCrowns"):Connect(function() if gui:GetAttribute("OpenCrowns") then openGetCrowns() end end)
 end
 
 --------------------------------------------------------------------
