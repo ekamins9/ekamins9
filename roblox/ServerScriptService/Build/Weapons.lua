@@ -22,9 +22,12 @@ local W = {}
 --------------------------------------------------------------------
 --  SUB-ASSEMBLIES
 --------------------------------------------------------------------
--- the grip cylinder = the Handle, centered at the origin
+-- the grip = the Handle, a BLOCK centered at the origin with the blade along
+-- its +Y. (A Roblox cylinder's axis is its X, so a cylinder Handle would put
+-- the blade sideways out of the fist: the Handle is a box, like the hand-made
+-- weapons; the leather wraps around it stay round.)
 local function grip(len, d, color, material)
-	return B.cyl("Handle", d or 0.26, len, cf(0, 0, 0), color or C.DARKLEATHER, material or M.LEATHER, {SkinPart = "Grip"})
+	return B.box("Handle", v(d or 0.26, len, d or 0.26), cf(0, 0, 0), color or C.DARKLEATHER, material or M.LEATHER, {SkinPart = "Grip"})
 end
 -- leather wrap rings on a grip
 local function wraps(len, d, n, color)

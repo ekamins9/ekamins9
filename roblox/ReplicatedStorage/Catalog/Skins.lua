@@ -10,6 +10,7 @@
        blade / grip   Color3 tints for parts with attribute SkinPart = "Blade" / "Grip"
        model    optional Model in Cosmetics ▸ Skins ▸ <weapon> ▸ <model or name> that
                 replaces the Tool's visible parts (welded by offset from its Handle) ]]
+local C = Color3.fromRGB
 return {
 	-- HAND-WRITTEN (scripts/skins_handmade.part): the four original weapons
 	-- SHORTSWORD (one-handed)

@@ -7,11 +7,11 @@
                    in the side bar, your party on the stage with READY-UP,
                    the leaderboard, contracts, friends; The Lists shows the
                    bracket / casual-ranked card and the queue
-       APPEARANCE  hair, beard, face, skin, hair color, title (Catalog ▸ Body)
+       APPEARANCE  hair, beard, face, skin, hair color, title (Catalog › Body)
        CLASSES     one loadout per class: helmet / top / bottom of the class's
                    weight, color blocks, weapon + skin, secondary; TEAM PREVIEW
        SHOP        crates (the drum), packs, weapons, premium colors; GET CROWNS
-                   (Robux products) and Crowns → Marks
+                   (Robux products) and Crowns › Marks
        SERVERS     the browser with filters, and CREATE CUSTOM (all settings)
        SETTINGS    camera feel, keybinds, attack side (ClientSettings)
 
@@ -386,7 +386,7 @@ local function showRewards(r)
 		rewardTitle.Text = (r.won and "VICTORY" or "ROUND OVER") .. (r.firstWin and "  ·  FIRST WIN OF THE DAY" or "")
 		local bits = {string.format("+%s Marks", fmt(r.marks or 0)), string.format("+%s XP", fmt(r.xp or 0))}
 		if (r.levels or 0) > 0 then table.insert(bits, "LEVEL " .. tostring(r.level) .. "!") end
-		if r.delta then table.insert(bits, string.format("rating %s%d → %s", r.delta >= 0 and "+" or "", r.delta, fmt(r.rating))) end
+		if r.delta then table.insert(bits, string.format("rating %s%d › %s", r.delta >= 0 and "+" or "", r.delta, fmt(r.rating))) end
 		rewardBody.Text = table.concat(bits, "   ·   ") .. string.format("\n%d kills  ·  %d parries", r.kills or 0, r.parries or 0)
 	end
 	rewardCard.Visible = true
@@ -463,7 +463,7 @@ getCrownsBtn.Size = UDim2.fromOffset(120, 30)
 getCrownsBtn.LayoutOrder = 3
 getCrownsBtn.TextColor3 = Color3.fromRGB(30, 22, 10)
 local levelText = coin("LVL 1", COL_DIM, 0)
-local closeBtn = button(header, "✕", 18, COL_CARD)
+local closeBtn = button(header, "X", 18, COL_CARD)
 closeBtn.AnchorPoint = Vector2.new(1, 0)
 closeBtn.Position = UDim2.new(1, 0, 0, 0)
 closeBtn.Size = UDim2.fromOffset(44, 40)
@@ -495,13 +495,22 @@ for i, name in ipairs(TABS) do
 	f.Visible = false
 	tabFrame[name] = f
 end
-local sideGrow = frame(side, COL_SIDE); sideGrow.BackgroundTransparency = 1; sideGrow.LayoutOrder = 10; sideGrow.Size = UDim2.new(1, 0, 1, -(6 * 44 + 300))
+-- a spacer pushes the foot to the bottom of the side bar; on a short viewport
+-- it shrinks to nothing (never negative, or the foot would climb over the tabs)
+local sideGrow = frame(side, COL_SIDE); sideGrow.BackgroundTransparency = 1; sideGrow.LayoutOrder = 10; sideGrow.Size = UDim2.new(1, 0, 0, 0)
 local sideFoot = frame(side, COL_SIDE)
 sideFoot.BackgroundTransparency = 1
 sideFoot.AutomaticSize = Enum.AutomaticSize.Y
 sideFoot.Size = UDim2.new(1, 0, 0, 0)
 sideFoot.LayoutOrder = 20
 vlist(sideFoot, 6)
+local function fitSide()
+	local tabsH = #TABS * (38 + 6)
+	local free = side.AbsoluteSize.Y - 20 - tabsH - sideFoot.AbsoluteSize.Y - 6
+	sideGrow.Size = UDim2.new(1, 0, 0, math.max(0, free))
+end
+side:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitSide)
+sideFoot:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitSide)
 
 -- modal (buy / confirm / crowns)
 local modalBack = frame(backdrop, COL_BACK)
@@ -799,7 +808,7 @@ end
 --   tag=, sub=, subColor=, ghost=bool, back=bool,
 --   buttons = {{text, color, fn}}   small buttons under the name
 --   onInvite = fn                   a big + on the (ghost) body
---   onKick = fn                     an ✕ over the head }
+--   onKick = fn                     an X over the head }
 function Stage:set(slots)
 	for _, r in ipairs(self.rigs) do r.model:Destroy() end
 	self.rigs = {}
@@ -856,7 +865,7 @@ function Stage:set(slots)
 			ov.mid = mid
 		end
 		if s.onKick then
-			local x = button(self.overlay, "✕", 14, COL_BAD)
+			local x = button(self.overlay, "X", 14, COL_BAD)
 			x.AnchorPoint = Vector2.new(0.5, 1); x.Size = UDim2.fromOffset(28, 28); x.ZIndex = 5
 			x:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(1, 0)
 			x.Activated:Connect(s.onKick)
@@ -884,8 +893,8 @@ local function stageBlock(parent, hintText)
 	return holder, st, h
 end
 
--- a small 3D view of a weapon (Cosmetics ▸ Weapons ▸ <id>) wearing a skin,
--- laid diagonally across the card. No display model yet → a flat drawing.
+-- a small 3D view of a weapon (Cosmetics › Weapons › <id>) wearing a skin,
+-- laid diagonally across the card. No display model yet › a flat drawing.
 local function weaponThumb(parent, weaponId, skinId, size)
 	local holder = frame(parent, COL_CARD2, 8)
 	holder.Size = size or UDim2.new(1, 0, 0, 72)
@@ -989,7 +998,7 @@ local function findMatch()
 	local size = tonumber(ui.bracket:match("^(%d)")) or 1
 	local n = partySize()
 	if n > size then
-		modal("PARTY TOO BIG FOR " .. ui.bracket, string.format("%s takes a party of at most %d and yours is %d. Remove someone (the ✕ over their head on PLAY) or pick a bigger bracket.", ui.bracket, size, n),
+		modal("PARTY TOO BIG FOR " .. ui.bracket, string.format("%s takes a party of at most %d and yours is %d. Remove someone (the X over their head on PLAY) or pick a bigger bracket.", ui.bracket, size, n),
 			{{"PICK " .. (n <= 2 and "2v2" or "3v3"), COL_CARD_ON, function() ui.bracket = n <= 2 and "2v2" or "3v3"; closeModal(); render.PLAY() end}})
 		return
 	end
@@ -1043,7 +1052,7 @@ do
 	local function inParty() return state.party ~= nil and #(state.party.members or {}) > 1 end
 
 	-- you up front in the middle; teammates and open slots (shadows) around
-	-- you. Click a shadow to invite, the ✕ over a teammate to remove them.
+	-- you. Click a shadow to invite, the X over a teammate to remove them.
 	local function renderStage()
 		local list = partyMembers()
 		local leader, party = isLeader(), inParty()
@@ -1058,7 +1067,7 @@ do
 			local sub, subColor = "", nil
 			if party then
 				if m.leader then sub, subColor = "party leader", COL_ACCENT
-				elseif m.ready then sub, subColor = "READY ✓", COL_GOOD
+				elseif m.ready then sub, subColor = "READY ✔", COL_GOOD
 				else sub, subColor = "not ready", COL_BAD end
 			end
 			local buttons = {}
@@ -1076,7 +1085,7 @@ do
 			local clsName = GameConfig.CLASSES[cls] and GameConfig.CLASSES[cls].name or cls
 			return {
 				loadout = lo, appearance = mine and state.profile and state.profile.appearance or nil, weight = weightOf(cls), back = not mine,
-				tag = (m.leader and "♛ " or "") .. (mine and "You" or m.name) .. "  ·  " .. clsName .. (mine and "" or string.format("  ·  lvl %d", m.level or 1)),
+				tag = (m.leader and "👑 " or "") .. (mine and "You" or m.name) .. "  ·  " .. clsName .. (mine and "" or string.format("  ·  lvl %d", m.level or 1)),
 				sub = sub, subColor = subColor, buttons = buttons,
 				onKick = (leader and not mine) and function()
 					local r = call("PartyKick", m.id)
@@ -1199,7 +1208,7 @@ do
 			bigBtn(p, "BROWSE SERVERS", COL_CARD2, function() ui.filters.door = ui.door ~= "Courtyard" and ui.door or nil; selectTab("SERVERS") end)
 			local c = panel(rightList, "DAILY CONTRACTS", true)
 			for _, ct in ipairs(state.contracts or {}) do
-				row(c, (ct.weekly and "★ " or "") .. ct.text, ct.done and "done ✓" or string.format("%d / %d  ·  %d", ct.n, ct.goal, ct.pay), false, nil, ct.done and COL_GOOD or COL_DIM)
+				row(c, (ct.weekly and "★ " or "") .. ct.text, ct.done and "done ✔" or string.format("%d / %d  ·  %d", ct.n, ct.goal, ct.pay), false, nil, ct.done and COL_GOOD or COL_DIM)
 			end
 			if #(state.contracts or {}) == 0 then dim(c, "Contracts load with your profile.") end
 			local fr = panel(rightList, "FRIENDS", true)
@@ -1239,7 +1248,7 @@ do
 				local w = rightList:FindFirstChild("QWin", true)
 				local s = math.floor(os.clock() - (state.queue.since or os.clock()))
 				if t then t.Text = string.format("%d:%02d", math.floor(s / 60), s % 60) end
-				if w then w.Text = string.format("rating window ±%d  ·  widening", math.min(1000, 100 + 40 * math.floor(s / 4))) end
+				if w then w.Text = string.format("rating window +/-%d  ·  widening", math.min(1000, 100 + 40 * math.floor(s / 4))) end
 			end
 		end
 	end)
@@ -1267,10 +1276,10 @@ do
 		local a = draft()
 		local lo = classLoadout(state.activeClass)
 		if ui.helmPreview then
-			stage:set({{loadout = lo, appearance = a, weight = weightOf(state.activeClass), weapon = false, tag = "♛ You  ·  " .. (GameConfig.CLASSES[state.activeClass] and GameConfig.CLASSES[state.activeClass].name or "") .. " helmet on"}})
+			stage:set({{loadout = lo, appearance = a, weight = weightOf(state.activeClass), weapon = false, tag = "👑 You  ·  " .. (GameConfig.CLASSES[state.activeClass] and GameConfig.CLASSES[state.activeClass].name or "") .. " helmet on"}})
 			stageHint.Text = "the active class's helmet shows what it hides"
 		else
-			stage:set({{loadout = lo, appearance = a, armor = false, weapon = false, tag = "♛ You"}})
+			stage:set({{loadout = lo, appearance = a, armor = false, weapon = false, tag = "👑 You"}})
 			stageHint.Text = "armor and weapon come off while you edit  ·  drag to turn"
 		end
 	end
@@ -1367,7 +1376,7 @@ do
 	local function renderStage()
 		local lo = edit()
 		stage:set({{loadout = lo, appearance = state.profile and state.profile.appearance, weight = weightOf(ui.editing), team = ui.team,
-			tag = "♛ You  ·  " .. (GameConfig.CLASSES[ui.editing] and GameConfig.CLASSES[ui.editing].name or ui.editing)}})
+			tag = "👑 You  ·  " .. (GameConfig.CLASSES[ui.editing] and GameConfig.CLASSES[ui.editing].name or ui.editing)}})
 		stageHint.Text = ui.team and ("team preview: Primary forced to " .. (GameConfig.TEAMS[ui.team] and GameConfig.TEAMS[ui.team].name or ui.team) .. ", Secondary darkened")
 			or "every click re-dresses the mannequin  ·  drag to turn, scroll to zoom"
 	end
@@ -1426,7 +1435,7 @@ do
 					((pc.marks or 0) > 0 and (fmt(pc.marks) .. " M") or "") .. ((pc.crowns or 0) > 0 and ("  " .. fmt(pc.crowns) .. " C") or ""))
 				row(p, pc.name, rightText, lo[slot] == pc.id, function() if have then choose(slot, pc.id) else buyPiece(pc) end end, have and COL_DIM or COL_MARKS)
 			end
-			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet: drop a set with Config.Type = \"" .. cls.weight .. "\" into ServerStorage ▸ Armor.") end
+			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet: drop a set with Config.Type = \"" .. cls.weight .. "\" into ServerStorage › Armor.") end
 		end
 		heading(p, "COLOR BLOCKS")
 		for _, slot in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
@@ -1537,7 +1546,7 @@ do
 		table.sort(names, function(a, b) return a.id < b.id end)
 		chips(leftList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; render.SHOP() end)
 		local crate = Catalog.CRATES[ui.crate]
-		if not crate then dim(leftList, "No crates in Catalog ▸ Crates."); return end
+		if not crate then dim(leftList, "No crates in Catalog › Crates."); return end
 		local pool = Catalog.crateSkins(ui.crate)
 		-- drum
 		local drum = frame(leftList, COL_CARD2, 10)
@@ -1568,7 +1577,7 @@ do
 				cards[i] = {frame = c, skin = s}
 			end
 		else
-			dim(drum, "This crate has no skins yet: point some skins at it in Catalog ▸ Skins.")
+			dim(drum, "This crate has no skins yet: point some skins at it in Catalog › Skins.")
 		end
 		local mark = frame(drum, COL_GOLD); mark.AnchorPoint = Vector2.new(0.5, 0); mark.Position = UDim2.new(0.5, 0, 0, 0); mark.Size = UDim2.new(0, 3, 1, 0); mark.ZIndex = 5
 		local function centerOn(index, tweenTime)
@@ -1642,7 +1651,7 @@ do
 		local names = {}
 		for k, p in pairs(Catalog.PACKS) do if not p.free then table.insert(names, k) end end
 		table.sort(names, function(a, b) local pa, pb = Catalog.PACKS[a], Catalog.PACKS[b]; if (pa.featured == true) ~= (pb.featured == true) then return pa.featured == true end; return pa.name < pb.name end)
-		if #names == 0 then dim(list, "No paid packs yet. A pack is a key in Catalog ▸ Packs that pieces (or a set's Config.Pack) name.") end
+		if #names == 0 then dim(list, "No paid packs yet. A pack is a key in Catalog › Packs that pieces (or a set's Config.Pack) name.") end
 		for i, k in ipairs(names) do
 			local pk = Catalog.PACKS[k]
 			local pieces = {}
@@ -1691,7 +1700,7 @@ do
 			if pc.unlock then
 				any = true
 				local have = owns("pieces", pc.id)
-				row(e, pc.name .. "  ·  " .. pc.weight .. " " .. pc.slot, have and "earned ✓" or (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)), false, nil, have and COL_GOOD or COL_DIM)
+				row(e, pc.name .. "  ·  " .. pc.weight .. " " .. pc.slot, have and "earned ✔" or (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)), false, nil, have and COL_GOOD or COL_DIM)
 			end
 		end
 		for _, sk in ipairs(Catalog.SKINS) do
@@ -1699,13 +1708,13 @@ do
 				any = true
 				local have = owns("skins", sk.id)
 				local u = {kills = sk.kills, weapon = sk.weapon}
-				row(e, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "earned ✓" or (Catalog.unlockText(u) .. "  ·  " .. progressText(u)), false, nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_DIM))
+				row(e, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name .. " skin", have and "earned ✔" or (Catalog.unlockText(u) .. "  ·  " .. progressText(u)), false, nil, have and COL_GOOD or (RARITY_COL[sk.rarity] or COL_DIM))
 			end
 		end
 		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do
 			any = true
 			local have = owns("titles", et.title)
-			row(e, "Title: " .. et.title, have and "earned ✓" or (Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock)), false, nil, have and COL_GOOD or COL_DIM)
+			row(e, "Title: " .. et.title, have and "earned ✔" or (Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock)), false, nil, have and COL_GOOD or COL_DIM)
 		end
 		if not any then dim(e, "Nothing to earn yet.") end
 	end
@@ -1754,7 +1763,7 @@ do
 				local sw = frame(r, c.color, 4); sw.Size = UDim2.fromOffset(18, 18); sw.Position = UDim2.new(0, 0, 0.5, -9)
 			end
 		end
-		if n == 0 then dim(a, "No premium colors (Catalog ▸ Palette, crowns = …).") end
+		if n == 0 then dim(a, "No premium colors (Catalog › Palette, crowns = …).") end
 		dim(a, "Bought once, usable on every slot of every class.")
 		local b = panel(two, "PREMIUM HAIR COLORS & BEARDS", true); b.Size = UDim2.new(0.5, -4, 0, 0)
 		n = 0
@@ -1773,7 +1782,7 @@ do
 				row(b, bd.name .. " beard", have and "owned" or (tostring(bd.crowns) .. " CROWNS"), false, (not have) and function() afterBuy(call("Buy", "beard", bd.id, "crowns")) end or nil, have and COL_GOOD or COL_CROWNS)
 			end
 		end
-		if n == 0 then dim(b, "Nothing premium here yet (Catalog ▸ Body).") end
+		if n == 0 then dim(b, "Nothing premium here yet (Catalog › Body).") end
 	end
 
 	render.SHOP = function()
@@ -1783,7 +1792,7 @@ do
 		renderSide()
 	end
 
-	-- GET CROWNS: Robux products + Crowns → Marks
+	-- GET CROWNS: Robux products + Crowns › Marks
 	getCrownsBtn.Activated:Connect(function()
 		modal("GET CROWNS", "Crowns are bought with Robux. Marks are earned by playing, or exchanged from Crowns (one way).", nil, function(box)
 			heading(box, "CROWN BUNDLES  ·  ROBUX")
@@ -1792,7 +1801,7 @@ do
 					local r = call("BuyCrowns", i); toast(r.msg or "", r.ok and COL_GOOD or COL_BAD)
 				end, pr.id == 0 and COL_DIM or COL_CROWNS)
 			end
-			heading(box, "CROWNS → MARKS")
+			heading(box, "CROWNS › MARKS")
 			for i, ex in ipairs(ECON.exchange or {}) do
 				row(box, fmt(ex.marks) .. " Marks", fmt(ex.crowns) .. " Crowns", false, function() afterBuy(call("Exchange", i)) end, COL_MARKS)
 			end
@@ -1843,7 +1852,7 @@ do
 				local r = frame(list, s.here and COL_CARD_ON or COL_PANEL, 6)
 				r.Size = UDim2.new(1, 0, 0, 40); r.LayoutOrder = nextOrder(); r.BackgroundTransparency = s.here and 0.3 or 0
 				if s.cheats then r.BackgroundTransparency = 0.4 end
-				local name = (s.custom and s.name ~= "" and ("⚑ " .. s.name)) or (door .. "  #" .. string.sub(tostring(s.jobId or "?"), 1, 6))
+				local name = (s.custom and s.name ~= "" and ("🏴 " .. s.name)) or (door .. "  #" .. string.sub(tostring(s.jobId or "?"), 1, 6))
 				if s.pending then name = name .. "  (starting)" end
 				if s.cheats then name = name .. "  ·  cheats, no rewards" elseif s.custom then name = name .. "  ·  custom" end
 				local cells = {name .. (s.here and "   (here)" or ""), s.modeName ~= "" and s.modeName or s.mode, s.map, string.format("%d / %d", s.players or 0, s.max or 0)}
@@ -1894,8 +1903,8 @@ do
 			padding(r, 10, 4, 0, 0)
 			local l = label(r, labelText, 12, FONT_BODY, COL_DIM); l.Size = UDim2.new(0.45, 0, 1, 0)
 			local v = label(r, value, 12, FONT, COL_TEXT); v.Position = UDim2.new(0.45, 0, 0, 0); v.Size = UDim2.new(0.55, -60, 1, 0); v.TextXAlignment = Enum.TextXAlignment.Right; v.TextWrapped = false; v.TextTruncate = Enum.TextTruncate.AtEnd
-			local lb = button(r, "◀", 11, COL_CARD); lb.AnchorPoint = Vector2.new(1, 0.5); lb.Position = UDim2.new(1, -30, 0.5, 0); lb.Size = UDim2.fromOffset(26, 24); lb.Activated:Connect(function() onLeft(); renderCustom() end)
-			local rb = button(r, "▶", 11, COL_CARD); rb.AnchorPoint = Vector2.new(1, 0.5); rb.Position = UDim2.new(1, 0, 0.5, 0); rb.Size = UDim2.fromOffset(26, 24); rb.Activated:Connect(function() onRight(); renderCustom() end)
+			local lb = button(r, "‹", 11, COL_CARD); lb.AnchorPoint = Vector2.new(1, 0.5); lb.Position = UDim2.new(1, -30, 0.5, 0); lb.Size = UDim2.fromOffset(26, 24); lb.Activated:Connect(function() onLeft(); renderCustom() end)
+			local rb = button(r, "›", 11, COL_CARD); rb.AnchorPoint = Vector2.new(1, 0.5); rb.Position = UDim2.new(1, 0, 0.5, 0); rb.Size = UDim2.fromOffset(26, 24); rb.Activated:Connect(function() onRight(); renderCustom() end)
 		end
 		local function tog(labelText, k, hintText)
 			local r = frame(customList, COL_PANEL, 6); r.Size = UDim2.new(1, 0, 0, 30); r.LayoutOrder = nextOrder()
@@ -2049,7 +2058,7 @@ do
 		local h = label(r, spec.hint or "", 10, FONT_BODY, COL_DIM); h.Position = UDim2.new(0, 0, 0, 30); h.Size = UDim2.new(1, 0, 0, 26); h.TextYAlignment = Enum.TextYAlignment.Top
 		local btn = button(r, "", 13, COL_CARD)
 		btn.AnchorPoint = Vector2.new(1, 0); btn.Position = UDim2.new(1, 0, 0, 0); btn.Size = UDim2.new(0.42, 0, 0, 30)
-		local function refresh() btn.Text = tostring(ClientSettings.get(spec.key)) .. "  ▸" end
+		local function refresh() btn.Text = tostring(ClientSettings.get(spec.key)) .. "  ›" end
 		choiceRefresh[spec.key] = refresh
 		refresh()
 		btn.Activated:Connect(function()
@@ -2138,12 +2147,12 @@ renderSide = function()
 		local text, color
 		if alive() and ui.door == state.door and not (ui.door == "Courtyard" and not inHub()) then text, color = "RESUME", COL_CARD
 		elseif ui.door == "Courtyard" then
-			if inHub() and roundState() == "Round" and not alive() then text, color = "ENTER COURTYARD ▸", COL_GO_ON
+			if inHub() and roundState() == "Round" and not alive() then text, color = "ENTER COURTYARD ›", COL_GO_ON
 			elseif inHub() then text, color = "TO SPAWN SCREEN", COL_CARD
-			else text, color = "RETURN TO COURTYARD ▸", COL_GO_ON end
-		elseif ui.door == "Lists" then text, color = state.queue and "SEARCHING…" or "FIND MATCH ▸", COL_GO_ON
-		elseif ui.door == "Tiltyard" then text, color = "OPEN TILTYARD ▸", COL_GO_ON
-		else text, color = "QUICK JOIN ▸", COL_GO_ON end
+			else text, color = "RETURN TO COURTYARD ›", COL_GO_ON end
+		elseif ui.door == "Lists" then text, color = state.queue and "SEARCHING…" or "FIND MATCH ›", COL_GO_ON
+		elseif ui.door == "Tiltyard" then text, color = "OPEN TILTYARD ›", COL_GO_ON
+		else text, color = "QUICK JOIN ›", COL_GO_ON end
 		if blocked and text ~= "RESUME" then color = COL_CARD end
 		local go = bigBtn(sideFoot, text, color, function()
 			if text == "RESUME" then hide(); return end
@@ -2159,17 +2168,17 @@ renderSide = function()
 		local note = dim(sideFoot, blocked or (state.studio and "Studio: no teleports, PLAY switches this server's mode." or ""), 10)
 	elseif currentTab == "CLASSES" then
 		local d = ui.dirty[ui.editing]
-		bigBtn(sideFoot, d and ("SAVE " .. string.upper(ui.editing)) or "SAVED ✓", d and COL_GOLD or COL_CARD, function() if d then render.CLASSES_save() end end).TextColor3 = d and Color3.fromRGB(30, 22, 10) or COL_TEXT
+		bigBtn(sideFoot, d and ("SAVE " .. string.upper(ui.editing)) or "SAVED ✔", d and COL_GOLD or COL_CARD, function() if d then render.CLASSES_save() end end).TextColor3 = d and Color3.fromRGB(30, 22, 10) or COL_TEXT
 		bigBtn(sideFoot, state.activeClass == ui.editing and "ACTIVE CLASS ★" or "SET ACTIVE", state.activeClass == ui.editing and COL_CARD_ON or COL_CARD, render.CLASSES_active)
 		bigBtn(sideFoot, "TEAM PREVIEW" .. (ui.team and (": " .. (GameConfig.TEAMS[ui.team] and string.upper(GameConfig.TEAMS[ui.team].name) or ui.team)) or ""), ui.team and COL_CARD_ON or COL_CARD, function()
 			ui.team = ui.team == nil and "A" or (ui.team == "A" and "B" or nil); render.CLASSES()
 		end)
 	elseif currentTab == "APPEARANCE" then
-		bigBtn(sideFoot, ui.appDirty and "SAVE" or "SAVED ✓", ui.appDirty and COL_GOLD or COL_CARD, function() if ui.appDirty then render.APPEARANCE_save() end end).TextColor3 = ui.appDirty and Color3.fromRGB(30, 22, 10) or COL_TEXT
+		bigBtn(sideFoot, ui.appDirty and "SAVE" or "SAVED ✔", ui.appDirty and COL_GOLD or COL_CARD, function() if ui.appDirty then render.APPEARANCE_save() end end).TextColor3 = ui.appDirty and Color3.fromRGB(30, 22, 10) or COL_TEXT
 		bigBtn(sideFoot, ui.helmPreview and "BACK TO EDITING" or "PREVIEW WITH HELMET", ui.helmPreview and COL_CARD_ON or COL_CARD, function() ui.helmPreview = not ui.helmPreview; render.APPEARANCE() end)
 	elseif currentTab == "SERVERS" then
 		bigBtn(sideFoot, ui.customOpen and "CLOSE CUSTOM" or "CREATE CUSTOM", COL_GOLD, function() ui.customOpen = not ui.customOpen; render.SERVERS() end).TextColor3 = Color3.fromRGB(30, 22, 10)
-		bigBtn(sideFoot, "↻  REFRESH", COL_CARD, function() state.serversAt = 0; render.SERVERS() end)
+		bigBtn(sideFoot, "REFRESH", COL_CARD, function() state.serversAt = 0; render.SERVERS() end)
 	end
 	if inMatch then
 		spacer(sideFoot, 4)

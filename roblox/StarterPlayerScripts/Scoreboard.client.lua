@@ -3,7 +3,7 @@
      team scores in team modes) and the leaderboard you see while HOLDING
      Tab: every player's kills, deaths and K/D, sorted by kills, team-coloured.
      During the intermission the board stays up with the result banner and
-     the MAP VOTE (three buttons → VoteRemote). Replaces Roblox's own player
+     the MAP VOTE (three buttons › VoteRemote). Replaces Roblox's own player
      list. Built from Instances. Lives in StarterPlayerScripts. ]]
 
 local Players           = game:GetService("Players")

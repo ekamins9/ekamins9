@@ -3,13 +3,17 @@
         /god          invulnerable (toggle)        /heal          full health
         /speed 2      walk speed multiplier        /tp <name>     teleport to a player
         /bring <name> pull a player to you         /give <Weapon> a weapon from ServerStorage ▸ Weapons
-        /kick <name>  remove a player ]]
+        /kick <name>  remove a player
+     TESTING (Studio only, any server): /marks <n>  /crowns <n>  /xp <n>  /level <n>
+        add that much to your wallet / XP (level = level-ups), e.g. /marks 5000 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local TextChatService = game:GetService("TextChatService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Game = require(ServerScriptService:WaitForChild("Game"):WaitForChild("Game"))
+local Economy = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Economy"))
+local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 
 local STUDIO = RunService:IsStudio()
 local function allowed(plr)
@@ -27,13 +31,35 @@ local function findPlayer(name)
 end
 local god = {}
 local last = {}
+-- XP needed to reach `level` (Catalog ▸ Economy ▸ levels; past the list the last value repeats)
+local Catalog = require(game:GetService("ReplicatedStorage"):WaitForChild("Catalog"))
+local function Catalog_levels(level)
+	local L = Catalog.ECONOMY.levels
+	return L[level] or L[#L]
+end
 local function handle(plr, text)
 	local cmd, rest = text:match("^/(%a+)%s*(.*)$")
 	if not cmd then return end
 	cmd = cmd:lower()
-	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1})[cmd] then return end
+	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, xp = 1, level = 1})[cmd] then return end
 	if os.clock() - (last[plr] or -1e9) < 0.3 then return end
 	last[plr] = os.clock()
+	-- testing cheats: Studio only, no server setting needed
+	if cmd == "marks" or cmd == "crowns" or cmd == "xp" or cmd == "level" then
+		if not STUDIO then return end
+		local n = math.floor(tonumber(rest) or 0)
+		if n == 0 then return end
+		local p = Profile.get(plr)
+		if cmd == "marks" then p.wallet.marks = math.max(0, p.wallet.marks + n)
+		elseif cmd == "crowns" then p.wallet.crowns = math.max(0, p.wallet.crowns + n)
+		elseif cmd == "xp" then Economy.addXP(plr, math.max(0, n))
+		elseif cmd == "level" then
+			for _ = 1, math.clamp(n, 1, 100) do Economy.addXP(plr, Catalog_levels(p.level + 1) - p.xp) end
+		end
+		Profile.markDirty(plr)
+		Economy.changed:Fire(plr)
+		return
+	end
 	if not allowed(plr) then return end
 	local char = plr.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -49,7 +75,7 @@ local function handle(plr, text)
 	end
 end
 pcall(function()
-	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick"}) do
+	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "xp", "level"}) do
 		local c = Instance.new("TextChatCommand"); c.Name = "Cheat_" .. name; c.PrimaryAlias = "/" .. name; c.Parent = TextChatService
 		c.Triggered:Connect(function(source, text) local p = Players:GetPlayerByUserId(source.UserId); if p then handle(p, text) end end)
 	end

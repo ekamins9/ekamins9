@@ -88,7 +88,7 @@ def lua_bool(b): return "true" if b else "false"
 
 def write(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f: f.write(text)
+    with open(path, "w", encoding="utf-8") as f: f.write(text)
 
 def gen_tools():
     for (wid, name, fam, two, sec, speed, reach, slash, stab, sm, cm, ss, desc, unlock, marks) in WEAPONS:
@@ -168,9 +168,10 @@ def gen_catalog_skins():
              '       kills    for crate = "earned": kills with that weapon that unlock it',
              '       blade / grip   Color3 tints for parts with attribute SkinPart = "Blade" / "Grip"',
              '       model    optional Model in Cosmetics ▸ Skins ▸ <weapon> ▸ <model or name> that',
-             '                replaces the Tool\'s visible parts (welded by offset from its Handle) ]]', 'return {']
+             '                replaces the Tool\'s visible parts (welded by offset from its Handle) ]]',
+             'local C = Color3.fromRGB', 'return {']
     lines.append('\t-- HAND-WRITTEN (scripts/skins_handmade.part): the four original weapons')
-    with open(os.path.join(os.path.dirname(__file__), "skins_handmade.part")) as f: lines.append(f.read().rstrip("\n"))
+    with open(os.path.join(os.path.dirname(__file__), "skins_handmade.part"), encoding="utf-8") as f: lines.append(f.read().rstrip("\n"))
     lines.append('\t-- GENERATED for every other weapon')
     for (wid, name, *_rest) in WEAPONS:
         if wid in EXISTING: continue

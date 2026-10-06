@@ -1,0 +1,6 @@
+.env
+*.fbx
+*.obj
+*.blend1
+build/
+__pycache__/

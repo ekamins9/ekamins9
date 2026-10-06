@@ -82,7 +82,7 @@ local hpShown, staShown = 1, 1
 
 --------------------------------------------------------------------
 --  COMBAT TEXT — a word near the crosshair for what just happened:
---  as the defender  PARRY ×2 +12 (gold, big) · BLOCK −20 (grey) · CHAMBER · GUARD BROKEN
+--  as the defender  PARRY x2 +12 (gold, big) · BLOCK -20 (grey) · CHAMBER · GUARD BROKEN
 --  as the attacker  PARRIED / CHAMBERED (red) · BLOCKED (grey) · FEINT · TEAMMATE (orange)
 --  (hitting a wall / the floor shows nothing — you heard the clang)
 --------------------------------------------------------------------
@@ -99,8 +99,8 @@ local popupOrder = 0
 local function popup(text, big, colorKey, offsetX)
 	popupOrder += 1
 	local key = colorKey or text:match("^(GUARD BROKEN)") or text:match("^(%u+)")
-	-- a parry streak grows: PARRY ×2, ×3… get bigger each time
-	local streak = tonumber(text:match("×(%d+)")) or 1
+	-- a parry streak grows: PARRY x2, x3… get bigger each time
+	local streak = tonumber(text:match("x(%d+)")) or 1
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
 	l.AnchorPoint = Vector2.new(0.5, 0.5)
