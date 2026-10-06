@@ -19,6 +19,7 @@ local RunService        = game:GetService("RunService")
 local TweenService      = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 
 local player    = Players.LocalPlayer
 local remote    = ReplicatedStorage:WaitForChild("LoadoutRemote")
@@ -32,18 +33,18 @@ local bus = _G.MenuBus
 --------------------------------------------------------------------
 --  LOOK
 --------------------------------------------------------------------
-local FONT       = Enum.Font.GothamBold
-local FONT_BLACK = Enum.Font.GothamBlack
-local FONT_BODY  = Enum.Font.Gotham
-local COL_BACK    = Color3.fromRGB(8, 7, 6)
-local COL_PANEL   = Color3.fromRGB(22, 20, 18)
-local COL_CARD    = Color3.fromRGB(38, 35, 31)
-local COL_CARD_ON = Color3.fromRGB(96, 78, 46)
-local COL_TEXT    = Color3.fromRGB(235, 228, 214)
-local COL_DIM     = Color3.fromRGB(160, 150, 135)
-local COL_ACCENT  = Color3.fromRGB(196, 150, 70)
-local COL_SPAWN   = Color3.fromRGB(120, 42, 34)
-local COL_SPAWN_ON= Color3.fromRGB(170, 58, 44)
+local FONT       = Theme.FONT
+local FONT_BLACK = Theme.FONT_TITLE
+local FONT_BODY  = Theme.FONT_BODY
+local COL_BACK    = Theme.BACK
+local COL_PANEL   = Theme.PANEL
+local COL_CARD    = Theme.CARD
+local COL_CARD_ON = Theme.CARD_ON
+local COL_TEXT    = Theme.TEXT
+local COL_DIM     = Theme.DIM
+local COL_ACCENT  = Theme.ACCENT
+local COL_SPAWN   = Theme.GO
+local COL_SPAWN_ON= Theme.GO_ON
 local TYPE_COL    = {Light = Color3.fromRGB(96, 160, 96), Medium = Color3.fromRGB(190, 160, 70), Heavy = Color3.fromRGB(180, 80, 70)}
 
 local function label(parent, text, size, font, color)
@@ -65,10 +66,13 @@ local function button(parent, text, size, color)
 	b.AutoButtonColor = true
 	b.Font = FONT
 	b.TextSize = size or 15
-	b.TextColor3 = COL_TEXT
+	b.TextColor3 = Theme.textOn(b.BackgroundColor3)
 	b.Text = text
 	b.Parent = parent
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+		if b.TextColor3 == COL_TEXT or b.TextColor3 == Theme.INK then b.TextColor3 = Theme.textOn(b.BackgroundColor3) end
+	end)
 	return b
 end
 

@@ -20,13 +20,23 @@ local ServerStorage     = game:GetService("ServerStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Debris            = game:GetService("Debris")
 
--- Cosmetics folders first, so Catalog finds them on the client too
+-- 1) anything without a hand-made model is built from Build ▸ Blueprints
+--    (weapon bodies, armor set models, hair / beards / faces, weapon displays)
+do
+	local build = ServerScriptService:FindFirstChild("Build")
+	local bp = build and build:FindFirstChild("Blueprints")
+	if bp then
+		local ok, err = pcall(function() require(bp).ensureAll() end)
+		if not ok then warn("[Loadout] Blueprints failed:", err) end
+	end
+end
+-- 2) Cosmetics folders, so Catalog finds them on the client too
 local cos = ReplicatedStorage:FindFirstChild("Cosmetics")
 if not cos then cos = Instance.new("Folder"); cos.Name = "Cosmetics"; cos.Parent = ReplicatedStorage end
 for _, n in ipairs({"Armor", "Pieces", "Skins", "Weapons", "Body"}) do
 	if not cos:FindFirstChild(n) then local f = Instance.new("Folder"); f.Name = n; f.Parent = cos end
 end
-for _, n in ipairs({"Hair", "Beard"}) do if not cos.Body:FindFirstChild(n) then local f = Instance.new("Folder"); f.Name = n; f.Parent = cos.Body end end
+for _, n in ipairs({"Hair", "Beard", "Face"}) do if not cos.Body:FindFirstChild(n) then local f = Instance.new("Folder"); f.Name = n; f.Parent = cos.Body end end
 local legacy = ServerStorage:FindFirstChild("Armor")
 if legacy then
 	for _, set in ipairs(legacy:GetChildren()) do

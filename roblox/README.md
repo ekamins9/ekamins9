@@ -38,6 +38,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Economy/Economy.lua` | `ServerScriptService` → `Economy` (Folder) → `Economy` | ModuleScript |
 | `ServerScriptService/Economy/Stats.lua` | `ServerScriptService` → `Economy` → `Stats` | ModuleScript |
 | `ServerScriptService/Economy/EconomyServer.server.lua` | `ServerScriptService` → `Economy` → `EconomyServer` | Script |
+| `ServerScriptService/Build/<Name>.lua` | `ServerScriptService` → `Build` (Folder) → `Builder`, `Weapons`, `Armor`, `Body`, `Blueprints` | ModuleScript each |
+| `ReplicatedStorage/Theme.lua` | `ReplicatedStorage` → `Theme` | ModuleScript |
 | `ServerScriptService/Loadout/Profile.lua` | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript |
 | `ReplicatedStorage/Catalog/init.lua` | `ReplicatedStorage` → `Catalog` | ModuleScript |
 | `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts` (children of the Catalog ModuleScript) | ModuleScript each |
@@ -53,6 +55,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
+| `Tools/<Weapon>/Config.lua`, `Server.server.lua`, `Client.client.lua` | `ServerStorage` → `Weapons` → each Tool (26 weapons: Shortsword, Pitchfork, Greatsword, Hammer, ArmingSword, Dagger, Longsword, Mace, Cleaver, Falchion, BattleAxe, MorningStar, Halberd, Messer, Maul, Billhook, Estoc, Rapier, Glaive, Poleaxe, Bardiche, Zweihander, Executioner, WarAxe, Spear, Quarterstaff) | ModuleScript, Script, LocalScript |
 | `Tools/Pitchfork/Config.lua` | inside the Tool → `Config` | ModuleScript |
 | `Tools/Pitchfork/Server.server.lua` | inside the Tool → `Server` | Script |
 | `Tools/Pitchfork/Client.client.lua` | inside the Tool → `Client` | LocalScript |
@@ -90,6 +93,14 @@ wear (owned pieces, unlocked weapons, owned colors / skins); `Dresser.dress` put
 on the server for real spawns and on the client for every menu mannequin, so what you see is
 what spawns. Profiles are DataStore `Profiles_v2` (v1 saves migrate: armor set → its three
 pieces). **Adding content is config only: see [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
+
+## Look (`Theme`)
+
+Every screen reads its colors and fonts from `ReplicatedStorage ▸ Theme`: deep blue panels,
+white text, yellow for the action you should press (dark text on it, automatically), bright
+blue for what is selected, green good / red bad, rounded cards with a faint white outline,
+FredokaOne headings. Change a value there and the Hub menu, class screen, scoreboard, travel
+screen and HUD all follow.
 
 ## Hub menu (M)
 
@@ -201,6 +212,22 @@ per-limb protection check finds it. Rules the pieces play by:
 - Severed limbs take their armor with them; a skewered head takes its helmet onto the blade.
 - Helmets (`HeadClothing`) are hidden in first person like hats.
 - Test dummies still wear whole sets: `/spawn attack Pitchfork PeasantSkin`.
+
+## Weapons (26) and blueprints
+
+The roster covers the Mordhau / Chivalry armory: swords (Shortsword, Arming Sword, Longsword,
+Greatsword, Zweihander, Executioner's Sword, Estoc, Rapier, Falchion, Kriegsmesser, Cleaver,
+Rondel Dagger), blunt (War Hammer, Flanged Mace, Morning Star, Maul), axes (War Axe, Battle
+Axe, Bardiche) and polearms (Spear, Pitchfork, Halberd, Poleaxe, Glaive, Billhook,
+Quarterstaff). Each Tool holds only its three scripts in the repo; its BODY (Handle, Hitbox,
+blade / haft / head, skin-tintable parts) is built from `Build ▸ Weapons` when the Tool has no
+Handle, and a display copy lands in `Cosmetics ▸ Weapons` for the menu mannequin. Stats
+(speed, reach, damage per attack, one- or two-handed, weight) live in each Tool's `Config`;
+unlocks and prices in `Catalog ▸ Weapons`; both are generated from `scripts/gen_content.py`.
+Armor sets work the same way: `Build ▸ Armor` has a blueprint for every set in
+`ServerStorage ▸ Armor` (Marsh Warden, Brigand, Woodsman · Gilded Court, Sergeant, Freelancer ·
+Iron Crow, Templar, Royal Guard, plus fallbacks for Knight, Gambeson and Peasant), and
+`Build ▸ Body` has hair, beards and faces. See [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0.
 
 ## Making a new weapon
 

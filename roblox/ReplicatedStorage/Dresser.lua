@@ -134,7 +134,8 @@ local function applyBody(char, app, coversHair, coversFace)
 	end
 	add("Hair", app.hair, coversHair)
 	add("Beard", app.beard, coversFace)
-	-- face
+	-- face: a decal texture for the whole face, and / or a Face model overlay
+	-- (brows, mouth, paint — Build ▸ Body) that keeps its own colors
 	if head then
 		local decal = head:FindFirstChildOfClass("Decal")
 		local face
@@ -142,6 +143,13 @@ local function applyBody(char, app, coversHair, coversFace)
 		if decal then
 			if face and face.texture ~= "" then decal.Texture = face.texture end
 			decal.Transparency = coversFace and 1 or 0
+		end
+		if face and not coversFace then
+			local t = Catalog.bodyModel("Face", face.id)
+			if t then
+				local m = putOn(head, t)
+				if m then m.Name = "Face"; m.Parent = body end
+			end
 		end
 	end
 	body.Parent = char

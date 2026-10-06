@@ -2,86 +2,61 @@
 
 Rewritten after every change — only what the **last** change touched. Links open the file.
 
-**Now synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md). The tables below still say where each file lives.
+**Synced with Rojo:** `git pull` + `rojo serve` on your PC puts all of this into Studio by itself — see [ROJO_SETUP.md](ROJO_SETUP.md).
 
-**Last change: the whole menu / cosmetics / economy system.** Doors (Courtyard · Tiltyard ·
-Warfront · The Lists), parties of 3 with **ready-up**, matchmaking queue + ranked ratings,
-appearance (hair / beard / face / skin / hair color / title), weight-based classes with
-helmet / top / bottom pieces and color blocks, weapon unlocks + skins, the shop (crates with
-odds / pity / duplicate refunds, packs, premium colors, GET CROWNS with Robux products and
-Crowns → Marks), custom servers with every setting (cheats → host commands, no rewards), end-of-
-round pay, daily / weekly contracts, mode votes on the Warfront. **Adding content is config
-only — read [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
+**Last change: the cosmetic side, complete.** 22 new weapons (26 total, the Mordhau /
+Chivalry armory), 9 new armor sets across the three weights, 8 hair styles, 5 beards, 7 faces,
+skins for every weapon (3 crates), 7 packs — and every one of them has a **blueprint**, so the
+game builds the models itself where you haven't made one yet (`ServerScriptService ▸ Build`).
+Plus the bright, friendly look (`ReplicatedStorage ▸ Theme`) across every screen.
 
-## Studio setup (once)
+## What happens when you press Play
 
-1. `ReplicatedStorage` → make a ModuleScript **`Catalog`** (paste `Catalog/init.lua`), then make
-   these ModuleScripts **as children of it**: `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`,
-   `Body`, `Palette`, `Crates`, `Economy`, `Contracts` (from `ReplicatedStorage/Catalog/*.lua`).
-2. `ReplicatedStorage` → ModuleScript **`Dresser`**.
-3. `ServerScriptService` → Folder **`Economy`** with ModuleScripts `Economy`, `Stats` and Script
-   `EconomyServer`.
-4. `ServerScriptService` → `Hub` → add ModuleScript **`Matchmaker`** and Script **`Cheats`**.
-5. `ServerScriptService` → `Game` → `Modes` → add ModuleScripts **`Lists`** and **`Tiltyard`**.
-6. Replace every file in the table below. Delete `ServerScriptService` → `Loadout` → `Armor` if
-   you like (`Dresser` replaced it; `TestDummies` still works either way).
-7. Give your weapons' blade / grip parts an attribute `SkinPart` = `"Blade"` / `"Grip"` so skins
-   tint them, and put a display copy of each weapon in `ReplicatedStorage` → `Cosmetics` →
-   `Weapons` → `<ToolName>` (a Model with a `Handle`) for the menu mannequin. `Cosmetics` and
-   its folders are created by the server on first run.
-8. For Robux Crowns: make Developer Products and paste the ids into `Catalog ▸ Economy`.
+`LoadoutServer` calls `Build ▸ Blueprints.ensureAll()` first. It gives every weapon Tool
+without a Handle its body (Handle, Hitbox, welded parts, `SkinPart` attributes), every armor
+set folder without clothing models its six models (with `ColorSlot` color blocks), fills
+`Cosmetics ▸ Body ▸ Hair / Beard / Face`, and drops a display copy of every weapon in
+`Cosmetics ▸ Weapons`. Your hand-made Shortsword / Pitchfork / Greatsword / Hammer and your
+three sets are untouched (they already have models). To get **editable** copies in Studio,
+run that same line in the command bar in edit mode — see [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0.
 
-Profiles move to DataStore `Profiles_v2`; old v1 saves migrate on first load.
+## Studio notes
+
+- Rojo creates the 22 new Tools in `ServerStorage ▸ Weapons` and the 9 set folders in
+  `ServerStorage ▸ Armor` from the repo; nothing to make by hand.
+- Your four existing weapons: give their blade / grip parts an attribute `SkinPart` = `"Blade"`
+  / `"Grip"` so skins tint them (the generated weapons already have it).
+- New folder `ServerScriptService ▸ Build` (Rojo makes it). New module `ReplicatedStorage ▸ Theme`.
+- Profiles: new default face is `Calm`; old saves keep working.
 
 ## New files
 
 | File | Roblox Studio location | Type | What it is |
 |---|---|---|---|
-| [ReplicatedStorage/Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | `ReplicatedStorage` → `Catalog` | ModuleScript | the content catalog (auto-imports armor sets as pieces) |
-| [ReplicatedStorage/Catalog/Weights.lua](ReplicatedStorage/Catalog/Weights.lua) | `Catalog` → `Weights` | ModuleScript | Light / Medium / Heavy stats |
-| [ReplicatedStorage/Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | `Catalog` → `Packs` | ModuleScript | packs |
-| [ReplicatedStorage/Catalog/Pieces.lua](ReplicatedStorage/Catalog/Pieces.lua) | `Catalog` → `Pieces` | ModuleScript | explicit pieces (usually empty) |
-| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `Catalog` → `Weapons` | ModuleScript | weapons + unlocks |
-| [ReplicatedStorage/Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | `Catalog` → `Skins` | ModuleScript | weapon skins |
-| [ReplicatedStorage/Catalog/Body.lua](ReplicatedStorage/Catalog/Body.lua) | `Catalog` → `Body` | ModuleScript | hair, beards, faces, skin, hair colors, titles |
-| [ReplicatedStorage/Catalog/Palette.lua](ReplicatedStorage/Catalog/Palette.lua) | `Catalog` → `Palette` | ModuleScript | armor colors |
-| [ReplicatedStorage/Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | `Catalog` → `Crates` | ModuleScript | crates |
-| [ReplicatedStorage/Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | `Catalog` → `Economy` | ModuleScript | earn table, products, exchange, levels, ranks |
-| [ReplicatedStorage/Catalog/Contracts.lua](ReplicatedStorage/Catalog/Contracts.lua) | `Catalog` → `Contracts` | ModuleScript | contracts |
-| [ReplicatedStorage/Dresser.lua](ReplicatedStorage/Dresser.lua) | `ReplicatedStorage` → `Dresser` | ModuleScript | dresses a character / mannequin: pieces, colors, body, skins |
-| [ServerScriptService/Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) | `ServerScriptService` → `Economy` (Folder) → `Economy` | ModuleScript | awards, buying, crates, exchange, products |
-| [ServerScriptService/Economy/Stats.lua](ServerScriptService/Economy/Stats.lua) | `ServerScriptService` → `Economy` → `Stats` | ModuleScript | counters, contracts, earned skins |
-| [ServerScriptService/Economy/EconomyServer.server.lua](ServerScriptService/Economy/EconomyServer.server.lua) | `ServerScriptService` → `Economy` → `EconomyServer` | Script | Robux receipts (`ProcessReceipt`) |
-| [ServerScriptService/Hub/Matchmaker.lua](ServerScriptService/Hub/Matchmaker.lua) | `ServerScriptService` → `Hub` → `Matchmaker` | ModuleScript | The Lists queue (MemoryStore), pairing, match records |
-| [ServerScriptService/Hub/Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | `ServerScriptService` → `Hub` → `Cheats` | Script | host commands on cheat servers |
-| [ServerScriptService/Game/Modes/Lists.lua](ServerScriptService/Game/Modes/Lists.lua) | `ServerScriptService` → `Game` → `Modes` → `Lists` | ModuleScript | arena matches: sides from the matchmaker, best of 5, forfeit |
-| [ServerScriptService/Game/Modes/Tiltyard.lua](ServerScriptService/Game/Modes/Tiltyard.lua) | `…` → `Modes` → `Tiltyard` | ModuleScript | the training yard |
-| [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | **how to add sets, pieces, packs, weapons, skins, crates, body models, colors, products, contracts, maps** |
+| [ServerScriptService/Build/Builder.lua](ServerScriptService/Build/Builder.lua) | `ServerScriptService` → `Build` (Folder) → `Builder` | ModuleScript | part factory + shared palette |
+| [ServerScriptService/Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | `Build` → `Weapons` | ModuleScript | 26 weapon blueprints (swords, blunt, axes, polearms) |
+| [ServerScriptService/Build/Armor.lua](ServerScriptService/Build/Armor.lua) | `Build` → `Armor` | ModuleScript | 12 armor set blueprints (helms, plate, gambeson, mail, hoods…) |
+| [ServerScriptService/Build/Body.lua](ServerScriptService/Build/Body.lua) | `Build` → `Body` | ModuleScript | 8 hairs, 5 beards, 7 face overlays |
+| [ServerScriptService/Build/Blueprints.lua](ServerScriptService/Build/Blueprints.lua) | `Build` → `Blueprints` | ModuleScript | `ensureAll()`: builds what is missing, weapon display copies |
+| [ReplicatedStorage/Theme.lua](ReplicatedStorage/Theme.lua) | `ReplicatedStorage` → `Theme` | ModuleScript | the UI palette + fonts |
+| `Tools/<Weapon>/…` (22 folders) | `ServerStorage` → `Weapons` → `ArmingSword`, `Dagger`, `Longsword`, `Mace`, `Cleaver`, `Falchion`, `BattleAxe`, `MorningStar`, `Halberd`, `Messer`, `Maul`, `Billhook`, `Estoc`, `Rapier`, `Glaive`, `Poleaxe`, `Bardiche`, `Zweihander`, `Executioner`, `WarAxe`, `Spear`, `Quarterstaff` | Tool with Config / Server / Client | generated by `scripts/gen_content.py` |
+| `ServerStorage/Armor/<Set>/Config.lua` (9 folders) | `ServerStorage` → `Armor` → `MarshWarden`, `Brigand`, `Woodsman`, `GildedCourt`, `Sergeant`, `Freelancer`, `IronCrow`, `Templar`, `RoyalGuard` | ModuleScript | set configs (weight, pack, price, covers) |
+| [scripts/gen_content.py](../scripts/gen_content.py) | — (repo tooling) | python | generates the Tool folders, set folders, `Catalog ▸ Weapons` and `Catalog ▸ Skins` from tables |
 
 ## Replaced files
 
 | File | Roblox Studio location | Type | What changed |
 |---|---|---|---|
-| [ReplicatedStorage/GameConfig.lua](ReplicatedStorage/GameConfig.lua) | `ReplicatedStorage` → `GameConfig` | ModuleScript | `DOORS`, `DOOR_ORDER`, `PARTY_MAX`, modes `Tiltyard` + `Lists`, classes have `weight`, `CUSTOM_DEFAULTS` |
-| [ServerScriptService/Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript | profile v2: wallet, level, appearance, owned, piece loadouts, ratings, crates, contracts; validation |
-| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | mirrors sets into Cosmetics, dresses through `Dresser`, weapon skins, no-respawn servers |
-| [ServerScriptService/Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | `ServerScriptService` → `Hub` → `HubServer` | Script | doors, party **ready-up** (`PartyReady` / `PartyKick`), queue, custom settings, shop ops, leaderboards, profile pushes, match-over send-home |
-| [ServerScriptService/Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | `ServerScriptService` → `Scoreboard` | Script | round-end pay (`Economy.award` → "Rewards"), stats + contracts, ranked Elo + `LB_<bracket>` / `LB_Warfront` boards, ranked queue lock on leave |
-| [ServerScriptService/Game/Game.lua](ServerScriptService/Game/Game.lua) | `ServerScriptService` → `Game` → `Game` | ModuleScript | server identity: door, bracket, ranked, sides, custom settings; no-respawn rule; `roundLength` |
-| [ServerScriptService/Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | `ServerScriptService` → `Game` → `GameServer` | Script | Warfront **mode vote** (`ModeVote1..3`), `VoteRemote ("mode"|"map", i)`, per-round attributes (`FriendlyFire`, `NoRewards`, `Door`, `Bracket`, `Ranked`, `ServerName`), `MatchOver` |
-| [ServerScriptService/Game/Teams.lua](ServerScriptService/Game/Teams.lua) | `ServerScriptService` → `Game` → `Teams` | ModuleScript | no tabard when the armor is team-painted |
-| [ServerScriptService/Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | `ServerScriptService` → `Combat` → `CombatServer` | ModuleScript | friendly fire off on custom servers; reports parries / chambers to `_G.StatHook` |
-| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | **the whole new menu** (PLAY · APPEARANCE · CLASSES · SHOP · SERVERS · SETTINGS, mannequins, ready-up, queue, crates drum, custom panel) |
-| [StarterPlayerScripts/Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript | mode vote buttons, bracket / ranked / no-rewards strip, match over |
-| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript | class cards show helm · top · legs · weapon (skin) |
-| [README.md](README.md) | — | doc | classes / pieces / Dresser, the new menu, money + ranked, armor sets, placement table |
-
-## Remotes (for reference)
-
-`HubRemote` ops: `State`, `Servers`, `Friends`, `Leaderboard(which)`, `Play(door, {bracket, ranked, mode})`,
-`Hub`, `Custom(settings)`, `Join(jobId)`, `JoinFriend(userId)`, `QueueCancel`, `PartyCreate`,
-`PartyInvite(id)`, `PartyAccept`, `PartyLeave`, `PartyReady(bool)`, `PartyKick(id)`,
-`SaveClass(classId, loadout)`, `SetActive(classId)`, `SaveAppearance(app)`,
-`Buy(kind, id, currency)`, `OpenCrate(crateId)`, `Exchange(tier)`, `BuyCrowns(index)`.
-`HubEvent` to the client: `Party`, `Toast`, `Invite`, `Profile`, `Travel`, `TravelFailed`,
-`MatchFound`, `Rewards`.
+| [ReplicatedStorage/Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | `Catalog` → `Weapons` | ModuleScript | all 26 weapons with unlocks (free / level / kills) and prices |
+| [ReplicatedStorage/Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | `Catalog` → `Skins` | ModuleScript | 6–8 skins per weapon across Bladesmith / Hafted / Treasury, Veteran at 100 kills |
+| [ReplicatedStorage/Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | `Catalog` → `Packs` | ModuleScript | Marsh Wardens, Outlaws, Gilded Court, Garrison, Iron Crow (featured), Holy Order, Royal Guard |
+| [ReplicatedStorage/Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | `Catalog` → `Crates` | ModuleScript | Royal Treasury crate (Epic / Legendary only) |
+| [ReplicatedStorage/Catalog/Body.lua](ReplicatedStorage/Catalog/Body.lua) | `Catalog` → `Body` | ModuleScript | 8 hairs, 6 beards, 7 faces; default face Calm |
+| [ReplicatedStorage/Dresser.lua](ReplicatedStorage/Dresser.lua) | `ReplicatedStorage` → `Dresser` | ModuleScript | face models as overlays on the head |
+| [ServerScriptService/Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script | runs the Blueprints first; `Body ▸ Face` folder |
+| [StarterPlayerScripts/HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript | Theme colors, dark text on bright buttons, card outlines |
+| [StarterPlayerScripts/LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | `…` → `LoadoutMenu` | LocalScript | Theme |
+| [StarterPlayerScripts/Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | `…` → `Scoreboard` | LocalScript | Theme |
+| [StarterPlayerScripts/TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | `…` → `TravelScreen` | LocalScript | Theme |
+| [StarterCharacterScripts/HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript | navy panel |
+| [README.md](README.md) · [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | weapons roster, blueprints (§0), Theme |

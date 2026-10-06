@@ -30,6 +30,7 @@ local GameConfig     = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Catalog        = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Dresser        = require(ReplicatedStorage:WaitForChild("Dresser"))
+local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 
 local player        = Players.LocalPlayer
 local hubRemote     = ReplicatedStorage:WaitForChild("HubRemote")
@@ -90,25 +91,25 @@ end
 --------------------------------------------------------------------
 --  LOOK
 --------------------------------------------------------------------
-local FONT       = Enum.Font.GothamBold
-local FONT_BLACK = Enum.Font.GothamBlack
-local FONT_BODY  = Enum.Font.Gotham
-local COL_BACK    = Color3.fromRGB(8, 7, 6)
-local COL_PANEL   = Color3.fromRGB(22, 20, 18)
-local COL_SIDE    = Color3.fromRGB(16, 15, 13)
-local COL_CARD    = Color3.fromRGB(38, 35, 31)
-local COL_CARD2   = Color3.fromRGB(30, 28, 25)
-local COL_CARD_ON = Color3.fromRGB(96, 78, 46)
-local COL_TEXT    = Color3.fromRGB(235, 228, 214)
-local COL_DIM     = Color3.fromRGB(160, 150, 135)
-local COL_ACCENT  = Color3.fromRGB(196, 150, 70)
-local COL_GOLD    = Color3.fromRGB(201, 154, 72)
-local COL_GO      = Color3.fromRGB(120, 42, 34)
-local COL_GO_ON   = Color3.fromRGB(170, 58, 44)
-local COL_GOOD    = Color3.fromRGB(110, 170, 100)
-local COL_BAD     = Color3.fromRGB(200, 80, 70)
-local COL_MARKS   = Color3.fromRGB(196, 150, 70)
-local COL_CROWNS  = Color3.fromRGB(170, 120, 230)
+local FONT       = Theme.FONT
+local FONT_BLACK = Theme.FONT_TITLE
+local FONT_BODY  = Theme.FONT_BODY
+local COL_BACK    = Theme.BACK
+local COL_PANEL   = Theme.PANEL
+local COL_SIDE    = Theme.SIDE
+local COL_CARD    = Theme.CARD
+local COL_CARD2   = Theme.CARD2
+local COL_CARD_ON = Theme.CARD_ON
+local COL_TEXT    = Theme.TEXT
+local COL_DIM     = Theme.DIM
+local COL_ACCENT  = Theme.ACCENT
+local COL_GOLD    = Theme.GOLD
+local COL_GO      = Theme.GO
+local COL_GO_ON   = Theme.GO_ON
+local COL_GOOD    = Theme.GOOD
+local COL_BAD     = Theme.BAD
+local COL_MARKS   = Theme.MARKS
+local COL_CROWNS  = Theme.CROWNS
 local TYPE_COL    = {Light = Color3.fromRGB(96, 160, 96), Medium = Color3.fromRGB(190, 160, 70), Heavy = Color3.fromRGB(180, 80, 70)}
 local RARITY_COL  = {Common = Color3.fromRGB(93, 107, 122), Rare = Color3.fromRGB(47, 111, 176), Epic = Color3.fromRGB(122, 63, 176), Legendary = Color3.fromRGB(201, 154, 72)}
 
@@ -132,10 +133,14 @@ local function button(parent, text, size, color)
 	b.AutoButtonColor = true
 	b.Font = FONT
 	b.TextSize = size or 15
-	b.TextColor3 = COL_TEXT
+	b.TextColor3 = Theme.textOn(b.BackgroundColor3)
 	b.Text = text
 	b.Parent = parent
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	local st = Instance.new("UIStroke", b); st.Color = Theme.STROKE; st.Transparency = 0.86; st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	b:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+		if b.TextColor3 == COL_TEXT or b.TextColor3 == Theme.INK then b.TextColor3 = Theme.textOn(b.BackgroundColor3) end
+	end)
 	return b
 end
 
@@ -193,7 +198,8 @@ end
 local orderN = 0
 local function nextOrder() orderN += 1; return orderN end
 local function panel(parent, heading, quiet)
-	local p = frame(parent, quiet and COL_CARD2 or COL_CARD, 10)
+	local p = frame(parent, quiet and COL_CARD2 or COL_CARD, 12)
+	do local st = Instance.new("UIStroke", p); st.Color = Theme.STROKE; st.Transparency = 0.88 end
 	p.AutomaticSize = Enum.AutomaticSize.Y
 	p.Size = UDim2.new(1, 0, 0, 0)
 	p.LayoutOrder = nextOrder()
@@ -406,14 +412,14 @@ gui.Parent = playerGui
 
 local backdrop = frame(gui, COL_BACK)
 backdrop.Size = UDim2.fromScale(1, 1)
-backdrop.BackgroundTransparency = 0.45
+backdrop.BackgroundTransparency = 0.35
 backdrop.Active = true
 
 local panelMain = frame(backdrop, COL_PANEL, 12)
 panelMain.AnchorPoint = Vector2.new(0.5, 0.5)
 panelMain.Position = UDim2.fromScale(0.5, 0.5)
 panelMain.Size = UDim2.fromScale(0.92, 0.88)
-do local s = Instance.new("UIStroke", panelMain); s.Color = COL_ACCENT; s.Thickness = 1.5; s.Transparency = 0.5 end
+do local s = Instance.new("UIStroke", panelMain); s.Color = Theme.STROKE; s.Thickness = 2; s.Transparency = 0.8 end
 Instance.new("UISizeConstraint", panelMain).MaxSize = Vector2.new(1500, 920)
 
 -- header: title · subtitle · wallet · close

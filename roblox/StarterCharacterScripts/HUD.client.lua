@@ -17,7 +17,7 @@ local LERP_SPEED     = 10
 local HP_HIGH  = Color3.fromRGB(105, 205, 120)
 local HP_LOW   = Color3.fromRGB(215, 70, 60)
 local STA_COL  = Color3.fromRGB(235, 190, 80)
-local BG_COL   = Color3.fromRGB(18, 18, 22)
+local BG_COL   = Color3.fromRGB(13, 30, 64)
 --------------------------------------------------------------------
 
 local gui = Instance.new("ScreenGui")

@@ -43,12 +43,13 @@ local HINTS = {
 }
 --------------------------------------------------------------------
 
-local FONT, FONT_BLACK, FONT_BODY = Enum.Font.GothamBold, Enum.Font.GothamBlack, Enum.Font.Gotham
-local COL_BACK   = Color3.fromRGB(8, 7, 6)
-local COL_TEXT   = Color3.fromRGB(235, 228, 214)
-local COL_DIM    = Color3.fromRGB(160, 150, 135)
-local COL_ACCENT = Color3.fromRGB(196, 150, 70)
-local COL_TRACK  = Color3.fromRGB(30, 27, 24)
+local Theme = require(game:GetService("ReplicatedStorage"):WaitForChild("Theme"))
+local FONT, FONT_BLACK, FONT_BODY = Theme.FONT, Theme.FONT_TITLE, Theme.FONT_BODY
+local COL_BACK   = Theme.BACK
+local COL_TEXT   = Theme.TEXT
+local COL_DIM    = Theme.DIM
+local COL_ACCENT = Theme.ACCENT
+local COL_TRACK  = Theme.CARD2
 
 local function build(name)
 	local gui = Instance.new("ScreenGui")

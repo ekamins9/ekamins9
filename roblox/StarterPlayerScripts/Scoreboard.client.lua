@@ -14,6 +14,7 @@ local StarterGui        = game:GetService("StarterGui")
 local TweenService      = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("KillFeedRemote")
@@ -24,16 +25,16 @@ local voteRemote = ReplicatedStorage:FindFirstChild("VoteRemote")
 local FEED_MAX     = 6
 local FEED_TTL     = 7      -- seconds an entry stays
 local BOARD_KEY    = Enum.KeyCode.Tab
-local FONT, FONT_BODY, FONT_BLACK = Enum.Font.GothamBold, Enum.Font.Gotham, Enum.Font.GothamBlack
-local COL_TEXT   = Color3.fromRGB(235, 228, 214)
-local COL_DIM    = Color3.fromRGB(160, 150, 135)
-local COL_ACCENT = Color3.fromRGB(196, 150, 70)
-local COL_ME     = Color3.fromRGB(120, 170, 100)
-local COL_KILL   = Color3.fromRGB(215, 90, 70)
-local COL_TK     = Color3.fromRGB(200, 140, 60)
-local COL_PANEL  = Color3.fromRGB(24, 22, 20)
-local COL_ROW    = Color3.fromRGB(38, 35, 31)
-local COL_ROW_ON = Color3.fromRGB(96, 78, 46)
+local FONT, FONT_BODY, FONT_BLACK = Theme.FONT, Theme.FONT_BODY, Theme.FONT_TITLE
+local COL_TEXT   = Theme.TEXT
+local COL_DIM    = Theme.DIM
+local COL_ACCENT = Theme.ACCENT
+local COL_ME     = Theme.GOOD
+local COL_KILL   = Theme.BAD
+local COL_TK     = Color3.fromRGB(255, 170, 60)
+local COL_PANEL  = Theme.PANEL
+local COL_ROW    = Theme.CARD
+local COL_ROW_ON = Theme.CARD_ON
 --------------------------------------------------------------------
 
 -- ours replaces the core list (which would also pop on Tab)

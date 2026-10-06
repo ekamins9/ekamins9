@@ -30,6 +30,37 @@ ReplicatedStorage
 Reload the place (or restart the server) after editing a config module: the server reads
 them once at start.
 
+## 0. Blueprints — models you don't have to build (yet)
+
+Nothing in the catalog needs a hand-made model to work. `ServerScriptService ▸ Build` holds
+**blueprints** (lists of parts with sizes, colors and attributes) for every shipped weapon,
+armor set, hair, beard and face. When the server starts, `Build ▸ Blueprints.ensureAll()`
+builds whatever is missing:
+
+- a weapon Tool with scripts but **no Handle** gets its body (Handle, Hitbox with the right
+  long axis, blade / haft / head parts with `SkinPart` attributes, all welded to the Handle)
+- an armor set folder with a Config but **no clothing models** gets them (Middle-based,
+  `ColorSlot` color blocks)
+- `Cosmetics ▸ Body ▸ Hair / Beard / Face` get every id from `Catalog ▸ Body`
+- `Cosmetics ▸ Weapons` gets a display copy of every Tool for the menu mannequin
+
+Hand-made models always win: the builder only fills gaps, never overwrites. To **edit a built
+model by hand**, open Studio, press Run or type in the command bar
+`require(game.ServerScriptService.Build.Blueprints).ensureAll()`, then stop — the models are
+now real instances you can reshape, save, and keep. To **replace** one, delete the built one
+and put yours in its place with the same name.
+
+Adding a new weapon or set with a blueprint: write `W.MyWeapon = function() … end` in
+`Build ▸ Weapons` using the sub-assemblies (`sword{}`, `axeBit`, `spearhead`, `haft`, `grip`…)
+or `A_.MySet = {HeadClothing = …, TorsoClothing = …}` in `Build ▸ Armor` (`plateTorso`,
+`gambeson`, `hood`, `greatHelm`, `vambrace`…). Sizes are studs on an R6 body.
+
+**Generator.** `scripts/gen_content.py` (run from the repo root) writes the weapon Tool folders
+(`Tools/<id>/Config, Server, Client`), the armor set folders (`ServerStorage/Armor/<Set>/Config`)
+and `Catalog ▸ Weapons` + `Catalog ▸ Skins` from the tables at the top of the script. Add a row
+to `WEAPONS` or `SETS` (or a tint to `TINTS`) and re-run it; edit those four outputs by hand
+only if you stop running the script.
+
 ---
 
 ## 1. An armor set (helmet + top + bottom)
