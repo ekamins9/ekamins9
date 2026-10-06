@@ -43,6 +43,50 @@ if legacy then
 		if not cos.Armor:FindFirstChild(set.Name) then set:Clone().Parent = cos.Armor end
 	end
 end
+-- 3) every weapon's numbers, for the menus: ReplicatedStorage ▸ WeaponStats ▸ <id>
+--    (attributes). The Tools and their Configs stay on the server.
+--      Reach · <Type>Damage / <Type>Windup (seconds) / <Type>Cost (stamina) /
+--      <Type>Block (what blocking it costs) for Swing, Stab, Overhead ·
+--      HeadMult · Move (walk speed while held) · ArmorPen · TwoHanded · Secondary
+do
+	local ok, DEF = pcall(function() return require(ServerScriptService:WaitForChild("Combat"):WaitForChild("CombatServer")).DEFAULTS end)
+	DEF = ok and DEF or {}
+	local out = ReplicatedStorage:FindFirstChild("WeaponStats")
+	if out then out:ClearAllChildren() else out = Instance.new("Folder"); out.Name = "WeaponStats" end
+	local wf = ServerStorage:FindFirstChild("Weapons")
+	for _, tool in ipairs(wf and wf:GetChildren() or {}) do
+		local mod = tool:IsA("Tool") and tool:FindFirstChild("Config")
+		local okc, cfg = false, nil
+		if mod then okc, cfg = pcall(require, mod) end
+		if okc and type(cfg) == "table" then
+			local function get(k) if cfg[k] ~= nil then return cfg[k] end return DEF[k] end
+			local A, ts = cfg.ATTACKS or {}, get("TYPE_SPEED") or {}
+			local c = Instance.new("Configuration")
+			c.Name = tool.Name
+			c:SetAttribute("Reach", get("REACH") or 6)
+			for _, kind in ipairs({"Swing", "Stab", "Overhead"}) do
+				local info = A["Right" .. kind] or A["Left" .. kind] or A[kind]
+				if info then
+					local d = type(info.damage) == "table" and (info.damage.body or info.damage.torso or 0) or (info.damage or 0)
+					local speed = (info.speed or 1) * (ts[kind] or 1) * (get("SPEED_MULT") or 1)
+					c:SetAttribute(kind .. "Damage", d)
+					c:SetAttribute(kind .. "Windup", (info.windup or get("WINDUP") or 0.15) / math.max(speed, 0.01))
+					c:SetAttribute(kind .. "Cost", info.staminaCost or 0)
+					-- what a held guard actually pays for it (a timed parry pays nothing)
+					c:SetAttribute(kind .. "Block", math.floor((info.blockCost or 0) * (get("BLOCK_COST_MULT") or 1) + 0.5))
+				end
+			end
+			c:SetAttribute("HeadMult", get("HEAD_DAMAGE_MULT") or 2)
+			c:SetAttribute("Move", get("SpeedMult") or 1)
+			c:SetAttribute("ArmorPen", get("ARMOR_PEN") or 0)
+			c:SetAttribute("TwoHanded", get("TWO_HANDED") == true)
+			c:SetAttribute("Secondary", get("SECONDARY") == true)
+			if type(cfg.Description) == "string" then c:SetAttribute("Description", cfg.Description) end
+			c.Parent = out
+		end
+	end
+	out.Parent = ReplicatedStorage
+end
 
 local Catalog    = require(ReplicatedStorage:WaitForChild("Catalog"))
 Catalog.rebuild()

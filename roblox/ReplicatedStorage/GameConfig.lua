@@ -60,7 +60,7 @@ GameConfig.MODES = {
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
-		maps = {"Sandpit", "Colosseum"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		maps = {"RoseCourt", "Sandpit", "Colosseum"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -76,7 +76,7 @@ GameConfig.MODES = {
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Honor rules: one on one. Stay out of other people's fights.",
-		maps = {"Sandpit", "Millfield"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"RoseCourt", "Sandpit", "Millfield"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
 	},
 	TDM = {
 		name = "Team Deathmatch", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
@@ -111,7 +111,7 @@ GameConfig.MODES = {
 }
 -- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
 GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Frostgate = "Frostgate",
-	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum"}
+	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum", RoseCourt = "The Rose Court"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- order on the Play tab
@@ -124,11 +124,11 @@ GameConfig.TEAMS = {
 
 GameConfig.CLASSES = {
 	Knight   = {name = "Knight",   weight = "Heavy",  armorType = "Heavy",  weapons = "any",
-		description = "Plate from head to toe. Slow, hard to cut, hits like a wall falling on you."},
+		description = "Plate from head to toe: the most health and armor. Slow, short of breath (less stamina, slower to get it back) and clumsy, costly dodges."},
 	Footman  = {name = "Footman",  weight = "Medium", armorType = "Medium", weapons = "any",
 		description = "Mail and gambeson. The all-rounder — quick enough, tough enough."},
 	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any",
-		description = "No armor to speak of. Fast, long reach, one mistake from death."},
+		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
 }
 GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard"}
 GameConfig.DEFAULT_CLASS = "Footman"

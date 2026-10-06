@@ -643,6 +643,9 @@ function CombatClient.attach(Tool, weaponConfig)
 	end
 
 	local function handleAction(action)
+		-- held on your mark for a countdown (HoldUntil, server time): nothing until FIGHT
+		local char = player.Character
+		if char and (char:GetAttribute("HoldUntil") or 0) > workspace:GetServerTimeNow() then return end
 		if action == "Kick" then
 			remote:FireServer("Kick")
 		elseif action == "Feint" then

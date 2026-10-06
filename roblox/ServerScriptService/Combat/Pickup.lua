@@ -217,6 +217,40 @@ function Pickup.take(plr, tool)
 	return true
 end
 
+-- a bot (no Backpack) takes a weapon off the floor straight into its hand;
+-- whatever it held goes down in its place
+function Pickup.takeNpc(char, tool)
+	if not (char and tool and tool.Parent and Pickup.isDropped(tool)) then return false end
+	if Players:GetPlayerFromCharacter(char) then return false end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not (hum and hrp and hum.Health > 0) then return false end
+	if char:GetAttribute("Ragdolled") or (char:GetAttribute("StunnedUntil") or 0) > os.clock() then return false end
+	local handle = handleOf(tool)
+	if handle and (handle.Position - hrp.Position).Magnitude > C.PROMPT_RANGE + 4 then return false end
+	local held = char:FindFirstChildOfClass("Tool")
+	if held then Pickup.drop(held, char, hrp.CFrame.LookVector, C.DROP_SPEED) end
+	restore(tool)
+	tool.Parent = char
+	Sounds.play(SoundConfig.Pickup, hrp)
+	log(char.Name, "picked up", tool.Name)
+	return true
+end
+
+-- the nearest weapon lying on the floor within `range` of pos (and its distance)
+function Pickup.nearest(pos, range)
+	local best, bestD = nil, range or math.huge
+	local f = workspace:FindFirstChild("DroppedWeapons")
+	for _, t in ipairs(f and f:GetChildren() or {}) do
+		if t:IsA("Tool") and Pickup.isDropped(t) then
+			local h = handleOf(t)
+			local d = h and (h.Position - pos).Magnitude
+			if d and d < bestD then best, bestD = t, d end
+		end
+	end
+	return best, best and bestD or nil
+end
+
 -- rules for the loadout menu: can this pair be carried together?
 function Pickup.validLoadout(primaryTool, secondaryTool)
 	if secondaryTool and not Pickup.isSecondary(secondaryTool) then return false, "that weapon can't be a secondary" end

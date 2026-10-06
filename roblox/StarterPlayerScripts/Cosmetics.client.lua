@@ -40,13 +40,27 @@ local function bodyParts(char)
 	return out
 end
 
+-- the effects are built round a standing body; by the time one plays the body
+-- has fallen, so it plays upright over it, at a standing torso's height above
+-- the floor under it
+local floorRay = RaycastParams.new()
+floorRay.FilterType = Enum.RaycastFilterType.Exclude
+local function originOver(char, torso)
+	local pos = torso.Position
+	floorRay.FilterDescendantsInstances = {char, fxFolder}
+	local hit = workspace:Raycast(pos + Vector3.new(0, 1, 0), Vector3.new(0, -12, 0), floorRay)
+	local floorY = hit and hit.Position.Y or (pos.Y - 3)
+	local look = torso.CFrame.LookVector
+	return CFrame.new(pos.X, floorY + 3, pos.Z) * CFrame.Angles(0, math.atan2(-look.X, -look.Z), 0)
+end
+
 fx.OnClientEvent:Connect(function(what, a, b, c)
 	if what == "Kill" then
 		local char = b
 		if typeof(char) ~= "Instance" or not char.Parent then return end
 		local torso = char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
 		if not torso then return end
-		KillFX.play(a, fxFolder, torso.CFrame, {body = bodyParts(char), world = true})
+		KillFX.play(a, fxFolder, originOver(char, torso), {body = bodyParts(char), world = true})
 	elseif what == "Emote" then
 		local plr, id, startedAt = a, b, c
 		if typeof(plr) ~= "Instance" or not plr.Character then return end

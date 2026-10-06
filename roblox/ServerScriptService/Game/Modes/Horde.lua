@@ -167,6 +167,13 @@ function Horde:tick(dt)
 				if _G.RoundBump then _G.RoundBump(p, "wave") end
 				local st = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile")).get(p).stats
 				st.hordeBest = math.max(st.hordeBest or 0, self.wave)
+				-- the break: your wind back at once, and a quarter of your health
+				local c = p.Character
+				local hum = c and c:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health > 0 then
+					c:SetAttribute("BlockMeter", c:GetAttribute("BlockMax") or 100)
+					hum.Health = math.min(hum.MaxHealth, hum.Health + hum.MaxHealth * 0.25)
+				end
 			end
 			event:FireAllClients("Stage", {text = "WAVE " .. self.wave .. " BEATEN", add = 0, team = "A", final = false, horde = true})
 		end

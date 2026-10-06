@@ -2,6 +2,6 @@
 *.fbx
 *.obj
 *.blend1
-build/
+/build/
 __pycache__/
 blender/out/

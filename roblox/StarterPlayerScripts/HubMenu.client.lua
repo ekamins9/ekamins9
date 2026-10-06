@@ -108,6 +108,13 @@ local COL = {
 }
 local WHITE       = Color3.new(1, 1, 1)
 local TYPE_COL    = {Light = Color3.fromRGB(96, 190, 110), Medium = Color3.fromRGB(230, 180, 60), Heavy = Color3.fromRGB(230, 90, 80)}
+-- what an armor weight gives and costs, in one line (Catalog ▸ Weights)
+local function weightLine(weight)
+	local w = Catalog.WEIGHTS[weight] or {}
+	local pct = function(x) return math.floor((x or 1) * 100 + 0.5) end
+	return string.format("+%d health  ·  %d%% protection on covered limbs  ·  %d%% speed, %d%% sprint  ·  %d stamina, %d%% regen  ·  dodges cost %d%%, reach %d%%",
+		w.health or 0, pct(w.prot or 0), pct(w.speed), pct((w.sprint or 1.45) / 1.45), math.floor(100 * (w.stamina or 1) + 0.5), pct(w.regen), pct(w.dodgeCost), pct(w.dodgeReach))
+end
 local RARITY_COL  = {Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40)}
 local RARITY_ORDER = {Common = 1, Rare = 2, Epic = 3, Legendary = 4}
 
@@ -826,6 +833,7 @@ local ui = {bracket = "1v1", ranked = false, lbTab = "Warfront", editing = GameC
 	classEdit = {}, dirty = {}, team = nil, appDraft = nil, appDirty = false, helmPreview = false, tryOn = nil,
 	shopTab = "daily", crate = nil, crateItem = nil, rolling = false, pulls = {},
 	armoryTab = "weapons", shopWeapon = "Longsword", shopSkin = nil, armorSet = nil, armorSlots = {helmet = true, top = true, bottom = true},
+	ownedOnly = true,   -- the Armory shows what you have; the filter off shows everything you can get
 	filters = {hideEmpty = true, hideFull = false, customOnly = false, door = nil},
 	customOpen = false, custom = nil, facing = 0, zoom = 1, shopSeen = nil}
 do for k in pairs(Catalog.CRATES) do if not ui.crate or k < ui.crate then ui.crate = k end end end
@@ -2758,8 +2766,14 @@ do
 	-- weight, and the three stats the weight gives (Catalog ▸ Weights)
 	local function renderClassRow()
 		clear(classRow)
-		local maxHp, minSpeed, maxProt = 0, 1, 0
-		for _, ww in pairs(Catalog.WEIGHTS) do maxHp = math.max(maxHp, ww.health or 0); minSpeed = math.min(minSpeed, ww.speed or 1); maxProt = math.max(maxProt, ww.prot or 0) end
+		local maxHp, minSpeed, maxSpeed, maxProt, minSta, maxSta = 0, 1, 1, 0, 1, 1
+		for _, ww in pairs(Catalog.WEIGHTS) do
+			maxHp = math.max(maxHp, ww.health or 0); maxProt = math.max(maxProt, ww.prot or 0)
+			minSpeed = math.min(minSpeed, ww.speed or 1); maxSpeed = math.max(maxSpeed, ww.speed or 1)
+			-- stamina: the bar and how fast it comes back, together
+			local sta = (ww.stamina or 1) * (ww.regen or 1)
+			minSta = math.min(minSta, sta); maxSta = math.max(maxSta, sta)
+		end
 		for i, id in ipairs(GameConfig.CLASS_ORDER) do
 			local def = GameConfig.CLASSES[id]
 			local on = ui.editing == id
@@ -2775,9 +2789,15 @@ do
 			local n = title(b, string.upper(def.name), 22); n.Size = UDim2.new(1, -110, 0, 26); n.Position = UDim2.new(0, 100, 0, 8)
 			local w = title(b, string.upper(def.weight) .. (ui.dirty[id] and "  ·  UNSAVED" or ""), 13, TYPE_COL[def.weight] or COL.DIM); w.Size = UDim2.new(1, -110, 0, 16); w.Position = UDim2.new(0, 100, 0, 34)
 			local wt = Catalog.WEIGHTS[def.weight] or {}
-			local bars = {{"HP", (100 + (wt.health or 0)) / (100 + maxHp), COL.GOOD}, {"SPEED", ((wt.speed or 1) - minSpeed * 0.8) / (1 - minSpeed * 0.8), COL.CROWNS}, {"ARMOR", maxProt > 0 and (wt.prot or 0) / maxProt or 0, COL.ACCENT}}
+			local sta = (wt.stamina or 1) * (wt.regen or 1)
+			local bars = {
+				{"HP", (100 + (wt.health or 0)) / (100 + maxHp), COL.GOOD},
+				{"ARMOR", maxProt > 0 and (wt.prot or 0) / maxProt or 0, COL.ACCENT},
+				{"SPEED", ((wt.speed or 1) - minSpeed * 0.8) / (maxSpeed - minSpeed * 0.8), COL.CROWNS},
+				{"STAMINA", (sta - minSta * 0.6) / (maxSta - minSta * 0.6), Color3.fromRGB(90, 200, 255)},
+			}
 			for j, bar in ipairs(bars) do
-				local y = 56 + (j - 1) * 18
+				local y = 52 + (j - 1) * 15
 				local l = title(b, bar[1], 11, COL.DIM); l.Position = UDim2.new(0, 100, 0, y); l.Size = UDim2.fromOffset(52, 14)
 				local track = frame(b, Color3.fromRGB(6, 8, 16), 4); track.Position = UDim2.new(0, 152, 0, y + 3); track.Size = UDim2.new(1, -164, 0, 8); track.BackgroundTransparency = 0.2
 				local fill = frame(track, bar[3], 4); fill.Size = UDim2.new(math.clamp(bar[2], 0.08, 1), 0, 1, 0)
@@ -2918,8 +2938,7 @@ do
 				if owns("skins", s.id) then itemCard(sg3, i, s.name, s.rarity, lo.secondarySkin == s.id, true, RARITY_COL[s.rarity], function() lo.secondarySkin = s.id; ui.dirty[id] = true; render.CLASSES() end) end
 			end
 		end
-		local wt = Catalog.WEIGHTS[cls.weight] or {}
-		dim(list, string.format("Weight %s:  +%d health  ·  %d%% speed  ·  %d%% protection on covered limbs. Looks never change stats.", cls.weight, wt.health or 0, math.floor((wt.speed or 1) * 100 + 0.5), math.floor((wt.prot or 0) * 100 + 0.5)), 12)
+		dim(list, string.format("%s.  Weight %s:  %s. Looks never change stats.", cls.description or "", cls.weight, weightLine(cls.weight)), 12)
 		renderSide()
 	end
 	render.CLASSES_save = function()
@@ -3046,6 +3065,78 @@ local function armorSets()
 end
 
 --------------------------------------------------------------------
+--  WEAPON STATS: the numbers the server publishes (ReplicatedStorage ▸
+--  WeaponStats), as bars against every other weapon
+--------------------------------------------------------------------
+local function weaponStats(id)
+	local f = ReplicatedStorage:FindFirstChild("WeaponStats")
+	local c = f and f:FindFirstChild(id)
+	return c and c:GetAttributes() or nil
+end
+local statRange
+local function weaponStatRange()
+	if statRange then return statRange end
+	local f = ReplicatedStorage:FindFirstChild("WeaponStats")
+	if not f or #f:GetChildren() == 0 then return nil end
+	local r = {}
+	local function see(k, v) if type(v) ~= "number" then return end; local e = r[k] or {lo = v, hi = v}; e.lo = math.min(e.lo, v); e.hi = math.max(e.hi, v); r[k] = e end
+	for _, c in ipairs(f:GetChildren()) do
+		local a = c:GetAttributes()
+		see("Reach", a.Reach); see("Damage", math.max(a.SwingDamage or 0, a.OverheadDamage or 0)); see("Stab", a.StabDamage)
+		see("Windup", a.SwingWindup); see("Cost", a.SwingCost); see("Block", a.SwingBlock); see("Move", a.Move)
+	end
+	statRange = r
+	return r
+end
+-- a card of bars: reach, damage, stab, speed, stamina, guard break, armor pierce, walk speed
+local function weaponStatCard(parent, id)
+	local a, R = weaponStats(id), weaponStatRange()
+	if not (a and R) then return nil end
+	local card = frame(parent, COL.GLASS, 14)
+	card.BackgroundTransparency = 0.18
+	card.AnchorPoint = Vector2.new(1, 1)
+	card.Position = UDim2.new(1, -14, 1, -14)
+	card.Size = UDim2.fromOffset(360, 0)
+	card.AutomaticSize = Enum.AutomaticSize.Y
+	card.ZIndex = 5
+	border(card, WHITE, 1.5, 0.85)
+	padding(card, 12, 12, 10, 10)
+	vlist(card, 4)
+	local h = title(card, "STATS", 14, COL.DIM); h.Size = UDim2.new(1, 0, 0, 18); h.ZIndex = 6
+	local function frac(k, v, invert)
+		local e = R[k]
+		if not (e and v) or e.hi - e.lo < 1e-6 then return 0.5 end
+		local f = (v - e.lo) / (e.hi - e.lo)
+		if invert then f = 1 - f end
+		return 0.12 + 0.88 * f
+	end
+	local dmg = math.max(a.SwingDamage or 0, a.OverheadDamage or 0)
+	local rows = {
+		{"REACH", frac("Reach", a.Reach), string.format("%.1f studs", a.Reach or 0), COL.CROWNS},
+		{"DAMAGE", frac("Damage", dmg), string.format("%d  ·  head %d", dmg, math.floor(dmg * (a.HeadMult or 2) + 0.5)), COL.BAD},
+		{"STAB", frac("Stab", a.StabDamage), string.format("%d", a.StabDamage or 0), Color3.fromRGB(230, 120, 90)},
+		{"SPEED", frac("Windup", a.SwingWindup, true), string.format("%.2f s wind-up", a.SwingWindup or 0), COL.GOOD},
+		{"STAMINA", frac("Cost", a.SwingCost), string.format("%d a swing", a.SwingCost or 0), Color3.fromRGB(255, 170, 60)},
+		{"GUARD BREAK", frac("Block", a.SwingBlock), string.format("%d off a block", a.SwingBlock or 0), COL.PURPLE},
+		{"ARMOR PIERCE", 0.04 + 0.96 * (a.ArmorPen or 0), string.format("%d%%", math.floor((a.ArmorPen or 0) * 100 + 0.5)), Color3.fromRGB(180, 190, 210)},
+		{"MOVE", frac("Move", a.Move), string.format("%d%% walk speed", math.floor((a.Move or 1) * 100 + 0.5)), Color3.fromRGB(90, 200, 255)},
+	}
+	for i, r in ipairs(rows) do
+		local row_ = clearFrame(card); row_.Size = UDim2.new(1, 0, 0, 18); row_.LayoutOrder = 10 + i
+		local l = title(row_, r[1], 11, COL.DIM); l.Size = UDim2.fromOffset(96, 18); l.ZIndex = 6
+		local track = frame(row_, Color3.fromRGB(6, 8, 16), 4); track.Position = UDim2.fromOffset(100, 5); track.Size = UDim2.new(1, -236, 0, 8); track.BackgroundTransparency = 0.2; track.ZIndex = 6
+		local fill = frame(track, r[4], 4); fill.Size = UDim2.new(math.clamp(r[2], 0.04, 1), 0, 1, 0); fill.ZIndex = 7
+		local v = label(row_, r[3], 12, FONT, COL.TEXT); v.AnchorPoint = Vector2.new(1, 0); v.Position = UDim2.new(1, 0, 0, 0); v.Size = UDim2.fromOffset(128, 18)
+		v.TextXAlignment = Enum.TextXAlignment.Right; v.TextWrapped = false; v.ZIndex = 6
+	end
+	local tags = {}
+	if a.TwoHanded then table.insert(tags, "two hands") end
+	if a.Secondary then table.insert(tags, "can be a secondary") end
+	if #tags > 0 then local t = label(card, table.concat(tags, "  ·  "), 11, FONT_BODY, COL.DIM); t.Size = UDim2.new(1, 0, 0, 14); t.LayoutOrder = 30; t.ZIndex = 6 end
+	return card
+end
+
+--------------------------------------------------------------------
 --  ARMORY — WEAPONS: every weapon on a stage with its skins, and for each
 --  skin exactly where it comes from · ARMOR: every set, worn by you
 --------------------------------------------------------------------
@@ -3065,6 +3156,16 @@ do
 			if not on then b.TextColor3 = COL.DIM end
 			b.Activated:Connect(function() ui.armoryTab = t[1]; render.ARMORY() end)
 		end
+		-- the filter: what you own (the default), or everything there is to get
+		local gap = clearFrame(tabs); gap.Size = UDim2.fromOffset(24, 46); gap.LayoutOrder = 50
+		local h, b = fatButton(tabs, ui.ownedOnly and "✔ OWNED ONLY" or "SHOWING ALL", ui.ownedOnly and COL.GREEN or COL.GLASS2, 18)
+		h.Size = UDim2.fromOffset(230, 46); h.LayoutOrder = 51
+		b.Activated:Connect(function() ui.ownedOnly = not ui.ownedOnly; render.ARMORY() end)
+	end
+	-- the filter's empty state
+	local function nothingOwned(parent, what)
+		local d = dim(parent, string.format("No %s unlocked yet. Tap  ✔ OWNED ONLY  to see everything you can get, and how.", what), 14)
+		return d
 	end
 
 	-- equip helper: put these pieces / this weapon on the best class for them
@@ -3098,23 +3199,32 @@ do
 		local leftList = scroll(left, 6)
 		local right = clearFrame(body); right.Position = UDim2.new(0, 286, 0, 0); right.Size = UDim2.new(1, -286, 1, 0)
 		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}}
-		if not Catalog.WEAPON[ui.shopWeapon] then ui.shopWeapon = Catalog.WEAPONS[1] and Catalog.WEAPONS[1].id end
+		local function shown(w) return not ui.ownedOnly or owns("weapons", w.id) end
+		if not Catalog.WEAPON[ui.shopWeapon] or not shown(Catalog.WEAPON[ui.shopWeapon]) then
+			ui.shopWeapon = nil
+			for _, w in ipairs(Catalog.WEAPONS) do if shown(w) then ui.shopWeapon = w.id; break end end
+			ui.shopWeapon = ui.shopWeapon or (Catalog.WEAPONS[1] and Catalog.WEAPONS[1].id)
+		end
 		for _, g in ipairs(groups) do
-			heading(leftList, g[2])
-			for _, w in ipairs(Catalog.WEAPONS) do
-				if w.family == g[1] then
-					local have = owns("weapons", w.id)
-					local skinsOwned, skinsAll = 0, 0
-					for _, s in ipairs(Catalog.skinsFor(w.id)) do skinsAll += 1; if owns("skins", s.id) then skinsOwned += 1 end end
-					row(leftList, (have and "" or "🔒 ") .. w.name, have and string.format("%d / %d skins", skinsOwned, skinsAll) or unlockText(w), w.id == ui.shopWeapon,
-						function() ui.shopWeapon = w.id; ui.shopSkin = nil; render.ARMORY() end, have and COL.DIM or COL.BAD)
-				end
+			local list = {}
+			for _, w in ipairs(Catalog.WEAPONS) do if w.family == g[1] and shown(w) then table.insert(list, w) end end
+			if #list > 0 then heading(leftList, g[2]) end
+			for _, w in ipairs(list) do
+				local have = owns("weapons", w.id)
+				local skinsOwned, skinsAll = 0, 0
+				for _, s in ipairs(Catalog.skinsFor(w.id)) do skinsAll += 1; if owns("skins", s.id) then skinsOwned += 1 end end
+				row(leftList, (have and "" or "🔒 ") .. w.name, have and string.format("%d / %d skins", skinsOwned, skinsAll) or unlockText(w), w.id == ui.shopWeapon,
+					function() ui.shopWeapon = w.id; ui.shopSkin = nil; render.ARMORY() end, have and COL.DIM or COL.BAD)
 			end
 		end
+		if ui.ownedOnly then dim(leftList, "Showing the weapons you own. Tap  ✔ OWNED ONLY  to see every weapon and how to unlock it.", 12) end
 		local w = Catalog.WEAPON[ui.shopWeapon]
 		if not w then return end
 		local have = owns("weapons", w.id)
-		local pool = Catalog.skinsFor(w.id)
+		local all = Catalog.skinsFor(w.id)
+		local pool = {}
+		for _, s in ipairs(all) do if not ui.ownedOnly or owns("skins", s.id) then table.insert(pool, s) end end
+		local hidden = #all - #pool
 		table.sort(pool, function(a, b)
 			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) < (RARITY_ORDER[b.rarity] or 0) end
 			return a.name < b.name
@@ -3130,8 +3240,10 @@ do
 		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or "Polearm")
 		local fxText = Preview.fxText(sel)
 		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or "") .. (fxText and ("  ·  " .. fxText) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
-		local desc = state.catalog and state.catalog.weapons and state.catalog.weapons[w.id] and state.catalog.weapons[w.id].description
-		if desc then local d2 = title(stg, desc, 14); d2.TextWrapped = true; d2.AnchorPoint = Vector2.new(0, 1); d2.Position = UDim2.new(0, 20, 1, -14); d2.Size = UDim2.new(0.6, 0, 0, 40); d2.TextYAlignment = Enum.TextYAlignment.Bottom end
+		local desc = (weaponStats(w.id) or {}).Description
+		if desc then local d2 = title(stg, desc, 14); d2.TextWrapped = true; d2.AnchorPoint = Vector2.new(0, 1); d2.Position = UDim2.new(0, 20, 1, -14); d2.Size = UDim2.new(1, -420, 0, 60); d2.TextYAlignment = Enum.TextYAlignment.Bottom end
+		-- what it does, against every other weapon
+		weaponStatCard(stg, w.id)
 		-- what you can do with it: equip / unlock / buy / where it drops
 		local act = clearFrame(right); act.Position = UDim2.new(0, 0, 1, -252); act.Size = UDim2.new(1, 0, 0, 56)
 		hlist(act, 10).VerticalAlignment = Enum.VerticalAlignment.Center
@@ -3174,7 +3286,8 @@ do
 		local stripH = clearFrame(right); stripH.AnchorPoint = Vector2.new(0, 1); stripH.Position = UDim2.new(0, 0, 1, 0); stripH.Size = UDim2.new(1, 0, 0, 186)
 		local owned = 0
 		for _, s in ipairs(pool) do if owns("skins", s.id) then owned += 1 end end
-		local h = title(stripH, string.format("SKINS  ·  %d / %d OWNED", owned, #pool), 15, COL.DIM); h.Size = UDim2.new(1, 0, 0, 20)
+		local h = title(stripH, string.format("SKINS  ·  %d / %d OWNED", owned, #all + 1) .. (hidden > 0 and string.format("  ·  %d MORE TO UNLOCK: TAP  ✔ OWNED ONLY  TO SEE THEM", hidden) or ""), 15, COL.DIM)
+		h.Size = UDim2.new(1, 0, 0, 20); h.TextTruncate = Enum.TextTruncate.AtEnd
 		local sh = clearFrame(stripH); sh.Position = UDim2.new(0, 0, 0, 24); sh.Size = UDim2.new(1, 0, 1, -24)
 		skinStrip(sh, pool, sel.id, function(s) ui.shopSkin = s.id; render.ARMORY() end, 162)
 	end
@@ -3184,12 +3297,21 @@ do
 	----------------------------------------------------------------
 	local armorStage, armorHint
 	local function armor()
-		local sets, byKey = armorSets()
-		if not ui.armorSet or not byKey[ui.armorSet] then
+		local allSets, byKey = armorSets()
+		-- the filter: sets you own a piece of (or everything)
+		local sets = {}
+		for _, s in ipairs(allSets) do
+			local any = false
+			for _, pc in pairs(s.pieces) do if owns("pieces", pc.id) then any = true; break end end
+			if any or not ui.ownedOnly then table.insert(sets, s) end
+		end
+		local function listed(key) for _, s in ipairs(sets) do if s.key == key then return true end end return false end
+		if not ui.armorSet or not byKey[ui.armorSet] or not listed(ui.armorSet) then
 			-- start on the set your active class wears
 			local lo = classLoadout(state.activeClass)
 			local pc = lo.top and Catalog.PIECE[lo.top]
 			ui.armorSet = pc and (pc.set or ("pack:" .. pc.pack)) or (sets[1] and sets[1].key)
+			if not listed(ui.armorSet) then ui.armorSet = sets[1] and sets[1].key end
 		end
 		local set = byKey[ui.armorSet]
 		local left = clearFrame(body); left.Size = UDim2.new(0, 290, 1, 0)
@@ -3205,7 +3327,8 @@ do
 				have == total and COL.GOOD or (right == "IN SHOP" and COL.ACCENT or COL.DIM))
 			local bar = frame(r, RARITY_COL[s.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
 		end
-		if not set then dim(body, "No armor sets yet."); return end
+		if ui.ownedOnly then dim(leftList, string.format("Showing the sets you own a piece of. %d more to get: tap  ✔ OWNED ONLY  to see them.", #allSets - #sets), 12) end
+		if not set then nothingOwned(body, "armor"); return end
 		-- the stage: you, wearing the set (the slots you toggle off keep your class's pieces)
 		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
 		local stageH = clearFrame(mid); stageH.Size = UDim2.new(1, 0, 1, -64)
@@ -3242,9 +3365,8 @@ do
 		local wt = title(tagRow, string.upper(set.weight), 12); wt.BackgroundTransparency = 0; wt.BackgroundColor3 = TYPE_COL[set.weight] or COL.DIM; wt.Size = UDim2.fromOffset(84, 20); wt.TextXAlignment = Enum.TextXAlignment.Center; wt.LayoutOrder = 2
 		Instance.new("UICorner", wt).CornerRadius = UDim.new(0, 6)
 		if set.description then dim(p, set.description, 13) end
-		local W = Catalog.WEIGHTS[set.weight] or {}
-		dim(p, string.format("%s armor: +%d health · %d%% speed · %d%% protection on covered limbs. Every %s set gives the same stats: looks never change them.",
-			set.weight, W.health or 0, math.floor((W.speed or 1) * 100 + 0.5), math.floor((W.prot or 0) * 100 + 0.5), string.lower(set.weight)), 12)
+		dim(p, string.format("%s armor: %s. Every %s set gives the same stats: looks never change them.",
+			set.weight, weightLine(set.weight), string.lower(set.weight)), 12)
 		heading(p, "PIECES")
 		local allOwned = true
 		for _, slot in ipairs(Catalog.SLOTS) do
@@ -3327,10 +3449,20 @@ do
 		return list
 	end
 
+	-- the filter: just what you own (or everything there is)
+	local function filtered(items, kind)
+		if not ui.ownedOnly then return items, 0 end
+		local out = {}
+		for _, it in ipairs(items) do if owns(kind, it.id) then table.insert(out, it) end end
+		return out, #items - #out
+	end
 	local function killfx()
-		local items = sortedItems(Catalog.KILLFX)
+		local items, hidden = filtered(sortedItems(Catalog.KILLFX), "killfx")
 		local equippedId = state.profile and state.profile.killfx or "Shatter"
-		if not Catalog.KILLFX_BY[ui.fxSel or ""] then ui.fxSel = equippedId end
+		if #items == 0 then nothingOwned(body, "kill effects"); return end
+		local inList = false
+		for _, f in ipairs(items) do if f.id == ui.fxSel then inList = true end end
+		if not Catalog.KILLFX_BY[ui.fxSel or ""] or not inList then ui.fxSel = Catalog.KILLFX_BY[equippedId] and equippedId or items[1].id end
 		local left = clearFrame(body); left.Size = UDim2.new(0, 290, 1, 0)
 		local leftList = scroll(left, 6)
 		heading(leftList, "KILL EFFECTS")
@@ -3341,6 +3473,7 @@ do
 			local bar = frame(r, RARITY_COL[f.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
 		end
 		dim(leftList, "Plays on whoever you finish off, for everyone to see. Looks only.", 12)
+		if hidden > 0 then dim(leftList, string.format("%d more to get: tap  ✔ OWNED ONLY  to see them.", hidden), 12) end
 		local f = Catalog.KILLFX_BY[ui.fxSel]
 		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
 		Preview.killFx(mid, f.id, UDim2.fromScale(1, 1))
@@ -3361,12 +3494,15 @@ do
 	end
 
 	local function emotes()
-		local items = sortedItems(Catalog.EMOTES)
+		local items, hidden = filtered(sortedItems(Catalog.EMOTES), "emotes")
 		local wheel = {}
 		for _, id in ipairs(state.profile and state.profile.emotes or {}) do table.insert(wheel, id) end
 		local inWheel = {}
 		for i, id in ipairs(wheel) do inWheel[id] = i end
-		if not Catalog.EMOTE[ui.emoteSel or ""] then ui.emoteSel = wheel[1] or items[1].id end
+		if #items == 0 then nothingOwned(body, "emotes"); return end
+		local inList = false
+		for _, e in ipairs(items) do if e.id == ui.emoteSel then inList = true end end
+		if not Catalog.EMOTE[ui.emoteSel or ""] or not inList then ui.emoteSel = (wheel[1] and Catalog.EMOTE[wheel[1]] and wheel[1]) or items[1].id end
 		local function saveWheel(list)
 			local r = call("Equip", "emotes", list)
 			if r.profile then state.profile = r.profile end
@@ -3382,6 +3518,7 @@ do
 				function() ui.emoteSel = e.id; render.ARMORY() end, inWheel[e.id] and COL.GOOD or (RARITY_COL[e.rarity] or COL.DIM))
 			local bar = frame(r, RARITY_COL[e.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
 		end
+		if hidden > 0 then dim(leftList, string.format("%d more to get: tap  ✔ OWNED ONLY  to see them.", hidden), 12) end
 		local e = Catalog.EMOTE[ui.emoteSel]
 		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
 		Preview.emote(mid, e.id, UDim2.fromScale(1, 1))
@@ -4396,16 +4533,66 @@ do
 		toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 		render.HATCHERY()
 	end
-	-- an empty nest: choose which egg to set (or the only kind you have)
-	local function pickEgg(nest)
+	local function hatchTime(eg) return eg.minutes >= 60 and (math.floor(eg.minutes / 60 * 10) / 10 .. " h") or (eg.minutes .. " min") end
+	local function priceOf(eg) return eg.marks and (fmt(eg.marks) .. " MARKS") or (eg.crowns and (fmt(eg.crowns) .. " CROWNS")) or nil end
+
+	-- an egg as a card: its picture, its name, how many you have, how long it
+	-- takes, and a line at the foot (what clicking it does)
+	local function eggCard(parent, eg, count, w, h, foot, footColor)
+		local mine = (count or 0) > 0
+		local c = button(parent, "", 12, mine and COL.GLASS2 or Color3.fromRGB(14, 16, 26))
+		c.Size = UDim2.fromOffset(w, h)
+		border(c, RARITY_COL[eg.rarity] or WHITE, mine and 2.5 or 1.5, mine and 0.1 or 0.7)
+		local th = Preview.egg(c, eg.id, UDim2.new(1, -12, 0, h - 84), nil, not mine)
+		th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
+		if th:IsA("ViewportFrame") and not mine then th.ImageTransparency = 0.55 end
+		local cnt = title(c, mine and ("×" .. count) or "NONE", mine and 18 or 12, mine and WHITE or COL.DIM)
+		cnt.AnchorPoint = Vector2.new(1, 0); cnt.Position = UDim2.new(1, -8, 0, 6); cnt.Size = UDim2.fromOffset(60, 22); cnt.TextXAlignment = Enum.TextXAlignment.Right
+		local nm = title(c, eg.name, 14, RARITY_COL[eg.rarity] or WHITE)
+		nm.Position = UDim2.new(0, 6, 1, -76); nm.Size = UDim2.new(1, -12, 0, 18); nm.TextXAlignment = Enum.TextXAlignment.Center; nm.TextTruncate = Enum.TextTruncate.AtEnd
+		local sub = label(c, string.upper(eg.rarity) .. "  ·  hatches in " .. hatchTime(eg), 11, FONT_BODY, COL.DIM)
+		sub.Position = UDim2.new(0, 6, 1, -56); sub.Size = UDim2.new(1, -12, 0, 16); sub.TextXAlignment = Enum.TextXAlignment.Center
+		if foot then
+			local f = title(c, foot, 13, footColor or COL.ACCENT)
+			f.Position = UDim2.new(0, 6, 1, -34); f.Size = UDim2.new(1, -12, 0, 26); f.TextXAlignment = Enum.TextXAlignment.Center; f.TextTruncate = Enum.TextTruncate.AtEnd
+		end
+		return c
+	end
+
+	-- SET AN EGG: your egg inventory pops up; pick one for this nest (one you
+	-- don't have yet can be bought right there, if the shelf sells it)
+	local pickEgg
+	pickEgg = function(nest)
 		local h = state.hatchery or {}
-		local have = {}
-		for _, e in ipairs(E.eggs) do if (h.eggs or {})[e.id] then table.insert(have, e) end end
-		if #have == 0 then toast("No eggs yet: buy one on the shelf, or earn them from gifts, login days and the pass", COL.BAD); return end
-		if #have == 1 then place(have[1].id, nest); return end
-		local buttons = {}
-		for _, e in ipairs(have) do table.insert(buttons, {string.upper(e.name) .. "  ×" .. h.eggs[e.id], RARITY_COL[e.rarity] or COL.BLUE, function() closeModal(); place(e.id, nest) end}) end
-		modal("SET AN EGG IN NEST " .. nest, "Which egg?", buttons)
+		local mine = h.eggs or {}
+		local total = 0
+		for _, e in ipairs(E.eggs) do total += mine[e.id] or 0 end
+		modal("SET AN EGG IN NEST " .. nest,
+			total > 0 and string.format("Your eggs (%d). Pick one to set it warming: it keeps warming while you're away, even offline.", total)
+				or "You have no eggs yet. Buy one below, or earn them from playtime gifts, login days and the season pass.",
+			nil, function(box)
+				local grid = clearFrame(box)
+				grid.Size = UDim2.new(1, 0, 0, 0); grid.AutomaticSize = Enum.AutomaticSize.Y; grid.LayoutOrder = 3
+				local gl = Instance.new("UIGridLayout", grid)
+				gl.CellSize = UDim2.fromOffset(152, 236); gl.CellPadding = UDim2.fromOffset(10, 10); gl.SortOrder = Enum.SortOrder.LayoutOrder
+				for i, e in ipairs(E.eggs) do
+					local n = mine[e.id] or 0
+					local price = priceOf(e)
+					local foot = n > 0 and "SET IT  ›" or (price and ("BUY  ·  " .. price) or "gifts · login · pass")
+					local card = eggCard(grid, e, n, 152, 236, foot, n > 0 and COL.GOOD or (price and (e.crowns and COL.GOLD or COL.ACCENT) or COL.DIM))
+					card.LayoutOrder = (n > 0 and 0 or 10) + i
+					card.Activated:Connect(function()
+						if n > 0 then closeModal(); place(e.id, nest); return end
+						if not price then toast(e.name .. " comes from playtime gifts, login days and the pass", COL.BAD); return end
+						local r = call("EggBuy", e.id); apply(r)
+						toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+						if r.ok then
+							local r2 = call("Hatchery"); if r2.ok then state.hatchery = r2.hatchery end
+							pickEgg(nest)
+						end
+					end)
+				end
+			end, 700)
 	end
 
 	local function nests()
@@ -4460,22 +4647,33 @@ do
 				actB.Activated:Connect(function() pickEgg(i) end)
 			end
 		end
-		local tip = dim(left, string.format("Eggs keep warming while you're away or in a match. Stand by the Hatchery in the Courtyard and they hatch %d× faster. A hatched egg gives a companion that follows you around: looks only, never stats.", E.boost or 2), 14)
+		local tip = dim(left, string.format("Eggs keep warming in real time while you're away, in a match or offline. Stand by the Hatchery in the Courtyard and they hatch %d× faster. A hatched egg gives a companion that follows you around: looks only, never stats.", E.boost or 2), 14)
 		tip.Position = UDim2.fromOffset(4, 490); tip.Size = UDim2.new(1, -8, 0, 60)
 
-		-- right: your eggs, then the shelf
+		-- right: your eggs (every kind, how many you hold), then the shelf
 		local right = clearFrame(body); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 410, 1, 0)
 		local list = scroll(right, 10)
-		local inv = panel(list, "YOUR EGGS")
-		local any = false
-		for _, eg in ipairs(E.eggs) do
-			local n = h.eggs and h.eggs[eg.id]
-			if n and n > 0 then
-				any = true
-				row(inv, eg.name .. "  ×" .. n, "SET IN A NEST  ›", false, function() place(eg.id, nil) end, RARITY_COL[eg.rarity])
-			end
+		local total = 0
+		for _, eg in ipairs(E.eggs) do total += (h.eggs and h.eggs[eg.id]) or 0 end
+		local inv = panel(list, string.format("YOUR EGGS  ·  %d", total))
+		local eggGrid = clearFrame(inv)
+		eggGrid.Size = UDim2.new(1, 0, 0, 0); eggGrid.AutomaticSize = Enum.AutomaticSize.Y; eggGrid.LayoutOrder = nextOrder()
+		local gl = Instance.new("UIGridLayout", eggGrid)
+		gl.CellSize = UDim2.fromOffset(182, 190); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
+		local firstEmpty
+		for i = 1, (h.count or E.nests) do if not (h.nests and h.nests[tostring(i)]) then firstEmpty = i; break end end
+		for i, eg in ipairs(E.eggs) do
+			local n = (h.eggs and h.eggs[eg.id]) or 0
+			local foot = n > 0 and (firstEmpty and "SET IN A NEST  ›" or "NESTS FULL") or "NONE YET"
+			local card = eggCard(eggGrid, eg, n, 182, 190, foot, n > 0 and (firstEmpty and COL.GOOD or COL.DIM) or COL.DIM)
+			card.LayoutOrder = (n > 0 and 0 or 10) + i
+			card.Activated:Connect(function()
+				if n <= 0 then toast("Buy one on the shelf below, or earn it from gifts, login days and the pass", COL.BAD); return end
+				if not firstEmpty then toast("Every nest is taken: hatch one first", COL.BAD); return end
+				place(eg.id, firstEmpty)
+			end)
 		end
-		if not any then dim(inv, "None waiting. Buy one below, or earn them: playtime gifts, login days, the season pass.", 13) end
+		if total == 0 then dim(inv, "None waiting. Buy one below, or earn them: playtime gifts, login days, the season pass.", 13) end
 		local shelf = panel(list, "THE SHELF")
 		for _, eg in ipairs(E.eggs) do
 			local c = frame(shelf, COL.GLASS2, 12); c.BackgroundTransparency = 0.1; c.Size = UDim2.new(1, 0, 0, 96); c.LayoutOrder = nextOrder()

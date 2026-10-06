@@ -391,6 +391,8 @@ CombatServer.DEFAULTS = {
 	TWO_HANDED  = false, -- needs both arms to wield (losing the left arm drops it too)
 	SpeedMult   = 1.0,   -- weight: WalkSpeed multiplier while equipped (published as SpeedMult_Weapon)
 	ClunkMult   = 1.0,   -- weight: footstep clunk multiplier while equipped (published as ClunkMult_Weapon)
+	ARMOR_PEN   = 0,     -- the share of the target's armor protection this weapon ignores
+	                     --    (blunt heads and armor-piercing points beat plate; edges don't)
 	SWING_SLOW  = 0.55,  -- WalkSpeed multiplier while attacking (published as SpeedMult_Swing)
 
 	-- Sound slots. Every weapon uses these unless its Config has a SOUNDS table
@@ -420,10 +422,12 @@ CombatServer.DEFAULTS = {
 	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
 	                          --    already in release finishes (trades are a real choice)
 	-- STAMINA LEDGER (Mordhau-style): the windup always costs staminaCost; every
-	-- enemy the swing hits refunds HIT_REFUND (cut through three = three refunds);
-	-- a swing that touches nothing costs MISS_COST_MULT × staminaCost extra; a
-	-- swing that hits a wall / the floor stops there with no penalty and no refund.
-	MISS_COST_MULT   = 0.75,
+	-- enemy the swing cuts cleanly gives it back (the swing's whole staminaCost, at
+	-- least HIT_REFUND; cut through three = three refunds) — a blocked or parried
+	-- swing gives nothing back; a swing that touches nothing costs MISS_COST_MULT ×
+	-- staminaCost extra; a swing that hits a wall / the floor stops there with no
+	-- penalty and no refund.
+	MISS_COST_MULT   = 0.5,
 	HIT_REFUND       = 6,
 	WALL_CHECK       = true,  -- reject hits whose line from you to the hit point passes through geometry,
 	WALL_RECOVERY    = 0.35,  --    and a blade that hits a wall stops (this long before you can act)
@@ -473,9 +477,10 @@ CombatServer.DEFAULTS = {
 	                           --    parry costs nothing) — ticked by CharacterSystems
 	EXHAUSTED_MIN     = 1,     -- you need at least the attack's staminaCost (and this) to start a swing;
 	                           --    at 0 stamina you cannot attack or kick — only guard and walk
-	BLOCK_REGEN       = 15,    -- per second…
-	STAMINA_REGEN_DELAY = 1.8, -- …but only this long after the last combat event (attack, feint,
+	BLOCK_REGEN       = 17,    -- per second (× the armor weight's regen)…
+	STAMINA_REGEN_DELAY = 1.3, -- …but only this long after the last combat event (attack, feint,
 	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing
+	BLOCK_COST_MULT   = 0.8,   -- a held guard pays this × the attack's blockCost (a timed parry pays nothing)
 	BLOCK_BREAK_STUN  = 2.50,
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
@@ -874,7 +879,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				dprint("PARRIED by", target.Name)
 			else
 				-- BLOCK: drains defender stamina by the attack's blockCost; empty = guard broken
-				drainStamina(target, info.blockCost)
+				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1))
 				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
 				Injury.sparks(hitPos, 1)
@@ -891,7 +896,7 @@ function CombatServer.attach(Tool, weaponConfig)
 					tell("Blocked", true)
 					dprint("BLOCK BROKEN on", target.Name)
 				else
-					guardText(string.format("BLOCK  −%d", info.blockCost or 0))
+					guardText(string.format("BLOCK  −%d", math.floor((info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1) + 0.5)))
 					tell("Blocked", false)
 					dprint("blocked by", target.Name, "meter", math.floor(m))
 				end
@@ -949,14 +954,14 @@ function CombatServer.attach(Tool, weaponConfig)
 		else
 			dmg = (info.damage or 0) * (region == "head" and cfg.HEAD_DAMAGE_MULT or (region == "legs" and cfg.LEG_DAMAGE_MULT or 1))
 		end
-		CombatServer.refundStamina(character, cfg.HIT_REFUND)
+		CombatServer.refundStamina(character, math.max(cfg.HIT_REFUND, info.staminaCost or 0))
 		Sounds.voice("Hurt", target:FindFirstChild("Head") or part)
 		-- armor: the set's Protection applies only on limbs it actually covers.
 		-- Hits on accessories/clothing count as the limb they're on.
 		if Armor then
 			local limbName = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name
 				or (region == "head" and "Head") or "Torso"
-			local prot = Armor.protectionAt(target, limbName)
+			local prot = Armor.protectionAt(target, limbName) * (1 - math.clamp(cfg.ARMOR_PEN or 0, 0, 1))
 			if prot > 0 then
 				dmg = dmg * (1 - math.clamp(prot, 0, 0.95))
 				dprint("armor on", limbName, "absorbed", math.floor(prot * 100) .. "%")
@@ -1684,13 +1689,20 @@ function CombatServer.attach(Tool, weaponConfig)
 			task.defer(function() Injury.disarm(char) end)
 			return
 		end
-		if character:GetAttribute("BlockMeter") == nil then
-			character:SetAttribute("BlockMeter", cfg.BLOCK_MAX)
+		-- the stamina bar and its regen, scaled by the armor weight's wind
+		-- (Catalog ▸ Weights via Dresser: StaminaMult / RegenMult); stamina regen
+		-- runs in CharacterSystems (so it keeps going when this weapon leaves the
+		-- hand) and reads these
+		local function windOf(char)
+			local max = cfg.BLOCK_MAX * (char:GetAttribute("StaminaMult") or 1)
+			local old = char:GetAttribute("BlockMax")
+			local meter = char:GetAttribute("BlockMeter")
+			char:SetAttribute("BlockMax", max)   -- HUD scale
+			if meter == nil then char:SetAttribute("BlockMeter", max)
+			elseif old and old > 0 and math.abs(old - max) > 0.01 then char:SetAttribute("BlockMeter", math.min(max, meter * max / old)) end
+			char:SetAttribute("StaminaRegen", cfg.BLOCK_REGEN * (char:GetAttribute("RegenMult") or 1))
 		end
-		character:SetAttribute("BlockMax", cfg.BLOCK_MAX)   -- HUD scale
-		-- stamina regen runs in CharacterSystems (so it keeps going when this
-		-- weapon leaves the hand); it reads these
-		character:SetAttribute("StaminaRegen", cfg.BLOCK_REGEN)
+		windOf(character)
 		character:SetAttribute("StaminaRegenDelay", cfg.STAMINA_REGEN_DELAY)
 		character:SetAttribute("BlockHoldDrain", cfg.BLOCK_HOLD_DRAIN)
 		character:SetAttribute("Blocking", false)
@@ -1710,6 +1722,12 @@ function CombatServer.attach(Tool, weaponConfig)
 					if state.phase ~= "idle" then cancelSwing("lost an arm") end
 					Injury.disarm(char)
 				end
+			end))
+		end
+		-- dressed after the weapon came out (or re-dressed): rescale the bar
+		for _, a in ipairs({"StaminaMult", "RegenMult"}) do
+			table.insert(limbConns, char:GetAttributeChangedSignal(a):Connect(function()
+				if char == character then windOf(char) end
 			end))
 		end
 		-- any script that lowers our Blocking attribute (block break, kick,
@@ -1765,7 +1783,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		kick = doKick, interrupt = interruptSelf,
 		-- for other weapons' hit resolution (chambers)
 		snapshot = function()
-			return {phase = state.phase, kind = state.attack and state.attack.kind, windupStart = state.windupStart, name = state.attackName}
+			return {phase = state.phase, kind = state.attack and state.attack.kind, windupStart = state.windupStart, name = state.attackName,
+				windupEnd = state.windupEnd, releaseEnd = state.releaseEnd, nextAction = state.nextActionTime, landed = state.landed}
 		end,
 		chambered = chamberRelease,
 	}

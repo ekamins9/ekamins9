@@ -78,7 +78,7 @@ local function govern(char)
 			if sprintHeld[char] and dot >= M.SPRINT_MIN_DOT
 				and not char:GetAttribute("Blocking") and not char:GetAttribute("Crouching")
 				and not char:GetAttribute("Acting") and hum.Health > 0 and not incapacitated(char) then
-				sprint = M.SPRINT_MULT
+				sprint = char:GetAttribute("SprintMult") or M.SPRINT_MULT   -- the armor weight's (Catalog ▸ Weights)
 			end
 		end
 		if char:GetAttribute("SpeedMult_Facing") ~= facing then char:SetAttribute("SpeedMult_Facing", facing) end
@@ -95,11 +95,12 @@ local function dodge(plr, char, dx, dz)
 	if type(dx) ~= "number" or type(dz) ~= "number" or dx ~= dx or dz ~= dz then return end
 	local now = os.clock()
 	local why
+	local cost = M.DODGE_COST * (char:GetAttribute("DodgeCost") or 1)   -- light armor dodges cheap, heavy dear
 	if now < (dodgeReady[char] or 0) then why = "cooldown"
 	elseif char:GetAttribute("Blocking") then why = "blocking"
 	elseif char:GetAttribute("Acting") then why = "mid-action"
 	elseif incapacitated(char) then why = "stunned"
-	elseif (char:GetAttribute("BlockMeter") or 100) < M.DODGE_COST then why = "stamina"
+	elseif (char:GetAttribute("BlockMeter") or 100) < cost then why = "stamina"
 	elseif dz < -0.01 then why = "no forward dodge"           -- the client already strips this; belt and braces
 	elseif math.abs(dx) < 0.05 and math.abs(dz) < 0.05 then why = "no direction" end
 	if why then
@@ -110,7 +111,7 @@ local function dodge(plr, char, dx, dz)
 	dodgeReady[char] = now + M.DODGE_COOLDOWN
 	char:SetAttribute("DodgeReadyAt", dodgeReady[char])   -- server clock; the client keeps its own
 	char:SetAttribute("LastDodgeAt", now)                 -- CombatServer refunds stamina if this dodges a swing
-	CombatServer.drainStamina(char, M.DODGE_COST, char:GetAttribute("BlockMax"))
+	CombatServer.drainStamina(char, cost, char:GetAttribute("BlockMax"))
 	log(plr.Name, string.format("dodge %.1f %.1f", dx, dz))
 end
 

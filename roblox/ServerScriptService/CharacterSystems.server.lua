@@ -22,8 +22,8 @@ local DEATH_SHOVE = 10   -- studs/s the corpse falls away from the last hit
 -- stamina (the BlockMeter attribute) — a weapon overrides these through the
 -- BlockMax / StaminaRegen / StaminaRegenDelay attributes it publishes on equip
 local STAMINA_MAX   = 100
-local STAMINA_REGEN = 15    -- per second…
-local STAMINA_DELAY = 1.8   -- …starting this long after the last combat event
+local STAMINA_REGEN = 17    -- per second…
+local STAMINA_DELAY = 1.3   -- …starting this long after the last combat event
 local HOLD_DRAIN    = 3     -- stamina per second while the guard is held (weapon overrides via BlockHoldDrain)
 -- health regen: slow, and only when you are truly out of the fight — full stamina,
 -- not blocking / attacking / sprinting, nothing happened for HEALTH_DELAY

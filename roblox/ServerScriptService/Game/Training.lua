@@ -345,6 +345,27 @@ local function endSpar(result)
 	end
 end
 
+-- THE COUNTDOWN: a fight starts with 3-2-1 (the client counts to the server
+-- time it's given). You're held on your mark till FIGHT: no walking (SpeedMult_Hold),
+-- no swings, kicks, dodges or hops (HoldUntil on the client, StunnedUntil here);
+-- the bots start on the same tick (their startDelay).
+local COUNT = 3
+local function hold(char, seconds)
+	local goAt = workspace:GetServerTimeNow() + seconds
+	if not char then return goAt end
+	char:SetAttribute("HoldUntil", goAt)
+	char:SetAttribute("StunnedUntil", os.clock() + seconds)
+	char:SetAttribute("SpeedMult_Hold", 0)
+	char:SetAttribute("BlockMeter", char:GetAttribute("BlockMax") or 100)   -- a fresh breath for every start
+	task.delay(seconds, function()
+		if char.Parent and (char:GetAttribute("HoldUntil") or 0) <= workspace:GetServerTimeNow() + 0.02 then
+			char:SetAttribute("SpeedMult_Hold", nil)
+			char:SetAttribute("HoldUntil", nil)
+		end
+	end)
+	return goAt
+end
+
 local function startSpar(plr, skill)
 	if not SKILL_ORDER[skill] then return end
 	if ring then
@@ -356,17 +377,18 @@ local function startSpar(plr, skill)
 	local you, them, centre = spot("RingPlayer"), spot("RingBot"), spot("Ring")
 	if not (char and you and them and centre) then return end
 	char:PivotTo(you.CFrame)
+	local goAt = hold(char, COUNT)
 	local radius = centre:GetAttribute("Radius") or 14
 	ring = {player = plr, kind = "spar", skill = skill, bots = {}, outSince = nil}
 	local r = ring
 	local bot = Bots.spawn({at = them.CFrame, skill = skill, weapon = WEAPONS[math.random(#WEAPONS)], target = char,
-		arena = {centre = centre.Position, radius = radius}, startDelay = 3.2, corpseTime = 4,
+		arena = {centre = centre.Position, radius = radius}, startDelay = goAt - workspace:GetServerTimeNow(), corpseTime = 4,
 		onDeath = function() if ring == r then endSpar("win") end end})
 	r.bots = {bot}
 	r.startAt = bot.startAt
 	table.insert(stuff, bot.model)
 	watchTarget(bot.model)
-	tell(plr, "Spar", "start", skill)
+	tell(plr, "Spar", "start", skill, goAt)
 	-- you fall: a loss
 	hum.Died:Once(function() if ring == r then endSpar("lose") end end)
 end
@@ -409,16 +431,19 @@ local function gauntletWave(r)
 	if ring ~= r then return end
 	r.wave = (r.wave or 0) + 1
 	local list = waveOf(r.wave)
-	local centre, them = spot("Ring"), spot("RingBot")
+	local centre, them, you = spot("Ring"), spot("RingBot"), spot("RingPlayer")
 	local char = r.player.Character
 	if not (centre and them and char) then endGauntlet("left"); return end
+	-- back on your mark, your wind back, held till FIGHT
+	if you then char:PivotTo(you.CFrame) end
+	local goAt = hold(char, COUNT)
 	local radius = centre:GetAttribute("Radius") or 14
 	r.left = #list
 	for i, skill in ipairs(list) do
 		local off = (i - (#list + 1) / 2) * 4.5
 		local at = them.CFrame * CFrame.new(off, 0, 0)
 		local bot = Bots.spawn({at = at, skill = skill, weapon = WEAPONS[math.random(#WEAPONS)], target = char,
-			name = skill .. "  ·  wave " .. r.wave, arena = {centre = centre.Position, radius = radius}, startDelay = 2.2, corpseTime = 3,
+			name = skill .. "  ·  wave " .. r.wave, arena = {centre = centre.Position, radius = radius}, startDelay = goAt - workspace:GetServerTimeNow(), corpseTime = 3,
 			onDeath = function()
 				if ring ~= r then return end
 				r.left -= 1
@@ -435,8 +460,8 @@ local function gauntletWave(r)
 		table.insert(stuff, bot.model)
 		watchTarget(bot.model)
 	end
-	r.startAt = os.clock() + 2.2
-	tell(r.player, "Gauntlet", "wave", r.wave, list)
+	r.startAt = os.clock() + (goAt - workspace:GetServerTimeNow())
+	tell(r.player, "Gauntlet", "wave", r.wave, list, goAt)
 end
 
 local function startGauntlet(plr)
@@ -480,13 +505,14 @@ local function startPractice(plr, skill, count)
 	clearPractice(plr, true)
 	local radius = centre:GetAttribute("Radius") or 12
 	char:PivotTo(CFrame.lookAt(centre.Position + Vector3.new(0, 2, 4), centre.Position + Vector3.new(0, 2, -4)))
+	local goAt = hold(char, COUNT)
 	local P = {bots = {}, kills = 0, skill = skill, left = count}
 	practice[plr] = P
 	for i = 1, count do
 		local a = -math.pi / 2 + (i - (count + 1) / 2) * 0.7
 		local at = CFrame.lookAt(centre.Position + Vector3.new(math.cos(a) * (radius - 3), 2, math.sin(a) * (radius - 3)), centre.Position + Vector3.new(0, 2, 0))
 		local bot = Bots.spawn({at = at, skill = skill, weapon = WEAPONS[math.random(#WEAPONS)], target = char, name = skill,
-			arena = {centre = centre.Position, radius = radius + 3}, startDelay = 2, corpseTime = 3,
+			arena = {centre = centre.Position, radius = radius + 3}, startDelay = goAt - workspace:GetServerTimeNow(), corpseTime = 3,
 			onDeath = function()
 				if practice[plr] ~= P then return end
 				P.kills += 1
@@ -498,7 +524,7 @@ local function startPractice(plr, skill, count)
 		table.insert(stuff, bot.model)
 		watchTarget(bot.model)
 	end
-	tell(plr, "Practice", "start", skill, count)
+	tell(plr, "Practice", "start", skill, count, goAt)
 	hum.Died:Once(function() if practice[plr] == P then clearPractice(plr, true); tell(plr, "Practice", "lost", skill) end end)
 end
 

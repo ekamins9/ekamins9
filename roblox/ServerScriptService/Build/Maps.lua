@@ -283,6 +283,7 @@ function Maps.TrainingYard() return require(script.Parent:WaitForChild("MapTrain
 function Maps.Courtyard() return require(script.Parent:WaitForChild("MapCourtyard"))(K) end
 function Maps.Frostgate() return require(script.Parent:WaitForChild("MapFrostgate"))(K) end
 function Maps.Colosseum() return require(script.Parent:WaitForChild("MapColosseum"))(K) end
+function Maps.RoseCourt() return require(script.Parent:WaitForChild("MapRoseCourt"))(K) end
 
 function Maps.build(name)
 	local fn = Maps[name]
@@ -290,7 +291,7 @@ function Maps.build(name)
 	return fn()
 end
 function Maps.buildAll()
-	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield", "TrainingYard", "Courtyard", "Frostgate", "Colosseum"}) do Maps.build(n) end
+	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield", "TrainingYard", "Courtyard", "Frostgate", "Colosseum", "RoseCourt"}) do Maps.build(n) end
 end
 
 return Maps

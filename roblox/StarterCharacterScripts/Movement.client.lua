@@ -39,6 +39,8 @@ if not remote then warn("[Movement] MoveRemote missing — is ServerScriptServic
 ClientSettings.load()
 local function log(...) DebugFlags.log("Movement", ...) end
 local conns = {}
+-- held on your mark for a countdown (HoldUntil, server time): no hops, dodges or kicks till FIGHT
+local function held() return (character:GetAttribute("HoldUntil") or 0) > workspace:GetServerTimeNow() end
 
 --------------------------------------------------------------------
 --  JUMP (a short hop) and getting up from a seat
@@ -78,6 +80,7 @@ local function tryJump()
 	end
 	local now = os.clock()
 	if now < jumpReadyAt then return end
+	if held() then return end
 	if character:GetAttribute("Acting") or character:GetAttribute("Blocking") or character:GetAttribute("Crouching") then return end
 	if character:GetAttribute("Ragdolled") or Humanoid.PlatformStand then return end
 	if (character:GetAttribute("BlockMeter") or 100) < M.JUMP_COST then log("jump: no stamina"); return end
@@ -138,11 +141,12 @@ local dodgeAttachment
 -- dirOverride: a body-space direction (a double-tapped key); else the move keys
 local function tryDodge(dirOverride)
 	if Humanoid.Health <= 0 or Humanoid.Sit then return end
+	if held() then return end
 	local now = os.clock()
 	if now < dodgeReadyAt then log("dodge: cooldown"); return end
 	if character:GetAttribute("Blocking") or character:GetAttribute("Acting") then log("dodge: busy"); return end
 	if character:GetAttribute("Ragdolled") then return end
-	if (character:GetAttribute("BlockMeter") or 100) < M.DODGE_COST then log("dodge: no stamina"); return end
+	if (character:GetAttribute("BlockMeter") or 100) < M.DODGE_COST * (character:GetAttribute("DodgeCost") or 1) then log("dodge: no stamina"); return end
 	if Humanoid.FloorMaterial == Enum.Material.Air then log("dodge: airborne"); return end
 
 	-- direction from the move keys, in body space (x = right, z = back).
@@ -171,7 +175,8 @@ local function tryDodge(dirOverride)
 	lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
 	lv.PrimaryTangentAxis = Vector3.xAxis
 	lv.SecondaryTangentAxis = Vector3.zAxis
-	lv.PlaneVelocity = Vector2.new(dirW.X, dirW.Z) * M.DODGE_SPEED
+	-- light armor dodges further, heavy armor shorter (Catalog ▸ Weights dodgeReach)
+	lv.PlaneVelocity = Vector2.new(dirW.X, dirW.Z) * M.DODGE_SPEED * (character:GetAttribute("DodgeReach") or 1)
 	lv.MaxForce = 1e6
 	lv.Parent = dodgeAttachment
 	Debris:AddItem(dodgeAttachment, M.DODGE_TIME)
@@ -188,6 +193,7 @@ end
 --------------------------------------------------------------------
 local function tryKick()
 	if character:FindFirstChildOfClass("Tool") then return end   -- the weapon's CombatClient sends its own
+	if held() then return end
 	remote:FireServer("Kick")
 end
 

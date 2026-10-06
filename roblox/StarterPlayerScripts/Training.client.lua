@@ -397,9 +397,18 @@ end
 local waveLine = text(gui, "", 20, Theme.ACCENT); waveLine.AnchorPoint = Vector2.new(0.5, 0); waveLine.Position = UDim2.new(0.5, 0, 0, 84)
 waveLine.Size = UDim2.fromOffset(600, 26); waveLine.TextXAlignment = Enum.TextXAlignment.Center; waveLine.Visible = false
 
-local function countdown(vs)
+-- 3-2-1-FIGHT, counted to the server time the fight starts (goAt): you're
+-- held on your mark till then, and the bots start on FIGHT too
+local function countdown(vs, goAt)
+	goAt = goAt or (workspace:GetServerTimeNow() + 3)
 	task.spawn(function()
-		for _, n in ipairs({"3", "2", "1"}) do show(n, vs, WHITE, 0.95); task.wait(1) end
+		for n = 3, 1, -1 do
+			local wait = goAt - n - workspace:GetServerTimeNow()
+			if wait > 0 then task.wait(wait) end
+			if goAt - workspace:GetServerTimeNow() > n - 1 then show(tostring(n), vs, WHITE, 0.95) end
+		end
+		local wait = goAt - workspace:GetServerTimeNow()
+		if wait > 0 then task.wait(wait) end
 		show("FIGHT!", nil, Theme.RED, 1.2)
 	end)
 end
@@ -417,7 +426,7 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	elseif what == "Spar" then
 		if a == "start" then
 			fighting = true
-			countdown(b and ("vs " .. b) or nil)
+			countdown(b and ("vs " .. b) or nil, c)
 		else
 			fighting = false
 			if a == "win" then
@@ -436,7 +445,7 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 			fighting = true
 			waveLine.Text = string.format("THE GAUNTLET  ·  WAVE %d", b or 1)
 			waveLine.Visible = true
-			countdown(string.format("wave %d  ·  %s", b or 1, table.concat(c or {}, ", ")))
+			countdown(string.format("wave %d  ·  %s", b or 1, table.concat(c or {}, ", ")), d)
 		elseif a == "cleared" then
 			show(string.format("WAVE %d CLEARED", b or 0), "catch your breath…", Theme.GOOD, 2.6)
 		elseif a == "over" then
@@ -449,7 +458,7 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	elseif what == "Practice" then
 		if a == "start" then
 			fighting = true
-			countdown(string.format("%d %s%s", c or 1, b or "", (c or 1) > 1 and "s" or ""))
+			countdown(string.format("%d %s%s", c or 1, b or "", (c or 1) > 1 and "s" or ""), d)
 		elseif a == "won" then
 			fighting = false
 			show("ALL DOWN!", string.format("you beat %d %s%s. Again? Ask the Drill Master or the sign", c or 1, b or "", (c or 1) > 1 and "s" or ""), Theme.GOOD, 3.5)

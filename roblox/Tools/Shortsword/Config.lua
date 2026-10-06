@@ -12,7 +12,7 @@ return {
 	IDLE_ID  = "rbxassetid://135659407369438",
 	BLOCK_ID = "rbxassetid://72812411957933",
 
-	SPEED_MULT = 0.45,
+	SPEED_MULT = 0.55,
 	TYPE_SPEED = {Swing = 1.0, Stab = 1.1, Overhead = 1.0, Underhand = 1.0},
 	WINDUP     = 0.15,
 	RECOVERY   = 0.15,
@@ -22,6 +22,7 @@ return {
 
 	SpeedMult = 1.0,
 	ClunkMult = 1.0,
+	ARMOR_PEN = 0,   -- the share of a target's armor protection it ignores
 
 	ATTACKS = {
 		LeftSwing      = {anim="rbxassetid://133334061889126", kind="slash", damage=20, blockCost=15, staminaCost=6},

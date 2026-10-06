@@ -16,33 +16,39 @@ ATTACK_ANIMS = {
 
 # id: (name, family, two_handed, secondary, speed, reach, slash, stab, speedMult, clunkMult, stabSpeed, description, unlock, marks)
 WEAPONS = [
- ("Shortsword",  "Shortsword",        "OneHanded", False, True,  0.45, 4.0, 20, 20, 1.0, 1.0, 1.1, "A short, broad sidearm. Quick, close, and always there when the main weapon is not.", {"free": True}, 0),
- ("Pitchfork",   "Pitchfork",         "Polearm",   True,  False, 0.5,  9.0, 15, 22, 1.0, 1.0, 1.15, "Three tines of farm iron on an ash pole. The levy's spear, and it reaches just as far.", {"level": 2}, 300),
- ("Greatsword",  "Greatsword",        "TwoHanded", True,  False, 0.4,  9.0, 30, 30, 1.1, 1.1, 1.0, "Six feet of steel swung in great arcs. Every hit lands like a hammer, but it takes both hands and a wide stance.", {"free": True}, 0),
+ ("Shortsword",  "Shortsword",        "OneHanded", False, True,  0.55, 4.0, 20, 20, 1.0, 1.0, 1.1, "A short, broad sidearm. Quick, close, and always there when the main weapon is not.", {"free": True}, 0),
+ ("Pitchfork",   "Pitchfork",         "Polearm",   True,  False, 0.5,  9.0, 15, 22, 0.98, 1.0, 1.15, "Three tines of farm iron on an ash pole. The levy's spear, and it reaches just as far.", {"level": 2}, 300),
+ ("Greatsword",  "Greatsword",        "TwoHanded", True,  False, 0.4,  9.0, 30, 30, 0.94, 1.1, 1.0, "Six feet of steel swung in great arcs. Every hit lands like a hammer, but it takes both hands and a wide stance.", {"free": True}, 0),
  ("Hammer",      "War Hammer",        "OneHanded", False, True,  0.45, 4.0, 20, 20, 1.0, 1.0, 1.0, "A small head on a short haft, with a spike on the back for helmets. Armor means nothing to it.", {"free": True}, 0),
  ("ArmingSword", "Arming Sword",      "OneHanded", False, True,  0.5,  5.0, 22, 20, 1.0, 1.0, 1.05, "The knight's sidearm: a straight cut-and-thrust blade that is quick in the hand and honest about its reach.", {"free": True}, 0),
- ("Dagger",      "Rondel Dagger",     "OneHanded", False, True,  0.75, 3.2, 14, 18, 1.0, 0.9, 1.15, "A hand's breadth of steel. Useless at range, deadly inside it: the stab goes through mail.", {"level": 2}, 500),
- ("Longsword",   "Longsword",         "TwoHanded", True,  False, 0.5,  6.5, 26, 24, 1.05, 1.05, 1.0, "Hand-and-a-half and fast for a two-hander. The fencer's weapon: feints, chambers, ripostes.", {"level": 3}, 900),
+ ("Dagger",      "Rondel Dagger",     "OneHanded", False, True,  0.75, 3.2, 14, 18, 1.04, 0.9, 1.15, "A hand's breadth of steel. Useless at range, deadly inside it: the stab goes through mail.", {"level": 2}, 500),
+ ("Longsword",   "Longsword",         "TwoHanded", True,  False, 0.5,  6.5, 26, 24, 0.98, 1.05, 1.0, "Hand-and-a-half and fast for a two-hander. The fencer's weapon: feints, chambers, ripostes.", {"level": 3}, 900),
  ("Mace",        "Flanged Mace",      "OneHanded", False, True,  0.46, 4.6, 26, 14, 1.0, 1.05, 0.9, "Flanges that bite through plate. Slow to thrust, but a hit is a hit no matter what they're wearing.", {"level": 4}, 900),
  ("Cleaver",     "Cleaver",           "OneHanded", False, True,  0.52, 4.0, 24, 8,  1.0, 1.0, 0.8, "Taken from a butcher's block. Heavy chop, no point to speak of.", {"level": 4}, 600),
  ("Falchion",    "Falchion",          "OneHanded", False, True,  0.48, 4.8, 26, 12, 1.0, 1.0, 0.9, "A broad, forward-weighted blade. Cuts like an axe, swings like a sword.", {"level": 6}, 1000),
- ("BattleAxe",   "Battle Axe",        "TwoHanded", True,  False, 0.4,  7.0, 32, 14, 1.05, 1.15, 0.8, "A great bearded axe. The swing takes a moment; whatever it meets takes longer.", {"level": 7}, 1300),
+ ("BattleAxe",   "Battle Axe",        "TwoHanded", True,  False, 0.4,  7.0, 32, 14, 0.96, 1.15, 0.8, "A great bearded axe. The swing takes a moment; whatever it meets takes longer.", {"level": 7}, 1300),
  ("MorningStar", "Morning Star",      "OneHanded", False, False, 0.44, 5.0, 28, 16, 1.0, 1.1, 0.9, "A spiked ball on a haft. Blunt and sharp at once; nobody blocks it comfortably.", {"level": 8}, 1200),
- ("Halberd",     "Halberd",           "Polearm",   True,  False, 0.38, 10.0, 32, 26, 1.1, 1.15, 1.0, "Axe, spike and hook on a long pole. The infantry's answer to everything, if you can keep them at the end of it.", {"level": 8}, 1600),
- ("Messer",      "Kriegsmesser",      "OneHanded", False, False, 0.46, 5.8, 27, 18, 1.0, 1.05, 0.95, "A long single-edged knife with a nagel to guard the hand. Reach of a longsword, speed of a sword.", {"level": 9}, 1300),
+ ("Halberd",     "Halberd",           "Polearm",   True,  False, 0.38, 10.0, 32, 26, 0.94, 1.15, 1.0, "Axe, spike and hook on a long pole. The infantry's answer to everything, if you can keep them at the end of it.", {"level": 8}, 1600),
+ ("Messer",      "Kriegsmesser",      "OneHanded", False, False, 0.46, 5.8, 27, 18, 0.99, 1.05, 0.95, "A long single-edged knife with a nagel to guard the hand. Reach of a longsword, speed of a sword.", {"level": 9}, 1300),
  ("Maul",        "Maul",              "TwoHanded", True,  False, 0.3,  7.5, 40, 14, 0.9, 1.3, 0.7, "A sledge for men. One clean hit ends an argument; one miss ends you.", {"level": 10}, 1800),
- ("Billhook",    "Billhook",          "Polearm",   True,  False, 0.42, 9.5, 26, 22, 1.05, 1.1, 1.0, "The farmer's hedge tool, lengthened and sharpened. Its hook pulls riders and shields alike.", {"level": 10}, 1200),
- ("Estoc",       "Estoc",             "TwoHanded", True,  False, 0.46, 7.0, 14, 32, 1.0, 1.0, 1.1, "A blade with no edge, only a point, meant to find the gaps in plate. Thrust, don't swing.", {"level": 11}, 1500),
- ("Rapier",      "Rapier",            "OneHanded", False, True,  0.6,  6.0, 12, 24, 1.0, 0.95, 1.2, "Long, light and precise. The thrust arrives before the wind-up is noticed.", {"level": 12}, 1500),
- ("Glaive",      "Glaive",            "Polearm",   True,  False, 0.4,  10.0, 30, 20, 1.05, 1.1, 0.95, "A sword blade on a pole. Sweeps that reach the second rank.", {"level": 13}, 1600),
- ("Poleaxe",     "Poleaxe",           "Polearm",   True,  False, 0.4,  9.5, 30, 24, 1.1, 1.15, 1.0, "Hammer head, fluke and top spike: the knight's own polearm for fighting other knights.", {"level": 14}, 1800),
- ("Bardiche",    "Bardiche",          "TwoHanded", True,  False, 0.36, 8.5, 34, 18, 1.1, 1.2, 0.85, "A long crescent blade bound to a long haft. Few things cut deeper.", {"level": 15}, 1800),
- ("Zweihander",  "Zweihander",        "TwoHanded", True,  False, 0.36, 9.5, 34, 28, 1.15, 1.15, 1.0, "The great two-hander of the Landsknechte, with rings and a leather ricasso. Every swing is a wall of steel.", {"level": 16}, 2200),
- ("Executioner", "Executioner's Sword","TwoHanded", True, False, 0.38, 8.0, 36, 10, 1.1, 1.15, 0.6, "Broad, flat-tipped, built for one job. No point, all edge.", {"level": 18}, 2400),
+ ("Billhook",    "Billhook",          "Polearm",   True,  False, 0.42, 9.5, 26, 22, 0.95, 1.1, 1.0, "The farmer's hedge tool, lengthened and sharpened. Its hook pulls riders and shields alike.", {"level": 10}, 1200),
+ ("Estoc",       "Estoc",             "TwoHanded", True,  False, 0.46, 7.0, 14, 32, 0.98, 1.0, 1.1, "A blade with no edge, only a point, meant to find the gaps in plate. Thrust, don't swing.", {"level": 11}, 1500),
+ ("Rapier",      "Rapier",            "OneHanded", False, True,  0.6,  6.0, 12, 24, 1.02, 0.95, 1.2, "Long, light and precise. The thrust arrives before the wind-up is noticed.", {"level": 12}, 1500),
+ ("Glaive",      "Glaive",            "Polearm",   True,  False, 0.4,  10.0, 30, 20, 0.95, 1.1, 0.95, "A sword blade on a pole. Sweeps that reach the second rank.", {"level": 13}, 1600),
+ ("Poleaxe",     "Poleaxe",           "Polearm",   True,  False, 0.4,  9.5, 30, 24, 0.94, 1.15, 1.0, "Hammer head, fluke and top spike: the knight's own polearm for fighting other knights.", {"level": 14}, 1800),
+ ("Bardiche",    "Bardiche",          "TwoHanded", True,  False, 0.36, 8.5, 34, 18, 0.94, 1.2, 0.85, "A long crescent blade bound to a long haft. Few things cut deeper.", {"level": 15}, 1800),
+ ("Zweihander",  "Zweihander",        "TwoHanded", True,  False, 0.36, 9.5, 34, 28, 0.93, 1.15, 1.0, "The great two-hander of the Landsknechte, with rings and a leather ricasso. Every swing is a wall of steel.", {"level": 16}, 2200),
+ ("Executioner", "Executioner's Sword","TwoHanded", True, False, 0.38, 8.0, 36, 10, 0.94, 1.15, 0.6, "Broad, flat-tipped, built for one job. No point, all edge.", {"level": 18}, 2400),
  ("WarAxe",      "War Axe",           "OneHanded", False, True,  0.48, 4.8, 26, 10, 1.0, 1.05, 0.8, "A one-handed axe, light enough to carry as a sidearm and heavy enough to open a helm.", {"level": 3}, 500),
- ("Spear",       "Spear",             "Polearm",   True,  False, 0.5,  10.5, 12, 26, 1.0, 1.0, 1.15, "The oldest weapon there is. Keep the point between you and them.", {"free": True}, 0),
+ ("Spear",       "Spear",             "Polearm",   True,  False, 0.5,  10.5, 12, 26, 0.98, 1.0, 1.15, "The oldest weapon there is. Keep the point between you and them.", {"free": True}, 0),
  ("Quarterstaff","Quarterstaff",      "Polearm",   True,  False, 0.62, 8.0, 14, 14, 1.0, 0.9, 1.0, "Iron-shod oak. It kills nobody quickly, and nobody gets near you either.", {"level": 3}, 400),
 ]
+# ARMOR PENETRATION: the share of a target's armor protection the weapon ignores
+# (CombatServer: protection x (1 - ARMOR_PEN)). Blunt heads and armor-piercing
+# points beat plate; edges don't.
+PEN = {"Hammer": 0.6, "Maul": 0.6, "Mace": 0.5, "MorningStar": 0.45, "Poleaxe": 0.4, "Estoc": 0.4,
+       "Dagger": 0.35, "Quarterstaff": 0.3, "BattleAxe": 0.25, "WarAxe": 0.2, "Halberd": 0.2,
+       "Bardiche": 0.15, "Spear": 0.15, "Rapier": 0.1, "Pitchfork": 0.1}
 EXISTING = set()   # every Tool folder is generated now (the four originals were remade as meshes)
 
 CONFIG = '''--[[ {UPPER} — weapon config (ModuleScript inside the Tool).
@@ -69,6 +75,7 @@ return {{
 
 	SpeedMult = {speedMult},
 	ClunkMult = {clunkMult},
+	ARMOR_PEN = {pen},   -- the share of a target's armor protection it ignores
 
 	ATTACKS = {{
 {attacks}
@@ -102,7 +109,7 @@ def gen_tools():
             attacks.append(f'\t\t{key:<15}= {{anim="rbxassetid://{aid}", kind="{kind}", damage={dmg}, blockCost={block}, staminaCost={stam}}},')
         anims = ANIMS if two else ANIMS_1H
         cfg = CONFIG.format(UPPER=name.upper(), id=wid, name=name, desc=desc.replace('"', '\\"'), idle=anims["IDLE_ID"], block=anims["BLOCK_ID"],
-                            speed=speed, stabSpeed=ss, reach=reach, two=lua_bool(two), sec=lua_bool(sec), speedMult=sm, clunkMult=cm,
+                            speed=speed, stabSpeed=ss, reach=reach, two=lua_bool(two), sec=lua_bool(sec), speedMult=sm, clunkMult=cm, pen=PEN.get(wid, 0),
                             attacks="\n".join(attacks))
         d = os.path.join(ROOT, "Tools", wid)
         write(os.path.join(d, "Config.lua"), cfg)

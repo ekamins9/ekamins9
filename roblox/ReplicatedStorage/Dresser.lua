@@ -164,7 +164,8 @@ function Dresser.undress(char)
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	local base = char:GetAttribute("BaseMaxHealth")
 	if hum and base then local frac = hum.MaxHealth > 0 and hum.Health / hum.MaxHealth or 1; hum.MaxHealth = base; hum.Health = base * frac end
-	for _, a in ipairs({"SpeedMult_Armor", "ClunkMult_Armor", "ArmorId", "ArmorType", "ArmorProtection", "TeamPainted", "Pieces"}) do char:SetAttribute(a, nil) end
+	for _, a in ipairs({"SpeedMult_Armor", "ClunkMult_Armor", "ArmorId", "ArmorType", "ArmorProtection", "TeamPainted", "Pieces",
+		"StaminaMult", "RegenMult", "SprintMult", "DodgeCost", "DodgeReach"}) do char:SetAttribute(a, nil) end
 	local head = char:FindFirstChild("Head"); local decal = head and head:FindFirstChildOfClass("Decal"); if decal then decal.Transparency = 0 end
 end
 
@@ -211,6 +212,13 @@ function Dresser.dress(char, opts)
 	end
 	if stats.speed ~= 1 then char:SetAttribute("SpeedMult_Armor", stats.speed) end
 	if stats.clunk ~= 1 then char:SetAttribute("ClunkMult_Armor", stats.clunk) end
+	-- the weight's wind and footwork: CombatServer scales the stamina bar and its
+	-- regen by these, MovementServer the sprint and the dodge's cost, Movement its reach
+	char:SetAttribute("StaminaMult", stats.stamina or 1)
+	char:SetAttribute("RegenMult", stats.regen or 1)
+	char:SetAttribute("SprintMult", stats.sprint)
+	char:SetAttribute("DodgeCost", stats.dodgeCost or 1)
+	char:SetAttribute("DodgeReach", stats.dodgeReach or 1)
 	char:SetAttribute("ArmorType", weight)
 	char:SetAttribute("ArmorProtection", stats.prot or 0)
 	char:SetAttribute("ArmorId", table.concat(worn, ","))

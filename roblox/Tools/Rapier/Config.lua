@@ -20,8 +20,9 @@ return {
 	TWO_HANDED = false,
 	SECONDARY  = true,
 
-	SpeedMult = 1.0,
+	SpeedMult = 1.02,
 	ClunkMult = 0.95,
+	ARMOR_PEN = 0.1,   -- the share of a target's armor protection it ignores
 
 	ATTACKS = {
 		LeftSwing      = {anim="rbxassetid://133334061889126", kind="slash", damage=12, blockCost=9, staminaCost=4},

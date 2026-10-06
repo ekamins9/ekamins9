@@ -286,6 +286,9 @@ player.CameraMode = Enum.CameraMode.Classic
 --  VISIBILITY
 --------------------------------------------------------------------
 local torsoPieces = {}   -- torso armor parts, faded with the torso in first person
+local armPieces = {}     -- arm armor parts: shown in first person (your sleeves and gauntlets on the
+                         -- weapon), hidden only while one is right up against the camera
+local ARM_NEAR = 0.35    -- studs between the camera and a part's bounds before it hides
 local setTorsoAlpha
 local function applyVisibility(d, inFP)
 	if d:IsA("BasePart") then
@@ -296,14 +299,17 @@ local function applyVisibility(d, inFP)
 			d.LocalTransparencyModifier = inFP and ACCESSORY_TRANSPARENCY or 0
 			d.CastShadow = true
 		elseif d:FindFirstAncestor("Armor") and d:FindFirstAncestor("Armor").Parent == character then
-			-- armor: leg pieces always show in first person; torso pieces follow the
-			-- torso (visible only when looking down, see setTorsoAlpha); helmet and
-			-- arm pieces clip through the camera (Middle is invisible anyway)
+			-- armor: leg and arm pieces show in first person (an arm piece hides
+			-- only while it's in the camera's face, see the loop); torso pieces
+			-- follow the torso (visible only when looking down, see setTorsoAlpha);
+			-- the helmet would fill the camera (Middle is invisible anyway)
 			local piece = d:FindFirstAncestorOfClass("Model")
 			local isLeg = piece and piece.Name:find("LegClothing") ~= nil
+			local isArm = piece and piece.Name:find("ArmClothing") ~= nil
 			local isTorso = piece and piece.Name:find("TorsoClothing") ~= nil
-			d.LocalTransparencyModifier = (inFP and not isLeg) and 1 or 0
+			d.LocalTransparencyModifier = (inFP and not isLeg and not isArm) and 1 or 0
 			if isTorso then torsoPieces[d] = inFP or nil end
+			if isArm then armPieces[d] = inFP or nil end
 			d.CastShadow = true
 		elseif d:FindFirstAncestor("Body") and d:FindFirstAncestor("Body").Parent == character then
 			-- hair, beard and the face overlay sit on the head: they would fill
@@ -320,7 +326,20 @@ end
 
 local function setBodyForFP(inFP)
 	torsoPieces = {}
+	armPieces = {}
 	for _, d in ipairs(character:GetDescendants()) do applyVisibility(d, inFP) end
+end
+-- first person: an arm piece swung up into the camera hides until it's clear again
+local function fadeArmPieces()
+	local eye = Camera.CFrame.Position
+	for part in pairs(armPieces) do
+		if part.Parent then
+			local gap = (part.Position - eye).Magnitude - part.Size.Magnitude / 2
+			part.LocalTransparencyModifier = gap < ARM_NEAR and 1 or 0
+		else
+			armPieces[part] = nil
+		end
+	end
 end
 
 -- 1 = torso hidden (looking level), 0 = fully shown (looking down)
@@ -722,6 +741,7 @@ local function loopBody(dt)
 		-- eye is already in front of the chest, so its top face never shows
 		local show = math.clamp((-rot.X - TORSO_SHOW_FROM) / (TORSO_SHOW_TO - TORSO_SHOW_FROM), 0, 1)
 		setTorsoAlpha(1 - show)
+		fadeArmPieces()
 	else
 		Head.LocalTransparencyModifier = 0
 		setTorsoAlpha(0)

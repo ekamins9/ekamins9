@@ -23,12 +23,17 @@ end
 local fx = remote("RemoteEvent", "FxEvent")
 local emote = remote("RemoteEvent", "EmoteRemote")
 
+-- the body falls first (and a head that came off rolls away); the effect plays on it a moment later
+local KILL_FX_DELAY = 1.2
+
 -- the killer's kill effect on the victim's body, for everyone
 _G.KillFxHook = function(killer, victimChar)
 	if not (killer and victimChar and victimChar.Parent) then return end
 	local p = Profile.get(killer)
 	local id = p and p.killfx
 	if type(id) ~= "string" or not Catalog.KILLFX_BY[id] or not Profile.has(killer, "killfx", id) then return end
+	task.wait(KILL_FX_DELAY)
+	if not victimChar.Parent then return end
 	fx:FireAllClients("Kill", id, victimChar)
 end
 

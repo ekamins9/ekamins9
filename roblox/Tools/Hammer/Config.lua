@@ -22,6 +22,7 @@ return {
 
 	SpeedMult = 1.0,
 	ClunkMult = 1.0,
+	ARMOR_PEN = 0.6,   -- the share of a target's armor protection it ignores
 
 	ATTACKS = {
 		LeftSwing      = {anim="rbxassetid://133334061889126", kind="slash", damage=20, blockCost=15, staminaCost=6},

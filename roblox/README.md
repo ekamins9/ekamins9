@@ -52,6 +52,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Game/Modes/Siege.lua` | `ServerScriptService` → `Game` → `Modes` → `Siege` | ModuleScript |
 | `ServerScriptService/Build/MapFrostgate.lua` | `ServerScriptService` → `Build` → `MapFrostgate` | ModuleScript |
 | `ServerScriptService/Build/MapColosseum.lua` | `ServerScriptService` → `Build` → `MapColosseum` | ModuleScript |
+| `ServerScriptService/Build/MapRoseCourt.lua` | `ServerScriptService` → `Build` → `MapRoseCourt` | ModuleScript |
 | `ServerScriptService/Game/Modes/Horde.lua` | `ServerScriptService` → `Game` → `Modes` → `Horde` | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
 | `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
@@ -118,6 +119,19 @@ on the server for real spawns and on the client for every menu mannequin, so wha
 what spawns. Profiles are DataStore `Profiles_v2` (v1 saves migrate: armor set → its three
 pieces). **Adding content is config only: see [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
 
+**The weights trade real things** (`Catalog ▸ Weights`; the class cards show HP / ARMOR / SPEED /
+STAMINA bars and the full line under each class):
+- **Light (Vanguard):** 100 HP, 3% armor, 106% walk speed, the fastest sprint (×1.55), 115 stamina
+  coming back 25% faster, dodges that cost 70% and go 25% further. One mistake from death.
+- **Medium (Footman):** 106 HP, 12% armor, 96% speed, ×1.45 sprint, 100 stamina: the all-rounder.
+- **Heavy (Knight):** 112 HP, 22% armor on covered limbs, 87% speed, ×1.32 sprint, 85 stamina
+  coming back 20% slower, dodges that cost 140% and go 20% shorter. About 1.4× a Light's
+  staying power (it was 2×): a Light that keeps moving and keeps the pressure on runs it dry.
+  Blunt weapons and armor-piercing points ignore part of the armor (`ARMOR_PEN`, below).
+Dresser publishes them as `StaminaMult`, `RegenMult`, `SprintMult`, `DodgeCost`, `DodgeReach`;
+CombatServer scales `BlockMax` / `StaminaRegen` (and rescales if you're re-dressed),
+MovementServer the sprint and the dodge's cost, Movement the dodge's reach.
+
 ## Look (`Theme`)
 
 Every screen reads its colors and fonts from `ReplicatedStorage ▸ Theme`: dark glass cards,
@@ -154,7 +168,11 @@ and a UIScale fits it to any screen.
 - **LOADOUT**: one loadout per class (weight → stats), with a live mannequin and TEAM PREVIEW.
   **Anything locked can be tried on**: it shows on you, with where it comes from and a buy
   button when it is in today's shop.
-- **ARMORY**: **WEAPONS** shows every weapon turning on a stage with its skin strip, and for
+- **ARMORY**: a **✔ OWNED ONLY** filter (on by default) shows what you have in every tab; tap it
+  to see everything there is to get and how. **WEAPONS** shows every weapon turning on a stage with
+  its skin strip, a **STATS** card (reach, damage and head damage, stab, wind-up, stamina a swing,
+  guard break, armor pierce, walk speed: bars against every other weapon, from
+  `ReplicatedStorage ▸ WeaponStats`), and for
   each skin exactly where it comes from (crate, task, pack, the shop shelf) and its effects
   (trail, aura), plus EQUIP / AS SECONDARY. **ARMOR** shows every set worn by you, piece by
   piece. You can toggle pieces, see the stats of its weight, and BUY (on the days its pack is in
@@ -256,7 +274,11 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   built by `Hub ▸ Pastimes`. Set an egg in a nest and it incubates in real time, even while you
   are away or in a match. Standing within 20 studs makes your eggs incubate twice as fast, and
   a line at the top says so. Your own eggs sit in the nests, wobbling when ready, with timers;
-  press E to hatch or to open the menu.
+  press E to hatch or to open the menu. Nests keep real time (`started` = `os.time()` in the
+  profile), so eggs ripen while you're offline too (Studio can't save, so there they last a session).
+  In the menu: **SET AN EGG** opens your egg inventory as cards (count, hatch time; a missing one
+  can be bought right there if the shelf sells it), and **YOUR EGGS** shows every kind with how
+  many you hold.
 - **Companions** (`Catalog ▸ Companions`, 21 to find): a hatched egg rolls one by the egg's
   odds. A duplicate adds a star (up to 5, and five stars sparkle); past that it pays Marks.
   Your companion follows you around (built from parts by `Companions`, drawn locally for every
@@ -269,8 +291,10 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   Legendary skins leave a swing trail; skins with `fx` shed an aura of particles around the blade.
 - **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): `Scoreboard` (and the training dummies) call
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
-  effect and fires `FxEvent "Kill"` to everyone; each client (`Cosmetics.client`) builds it on
-  the body in `workspace.LocalFX` and hides the body locally.
+  effect and fires `FxEvent "Kill"` to everyone **1.2 s after the death** (`KILL_FX_DELAY`), so the
+  body falls first and a head that came off rolls away; each client (`Cosmetics.client`) builds it
+  upright over the body, at a standing torso's height above the floor under it, in
+  `workspace.LocalFX`, and hides the body locally.
 - **Emotes** (`Emotes` + `Catalog ▸ Emotes`): hold **B**, point the mouse at an emote and let go
   (or tap B and click one). There are no number keys, because 1–9 are the backpack's weapon slots.
   The client starts the emote at once and asks `EmoteRemote "Play"`. The server checks ownership,
@@ -382,6 +406,14 @@ blade / haft / head, skin-tintable parts) is built from `Build ▸ Weapons` when
 Handle, and a display copy lands in `Cosmetics ▸ Weapons` for the menu mannequin. Stats
 (speed, reach, damage per attack, one- or two-handed, weight) live in each Tool's `Config`;
 unlocks and prices in `Catalog ▸ Weapons`; both are generated from `scripts/gen_content.py`.
+**Every weapon has a niche:** heavier weapons slow you a little while held (`SpeedMult` 0.90–1.04;
+two-handers used to *speed you up*), and `ARMOR_PEN` is the share of the target's armor a weapon
+ignores: War Hammer and Maul 60%, Mace 50%, Morning Star 45%, Poleaxe and Estoc 40%, Rondel
+Dagger 35%… edges 0. The Shortsword is the quick sidearm (`SPEED_MULT` 0.55). At startup
+`LoadoutServer` publishes every weapon's numbers to `ReplicatedStorage ▸ WeaponStats ▸ <id>`
+(attributes: Reach, Swing/Stab/Overhead Damage · Windup · Cost · Block (what a held guard pays),
+HeadMult, Move, ArmorPen, TwoHanded, Secondary, Description) and the Armory shows them as
+bars against every other weapon.
 Armor sets work the same way: `Build ▸ Armor` has a blueprint for every release set in
 `ServerStorage ▸ Armor` (Road Levy, Marsh Wardens, Harriers of the Coast, Night Hunters ·
 Sellswords, River Guard, Gilded Court, Wolf Company · Tourney Knight, Iron Crow, Blackguard,
@@ -537,8 +569,9 @@ The HORDE door (PLAY board): you and your party against waves of bots, in a Frie
 the Training Yard. A short breather, then wave 1 pours in through the map's gates (`Spots ▸
 HordeGate1..n`): each wave bigger and better trained (Knights from wave 3, Champions from 6), a
 **Warlord** every fifth wave. At most 10 bots are on the field at once; the rest wait their turn.
-The fallen spawn again between waves (12 s); when everyone is down at once the horde wins and the
-round ends. Players can't hurt each other and bots don't hurt each other. Each wave beaten pays
+The fallen spawn again between waves (12 s), and the standing get all their stamina and a quarter
+of their health back; when everyone is down at once the horde wins and the round ends. Players
+can't hurt each other and bots don't hurt each other. Each wave beaten pays
 everyone `wave` (15 Marks, 30 XP), each bot killed pays `kill`, and your best wave is kept
 (`stats.hordeBest`). The HUD shows the wave, the foes left and the countdown between waves.
 
@@ -546,6 +579,14 @@ everyone `wave` (15 Marks, 30 XP), each bot killed pays `kill`, and your best wa
 stands, a two-storey arcade of arches with red and white awnings, and four gates where the horde
 comes in. A dais in the middle is the King of the Hill's hill, and broken columns give cover.
 Used by Horde, the Lists, Last Team Standing, FFA and King of the Hill.
+
+**The Rose Court** (`Build ▸ MapRoseCourt`): a walled rose garden for duels, 46 × 46 studs inside
+warm sandstone walls too tall to get over, its four arched gates barred with iron grilles. A
+heraldic rose (red, white, gold, green barbs) is laid in the marble floor inside a ring of eight
+columns under a pergola of roses; flowerbeds and climbing roses run along the walls, little
+fountains and rose trees stand in the corners, a tower with a rose-red spire at each corner;
+fountains, cypresses and trees on the lawns outside. Terrain under the court is paving (grass
+blades grow up through thin floor parts). Used by the Lists and the Duel Yard.
 
 ## Rounds
 
@@ -567,6 +608,9 @@ and `SpeedMult_Facing` from replicated state (MoveDirection, attributes), so the
 only ever *ask*. Sprint ends the moment you block, crouch, attack, get stunned or ragdoll.
 Dodge: the client pushes itself (it owns its physics, `DODGE_SPEED` for `DODGE_TIME`) and the
 server validates and charges `DODGE_COST` stamina; forward input is stripped, no input = hop back.
+The armor weight scales the sprint (`SprintMult`), the dodge's cost (`DodgeCost`) and its reach
+(`DodgeReach`). A fighter held on their mark for a countdown (`HoldUntil`, server time) can't hop,
+dodge, kick or swing until it runs out.
 
 ## Weapons on the floor (Pickup)
 
@@ -632,11 +676,15 @@ it from the map's `Spots`:
   never drops its guard (so you can learn to kick it). They arrive with a lesson that needs them
   and leave when nobody's lesson does.
 - **The sparring ring**: press E at the sign (or the menu) and pick a Squire, Knight or Champion
-  bot. After a 3-2-1 it's a fight to the death; leaving the ring forfeits. A first win at each
+  bot. After a 3-2-1 it's a fight to the death; leaving the ring forfeits. **The countdown holds
+  you on your mark** (`Training` `hold`: `SpeedMult_Hold` = 0, `HoldUntil` for the client,
+  `StunnedUntil` for the server) with a full stamina bar, and the bots start on the same tick as
+  FIGHT (the client counts to the server time it's sent). A first win at each
   level pays (`Catalog ▸ Drills ▸ spar`); wins are kept per level. The last lesson's Squire
   comes out the moment you step into the ring.
 - **The Gauntlet** (in the ring): waves of bots, each harder (Squire, two Squires, a Knight… then
-  Champions), a breath and some health back between waves, until you fall. Your best wave is
+  Champions), a breath, some health and all your stamina back between waves (and you're put back
+  on your mark for the next 3-2-1), until you fall. Your best wave is
   kept (profile `gauntlet`); each wave past your best pays `Drills ▸ gauntlet.perWave` Marks.
 - **The practice ground** (north-east, by the ring): call up one, two or three Squires, Knights
   or Champions at once and fight them, as often as you like (no pay).
@@ -645,12 +693,23 @@ it from the map's `Spots`:
 
 **Bots** (`Combat ▸ Bots`) fight on the real combat system: they carry a normal weapon Tool whose
 controller runs in NPC mode.
-- **Brain** (10 Hz): close in, circle at sword length, strike (swings, stabs, overheads; feints
-  and morphs when skilled), step in to land, raise the guard against your windup (late enough to
-  parry, when skilled), and kick a turtle.
-- **Skill presets:** Squire / Knight / Champion. Drill and Guard are the training dummies.
-- **Look:** dressed by the Dresser in their weight's starter armor. Clients draw their walk
-  (`NpcAnimator`: hips swing from how far the root moved each frame) and play their footsteps.
+- **The players' rules:** the same walk speed (`MovementConfig` × the armor's and weapon's
+  `SpeedMult` × 0.8 sideways / 0.65 backwards, a sprint to close distance), the players' 400°/s
+  turn cap while swinging (720°/s otherwise), the same stamina.
+- **Brain** (10 Hz): hold just out of the foe's reach, step in to swing (the blade lands at
+  about 0.72 × `REACH`), punish whiffs and parried swings, press a foe low on stamina or stunned,
+  kick a guard held up too long; keep `reserve` stamina and back off to get it back.
+- **Reflexes** (every frame, from the foe's controller `snapshot`): a parry timed so the blade
+  arrives mid-window, learning how long each of your attacks takes to land (`learned`); `bait` is
+  the chance it guards early, which a late feint catches; a riposte after its own parry; feints
+  and morphs when you raise your guard early against its swing; combos after a hit; chambers.
+- **Disarmed:** it draws its spare (`spare`: a secondary) or goes and picks a weapon up
+  (`Pickup.takeNpc`), facing where it walks.
+- **Skill presets** (`Bots.SKILLS`): Squire / Knight / Champion. Drill and Guard are the training dummies.
+- **Look:** each rank has its own sets and colours (`LOOKS`): levy cloth in umber and moss for
+  Squires, mail and surcoats in navy and white for Knights, full plate in black and blood for
+  Champions. Clients draw their walk (`NpcAnimator`: hips swing from how far the root moved each
+  frame) and play their footsteps.
 - `Combat ▸ R6` builds a plain R6 rig from parts for bots, dummies and NPCs.
 - Studio: `/bot Knight Longsword`, `/bot clear`.
 
@@ -680,6 +739,11 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
   players see it, so ducking under a high swing or leaning back from a stab is a real dodge.
 - **Stamina** (`BlockMeter`): attacks, feints, kicks, blocks drain it. Hits 0 from a
   block → guard break stun. Guard hit while already at 0 → **weapon flies out of your hand**.
+  A swing that cuts someone cleanly gives its whole cost back (at least `HIT_REFUND`); a
+  blocked or parried one gives nothing; a whiff costs half again (`MISS_COST_MULT` 0.5). A held
+  guard pays `BLOCK_COST_MULT` (0.8) × the attack's blockCost; a timed parry pays nothing.
+  Regen: 17/s (× the weight's `RegenMult`) from 1.3 s after the last combat event.
+- **Armor**: protection on a covered limb × (1 − the weapon's `ARMOR_PEN`).
 - **Head**: `HEAD_DAMAGE_MULT` × damage (2× by default) — no automatic kill.
 - **Kills**: a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
   with `BLEED_OUT_CHANCE` an arm/leg victim survives on `BLEED_HP` and bleeds out instead.

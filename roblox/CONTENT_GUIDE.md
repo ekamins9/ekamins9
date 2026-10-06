@@ -59,7 +59,11 @@ or `A_.MySet = {HeadClothing = …, TorsoClothing = …}` in `Build ▸ Armor` (
 (`Tools/<id>/Config, Server, Client`), the armor set folders (`ServerStorage/Armor/<Set>/Config`)
 and `Catalog ▸ Weapons` + `Catalog ▸ Skins` from the tables at the top of the script. Add a row
 to `WEAPONS` or `SETS` (or a tint to `TINTS`) and re-run it; edit those four outputs by hand
-only if you stop running the script.
+only if you stop running the script. A weapon row's `speedMult` is its walk speed while held
+(heavier = a little slower, never faster than 1.04), and `PEN` (next to the table) gives a
+weapon its `ARMOR_PEN`, the share of armor it ignores (blunt heads and armor-piercing points).
+The Armory reads every weapon's numbers from `ReplicatedStorage ▸ WeaponStats`, which
+`LoadoutServer` fills from the Configs at startup: nothing to add for a new weapon.
 
 ---
 
@@ -87,7 +91,11 @@ return {
 
 Stats come from the **weight only** (`Catalog ▸ Weights`): every Heavy piece gives the same
 health / speed / protection, so looks never buy power. A set may skip slots (no
-`HeadClothing` → no helm piece).
+`HeadClothing` → no helm piece). A weight's row: `health` (added to 100), `prot` (damage
+removed on covered limbs), `speed` (walk), `sprint` (sprint multiplier), `stamina` (× the 100
+bar), `regen` (× stamina regen), `dodgeCost` and `dodgeReach` (× the dodge's cost and distance),
+`clunk` (footsteps). Keep the trade honest: what a weight gains in health and armor it pays
+in speed, stamina and footwork (see the README's *Classes* section for the current numbers).
 
 **Color blocks.** Give any part in the models an attribute `ColorSlot` (string) =
 `Primary`, `Secondary`, `Accent` or `Metal`. The player's four colors paint those parts;
