@@ -273,7 +273,9 @@ function Dresser.attachWeapon(rig, weaponId, skinId)
 	local handle = m:FindFirstChild("Handle", true)
 	if not handle then m:Destroy(); return false end
 	strip(m)
-	local grip = CFrame.new(0, -1, 0) * CFrame.Angles(-math.pi / 2, 0, 0)
+	-- the hand's grip, with the same roll a held weapon gets (CombatServer GRIP_ROLL = -90:
+	-- edge to the front)
+	local grip = CFrame.new(0, -1, 0) * CFrame.Angles(-math.pi / 2, 0, 0) * CFrame.Angles(0, math.rad(90), 0)
 	for _, p in ipairs(m:GetDescendants()) do
 		if p:IsA("BasePart") then
 			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true

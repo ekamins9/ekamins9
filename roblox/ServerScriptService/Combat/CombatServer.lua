@@ -518,6 +518,9 @@ CombatServer.DEFAULTS = {
 
 	-- geometry
 	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
+	GRIP_ROLL      = -90,    -- degrees the weapon turns about its handle in the hand (Tool.Grip): every
+	                         -- weapon is built flat-on, so this turns the edge, the axe head, the hammer
+	                         -- face to the front (Dresser's previews use the same roll)
 	HITBOX_NAME    = "Hitbox",
 	GUARD_WIDTH    = 1.6,   -- hull cross-section around the blade while blocking — snug to the weapon
 	GUARD_PAD      = 0.3,   -- extra hull length past each end of the blade
@@ -554,6 +557,11 @@ function CombatServer.attach(Tool, weaponConfig)
 	end)
 
 	Tool.CanBeDropped = false   -- Backspace would dump it in workspace with no pickup prompt
+	-- held edge-first: one roll about the handle, once per weapon (a picked-up weapon keeps it)
+	if not Tool:GetAttribute("GripRolled") then
+		Tool.Grip = CFrame.Angles(0, math.rad(cfg.GRIP_ROLL or 0), 0) * Tool.Grip
+		Tool:SetAttribute("GripRolled", true)
+	end
 
 	local remote = Tool:FindFirstChild("CombatRemote")
 	if not remote then
