@@ -373,6 +373,13 @@ accent, glow, style, fx, egg, pass, description}`.
 - **Door:** `GameConfig.DOORS` + `DOOR_ORDER` (the four cards on PLAY).
 - **Class:** `GameConfig.CLASSES` — a name, a `weight`, optional weapon list.
 
+## 11b. Staff roles
+
+`ServerScriptService ▸ Admin ▸ Roles`: `roles = {Name = {rank, color, perms}}` (perms `"*"` or a
+list from the file's header), `order` (how the panel lists them), `owners` (more owner user ids;
+the creator is one already), `TEMPBAN_HOURS` (the longest ban a `tempban` role may give). People
+get roles in the panel's STAFF tab.
+
 ## 12. The first release
 
 [RELEASE_CONTENT.md](RELEASE_CONTENT.md) lists every model the shipped catalog expects, with

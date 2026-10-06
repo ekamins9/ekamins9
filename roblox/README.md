@@ -46,6 +46,9 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Build/MapCourtyard.lua` | `ServerScriptService` → `Build` → `MapCourtyard` (the hub map) | ModuleScript |
 | `StarterPlayerScripts/Courtyard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Courtyard` | LocalScript |
 | `StarterPlayerScripts/Objectives.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Objectives` | LocalScript |
+| `ServerScriptService/Admin/AdminServer.server.lua`, `Roles.lua` | `ServerScriptService` → `Admin` (Folder) → `AdminServer` (Script), `Roles` (ModuleScript) | Script / ModuleScript |
+| `StarterPlayerScripts/AdminPanel.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `AdminPanel` | LocalScript |
+| `ReplicatedStorage/Defight.lua` | `ReplicatedStorage` → `Defight` | ModuleScript |
 | `ServerScriptService/Game/Modes/Siege.lua` | `ServerScriptService` → `Game` → `Modes` → `Siege` | ModuleScript |
 | `ServerScriptService/Build/MapFrostgate.lua` | `ServerScriptService` → `Build` → `MapFrostgate` | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
@@ -197,6 +200,28 @@ server teleports its own players with the sides in the teleport data (`Matchmake
 are `Locked` (only those user ids), best of 5, forfeited by a leaver; ratings are Elo
 (`Scoreboard`, `LB_<bracket>` OrderedDataStores), ranks from `Economy.rankTiers`, leaving a
 ranked match early locks the queue for `queueLockMinutes`.
+
+## Staff: the admin panel (F2)
+
+`Admin ▸ AdminServer` decides everything; `StarterPlayerScripts ▸ AdminPanel` only asks.
+**Roles** are in `Admin ▸ Roles` (edit it to change them): **Owner** (the game's creator, always;
+everything), **Admin**, **Moderator**, **Helper**, each with a rank and a list of permissions
+(view, kick, tempban, ban, teleport, health, announce, announce_all, rounds, bots, currency,
+items, unlock, progress, reset, staff, shutdown, log). A role acts only on players and staff below
+it and gives only roles below it. Staff see an **ADMIN · F2** button (top right); F2 opens:
+- **PLAYERS:** everyone here, or look anyone up by name or id: kick, ban (hours, or for good),
+  unban, go to, bring, freeze, heal, kill, give / take Marks and Crowns, set level, give / take any
+  item (pieces, skins, weapons, emotes, kill effects, companions, eggs, crates, titles, colours),
+  unlock everything, wipe saved data (the last two ask twice).
+- **SERVER:** end the round now, the next mode and map, announce (this server or every server),
+  spawn / clear bots, shut the server down.
+- **STAFF** (give and take roles) · **BANS** (who, until when, why; unban) · **LOG** (every staff
+  action, newest first).
+Changes to a player who isn't in your server wait in a queue and land in whichever server has
+them (right away through MessagingService, or when they next join). Bans are checked as players
+join and kick across servers. Saved in DataStores Staff_v1, Bans_v1, AdminQueue_v1, AdminLog_v1.
+If a store can't be reached (Studio without API access), roles, bans and the log still work for
+that server and the panel says so.
 
 ## The Courtyard (the hub)
 

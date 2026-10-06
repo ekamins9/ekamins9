@@ -83,6 +83,8 @@ local function countdown(seconds, mode, earlyEnd)
 		local dt = now - last
 		last = now
 		if mode then mode:tick(dt) end
+		-- staff ended the round (Admin)
+		if mode and Game.adminEnd then local r = Game.adminEnd; Game.adminEnd = nil; return r end
 		-- time a mode earned (a siege stage taken)
 		if mode and (mode.bonusTime or 0) ~= 0 then left += mode.bonusTime; mode.bonusTime = 0 end
 		local over = earlyEnd and earlyEnd()
@@ -134,6 +136,9 @@ task.spawn(function()
 		else
 			map = candidates(def)[1]
 		end
+		-- staff picked the next map (Admin)
+		if Game.adminNextMap and MapLoader.exists(Game.adminNextMap) then map = Game.adminNextMap end
+		Game.adminNextMap = nil
 		MapLoader.load(map)
 		node:SetAttribute("Map", map)
 		node:SetAttribute("MapName", GameConfig.mapTitle(map))

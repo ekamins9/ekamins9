@@ -1,28 +1,27 @@
-# Updated scripts: no more flickering surfaces (z-fighting)
+# Updated scripts: the admin panel
 
-- **Where two parts' faces lie flush and overlap** (the path stones round the fountain, a glove
-  as wide as its sleeve), the renderer can't tell which is in front and the surface flickers.
-  The new `Defight` module finds every such pair and grows the smaller part a hair (0.02 per side
-  per notch) so its face sits just in front. Parts of the same size in a row (path stones, planks,
-  crenels) get alternating notches, like colours on a map, so no two neighbours end up level
-  again. Nothing moves more than a few hundredths of a stud.
-- **Every map** runs it on build (MapKit): Sandpit 116 faces, Highbridge 245, Millfield 29,
-  Training Yard 51, Courtyard 367, Frostgate 180. A second run on each map finds none left
-  (bar 4 wall bottoms on the ground in Sandpit that nobody can see). Faces pointing down onto the
-  ground are left alone.
-- **The armor and weapons:** the stored clothing models were fixed once (the mesh armor sets 57,
-  the part-built pieces 7, weapons 2), and Dresser runs it on every dressed character too, which
-  catches clashes between pieces.
-- The fountain ring's stones now alternate in height, its edging sits well below and the roads
-  run over the ring. Wall footing caps stop short of the wall ends.
+- **Staff roles:** Owner (you, the game's creator, always; everything), Admin, Moderator, Helper.
+  Each has a rank and a list of permissions in `Admin ▸ Roles` (edit it to change them). A role
+  acts only on players and staff below it and gives only roles below it.
+- **F2 (or the ADMIN · F2 button, top right) opens the panel** for staff:
+  - **PLAYERS:** everyone here, or look anyone up by name or id: kick, ban (hours, or for good),
+    unban, go to, bring, freeze, heal, kill, give / take Marks and Crowns, set level, give / take
+    any item, unlock everything, wipe saved data.
+  - **SERVER:** end the round now, the next mode and map, announcements (this server or every
+    server), spawn / clear bots, shut down.
+  - **STAFF** (give and take roles), **BANS** (unban), **LOG** (every staff action).
+- Everything is decided on the server, which re-checks your role, the permission and your rank
+  on every request. Changes to a player in another server, or offline, reach them there or when
+  they next join. Bans kick across servers and are checked as players join. Announcements show
+  as a banner for everyone.
+- **In Studio,** "Enable Studio Access to API Services" is off right now, so roles, bans and the
+  log save for that test server only (the panel says so). Live servers save them.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Defight.lua](ReplicatedStorage/Defight.lua) | ReplicatedStorage ▸ Defight | ModuleScript | **new**: finds flush faces and nudges them apart |
-| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | runs it on a dressed character's armor |
-| [MapKit.lua](ServerScriptService/Build/MapKit.lua), [Builder.lua](ServerScriptService/Build/Builder.lua) | ServerScriptService ▸ Build | ModuleScript | run it on every map / blueprint model; footing caps inset |
-| [MapCourtyard.lua](ServerScriptService/Build/MapCourtyard.lua) | ServerScriptService ▸ Build ▸ MapCourtyard | ModuleScript | the ring stones, edging and roads at distinct heights |
-
-**Studio-only:** every map in `ServerStorage ▸ Maps` was rebuilt, and the armor (`ServerStorage ▸
-Armor`, `Cosmetics ▸ Pieces`) and weapons (`ServerStorage ▸ Weapons`) were fixed in place. Save
-the place.
+| [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService ▸ Admin ▸ AdminServer | Script | **new**: roles, permissions, every action, bans, the queue, the log |
+| [Roles.lua](ServerScriptService/Admin/Roles.lua) | ServerScriptService ▸ Admin ▸ Roles | ModuleScript | **new**: the roles and what each may do |
+| [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ AdminPanel | LocalScript | **new**: the panel and the announcement banner |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | `Profile.reset` |
+| [Game.lua](ServerScriptService/Game/Game.lua), [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | ModuleScript / Script | staff can end the round and pick the next map |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | the admin panel; staff roles |

@@ -120,6 +120,12 @@ end
 
 function Profile.get(plr) return cache[plr] or load(plr) end
 function Profile.markDirty(plr) dirty[plr] = true end
+-- staff wiped this player's data (Admin): a fresh profile, saved over the old one
+function Profile.reset(plr)
+	cache[plr] = default()
+	dirty[plr] = true
+	return cache[plr]
+end
 
 local function save(plr)
 	local data = cache[plr]

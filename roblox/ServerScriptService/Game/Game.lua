@@ -21,6 +21,8 @@ local Teams      = require(script.Parent:WaitForChild("Teams"))
 local Game = {}
 Game.current = nil       -- mode instance
 Game.modeId  = nil
+Game.adminEnd = nil      -- staff: a result text ends the round now (Admin)
+Game.adminNextMap = nil  -- staff: the next round's map
 Game.MapLoader, Game.Teams = MapLoader, Teams
 
 local function log(...) DebugFlags.log("Game", ...) end
