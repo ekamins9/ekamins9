@@ -95,6 +95,42 @@ Still to do:
   `Build ▸ Armor` (the converter makes meshes of whatever the blueprints say).
 - Matchmaking, reserved servers, Robux products: need a published game.
 
+## 4c. State after the second session (2026-10-06, later)
+
+Verified in Studio with screenshots (the 3D view must stay visible for `screen_capture`):
+
+- **Meshes face the right way.** The FBX import turns every pipeline mesh 180° about Y.
+  `MeshArmor` / `MeshTool` turn each region back, and parts already in the place carry
+  `Turned = true`. This fixed backwards hair and reversed axe heads.
+- **Faces are decal textures** (`blender/faces.py`, `Cosmetics ▸ Body ▸ Face`). They sit
+  correctly on the round R6 head; the wardrobe shows them as a picture grid.
+- **Skins are never sold at will.** A skin comes from a crate, is earned (kills, tasks), comes
+  with its pack on that pack's shop days, is one of the daily WEAPONS shelf offers
+  (`Catalog ▸ Store`), or is a season pass reward. `Economy.buy` enforces all of it.
+- **Skins change the weapon's shape**: `ReplicatedStorage ▸ SkinTrims` has 19 trim builders,
+  and every skin in `Catalog ▸ Skins` names one.
+- **The menu is a lobby** (`HubMenu`): party stage, PLAY → MODES board with posed 3D scenes,
+  a 7-tile dock, LOADOUT with try-on, ARMORY (weapons + armor), SHOP (daily + crates + crowns +
+  colors), TASKS, PASS, WARDROBE, SERVERS, SETTINGS. Test hooks: ScreenGui attributes
+  `Tab`, `ShopTab`, `ArmoryTab`, `OpenCrowns`.
+- **Season Pass** (`Catalog ▸ Pass`) and **login rewards** (`Catalog ▸ Login`) work end to end
+  in Play: claim, claim-all, premium purchase. Studio cheats: `/marks /crowns /xp /level /passxp`.
+- **Maps rebuilt**: cone spires, round arches, Sandpit gate and pit stairs, Highbridge gatehouse
+  walls, per-map terrain colours (`TerrainColor_*`, applied by MapLoader).
+
+Studio tips:
+- Edit-mode `require` caches modules, so require a clone for fresh code.
+- A `require` from the MCP's Server context gets its own module copies (its own Profile
+  cache). Test economy changes through the chat cheats (`TextChannel:SendAsync` in a
+  `task.spawn`) or the remotes.
+- `user_mouse_input` y is 58 px above GUI y (the top bar inset).
+
+Still to do:
+- Enable *Allow Studio access to API services* (profiles don't save in Studio without it).
+- Uninstall the counterfeit Studio Build Suite plugin (section 4b).
+- Season 2: a new `season` id and tier list in `Catalog ▸ Pass`, plus its skins in
+  `scripts/gen_content.py` (`PASS_SKINS`).
+
 ## 4b. Security: the counterfeit "Studio Build Suite" plugin
 
 Plugin **6542422966** (shows up as *Studio Build Suite* / SBS) injects a Script
