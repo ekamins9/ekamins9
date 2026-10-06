@@ -18,6 +18,7 @@
        nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
        companion   the companion out with you ("" = none)   stars  {[companionId] = 1..5}
        drills      {[lessonId] = true} the Drill Master's lessons done   spars  {[skill] = wins in the ring}
+       wishDay     the last UTC day you wished at the Courtyard's fountain
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -60,7 +61,7 @@ local function default()
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
-		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}}
+		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = ""}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p

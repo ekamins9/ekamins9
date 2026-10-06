@@ -307,7 +307,8 @@ A reward anywhere (pass, login, gifts) can also be `{egg = "Mossy"}` or
 ## 10c. Playtime gifts, eggs and companions
 
 **Playtime gifts:** `Catalog ▸ Gifts`: `gifts = {{minutes = 10, reward = {...}}, ...}`, in
-order. Minutes count on every server and reset at 00:00 UTC.
+order. Minutes count on every server and reset at 00:00 UTC. `wishes` is the Courtyard
+fountain's daily wish: `{weight, reward}` entries, drawn by weight.
 
 **Eggs:** `Catalog ▸ Eggs`.
 - `nests` (how many incubate at once), `boost` (how many times as fast by the Hatchery),

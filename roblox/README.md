@@ -41,6 +41,9 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Hub/Cheats.server.lua` | `ServerScriptService` → `Hub` → `Cheats` | Script |
 | `ServerScriptService/Economy/Economy.lua` | `ServerScriptService` → `Economy` (Folder) → `Economy` | ModuleScript |
 | `ServerScriptService/Economy/Stats.lua` | `ServerScriptService` → `Economy` → `Stats` | ModuleScript |
+| `ServerScriptService/Hub/Courtyard.server.lua`, `Leaderboards.lua` | `ServerScriptService` → `Hub` → `Courtyard` (Script), `Leaderboards` (ModuleScript) | Script / ModuleScript |
+| `ServerScriptService/Build/MapCourtyard.lua` | `ServerScriptService` → `Build` → `MapCourtyard` (the hub map) | ModuleScript |
+| `StarterPlayerScripts/Courtyard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Courtyard` | LocalScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
 | `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
 | `ReplicatedStorage/Companions.lua` | `ReplicatedStorage` → `Companions` (creatures and eggs built from parts) | ModuleScript |
@@ -190,6 +193,27 @@ server teleports its own players with the sides in the teleport data (`Matchmake
 are `Locked` (only those user ids), best of 5, forfeited by a leaver; ratings are Elo
 (`Scoreboard`, `LB_<bracket>` OrderedDataStores), ranks from `Economy.rankTiers`, leaving a
 ranked match early locks the queue for `queueLockMinutes`.
+
+## The Courtyard (the hub)
+
+A castle courtyard built from code (`Build ▸ MapCourtyard`); the old free-model Courtyard was
+moved to `ServerStorage ▸ _RetiredMaps`. It's peaceful: players can't fight here.
+`Hub ▸ Courtyard` (server) and `StarterPlayerScripts ▸ Courtyard` (client) run its places from
+the map's `Spots`:
+- **The Hall of Champions** (north, before the keep): statues of the season's top three in
+  Warfront kills, wearing their own armor and weapon, larger than life and cast in gold, silver
+  and bronze, with plaques. Two boards list the most kills and the Lists' ranked brackets.
+  `Hub ▸ Leaderboards` reads the boards and a player's saved look.
+- **The wishing fountain** (middle): one free wish a day (`Catalog ▸ Gifts ▸ wishes`). A coin
+  arcs into the water and the wisher's luck floats over their head for everyone. Benches round
+  it.
+- **The Gates of War** (south): Training Yard, Warfront and The Lists. E travels, or opens the
+  mode board for the Lists.
+- **The Merchant's Stall** (south-west): today's packs on two mannequins and today's skins on
+  the rack; E opens the SHOP.
+- **The Notice Board** (where you arrive): your own daily and weekly tasks with progress, the
+  next playtime gift and your pass tier, written on the parchment for you; E opens TASKS.
+- **The Hatchery** (west), the stone circle (east), the tavern with a bard (south-east).
 
 ## Pastimes: playtime gifts, the Hatchery, companions (looks only)
 

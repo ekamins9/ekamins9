@@ -17,6 +17,7 @@
        Pastimes.boost(plr, seconds)      the Hatchery's speed-up (Hub ▸ Pastimes calls it)
        Pastimes.grantCompanion(plr, id)  -> {id, name, rarity, dup, stars, refund}
        Pastimes.equip(plr, id | "")      -> ok, msg
+       Pastimes.wish(plr)                -> ok, line | false, "come back in …"   (the wishing fountain, daily)
      A companion result: a duplicate adds a star (up to Eggs.stars); past that
      it pays the rarity's refund in Marks. ]]
 
@@ -222,6 +223,28 @@ function Pastimes.equip(plr, id)
 	p.companion = id
 	Profile.markDirty(plr)
 	return true, Catalog.COMPANION[id].name .. " comes along"
+end
+
+--------------------------------------------------------------------
+--  THE WISHING FOUNTAIN: one wish a day
+--------------------------------------------------------------------
+function Pastimes.wish(plr)
+	local p = Profile.get(plr)
+	if p.wishDay == today() then
+		local left = 86400 - (os.time() % 86400)
+		return false, string.format("You've wished today. Come back in %dh %dm", math.floor(left / 3600), math.floor(left % 3600 / 60))
+	end
+	local list = Catalog.GIFTS.wishes or {}
+	local total = 0
+	for _, w in ipairs(list) do total += w.weight or 1 end
+	if total <= 0 then return false, "the fountain is dry" end
+	local r = math.random() * total
+	local pick = list[#list]
+	for _, w in ipairs(list) do r -= (w.weight or 1); if r <= 0 then pick = w; break end end
+	p.wishDay = today()
+	Profile.markDirty(plr)
+	local line = Economy.grantReward(plr, pick.reward)
+	return true, line, pick.reward
 end
 
 return Pastimes

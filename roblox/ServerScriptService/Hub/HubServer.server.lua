@@ -659,42 +659,10 @@ end
 --------------------------------------------------------------------
 --  LEADERBOARDS (Scoreboard writes LB_<bracket> ratings and LB_Warfront kills)
 --------------------------------------------------------------------
-local boardCache = {}   -- [name] = {at, rows}
-local nameCache = {}
-local function nameOf(userId)
-	if nameCache[userId] then return nameCache[userId] end
-	local here = Players:GetPlayerByUserId(userId)
-	local name = here and here.DisplayName
-	if not name then local ok, n = pcall(Players.GetNameFromUserIdAsync, Players, userId); name = ok and n or ("#" .. userId) end
-	nameCache[userId] = name
-	return name
-end
-local function leaderboard(plr, which)
-	which = type(which) == "string" and which:gsub("[^%w]", ""):sub(1, 12) or "Warfront"
-	local name = "LB_" .. which
-	local c = boardCache[name]
-	if c and os.time() - c.at < 60 then return c.rows end
-	local rows = {}
-	pcall(function()
-		local ds = DataStoreService:GetOrderedDataStore(name)
-		local page = ds:GetSortedAsync(false, 10)
-		for i, it in ipairs(page:GetCurrentPage()) do
-			table.insert(rows, {rank = i, id = tonumber(it.key), name = nameOf(tonumber(it.key) or 0), value = it.value})
-		end
-	end)
-	-- Studio / empty boards: show the players here so the column isn't blank
-	if #rows == 0 then
-		for i, p in ipairs(Players:GetPlayers()) do
-			local pr = Profile.get(p)
-			local v = which == "Warfront" and (pr.stats.kill or 0) or (pr.rating[which] or Catalog.ECONOMY.ratingStart)
-			table.insert(rows, {rank = i, id = p.UserId, name = p.DisplayName, value = v})
-		end
-		table.sort(rows, function(a, b) return a.value > b.value end)
-		for i, r in ipairs(rows) do r.rank = i end
-	end
-	boardCache[name] = {at = os.time(), rows = rows}
-	return rows
-end
+-- (the boards themselves live in Hub ▸ Leaderboards, shared with the Courtyard)
+local Leaderboards = require(script.Parent:WaitForChild("Leaderboards"))
+local function nameOf(userId) return Leaderboards.nameOf(userId) end
+local function leaderboard(plr, which) return Leaderboards.top(which, 10) end
 
 --------------------------------------------------------------------
 --  SHOP

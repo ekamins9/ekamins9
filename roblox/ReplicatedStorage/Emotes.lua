@@ -445,7 +445,8 @@ end
 -- the weapon spins / flies
 local JOINT_PARENT = {["Right Shoulder"] = "Torso", ["Left Shoulder"] = "Torso", ["Right Hip"] = "Torso", ["Left Hip"] = "Torso", Neck = "Torso", RootJoint = "HumanoidRootPart"}
 local UPPER_PARENT = {["Right Shoulder"] = "Torso", ["Left Shoulder"] = "Torso", Neck = "Torso"}
-RunService.RenderStepped:Connect(function()
+-- (clients only: the server just poses statues with poseRig)
+if RunService:IsClient() then RunService.RenderStepped:Connect(function()
 	for char, rec in pairs(active) do
 		if not char.Parent then active[char] = nil; continue end
 		local hum = char:FindFirstChildOfClass("Humanoid")
@@ -485,7 +486,7 @@ RunService.RenderStepped:Connect(function()
 			grip.C0 = c0
 		end
 	end
-end)
+end) end
 
 --------------------------------------------------------------------
 --  PREVIEWS (anchored rigs in a ViewportFrame)
