@@ -52,6 +52,7 @@ ClientSettings.KEYS = {
 	{key = "Crouch",     label = "Crouch",           default = "LeftControl"},
 	{key = "View",       label = "First / third person", default = "Z"},
 	{key = "Pickup",     label = "Pick up weapon",   default = "V"},
+	{key = "Emote",      label = "Emote wheel",      default = "B"},
 }
 ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}
 

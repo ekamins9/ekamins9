@@ -788,6 +788,23 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	elseif op == "PassClaim" then
 		local ok, msg, crate = Economy.passClaim(plr, a, b)
 		return {ok = ok, msg = msg, crate = crate, pass = Economy.passState(plr), profile = Profile.summary(plr)}
+	elseif op == "Equip" then
+		-- a = "killfx" + id, or "emotes" + {id, ...} (up to 6, owned)
+		local p = Profile.get(plr)
+		if a == "killfx" then
+			if type(b) ~= "string" or not Catalog.KILLFX_BY[b] or not Profile.has(plr, "killfx", b) then return {ok = false, msg = "you don't have that kill effect"} end
+			p.killfx = b
+		elseif a == "emotes" then
+			if type(b) ~= "table" then return {ok = false, msg = "bad list"} end
+			local list, seen = {}, {}
+			for _, id in ipairs(b) do
+				if #list >= 6 then break end
+				if type(id) == "string" and Catalog.EMOTE[id] and not seen[id] and Profile.has(plr, "emotes", id) then table.insert(list, id); seen[id] = true end
+			end
+			p.emotes = list
+		else return {ok = false, msg = "nothing to equip"} end
+		Profile.markDirty(plr)
+		return {ok = true, profile = Profile.summary(plr)}
 	elseif op == "PassClaimAll" then
 		local ok, msg, lines, crates = Economy.passClaimAll(plr)
 		return {ok = ok, msg = msg, lines = lines, crates = crates, pass = Economy.passState(plr), profile = Profile.summary(plr)}

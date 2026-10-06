@@ -6,7 +6,7 @@
                             appearance = {skin, hair, hairColor, beard, face},
                             weight = "Heavy", team = "A"|"B"|nil, preview = bool})
        Dresser.undress(char)              removes armor + body, resets stats
-       Dresser.applySkin(tool, skinId)    recolors a weapon Tool and adds the skin's trim (SkinTrims)
+       Dresser.applySkin(tool, skinId)    recolors a weapon Tool, adds the skin's trim (SkinTrims) and its trail / aura (SkinFX)
        Dresser.attachWeapon(rig, weaponId, skinId)   preview only: welds Cosmetics ▸ Weapons ▸ <id> to the right hand
 
      Welding follows the armor convention: every clothing model has a part
@@ -21,6 +21,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local SkinTrims = require(ReplicatedStorage:WaitForChild("SkinTrims"))
+local SkinFX = require(ReplicatedStorage:WaitForChild("SkinFX"))
 
 local Dresser = {}
 
@@ -224,6 +225,7 @@ end
 function Dresser.applySkin(tool, skinId)
 	local skin = skinId and Catalog.SKIN[skinId]
 	SkinTrims.clear(tool)
+	SkinFX.clear(tool)
 	if not skin or skin.name == "Default" then return false end
 	tool:SetAttribute("Skin", skin.name)   -- the HUD's weapon chip shows it
 	local handle = tool:FindFirstChild("Handle")
@@ -257,6 +259,7 @@ function Dresser.applySkin(tool, skinId)
 		end
 	end
 	if SkinTrims.apply(tool, skin) then n += 1 end
+	if SkinFX.apply(tool, skin) then n += 1 end
 	return n > 0
 end
 
@@ -275,7 +278,11 @@ function Dresser.attachWeapon(rig, weaponId, skinId)
 		if p:IsA("BasePart") then
 			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
 			local w = Instance.new("Weld"); w.Part0, w.Part1 = arm, p
-			w.C0 = p == handle and grip or (grip * handle.CFrame:ToObjectSpace(p.CFrame))
+			local off = p == handle and CFrame.identity or handle.CFrame:ToObjectSpace(p.CFrame)
+			w.C0 = grip * off
+			-- previews spin the weapon about the hand (Emotes.poseRig)
+			w:SetAttribute("GripBase", grip)
+			w:SetAttribute("GripOffset", off)
 			w.Parent = p
 		end
 	end

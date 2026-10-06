@@ -12,6 +12,7 @@
        receipts    {[receiptId] = true}       lastWinDay
        pass        {season, xp, premium, claimed = {free = {["3"] = true}, premium = {}}}
        login       {streak, claimed = "YYYY-MM-DD"}
+       killfx      the equipped kill effect id     emotes   the emote wheel (up to 6 ids)
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -50,10 +51,10 @@ end
 
 local function default()
 	local p = {version = 2, wallet = {marks = 500, crowns = 0}, level = 1, xp = 0,
-		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}},
+		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}},
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
-		pass = {}, login = {}}
+		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"}}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -132,6 +133,8 @@ function Profile.has(plr, kind, id)
 	end
 	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
 	if kind == "skins" then local s = Catalog.SKIN[id]; if s and s.unlock and Catalog.unlocked(s.unlock, p) then return true end end
+	if kind == "killfx" then local f = Catalog.KILLFX_BY[id]; if f and (f.free or (f.unlock and Catalog.unlocked(f.unlock, p))) then return true end end
+	if kind == "emotes" then local e = Catalog.EMOTE[id]; if e and (e.free or (e.unlock and Catalog.unlocked(e.unlock, p))) then return true end end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
@@ -215,7 +218,7 @@ function Profile.summary(plr)
 	local p = Profile.get(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
-		login = p.login}
+		login = p.login, killfx = p.killfx, emotes = p.emotes}
 end
 
 Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)

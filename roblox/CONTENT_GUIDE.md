@@ -177,8 +177,14 @@ a free "Default"):
   crown halo bone serpent wave thunder`. The trim adds parts around the weapon (winged guards,
   gems, thorns, flames, a halo, a crown…), fitted from the weapon's own Blade / Grip boxes, so
   one trim fits every weapon. `accent` colors its metal (default: gold on Epic / Legendary, steel
-  below) and `glow` its Neon. Legendary trims also shed sparkles in the world. Add a new trim by
-  writing a builder in `SkinTrims` and naming it in a skin.
+  below) and `glow` its Neon. Add a new trim by writing a builder in `SkinTrims` and naming it in
+  a skin.
+- **Effects (`ReplicatedStorage ▸ SkinFX`):** Epic and Legendary skins leave a swing **trail**
+  in the colour of their `glow` (else `accent`, else the rarity). `trail = false` turns it off,
+  `trail = true` gives one to a lower rarity. `fx = "embers"` adds an **aura** of particles
+  around the blade: `embers frost holy shadow storm toxic petals gold blood` (every Legendary
+  has one; `FX_BY_NAME` in the generator picks them by skin name). Trails and particles only
+  show in the world, so the menu names them on the skin ("Trail · Embers").
 - **Models:** for a full re-model, put a Model in `Cosmetics ▸ Skins ▸ <Weapon> ▸ <SkinName>`
   with its own `Handle`. Its parts replace the Tool's visible ones (welded by their offset from
   the model's Handle). Hitbox and guard parts stay as they are.
@@ -196,6 +202,35 @@ Siege = {name = "Siege Crate", description = "Hammer and polearm skins.",
 `odds` must sum to 100 (they are shown to the player). `pity` guarantees a Legendary within
 that many opens. `refund` is the Marks paid for a duplicate. A crate can also list skins
 directly: `skins = {"Greatsword:Gilded", "Hammer:Bronze"}`.
+
+A crate can hold **kill effects and emotes** too (the `Relic` crate holds only those): give the
+line in `Catalog ▸ KillFX` or `Catalog ▸ Emotes` `crate = "Relic"`. The strip, the stage and
+the prize pop-up show each kind its own way (a skin on its weapon, an effect or emote on you).
+
+## 6b. Kill effects and emotes
+
+**Kill effects** (`Catalog ▸ KillFX`): what the body does when *you* land the killing blow,
+seen by everyone. One is equipped at a time (ARMORY ▸ KILL FX). A line:
+
+```lua
+{id = "Inferno", name = "Inferno", rarity = "Epic", crate = "Relic", description = "A column of fire..."},
+```
+
+The `id` must match a builder in `ReplicatedStorage ▸ KillFX` (the ten there: `Shatter Confetti
+GoldRush CrowSwarm Inferno Frozen ShadowRift Thunderstrike Ascension RoyalDecree`). A builder
+makes parts that fly, spin, grow and fade around the body (so the same effect plays in the world
+and in the menu preview) and can hide or tint the body locally. Particles and lights are
+world-only extras.
+
+**Emotes** (`Catalog ▸ Emotes`): played from the emote wheel (**B**, rebindable), up to six on
+the wheel (ARMORY ▸ EMOTES). The `id` must match a motion in `ReplicatedStorage ▸ Emotes`: a few
+keyframes of joint angles (shoulders, hips, neck, root) plus the weapon's spin in the hand, e.g.
+the Flourish twirls the sword twice and salutes. Moving or attacking ends an emote.
+
+**Where they come from** (both lists): `free = true` (everyone has it) · `crate = "Relic"` ·
+`pass = true` (a season-pass reward names it: `{killfx = "ShadowRift"}` / `{emote = "WarCry"}`)
+· `unlock = {...}` (earned, like a skin). Neither ever changes damage, speed or anything else:
+looks only.
 
 ## 7. Hair, beards, faces, skin, hair colors, titles
 
@@ -242,8 +277,9 @@ server keeps: `kill`, `parry`, `chamber`, `win`, `round`, `drill`, `kill_<Family
 - `price` is the premium track in Crowns. `tierXP` is the pass XP per tier. Every round's XP
   counts as pass XP, and each finished daily task adds `taskXP` (three times that for the weekly).
 - `tiers` is a list of `{free = reward, premium = reward}`. A reward is `{marks = n}`,
-  `{crowns = n}`, `{skin = "Weapon:Name"}`, `{title = "..."}` or `{crate = "Royal"}`. A crate
-  reward is one free open, rolled on the server.
+  `{crowns = n}`, `{skin = "Weapon:Name"}`, `{title = "..."}`, `{crate = "Royal"}`,
+  `{killfx = "ShadowRift"}` or `{emote = "WarCry"}`. A crate reward is one free open, rolled on
+  the server.
 - Skins a pass gives should carry `pass = true` in `Catalog ▸ Skins` (`PASS_SKINS` in
   `scripts/gen_content.py`), so nothing else sells them.
 - Testing in Studio: `/passxp 5000`.

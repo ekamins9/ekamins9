@@ -12,8 +12,8 @@
        SkinTrims.NAMES               every trim name (the catalog check uses it)
 
      Colours come from the skin: blade, grip, accent (default: gold on Epic and
-     Legendary, steel below) and glow (the Neon parts). A Legendary trim also
-     sheds a few sparkles in the world (viewports don't show particles).
+     Legendary, steel below) and glow (the Neon parts). Trails and auras are
+     the next layer (SkinFX).
      Add a trim: write a builder below (frame, palette → specs) and name it in
      a skin. ]]
 
@@ -462,8 +462,6 @@ T.thunder = function(F, P)
 	return out
 end
 
-local LEGENDARY_SPARKLE = {frost = true, crown = true, halo = true, flame = true, thunder = true, serpent = true, runes = true}
-
 SkinTrims.NAMES = {}
 for k in pairs(T) do table.insert(SkinTrims.NAMES, k) end
 table.sort(SkinTrims.NAMES)
@@ -508,28 +506,6 @@ function SkinTrims.apply(tool, skin)
 		w.Part0, w.Part1, w.C0 = handle, p, s.cf
 		w.Parent = p
 		p.Parent = folder
-	end
-	if skin.rarity == "Legendary" and LEGENDARY_SPARKLE[skin.trim] then
-		local att = Instance.new("Attachment")
-		att.Name = "TrimSparkle"
-		att.Position = Vector3.new(F.bX, F.guard + F.bLen * 0.5, 0)
-		att.Parent = handle
-		local pe = Instance.new("ParticleEmitter")
-		pe.Name = "TrimSparkle"
-		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-		pe.Color = ColorSequence.new(skin.glow or rarityAccent(skin))
-		pe.LightEmission = 1
-		pe.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.18), NumberSequenceKeypoint.new(1, 0)})
-		pe.Transparency = NumberSequence.new(0.2)
-		pe.Lifetime = NumberRange.new(0.6, 1.1)
-		pe.Rate = 6
-		pe.Speed = NumberRange.new(0.2, 0.6)
-		pe.SpreadAngle = Vector2.new(180, 180)
-		pe.LockedToPart = false
-		pe.Parent = att
-		-- the folder owns the sparkle so a re-skin clears it
-		local tag = Instance.new("ObjectValue"); tag.Name = "SparkleAttachment"; tag.Value = att; tag.Parent = folder
-		folder.Destroying:Connect(function() if att.Parent then att:Destroy() end end)
 	end
 	folder.Parent = tool
 	return true

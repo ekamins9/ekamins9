@@ -822,7 +822,7 @@ local state = {studio = false, reserved = false, access = "Public", name = "", c
 	queue = nil, matchFound = nil, boards = {}, serversAt = 0, store = nil}
 local ui = {bracket = "1v1", ranked = false, lbTab = "Warfront", editing = GameConfig.DEFAULT_CLASS,
 	classEdit = {}, dirty = {}, team = nil, appDraft = nil, appDirty = false, helmPreview = false, tryOn = nil,
-	shopTab = "daily", crate = nil, crateSkin = nil, rolling = false, pulls = {},
+	shopTab = "daily", crate = nil, crateItem = nil, rolling = false, pulls = {},
 	armoryTab = "weapons", shopWeapon = "Longsword", shopSkin = nil, armorSet = nil, armorSlots = {helmet = true, top = true, bottom = true},
 	filters = {hideEmpty = true, hideFull = false, customOnly = false, door = nil},
 	customOpen = false, custom = nil, facing = 0, zoom = 1, shopSeen = nil}
@@ -853,6 +853,8 @@ local function owns(kind, id)
 	end
 	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
 	if kind == "skins" then local s = Catalog.SKIN[id]; if s and s.unlock and Catalog.unlocked(s.unlock, p) then return true end end
+	if kind == "killfx" then local f = Catalog.KILLFX_BY[id]; if f and (f.free or (f.unlock and Catalog.unlocked(f.unlock, p))) then return true end end
+	if kind == "emotes" then local e = Catalog.EMOTE[id]; if e and (e.free or (e.unlock and Catalog.unlocked(e.unlock, p))) then return true end end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
@@ -1408,6 +1410,104 @@ local function weaponStage(parent, weaponId, skinId, size)
 end
 
 --------------------------------------------------------------------
+--  PREVIEWS of kill effects and emotes: your own look on a mannequin
+--------------------------------------------------------------------
+local Preview = {KillFX = require(ReplicatedStorage:WaitForChild("KillFX")), Emotes = require(ReplicatedStorage:WaitForChild("Emotes")), SkinFX = require(ReplicatedStorage:WaitForChild("SkinFX"))}
+function Preview.fxText(skin) return skin and Preview.SkinFX.describe(skin) or nil end
+function Preview.box(parent, size)
+	local holder = frame(parent, COL.GLASS2, 14)
+	holder.Size = size or UDim2.fromScale(1, 1)
+	holder.ClipsDescendants = true
+	do
+		local g = Instance.new("UIGradient", holder)
+		g.Rotation = 90
+		g.Color = ColorSequence.new(Color3.fromRGB(62, 76, 120), Color3.fromRGB(18, 22, 38))
+	end
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = UDim2.fromScale(1, 1)
+	vp.Ambient = Color3.fromRGB(160, 156, 150)
+	vp.LightColor = Color3.fromRGB(255, 244, 228)
+	vp.LightDirection = Vector3.new(-0.5, -1, 0.5)
+	vp.Parent = holder
+	local world = Instance.new("WorldModel"); world.Parent = vp
+	local cam = Instance.new("Camera"); cam.Parent = vp
+	vp.CurrentCamera = cam
+	return holder, world, cam
+end
+-- you in your active class (light = no armor: the small cards)
+function Preview.rig(world, weapon, light)
+	local lo = {}
+	for k, v in pairs(classLoadout(state.activeClass)) do lo[k] = v end
+	local rig = dressedRig({loadout = lo, appearance = state.profile and state.profile.appearance, weight = weightOf(state.activeClass), weapon = weapon, armor = not light})
+	rig.Parent = world
+	return rig
+end
+-- the kill effect on you, again and again (still = a frozen moment, 0..1)
+function Preview.killFx(parent, id, size, still, light)
+	local holder, world, cam = Preview.box(parent, size)
+	cam.FieldOfView = 40
+	cam.CFrame = light and CFrame.lookAt(Vector3.new(0, 1.6, -10.5), Vector3.new(0, 0.2, 0)) or CFrame.lookAt(Vector3.new(0, 2.4, -13.5), Vector3.new(0, 0.4, 0))
+	local floor = Instance.new("Part")
+	floor.Anchored = true; floor.Size = Vector3.new(40, 1, 40); floor.CFrame = CFrame.new(0, -3.5, 0)
+	floor.Color = Color3.fromRGB(58, 64, 80); floor.Material = Enum.Material.Slate; floor.Parent = world
+	local function once(freeze)
+		for _, c in ipairs(world:GetChildren()) do if c ~= floor then c:Destroy() end end
+		local rig = Preview.rig(world, false, light)
+		rig:PivotTo(CFrame.Angles(0, math.rad(18), 0))
+		-- direct: the preview rig is ours, so the effect hides it for real
+		local bodyParts = {direct = true}
+		for _, d in ipairs(rig:GetDescendants()) do
+			if (d:IsA("BasePart") and d.Name ~= "HumanoidRootPart") or d:IsA("Decal") then table.insert(bodyParts, d) end
+		end
+		local torso = rig:FindFirstChild("Torso")
+		return Preview.KillFX.play(id, world, torso and torso.CFrame or CFrame.new(), {body = bodyParts, freezeAt = freeze})
+	end
+	if still then once(still); return holder end
+	task.spawn(function()
+		while holder.Parent do
+			if gui.Enabled then
+				local d = once(nil)
+				task.wait((d or 2) + 0.9)
+			else
+				task.wait(0.5)
+			end
+		end
+	end)
+	return holder
+end
+-- the emote on you, looping (still = a frozen moment, 0..1)
+function Preview.emote(parent, id, size, still, light)
+	local holder, world, cam = Preview.box(parent, size)
+	cam.FieldOfView = 40
+	cam.CFrame = light and CFrame.lookAt(Vector3.new(0, 0.8, -8.6), Vector3.new(0, 0, 0)) or CFrame.lookAt(Vector3.new(0, 1.4, -12), Vector3.new(0, 0.2, 0))
+	local rig = Preview.rig(world, true, light)
+	rig:PivotTo(CFrame.Angles(0, math.rad(16), 0))
+	if not light then platformDisc(world, 0, 0, COL.BLUE) end
+	local origins = {}
+	local dur = Preview.Emotes.DURATION[id] or 2
+	if still then Preview.Emotes.poseRig(rig, id, dur * still, origins); settle(rig); return holder end
+	local t0 = os.clock()
+	task.spawn(function()
+		while holder.Parent do
+			if gui.Enabled then
+				local t = (os.clock() - t0) % (dur + 0.8)
+				Preview.Emotes.poseRig(rig, id, math.min(t, dur), origins)
+				settle(rig)
+			end
+			task.wait(1 / 30)
+		end
+	end)
+	return holder
+end
+-- a small still card picture for any crate item
+function Preview.thumb(parent, it, size, zoom)
+	if it.kind == "skin" then return weaponThumb(parent, it.weapon, it.id, size, zoom) end
+	if it.kind == "killfx" then return Preview.killFx(parent, it.id, size, 0.3, true) end
+	return Preview.emote(parent, it.id, size, 0.45, true)
+end
+
+--------------------------------------------------------------------
 --  SCREENS + SHARED ACTIONS
 --------------------------------------------------------------------
 -- every screen: its header (title, icon) and a frame in the content host.
@@ -1629,6 +1729,25 @@ local function skinWhere(s)
 		return "sold on the shop's WEAPONS shelf some days, not today", "shelf"
 	end
 	return "free", "owned"
+end
+
+-- where a kill effect / emote comes from, for a label: text, kind
+function Preview.where(it, ownKind)
+	if not it then return "", "owned" end
+	if owns(ownKind, it.id) then return "owned", "owned" end
+	local src = Catalog.itemSource(it)
+	if src == "free" then return "free for everyone", "owned" end
+	if src == "earned" then return "earn it: " .. Catalog.unlockText(it.unlock) .. "  ·  " .. progressText(it.unlock), "earned" end
+	if src == "pass" then
+		local key = ownKind == "killfx" and "killfx" or "emote"
+		for i, t in ipairs(Catalog.PASS.tiers or {}) do
+			if t.free and t.free[key] == it.id then return "season pass reward  ·  tier " .. i .. " (free)", "pass" end
+			if t.premium and t.premium[key] == it.id then return "season pass reward  ·  tier " .. i .. " (premium)", "pass" end
+		end
+		return "a season pass reward", "pass"
+	end
+	if src == "crate" then return "drops from the " .. (Catalog.CRATES[it.crate] and Catalog.CRATES[it.crate].name or it.crate), "crate" end
+	return "", "owned"
 end
 
 local function afterBuy(r, rerenderFn)
@@ -2690,6 +2809,42 @@ local function skinStrip(parent, pool, selectedId, onPick, height, showWeapon)
 	return holder, sf
 end
 
+-- the crates' strip: skins, kill effects and emotes side by side
+function Preview.strip(parent, pool, selectedKey, onPick, height)
+	local holder = frame(parent, COL.GLASS, 14)
+	holder.BackgroundTransparency = 0.12
+	holder.Size = UDim2.new(1, 0, 0, height or 160)
+	local sf = Instance.new("ScrollingFrame")
+	sf.BackgroundTransparency = 1
+	sf.BorderSizePixel = 0
+	sf.Size = UDim2.fromScale(1, 1)
+	sf.CanvasSize = UDim2.new(0, 0, 0, 0)
+	sf.AutomaticCanvasSize = Enum.AutomaticSize.X
+	sf.ScrollingDirection = Enum.ScrollingDirection.X
+	sf.ScrollBarThickness = 6
+	sf.ScrollBarImageColor3 = COL.DIM
+	sf.Parent = holder
+	local lay = hlist(sf, 10); lay.VerticalAlignment = Enum.VerticalAlignment.Center
+	padding(sf, 10, 10, 8, 8)
+	for i, it in ipairs(pool) do
+		local key = it.kind .. "|" .. it.id
+		local have = owns(it.kind == "skin" and "skins" or (it.kind == "killfx" and "killfx" or "emotes"), it.id)
+		local on = key == selectedKey
+		local c = button(sf, "", 12, on and COL.BLUE or COL.GLASS2)
+		c.AutoButtonColor = false
+		c.Size = UDim2.fromOffset(122, (height or 160) - 26)
+		c.LayoutOrder = i
+		border(c, RARITY_COL[it.rarity] or COL.DIM, on and 3 or 2, on and 0 or 0.35)
+		local th = Preview.thumb(c, it, UDim2.new(1, -12, 0, 76), 1.45); th.Position = UDim2.new(0, 6, 0, 6); th.BackgroundTransparency = 1
+		local t = title(c, it.name, 13); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
+		local subText = it.kind == "skin" and string.upper(Catalog.WEAPON[it.weapon] and Catalog.WEAPON[it.weapon].name or it.weapon) or (it.kind == "killfx" and "KILL FX" or "EMOTE")
+		local sub = title(c, subText .. (have and "  ✔" or ""), 11, have and COL.GOOD or COL.DIM); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
+		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
+		c.Activated:Connect(function() onPick(it) end)
+	end
+	return holder, sf
+end
+
 -- armor sets: pieces grouped by their set (auto-imported) or their pack
 local function armorSets()
 	local byKey, list = {}, {}
@@ -2726,7 +2881,7 @@ do
 	local tabs = clearFrame(f); tabs.Size = UDim2.new(1, 0, 0, 46)
 	hlist(tabs, 10)
 	local body = clearFrame(f); body.Position = UDim2.new(0, 0, 0, 58); body.Size = UDim2.new(1, 0, 1, -58)
-	local TABS = {{"weapons", "WEAPONS"}, {"armor", "ARMOR"}}
+	local TABS = {{"weapons", "WEAPONS"}, {"armor", "ARMOR"}, {"killfx", "KILL FX"}, {"emotes", "EMOTES"}}
 
 	local function renderTabs()
 		clear(tabs)
@@ -2800,7 +2955,8 @@ do
 		local sk = title(stg, sel.name == "Default" and "DEFAULT LOOK" or (string.upper(sel.name) .. "  SKIN"), 18, RARITY_COL[sel.rarity] or COL.DIM); sk.Position = UDim2.fromOffset(20, 50); sk.Size = UDim2.new(1, -40, 0, 22)
 		if sel.name ~= "Default" then local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16) end
 		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or "Polearm")
-		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
+		local fxText = Preview.fxText(sel)
+		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or "") .. (fxText and ("  ·  " .. fxText) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
 		local desc = state.catalog and state.catalog.weapons and state.catalog.weapons[w.id] and state.catalog.weapons[w.id].description
 		if desc then local d2 = title(stg, desc, 14); d2.TextWrapped = true; d2.AnchorPoint = Vector2.new(0, 1); d2.Position = UDim2.new(0, 20, 1, -14); d2.Size = UDim2.new(0.6, 0, 0, 40); d2.TextYAlignment = Enum.TextYAlignment.Bottom end
 		-- what you can do with it: equip / unlock / buy / where it drops
@@ -2830,7 +2986,7 @@ do
 		elseif kind == "buy" then
 			for _, b in ipairs(skinBuyButtons(sel, render.ARMORY)) do fat(b[1], b[2], b[3], 240) end
 		elseif kind == "crate" then
-			fat("OPEN THE CRATE", COL.GOLD, function() ui.shopTab = "crates"; ui.crate = sel.crate; ui.crateSkin = sel.id; selectTab("SHOP") end)
+			fat("OPEN THE CRATE", COL.GOLD, function() ui.shopTab = "crates"; ui.crate = sel.crate; ui.crateItem = "skin|" .. sel.id; selectTab("SHOP") end)
 		elseif kind == "pass" then
 			fat("SEE THE PASS", COL.GOLD, function() selectTab("PASS") end)
 		elseif kind == "earned" then
@@ -2960,10 +3116,132 @@ do
 		end
 	end
 
+
+	----------------------------------------------------------------
+	--  KILL FX and EMOTES: a list, you on a stage, where to get it, equip
+	----------------------------------------------------------------
+	local function sortedItems(list)
+		local out = {}
+		for _, it in ipairs(list) do table.insert(out, it) end
+		table.sort(out, function(a, b)
+			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) < (RARITY_ORDER[b.rarity] or 0) end
+			return a.name < b.name
+		end)
+		return out
+	end
+	local function itemCardRight(it, ownKind, extra)
+		local right = clearFrame(body); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 390, 1, 0)
+		local list = scroll(right, 10)
+		local p = panel(list, nil)
+		local t = title(p, it.name, 28); t.Size = UDim2.new(1, 0, 0, 32); t.TextTruncate = Enum.TextTruncate.AtEnd
+		local tags = clearFrame(p); tags.Size = UDim2.new(1, 0, 0, 22); tags.LayoutOrder = nextOrder()
+		rarityTag(tags, it.rarity)
+		dim(p, it.description or "", 14)
+		local text, kind = Preview.where(it, ownKind)
+		local w = title(p, string.upper(text), 13, kind == "owned" and COL.GOOD or COL.ACCENT); w.Size = UDim2.new(1, 0, 0, 0); w.AutomaticSize = Enum.AutomaticSize.Y; w.TextWrapped = true; w.LayoutOrder = nextOrder()
+		local acts = panel(list, nil, true)
+		if kind == "crate" then
+			local h, b = fatButton(acts, "OPEN THE " .. string.upper(Catalog.CRATES[it.crate] and Catalog.CRATES[it.crate].name or it.crate), COL.GOLD, 18); h.Size = UDim2.new(1, 0, 0, 54); h.LayoutOrder = nextOrder()
+			b.Activated:Connect(function() ui.shopTab = "crates"; ui.crate = it.crate; ui.crateItem = (ownKind == "killfx" and "killfx|" or "emote|") .. it.id; selectTab("SHOP") end)
+		elseif kind == "pass" then
+			local h, b = fatButton(acts, "SEE THE PASS", COL.GOLD, 18); h.Size = UDim2.new(1, 0, 0, 54); h.LayoutOrder = nextOrder()
+			b.Activated:Connect(function() selectTab("PASS") end)
+		elseif kind == "earned" then
+			local bh = clearFrame(acts); bh.Size = UDim2.new(1, 0, 0, 22); bh.LayoutOrder = nextOrder()
+			progressBar(bh, progressFrac(it.unlock), COL.PURPLE, progressText(it.unlock), 22)
+		end
+		if extra then extra(acts, kind == "owned") end
+		return list
+	end
+
+	local function killfx()
+		local items = sortedItems(Catalog.KILLFX)
+		local equippedId = state.profile and state.profile.killfx or "Shatter"
+		if not Catalog.KILLFX_BY[ui.fxSel or ""] then ui.fxSel = equippedId end
+		local left = clearFrame(body); left.Size = UDim2.new(0, 290, 1, 0)
+		local leftList = scroll(left, 6)
+		heading(leftList, "KILL EFFECTS")
+		for _, f in ipairs(items) do
+			local have = owns("killfx", f.id)
+			local r = row(leftList, (have and "" or "🔒 ") .. f.name, f.id == equippedId and "EQUIPPED ★" or (have and string.upper(f.rarity) or ""), f.id == ui.fxSel,
+				function() ui.fxSel = f.id; render.ARMORY() end, f.id == equippedId and COL.GOOD or (RARITY_COL[f.rarity] or COL.DIM))
+			local bar = frame(r, RARITY_COL[f.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
+		end
+		dim(leftList, "Plays on whoever you finish off, for everyone to see. Looks only.", 12)
+		local f = Catalog.KILLFX_BY[ui.fxSel]
+		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
+		Preview.killFx(mid, f.id, UDim2.fromScale(1, 1))
+		itemCardRight(f, "killfx", function(acts, have)
+			if not have then return end
+			if f.id == equippedId then
+				local t = title(acts, "★ EQUIPPED", 20, COL.GOOD); t.Size = UDim2.new(1, 0, 0, 26); t.LayoutOrder = nextOrder()
+			else
+				local h, b = fatButton(acts, "EQUIP", COL.GREEN, 20); h.Size = UDim2.new(1, 0, 0, 56); h.LayoutOrder = nextOrder()
+				b.Activated:Connect(function()
+					local r = call("Equip", "killfx", f.id)
+					toast(r.ok and (f.name .. " equipped") or (r.msg or ""), r.ok and COL.GOOD or COL.BAD)
+					if r.profile then state.profile = r.profile end
+					render.ARMORY()
+				end)
+			end
+		end)
+	end
+
+	local function emotes()
+		local items = sortedItems(Catalog.EMOTES)
+		local wheel = {}
+		for _, id in ipairs(state.profile and state.profile.emotes or {}) do table.insert(wheel, id) end
+		local inWheel = {}
+		for i, id in ipairs(wheel) do inWheel[id] = i end
+		if not Catalog.EMOTE[ui.emoteSel or ""] then ui.emoteSel = wheel[1] or items[1].id end
+		local function saveWheel(list)
+			local r = call("Equip", "emotes", list)
+			if r.profile then state.profile = r.profile end
+			if not r.ok then toast(r.msg or "", COL.BAD) end
+			render.ARMORY()
+		end
+		local left = clearFrame(body); left.Size = UDim2.new(0, 290, 1, 0)
+		local leftList = scroll(left, 6)
+		heading(leftList, "EMOTES  ·  " .. tostring(ClientSettings.get("Key_Emote") or "B") .. " OPENS THE WHEEL")
+		for _, e in ipairs(items) do
+			local have = owns("emotes", e.id)
+			local r = row(leftList, (have and "" or "🔒 ") .. e.name, inWheel[e.id] and ("ON WHEEL · " .. inWheel[e.id]) or (have and string.upper(e.rarity) or ""), e.id == ui.emoteSel,
+				function() ui.emoteSel = e.id; render.ARMORY() end, inWheel[e.id] and COL.GOOD or (RARITY_COL[e.rarity] or COL.DIM))
+			local bar = frame(r, RARITY_COL[e.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
+		end
+		local e = Catalog.EMOTE[ui.emoteSel]
+		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
+		Preview.emote(mid, e.id, UDim2.fromScale(1, 1))
+		local list = itemCardRight(e, "emotes", function(acts, have)
+			if not have then return end
+			if inWheel[e.id] then
+				local h, b = fatButton(acts, "TAKE OFF THE WHEEL", COL.GLASS2, 18); h.Size = UDim2.new(1, 0, 0, 52); h.LayoutOrder = nextOrder()
+				b.Activated:Connect(function()
+					local out = {}
+					for _, id in ipairs(wheel) do if id ~= e.id then table.insert(out, id) end end
+					saveWheel(out)
+				end)
+			elseif #wheel < 6 then
+				local h, b = fatButton(acts, "PUT ON THE WHEEL", COL.GREEN, 18); h.Size = UDim2.new(1, 0, 0, 52); h.LayoutOrder = nextOrder()
+				b.Activated:Connect(function() local out = table.clone(wheel); table.insert(out, e.id); saveWheel(out) end)
+			else
+				dim(acts, "The wheel is full (6): take one off first.", 13)
+			end
+		end)
+		-- the wheel itself: six slots
+		local wp = panel(list, "YOUR WHEEL")
+		for i = 1, 6 do
+			local id = wheel[i]
+			local it = id and Catalog.EMOTE[id]
+			row(wp, string.format("%d   %s", i, it and it.name or "—"), it and string.upper(it.rarity) or "empty", false, it and function() ui.emoteSel = id; render.ARMORY() end or nil, it and (RARITY_COL[it.rarity] or COL.DIM) or COL.DIM)
+		end
+		dim(wp, "In a match or the Courtyard, press " .. tostring(ClientSettings.get("Key_Emote") or "B") .. " and pick one (or its number). Moving or attacking ends it.", 12)
+	end
+
 	render.ARMORY = function()
 		renderTabs()
 		clear(body)
-		if ui.armoryTab == "armor" then armor() else weapons() end
+		if ui.armoryTab == "armor" then armor() elseif ui.armoryTab == "killfx" then killfx() elseif ui.armoryTab == "emotes" then emotes() else weapons() end
 		renderSide()
 	end
 	gui:GetAttributeChangedSignal("ArmoryTab"):Connect(function() local t = gui:GetAttribute("ArmoryTab"); if t then ui.armoryTab = t; if currentTab == "ARMORY" then task.spawn(render.ARMORY) end end end)
@@ -3142,7 +3420,7 @@ do
 	end
 
 	----------------------------------------------------------------
-	--  CRATES: the chosen skin on a stage, the strip, the drum
+	--  CRATES: the chosen item on a stage, the strip, the drum
 	----------------------------------------------------------------
 	local function crates()
 		local left = clearFrame(body); left.Size = UDim2.new(1, -372, 1, 0)
@@ -3150,34 +3428,43 @@ do
 		local rightList = scroll(right, 10)
 		local crate = Catalog.CRATES[ui.crate]
 		if not crate then dim(left, "No crates in Catalog › Crates."); return end
-		local pool = Catalog.crateSkins(ui.crate)
+		local pool = Catalog.crateItems(ui.crate)
 		table.sort(pool, function(a, b)
 			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
-			return a.id < b.id
+			return a.kind .. a.id < b.kind .. b.id
 		end)
-		local sel = ui.crateSkin and Catalog.SKIN[ui.crateSkin]
-		if not sel or sel.crate ~= ui.crate then sel = pool[1]; ui.crateSkin = sel and sel.id end
-		-- stage
+		local function keyOf(it) return it.kind .. "|" .. it.id end
+		local function ownKind(it) return it.kind == "skin" and "skins" or (it.kind == "killfx" and "killfx" or "emotes") end
+		local sel
+		for _, it in ipairs(pool) do if keyOf(it) == ui.crateItem then sel = it end end
+		sel = sel or pool[1]
+		ui.crateItem = sel and keyOf(sel)
+		-- stage: a skin on its weapon, a kill effect / emote on you
 		local stageH = clearFrame(left); stageH.Size = UDim2.new(1, 0, 1, -196)
 		if sel then
-			local stg = weaponStage(stageH, sel.weapon, sel.id)
+			local stg
+			if sel.kind == "skin" then stg = weaponStage(stageH, sel.weapon, sel.id)
+			elseif sel.kind == "killfx" then stg = Preview.killFx(stageH, sel.id, UDim2.fromScale(1, 1))
+			else stg = Preview.emote(stageH, sel.id, UDim2.fromScale(1, 1)) end
 			local nm = title(stg, sel.name, 32); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 36)
-			local wn = title(stg, string.upper(Catalog.WEAPON[sel.weapon] and Catalog.WEAPON[sel.weapon].name or sel.weapon), 16, COL.DIM); wn.Position = UDim2.fromOffset(20, 48); wn.Size = UDim2.new(1, -40, 0, 20)
+			local kindText = sel.kind == "skin" and string.upper(Catalog.WEAPON[sel.weapon] and Catalog.WEAPON[sel.weapon].name or sel.weapon) or (sel.kind == "killfx" and "KILL EFFECT" or "EMOTE")
+			local fxText = sel.kind == "skin" and Preview.fxText(sel.ref) or nil
+			local wn = title(stg, kindText .. (fxText and ("  ·  " .. string.upper(fxText)) or ""), 16, COL.DIM); wn.Position = UDim2.fromOffset(20, 48); wn.Size = UDim2.new(1, -40, 0, 20)
 			local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16)
-			local have = owns("skins", sel.id)
+			local have = owns(ownKind(sel), sel.id)
 			local note = title(stg, have and "OWNED ✔" or string.format("%d%% CHANCE FOR A %s PER OPEN", crate.odds[sel.rarity] or 0, string.upper(sel.rarity)), 14, have and COL.GOOD or COL.DIM)
 			note.AnchorPoint = Vector2.new(0, 1); note.Position = UDim2.new(0, 20, 1, -14); note.Size = UDim2.new(1, -40, 0, 18)
 		else
-			dim(stageH, "This crate has no skins yet: point some skins at it in Catalog › Skins.")
+			dim(stageH, "This crate is empty: point some skins, kill effects or emotes at it.")
 		end
 		-- strip
 		local stripH = clearFrame(left); stripH.AnchorPoint = Vector2.new(0, 1); stripH.Position = UDim2.new(0, 0, 1, 0); stripH.Size = UDim2.new(1, 0, 0, 184)
-		local _, sf = skinStrip(stripH, pool, sel and sel.id, function(s) ui.crateSkin = s.id; render.SHOP() end, 184, true)
+		local _, sf = Preview.strip(stripH, pool, sel and keyOf(sel), function(it) ui.crateItem = keyOf(it); render.SHOP() end, 184)
 		-- right: the crates, open, odds, pulls
 		local names = {}
 		for k, c in pairs(Catalog.CRATES) do table.insert(names, {text = c.name, id = k}) end
 		table.sort(names, function(a, b) return a.id < b.id end)
-		chips(rightList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; ui.crateSkin = nil; render.SHOP() end, 34)
+		chips(rightList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; ui.crateItem = nil; render.SHOP() end, 34)
 		local c1 = panel(rightList, crate.name)
 		local cc = state.profile and state.profile.crates and state.profile.crates[ui.crate] or {opens = 0, sinceLegendary = 0}
 		dim(c1, crate.description or "", 13)
@@ -3208,7 +3495,7 @@ do
 			local res = r.result
 			-- the strip spins: flick through the pool fast, slow down, stop on the win
 			local wonIndex = 1
-			for i, s in ipairs(pool) do if s.id == res.skinId then wonIndex = i end end
+			for i, it in ipairs(pool) do if it.kind == (res.kind or "skin") and it.id == (res.itemId or res.skinId) then wonIndex = i end end
 			local cardW = 132
 			local total = #pool * 3 + wonIndex - 1
 			local t0 = os.clock()
@@ -3224,11 +3511,23 @@ do
 			task.wait(0.4)
 			ui.rolling = false
 			table.insert(ui.pulls, 1, res)
-			ui.crateSkin = res.skinId
-			local won = Catalog.SKIN[res.skinId]
-			modal(string.upper(res.rarity) .. "!  " .. res.name, res.dup and string.format("Duplicate — %s Marks back.", fmt(res.refund)) or "New skin! Equip it from the ARMORY or your LOADOUT.",
-				{{"EQUIP IT", COL.GREEN, function() closeModal(); ui.armoryTab = "weapons"; ui.shopWeapon = won and won.weapon or res.weapon; ui.shopSkin = res.skinId; selectTab("ARMORY") end}}, function(box)
-					local th = weaponStage(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 240)); th.LayoutOrder = 5
+			local kind = res.kind or "skin"
+			ui.crateItem = kind .. "|" .. (res.itemId or res.skinId)
+			local won = res.skinId and Catalog.SKIN[res.skinId]
+			local line = kind == "skin" and "New skin! Equip it from the ARMORY or your LOADOUT." or (kind == "killfx" and "New kill effect! Equip it in the ARMORY." or "New emote! Put it on your wheel in the ARMORY.")
+			modal(string.upper(res.rarity) .. "!  " .. res.name, res.dup and string.format("Duplicate — %s Marks back.", fmt(res.refund)) or line,
+				{{"EQUIP IT", COL.GREEN, function()
+					closeModal()
+					if kind == "skin" then ui.armoryTab = "weapons"; ui.shopWeapon = won and won.weapon or res.weapon; ui.shopSkin = res.skinId
+					elseif kind == "killfx" then ui.armoryTab = "killfx"; ui.fxSel = res.itemId
+					else ui.armoryTab = "emotes"; ui.emoteSel = res.itemId end
+					selectTab("ARMORY")
+				end}}, function(box)
+					local th
+					if kind == "skin" then th = weaponStage(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 240))
+					elseif kind == "killfx" then th = Preview.killFx(box, res.itemId, UDim2.new(1, 0, 0, 260))
+					else th = Preview.emote(box, res.itemId, UDim2.new(1, 0, 0, 260)) end
+					th.LayoutOrder = 5
 					border(th, RARITY_COL[res.rarity] or COL.DIM, 3, 0)
 				end, 560)
 			render.SHOP()
@@ -3639,6 +3938,16 @@ end
 -- a reward's look inside a card: a skin on its weapon, a currency, a crate, a title
 local function rewardVisual(parent, r, h)
 	h = h or 110
+	if r.killfx and Catalog.KILLFX_BY[r.killfx] then
+		local f = Catalog.KILLFX_BY[r.killfx]
+		local th = Preview.killFx(parent, f.id, UDim2.new(1, -8, 0, h), 0.3); th.Position = UDim2.fromOffset(4, 4)
+		return f.name, RARITY_COL[f.rarity], "KILL EFFECT"
+	end
+	if r.emote and Catalog.EMOTE[r.emote] then
+		local e = Catalog.EMOTE[r.emote]
+		local th = Preview.emote(parent, e.id, UDim2.new(1, -8, 0, h), 0.45); th.Position = UDim2.fromOffset(4, 4)
+		return e.name, RARITY_COL[e.rarity], "EMOTE"
+	end
 	if r.skin and Catalog.SKIN[r.skin] then
 		local s = Catalog.SKIN[r.skin]
 		local th = weaponThumb(parent, s.weapon, s.id, UDim2.new(1, -8, 0, h), 1.5)

@@ -9,8 +9,10 @@
        tiers    {free = reward, premium = reward}, a reward being
                 {marks = n} · {crowns = n} · {skin = "Weapon:Name"} · {title = "…"}
                 · {crate = "Royal"} (one free open of that crate)
+                · {killfx = "ShadowRift"} · {emote = "WarCry"} (Catalog ▸ KillFX / Emotes)
      Rewards are granted when claimed (server-side). Skins named here are pass
-     skins (Catalog ▸ Skins: pass = true), so nothing else sells them. ]]
+     skins (Catalog ▸ Skins: pass = true), so nothing else sells them; the
+     same goes for kill effects and emotes marked pass = true. ]]
 return {
 	season = "S1",
 	name = "Season 1  ·  The Iron Crown",
@@ -26,17 +28,17 @@ return {
 		{free = {skin = "Shortsword:Iron Oath"},  premium = {crate = "Royal"}},
 		{free = {marks = 200},                    premium = {marks = 500}},
 		{free = {crowns = 10},                    premium = {skin = "WarAxe:Ironbark"}},
-		{free = {marks = 250},                    premium = {crowns = 30}},
+		{free = {marks = 250},                    premium = {killfx = "ShadowRift"}},
 		{free = {crate = "Hafted"},               premium = {marks = 600}},
 		{free = {marks = 250},                    premium = {skin = "Longsword:Crownguard"}},
 		{free = {marks = 250},                    premium = {crate = "Royal"}},
-		{free = {crowns = 15},                    premium = {marks = 700}},
+		{free = {emote = "WarCry"},               premium = {marks = 700}},
 		{free = {marks = 300},                    premium = {skin = "Mace:Iron Lion"}},
 		{free = {crate = "Bladesmith"},           premium = {crowns = 40}},
 		{free = {skin = "Pitchfork:Iron Tines"},  premium = {marks = 800}},
 		{free = {marks = 300},                    premium = {crate = "Royal"}},
 		{free = {marks = 350},                    premium = {skin = "Halberd:Kingsguard"}},
-		{free = {crowns = 15},                    premium = {crowns = 50}},
+		{free = {crowns = 15},                    premium = {emote = "Windmill"}},
 		{free = {crate = "Hafted"},               premium = {marks = 900}},
 		{free = {title = "Ironsworn"},            premium = {skin = "Greatsword:Last Light"}},
 		{free = {marks = 400},                    premium = {crate = "Royal"}},
@@ -46,7 +48,7 @@ return {
 		{free = {skin = "Dagger:Crown's Fang"},   premium = {crate = "Royal"}},
 		{free = {marks = 500},                    premium = {marks = 1200}},
 		{free = {marks = 500},                    premium = {crowns = 80}},
-		{free = {crowns = 25},                    premium = {crate = "Royal"}},
+		{free = {crowns = 25},                    premium = {killfx = "RoyalDecree"}},
 		{free = {crate = "Royal"},                premium = {title = "Crowned"}},
 		{free = {marks = 1000},                   premium = {skin = "Zweihander:The Iron Crown"}},
 	},

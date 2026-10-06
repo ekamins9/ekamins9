@@ -45,6 +45,8 @@ Catalog.CONTRACTS = child("Contracts")
 Catalog.STORE     = child("Store")
 Catalog.PASS      = child("Pass")
 Catalog.LOGIN     = child("Login")
+Catalog.KILLFX    = child("KillFX")
+Catalog.EMOTES    = child("Emotes")
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears
@@ -145,6 +147,8 @@ for _, s in ipairs(Catalog.SKINS) do
 	Catalog.SKIN[s.id] = s
 end
 Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name] = c end
+Catalog.KILLFX_BY = {}  for _, f in ipairs(Catalog.KILLFX) do Catalog.KILLFX_BY[f.id] = f end
+Catalog.EMOTE = {}      for _, e in ipairs(Catalog.EMOTES) do Catalog.EMOTE[e.id] = e end
 
 --------------------------------------------------------------------
 --  QUERIES
@@ -357,6 +361,31 @@ function Catalog.skinOnSale(skinId, dateKey)
 	return false
 end
 
+-- where a kill effect / emote comes from: "free" | "crate" | "pass" | "earned"
+function Catalog.itemSource(it)
+	if not it then return "free" end
+	if it.free then return "free" end
+	if it.unlock then return "earned" end
+	if it.pass then return "pass" end
+	if it.crate then return "crate" end
+	return "free"
+end
+
+-- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote")
+function Catalog.crateItems(crateId)
+	local out = {}
+	for _, s in ipairs(Catalog.crateSkins(crateId)) do
+		table.insert(out, {kind = "skin", id = s.id, name = s.name, rarity = s.rarity, weapon = s.weapon, ref = s})
+	end
+	for _, f in ipairs(Catalog.KILLFX) do
+		if f.crate == crateId then table.insert(out, {kind = "killfx", id = f.id, name = f.name, rarity = f.rarity, ref = f}) end
+	end
+	for _, e in ipairs(Catalog.EMOTES) do
+		if e.crate == crateId then table.insert(out, {kind = "emote", id = e.id, name = e.name, rarity = e.rarity, ref = e}) end
+	end
+	return out
+end
+
 function Catalog.crateSkins(crateId)
 	local c = Catalog.CRATES[crateId]
 	local out = {}
@@ -400,6 +429,12 @@ if RunService:IsServer() then
 			if r and r.crate and not Catalog.CRATES[r.crate] then warn("[Catalog]", where, "names unknown crate", r.crate) end
 		end
 		for i, t in ipairs(Catalog.PASS.tiers or {}) do checkReward("pass tier " .. i .. " free", t.free); checkReward("pass tier " .. i .. " premium", t.premium) end
+		for _, t in ipairs(Catalog.PASS.tiers or {}) do
+			for _, r in pairs(t) do
+				if r.killfx and not Catalog.KILLFX_BY[r.killfx] then warn("[Catalog] pass names unknown kill effect", r.killfx) end
+				if r.emote and not Catalog.EMOTE[r.emote] then warn("[Catalog] pass names unknown emote", r.emote) end
+			end
+		end
 		for i, d in ipairs(Catalog.LOGIN.days or {}) do checkReward("login day " .. i, d) end
 	end)
 end

@@ -106,6 +106,8 @@ local function onDied(char)
 			bump(killerPlr, "kill")
 			if Stats then Stats.weaponKill(killerPlr, weapon) elseif Profile then Profile.addStat(killerPlr, "kill", 1) end
 		end
+		-- the killer's kill effect on the body (Hub ▸ Cosmetics)
+		if _G.KillFxHook then task.spawn(_G.KillFxHook, killerPlr, char) end
 	end
 	if Game and victimPlr then
 		Game.onDeath(victimPlr, (not teamkill) and killerPlr or nil, char)

@@ -90,9 +90,26 @@ function RigPose.compute(i, o)
 	}
 end
 
+-- an emote (ReplicatedStorage ▸ Emotes) layers its pose over the targets and
+-- snaps to it; required lazily (Emotes is a sibling module)
+local Emotes = nil
+local function emotes()
+	if Emotes == nil then
+		local ok, m = pcall(function() return require(script.Parent:WaitForChild("Emotes", 2)) end)
+		Emotes = ok and m or false
+	end
+	return Emotes
+end
+
 -- lerps each joint's C0 toward the target; legAlpha lets kicks snap faster
 function RigPose.apply(j, target, alpha, legAlpha)
 	legAlpha = legAlpha or alpha
+	local E = emotes()
+	local char = j.Neck and j.Neck.Parent and j.Neck.Parent.Parent
+	if E and char then
+		local t2 = E.modify(char, target)
+		if t2 then target = t2; alpha = 1; legAlpha = 1 end
+	end
 	for name, cf in pairs(target) do
 		local m = j[name]
 		if m and m.Parent then

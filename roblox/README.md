@@ -42,8 +42,12 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Theme.lua` | `ReplicatedStorage` → `Theme` | ModuleScript |
 | `ServerScriptService/Loadout/Profile.lua` | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript |
 | `ReplicatedStorage/Catalog/init.lua` | `ReplicatedStorage` → `Catalog` | ModuleScript |
-| `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts` (children of the Catalog ModuleScript) | ModuleScript each |
+| `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts`, `Store`, `Pass`, `Login`, `KillFX`, `Emotes` (children of the Catalog ModuleScript) | ModuleScript each |
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
+| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX` (a skin's trim parts; its trail and aura) | ModuleScript each |
+| `ReplicatedStorage/KillFX.lua`, `Emotes.lua` | `ReplicatedStorage` → `KillFX`, `Emotes` (the effects and motions) | ModuleScript each |
+| `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
+| `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
@@ -131,13 +135,15 @@ and a UIScale fits it to any screen.
   **Anything locked can be tried on**: it shows on you, with where it comes from and a buy
   button when it is in today's shop.
 - **ARMORY**: **WEAPONS** shows every weapon turning on a stage with its skin strip, and for
-  each skin exactly where it comes from (crate, task, pack, the shop shelf), plus EQUIP / AS
-  SECONDARY. **ARMOR** shows every set worn by you, piece by piece. You can toggle pieces, see
-  the stats of its weight, and BUY (on the days its pack is in the shop) or EQUIP on a class of
-  that weight.
+  each skin exactly where it comes from (crate, task, pack, the shop shelf) and its effects
+  (trail, aura), plus EQUIP / AS SECONDARY. **ARMOR** shows every set worn by you, piece by
+  piece. You can toggle pieces, see the stats of its weight, and BUY (on the days its pack is in
+  the shop) or EQUIP on a class of that weight. **KILL FX** plays each kill effect on you, over
+  and over, with EQUIP. **EMOTES** loops each emote on you and edits the six-slot wheel.
 - **SHOP**: **DAILY** has the packs plus the **WEAPONS shelf** (single skins, a headliner and
-  three more, new every day; `Catalog ▸ Store`). **CRATES** has the skin on a big turning stage,
-  the strip, odds, pity and the spinning drum. **CROWNS** has the Robux bundles and Crowns →
+  three more, new every day; `Catalog ▸ Store`). **CRATES** has the chosen item on a big stage
+  (a skin turning on its weapon, a kill effect or emote played on you), the strip, odds, pity
+  and the spinning drum. The **Relic Crate** holds kill effects and emotes. **CROWNS** has the Robux bundles and Crowns →
   Marks. **COLORS** has the premium colours.
 - **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
   tasks), and **mastery** (kill-count skins, earned armor, earned titles) with progress bars.
@@ -169,6 +175,20 @@ server teleports its own players with the sides in the teleport data (`Matchmake
 are `Locked` (only those user ids), best of 5, forfeited by a leaver; ratings are Elo
 (`Scoreboard`, `LB_<bracket>` OrderedDataStores), ranks from `Economy.rankTiers`, leaving a
 ranked match early locks the queue for `queueLockMinutes`.
+
+## Skin effects, kill effects, emotes (looks only)
+
+- **Skin effects** (`SkinFX`, applied by the `Dresser` after the tint and trim): Epic and
+  Legendary skins leave a swing trail; skins with `fx` shed an aura of particles around the blade.
+- **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): `Scoreboard` (and the training dummies) call
+  `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
+  effect and fires `FxEvent "Kill"` to everyone; each client (`Cosmetics.client`) builds it on
+  the body in `workspace.LocalFX` and hides the body locally.
+- **Emotes** (`Emotes` + `Catalog ▸ Emotes`): **B** opens the wheel (`EmoteWheel`; 1–6 or click).
+  The client starts the emote at once and asks `EmoteRemote "Play"`; the server checks ownership
+  and that you are alive, then relays `FxEvent "Emote"` with its start time to everyone. The pose
+  is layered over `RigPose` (`Emotes.modify`), so it shows for every player exactly like the
+  combat pose does, and the weapon spins in the hand (the `ToolGrip`). Moving or attacking ends it.
 
 ## Game modes, maps, places (`GameConfig`)
 
@@ -281,8 +301,8 @@ work on them too.
 left-side version (default side Right; both are settings) · **Q feint** · RMB block (feint-to-parry
 during windup) · G kick (works unarmed too) · LeftShift sprint (forward / forward-diagonal only) ·
 Space dodge (a ~2-stud sidestep, side or back, 10 stamina) · LeftControl/C crouch · **Z first /
-third person** (no scroll zoom any more) · V pick up a weapon · Tab leaderboard. **There is no
-jumping.** Walking backwards is 35% slower and sideways 20% slower — dodge to reposition fast.
+third person** (no scroll zoom any more) · V pick up a weapon · Tab leaderboard · **B emote
+wheel**. **There is no jumping.** Walking backwards is 35% slower and sideways 20% slower — dodge to reposition fast.
 
 Binds take keys, left / middle mouse, scroll up / down. Roblox does not expose Mouse 4 / 5 to
 games — bind them to a key in your mouse software (e.g. Mouse4 → X) and bind that key here.

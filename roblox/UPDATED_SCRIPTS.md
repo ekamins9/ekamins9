@@ -1,29 +1,47 @@
-# Updated scripts: Season Pass and login rewards
+# Updated scripts: skin effects, kill effects, emotes
 
-- **Season Pass** ("Season 1 · The Iron Crown"): 30 tiers, climbed with every round's XP plus
-  400 pass XP per finished daily task (1,200 for the weekly). The free track is everyone's.
-  The premium track costs 600 Crowns, applies to tiers already reached, and holds 9 exclusive
-  trimmed skins and the title "Crowned". Claim tier by tier or with CLAIM ALL; free crate
-  opens are rolled on the server. There is a PASS dock tile with a badge for waiting rewards.
-- **Login rewards**: a pop-up on the first open of each day, seven days in a row, with the
-  streak broken by a missed day.
-- 12 new pass skins (`pass = true`), which can't be bought.
-- Testing cheat (Studio only): `/passxp <n>`.
+- **Skin effects**: Epic and Legendary skins leave a swing trail in their glow colour, and
+  every Legendary sheds an aura around the blade (embers, frost, holy light, shadow, storm,
+  toxic, petals, gold, blood). The menu names them on the skin ("Trail · Embers").
+- **Kill effects**: when you land the killing blow, the body does your equipped effect for
+  everyone: Shatter (free), Confetti Pop, Gold Rush, Crow Swarm, Inferno, Frozen Solid,
+  Thunderstrike, Ascension (Relic Crate), Shadow Rift and Royal Decree (season pass).
+- **Emotes**: **B** opens the emote wheel (six slots, 1–6 or click). There are 14: Salute,
+  Bow, Cheer and the sword-twirling Flourish are free. Wave, Shrug, Beckon, Kneel, Laugh, Jig,
+  Blade Toss and Champion come from the Relic Crate, and War Cry and Windmill from the pass.
+  Everyone sees them, and moving or attacking ends one.
+- **Relic Crate** (80 Crowns): kill effects and emotes only. The crates screen shows each item
+  its own way: a skin turns on its weapon, an effect or emote plays on you.
+- **ARMORY** has two new tabs. **KILL FX** loops each effect on you, with EQUIP. **EMOTES**
+  loops each emote on you and edits the wheel.
+- **Season pass**: tier 8 premium is Shadow Rift, tier 12 free is War Cry, tier 18 premium is
+  Windmill, and tier 28 premium is Royal Decree.
+- Looks only: nothing here changes damage, speed or any stat.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Catalog/Pass.lua](ReplicatedStorage/Catalog/Pass.lua) | ReplicatedStorage ▸ Catalog ▸ Pass | ModuleScript | **new**: the season, price, XP and 30 tiers |
-| [Catalog/Login.lua](ReplicatedStorage/Catalog/Login.lua) | ReplicatedStorage ▸ Catalog ▸ Login | ModuleScript | **new**: the seven daily gifts |
-| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `Catalog.PASS` / `Catalog.LOGIN`; skin source "pass"; reward checks |
-| [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | regenerated with the 12 pass skins |
-| [Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy ▸ Economy | ModuleScript | `grantReward`, pass state / XP / claim / claim-all / buy, login status / claim, free crate opens; round XP climbs the pass |
-| [Stats.lua](ServerScriptService/Economy/Stats.lua) | ServerScriptService ▸ Economy ▸ Stats | ModuleScript | a finished task adds pass XP |
-| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | `pass` and `login` records |
-| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | State carries pass + login; ops PassClaim, PassClaimAll, PassBuy, LoginClaim |
-| [Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | ServerScriptService ▸ Hub ▸ Cheats | Script | `/passxp <n>` |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | PASS screen, login pop-up, PASS dock tile + badge, pass skins' source text |
-| [gen_content.py](../scripts/gen_content.py) | (repo only) | script | `PASS_SKINS` |
-| [ui_icons.py](../blender/ui_icons.py) | (repo only) | Blender script | the PASS icon (a crowned banner) |
-| [CONTENT_GUIDE.md](CONTENT_GUIDE.md), [README.md](README.md) | (docs) | | the pass and the login gifts |
+| [SkinFX.lua](ReplicatedStorage/SkinFX.lua) | ReplicatedStorage ▸ SkinFX | ModuleScript | **new**: trails and auras on skinned weapons; `describe` for the menu |
+| [KillFX.lua](ReplicatedStorage/KillFX.lua) | ReplicatedStorage ▸ KillFX | ModuleScript | **new**: the ten kill effects (world + menu preview) |
+| [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage ▸ Emotes | ModuleScript | **new**: the 14 emote motions, the weapon spin, preview posing |
+| [Catalog/KillFX.lua](ReplicatedStorage/Catalog/KillFX.lua) | ReplicatedStorage ▸ Catalog ▸ KillFX | ModuleScript | **new**: names, rarities, sources |
+| [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua) | ReplicatedStorage ▸ Catalog ▸ Emotes | ModuleScript | **new**: names, rarities, sources |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `KILLFX` / `EMOTES` maps, `itemSource`, `crateItems`, reward checks |
+| [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog ▸ Crates | ModuleScript | the Relic Crate |
+| [Catalog/Pass.lua](ReplicatedStorage/Catalog/Pass.lua) | ReplicatedStorage ▸ Catalog ▸ Pass | ModuleScript | four tiers now give the pass-only effects and emotes |
+| [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | regenerated: Legendary skins carry an `fx` aura |
+| [SkinTrims.lua](ReplicatedStorage/SkinTrims.lua) | ReplicatedStorage ▸ SkinTrims | ModuleScript | the old Legendary sparkle moved to SkinFX |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | applies SkinFX; preview weapon welds remember their grip (for emote spins) |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | an emote's pose is layered over the combat pose |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | the Emote key (B) |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub ▸ Cosmetics | Script | **new**: `FxEvent` / `EmoteRemote`, ownership checks, `_G.KillFxHook` |
+| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Cosmetics | LocalScript | **new**: plays kill effects and emotes; the emote wheel |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService ▸ Scoreboard | Script | a kill calls the kill-effect hook |
+| [TestDummies.server.lua](ServerScriptService/TestDummies.server.lua) | ServerScriptService ▸ TestDummies | Script | a dummy kill calls it too |
+| [Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy ▸ Economy | ModuleScript | crates roll any item kind; pass rewards can be `killfx` / `emote` |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | owned / equipped kill effect and emote wheel |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | `Equip "killfx"` and `Equip "emotes"` |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | ARMORY ▸ KILL FX / EMOTES, live previews on you, crates of any item kind, pass cards for effects / emotes, skin effect tags |
+| [gen_content.py](../scripts/gen_content.py), [skins_handmade.part](../scripts/skins_handmade.part) | (repo only) | generator | `FX_BY_NAME` auras on Legendary skins |
+| [CONTENT_GUIDE.md](CONTENT_GUIDE.md), [README.md](README.md) | (docs) | | skin effects, kill effects, emotes, the Relic Crate |
 
-Studio-only: `ReplicatedStorage ▸ Cosmetics ▸ Icons ▸ Pass` (the dock icon decal).
+Nothing to do by hand in Studio: the remotes are made by `Hub ▸ Cosmetics` at start.

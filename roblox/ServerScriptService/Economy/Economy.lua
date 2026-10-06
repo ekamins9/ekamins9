@@ -168,8 +168,8 @@ end
 function Economy.openCrate(plr, crateId, free)
 	local crate = Catalog.CRATES[crateId]
 	if not crate then return nil, "no such crate" end
-	local pool = Catalog.crateSkins(crateId)
-	if #pool == 0 then return nil, "this crate is empty (no skins name it)" end
+	local pool = Catalog.crateItems(crateId)
+	if #pool == 0 then return nil, "this crate is empty (nothing names it)" end
 	local p = Profile.get(plr)
 	p.crates[crateId] = p.crates[crateId] or {opens = 0, sinceLegendary = 0}
 	local cc = p.crates[crateId]
@@ -193,15 +193,18 @@ function Economy.openCrate(plr, crateId, free)
 	local win = picks[math.random(#picks)]
 	cc.opens += 1
 	cc.sinceLegendary = win.rarity == "Legendary" and 0 or cc.sinceLegendary + 1
-	local dup = Profile.has(plr, "skins", win.id)
+	local ownKind = win.kind == "skin" and "skins" or (win.kind == "killfx" and "killfx" or "emotes")
+	local dup = Profile.has(plr, ownKind, win.id)
 	local refund = 0
 	if dup then refund = (crate.refund or {})[win.rarity] or 0; p.wallet.marks += refund
-	else Profile.grant(plr, "skins", win.id) end
+	else Profile.grant(plr, ownKind, win.id) end
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
-	log(plr.Name, "opened", crateId, "->", win.id, win.rarity, dup and ("dup +" .. refund) or "")
-	return {skinId = win.id, weapon = win.weapon, name = Catalog.WEAPON[win.weapon].name .. " · " .. win.name, rarity = win.rarity, dup = dup, refund = refund,
-		sinceLegendary = cc.sinceLegendary, opens = cc.opens}
+	log(plr.Name, "opened", crateId, "->", win.kind, win.id, win.rarity, dup and ("dup +" .. refund) or "")
+	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
+		or ((win.kind == "killfx" and "Kill effect · " or "Emote · ") .. win.name)
+	return {kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
+		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens}
 end
 
 --------------------------------------------------------------------
@@ -221,6 +224,8 @@ function Economy.grantReward(plr, r)
 	if r.title then Profile.grant(plr, "titles", r.title); table.insert(bits, "the title " .. r.title) end
 	if r.piece and Catalog.PIECE[r.piece] then Profile.grant(plr, "pieces", r.piece); table.insert(bits, Catalog.PIECE[r.piece].name) end
 	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
+	if r.killfx and Catalog.KILLFX_BY[r.killfx] then Profile.grant(plr, "killfx", r.killfx); table.insert(bits, "the kill effect " .. Catalog.KILLFX_BY[r.killfx].name) end
+	if r.emote and Catalog.EMOTE[r.emote] then Profile.grant(plr, "emotes", r.emote); table.insert(bits, "the emote " .. Catalog.EMOTE[r.emote].name) end
 	if r.crate then
 		crateResult = Economy.openCrate(plr, r.crate, true)
 		if crateResult then table.insert(bits, crateResult.name .. (crateResult.dup and string.format(" (dup, +%d Marks)", crateResult.refund) or "")) end
