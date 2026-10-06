@@ -628,12 +628,14 @@ do
 	root.Position = UDim2.fromScale(0.5, 0.5)
 	root.Size = UDim2.fromOffset(CANVAS.X, CANVAS.Y)
 	local rootScale = Instance.new("UIScale", root)
+	local applyInset   -- (below) keeps the top-left clear of Roblox's own buttons
 	fitRoot = function()
 		local abs = gui.AbsoluteSize
 		if abs.X < 2 or abs.Y < 2 then return end
 		local s = math.clamp(math.min(abs.X / CANVAS.X, abs.Y / CANVAS.Y), 0.45, 2.2)
 		rootScale.Scale = s
 		root.Size = UDim2.fromOffset(abs.X / s, abs.Y / s)
+		if applyInset then applyInset(s) end
 	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitRoot)
 	task.defer(fitRoot)
@@ -782,6 +784,21 @@ do
 		modalScale.Scale = 0.9
 		TweenService:Create(modalScale, TweenInfo.new(0.16, Enum.EasingStyle.Back), {Scale = 1}):Play()
 	end
+
+	-- Roblox draws its own buttons (menu, chat) across the top of the screen: the
+	-- top bar, the screen header and the lobby all start below that strip
+	applyInset = function(sc)
+		local ok, inset = pcall(function() return game:GetService("GuiService"):GetGuiInset() end)
+		local y = (ok and inset and inset.Y or 0) / math.max(sc or rootScale.Scale, 0.01)
+		topBar.Position = UDim2.fromOffset(0, y)
+		sHeader.Position = UDim2.fromOffset(28, 16 + y)
+		content.Position = UDim2.fromOffset(28, 108 + y)
+		content:SetAttribute("HomeY", 108 + y)
+		content.Size = UDim2.new(1, -56, 1, -130 - y)
+		lobby.Position = UDim2.fromOffset(0, y)
+		lobby.Size = UDim2.new(1, 0, 1, -y)
+	end
+	applyInset()
 
 	-- the world behind a screen blurs
 	local blur = Instance.new("BlurEffect")
@@ -4256,8 +4273,9 @@ selectTab = function(name)
 	if render[name] then task.spawn(render[name]) end
 	renderSide()
 	if not isLobby and was ~= name then
-		content.Position = UDim2.fromOffset(28, 126)
-		TweenService:Create(content, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(28, 108)}):Play()
+		local home = UDim2.fromOffset(28, content:GetAttribute("HomeY") or 108)
+		content.Position = home + UDim2.fromOffset(0, 18)
+		TweenService:Create(content, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = home}):Play()
 	end
 end
 sClose.Activated:Connect(function() selectTab("PLAY") end)
