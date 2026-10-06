@@ -5,7 +5,8 @@
      HairAttachment / FaceFrontAttachment. An id with no model still works
      (nothing is shown) so you can list the catalog before the models exist.
        hair / beards   {id, name, crowns}   crowns = 0 is free
-       faces           {id, name, texture}  texture = a decal id ("rbxassetid://…") or "" to keep the rig's face
+       faces           {id, name}  the texture is a Decal in Cosmetics ▸ Body ▸ Face ▸ <id>
+                       (drawn by blender/faces.py); optional texture = an image id instead
        skins           Color3 tones, free
        hairColors      {name, color, crowns}
        titles          free titles everyone has
@@ -34,12 +35,16 @@ return {
 		{id = "Forked",     name = "Forked", crowns = 40},
 	},
 	faces = {
-		{id = "Stern",   name = "Stern",   texture = ""},
-		{id = "Grin",    name = "Grin",    texture = ""},
-		{id = "Scarred", name = "Scarred", texture = ""},
-		{id = "Weary",   name = "Weary",   texture = ""},
-		{id = "Fierce",  name = "Fierce",  texture = ""},
-		{id = "OneEyed", name = "One-eyed", texture = ""},
+		{id = "Smile",     name = "Smile"},
+		{id = "Stern",     name = "Stern"},
+		{id = "Grin",      name = "Grin"},
+		{id = "Smirk",     name = "Smirk"},
+		{id = "Calm",      name = "Calm"},
+		{id = "Weary",     name = "Weary"},
+		{id = "Scarred",   name = "Scarred"},
+		{id = "Fierce",    name = "Fierce"},
+		{id = "BattleCry", name = "Battle cry"},
+		{id = "OneEyed",   name = "One-eyed"},
 	},
 	skins = {Color3.fromRGB(233, 201, 164), Color3.fromRGB(217, 180, 138), Color3.fromRGB(200, 154, 110), Color3.fromRGB(169, 123, 85), Color3.fromRGB(123, 82, 54), Color3.fromRGB(75, 50, 34)},
 	hairColors = {
@@ -70,5 +75,5 @@ return {
 		{title = "Champion of the Lists", unlock = {wins = 50, bracket = "1v1"}},
 		{title = "Drill Master",          unlock = {stat = "drill", n = 10}},
 	},
-	defaults = {skin = 2, hair = "SweptBack", hairColor = "Brown", beard = "None", face = "Stern", title = "Recruit"},
+	defaults = {skin = 2, hair = "SweptBack", hairColor = "Brown", beard = "None", face = "Smile", title = "Recruit"},
 }

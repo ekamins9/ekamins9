@@ -134,22 +134,21 @@ local function applyBody(char, app, coversHair, coversFace)
 	end
 	add("Hair", app.hair, coversHair)
 	add("Beard", app.beard, coversFace)
-	-- face: a decal texture for the whole face, and / or a Face model overlay
-	-- (brows, mouth, paint — Build ▸ Body) that keeps its own colors
+	-- face: a texture on the head's own face Decal. The textures are Decals in
+	-- Cosmetics ▸ Body ▸ Face ▸ <id> (made in Studio, see blender/faces.py), or a
+	-- `texture` id in Catalog ▸ Body. A helmet that covers the face hides it.
 	if head then
-		local decal = head:FindFirstChildOfClass("Decal")
+		local decal = head:FindFirstChild("face") or head:FindFirstChildOfClass("Decal")
+		if not decal then
+			decal = Instance.new("Decal"); decal.Name = "face"; decal.Face = Enum.NormalId.Front; decal.Parent = head
+		end
 		local face
 		for _, f in ipairs(Catalog.BODY.faces) do if f.id == app.face then face = f end end
-		local overlay = face and not coversFace and Catalog.bodyModel("Face", face.id)
-		if decal then
-			if face and face.texture ~= "" then decal.Texture = face.texture end
-			-- a Face model is a whole face (eyes, brows, mouth): the decal goes away under it
-			decal.Transparency = (coversFace or overlay) and 1 or 0
-		end
-		if overlay then
-			local m = putOn(head, overlay)
-			if m then m.Name = "Face"; m.Parent = body end
-		end
+		face = face or Catalog.BODY.faces[1]
+		local src = face and Catalog.bodyModel("Face", face.id)
+		if src and src:IsA("Decal") then decal.Texture = src.Texture
+		elseif face and face.texture and face.texture ~= "" then decal.Texture = face.texture end
+		decal.Transparency = coversFace and 1 or 0
 	end
 	body.Parent = char
 end
