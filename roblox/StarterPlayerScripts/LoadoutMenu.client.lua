@@ -1,6 +1,6 @@
 --[[ CLASS SCREEN — what you see with no body in a match: pick a CLASS and
      spawn. Each class (GameConfig.CLASSES) carries the loadout you saved for
-     it in the Armory (Hub menu, M); the card shows that loadout. Lives in
+     it on the LOADOUT screen (Hub menu, M); the card shows that loadout. Lives in
      StarterPlayerScripts so it survives death and opens again when the
      server says so.
 
@@ -126,7 +126,7 @@ local mrl = Instance.new("UIListLayout", menuRow)
 mrl.FillDirection = Enum.FillDirection.Horizontal
 mrl.HorizontalAlignment = Enum.HorizontalAlignment.Right
 mrl.Padding = UDim.new(0, 6)
-for i, tab in ipairs({"MENU", "ARMORY", "SETTINGS"}) do
+for i, tab in ipairs({"MENU", "LOADOUT", "SETTINGS"}) do
 	local b = button(menuRow, tab, 13, COL_CARD)
 	b.Size = UDim2.fromOffset(tab == "MENU" and 64 or 84, 36)
 	b.LayoutOrder = i

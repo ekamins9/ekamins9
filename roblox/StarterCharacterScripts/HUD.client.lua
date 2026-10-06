@@ -190,9 +190,14 @@ character:GetAttributeChangedSignal("TakenTick"):Connect(function()
 	popup(character:GetAttribute("TakenText") or "", true, "TAKEN", -120)
 end)
 
+local hubMenu = nil
 local conn = RunService.RenderStepped:Connect(function(dt)
 	local a = math.clamp(dt * LERP_SPEED, 0, 1)
 	local t = os.clock()
+	-- the main menu covers the screen: the bars step aside while it is up
+	hubMenu = hubMenu or (gui.Parent and gui.Parent:FindFirstChild("HubMenu"))
+	local menuUp = hubMenu ~= nil and hubMenu.Enabled
+	if root.Visible == menuUp then root.Visible = not menuUp; chip.Visible = not menuUp end
 
 	local hp = Humanoid.MaxHealth > 0 and math.clamp(Humanoid.Health / Humanoid.MaxHealth, 0, 1) or 0
 	hpShown = hpShown + (hp - hpShown) * a

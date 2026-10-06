@@ -102,7 +102,7 @@ local function autoPieces()
 				table.insert(out, {
 					id = set.Name .. "_" .. d.suffix, name = d.label, slot = d.slot, weight = weight, pack = pack,
 					rarity = cfg.Rarity or "Common", marks = cfg.PriceMarks or 0, crowns = cfg.PriceCrowns or 0,
-					covers = d.slot == "helmet" and d.covers or nil, set = set.Name, auto = true,
+					covers = d.slot == "helmet" and d.covers or nil, set = set.Name, setName = base, auto = true,
 					description = cfg.Description,
 				})
 			end

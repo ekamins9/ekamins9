@@ -96,36 +96,57 @@ pieces). **Adding content is config only: see [CONTENT_GUIDE.md](CONTENT_GUIDE.m
 
 ## Look (`Theme`)
 
-Every screen reads its colors and fonts from `ReplicatedStorage ▸ Theme`: deep blue panels,
-white text, yellow for the action you should press (dark text on it, automatically), bright
-blue for what is selected, green good / red bad, rounded cards with a faint white outline,
-FredokaOne headings. Change a value there and the Hub menu, class screen, scoreboard, travel
+Every screen reads its colors and fonts from `ReplicatedStorage ▸ Theme`: dark glass cards,
+white text with a dark outline, chunky glossy buttons (green for the action you should press,
+blue for what is selected, gold for Crowns, red to close or leave), FredokaOne headings. The
+dock icons and currency marks are rendered 3D icons (`blender/ui_icons.py`, `blender/icons.py`)
+kept as Decals in `Cosmetics ▸ Icons`. Change a value there and the Hub menu, class screen, scoreboard, travel
 screen and HUD all follow.
 
 ## Hub menu (M)
 
-`HubMenu` is the front door: **M** anywhere (Escape belongs to Roblox). It opens by itself
-when you have no body in the Courtyard, over the cinematic camera; in a match M pauses with the
-same menu (RESUME · RETURN TO COURTYARD). The side bar holds the four **doors**
-(`GameConfig.DOORS`): **Courtyard** (the hub, public servers), **Tiltyard** (a friends-only
-reserved server for you and your party), **Warfront** (public battle servers; the mode is voted
-between rounds from `DOORS.Warfront.modes`, then the map), **The Lists** (1v1 · 2v2 · 3v3,
-casual or ranked, through the matchmaker). Tabs — **PLAY**: your party on the stage — you stand
-up front in the middle, teammates and open slots (shadows) around you; the leader clicks a
-shadow to invite and the ✕ over a teammate to remove them — with **ready-up** (every member
-readies, the leader's PLAY only goes when all are ready; a party is at most `PARTY_MAX` = 3 and
-always travels together; friends in other servers can be invited too — the invite crosses
-servers by MessagingService and accepting teleports them to the leader). In a courtyard, the Courtyard card's button spawns you instead of
-travelling, the leaderboard (ranked ratings per
-bracket, Warfront kills), daily contracts, friends; on The Lists the bracket / casual-ranked
-card with FIND MATCH and the queue. **APPEARANCE**: hair, beard, face, skin, hair color, title.
-**CLASSES**: the loadout editor with a live mannequin and TEAM PREVIEW. **SHOP**: crates (the
-drum shows each skin on its weapon in 3D — a display model in Cosmetics ▸ Weapons ▸ <id>,
-flat colors until one exists — with odds, pity, duplicate refunds), packs, weapons, premium colors; **GET CROWNS** opens the
-Robux bundles and the Crowns → Marks exchange. **SERVERS**: the browser with filters and
-**CREATE CUSTOM** (door, mode, map, player limit, round length, who may join, friendly fire,
-respawns, ground weapons, cheats — a cheat server gives the host `/god /heal /speed /tp
-/bring /give /kick` and pays nobody). **SETTINGS**: camera feel, attack side, keybinds.
+`HubMenu` is the front door, built like a modern lobby: **M** anywhere (Escape belongs to
+Roblox). It opens by itself when you have no body in the Courtyard, over the cinematic camera;
+in a match M pauses with the same lobby (RESUME · LEAVE MATCH where PLAY was). M closes a
+pop-up first, then a screen, then the menu. The whole layout is drawn once on a 1600×900 canvas
+and a UIScale fits it to any screen.
+
+- **LOBBY**: your party stands on glowing platforms in the middle. You are up front; teammates
+  and open slots (shadows with a green **+**) stand around you, and the leader's red **X** over
+  a teammate removes them. **Daily tasks** and **friends** are on the left; the **leaderboard**
+  and **today's shop** are on the right. Along the bottom runs the **dock** of 3D icons: LOADOUT,
+  ARMORY, SHOP (a NEW badge when the day turns), TASKS (open tasks counted), WARDROBE,
+  SETTINGS. The big green **PLAY** opens the MODES board. Party members get **READY UP**
+  instead. A search shows **SEARCHING 0:42** with CANCEL. With no body in the Courtyard, a blue
+  **ENTER COURTYARD** spawns you.
+- **MODES** (`GameConfig.DOORS`): big tiles, each with a small 3D scene of posed, dressed
+  fighters. **Warfront** (public battle servers; the mode is voted between rounds), **Training**
+  (the Tiltyard: a friends-only server for you and your party), **Courtyard** (the hub),
+  **The Lists** casual **1v1 · 2v2 · 3v3**, and the **Ranked** card (your rank, rating,
+  placements, bracket, FIND RANKED). Tiles lock when the party is too big or you are not the
+  leader. **SERVER BROWSER** and **CREATE CUSTOM** sit underneath. A party is at most
+  `PARTY_MAX` = 3 and always travels together. Friends in other servers can be invited: the
+  invite crosses servers by MessagingService, and accepting teleports them to the leader.
+- **LOADOUT**: one loadout per class (weight → stats), with a live mannequin and TEAM PREVIEW.
+  **Anything locked can be tried on**: it shows on you, with where it comes from and a buy
+  button when it is in today's shop.
+- **ARMORY**: **WEAPONS** shows every weapon turning on a stage with its skin strip, and for
+  each skin exactly where it comes from (crate, task, pack, the shop shelf), plus EQUIP / AS
+  SECONDARY. **ARMOR** shows every set worn by you, piece by piece. You can toggle pieces, see
+  the stats of its weight, and BUY (on the days its pack is in the shop) or EQUIP on a class of
+  that weight.
+- **SHOP**: **DAILY** has the packs plus the **WEAPONS shelf** (single skins, a headliner and
+  three more, new every day; `Catalog ▸ Store`). **CRATES** has the skin on a big turning stage,
+  the strip, odds, pity and the spinning drum. **CROWNS** has the Robux bundles and Crowns →
+  Marks. **COLORS** has the premium colours.
+- **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
+  tasks), and **mastery** (kill-count skins, earned armor, earned titles) with progress bars.
+- **WARDROBE**: faces as a picture grid, hair, hair colour, beard, skin, title.
+- **SERVERS**: the browser with filters and **CREATE CUSTOM**: door, mode, map, player limit,
+  round length, who may join, friendly fire, respawns, ground weapons, and cheats. A cheat
+  server gives the host `/god /heal /speed /tp /bring /give /kick` and pays nobody.
+- **SETTINGS**: camera feel, attack side, keybinds.
+
 Every teleport puts up the **travel screen** (`TravelScreen`). `HubServer` answers all of it
 (`HubRemote` / `HubEvent`), heartbeats this server into a MemoryStore `Servers` map for the
 browser, and teleports through `TeleportService` — both need a published game; in Studio the
