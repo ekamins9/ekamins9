@@ -5,7 +5,8 @@ art in blender/icons.py (Cycles + Freestyle ink):
 
 names (default all): loadout (a great helm), armory (crossed longswords),
 shop (a treasure chest), tasks (a sealed scroll), wardrobe (a tabard on a
-hanger), settings (a gear), pass (a crowned banner). Output: 512x512 RGBA
+hanger), settings (a gear), pass (a crowned banner), hatchery (a straw nest
+with two eggs). Output: 512x512 RGBA
 PNGs in blender/out/ui/.
 """
 import bpy, bmesh, math, os, random, sys
@@ -273,9 +274,48 @@ def pass_banner():
     return objs
 
 
+def hatchery_nest():
+    """the hatchery: a straw nest holding a speckled egg and a mossy one"""
+    straw = I.material("Straw", (0.6, 0.4, 0.13), rough=0.8)
+    straw_dark = I.material("StrawDark", (0.36, 0.21, 0.07), rough=0.85)
+    shell = I.material("Shell", (0.94, 0.89, 0.79), rough=0.35)
+    moss = I.material("Moss", (0.42, 0.63, 0.3), rough=0.4)
+    spot = I.material("Spot", (0.45, 0.3, 0.17), rough=0.5)
+    moss_spot = I.material("MossSpot", (0.22, 0.36, 0.17), rough=0.5)
+    objs = []
+    # the bowl: a squashed straw ring on a woven base
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.64, minor_radius=0.21, location=(0, 0, -0.36))
+    ring = bpy.context.active_object; ring.name = "Ring"; ring.scale = (1, 1, 0.72)
+    I.link(ring, straw); objs.append(ring)
+    objs.append(cyl("Base", 0.62, 0.2, (0, 0, -0.47), straw_dark, bevel=0.05))
+    # loose twigs crossing the rim
+    rnd = random.Random(7)
+    for k in range(30):
+        a = k / 30 * math.tau + rnd.uniform(-0.08, 0.08)
+        r = 0.64 + rnd.uniform(-0.07, 0.07)
+        loc = (math.cos(a) * r, math.sin(a) * r, -0.32 + rnd.uniform(-0.07, 0.09))
+        rot = (rnd.uniform(-0.45, 0.45), math.pi / 2 + rnd.uniform(-0.35, 0.35), a + math.pi / 2)
+        objs.append(cyl("Twig", 0.034, 0.66, loc, straw_dark if k % 2 == 0 else straw, rot=rot, verts=8, bevel=0))
+    # the eggs, a little tilted, with spots
+    eggs = ((-0.15, 0.06, -0.03, 0.3, shell, spot, 0.12), (0.25, -0.13, -0.08, 0.26, moss, moss_spot, -0.18))
+    for x, y, z, r, mat, spot_mat, tilt in eggs:
+        e = sphere("Egg", r, (x, y, z), mat, scale=(1, 1, 1.33))
+        e.rotation_euler = (tilt, -tilt * 0.6, 0)
+        objs.append(e)
+        for k in range(9):
+            a = rnd.uniform(0, math.tau)
+            h = rnd.uniform(-0.75, 0.85)
+            rr = r * math.sqrt(max(0.05, 1 - h * h))
+            loc = Vector((x + math.cos(a) * rr * 1.01, y + math.sin(a) * rr * 1.01, z + h * r * 1.33))
+            d = sphere("Spot", r * rnd.uniform(0.13, 0.2), tuple(loc), spot_mat, scale=(1, 1, 0.35))
+            d.rotation_euler = (Vector((loc.x - x, loc.y - y, (loc.z - z) / 1.33)).to_track_quat("Z", "Y")).to_euler()
+            objs.append(d)
+    return objs
+
+
 MODELS = {"loadout": (helmet, 0.92, 0.0), "armory": (crossed_swords, 0.9, -0.55), "shop": (chest, 0.92, -0.55),
           "tasks": (scroll, 0.92, -0.3), "wardrobe": (wardrobe, 0.92, -0.3), "settings": (gear, 0.95, -0.4),
-          "pass": (pass_banner, 0.92, -0.25)}
+          "pass": (pass_banner, 0.92, -0.25), "hatchery": (hatchery_nest, 0.86, -0.5)}
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []

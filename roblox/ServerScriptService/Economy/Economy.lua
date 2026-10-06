@@ -6,7 +6,8 @@
        Economy.exchange(plr, tier)       Crowns -> Marks
        Economy.grantProduct(plr, productId, receiptId)   Robux Crown bundles (EconomyServer's ProcessReceipt)
        Economy.levelFor(xp)
-       Economy.grantReward(plr, reward)  {marks | crowns | skin | title | crate | piece | color} (pass, login)
+       Economy.grantReward(plr, reward)  {marks | crowns | skin | title | crate | piece | color |
+                                          killfx | emote | egg | companion} (pass, login, gifts)
        Economy.passState(plr) / addPassXP(plr, n) / passClaim(plr, tier, track) / passBuy(plr)
        Economy.loginStatus(plr) / loginClaim(plr)
      Nothing here trusts a client: prices and odds come from Catalog, results
@@ -210,6 +211,9 @@ end
 --------------------------------------------------------------------
 --  REWARDS (the pass, login gifts)
 --------------------------------------------------------------------
+-- eggs and companions live in Economy ▸ Pastimes (which requires this module)
+local function pastimes() return require(script.Parent:WaitForChild("Pastimes")) end
+
 -- grant one reward; returns a line for the toast and, for a crate, its result
 function Economy.grantReward(plr, r)
 	local p = Profile.get(plr)
@@ -226,6 +230,11 @@ function Economy.grantReward(plr, r)
 	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
 	if r.killfx and Catalog.KILLFX_BY[r.killfx] then Profile.grant(plr, "killfx", r.killfx); table.insert(bits, "the kill effect " .. Catalog.KILLFX_BY[r.killfx].name) end
 	if r.emote and Catalog.EMOTE[r.emote] then Profile.grant(plr, "emotes", r.emote); table.insert(bits, "the emote " .. Catalog.EMOTE[r.emote].name) end
+	if r.egg and Catalog.EGG[r.egg] then pastimes().grantEgg(plr, r.egg, r.n or 1); table.insert(bits, Catalog.EGG[r.egg].name) end
+	if r.companion and Catalog.COMPANION[r.companion] then
+		local res = pastimes().grantCompanion(plr, r.companion)
+		table.insert(bits, "the companion " .. Catalog.COMPANION[r.companion].name .. ((res and res.dup) and " (★ up)" or ""))
+	end
 	if r.crate then
 		crateResult = Economy.openCrate(plr, r.crate, true)
 		if crateResult then table.insert(bits, crateResult.name .. (crateResult.dup and string.format(" (dup, +%d Marks)", crateResult.refund) or "")) end
@@ -315,16 +324,17 @@ function Economy.passBuy(plr)
 	return true, P.name .. "  ·  premium unlocked"
 end
 
--- login gifts: one a day, the streak breaks on a missed day
+-- login gifts: one a day; a missed day pauses the run (you pick up where you
+-- left off) instead of starting it over
 local function dayKey(offsetDays) return os.date("!%Y-%m-%d", os.time() + (offsetDays or 0) * 86400) end
 function Economy.loginStatus(plr)
 	local p = Profile.get(plr)
 	local L = p.login or {}
 	p.login = L
-	local today, yesterday = dayKey(0), dayKey(-1)
+	local today = dayKey(0)
 	local streak = L.streak or 0
 	local claimed = L.claimed == today
-	local nextStreak = claimed and streak or ((L.claimed == yesterday) and streak + 1 or 1)
+	local nextStreak = claimed and streak or streak + 1
 	local n = #Catalog.LOGIN.days
 	return {day = (nextStreak - 1) % n + 1, claimed = claimed, streak = nextStreak}
 end

@@ -45,6 +45,7 @@ local Game       = require(ServerScriptService:WaitForChild("Game"):WaitForChild
 local Profile    = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local Economy    = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Economy"))
 local Stats      = require(ServerScriptService.Economy:WaitForChild("Stats"))
+local Pastimes   = require(ServerScriptService.Economy:WaitForChild("Pastimes"))
 local Matchmaker = require(script.Parent:WaitForChild("Matchmaker"))
 
 local STUDIO = RunService:IsStudio()
@@ -725,6 +726,7 @@ local function state(plr)
 		party = partyInfo(party), partyMax = PARTY_MAX,
 		profile = Profile.summary(plr), contracts = Stats.contracts(plr),
 		store = storeInfo(), pass = Economy.passState(plr), login = Economy.loginStatus(plr),
+		gifts = Pastimes.gifts(plr), hatchery = Pastimes.hatchery(plr),
 		players = #Players:GetPlayers()}
 end
 
@@ -815,6 +817,23 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		local ok, msg, crate = Economy.loginClaim(plr)
 		return {ok = ok, msg = msg, crate = crate, login = Economy.loginStatus(plr), profile = Profile.summary(plr)}
 	elseif op == "BuyCrowns" then local ok, msg = buyCrowns(plr, a); return {ok = ok, msg = msg}
+	-- pastimes: playtime gifts, the Hatchery, companions (Economy ▸ Pastimes)
+	elseif op == "GiftClaim" then
+		local ok, msg, crate = Pastimes.giftClaim(plr, a)
+		return {ok = ok, msg = msg, crate = crate, gifts = Pastimes.gifts(plr), profile = Profile.summary(plr)}
+	elseif op == "Hatchery" then return {ok = true, hatchery = Pastimes.hatchery(plr), gifts = Pastimes.gifts(plr)}
+	elseif op == "EggBuy" then
+		local ok, msg = Pastimes.eggBuy(plr, a)
+		return {ok = ok, msg = msg, hatchery = Pastimes.hatchery(plr), profile = Profile.summary(plr)}
+	elseif op == "EggPlace" then
+		local ok, msg = Pastimes.eggPlace(plr, a, b)
+		return {ok = ok, msg = msg, hatchery = Pastimes.hatchery(plr), profile = Profile.summary(plr)}
+	elseif op == "Hatch" then
+		local res, msg = Pastimes.hatch(plr, a, b == true)
+		return {ok = res ~= nil, msg = msg, result = res, hatchery = Pastimes.hatchery(plr), profile = Profile.summary(plr)}
+	elseif op == "Companion" then
+		local ok, msg = Pastimes.equip(plr, type(a) == "string" and a or "")
+		return {ok = ok, msg = msg, profile = Profile.summary(plr)}
 	end
 	return {ok = false, msg = "unknown op"}
 end

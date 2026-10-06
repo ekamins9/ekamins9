@@ -941,7 +941,7 @@ end
 local function loadState()
 	local r = call("State")
 	if r.ok then
-		for _, k in ipairs({"studio", "reserved", "access", "name", "custom", "door", "mode", "bracket", "ranked", "isHost", "noRewards", "party", "partyMax", "profile", "contracts", "settings", "store", "pass", "login"}) do state[k] = r[k] end
+		for _, k in ipairs({"studio", "reserved", "access", "name", "custom", "door", "mode", "bracket", "ranked", "isHost", "noRewards", "party", "partyMax", "profile", "contracts", "settings", "store", "pass", "login", "gifts", "hatchery"}) do state[k] = r[k] end
 		if state.store then state.store.at = os.clock() end
 		state.activeClass = r.profile and r.profile.active or state.activeClass
 		if r.party and r.party.queue then state.queue = {bracket = r.party.bracket, ranked = r.party.ranked, waiting = r.party.queue.waiting, window = r.party.queue.window, since = os.clock() - (r.party.queue.waiting or 0)}
@@ -1500,6 +1500,88 @@ function Preview.emote(parent, id, size, still, light)
 	end)
 	return holder
 end
+-- an egg on a little stage, turning (wobble() -> 0..1, how hard it shakes)
+Preview.Comp = require(ReplicatedStorage:WaitForChild("Companions"))
+function Preview.egg(parent, eggId, size, wobble, still)
+	local holder, world, cam = Preview.box(parent, size)
+	local e = Preview.Comp.egg(eggId)
+	if not e then return holder end
+	e.model.Parent = world
+	cam.FieldOfView = 30
+	cam.CFrame = CFrame.lookAt(Vector3.new(0, 1.5, -5.4), Vector3.new(0, 0.85, 0))
+	Preview.Comp.poseEgg(e, CFrame.Angles(0, 0.5, 0), 0, 0)
+	if still then return holder end
+	local t0 = os.clock()
+	task.spawn(function()
+		while holder.Parent do
+			if gui.Enabled then
+				local t = os.clock() - t0
+				Preview.Comp.poseEgg(e, CFrame.Angles(0, t * 0.6, 0), t, wobble and wobble() or 0.05)
+			end
+			task.wait(1 / 30)
+		end
+	end)
+	return holder
+end
+-- a companion on a little stage (still = a frozen pose; dark = a silhouette)
+function Preview.companion(parent, id, size, still, stars, dark)
+	local holder, world, cam = Preview.box(parent, size)
+	local rig = Preview.Comp.build(id, {stars = stars})
+	if not rig then return holder end
+	rig.model.Parent = world
+	if dark then
+		for _, p in ipairs(rig.list) do if p:IsA("BasePart") then p.Color = Color3.fromRGB(14, 16, 24); p.Material = Enum.Material.SmoothPlastic end end
+	end
+	local y = rig.flying and 1.3 * rig.scale or rig.foot
+	local d = 6.6 * rig.scale
+	cam.FieldOfView = 34
+	cam.CFrame = CFrame.lookAt(Vector3.new(d * 0.5, y + 1.3 * rig.scale, -d), Vector3.new(0, y * 0.9 + 0.2 * rig.scale, 0))
+	local disc = Instance.new("Part")
+	disc.Shape = Enum.PartType.Cylinder; disc.Anchored = true; disc.Size = Vector3.new(0.2, 3.4 * rig.scale, 3.4 * rig.scale)
+	disc.CFrame = CFrame.new(0, -0.1, 0) * CFrame.Angles(0, 0, math.pi / 2); disc.Material = Enum.Material.Neon; disc.Color = COL.BLUE; disc.Transparency = 0.55
+	disc.Parent = world
+	if still then Preview.Comp.pose(rig, CFrame.new(0, y, 0) * CFrame.Angles(0, math.rad(200), 0), 0.4, 0); return holder end
+	local t0 = os.clock()
+	task.spawn(function()
+		while holder.Parent do
+			if gui.Enabled then
+				local t = os.clock() - t0
+				Preview.Comp.pose(rig, CFrame.new(0, y, 0) * CFrame.Angles(0, math.rad(200) + math.sin(t * 0.5) * 0.6, 0), t, 0.45 + 0.35 * math.sin(t * 0.7))
+			end
+			task.wait(1 / 30)
+		end
+	end)
+	return holder
+end
+-- the time on a clock: 1:02:03 / 4:05
+function Preview.clock(sec)
+	sec = math.max(0, math.floor(sec))
+	local h, m, s2 = math.floor(sec / 3600), math.floor(sec % 3600 / 60), sec % 60
+	if h > 0 then return string.format("%d:%02d:%02d", h, m, s2) end
+	return string.format("%d:%02d", m, s2)
+end
+-- what a gift / pass reward is, in a few words
+function Preview.rewardName(r)
+	if r.marks then return fmt(r.marks) .. " Marks" end
+	if r.crowns then return fmt(r.crowns) .. " Crowns" end
+	if r.egg and Catalog.EGG[r.egg] then return Catalog.EGG[r.egg].name end
+	if r.crate and Catalog.CRATES[r.crate] then return "a free " .. Catalog.CRATES[r.crate].name end
+	if r.companion and Catalog.COMPANION[r.companion] then return Catalog.COMPANION[r.companion].name end
+	if r.emote and Catalog.EMOTE[r.emote] then return "the " .. Catalog.EMOTE[r.emote].name .. " emote" end
+	if r.killfx and Catalog.KILLFX_BY[r.killfx] then return Catalog.KILLFX_BY[r.killfx].name end
+	if r.skin and Catalog.SKIN[r.skin] then return Catalog.SKIN[r.skin].name end
+	if r.title then return "the title " .. r.title end
+	return "a gift"
+end
+-- eggs ready in your nests (the server's "Nests" attribute: egg,readyAt;…)
+function Preview.readyEggs()
+	local s, n = player:GetAttribute("Nests"), 0
+	if type(s) ~= "string" then return 0 end
+	local now = workspace:GetServerTimeNow()
+	for at in s:gmatch(",(%d+)") do if tonumber(at) <= now then n += 1 end end
+	return n
+end
+
 -- a small still card picture for any crate item
 function Preview.thumb(parent, it, size, zoom)
 	if it.kind == "skin" then return weaponThumb(parent, it.weapon, it.id, size, zoom) end
@@ -1522,9 +1604,11 @@ local SCREEN_DEF = {
 	SERVERS    = {title = "SERVERS",  icon = "Tasks"},
 	SETTINGS   = {title = "SETTINGS", icon = "Settings"},
 	PASS       = {title = "SEASON PASS", icon = "Pass"},
+	HATCHERY   = {title = "HATCHERY", icon = "Hatchery"},
 }
 -- old tab names and the names other scripts send over the bus
-local ALIAS = {LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY"}
+local ALIAS = {LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
+	EGGS = "HATCHERY", PETS = "HATCHERY", COMPANIONS = "HATCHERY"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
 	local f = clearFrame(content)
@@ -1901,6 +1985,58 @@ do
 		local all = bigBtn(c, "ALL TASKS  ›", COL.BLUE, function() selectTab("TASKS") end)
 		all.Size = UDim2.new(1, 0, 0, 38)
 
+		-- playtime gifts: the next one, its countdown, CLAIM
+		do
+			local G = Catalog.GIFTS.gifts
+			local gp = panel(leftList, nil)
+			local hd = clearFrame(gp); hd.Size = UDim2.new(1, 0, 0, 26); hd.LayoutOrder = 0
+			local gt = title(hd, "🎁  PLAYTIME GIFTS", 18); gt.Size = UDim2.new(1, 0, 0, 24)
+			local claimed, cnt = {}, 0
+			for k in (player:GetAttribute("GiftsClaimed") or ""):gmatch("[^,]+") do claimed[k] = true; cnt += 1 end
+			local played = player:GetAttribute("PlaySeconds") or 0
+			local at = os.clock()
+			local nextI
+			for i in ipairs(G) do if not claimed[tostring(i)] then nextI = i; break end end
+			if not nextI then
+				dim(gp, "All " .. #G .. " claimed today. New gifts tomorrow!", 13)
+			else
+				local g = G[nextI]
+				local prev = nextI > 1 and G[nextI - 1].minutes * 60 or 0
+				local gr = row(gp, string.format("%d MIN  ·  %s", g.minutes, Preview.rewardName(g.reward)), "", false, nil, COL.DIM)
+				local rl
+				for _, ch in ipairs(gr:GetChildren()) do if ch:IsA("TextLabel") and ch.TextXAlignment == Enum.TextXAlignment.Right then rl = ch end end
+				if not rl then rl = label(gr, "", 12, FONT, COL.DIM); rl.AnchorPoint = Vector2.new(1, 0); rl.Position = UDim2.new(1, 0, 0, 0); rl.Size = UDim2.new(0.4, 0, 1, 0); rl.TextXAlignment = Enum.TextXAlignment.Right end
+				local bh = clearFrame(gp); bh.Size = UDim2.new(1, 0, 0, 12); bh.LayoutOrder = nextOrder()
+				local _, fill = progressBar(bh, 0, COL.BLUE, nil, 12)
+				local claimB = bigBtn(gp, "CLAIM GIFT", COL.GREEN, function()
+					local r = call("GiftClaim", nextI)
+					toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+					if r.profile then state.profile = r.profile; refreshWallet() end
+					if r.ok and r.gifts then
+						local list = {}
+						for k in pairs(r.gifts.claimed or {}) do table.insert(list, k) end
+						table.sort(list)
+						player:SetAttribute("GiftsClaimed", table.concat(list, ","))
+					end
+					renderLeft()
+				end)
+				claimB.Size = UDim2.new(1, 0, 0, 38)
+				dim(gp, string.format("%d / %d claimed today  ·  every minute you play counts", cnt, #G), 12)
+				local function tick()
+					local now = played + (os.clock() - at)
+					local left = g.minutes * 60 - now
+					rl.Text = left <= 0 and "READY!" or Preview.clock(left)
+					rl.TextColor3 = left <= 0 and COL.GOOD or COL.DIM
+					local fr = math.clamp((now - prev) / math.max(1, g.minutes * 60 - prev), 0, 1)
+					fill.Size = UDim2.new(fr, 0, 1, 0); fill.Visible = fr > 0.001
+					fill.BackgroundColor3 = left <= 0 and COL.GREEN or COL.BLUE
+					claimB.Visible = left <= 0
+				end
+				tick()
+				task.spawn(function() while gp.Parent do task.wait(1); tick() end end)
+			end
+		end
+
 		local f = panel(leftList, "FRIENDS")
 		local shown = 0
 		local sorted = {}
@@ -2015,9 +2151,9 @@ do
 	local dock = clearFrame(lobby)
 	dock.AnchorPoint = Vector2.new(0, 1)
 	dock.Position = UDim2.new(0, 24, 1, -22)
-	dock.Size = UDim2.fromOffset(7 * 112 + 6 * 14, 112)
+	dock.Size = UDim2.fromOffset(8 * 112 + 7 * 14, 112)
 	hlist(dock, 14)
-	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
+	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"}, {"HATCHERY", "Hatchery", "HATCHERY"},
 		{"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
@@ -2125,6 +2261,8 @@ do
 			for _, ct in ipairs(state.contracts or {}) do if not ct.done and not ct.weekly then left += 1 end end
 			tb.Visible = left > 0; tb.Text = tostring(left)
 		end
+		local hb = dockBadges.HATCHERY
+		if hb then local n = Preview.readyEggs(); hb.Visible = n > 0; hb.Text = tostring(n) end
 	end
 
 	render.PLAY = function()
@@ -3938,6 +4076,16 @@ end
 -- a reward's look inside a card: a skin on its weapon, a currency, a crate, a title
 local function rewardVisual(parent, r, h)
 	h = h or 110
+	if r.egg and Catalog.EGG[r.egg] then
+		local e = Catalog.EGG[r.egg]
+		local th = Preview.egg(parent, e.id, UDim2.new(1, -8, 0, h), nil, true); th.Position = UDim2.fromOffset(4, 4)
+		return e.name, RARITY_COL[e.rarity], "EGG"
+	end
+	if r.companion and Catalog.COMPANION[r.companion] then
+		local c = Catalog.COMPANION[r.companion]
+		local th = Preview.companion(parent, c.id, UDim2.new(1, -8, 0, h), true); th.Position = UDim2.fromOffset(4, 4)
+		return c.name, RARITY_COL[c.rarity], "COMPANION"
+	end
 	if r.killfx and Catalog.KILLFX_BY[r.killfx] then
 		local f = Catalog.KILLFX_BY[r.killfx]
 		local th = Preview.killFx(parent, f.id, UDim2.new(1, -8, 0, h), 0.3); th.Position = UDim2.fromOffset(4, 4)
@@ -4155,6 +4303,258 @@ do
 			local x = math.max(0, ((first or (ps.tier or 0)) - 2) * 170)
 			sf.CanvasPosition = Vector2.new(x, 0)
 		end)
+		renderSide()
+	end
+end
+
+--------------------------------------------------------------------
+--  HATCHERY — your nests, your eggs, the egg shelf and your companions
+--  (Economy ▸ Pastimes on the server; the Hatchery itself stands in the
+--  Courtyard, where your eggs hatch faster while you stay)
+--------------------------------------------------------------------
+do
+	local f = tabFrame.HATCHERY
+	local tabs = clearFrame(f); tabs.Size = UDim2.new(1, 0, 0, 46)
+	hlist(tabs, 10)
+	local body = clearFrame(f); body.Position = UDim2.new(0, 0, 0, 58); body.Size = UDim2.new(1, 0, 1, -58)
+	local TABS = {{"nests", "NESTS"}, {"companions", "COMPANIONS"}}
+	ui.hatchTab = ui.hatchTab or "nests"
+	local E = Catalog.EGGS
+	local busy = false
+
+	local function skipCost(left) return math.max(E.skipMin or 3, math.ceil(left / 3600 * (E.skipCrowns or 10))) end
+	local function apply(r)
+		if r.profile then state.profile = r.profile; refreshWallet() end
+		if r.hatchery then state.hatchery = r.hatchery end
+	end
+
+	local function hatch(i, now)
+		if busy then return end
+		busy = true
+		local r = call("Hatch", i, now == true)
+		busy = false
+		apply(r)
+		if not r.ok or not r.result then toast(r.msg or "", COL.BAD); render.HATCHERY(); return end
+		local res = r.result
+		local line = res.dup and ((res.refund or 0) > 0 and string.format("%s again: +%s Marks.", res.name, fmt(res.refund)) or string.format("%s again: now ★%d.", res.name, res.stars or 1))
+			or "A new companion! It follows you around the Courtyard and your matches."
+		local out = state.profile and state.profile.companion or ""
+		local buttons = {}
+		if out ~= res.id then
+			table.insert(buttons, {"TAKE IT ALONG", COL.GREEN, function()
+				closeModal()
+				local r2 = call("Companion", res.id); apply(r2)
+				toast(r2.msg or "", r2.ok and COL.GOOD or COL.BAD)
+				ui.hatchTab = "companions"; ui.compSel = res.id; render.HATCHERY()
+			end})
+		end
+		modal(string.upper(res.rarity) .. "!  " .. res.name, line, buttons, function(box)
+			local v = Preview.companion(box, res.id, UDim2.new(1, 0, 0, 260), false, res.stars); v.LayoutOrder = 5
+			border(v, RARITY_COL[res.rarity] or COL.DIM, 3, 0)
+		end, 520)
+		render.HATCHERY()
+	end
+
+	local function place(eggId, nest)
+		local r = call("EggPlace", eggId, nest)
+		apply(r)
+		toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+		render.HATCHERY()
+	end
+	-- an empty nest: choose which egg to set (or the only kind you have)
+	local function pickEgg(nest)
+		local h = state.hatchery or {}
+		local have = {}
+		for _, e in ipairs(E.eggs) do if (h.eggs or {})[e.id] then table.insert(have, e) end end
+		if #have == 0 then toast("No eggs yet: buy one on the shelf, or earn them from gifts, login days and the pass", COL.BAD); return end
+		if #have == 1 then place(have[1].id, nest); return end
+		local buttons = {}
+		for _, e in ipairs(have) do table.insert(buttons, {string.upper(e.name) .. "  ×" .. h.eggs[e.id], RARITY_COL[e.rarity] or COL.BLUE, function() closeModal(); place(e.id, nest) end}) end
+		modal("SET AN EGG IN NEST " .. nest, "Which egg?", buttons)
+	end
+
+	local function nests()
+		local h = state.hatchery or {nests = {}, eggs = {}, count = E.nests}
+		local count = h.count or E.nests
+		local left = clearFrame(body); left.Size = UDim2.new(1, -424, 1, 0)
+		local row3 = clearFrame(left); row3.Size = UDim2.new(1, 0, 0, 476)
+		hlist(row3, 14)
+		for i = 1, count do
+			local nest = h.nests and h.nests[tostring(i)]
+			local e = nest and Catalog.EGG[nest.egg]
+			local card = frame(row3, COL.GLASS, 16); card.BackgroundTransparency = 0.1
+			card.Size = UDim2.new(1 / count, -10, 1, 0); card.LayoutOrder = i
+			border(card, e and (RARITY_COL[e.rarity] or WHITE) or WHITE, e and 2.5 or 1.5, e and 0.15 or 0.85)
+			padding(card, 12, 12, 12, 12)
+			local tl = title(card, "NEST " .. i, 15, COL.DIM); tl.Size = UDim2.new(1, 0, 0, 20)
+			if e then
+				local readyAt = os.clock() + (nest.left or 0)
+				local view = Preview.egg(card, e.id, UDim2.new(1, 0, 0, 232), function() return (readyAt - os.clock()) <= 0 and 0.8 or 0.06 end)
+				view.Position = UDim2.fromOffset(0, 26)
+				local nm = title(card, e.name, 22); nm.Position = UDim2.fromOffset(0, 266); nm.Size = UDim2.new(1, 0, 0, 26); nm.TextTruncate = Enum.TextTruncate.AtEnd
+				local tag = rarityTag(card, e.rarity); tag.Position = UDim2.fromOffset(0, 296)
+				local barH = clearFrame(card); barH.Position = UDim2.fromOffset(0, 326); barH.Size = UDim2.new(1, 0, 0, 26)
+				local track, fill = progressBar(barH, 0, COL.GOLD, "", 26)
+				local txt = track:FindFirstChildOfClass("TextLabel")
+				local act, actB = fatButton(card, "", COL.GREEN, 20)
+				act.AnchorPoint = Vector2.new(0, 1); act.Position = UDim2.new(0, 0, 1, 0); act.Size = UDim2.new(1, 0, 0, 56)
+				local function tick()
+					local leftS = readyAt - os.clock()
+					local fr = 1 - math.clamp(leftS / math.max(nest.need or 1, 1), 0, 1)
+					fill.Size = UDim2.new(fr, 0, 1, 0); fill.Visible = fr > 0.001
+					if txt then txt.Text = leftS <= 0 and "READY!" or Preview.clock(leftS) end
+					if leftS <= 0 then paintFat(act, actB, "HATCH!", COL.GREEN)
+					else paintFat(act, actB, "HATCH NOW  ·  " .. skipCost(leftS) .. " CROWNS", Color3.fromRGB(150, 120, 40)) end
+				end
+				tick()
+				task.spawn(function() while card.Parent do task.wait(0.5); tick() end end)
+				actB.Activated:Connect(function()
+					local leftS = readyAt - os.clock()
+					if leftS <= 0 then hatch(i, false); return end
+					local cost = skipCost(leftS)
+					modal("HATCH IT NOW?", string.format("%s left. Skip the wait for %d Crowns, or stand by the Hatchery in the Courtyard: eggs hatch %d× faster there.", Preview.clock(leftS), cost, E.boost or 2),
+						{{"HATCH NOW  ·  " .. cost .. " CROWNS", COL.GOLD, function() closeModal(); hatch(i, true) end}})
+				end)
+			else
+				local hole = frame(card, Color3.fromRGB(14, 16, 26), 14); hole.Position = UDim2.fromOffset(0, 26); hole.Size = UDim2.new(1, 0, 0, 232)
+				local straw = title(hole, "an empty nest", 18, COL.DIM); straw.Size = UDim2.fromScale(1, 1); straw.TextXAlignment = Enum.TextXAlignment.Center
+				local hint = dim(card, "Set an egg here and it starts warming, even while you're away.", 13)
+				hint.Position = UDim2.fromOffset(0, 270); hint.Size = UDim2.new(1, 0, 0, 40)
+				local act, actB = fatButton(card, "SET AN EGG", COL.BLUE, 20)
+				act.AnchorPoint = Vector2.new(0, 1); act.Position = UDim2.new(0, 0, 1, 0); act.Size = UDim2.new(1, 0, 0, 56)
+				actB.Activated:Connect(function() pickEgg(i) end)
+			end
+		end
+		local tip = dim(left, string.format("Eggs keep warming while you're away or in a match. Stand by the Hatchery in the Courtyard and they hatch %d× faster. A hatched egg gives a companion that follows you around: looks only, never stats.", E.boost or 2), 14)
+		tip.Position = UDim2.fromOffset(4, 490); tip.Size = UDim2.new(1, -8, 0, 60)
+
+		-- right: your eggs, then the shelf
+		local right = clearFrame(body); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 410, 1, 0)
+		local list = scroll(right, 10)
+		local inv = panel(list, "YOUR EGGS")
+		local any = false
+		for _, eg in ipairs(E.eggs) do
+			local n = h.eggs and h.eggs[eg.id]
+			if n and n > 0 then
+				any = true
+				row(inv, eg.name .. "  ×" .. n, "SET IN A NEST  ›", false, function() place(eg.id, nil) end, RARITY_COL[eg.rarity])
+			end
+		end
+		if not any then dim(inv, "None waiting. Buy one below, or earn them: playtime gifts, login days, the season pass.", 13) end
+		local shelf = panel(list, "THE SHELF")
+		for _, eg in ipairs(E.eggs) do
+			local c = frame(shelf, COL.GLASS2, 12); c.BackgroundTransparency = 0.1; c.Size = UDim2.new(1, 0, 0, 96); c.LayoutOrder = nextOrder()
+			border(c, RARITY_COL[eg.rarity] or WHITE, 1.5, 0.5)
+			local th = Preview.egg(c, eg.id, UDim2.fromOffset(84, 84), nil, true); th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
+			local nm = title(c, eg.name, 17, RARITY_COL[eg.rarity]); nm.Position = UDim2.fromOffset(98, 8); nm.Size = UDim2.new(1, -230, 0, 20); nm.TextTruncate = Enum.TextTruncate.AtEnd
+			local mins = eg.minutes >= 60 and (math.floor(eg.minutes / 60 * 10) / 10 .. " h") or (eg.minutes .. " min")
+			local odds = {}
+			for _, r in ipairs(Catalog.RARITIES) do if eg.odds[r] then table.insert(odds, eg.odds[r] .. "% " .. r) end end
+			local d1 = label(c, "hatches in " .. mins .. "  ·  " .. table.concat(odds, " · "), 11, FONT_BODY, COL.DIM)
+			d1.Position = UDim2.fromOffset(98, 30); d1.Size = UDim2.new(1, -230, 0, 56); d1.TextYAlignment = Enum.TextYAlignment.Top
+			local price = eg.marks and (fmt(eg.marks) .. " MARKS") or (eg.crowns and (fmt(eg.crowns) .. " CROWNS"))
+			if price then
+				local b = button(c, "BUY  ·  " .. price, 13, eg.crowns and COL.GOLD or COL.GREEN)
+				b.AnchorPoint = Vector2.new(1, 0.5); b.Position = UDim2.new(1, -8, 0.5, 0); b.Size = UDim2.fromOffset(120, 44)
+				b.Activated:Connect(function()
+					local r = call("EggBuy", eg.id); apply(r)
+					toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+					render.HATCHERY()
+				end)
+			else
+				local t = label(c, "gifts, login days and the pass", 11, FONT, COL.ACCENT)
+				t.AnchorPoint = Vector2.new(1, 0.5); t.Position = UDim2.new(1, -8, 0.5, 0); t.Size = UDim2.fromOffset(120, 44); t.TextXAlignment = Enum.TextXAlignment.Center
+			end
+		end
+	end
+
+	local function companions()
+		local p = state.profile or {}
+		local owned = (p.owned and p.owned.companions) or {}
+		local stars = p.stars or {}
+		local out = p.companion or ""
+		local list = {}
+		for _, c in ipairs(Catalog.COMPANIONS) do table.insert(list, c) end
+		table.sort(list, function(a, b)
+			local ha, hb = owned[a.id] == true, owned[b.id] == true
+			if ha ~= hb then return ha end
+			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
+			return a.name < b.name
+		end)
+		if not Catalog.COMPANION[ui.compSel or ""] then ui.compSel = (out ~= "" and out) or list[1].id end
+		local sel = Catalog.COMPANION[ui.compSel]
+		local have = owned[sel.id] == true
+		-- left: everyone there is to find
+		local left = clearFrame(body); left.Size = UDim2.new(1, -520, 1, 0)
+		local sf = Instance.new("ScrollingFrame")
+		sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0; sf.Size = UDim2.fromScale(1, 1)
+		sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.Y; sf.ScrollBarThickness = 5; sf.ScrollBarImageColor3 = COL.DIM
+		sf.Parent = left
+		local grid = Instance.new("UIGridLayout", sf)
+		grid.CellSize = UDim2.fromOffset(150, 176); grid.CellPadding = UDim2.fromOffset(10, 10); grid.SortOrder = Enum.SortOrder.LayoutOrder
+		local found = 0
+		for i, c in ipairs(list) do
+			local mine = owned[c.id] == true
+			if mine then found += 1 end
+			local on = c.id == sel.id
+			local cb = button(sf, "", 12, on and COL.BLUE or COL.GLASS2)
+			cb.AutoButtonColor = false; cb.LayoutOrder = i
+			border(cb, RARITY_COL[c.rarity] or COL.DIM, on and 3 or 2, on and 0 or (mine and 0.3 or 0.7))
+			local th = Preview.companion(cb, c.id, UDim2.new(1, -12, 0, 116), true, stars[c.id], not mine); th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
+			local nm = title(cb, mine and c.name or "???", 13); nm.Position = UDim2.fromOffset(6, 124); nm.Size = UDim2.new(1, -12, 0, 16); nm.TextXAlignment = Enum.TextXAlignment.Center; nm.TextTruncate = Enum.TextTruncate.AtEnd
+			local st = mine and (string.rep("★", stars[c.id] or 1) .. string.rep("☆", (E.stars or 5) - (stars[c.id] or 1))) or string.upper(c.rarity)
+			local sl = title(cb, st, 12, mine and COL.GOLD or (RARITY_COL[c.rarity] or COL.DIM)); sl.Position = UDim2.fromOffset(6, 144); sl.Size = UDim2.new(1, -12, 0, 16); sl.TextXAlignment = Enum.TextXAlignment.Center
+			if out == c.id then local o = label(cb, "OUT", 11, FONT_BLACK, COL.GOOD); o.Position = UDim2.fromOffset(10, 8); o.Size = UDim2.fromOffset(40, 14) end
+			cb.Activated:Connect(function() ui.compSel = c.id; render.HATCHERY() end)
+		end
+		-- right: the chosen one on a stage
+		local right = clearFrame(body); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 506, 1, 0)
+		local stage = Preview.companion(right, sel.id, UDim2.new(1, 0, 0, 320), false, stars[sel.id], not have)
+		local nm = title(stage, have and sel.name or "???", 30); nm.Position = UDim2.fromOffset(16, 10); nm.Size = UDim2.new(1, -32, 0, 34)
+		local tag = rarityTag(stage, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -14, 0, 14)
+		local cnt = title(stage, string.format("FOUND %d / %d", found, #list), 13, COL.DIM); cnt.AnchorPoint = Vector2.new(0, 1); cnt.Position = UDim2.new(0, 16, 1, -10); cnt.Size = UDim2.fromOffset(200, 16)
+		local info = clearFrame(right); info.Position = UDim2.fromOffset(0, 332); info.Size = UDim2.new(1, 0, 1, -332)
+		local il = scroll(info, 8)
+		local pnl = panel(il, nil)
+		dim(pnl, have and (sel.description or "") or "Not found yet.", 14)
+		local src = title(pnl, string.upper(Catalog.companionSource(sel)), 13, COL.ACCENT); src.Size = UDim2.new(1, 0, 0, 18); src.LayoutOrder = nextOrder()
+		if have then
+			local s2 = stars[sel.id] or 1
+			local starT = title(pnl, string.rep("★", s2) .. string.rep("☆", (E.stars or 5) - s2) .. "   duplicates add a star; five stars sparkle", 13, COL.GOLD)
+			starT.Size = UDim2.new(1, 0, 0, 18); starT.LayoutOrder = nextOrder()
+			local acts = panel(il, nil, true)
+			if out == sel.id then
+				local hb, b = fatButton(acts, "SEND IT HOME", COL.GLASS2, 20); hb.Size = UDim2.new(1, 0, 0, 56); hb.LayoutOrder = nextOrder()
+				b.Activated:Connect(function() local r = call("Companion", ""); apply(r); toast(r.msg or "", r.ok and COL.GOOD or COL.BAD); render.HATCHERY() end)
+			else
+				local hb, b = fatButton(acts, "TAKE IT ALONG", COL.GREEN, 20); hb.Size = UDim2.new(1, 0, 0, 56); hb.LayoutOrder = nextOrder()
+				b.Activated:Connect(function() local r = call("Companion", sel.id); apply(r); toast(r.msg or "", r.ok and COL.GOOD or COL.BAD); render.HATCHERY() end)
+			end
+			dim(acts, "It follows you around the Courtyard and your matches. SETTINGS › Companions hides other people's.", 12)
+		else
+			local acts = panel(il, nil, true)
+			local hb, b = fatButton(acts, "HATCH EGGS TO FIND IT", COL.BLUE, 18); hb.Size = UDim2.new(1, 0, 0, 52); hb.LayoutOrder = nextOrder()
+			b.Activated:Connect(function() ui.hatchTab = "nests"; render.HATCHERY() end)
+		end
+	end
+
+	local function renderTabs()
+		clear(tabs)
+		for i, t in ipairs(TABS) do
+			local on = ui.hatchTab == t[1]
+			local h2, b = fatButton(tabs, t[2], on and COL.BLUE or COL.GLASS2, 20)
+			h2.Size = UDim2.fromOffset(210, 46); h2.LayoutOrder = i
+			if not on then b.TextColor3 = COL.DIM end
+			b.Activated:Connect(function() ui.hatchTab = t[1]; render.HATCHERY() end)
+		end
+	end
+
+	render.HATCHERY = function()
+		local r = call("Hatchery")
+		if r.ok then state.hatchery = r.hatchery; state.gifts = r.gifts end
+		renderTabs()
+		clear(body)
+		if ui.hatchTab == "companions" then companions() else nests() end
 		renderSide()
 	end
 end

@@ -1,0 +1,424 @@
+--[[ COMPANIONS — builds the little creatures of Catalog ▸ Companions (and the
+     Hatchery's eggs) out of parts, and moves them. Every part is anchored and
+     placed by hand each frame (no physics), so the same rig works in the world
+     and inside a menu ViewportFrame.
+
+       Companions.build(id, opts)            -> rig   opts.world = particles, opts.stars
+       Companions.pose(rig, cf, t, moving)   place the rig with its root at cf;
+                                             moving 0..1 drives the walk / hop / flap
+       rig.model  rig.flying  rig.foot (studs from the root down to the ground)
+       Companions.egg(eggId, opts)           -> egg rig (a shell with spots)
+       Companions.poseEgg(egg, cf, t, wobble)  cf = the egg's bottom; wobble 0..1
+       Companions.BODIES                     the body names a companion may use
+
+     Bodies: bird (flies; style walker walks), beast (four legs), hopper (hops),
+     wisp (floats, sparks circle it), drake (flies on bat wings). ]]
+
+local Catalog = require(script.Parent:WaitForChild("Catalog"))
+
+local Companions = {}
+local SCALE = 1.25          -- a size-1 companion is about knee to waist high
+local DARK = Color3.fromRGB(22, 22, 28)
+local rad = math.rad
+local sin, cos, abs = math.sin, math.cos, math.abs
+
+local TEX = {
+	spark = "rbxasset://textures/particles/sparkles_main.dds",
+	fire = "rbxasset://textures/particles/fire_main.dds",
+	smoke = "rbxasset://textures/particles/smoke_main.dds",
+}
+
+--------------------------------------------------------------------
+--  PART SPECS: {name, shape, size, offset CFrame, colour, opts}
+--  shape: block · ball (a sphere mesh, any proportions) · wedge
+--  opts.hinge (Vector3, root space) + opts.ch (animation channel)
+--------------------------------------------------------------------
+local function S(list, name, shape, size, offset, color, o)
+	o = o or {}
+	table.insert(list, {name = name, shape = shape, size = size, offset = typeof(offset) == "Vector3" and CFrame.new(offset) or offset,
+		color = color, neon = o.neon, transp = o.transp, hinge = o.hinge, ch = o.ch, phase = o.phase, glass = o.glass})
+end
+local V = Vector3.new
+local CF = CFrame.new
+local A = CFrame.Angles
+
+local BODY = {}
+
+-- a round little bird: flaps (or, a walker, struts)
+BODY.bird = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	local owl, walker = d.style == "owl", d.style == "walker"
+	S(L, "Body", "ball", V(1.0, 0.92, 1.25), V(0, 0, 0), main)
+	S(L, "Belly", "ball", V(0.82, 0.72, 0.9), V(0, -0.12, -0.16), second)
+	local headY, headZ, headS = owl and 0.5 or 0.55, owl and -0.28 or -0.5, owl and 0.98 or 0.72
+	S(L, "Head", "ball", V(headS, headS * (owl and 0.92 or 1), headS), V(0, headY, headZ), main, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+	if owl then
+		S(L, "Face", "ball", V(0.78, 0.64, 0.3), V(0, headY - 0.02, headZ - 0.38), second, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+		for _, x in ipairs({-0.18, 0.18}) do
+			S(L, "Eye", "ball", V(0.24, 0.24, 0.1), V(x, headY + 0.04, headZ - 0.53), accent, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+			S(L, "Pupil", "ball", V(0.11, 0.11, 0.06), V(x, headY + 0.04, headZ - 0.58), DARK, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+		end
+		S(L, "Beak", "wedge", V(0.12, 0.14, 0.12), CF(0, headY - 0.14, headZ - 0.56), Color3.fromRGB(230, 190, 90), {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+	else
+		for _, x in ipairs({-0.2, 0.2}) do
+			S(L, "Eye", "ball", V(0.14, 0.14, 0.08), V(x, headY + 0.08, headZ - 0.32), DARK, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+		end
+		local beakCol = walker and Color3.fromRGB(240, 192, 64) or accent
+		S(L, "Beak", "wedge", V(0.18, 0.18, 0.32), CF(0, headY - 0.04, headZ - 0.46), beakCol, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+	end
+	if walker then
+		-- the comb and wattle
+		S(L, "Comb", "block", V(0.08, 0.2, 0.34), CF(0, headY + 0.42, headZ + 0.02), accent, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+		S(L, "Wattle", "ball", V(0.1, 0.18, 0.1), V(0, headY - 0.22, headZ - 0.36), accent, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+	end
+	for _, side in ipairs({-1, 1}) do
+		S(L, side < 0 and "WingL" or "WingR", "ball", V(0.16, 0.62, 0.92), CF(side * 0.52, 0.06, 0.06), second,
+			{ch = side < 0 and "wingL" or "wingR", hinge = V(side * 0.42, 0.3, 0.06)})
+		S(L, "Leg", "block", V(0.09, 0.42, 0.09), V(side * 0.2, -0.6, 0.02), Color3.fromRGB(230, 170, 70),
+			{ch = side < 0 and "legL" or "legR", hinge = V(side * 0.2, -0.4, 0.02)})
+		S(L, "Foot", "block", V(0.18, 0.06, 0.24), V(side * 0.2, -0.8, -0.06), Color3.fromRGB(230, 170, 70),
+			{ch = side < 0 and "legL" or "legR", hinge = V(side * 0.2, -0.4, 0.02)})
+	end
+	S(L, "Tail", "wedge", V(0.5, 0.14, 0.56), CF(0, 0.14, 0.78) * A(rad(-20), math.pi, 0), second, {ch = "tailBob", hinge = V(0, 0.1, 0.55)})
+	return L, {flying = not walker, foot = 0.83, flap = walker and 0 or 1}
+end
+
+-- four legs, a tail that wags
+BODY.beast = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	S(L, "Body", "block", V(0.9, 0.78, 1.5), V(0, 0, 0), main)
+	S(L, "Belly", "block", V(0.76, 0.2, 1.2), V(0, -0.36, -0.02), second)
+	local hy, hz = 0.52, -0.95
+	local H = {ch = "head", hinge = V(0, hy - 0.2, hz + 0.25)}
+	S(L, "Head", "block", V(0.82, 0.76, 0.78), V(0, hy, hz), main, H)
+	S(L, "Snout", "block", V(0.46, 0.34, 0.36), V(0, hy - 0.16, hz - 0.5), second, H)
+	S(L, "Nose", "block", V(0.18, 0.14, 0.08), V(0, hy - 0.04, hz - 0.7), DARK, H)
+	for _, side in ipairs({-1, 1}) do
+		S(L, "Eye", "block", V(0.15, 0.15, 0.05), V(side * 0.21, hy + 0.1, hz - 0.4), accent, H)
+		if d.style ~= "antlers" then
+			S(L, "Ear", "wedge", V(0.2, 0.34, 0.26), CF(side * 0.27, hy + 0.54, hz + 0.06) * A(0, rad(side * 90), 0), main, H)
+		else
+			S(L, "Ear", "wedge", V(0.12, 0.22, 0.3), CF(side * 0.42, hy + 0.3, hz + 0.1) * A(0, rad(side * 90), rad(side * -40)), main, H)
+		end
+		-- legs: front pair at -z, back pair at +z
+		for _, z in ipairs({-0.5, 0.5}) do
+			local ch = (z < 0 and "legF" or "legB") .. (side < 0 and "L" or "R")
+			S(L, "Leg", "block", V(0.26, 0.62, 0.26), V(side * 0.3, -0.62, z), main, {ch = ch, hinge = V(side * 0.3, -0.34, z)})
+			S(L, "Paw", "block", V(0.28, 0.12, 0.32), V(side * 0.3, -0.9, z - 0.03), second, {ch = ch, hinge = V(side * 0.3, -0.34, z)})
+		end
+	end
+	S(L, "Tail", "block", V(0.18, 0.18, 0.78), CF(0, 0.26, 1.02) * A(rad(32), 0, 0), main, {ch = "tail", hinge = V(0, 0.18, 0.74)})
+	S(L, "TailTip", "block", V(0.2, 0.2, 0.22), CF(0, 0.52, 1.4) * A(rad(32), 0, 0), second, {ch = "tail", hinge = V(0, 0.18, 0.74)})
+	if d.style == "mane" then
+		S(L, "Mane", "block", V(1.12, 1.04, 0.42), V(0, hy + 0.04, hz + 0.42), second, H)
+		S(L, "Tuft", "block", V(0.5, 0.2, 0.5), V(0, hy + 0.46, hz + 0.12), second, H)
+	elseif d.style == "antlers" then
+		local g = d.glow or accent
+		for _, side in ipairs({-1, 1}) do
+			S(L, "Antler", "block", V(0.1, 0.62, 0.1), CF(side * 0.24, hy + 0.66, hz + 0.08) * A(0, 0, rad(side * -24)), g, {neon = true, ch = "head", hinge = H.hinge})
+			S(L, "Tine", "block", V(0.08, 0.36, 0.08), CF(side * 0.4, hy + 0.92, hz - 0.04) * A(rad(-30), 0, rad(side * -50)), g, {neon = true, ch = "head", hinge = H.hinge})
+			S(L, "Tine", "block", V(0.08, 0.3, 0.08), CF(side * 0.32, hy + 1.02, hz + 0.18) * A(rad(30), 0, rad(side * -10)), g, {neon = true, ch = "head", hinge = H.hinge})
+		end
+	elseif d.style == "crown" then
+		S(L, "Collar", "block", V(0.86, 0.14, 0.3), V(0, hy - 0.38, hz + 0.38), accent, H)
+		S(L, "CrownBand", "block", V(0.5, 0.12, 0.5), V(0, hy + 0.44, hz + 0.02), accent, H)
+		for _, x in ipairs({-0.18, 0, 0.18}) do S(L, "CrownTip", "wedge", V(0.12, 0.2, 0.12), CF(x, hy + 0.6, hz - 0.2) * A(0, math.pi, 0), accent, H) end
+	end
+	return L, {flying = false, foot = 0.96 * 1, flap = 0}
+end
+
+-- hops: a round body, big back legs
+BODY.hopper = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	local hare = d.style == "longears"
+	S(L, "Body", "ball", V(1.0, 0.78, 1.12), V(0, 0, 0.05), main)
+	S(L, "Belly", "ball", V(0.78, 0.52, 0.82), V(0, -0.14, -0.14), second)
+	if hare then
+		local H = {ch = "head", hinge = V(0, 0.3, -0.45)}
+		S(L, "Head", "ball", V(0.62, 0.6, 0.66), V(0, 0.48, -0.56), main, H)
+		for _, side in ipairs({-1, 1}) do
+			S(L, "Ear", "block", V(0.15, 0.68, 0.08), CF(side * 0.14, 1.02, -0.44) * A(rad(-12), 0, rad(side * -8)), main, H)
+			S(L, "EarIn", "block", V(0.08, 0.5, 0.04), CF(side * 0.14, 1.0, -0.49) * A(rad(-12), 0, rad(side * -8)), second, H)
+			S(L, "Eye", "ball", V(0.12, 0.12, 0.08), V(side * 0.19, 0.56, -0.84), DARK, H)
+		end
+		S(L, "Nose", "ball", V(0.1, 0.08, 0.06), V(0, 0.44, -0.89), Color3.fromRGB(220, 150, 150), H)
+		S(L, "Tail", "ball", V(0.3, 0.3, 0.3), V(0, 0.12, 0.62), second)
+	else
+		for _, side in ipairs({-1, 1}) do
+			S(L, "EyeBump", "ball", V(0.3, 0.3, 0.3), V(side * 0.24, 0.38, -0.36), main, {ch = "head", hinge = V(0, 0.2, -0.3)})
+			S(L, "Eye", "ball", V(0.16, 0.16, 0.1), V(side * 0.26, 0.44, -0.5), accent, {ch = "head", hinge = V(0, 0.2, -0.3)})
+		end
+		S(L, "Mouth", "block", V(0.62, 0.04, 0.04), V(0, 0.06, -0.55), DARK)
+	end
+	for _, side in ipairs({-1, 1}) do
+		S(L, "BackLeg", "ball", V(0.32, 0.32, 0.66), V(side * 0.44, -0.28, 0.2), main, {ch = "hopLeg", hinge = V(side * 0.44, -0.2, 0)})
+		S(L, "BackFoot", "block", V(0.26, 0.08, 0.42), V(side * 0.46, -0.4, -0.06), second, {ch = "hopLeg", hinge = V(side * 0.44, -0.2, 0)})
+		S(L, "FrontLeg", "block", V(0.14, 0.32, 0.14), V(side * 0.26, -0.3, -0.4), main)
+	end
+	return L, {flying = false, foot = 0.44, flap = 0, hop = true}
+end
+
+-- a floating light; sparks circle it
+BODY.wisp = function(d)
+	local L = {}
+	local g = d.glow or d.main
+	S(L, "Core", "ball", V(0.74, 0.74, 0.74), V(0, 0, 0), g, {neon = true})
+	S(L, "Shell", "ball", V(1.18, 1.18, 1.18), V(0, 0, 0), d.second, {transp = 0.62, glass = true})
+	S(L, "Tail", "ball", V(0.5, 0.5, 0.8), V(0, -0.22, 0.52), d.second, {transp = 0.55, glass = true, ch = "tailBob", hinge = V(0, -0.1, 0.2)})
+	for _, side in ipairs({-1, 1}) do S(L, "Eye", "ball", V(0.12, 0.17, 0.06), V(side * 0.15, 0.08, -0.6), d.accent) end
+	for i = 1, 3 do S(L, "Spark", "ball", V(0.17, 0.17, 0.17), V(0.95, 0, 0), g, {neon = true, ch = "orbit", hinge = V(0, 0, 0), phase = i * 2.094}) end
+	return L, {flying = true, foot = 0.6, flap = 0, float = true}
+end
+
+-- a small dragon on bat wings (style beak: a griffin)
+BODY.drake = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	local griffin = d.style == "beak"
+	S(L, "Body", "ball", V(0.9, 0.82, 1.36), V(0, 0, 0), main)
+	S(L, "Belly", "ball", V(0.66, 0.5, 1.0), V(0, -0.2, -0.06), second, {neon = d.glow ~= nil and not griffin})
+	local hy, hz = 0.6, -0.92
+	local H = {ch = "head", hinge = V(0, hy - 0.3, hz + 0.3)}
+	S(L, "Neck", "block", V(0.36, 0.5, 0.36), CF(0, hy - 0.26, hz + 0.32) * A(rad(-30), 0, 0), griffin and second or main, H)
+	S(L, "Head", "block", V(0.58, 0.52, 0.72), V(0, hy, hz), griffin and second or main, H)
+	if griffin then
+		S(L, "Beak", "wedge", V(0.26, 0.3, 0.36), CF(0, hy - 0.06, hz - 0.5), accent, H)
+	else
+		S(L, "Snout", "block", V(0.42, 0.28, 0.42), V(0, hy - 0.08, hz - 0.5), main, H)
+		for _, side in ipairs({-1, 1}) do
+			S(L, "Horn", "wedge", V(0.12, 0.38, 0.14), CF(side * 0.18, hy + 0.4, hz + 0.24) * A(rad(-35), math.pi, 0), accent, H)
+		end
+	end
+	for _, side in ipairs({-1, 1}) do
+		S(L, "Eye", "block", V(0.12, 0.12, 0.05), V(side * 0.18, hy + 0.08, hz - 0.37), d.glow or DARK, {neon = d.glow ~= nil, ch = "head", hinge = H.hinge})
+		local wch = side < 0 and "wingL" or "wingR"
+		local hinge = V(side * 0.38, 0.32, 0.0)
+		-- the arm along the front edge, the membrane a flat triangle swept back to the tip
+		S(L, "WingArm", "block", V(0.9, 0.1, 0.12), V(side * 0.82, 0.34, -0.26), main, {ch = wch, hinge = hinge})
+		S(L, "Wing", "wedge", V(0.05, 0.95, 0.85), CF(side * 0.85, 0.3, 0.14) * A(0, 0, rad(-side * 90)), second, {ch = wch, hinge = hinge})
+		for _, z in ipairs({-0.38, 0.38}) do
+			S(L, "Leg", "block", V(0.2, 0.34, 0.2), V(side * 0.3, -0.5, z), main, {ch = (z < 0 and "legF" or "legB") .. (side < 0 and "L" or "R"), hinge = V(side * 0.3, -0.34, z)})
+		end
+	end
+	S(L, "Tail1", "block", V(0.3, 0.26, 0.72), CF(0, 0.02, 0.92) * A(rad(10), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
+	S(L, "Tail2", "block", V(0.18, 0.18, 0.6), CF(0, -0.06, 1.5) * A(rad(4), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
+	S(L, "TailTip", "wedge", V(0.34, 0.08, 0.3), CF(0, -0.08, 1.88), griffin and second or accent, {ch = "tail", hinge = V(0, 0.05, 0.6)})
+	return L, {flying = true, foot = 0.7, flap = 0.6}
+end
+
+Companions.BODIES = {}
+for k in pairs(BODY) do table.insert(Companions.BODIES, k) end
+table.sort(Companions.BODIES)
+
+--------------------------------------------------------------------
+--  BUILD
+--------------------------------------------------------------------
+local function makePart(spec, scale, parent)
+	local p = Instance.new(spec.shape == "wedge" and "WedgePart" or "Part")
+	p.Name = spec.name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanTouch = false
+	p.CanQuery = false
+	p.CastShadow = spec.neon ~= true
+	p.Massless = true
+	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	p.Color = spec.color or Color3.new(1, 1, 1)
+	p.Material = spec.neon and Enum.Material.Neon or (spec.glass and Enum.Material.Glass or Enum.Material.SmoothPlastic)
+	p.Transparency = spec.transp or 0
+	if spec.shape == "ball" then
+		p.Size = Vector3.new(1, 1, 1) * 0.2
+		local m = Instance.new("SpecialMesh")
+		m.MeshType = Enum.MeshType.Sphere
+		m.Scale = spec.size * scale / 0.2
+		m.Parent = p
+	else
+		p.Size = spec.size * scale
+	end
+	p.Parent = parent
+	return p
+end
+
+local function scaled(cf, k) return CFrame.new(cf.Position * k) * cf.Rotation end
+
+local function addFx(root, kind, scale)
+	local a = Instance.new("Attachment"); a.Parent = root
+	local e = Instance.new("ParticleEmitter")
+	e.LightEmission = 0.6
+	e.Rate = 6
+	e.Lifetime = NumberRange.new(0.8, 1.4)
+	e.Speed = NumberRange.new(0.3, 1)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.25 * scale), NumberSequenceKeypoint.new(1, 0)})
+	e.Transparency = NumberSequence.new(0.2, 1)
+	if kind == "embers" then
+		e.Texture = TEX.fire; e.Color = ColorSequence.new(Color3.fromRGB(255, 200, 80), Color3.fromRGB(255, 80, 30)); e.Acceleration = Vector3.new(0, 2, 0); e.Rate = 10
+	elseif kind == "frost" then
+		e.Texture = TEX.spark; e.Color = ColorSequence.new(Color3.fromRGB(220, 240, 255)); e.Acceleration = Vector3.new(0, -1.5, 0)
+	elseif kind == "spirit" then
+		e.Texture = TEX.spark; e.Color = ColorSequence.new(Color3.fromRGB(150, 220, 255), Color3.fromRGB(255, 255, 255)); e.Acceleration = Vector3.new(0, 1, 0)
+	else -- sparkle (five stars)
+		e.Texture = TEX.spark; e.Color = ColorSequence.new(Color3.fromRGB(255, 220, 110)); e.Rate = 4
+	end
+	e.Parent = a
+	return e
+end
+
+function Companions.build(id, opts)
+	opts = opts or {}
+	local d = Catalog.COMPANION and Catalog.COMPANION[id]
+	if not d then return nil end
+	local maker = BODY[d.body] or BODY.beast
+	local specs, info = maker(d)
+	local scale = (d.size or 1) * SCALE * (opts.scale or 1)
+	local model = Instance.new("Model")
+	model.Name = "Companion_" .. id
+	local root = Instance.new("Part")
+	root.Name = "Root"
+	root.Transparency = 1
+	root.Size = Vector3.new(0.2, 0.2, 0.2)
+	root.Anchored, root.CanCollide, root.CanTouch, root.CanQuery = true, false, false, false
+	root.Parent = model
+	model.PrimaryPart = root
+	local parts, list = {}, {root}
+	for _, s in ipairs(specs) do
+		local p = makePart(s, scale, model)
+		table.insert(parts, {part = p, rest = scaled(s.offset, scale), hinge = s.hinge and s.hinge * scale or nil, ch = s.ch, phase = s.phase or 0})
+		table.insert(list, p)
+	end
+	if opts.world then
+		if d.fx then addFx(root, d.fx, scale) end
+		if (opts.stars or 0) >= 5 then addFx(root, "sparkle", scale) end
+		if d.glow then
+			local l = Instance.new("PointLight"); l.Color = d.glow; l.Range = 7; l.Brightness = 0.8; l.Parent = root
+		end
+	end
+	return {model = model, root = root, parts = parts, list = list, def = d, flying = info.flying, foot = info.foot * scale,
+		flap = info.flap or 0, hop = info.hop, float = info.float, scale = scale, seed = math.random() * 10}
+end
+
+--------------------------------------------------------------------
+--  POSE: every channel's angle at time t
+--------------------------------------------------------------------
+local function channel(rig, ch, t, moving, phase)
+	if ch == "wingL" or ch == "wingR" then
+		local s = ch == "wingL" and 1 or -1
+		local a
+		if rig.flying then
+			local speed = rig.def.body == "drake" and 9 or 16
+			a = rad(18) + sin(t * speed) * rad(rig.def.body == "drake" and 38 or 52)
+		else
+			a = rad(6) + sin(t * 3) * rad(4) * (1 + moving)
+		end
+		return A(0, 0, s * a)
+	elseif ch == "legL" or ch == "legR" then
+		if rig.flying then return A(rad(30), 0, 0) end
+		local s = ch == "legL" and 1 or -1
+		return A(s * sin(t * 12) * rad(34) * moving, 0, 0)
+	elseif ch == "legFL" or ch == "legBR" or ch == "legFR" or ch == "legBL" then
+		if rig.flying then return A(rad(ch:sub(4, 4) == "F" and -40 or 40), 0, 0) end
+		local s = (ch == "legFL" or ch == "legBR") and 1 or -1
+		return A(s * sin(t * 11) * rad(32) * moving, 0, 0)
+	elseif ch == "tail" then
+		return A(0, sin(t * (moving > 0.2 and 9 or 4)) * rad(moving > 0.2 and 22 or 14), 0)
+	elseif ch == "tailBob" then
+		return A(sin(t * 4) * rad(10), 0, 0)
+	elseif ch == "head" then
+		return A(sin(t * 1.7) * rad(5) + (moving > 0.2 and sin(t * 11) * rad(4) or 0), sin(t * 0.6) * rad(10), 0)
+	elseif ch == "hopLeg" then
+		local k = rig.hopK or 0
+		return A(rad(-50) * k, 0, 0)
+	elseif ch == "orbit" then
+		return A(0, t * 2.4 + phase, 0) * A(0, 0, sin(t * 1.3 + phase) * 0.35)
+	end
+	return CFrame.identity
+end
+
+local cfs = {}
+function Companions.pose(rig, cf, t, moving)
+	moving = math.clamp(moving or 0, 0, 1)
+	t = t + rig.seed
+	local base = cf
+	if rig.flying then
+		base = base * CF(0, sin(t * (rig.float and 1.6 or 2.4)) * 0.18 * rig.scale, 0)
+	elseif rig.hop then
+		-- hop while moving; a small hop now and then while idle
+		local k
+		if moving > 0.15 then k = abs(sin(t * 7)) else k = math.max(0, sin(t * 2.2)) ^ 18 end
+		rig.hopK = k
+		base = base * CF(0, k * 0.7 * rig.scale, 0) * A(rad(-12) * k, 0, 0)
+	elseif moving > 0.2 then
+		base = base * CF(0, abs(sin(t * 11)) * 0.06 * rig.scale, 0)
+	end
+	local n = 0
+	table.clear(cfs)
+	n += 1; cfs[n] = base
+	for _, p in ipairs(rig.parts) do
+		local rel = p.rest
+		if p.ch then
+			local r = channel(rig, p.ch, t, moving, p.phase)
+			local h = p.hinge or Vector3.zero
+			rel = CF(h) * r * CF(-h) * rel
+		end
+		n += 1; cfs[n] = base * rel
+	end
+	if rig.model:IsDescendantOf(workspace) then
+		workspace:BulkMoveTo(rig.list, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+	else
+		for i, p in ipairs(rig.list) do p.CFrame = cfs[i] end
+	end
+end
+
+--------------------------------------------------------------------
+--  EGGS
+--------------------------------------------------------------------
+function Companions.egg(eggId, opts)
+	opts = opts or {}
+	local e = Catalog.EGG and Catalog.EGG[eggId]
+	if not e then return nil end
+	local k = opts.scale or 1
+	local model = Instance.new("Model")
+	model.Name = "Egg_" .. eggId
+	local list, rests = {}, {}
+	local function add(size, rel, color, neon)
+		local p = makePart({name = "Shell", shape = "ball", size = size, color = color, neon = neon}, k, model)
+		p.CastShadow = true
+		table.insert(list, p)
+		table.insert(rests, scaled(rel, k))
+		return p
+	end
+	-- the shell: bottom at y = 0, 1.7 tall
+	add(Vector3.new(1.24, 1.7, 1.24), CF(0, 0.85, 0), e.shell)
+	-- spots on the surface, the same every time
+	local rng = Random.new(#eggId * 7919)
+	for i = 1, 9 do
+		local yaw = rng:NextNumber(0, math.pi * 2)
+		local y = rng:NextNumber(0.35, 1.4)
+		local r = 0.62 * math.sqrt(math.max(0.05, 1 - ((y - 0.85) / 0.85) ^ 2))
+		local s = rng:NextNumber(0.16, 0.3)
+		local pos = Vector3.new(cos(yaw) * r, y, sin(yaw) * r)
+		add(Vector3.new(s, s, 0.08), CFrame.lookAt(pos, pos * Vector3.new(2, 1, 2)), e.spots, e.glow)
+	end
+	if e.glow and opts.world then
+		local l = Instance.new("PointLight"); l.Color = e.spots; l.Range = 6; l.Brightness = 0.7; l.Parent = list[1]
+	end
+	return {model = model, list = list, rests = rests, def = e, scale = k}
+end
+
+function Companions.poseEgg(egg, cf, t, wobble)
+	wobble = wobble or 0
+	local tilt = A(0, 0, sin(t * 9) * rad(14) * wobble) * A(sin(t * 7.3) * rad(6) * wobble, 0, 0)
+	local base = cf * tilt
+	table.clear(cfs)
+	for i, rel in ipairs(egg.rests) do cfs[i] = base * rel end
+	if egg.model:IsDescendantOf(workspace) then
+		workspace:BulkMoveTo(egg.list, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+	else
+		for i, p in ipairs(egg.list) do p.CFrame = cfs[i] end
+	end
+end
+
+return Companions

@@ -10,6 +10,7 @@
                 {marks = n} · {crowns = n} · {skin = "Weapon:Name"} · {title = "…"}
                 · {crate = "Royal"} (one free open of that crate)
                 · {killfx = "ShadowRift"} · {emote = "WarCry"} (Catalog ▸ KillFX / Emotes)
+                · {egg = "Royal"} · {companion = "IronHound"} (Catalog ▸ Eggs / Companions)
      Rewards are granted when claimed (server-side). Skins named here are pass
      skins (Catalog ▸ Skins: pass = true), so nothing else sells them; the
      same goes for kill effects and emotes marked pass = true. ]]
@@ -26,7 +27,7 @@ return {
 		{free = {crate = "Bladesmith"},           premium = {marks = 400}},
 		{free = {marks = 200},                    premium = {skin = "Spear:Crownspike"}},
 		{free = {skin = "Shortsword:Iron Oath"},  premium = {crate = "Royal"}},
-		{free = {marks = 200},                    premium = {marks = 500}},
+		{free = {egg = "Speckled"},               premium = {marks = 500}},
 		{free = {crowns = 10},                    premium = {skin = "WarAxe:Ironbark"}},
 		{free = {marks = 250},                    premium = {killfx = "ShadowRift"}},
 		{free = {crate = "Hafted"},               premium = {marks = 600}},
@@ -36,17 +37,17 @@ return {
 		{free = {marks = 300},                    premium = {skin = "Mace:Iron Lion"}},
 		{free = {crate = "Bladesmith"},           premium = {crowns = 40}},
 		{free = {skin = "Pitchfork:Iron Tines"},  premium = {marks = 800}},
-		{free = {marks = 300},                    premium = {crate = "Royal"}},
+		{free = {marks = 300},                    premium = {egg = "Royal"}},
 		{free = {marks = 350},                    premium = {skin = "Halberd:Kingsguard"}},
 		{free = {crowns = 15},                    premium = {emote = "Windmill"}},
-		{free = {crate = "Hafted"},               premium = {marks = 900}},
+		{free = {egg = "Mossy"},                  premium = {marks = 900}},
 		{free = {title = "Ironsworn"},            premium = {skin = "Greatsword:Last Light"}},
-		{free = {marks = 400},                    premium = {crate = "Royal"}},
+		{free = {marks = 400},                    premium = {companion = "IronHound"}},
 		{free = {marks = 400},                    premium = {marks = 1000}},
 		{free = {crowns = 20},                    premium = {skin = "Maul:Anvil of Kings"}},
 		{free = {crate = "Bladesmith"},           premium = {crowns = 60}},
 		{free = {skin = "Dagger:Crown's Fang"},   premium = {crate = "Royal"}},
-		{free = {marks = 500},                    premium = {marks = 1200}},
+		{free = {egg = "Ember"},                  premium = {marks = 1200}},
 		{free = {marks = 500},                    premium = {crowns = 80}},
 		{free = {crowns = 25},                    premium = {killfx = "RoyalDecree"}},
 		{free = {crate = "Royal"},                premium = {title = "Crowned"}},

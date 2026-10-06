@@ -13,6 +13,10 @@
        pass        {season, xp, premium, claimed = {free = {["3"] = true}, premium = {}}}
        login       {streak, claimed = "YYYY-MM-DD"}
        killfx      the equipped kill effect id     emotes   the emote wheel (up to 6 ids)
+       play        {day = "YYYY-MM-DD", seconds, claimed = {["1"] = true}}   today's playtime gifts
+       eggs        {[eggId] = count}  waiting to be set in a nest
+       nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
+       companion   the companion out with you ("" = none)   stars  {[companionId] = 1..5}
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -51,10 +55,11 @@ end
 
 local function default()
 	local p = {version = 2, wallet = {marks = 500, crowns = 0}, level = 1, xp = 0,
-		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}},
+		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}, companions = {}},
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
-		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"}}
+		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
+		play = {}, eggs = {}, nests = {}, companion = "", stars = {}}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -218,7 +223,8 @@ function Profile.summary(plr)
 	local p = Profile.get(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
-		login = p.login, killfx = p.killfx, emotes = p.emotes}
+		login = p.login, killfx = p.killfx, emotes = p.emotes,
+		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars}
 end
 
 Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)

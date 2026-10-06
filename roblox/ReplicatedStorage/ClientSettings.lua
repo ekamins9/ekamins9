@@ -62,11 +62,13 @@ ClientSettings.CHOICES = {
 		hint = "Mouse: the way your mouse was moving when you pressed picks left/right (still = alternate). Modifier: always your default side; hold the Opposite-side key for the other."},
 	{key = "DefaultSide", label = "Default side", options = {"Right", "Left"},
 		hint = "Modifier mode: the side you get without the Opposite-side key held. Mouse mode: what a held Opposite-side key flips away from."},
+	{key = "Companions", label = "Companions", options = {"All", "Mine", "None"},
+		hint = "Whose companions you see following them around: everyone's, only yours, or none."},
 }
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70,
-	SideMode = "Modifier", DefaultSide = "Right",
+	SideMode = "Modifier", DefaultSide = "Right", Companions = "All",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 

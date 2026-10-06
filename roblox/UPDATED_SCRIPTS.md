@@ -1,36 +1,46 @@
-# Updated scripts: emotes that look right
+# Updated scripts: playtime gifts, the Hatchery, companions
 
-Feedback fixed: on the Bow the legs didn't stay planted, emotes could play mid-swing and looked
-wrong, and arm-only emotes stopped as soon as you walked.
+Cosmetic things to do in the Courtyard, from the retention research: reasons to come back
+(offline incubation, daily gifts) and reasons to stay (AFK at the Hatchery). Nothing changes
+combat.
 
-- **Feet stay planted.** A bow, laugh or war cry now bends at the `waist`: the upper body pivots
-  on the hip line and the legs are counter-posed to exactly where they were (the Bow: 42° bend,
-  feet within 0.03 studs of the floor).
-- **No emotes mid-fight.** An emote won't start while you attack, block, kick or dodge. Pressing
-  any fight key ends it at once. For everyone else, the character's `Acting` / `Blocking` flags
-  end it, and the server refuses a Play while you're busy.
-- **Arm-only emotes play on the move.** Salute, Cheer, Flourish, Wave, Shrug, Beckon, Laugh, War
-  Cry and Blade Toss keep going while you walk (the legs keep the walk animation; Cheer's hop
-  only plays standing). Bow, Kneel, Jig, Windmill and Champion need you to stand still; the
-  wheel says so, and moving ends them.
-- **The weapon behaves for every blade length.** Emotes steer the blade's direction. Salute,
-  Cheer and War Cry hold it upright. The Bow sweeps it out to the side and round behind you,
-  never through the floor. Kneel and Champion plant the tip so it just meets the ground; the
-  hands rise for longer blades. The Flourish twirls it like a wheel beside you, with the arm
-  lifted so a greatsword clears the floor and the blade passes outside the arm. The Windmill
-  spins it flat over your head and eases to a stop on a whole turn.
-- **No snaps.** The weapon's idle animation fades out over the first 0.2 s of an emote and back
-  in over the last, and every emote starts and ends on the resting grip.
-- **The wheel:** hold B, point, let go (or tap B and click). The number keys are gone: 1–9 are the
-  backpack's weapon slots and would also swap your weapon. Each slot says ON THE MOVE or STAND
-  STILL.
-- Checked automatically for all 14 emotes with a greatsword: no blade through the body, no
-  weapon under the floor (planted tips just touch), feet on the floor. The live tests covered
-  the swing cancel, walking, and the Bow's drawn blade path.
+- **Playtime gifts** — six a day for minutes played on any server (5, 10, 20, 30, 45 and 60
+  minutes: Marks, a Speckled Egg, a free crate open, a Mossy Egg, Crowns). A chip at the top
+  left counts down and claims; the lobby has a panel too.
+- **The Hatchery** — a thatched pavilion with three nests, built into the Courtyard's open
+  square. Eggs incubate in real time, even while you're offline or in a match. Standing by the
+  Hatchery doubles the speed. Your own eggs sit in the nests with timers; press E to hatch.
+- **Eggs:** Speckled (30 min, 400 Marks), Mossy (2 h, 1,200 Marks), Ember (6 h, 60 Crowns) and
+  Royal (12 h; gifts, login days and the pass only). HATCH NOW skips the wait for Crowns.
+- **Companions** — 21 creatures built from parts: birds, beasts, hoppers, wisps and drakes,
+  from a sparrow to a griffin. They follow you around, and duplicates add stars (five stars
+  sparkle). The Iron Hound is a season pass reward.
+- **HATCHERY screen** (new dock tile with a ready-egg badge): NESTS and COMPANIONS (the
+  collection, silhouettes for the ones not found yet, take along / send home).
+- **Login days** no longer restart after a missed day; they pause. Login days 2 and 6 and pass
+  tiers 6, 16, 19, 21 and 26 now give eggs or the Iron Hound.
+- **SETTINGS:** Companions All / Mine / None.
+- **Studio cheats:** `/egg <Id> [n]`, `/ripen`, `/playtime <minutes>`.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage ▸ Emotes | ModuleScript | waist bends with planted legs; upper / whole-body emotes; blade steering (blade, plantW, twirl, rotor) in the grip's frame, by weapon length; animation fade; busy check; all 14 motions retuned |
-| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Cosmetics | LocalScript | radial wheel (hold / point / release); fight keys and attack flags end emotes; whole-body emotes refuse to start on the move and end when you move |
-| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub ▸ Cosmetics | Script | refuses an emote while Acting / Blocking |
-| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | (docs) | | how emotes work and how to write one |
+| [Catalog/Gifts.lua](ReplicatedStorage/Catalog/Gifts.lua) | ReplicatedStorage ▸ Catalog ▸ Gifts | ModuleScript | **new**: the six daily gifts |
+| [Catalog/Eggs.lua](ReplicatedStorage/Catalog/Eggs.lua) | ReplicatedStorage ▸ Catalog ▸ Eggs | ModuleScript | **new**: nests, boost, the Hatchery's spot, the four eggs |
+| [Catalog/Companions.lua](ReplicatedStorage/Catalog/Companions.lua) | ReplicatedStorage ▸ Catalog ▸ Companions | ModuleScript | **new**: 21 companions |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `GIFTS` / `EGG` / `COMPANION`, `eggPool`, `companionSource`, checks |
+| [Catalog/Login.lua](ReplicatedStorage/Catalog/Login.lua), [Catalog/Pass.lua](ReplicatedStorage/Catalog/Pass.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | eggs and the Iron Hound as rewards |
+| [Companions.lua](ReplicatedStorage/Companions.lua) | ReplicatedStorage ▸ Companions | ModuleScript | **new**: builds and animates companions and eggs |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | the Companions choice |
+| [Pastimes.lua](ServerScriptService/Economy/Pastimes.lua) | ServerScriptService ▸ Economy ▸ Pastimes | ModuleScript | **new**: gifts, eggs, nests, hatching, companions |
+| [Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy ▸ Economy | ModuleScript | egg / companion rewards; login runs pause |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | play, eggs, nests, companion, stars |
+| [Pastimes.server.lua](ServerScriptService/Hub/Pastimes.server.lua) | ServerScriptService ▸ Hub ▸ Pastimes | Script | **new**: the playtime clock, the Hatchery (built in the Courtyard), player attributes |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | ops GiftClaim, Hatchery, EggBuy, EggPlace, Hatch, Companion; state carries gifts + hatchery |
+| [Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua) | ServerScriptService ▸ Hub ▸ Cheats | Script | `/egg`, `/ripen`, `/playtime` |
+| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Pastimes | LocalScript | **new**: companions following, the gift chip, your eggs in the nests, hatching in the world |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | HATCHERY screen and dock tile, lobby gifts panel, egg / companion reward cards |
+| [ui_icons.py](../blender/ui_icons.py) | (repo only) | Blender script | the Hatchery icon (a nest with two eggs) |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | (docs) | | pastimes, eggs, companions, gifts |
+
+Studio-only: `ReplicatedStorage ▸ Cosmetics ▸ Icons ▸ Hatchery` (the dock icon decal). Save the
+place so it stays.

@@ -5,7 +5,8 @@
         /bring <name> pull a player to you         /give <Weapon> a weapon from ServerStorage ▸ Weapons
         /kick <name>  remove a player
      TESTING (Studio only, any server): /marks <n>  /crowns <n>  /xp <n>  /level <n>  /passxp <n>
-        add that much to your wallet / XP (level = level-ups) / season pass XP, e.g. /marks 5000 ]]
+        add that much to your wallet / XP (level = level-ups) / season pass XP, e.g. /marks 5000
+        /egg <Id> [n]  eggs for the Hatchery   /ripen  every nest ready   /playtime <minutes> ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -41,10 +42,24 @@ local function handle(plr, text)
 	local cmd, rest = text:match("^/(%a+)%s*(.*)$")
 	if not cmd then return end
 	cmd = cmd:lower()
-	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, xp = 1, level = 1, passxp = 1})[cmd] then return end
+	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, xp = 1, level = 1, passxp = 1, egg = 1, ripen = 1, playtime = 1})[cmd] then return end
 	if os.clock() - (last[plr] or -1e9) < 0.3 then return end
 	last[plr] = os.clock()
 	-- testing cheats: Studio only, no server setting needed
+	if cmd == "egg" or cmd == "ripen" or cmd == "playtime" then
+		if not STUDIO then return end
+		local Pastimes = require(ServerScriptService.Economy:WaitForChild("Pastimes"))
+		if cmd == "egg" then
+			local id, n = rest:match("^(%S+)%s*(%d*)")
+			Pastimes.grantEgg(plr, id or "Speckled", tonumber(n) or 1)
+		elseif cmd == "ripen" then
+			Pastimes.boost(plr, 10 ^ 6)
+		else
+			Pastimes.addPlaytime(plr, (tonumber(rest) or 10) * 60)
+		end
+		Economy.changed:Fire(plr)
+		return
+	end
 	if cmd == "marks" or cmd == "crowns" or cmd == "xp" or cmd == "level" or cmd == "passxp" then
 		if not STUDIO then return end
 		local n = math.floor(tonumber(rest) or 0)
@@ -76,7 +91,7 @@ local function handle(plr, text)
 	end
 end
 pcall(function()
-	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "xp", "level", "passxp"}) do
+	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "xp", "level", "passxp", "egg", "ripen", "playtime"}) do
 		local c = Instance.new("TextChatCommand"); c.Name = "Cheat_" .. name; c.PrimaryAlias = "/" .. name; c.Parent = TextChatService
 		c.Triggered:Connect(function(source, text) local p = Players:GetPlayerByUserId(source.UserId); if p then handle(p, text) end end)
 	end

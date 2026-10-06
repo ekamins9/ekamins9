@@ -37,6 +37,10 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Hub/Cheats.server.lua` | `ServerScriptService` → `Hub` → `Cheats` | Script |
 | `ServerScriptService/Economy/Economy.lua` | `ServerScriptService` → `Economy` (Folder) → `Economy` | ModuleScript |
 | `ServerScriptService/Economy/Stats.lua` | `ServerScriptService` → `Economy` → `Stats` | ModuleScript |
+| `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
+| `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
+| `ReplicatedStorage/Companions.lua` | `ReplicatedStorage` → `Companions` (creatures and eggs built from parts) | ModuleScript |
+| `StarterPlayerScripts/Pastimes.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pastimes` (companions following, the gift chip, your eggs in the nests) | LocalScript |
 | `ServerScriptService/Economy/EconomyServer.server.lua` | `ServerScriptService` → `Economy` → `EconomyServer` | Script |
 | `ServerScriptService/Build/<Name>.lua` | `ServerScriptService` → `Build` (Folder) → `Builder`, `Weapons`, `Armor`, `Body`, `Blueprints` | ModuleScript each |
 | `ReplicatedStorage/Theme.lua` | `ReplicatedStorage` → `Theme` | ModuleScript |
@@ -151,8 +155,15 @@ and a UIScale fits it to any screen.
   bonus per finished task. The free track is everyone's; the premium track (Crowns) adds
   exclusive skins and a title, and covers the tiers already reached. Rewards can be claimed one
   at a time or with CLAIM ALL. The dock's PASS badge counts what is waiting.
-- **Login rewards**: a pop-up on the first open of each day with a seven-day streak
-  (`Catalog ▸ Login`). Missing a day restarts the streak.
+- **Login rewards**: a pop-up on the first open of each day with a seven-day run
+  (`Catalog ▸ Login`). A missed day pauses the run instead of starting it over.
+- **HATCHERY** (dock tile, with a badge for eggs ready to hatch): **NESTS** shows your three
+  nests, each egg turning on a stage with its countdown. A ready egg can be hatched (HATCH!), or
+  hatched early for Crowns (HATCH NOW, after a confirm). There is SET AN EGG for empty nests,
+  your eggs, and the egg shelf (Marks / Crowns; the Royal Egg only comes from gifts, login days
+  and the pass). **COMPANIONS** is the collection: the ones you have found on stages, the rest
+  as silhouettes, stars, and TAKE IT ALONG / SEND IT HOME.
+- **Playtime gifts** in the lobby's left column: the next gift, a live countdown and CLAIM.
 - **WARDROBE**: faces as a picture grid, hair, hair colour, beard, skin, title.
 - **SERVERS**: the browser with filters and **CREATE CUSTOM**: door, mode, map, player limit,
   round length, who may join, friendly fire, respawns, ground weapons, and cheats. A cheat
@@ -175,6 +186,23 @@ server teleports its own players with the sides in the teleport data (`Matchmake
 are `Locked` (only those user ids), best of 5, forfeited by a leaver; ratings are Elo
 (`Scoreboard`, `LB_<bracket>` OrderedDataStores), ranks from `Economy.rankTiers`, leaving a
 ranked match early locks the queue for `queueLockMinutes`.
+
+## Pastimes: playtime gifts, the Hatchery, companions (looks only)
+
+Things to do between fights, so the Courtyard is a place to hang out. None of them touch combat.
+- **Playtime gifts** (`Catalog ▸ Gifts`): six a day for minutes played on any server (the
+  Courtyard and every match). A chip at the top left counts down to the next gift and claims it
+  with a click; the lobby shows it too. Reset at 00:00 UTC.
+- **The Hatchery** (`Catalog ▸ Eggs`): a thatched pavilion in the Courtyard with three nests,
+  built by `Hub ▸ Pastimes`. Set an egg in a nest and it incubates in real time, even while you
+  are away or in a match. Standing within 20 studs makes your eggs incubate twice as fast, and
+  a line at the top says so. Your own eggs sit in the nests, wobbling when ready, with timers;
+  press E to hatch or to open the menu.
+- **Companions** (`Catalog ▸ Companions`, 21 to find): a hatched egg rolls one by the egg's
+  odds. A duplicate adds a star (up to 5, and five stars sparkle); past that it pays Marks.
+  Your companion follows you around (built from parts by `Companions`, drawn locally for every
+  player). SETTINGS ▸ Companions: All / Mine / None.
+- Testing in Studio: `/egg Royal 2`, `/ripen` (every nest ready), `/playtime 30`.
 
 ## Skin effects, kill effects, emotes (looks only)
 

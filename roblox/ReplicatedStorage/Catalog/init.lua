@@ -1,6 +1,7 @@
 --[[ CATALOG — everything the game can sell, equip or roll, read from the
      config ModuleScripts INSIDE this module (Catalog ▸ Weights, Packs, Pieces,
-     Weapons, Skins, Body, Palette, Crates, Economy, Contracts). Server and
+     Weapons, Skins, Body, Palette, Crates, Economy, Contracts, Store, Pass,
+     Login, KillFX, Emotes, Gifts, Eggs, Companions). Server and
      client both require it. To add content you edit those children and drop
      models into ReplicatedStorage ▸ Cosmetics — never this file.
 
@@ -47,6 +48,9 @@ Catalog.PASS      = child("Pass")
 Catalog.LOGIN     = child("Login")
 Catalog.KILLFX    = child("KillFX")
 Catalog.EMOTES    = child("Emotes")
+Catalog.GIFTS     = child("Gifts")
+Catalog.EGGS      = child("Eggs")
+Catalog.COMPANIONS = child("Companions")
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears
@@ -149,6 +153,8 @@ end
 Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name] = c end
 Catalog.KILLFX_BY = {}  for _, f in ipairs(Catalog.KILLFX) do Catalog.KILLFX_BY[f.id] = f end
 Catalog.EMOTE = {}      for _, e in ipairs(Catalog.EMOTES) do Catalog.EMOTE[e.id] = e end
+Catalog.EGG = {}        for _, e in ipairs(Catalog.EGGS.eggs) do Catalog.EGG[e.id] = e end
+Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end
 
 --------------------------------------------------------------------
 --  QUERIES
@@ -386,6 +392,22 @@ function Catalog.crateItems(crateId)
 	return out
 end
 
+-- the companions an egg can hatch (any not tied to another egg, not a pass reward)
+function Catalog.eggPool(eggId)
+	local out = {}
+	for _, c in ipairs(Catalog.COMPANIONS) do
+		if not c.pass and (c.egg == nil or c.egg == eggId) then table.insert(out, c) end
+	end
+	return out
+end
+-- where a companion comes from, for a label
+function Catalog.companionSource(c)
+	if not c then return "" end
+	if c.pass then return "a season pass reward" end
+	if c.egg then return "hatches only from the " .. (Catalog.EGG[c.egg] and Catalog.EGG[c.egg].name or c.egg) end
+	return "hatches from any egg"
+end
+
 function Catalog.crateSkins(crateId)
 	local c = Catalog.CRATES[crateId]
 	local out = {}
@@ -427,15 +449,32 @@ if RunService:IsServer() then
 		local function checkReward(where, r)
 			if r and r.skin and not Catalog.SKIN[r.skin] then warn("[Catalog]", where, "names unknown skin", r.skin) end
 			if r and r.crate and not Catalog.CRATES[r.crate] then warn("[Catalog]", where, "names unknown crate", r.crate) end
+			if r and r.egg and not Catalog.EGG[r.egg] then warn("[Catalog]", where, "names unknown egg", r.egg) end
+			if r and r.companion and not Catalog.COMPANION[r.companion] then warn("[Catalog]", where, "names unknown companion", r.companion) end
+			if r and r.killfx and not Catalog.KILLFX_BY[r.killfx] then warn("[Catalog]", where, "names unknown kill effect", r.killfx) end
+			if r and r.emote and not Catalog.EMOTE[r.emote] then warn("[Catalog]", where, "names unknown emote", r.emote) end
 		end
 		for i, t in ipairs(Catalog.PASS.tiers or {}) do checkReward("pass tier " .. i .. " free", t.free); checkReward("pass tier " .. i .. " premium", t.premium) end
-		for _, t in ipairs(Catalog.PASS.tiers or {}) do
-			for _, r in pairs(t) do
-				if r.killfx and not Catalog.KILLFX_BY[r.killfx] then warn("[Catalog] pass names unknown kill effect", r.killfx) end
-				if r.emote and not Catalog.EMOTE[r.emote] then warn("[Catalog] pass names unknown emote", r.emote) end
-			end
-		end
 		for i, d in ipairs(Catalog.LOGIN.days or {}) do checkReward("login day " .. i, d) end
+		for i, g in ipairs(Catalog.GIFTS.gifts or {}) do checkReward("playtime gift " .. i, g.reward) end
+		-- eggs: odds add up, and every rarity they can roll has someone to hatch
+		for _, e in ipairs(Catalog.EGGS.eggs) do
+			local sum = 0
+			for r, n in pairs(e.odds) do
+				sum += n
+				local any = false
+				for _, c in ipairs(Catalog.eggPool(e.id)) do if c.rarity == r then any = true end end
+				if n > 0 and not any then warn("[Catalog] egg", e.id, "can roll", r, "but no companion of that rarity hatches from it") end
+			end
+			if sum ~= 100 then warn("[Catalog] egg", e.id, "odds add up to", sum, "(should be 100)") end
+		end
+		local okC, Comp = pcall(require, ReplicatedStorage:WaitForChild("Companions", 5))
+		local bodies = {}
+		if okC and Comp then for _, b in ipairs(Comp.BODIES) do bodies[b] = true end end
+		for _, c in ipairs(Catalog.COMPANIONS) do
+			if okC and not bodies[c.body] then warn("[Catalog] companion", c.id, "has unknown body", c.body) end
+			if c.egg and not Catalog.EGG[c.egg] then warn("[Catalog] companion", c.id, "names unknown egg", c.egg) end
+		end
 	end)
 end
 

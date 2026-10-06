@@ -297,8 +297,36 @@ server keeps: `kill`, `parry`, `chamber`, `win`, `round`, `drill`, `kill_<Family
 - Testing in Studio: `/passxp 5000`.
 
 **Login rewards:** `Catalog ▸ Login`. `days` holds one reward per day, seven in a row. A
-player can claim once per UTC day. A missed day restarts the streak at day 1, and after day 7
-it loops. The pop-up shows itself on the first menu open of the day.
+player can claim once per UTC day. A missed day doesn't start the run over (the next visit gives
+the next day's gift), and after day 7 it loops. The pop-up shows itself on the first menu open
+of the day.
+
+A reward anywhere (pass, login, gifts) can also be `{egg = "Mossy"}` or
+`{companion = "IronHound"}`.
+
+## 10c. Playtime gifts, eggs and companions
+
+**Playtime gifts:** `Catalog ▸ Gifts`: `gifts = {{minutes = 10, reward = {...}}, ...}`, in
+order. Minutes count on every server and reset at 00:00 UTC.
+
+**Eggs:** `Catalog ▸ Eggs`.
+- `nests` (how many incubate at once), `boost` (how many times as fast by the Hatchery),
+  `radius`, and `spot` (where the Hatchery stands in a hub map, as an offset from the map's
+  Floor; a part named `HatcherySpot` in the map wins).
+- `skipCrowns` / `skipMin` set the HATCH NOW price. `stars` caps a duplicate's stars, and
+  `refund` is the Marks paid once a companion has all its stars.
+- An egg: `{id, name, rarity, minutes, marks | crowns (on the shelf; neither = gifts / pass /
+  login only), odds = {Common = 64, ...} (sum 100), shell, spots, glow}`.
+
+**Companions:** `Catalog ▸ Companions`: `{id, name, rarity, body, size, main, second,
+accent, glow, style, fx, egg, pass, description}`.
+- `body` is a builder in `ReplicatedStorage ▸ Companions`: `bird` (flies; `style = "walker"`
+  walks), `beast` (four legs; styles `mane`, `antlers`, `crown`), `hopper` (`longears`),
+  `wisp`, or `drake` (`style = "beak"` makes a griffin).
+- `fx`: `embers`, `frost`, `spirit` or `sparkle` (world-only particles).
+- `egg = "Royal"` means only that egg hatches it; `pass = true` means only a reward gives it.
+- Each egg must have a companion of every rarity it can roll (the catalog warns when one is
+  missing).
 
 ## 11. Maps, modes, doors
 
