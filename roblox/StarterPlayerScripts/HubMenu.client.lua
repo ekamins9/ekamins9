@@ -959,7 +959,7 @@ local function mannequinThumb(parent, loadout, weight, size, colors)
 	rig.Parent = world
 	local lo = {}
 	for k, v in pairs(loadout or {}) do lo[k] = v end
-	lo.colors = lo.colors or colors or {Primary = "Royal Blue", Secondary = "Slate", Accent = "Gold", Metal = "Steel"}
+	lo.colors = lo.colors or colors or {Primary = "Royal", Secondary = "Slate", Accent = "Ochre", Metal = "Ash"}
 	pcall(Dresser.dress, rig, {loadout = lo, appearance = Catalog.BODY.defaults, weight = weight, preview = true})
 	settle(rig)
 	for _, d in ipairs(rig:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
