@@ -580,8 +580,12 @@ function Bots.spawn(opts)
 	local skill = Bots.SKILLS[opts.skill or "Squire"] or Bots.SKILLS.Squire
 	local name = opts.name or (skill.label .. " Bot")
 	local model, hum, hrp = R6.rig(name)
-	model:SetAttribute("Bot", true)
+	-- its name is drawn by NameTags (when you look right at it), not by Roblox
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+	model:SetAttribute("TagName", name)
 	model:SetAttribute("BotSkill", opts.skill or "Squire")
+	model:SetAttribute("Bot", true)
 	model:PivotTo(opts.at or CFrame.new(0, 3, 0))
 	model.Parent = folder
 	local weight = opts.weight or skill.weight or "Medium"
@@ -652,8 +656,8 @@ function Bots.spawn(opts)
 	end)
 	hum.Died:Once(function()
 		bot.alive = false
+		-- (the killer's kill effect comes from Scoreboard, which watches workspace.NPCs)
 		local killer = Players:GetPlayerByUserId(model:GetAttribute("LastHitBy") or 0)
-		if killer and _G.KillFxHook then task.spawn(_G.KillFxHook, killer, model) end
 		if opts.onDeath then task.spawn(opts.onDeath, bot, killer) end
 		task.delay(opts.corpseTime or 6, function() bot:destroy() end)
 	end)

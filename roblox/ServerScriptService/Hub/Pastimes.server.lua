@@ -20,6 +20,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local Pastimes = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Pastimes"))
+local Economy = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Economy"))
 local K = require(ServerScriptService:WaitForChild("Build"):WaitForChild("MapKit"))
 
 local EGGS = Catalog.EGGS
@@ -186,6 +187,10 @@ task.spawn(function()
 				if comp ~= "" and not Profile.has(plr, "companions", comp) then comp = "" end
 				set(plr, "Companion", comp)
 				set(plr, "CompanionStars", comp ~= "" and (p.stars and p.stars[comp] or 1) or 0)
+				-- what the name tags, the kill feed and the board show (StarterPlayerScripts ▸ NameTags)
+				set(plr, "Title", type(p.appearance) == "table" and type(p.appearance.title) == "string" and p.appearance.title or "")
+				set(plr, "Level", p.level or 1)
+				if tick % 5 == 0 or plr:GetAttribute("PassHolder") == nil then set(plr, "PassHolder", Economy.passState(plr).premium == true) end
 			end)
 			if not ok then warn("[Pastimes]", plr.Name, err) end
 		end

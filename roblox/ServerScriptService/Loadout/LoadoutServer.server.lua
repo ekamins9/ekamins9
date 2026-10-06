@@ -199,6 +199,9 @@ local function spawnAs(plr, classId)
 
 	local cf = Game.spawnCFrame(plr)
 	if cf then char:PivotTo(CFrame.new(cf.Position + Vector3.new(0, 3, 0)) * (cf - cf.Position)) end
+	-- names are drawn by NameTags (only when you look right at someone), not by Roblox
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	char:SetAttribute("Class", classId)
 	char:SetAttribute("Title", p.appearance.title or "")
 	local team = Game.teamOf(plr)

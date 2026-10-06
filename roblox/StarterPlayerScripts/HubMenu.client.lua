@@ -1461,7 +1461,7 @@ function Preview.killFx(parent, id, size, still, light)
 	local floor = Instance.new("Part")
 	floor.Anchored = true; floor.Size = Vector3.new(40, 1, 40); floor.CFrame = CFrame.new(0, -3.5, 0)
 	floor.Color = Color3.fromRGB(58, 64, 80); floor.Material = Enum.Material.Slate; floor.Parent = world
-	local function once(freeze)
+	local function once(freeze, sound)
 		for _, c in ipairs(world:GetChildren()) do if c ~= floor then c:Destroy() end end
 		local rig = Preview.rig(world, false, light)
 		rig:PivotTo(CFrame.Angles(0, math.rad(18), 0))
@@ -1471,13 +1471,15 @@ function Preview.killFx(parent, id, size, still, light)
 			if (d:IsA("BasePart") and d.Name ~= "HumanoidRootPart") or d:IsA("Decal") then table.insert(bodyParts, d) end
 		end
 		local torso = rig:FindFirstChild("Torso")
-		return Preview.KillFX.play(id, world, torso and torso.CFrame or CFrame.new(), {body = bodyParts, freezeAt = freeze})
+		return Preview.KillFX.play(id, world, torso and torso.CFrame or CFrame.new(), {body = bodyParts, freezeAt = freeze, sound = sound})
 	end
 	if still then once(still); return holder end
 	task.spawn(function()
+		local first = true   -- the first play is heard; the loop after it is silent
 		while holder.Parent do
 			if gui.Enabled then
-				local d = once(nil)
+				local d = once(nil, first)
+				first = false
 				task.wait((d or 2) + 0.9)
 			else
 				task.wait(0.5)

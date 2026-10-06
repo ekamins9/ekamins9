@@ -72,6 +72,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
+| `StarterPlayerScripts/NameTags.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NameTags` | LocalScript |
+| `StarterPlayerScripts/SkinFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SkinFX` | LocalScript |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
 | `ServerStorage/Armor/<Set>/Config.lua` | `ServerStorage` → `Armor` (Folder) → each set → `Config` | ModuleScript |
@@ -264,6 +266,21 @@ the map's `Spots`:
   next playtime gift and your pass tier, written on the parchment for you; E opens TASKS.
 - **The Hatchery** (west), the stone circle (east), the tavern with a bard (south-east).
 
+## Name tags and titles
+
+Roblox's own overhead names are off (players: `LoadoutServer`; bots: `Bots`). `NameTags` (client)
+draws ours, and only when it makes sense: someone within 9 studs, or your aim (the middle of the
+screen, or the mouse when it's free) on their body within 45 studs with a clear line of sight;
+in the Courtyard everyone within 24 studs shows too. Names fade in fast and out slowly.
+- **The look:** a level badge, a staff badge (OWNER · ADMIN · MOD · HELPER in their role's colour),
+  a gold crown and a gold shimmering name for **season pass** holders; team colours in team modes;
+  bots in their rank's colour with their rank under the name (a Warlord in gold).
+- **Titles** (picked in APPEARANCE; free, earned in battle or from the pass) show under your name
+  tag, after your name on the Tab board, and after yours in the kill feed when you get a kill (the
+  free *Recruit* is left out). The board and the feed crown pass holders too.
+- The server publishes `Title`, `Level` and `PassHolder` on each player (`Hub ▸ Pastimes`, every
+  second); `StaffRole` comes from the admin panel.
+
 ## Pastimes: playtime gifts, the Hatchery, companions (looks only)
 
 Things to do between fights, so the Courtyard is a place to hang out. None of them touch combat.
@@ -288,13 +305,21 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
 ## Skin effects, kill effects, emotes (looks only)
 
 - **Skin effects** (`SkinFX`, applied by the `Dresser` after the tint and trim): Epic and
-  Legendary skins leave a swing trail; skins with `fx` shed an aura of particles around the blade.
+  Legendary skins leave a double swing trail (a bright core and a wide soft glow; Legendary
+  trails shimmer). Skins with `fx` wear an aura: three layers of particles off the blade, a light
+  on it, sparks thrown off the tip and a sound for the swing (`SkinFX.SWING`). The client's
+  `SkinFX` driver brings them to life: while a blade moves the aura flares up to four times its
+  rate, the sparks fly, the light swells (a storm flickers) and the swing makes its sound.
 - **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): `Scoreboard` (and the training dummies) call
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
   effect and fires `FxEvent "Kill"` to everyone **1.2 s after the death** (`KILL_FX_DELAY`), so the
   body falls first and a head that came off rolls away; each client (`Cosmetics.client`) builds it
   upright over the body, at a standing torso's height above the floor under it, in
-  `workspace.LocalFX`, and hides the body locally.
+  `workspace.LocalFX`, and hides the body locally. **Every effect has its sounds**, timed to it
+  (ice that creaks then shatters, a zap and a thunderclap, a choir, a fanfare, a raven and wing
+  bursts…), from Roblox's licensed libraries (Pro Sound Effects, APM Music) so they play in any
+  game; the menu's preview plays them once, flat, on its first loop. Bots and dummies get their
+  kill effect from `Scoreboard` (which watches `workspace.NPCs`) and nothing else, so it plays once.
 - **Emotes** (`Emotes` + `Catalog ▸ Emotes`): hold **B**, point the mouse at an emote and let go
   (or tap B and click one). There are no number keys, because 1–9 are the backpack's weapon slots.
   The client starts the emote at once and asks `EmoteRemote "Play"`. The server checks ownership,

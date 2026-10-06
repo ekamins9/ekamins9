@@ -225,9 +225,8 @@ local function spawnDummy(player, mode, weaponName, armorName)
 
 	hum.Died:Once(function()
 		log(model.Name, "died")
-		-- whoever felled it shows off their kill effect on the dummy too
-		local killer = game:GetService("Players"):GetPlayerByUserId(model:GetAttribute("LastHitBy") or 0)
-		if killer and _G.KillFxHook then task.spawn(_G.KillFxHook, killer, model) end
+		-- (whoever felled it shows off their kill effect on the dummy too: Scoreboard
+		-- does that for everything in workspace.NPCs)
 		task.delay(CORPSE_TIME, function() remove(entry) end)
 	end)
 end

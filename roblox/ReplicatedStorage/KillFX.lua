@@ -11,6 +11,7 @@
                        body.direct = true hides them for real (a menu preview's
                        own rig, where LocalTransparencyModifier may not show)
            opts.world  true in the world (adds particles, lights, sounds)
+           opts.sound  true: sounds in a preview too (the menu's first play)
            opts.freezeAt  0..1: build the effect frozen at that moment (tests)
        KillFX.IDS      every effect id
 
@@ -154,6 +155,58 @@ local SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 local FIRE = "rbxasset://textures/particles/fire_main.dds"
 local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 
+-- SOUNDS (world only, or a preview asked for them with opts.sound): Roblox's
+-- licensed libraries (Pro Sound Effects, APM Music), so they play anywhere
+local SND = {
+	rockBurst = 9114221862, glassBreak = 9114592102, glassShatter = 9114592245, iceCrack = 9118762653,
+	zap = 9119594928, thunder = 9126099928, wings = 9125386714, raven = 9118066014,
+	choir = 1846902441, fanfare = 9042409054, pop = 9113263649, fireWhoosh = 9120696702,
+	rift = 9120706422, synthRip = 9119805147, swish = 9120726501, shells = 9119117331, shellsLong = 9119117098,
+}
+-- a sound at `at`: o.delay before it starts, o.cut seconds in it fades out over o.fade,
+-- o.from starts it part-way in. It lives beside the effect (which may end sooner).
+local function sfx(folder, opts, at, id, o)
+	if not (opts.world or opts.sound) or opts.freezeAt then return end
+	o = o or {}
+	local holder
+	if opts.world then
+		-- in the world: from the body, fading with distance
+		holder = Instance.new("Part")
+		holder.Name = "KillSound"
+		holder.Anchored, holder.CanCollide, holder.CanQuery, holder.CanTouch = true, false, false, false
+		holder.Transparency = 1
+		holder.Size = Vector3.one * 0.1
+		holder.CFrame = CFrame.new(typeof(at) == "CFrame" and at.Position or at)
+		holder.Parent = folder.Parent or folder
+	else
+		-- a menu preview (a ViewportFrame can't carry a sound): flat, a little quieter
+		holder = Instance.new("Folder")
+		holder.Name = "KillSound"
+		holder.Parent = game:GetService("SoundService")
+	end
+	local s = Instance.new("Sound")
+	s.SoundId = "rbxassetid://" .. tostring(id)
+	s.Volume = (o.volume or 0.8) * (opts.world and 1 or 0.6)
+	s.PlaybackSpeed = (o.speed or 1) * rng:NextNumber(0.97, 1.03)
+	s.RollOffMode = Enum.RollOffMode.InverseTapered
+	s.RollOffMinDistance = o.near or 12
+	s.RollOffMaxDistance = o.far or 160
+	s.TimePosition = o.from or 0
+	s.Parent = holder
+	local life = (o.delay or 0) + (o.cut and (o.cut + (o.fade or 0.4)) or 8) + 0.3
+	task.delay(o.delay or 0, function()
+		if not s.Parent then return end
+		s:Play()
+		if o.cut then
+			task.delay(o.cut, function()
+				if s.Parent then TweenService:Create(s, TweenInfo.new(o.fade or 0.4), {Volume = 0}):Play() end
+			end)
+		end
+	end)
+	task.delay(life, function() if holder.Parent then holder:Destroy() end end)
+	return s
+end
+
 --------------------------------------------------------------------
 --  THE EFFECTS: function(folder, origin, opts) -> duration
 --------------------------------------------------------------------
@@ -161,6 +214,8 @@ local FX = {}
 
 -- the body bursts into blocks of its own colours
 FX.Shatter = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.rockBurst, {volume = 0.9, speed = 1.15, cut = 1.4, fade = 0.5})
+	sfx(folder, opts, origin, SND.glassBreak, {volume = 0.45, speed = 0.75})
 	local cols = bodyColors(opts.body)
 	local floor = origin.Position.Y - 3
 	local bits = debris(folder, origin, 22, function(i)
@@ -177,6 +232,9 @@ end
 
 -- a pop and a cloud of spinning confetti
 FX.Confetti = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.pop, {volume = 1, speed = 0.85})
+	sfx(folder, opts, origin, SND.pop, {volume = 0.7, speed = 1.25, delay = 0.06})
+	sfx(folder, opts, origin, SND.swish, {volume = 0.35, speed = 1.6, cut = 0.9})
 	local palette = {Color3.fromRGB(255, 80, 90), Color3.fromRGB(255, 210, 60), Color3.fromRGB(80, 200, 120), Color3.fromRGB(70, 150, 255), Color3.fromRGB(200, 100, 255), Color3.fromRGB(255, 150, 60)}
 	local bits = debris(folder, origin, 40, function(i)
 		return part(folder, Enum.PartType.Block, Vector3.new(0.35, 0.05, 0.22), origin, palette[(i - 1) % #palette + 1], M.SmoothPlastic)
@@ -195,6 +253,9 @@ end
 
 -- a column of fire; the body chars black and crumbles to embers
 FX.Inferno = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.fireWhoosh, {volume = 1, speed = 0.75})
+	sfx(folder, opts, origin, SND.fireWhoosh, {volume = 0.7, speed = 0.55, delay = 0.35})
+	sfx(folder, opts, origin, SND.rockBurst, {volume = 0.35, speed = 1.6, delay = 1.0, cut = 1.0})   -- the char crumbles
 	local base = CFrame.new(origin.Position - Vector3.new(0, 3, 0))
 	local flames = {}
 	for i = 1, 16 do
@@ -236,6 +297,10 @@ FX.Frozen = function(folder, origin, opts)
 	local floor = origin.Position.Y - 3
 	local D = 2.2
 	bodyTint(opts.body, Color3.fromRGB(170, 220, 255), M.Ice)
+	-- the ice creaks as it closes, then bursts at the shatter
+	sfx(folder, opts, origin, SND.iceCrack, {volume = 0.8, speed = 1.35, cut = 0.9, fade = 0.2})
+	sfx(folder, opts, origin, SND.glassShatter, {volume = 1, speed = 0.95, delay = D * 0.45})
+	sfx(folder, opts, origin, SND.glassBreak, {volume = 0.6, speed = 1.3, delay = D * 0.45 + 0.05})
 	animate(D, opts, function(a, dt)
 		local grow = math.clamp(a / 0.15, 0, 1)
 		ice.Size = Vector3.new(3.2, 5.6 * grow + 0.05, 2.2)
@@ -258,6 +323,8 @@ end
 
 -- a bolt from the sky, a flash, a scorch mark
 FX.Thunderstrike = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.zap, {volume = 1, speed = 0.8})
+	sfx(folder, opts, origin, SND.thunder, {volume = 1, cut = 3.2, fade = 1.5, far = 300})
 	local top = origin.Position + Vector3.new(0, 26, 0)
 	local bottom = origin.Position - Vector3.new(0, 2.6, 0)
 	local segs = {}
@@ -295,6 +362,8 @@ end
 
 -- a pillar of light: the body rises, golden motes and wings, then it is gone
 FX.Ascension = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.choir, {volume = 0.75, cut = 3.4, fade = 1.6, far = 200})
+	sfx(folder, opts, origin, SND.swish, {volume = 0.5, speed = 0.8, delay = 0.3})
 	local beam = part(folder, Enum.PartType.Cylinder, Vector3.new(30, 3, 3), CFrame.new(origin.Position + Vector3.new(0, 12, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(255, 240, 190), M.Neon, 0.5)
 	local motes = {}
 	for i = 1, 16 do
@@ -335,6 +404,8 @@ end
 
 -- a rift opens underfoot; the body sinks into purple smoke
 FX.ShadowRift = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.rift, {volume = 0.9, speed = 0.55})
+	sfx(folder, opts, origin, SND.synthRip, {volume = 0.5, speed = 0.45, delay = 0.25})
 	local floorCF = CFrame.new(origin.Position - Vector3.new(0, 2.95, 0))
 	local rim = ring(folder, floorCF, 0.2, 0.06, Color3.fromRGB(150, 60, 255), M.Neon, 0)
 	local disc = ring(folder, floorCF * CFrame.new(0, 0.03, 0), 0.2, 0.08, Color3.fromRGB(12, 0, 20), M.SmoothPlastic, 0)
@@ -370,6 +441,9 @@ end
 
 -- the body bursts into gold coins that bounce on the floor
 FX.GoldRush = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.pop, {volume = 0.6, speed = 0.7})
+	sfx(folder, opts, origin, SND.shells, {volume = 0.9, speed = 1.45, delay = 0.25})
+	sfx(folder, opts, origin, SND.shellsLong, {volume = 0.6, speed = 1.6, delay = 0.45, cut = 1.4})
 	local floor = origin.Position.Y - 2.95
 	local bits = debris(folder, origin, 28, function()
 		return part(folder, Enum.PartType.Cylinder, Vector3.new(0.12, 0.6, 0.6), origin, Color3.fromRGB(255, 200, 60), M.Metal)
@@ -387,6 +461,9 @@ end
 
 -- a burst of black feathers that flutter down
 FX.CrowSwarm = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.wings, {volume = 1})
+	sfx(folder, opts, origin, SND.raven, {volume = 0.8, delay = 0.15})
+	sfx(folder, opts, origin, SND.raven, {volume = 0.6, speed = 0.85, delay = 0.7})
 	local bits = debris(folder, origin, 30, function(i)
 		return wedgePart(folder, Vector3.new(0.05, 0.25, 0.8), origin, i % 4 == 0 and Color3.fromRGB(60, 60, 75) or Color3.fromRGB(14, 14, 18), M.SmoothPlastic)
 	end, {speedMin = 7, speedMax = 15, upMin = 0.3, upMax = 1.1, spawnSpread = 0.6})
@@ -400,6 +477,8 @@ end
 
 -- gold rays and a crown that settles over the fallen
 FX.RoyalDecree = function(folder, origin, opts)
+	sfx(folder, opts, origin, SND.fanfare, {volume = 0.7, cut = 3.6, fade = 1.4, far = 220})
+	sfx(folder, opts, origin, SND.swish, {volume = 0.4, speed = 1.3})
 	local crownCF = origin * CFrame.new(0, 3.2, 0)
 	local band = ring(folder, crownCF, 0.75, 0.35, Color3.fromRGB(255, 200, 60), M.Metal, 0)
 	local points = {}
