@@ -574,18 +574,31 @@ The training yard is a peaceful map: players can't hurt each other, but dummies 
 hit (`GameConfig.MODES.Tiltyard.pvp = false`, the same as the Courtyard). `Game ▸ Training` runs
 it from the map's `Spots`:
 - **Straw dummies** on six posts: they take hits, never strike back, and pop back up.
-- **Sir Aldric, the Drill Master**: press E for the lesson board. There are 13 lessons
+- **Where to go:** a light beam and a bobbing arrow stand over your next stop (the straw dummy,
+  the drill dummy, the ring, the Drill Master), with an arrow at the edge of the screen when it's
+  out of view; the lesson card says GO TO › … (`DrillTarget` / `DrillTargetName` on the player).
+- **Sir Aldric, the Drill Master**: E opens his menu: carry on, start over, all lessons (pick any
+  to learn or redo), spar in the ring, practice bots, the Gauntlet. There are 13 lessons
   (`Catalog ▸ Drills`), from the swing, stab and overhead to both sides, blocks, parries,
   ripostes, feints, morphs, kicks, dodges and chambers, then a first win in the ring. Each lesson
   watches the combat system's own signals (which attack landed, GuardTick, ParryTick, FeintTick,
   MorphTick, KickTick, LastDodgeAt, a CHAMBER guard). The first finish of each pays a drill
   (`earn.drill`, the drill stat for tasks and the Drill Master title). A card on the right shows
   the lesson in your own key binds, and he says it over his head.
-- **Drill dummies** for the guard lessons: one swings slowly at you, the other never drops its
-  guard (so you can learn to kick it).
-- **The sparring ring**: press E at the sign and pick a Squire, Knight or Champion bot. After a
-  3-2-1 it's a fight to the death; leaving the ring forfeits. A first win at each level pays
-  (`Catalog ▸ Drills ▸ spar`); wins are kept per level.
+- **Drill dummies** for the guard lessons (and footwork): one swings slowly at you, the other
+  never drops its guard (so you can learn to kick it). They arrive with a lesson that needs them
+  and leave when nobody's lesson does.
+- **The sparring ring**: press E at the sign (or the menu) and pick a Squire, Knight or Champion
+  bot. After a 3-2-1 it's a fight to the death; leaving the ring forfeits. A first win at each
+  level pays (`Catalog ▸ Drills ▸ spar`); wins are kept per level. The last lesson's Squire
+  comes out the moment you step into the ring.
+- **The Gauntlet** (in the ring): waves of bots, each harder (Squire, two Squires, a Knight… then
+  Champions), a breath and some health back between waves, until you fall. Your best wave is
+  kept (profile `gauntlet`); each wave past your best pays `Drills ▸ gauntlet.perWave` Marks.
+- **The practice ground** (north-east, by the ring): call up one, two or three Squires, Knights
+  or Champions at once and fight them, as often as you like (no pay).
+- **New players** (no lessons, no rounds) heading for the Warfront or the Lists are asked once:
+  *Would you like to complete the training first?* (profile `askedTraining`).
 
 **Bots** (`Combat ▸ Bots`) fight on the real combat system: they carry a normal weapon Tool whose
 controller runs in NPC mode.

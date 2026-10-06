@@ -136,6 +136,27 @@ return function(K)
 			sp.CanCollide = false
 		end
 	end
+	-- the practice ground (north-east, between the ring and the butts): call
+	-- up bots at the sign and fight them here
+	do
+		local pg = V3(44, 0, -40)
+		K.cyl(ctx, "PracticeFloor", 26, 0.3, pg + V3(0, 0.15, 0), Color3.fromRGB(196, 168, 118), M.Sand)
+		for i = 0, 11 do
+			local a = i / 12 * math.pi * 2
+			if i ~= 3 then   -- a gap on the side facing the yard
+				K.box(ctx, "PracticeStone", V3(1.6, 0.7, 1.1), CFrame.new(pg + V3(math.cos(a) * 13.6, 0.35, math.sin(a) * 13.6)) * CFrame.Angles(0, -a, 0), C.STONE, M.Slate)
+			end
+		end
+		K.banner(ctx, pg + V3(-12, 0, -10), 10, C.RED)
+		K.banner(ctx, pg + V3(12, 0, -10), 10, C.RED)
+		K.rack(ctx, CFrame.new(pg + V3(0, 0, -15.5)) * CFrame.Angles(0, 0, 0))
+		local signCF = CFrame.lookAt(pg + V3(-4, 0, 15), pg + V3(-4, 0, 30))
+		for _, x in ipairs({-3.6, 3.6}) do K.box(ctx, "PracticeSignPost", V3(0.6, 6, 0.6), signCF * CFrame.new(x, 3, 0), C.DARKWOOD, M.Wood) end
+		K.box(ctx, "PracticeSignBoard", V3(8.4, 3.6, 0.4), signCF * CFrame.new(0, 4.6, 0), C.WOOD, M.WoodPlanks)
+		K.spot(ctx, "PracticeSign", signCF * CFrame.new(0, 4.6, -0.25))
+		K.spot(ctx, "Practice", CFrame.new(pg + V3(0, 1, 0)), {Radius = 12})
+	end
+
 	-- straw archery butts along the north palisade (dressing)
 	for _, x in ipairs({30, 40, 50}) do
 		K.box(ctx, "ButtStand", V3(0.4, 4, 0.4), V3(x, 2, -60), C.DARKWOOD, M.Wood)

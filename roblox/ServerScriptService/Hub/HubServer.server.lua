@@ -786,6 +786,10 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		return {ok = ok, msg = msg, crate = crate, login = Economy.loginStatus(plr), profile = Profile.summary(plr)}
 	elseif op == "BuyCrowns" then local ok, msg = buyCrowns(plr, a); return {ok = ok, msg = msg}
 	-- pastimes: playtime gifts, the Hatchery, companions (Economy ▸ Pastimes)
+	elseif op == "AskedTraining" then
+		Profile.get(plr).askedTraining = true
+		Profile.markDirty(plr)
+		return {ok = true}
 	elseif op == "GiftClaim" then
 		local ok, msg, crate = Pastimes.giftClaim(plr, a)
 		return {ok = ok, msg = msg, crate = crate, gifts = Pastimes.gifts(plr), profile = Profile.summary(plr)}

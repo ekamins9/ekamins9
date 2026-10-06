@@ -33,9 +33,8 @@ end
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	local gate = prompt:GetAttribute("Gate")
 	if gate == "Warfront" or gate == "Training" then
-		local door = gate == "Training" and "Tiltyard" or "Warfront"
-		local r = call("Play", door, {})
-		if not r.ok then _G.MenuBus:Fire("OpenHub", "MODES") end
+		-- through the menu, so a new player is offered the training first
+		_G.MenuBus:Fire("PlayDoor", gate == "Training" and "Tiltyard" or "Warfront")
 	elseif gate == "Lists" then
 		_G.MenuBus:Fire("OpenHub", "MODES")
 	end

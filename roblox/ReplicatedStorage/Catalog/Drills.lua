@@ -10,7 +10,8 @@
                  (a dummy that never drops its guard)
      A lesson finished for the first time pays Catalog ▸ Economy ▸ earn.drill
      and counts as a drill (daily tasks, the Drill Master title).
-       spar      per skill: first (Marks for your first win) and again (each win after) ]]
+       spar      per skill: first (Marks for your first win) and again (each win after)
+       gauntlet  perWave (Marks for each wave past your best), payTo (no pay past this wave) ]]
 return {
 	lessons = {
 		{id = "swing", title = "The Swing", goal = 3, event = "hit", kind = "Swing",
@@ -33,16 +34,18 @@ return {
 			text = "Start one attack and press another during its windup to switch: swing, then {Stab}. Twice."},
 		{id = "kick", title = "Break the Guard", goal = 2, event = "kick", setup = "blocker",
 			text = "Some fighters hide behind their guard. That dummy never drops it, so kick it with {Kick}. Twice."},
-		{id = "dodge", title = "Footwork", goal = 3, event = "dodge",
-			text = "Press {Dodge} with a direction to sidestep a blow. Dodge three times."},
+		{id = "dodge", title = "Footwork", goal = 3, event = "dodge", setup = "attacker",
+			text = "Sidestep my drill dummy's blows: press {Dodge} with a direction (or double-tap one). Dodge three times."},
 		{id = "chamber", title = "The Chamber", goal = 1, event = "chamber", setup = "attacker",
 			text = "The masters' trick: as the dummy swings, start the SAME attack from your mirrored side. Its blow dies and yours lands. Once!"},
 		{id = "spar", title = "First Blood", goal = 1, event = "spar", skill = "Squire",
-			text = "Enough dummies. Step into the sparring ring and beat a Squire."},
+			text = "Enough dummies. Step into the sparring ring: a Squire will meet you there. Beat him!"},
 	},
 	spar = {
 		Squire   = {first = 100, again = 15},
 		Knight   = {first = 250, again = 30},
 		Champion = {first = 600, again = 60},
 	},
+	-- the Gauntlet: each wave cleared past your best pays perWave Marks (up to wave payTo)
+	gauntlet = {perWave = 25, payTo = 20},
 }

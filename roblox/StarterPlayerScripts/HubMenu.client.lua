@@ -1683,6 +1683,7 @@ local function partyBlocked()
 	return nil
 end
 
+local goDoor, offerTraining   -- forward (defined below)
 local function findMatch()
 	if state.queue then return end
 	local blocked = partyBlocked()
@@ -1694,6 +1695,7 @@ local function findMatch()
 			{{"PICK " .. (n <= 2 and "2v2" or "3v3"), COL.BLUE, function() ui.bracket = n <= 2 and "2v2" or "3v3"; closeModal(); rerender() end}})
 		return
 	end
+	if offerTraining(findMatch) then return end
 	local r = call("Play", "Lists", {bracket = ui.bracket, ranked = ui.ranked})
 	if r.ok then
 		toast(r.msg or "", COL.GOOD)
@@ -1711,7 +1713,24 @@ local function cancelQueue()
 	rerender()
 end
 
-local function goDoor(doorId, opts)
+-- a new player (no lessons, no rounds) heading to battle is offered the
+-- training once; either answer is remembered (profile askedTraining)
+offerTraining = function(proceed)
+	local p = state.profile
+	if not p or p.askedTraining then return false end
+	for _ in pairs(p.drills or {}) do return false end
+	local st = p.stats or {}
+	if (st.round or 0) > 0 or (st.kill or 0) > 0 then return false end
+	p.askedTraining = true
+	task.spawn(call, "AskedTraining")
+	modal("NEW TO THE FIGHT?", "The Drill Master in the Training Yard teaches every move in a few minutes, and every lesson pays Marks. Would you like to complete the training first?",
+		{{"TO THE TRAINING YARD", COL.GREEN, function() closeModal(); goDoor("Tiltyard") end},
+		 {"STRAIGHT TO BATTLE", COL.RED, function() closeModal(); proceed() end}})
+	return true
+end
+
+goDoor = function(doorId, opts)
+	if doorId == "Warfront" and offerTraining(function() goDoor(doorId, opts) end) then return false end
 	local blocked = partyBlocked()
 	if blocked and doorId ~= "Courtyard" then toast(blocked, COL.BAD); return false end
 	local r = call("Play", doorId, opts or {})
@@ -5201,7 +5220,8 @@ loadoutEvent.OnClientEvent:Connect(function(what)
 end)
 
 bus.Event:Connect(function(what, tab)
-	if what == "OpenHub" then show(tab) end
+	if what == "OpenHub" then show(tab)
+	elseif what == "PlayDoor" then goDoor(tab) end   -- the Courtyard's gates
 end)
 
 -- in the Courtyard with no body: the menu opens by itself, over the cinematic

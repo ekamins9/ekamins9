@@ -19,6 +19,8 @@
        companion   the companion out with you ("" = none)   stars  {[companionId] = 1..5}
        drills      {[lessonId] = true} the Drill Master's lessons done   spars  {[skill] = wins in the ring}
        wishDay     the last UTC day you wished at the Courtyard's fountain
+       gauntlet    the best Gauntlet wave you cleared in the training yard
+       askedTraining  a new player was offered the training once (before their first battle)
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -61,7 +63,8 @@ local function default()
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
-		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = ""}
+		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
+		gauntlet = 0, askedTraining = false}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -226,7 +229,8 @@ function Profile.summary(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
 		login = p.login, killfx = p.killfx, emotes = p.emotes,
-		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars}
+		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
+		gauntlet = p.gauntlet, askedTraining = p.askedTraining}
 end
 
 Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)
