@@ -1,4 +1,8 @@
 {
   "className": "Tool",
-  "ignoreUnknownInstances": true
+  "ignoreUnknownInstances": true,
+  "properties": {
+    "ToolTip": "War Hammer",
+    "CanBeDropped": false
+  }
 }

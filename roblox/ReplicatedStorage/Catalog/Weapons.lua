@@ -11,7 +11,7 @@
      when no hand-made model exists. ]]
 return {
 	{id = "Shortsword", name = "Shortsword", family = "OneHanded", secondary = true, unlock = {free = true}},
-	{id = "Pitchfork", name = "Pitchfork", family = "Polearm", secondary = false, unlock = {free = true}},
+	{id = "Pitchfork", name = "Pitchfork", family = "Polearm", secondary = false, unlock = {level = 2}, marks = 300},
 	{id = "Greatsword", name = "Greatsword", family = "TwoHanded", secondary = false, unlock = {free = true}},
 	{id = "Hammer", name = "War Hammer", family = "OneHanded", secondary = true, unlock = {free = true}},
 	{id = "ArmingSword", name = "Arming Sword", family = "OneHanded", secondary = true, unlock = {free = true}},
@@ -33,7 +33,7 @@ return {
 	{id = "Bardiche", name = "Bardiche", family = "TwoHanded", secondary = false, unlock = {level = 15}, marks = 1800},
 	{id = "Zweihander", name = "Zweihander", family = "TwoHanded", secondary = false, unlock = {level = 16}, marks = 2200},
 	{id = "Executioner", name = "Executioner's Sword", family = "TwoHanded", secondary = false, unlock = {level = 18}, marks = 2400},
-	{id = "WarAxe", name = "War Axe", family = "OneHanded", secondary = true, unlock = {free = true}},
+	{id = "WarAxe", name = "War Axe", family = "OneHanded", secondary = true, unlock = {level = 3}, marks = 500},
 	{id = "Spear", name = "Spear", family = "Polearm", secondary = false, unlock = {free = true}},
-	{id = "Quarterstaff", name = "Quarterstaff", family = "Polearm", secondary = false, unlock = {free = true}},
+	{id = "Quarterstaff", name = "Quarterstaff", family = "Polearm", secondary = false, unlock = {level = 3}, marks = 400},
 }

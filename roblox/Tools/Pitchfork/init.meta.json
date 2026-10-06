@@ -1,4 +1,8 @@
 {
   "className": "Tool",
-  "ignoreUnknownInstances": true
+  "ignoreUnknownInstances": true,
+  "properties": {
+    "ToolTip": "Pitchfork",
+    "CanBeDropped": false
+  }
 }

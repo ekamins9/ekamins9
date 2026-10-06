@@ -140,16 +140,15 @@ local function applyBody(char, app, coversHair, coversFace)
 		local decal = head:FindFirstChildOfClass("Decal")
 		local face
 		for _, f in ipairs(Catalog.BODY.faces) do if f.id == app.face then face = f end end
+		local overlay = face and not coversFace and Catalog.bodyModel("Face", face.id)
 		if decal then
 			if face and face.texture ~= "" then decal.Texture = face.texture end
-			decal.Transparency = coversFace and 1 or 0
+			-- a Face model is a whole face (eyes, brows, mouth): the decal goes away under it
+			decal.Transparency = (coversFace or overlay) and 1 or 0
 		end
-		if face and not coversFace then
-			local t = Catalog.bodyModel("Face", face.id)
-			if t then
-				local m = putOn(head, t)
-				if m then m.Name = "Face"; m.Parent = body end
-			end
+		if overlay then
+			local m = putOn(head, overlay)
+			if m then m.Name = "Face"; m.Parent = body end
 		end
 	end
 	body.Parent = char

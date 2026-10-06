@@ -53,17 +53,40 @@ Body.Beard.Forked     = {middle(), B.box("Beard", v(1.0, 0.4, 0.3), cf(0, -0.5, 
 
 local E = C.EYE
 local Z = -0.66
-local function brows(angle, y)
-	return {B.box("Brow", v(0.42, 0.1, 0.04), cf(-0.3, y or 0.3, Z, 0, 0, -angle), E, M.PLASTIC, {KeepColor = true}),
-		B.box("Brow", v(0.42, 0.1, 0.04), cf(0.3, y or 0.3, Z, 0, 0, angle), E, M.PLASTIC, {KeepColor = true})}
+-- a complete face: the Roblox decal is hidden while one of these is worn, so
+-- every face carries its own eyes, brows and mouth. The visible head is a
+-- 1.25 cube: eyes sit a little above the middle (y 0.1), brows just over
+-- them, the mouth a little below (-0.22) — compact, like a drawn face.
+local K = {KeepColor = true}
+local function eyes(y, w, h, squint)
+	y = y or 0.1
+	return {B.box("Eye", v(w or 0.17, h or 0.17, 0.04), cf(-0.25, y, Z), E, M.PLASTIC, K),
+		B.box("Eye", v(w or 0.17, h or 0.17, 0.04), cf(0.25, y, Z), E, M.PLASTIC, K),
+		B.box("Shine", v(0.05, 0.05, 0.04), cf(-0.22, y + 0.04, Z - 0.005), C.WHITE, M.PLASTIC, K),
+		B.box("Shine", v(0.05, 0.05, 0.04), cf(0.28, y + 0.04, Z - 0.005), C.WHITE, M.PLASTIC, K)}
 end
-Body.Face.Stern   = B.join({middle()}, brows(12))
-Body.Face.Grin    = B.join({middle()}, brows(0, 0.32), {B.box("Mouth", v(0.7, 0.14, 0.04), cf(0, -0.3, Z), C.MOUTH, M.PLASTIC, {KeepColor = true}), B.box("Teeth", v(0.5, 0.06, 0.04), cf(0, -0.27, Z - 0.005), C.WHITE, M.PLASTIC, {KeepColor = true})})
-Body.Face.Scarred = B.join({middle()}, brows(8), {B.box("Scar", v(0.08, 0.7, 0.04), cf(0.38, 0.05, Z, 0, 0, 12), Color3.fromRGB(190, 130, 110), M.PLASTIC, {KeepColor = true})})
-Body.Face.Weary   = B.join({middle()}, brows(-10, 0.3), {B.box("Bag", v(0.36, 0.06, 0.04), cf(-0.3, -0.05, Z), Color3.fromRGB(150, 110, 100), M.PLASTIC, {KeepColor = true}), B.box("Bag", v(0.36, 0.06, 0.04), cf(0.3, -0.05, Z), Color3.fromRGB(150, 110, 100), M.PLASTIC, {KeepColor = true}),
-	B.box("Mouth", v(0.4, 0.06, 0.04), cf(0, -0.32, Z), C.MOUTH, M.PLASTIC, {KeepColor = true})})
-Body.Face.Fierce  = B.join({middle()}, brows(22, 0.26), {B.box("Paint", v(1.2, 0.2, 0.04), cf(0, 0.08, Z), C.RED, M.PLASTIC, {KeepColor = true}), B.box("Mouth", v(0.5, 0.08, 0.04), cf(0, -0.32, Z, 0, 0, 180), C.MOUTH, M.PLASTIC, {KeepColor = true})})
-Body.Face.OneEyed = B.join({middle()}, brows(6), {B.box("Patch", v(0.44, 0.34, 0.05), cf(0.3, 0.1, Z - 0.01), C.BLACK, M.LEATHER, {KeepColor = true}),
-	B.box("Strap", v(1.5, 0.08, 0.05), cf(0, 0.22, Z - 0.005, 0, 0, -12), C.BLACK, M.LEATHER, {KeepColor = true}), B.box("Strap", v(0.08, 0.3, 1.4), cf(0.62, 0.3, 0), C.BLACK, M.LEATHER, {KeepColor = true})})
+local function brows(angle, y)
+	y = y or 0.27
+	return {B.box("Brow", v(0.3, 0.07, 0.04), cf(-0.25, y, Z, 0, 0, -angle), E, M.PLASTIC, K),
+		B.box("Brow", v(0.3, 0.07, 0.04), cf(0.25, y, Z, 0, 0, angle), E, M.PLASTIC, K)}
+end
+local function mouth(w, y, angle)
+	return {B.box("Mouth", v(w or 0.3, 0.05, 0.04), cf(0, y or -0.22, Z, 0, 0, angle or 0), C.MOUTH, M.PLASTIC, K)}
+end
+local function face(...) return B.join({middle()}, ...) end
+
+Body.Face.Stern   = face(eyes(), brows(14), mouth(0.3, -0.22))
+Body.Face.Grin    = face(eyes(0.1, 0.17, 0.14), brows(-4, 0.29),
+	{B.box("Mouth", v(0.5, 0.12, 0.04), cf(0, -0.22, Z), C.MOUTH, M.PLASTIC, K), B.box("Teeth", v(0.4, 0.05, 0.04), cf(0, -0.19, Z - 0.005), C.WHITE, M.PLASTIC, K)})
+Body.Face.Scarred = face(eyes(), brows(10), mouth(0.28, -0.22, 6),
+	{B.box("Scar", v(0.06, 0.55, 0.04), cf(0.3, 0.1, Z - 0.003, 0, 0, 14), Color3.fromRGB(190, 130, 110), M.PLASTIC, K)})
+Body.Face.Weary   = face(eyes(0.08, 0.17, 0.11), brows(-12, 0.25), mouth(0.26, -0.24),
+	{B.box("Bag", v(0.2, 0.04, 0.04), cf(-0.25, -0.02, Z), Color3.fromRGB(150, 110, 100), M.PLASTIC, K), B.box("Bag", v(0.2, 0.04, 0.04), cf(0.25, -0.02, Z), Color3.fromRGB(150, 110, 100), M.PLASTIC, K)})
+Body.Face.Fierce  = face(eyes(0.09, 0.19, 0.13), brows(24, 0.24), mouth(0.36, -0.24, 180),
+	{B.box("Paint", v(1.2, 0.16, 0.04), cf(0, 0.1, Z + 0.003), C.RED, M.PLASTIC, K)})
+Body.Face.OneEyed = face({B.box("Eye", v(0.17, 0.17, 0.04), cf(-0.25, 0.1, Z), E, M.PLASTIC, K), B.box("Shine", v(0.05, 0.05, 0.04), cf(-0.22, 0.14, Z - 0.005), C.WHITE, M.PLASTIC, K)},
+	brows(8), mouth(0.28, -0.22),
+	{B.box("Patch", v(0.32, 0.26, 0.05), cf(0.25, 0.1, Z - 0.01), C.BLACK, M.LEATHER, K),
+	 B.box("Strap", v(1.5, 0.06, 0.05), cf(0, 0.2, Z - 0.005, 0, 0, -12), C.BLACK, M.LEATHER, K), B.box("Strap", v(0.06, 0.3, 1.4), cf(0.62, 0.3, 0), C.BLACK, M.LEATHER, K)})
 
 return Body

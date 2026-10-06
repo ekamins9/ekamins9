@@ -16,10 +16,10 @@ ATTACK_ANIMS = {
 
 # id: (name, family, two_handed, secondary, speed, reach, slash, stab, speedMult, clunkMult, stabSpeed, description, unlock, marks)
 WEAPONS = [
- ("Shortsword",  "Shortsword",        "OneHanded", False, True,  0.45, 4.0, 20, 20, 1.0, 1.0, 1.1, None, {"free": True}, 0),
- ("Pitchfork",   "Pitchfork",         "Polearm",   True,  False, 0.5,  9.0, 15, 22, 1.0, 1.0, 1.15, None, {"free": True}, 0),
- ("Greatsword",  "Greatsword",        "TwoHanded", True,  False, 0.4,  9.0, 30, 30, 1.1, 1.1, 1.0, None, {"free": True}, 0),
- ("Hammer",      "War Hammer",        "OneHanded", False, True,  0.45, 4.0, 20, 20, 1.0, 1.0, 1.0, None, {"free": True}, 0),
+ ("Shortsword",  "Shortsword",        "OneHanded", False, True,  0.45, 4.0, 20, 20, 1.0, 1.0, 1.1, "A short, broad sidearm. Quick, close, and always there when the main weapon is not.", {"free": True}, 0),
+ ("Pitchfork",   "Pitchfork",         "Polearm",   True,  False, 0.5,  9.0, 15, 22, 1.0, 1.0, 1.15, "Three tines of farm iron on an ash pole. The levy's spear, and it reaches just as far.", {"level": 2}, 300),
+ ("Greatsword",  "Greatsword",        "TwoHanded", True,  False, 0.4,  9.0, 30, 30, 1.1, 1.1, 1.0, "Six feet of steel swung in great arcs. Every hit lands like a hammer, but it takes both hands and a wide stance.", {"free": True}, 0),
+ ("Hammer",      "War Hammer",        "OneHanded", False, True,  0.45, 4.0, 20, 20, 1.0, 1.0, 1.0, "A small head on a short haft, with a spike on the back for helmets. Armor means nothing to it.", {"free": True}, 0),
  ("ArmingSword", "Arming Sword",      "OneHanded", False, True,  0.5,  5.0, 22, 20, 1.0, 1.0, 1.05, "The knight's sidearm: a straight cut-and-thrust blade that is quick in the hand and honest about its reach.", {"free": True}, 0),
  ("Dagger",      "Rondel Dagger",     "OneHanded", False, True,  0.75, 3.2, 14, 18, 1.0, 0.9, 1.15, "A hand's breadth of steel. Useless at range, deadly inside it: the stab goes through mail.", {"level": 2}, 500),
  ("Longsword",   "Longsword",         "TwoHanded", True,  False, 0.5,  6.5, 26, 24, 1.05, 1.05, 1.0, "Hand-and-a-half and fast for a two-hander. The fencer's weapon: feints, chambers, ripostes.", {"level": 3}, 900),
@@ -39,11 +39,11 @@ WEAPONS = [
  ("Bardiche",    "Bardiche",          "TwoHanded", True,  False, 0.36, 8.5, 34, 18, 1.1, 1.2, 0.85, "A long crescent blade bound to a long haft. Few things cut deeper.", {"level": 15}, 1800),
  ("Zweihander",  "Zweihander",        "TwoHanded", True,  False, 0.36, 9.5, 34, 28, 1.15, 1.15, 1.0, "The great two-hander of the Landsknechte, with rings and a leather ricasso. Every swing is a wall of steel.", {"level": 16}, 2200),
  ("Executioner", "Executioner's Sword","TwoHanded", True, False, 0.38, 8.0, 36, 10, 1.1, 1.15, 0.6, "Broad, flat-tipped, built for one job. No point, all edge.", {"level": 18}, 2400),
- ("WarAxe",      "War Axe",           "OneHanded", False, True,  0.48, 4.8, 26, 10, 1.0, 1.05, 0.8, "A one-handed axe, light enough to carry as a sidearm and heavy enough to open a helm.", {"free": True}, 0),
+ ("WarAxe",      "War Axe",           "OneHanded", False, True,  0.48, 4.8, 26, 10, 1.0, 1.05, 0.8, "A one-handed axe, light enough to carry as a sidearm and heavy enough to open a helm.", {"level": 3}, 500),
  ("Spear",       "Spear",             "Polearm",   True,  False, 0.5,  10.5, 12, 26, 1.0, 1.0, 1.15, "The oldest weapon there is. Keep the point between you and them.", {"free": True}, 0),
- ("Quarterstaff","Quarterstaff",      "Polearm",   True,  False, 0.62, 8.0, 14, 14, 1.0, 0.9, 1.0, "Iron-shod oak. It kills nobody quickly, and nobody gets near you either.", {"free": True}, 0),
+ ("Quarterstaff","Quarterstaff",      "Polearm",   True,  False, 0.62, 8.0, 14, 14, 1.0, 0.9, 1.0, "Iron-shod oak. It kills nobody quickly, and nobody gets near you either.", {"level": 3}, 400),
 ]
-EXISTING = {"Shortsword", "Pitchfork", "Greatsword", "Hammer"}   # hand-made Tools: don't regenerate their folders
+EXISTING = set()   # every Tool folder is generated now (the four originals were remade as meshes)
 
 CONFIG = '''--[[ {UPPER} — weapon config (ModuleScript inside the Tool).
      Only what makes this weapon different goes here; everything else comes

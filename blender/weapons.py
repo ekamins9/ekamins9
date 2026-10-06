@@ -24,17 +24,17 @@ from mathutils import Vector
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "blender", "out")
 
-# vertex colors (linear RGB) for the regions — Roblox shows them when the
+# vertex colors (Roblox shows them as-is, so these are display values) for the regions — Roblox shows them when the
 # MeshPart has no texture and `Color` is white
-STEEL = (0.62, 0.65, 0.69)
-BRIGHT = (0.80, 0.83, 0.87)
-DARKSTEEL = (0.22, 0.24, 0.27)
-IRON = (0.33, 0.35, 0.38)
-LEATHER = (0.22, 0.12, 0.07)
-DARKLEATHER = (0.10, 0.06, 0.04)
-WOOD = (0.36, 0.22, 0.11)
-BRASS = (0.62, 0.45, 0.17)
-GOLD = (0.85, 0.62, 0.18)
+STEEL = (0.86, 0.88, 0.92)
+BRIGHT = (0.95, 0.96, 0.98)
+DARKSTEEL = (0.42, 0.45, 0.50)
+IRON = (0.55, 0.57, 0.61)
+LEATHER = (0.45, 0.30, 0.19)
+DARKLEATHER = (0.26, 0.17, 0.11)
+WOOD = (0.58, 0.40, 0.23)
+BRASS = (0.80, 0.63, 0.30)
+GOLD = (0.95, 0.75, 0.28)
 
 # --------------------------------------------------------------------------
 #  mesh helpers (all return a bmesh)
