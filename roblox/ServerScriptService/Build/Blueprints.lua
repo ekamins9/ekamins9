@@ -63,7 +63,8 @@ function Blueprints.displayFor(tool)
 	m.Name = tool.Name
 	local handle
 	for _, d in ipairs(tool:GetDescendants()) do
-		if d:IsA("BasePart") and d.Name ~= "Hitbox" and d.Name ~= "GuardHull" and d.Transparency < 1 then
+		-- the Handle always comes along (mesh weapons hide it inside the grip mesh)
+		if d:IsA("BasePart") and d.Name ~= "Hitbox" and d.Name ~= "GuardHull" and (d.Transparency < 1 or d.Name == "Handle") then
 			local c = d:Clone()
 			for _, x in ipairs(c:GetChildren()) do if not (x:IsA("SpecialMesh") or x:IsA("Decal") or x:IsA("Texture")) then x:Destroy() end end
 			c.Anchored = true

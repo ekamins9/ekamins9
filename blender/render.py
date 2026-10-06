@@ -29,8 +29,10 @@ scene = bpy.context.scene
 cam_data = bpy.data.cameras.new("Cam"); cam_data.type = "ORTHO"; cam_data.ortho_scale = size * 1.15
 cam = bpy.data.objects.new("Cam", cam_data); scene.collection.objects.link(cam); scene.camera = cam
 # look along -Y of the world (Blender's forward) at the flat of the blade: Roblox Y is up → after import, up is Z
-cam.location = (cx, cy - size * 3, cz)
-cam.rotation_euler = (math.radians(90), 0, 0)
+# the sword axis comes in along Blender Y; look at its flat from +X with Y up
+from mathutils import Vector
+cam.location = (cx + size * 3, cy, cz)
+cam.rotation_euler = Vector((-1, 0, 0)).to_track_quat("-Z", "Y").to_euler()
 scene.render.engine = "BLENDER_WORKBENCH"
 scene.display.shading.light = "STUDIO"
 scene.display.shading.color_type = "VERTEX"

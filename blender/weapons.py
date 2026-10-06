@@ -408,9 +408,15 @@ def export(ob, path):
     for o in bpy.context.scene.objects:
         o.select_set(o == ob)
     bpy.context.view_layer.objects.active = ob
-    bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, global_scale=1.0,
-                             axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", colors_type="LINEAR",
+    # Roblox takes the FBX's Z as its Y (and keeps X): spin the mesh so the
+    # Tool's +Y (the blade) is on Blender +Z for the file, then spin it back
+    ob.rotation_euler = (math.radians(90), 0, 0)
+    # Roblox reads FBX centimetres (100 units = 1 stud) and takes the axes as
+    # they come, so pass coordinates through unchanged at 1/100
+    bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, global_scale=0.01,
+                             axis_forward="Y", axis_up="Z", mesh_smooth_type="FACE", colors_type="LINEAR",
                              add_leaf_bones=False, bake_anim=False, use_mesh_modifiers=True, path_mode="STRIP")
+    ob.rotation_euler = (0, 0, 0)
 
 
 def clear_scene():
@@ -418,10 +424,21 @@ def clear_scene():
         bpy.data.objects.remove(o, do_unlink=True)
 
 
+def bounds(ob):
+    xs = [v.co.x for v in ob.data.vertices]; ys = [v.co.y for v in ob.data.vertices]; zs = [v.co.z for v in ob.data.vertices]
+    lo, hi = (min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs))
+    return {"center": [(lo[i] + hi[i]) / 2 for i in range(3)], "size": [hi[i] - lo[i] for i in range(3)]}
+
+
 def build(name, out_dir):
+    """writes <name>_Blade.fbx / <name>_Grip.fbx and <name>.json. Roblox
+    re-centres every mesh on its bounding box, so the json keeps each region's
+    centre in the Tool frame: the weld offset from the Handle (the origin)."""
+    import json
     spec = WEAPONS[name]()
     clear_scene()
     written = []
+    meta = {"weapon": name, "regions": {}}
     for region in ("Blade", "Grip"):
         parts = spec.get(region) or []
         if not parts:
@@ -430,7 +447,10 @@ def build(name, out_dir):
         p = os.path.join(out_dir, f"{name}_{region}.fbx")
         export(ob, p)
         tri = len(ob.data.polygons)
+        meta["regions"][region] = dict(bounds(ob), tris=tri, file=os.path.basename(p))
         written.append((p, tri))
+    with open(os.path.join(out_dir, name + ".json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=1)
     return written
 
 
