@@ -2474,6 +2474,10 @@ selectTab = function(name)
 	renderSide()
 end
 for _, name in ipairs(TABS) do tabBtn[name].Activated:Connect(function() selectTab(name) end) end
+-- testing hook: set the ScreenGui's `Tab` attribute (or `ShopTab`) from the
+-- command bar / Studio MCP to switch screens without clicking
+gui:GetAttributeChangedSignal("Tab"):Connect(function() local t = gui:GetAttribute("Tab"); if t then selectTab(t) end end)
+gui:GetAttributeChangedSignal("ShopTab"):Connect(function() local t = gui:GetAttribute("ShopTab"); if t then ui.shopTab = t; if currentTab == "SHOP" and render.SHOP then task.spawn(render.SHOP) end end end)
 
 --------------------------------------------------------------------
 --  CINEMATIC CAMERA + MOUSE
