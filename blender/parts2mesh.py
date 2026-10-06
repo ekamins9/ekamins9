@@ -47,15 +47,15 @@ def box_mesh(sx, sy, sz, bevel):
 
 
 def cyl_mesh(sx, sy, sz):
-    # Builder: a cylinder's axis is its X; size = (height, diameter, diameter)
+    """a Build blueprint cylinder: its axis is the spec's local Y and its size
+    is (diameter along X, height, diameter along Z), as B.cyl in Builder.lua"""
     bm = bmesh.new()
-    r1, r2, h = sy / 2, sz / 2, sx
-    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=18, radius1=max(r1, r2), radius2=max(r1, r2), depth=h)
-    # create_cone is along Z: turn it onto X, squash to the ellipse
-    rot = Matrix.Rotation(math.radians(90), 4, "Y")
+    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=24, radius1=0.5, radius2=0.5, depth=1.0)
+    # create_cone runs along Z: stand it up along Y, then scale to the spec
+    rot = Matrix.Rotation(math.radians(-90), 4, "X")
     for v in bm.verts:
-        v.co = rot @ v.co
-        v.co = Vector((v.co.x, v.co.y * (r1 / max(r1, r2)), v.co.z * (r2 / max(r1, r2))))
+        p = rot @ v.co
+        v.co = Vector((p.x * sx, p.y * sy, p.z * sz))
     return bm
 
 
@@ -174,18 +174,19 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     data = json.load(open(src, encoding="utf-8"))
     jobs = []   # (model name, specs, is_body)
+    # --only takes set names / piece ids / body kinds, or whole model paths
+    # ("Sellswords/HeadClothing", "Pieces/BloodiedKettle/HeadClothing")
+    def wanted(group, path):
+        return not only or group in only or path in only
     for setName, slots in data.get("sets", {}).items():
-        if only and setName not in only: continue
         for slot, specs in slots.items():
-            jobs.append((f"{setName}/{slot}", specs, False))
+            if wanted(setName, f"{setName}/{slot}"): jobs.append((f"{setName}/{slot}", specs, False))
     for pid, slots in data.get("pieces", {}).items():
-        if only and pid not in only: continue
         for slot, specs in slots.items():
-            jobs.append((f"Pieces/{pid}/{slot}", specs, False))
+            if wanted(pid, f"Pieces/{pid}/{slot}"): jobs.append((f"Pieces/{pid}/{slot}", specs, False))
     for kind, items in data.get("body", {}).items():
-        if only and kind not in only: continue
         for bid, specs in items.items():
-            jobs.append((f"Body/{kind}/{bid}", specs, True))
+            if wanted(kind, f"Body/{kind}/{bid}"): jobs.append((f"Body/{kind}/{bid}", specs, True))
     for name, specs, body in jobs:
         meta = build_model(name, specs, out_dir, body)
         print("WROTE", name, {r: m["tris"] for r, m in meta["regions"].items()})

@@ -1,9 +1,16 @@
---[[ SANITIZE — the stamped castle models came with free-model "weld" scripts
-     (a Script under every "… Strong Joint" ManualWeld / RobloxModel /
-     RobloxStamper value that requires a dead asset). They do nothing but
-     throw in the Output, and more appear whenever a stamped model is cloned
-     or re-welded. This removes them from the world as soon as they exist:
-     at start, and for anything added later (maps are cloned at runtime). ]]
+--[[ SANITIZE — a runtime safety net for injected "weld" scripts.
+
+     Where they come from: a counterfeit "Studio Build Suite" plugin (Creator
+     Store id 6542422966) adds one Script with `require(<asset>).weld()` to a
+     random Workspace descendant every time Studio opens a place — under parts,
+     joints ("… Strong Joint"), RobloxModel / RobloxStamper values. That
+     require is a backdoor: harmless only while its asset stays deleted.
+     Uninstall the plugin (Plugins ▸ Manage Plugins) and remove the scripts in
+     edit mode (docs/HANDOFF.md has the snippet).
+
+     Game scripts can't read Script.Source, so at runtime this can only catch
+     the ones parked under joints and stamper values; it disables them the
+     moment they appear and deletes them a frame later. ]]
 local JUNK_PARENTS = {RobloxModel = true, RobloxStamper = true}
 
 local function isJunk(d)
@@ -24,6 +31,9 @@ end
 sweep(workspace)
 sweep(game:GetService("ServerStorage"))
 workspace.DescendantAdded:Connect(function(d)
-	if isJunk(d) then task.defer(function() if d.Parent then d:Destroy() end end) end
+	if isJunk(d) then
+		d.Enabled = false   -- synchronously, before it gets a chance to run
+		task.defer(function() if d.Parent then d:Destroy() end end)
+	end
 end)
 if n > 0 then print("[Sanitize] removed", n, "free-model weld scripts") end

@@ -95,6 +95,24 @@ Still to do:
   `Build ▸ Armor` (the converter makes meshes of whatever the blueprints say).
 - Matchmaking, reserved servers, Robux products: need a published game.
 
+## 4b. Security: the counterfeit "Studio Build Suite" plugin
+
+Plugin **6542422966** (shows up as *Studio Build Suite* / SBS) injects a Script
+`require(6523905017).weld()` into a random Workspace descendant every time Studio
+opens a place. That is a backdoor: it stays inert only while the required asset is
+taken down. The user was asked to uninstall it (Plugins ▸ Manage Plugins) on
+2026-10-06. If `require(…)`-style "Downloading asset failed" errors show up in the
+Output again, check the plugin list, then clean the place in edit mode:
+
+```lua
+for _, d in ipairs(game:GetDescendants()) do
+	if d:IsA("LuaSourceContainer") and d.Source:find("6523905017", 1, true) then d:Destroy() end
+end
+```
+
+Any other place the user opened in Studio while the plugin was installed has the
+same injected scripts.
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.
