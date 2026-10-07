@@ -41,6 +41,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
 local Pickup = require(script.Parent:WaitForChild("Pickup"))
 local Corpses = require(script.Parent:WaitForChild("Corpses"))
+local RigPose = require(game:GetService("ReplicatedStorage"):WaitForChild("RigPose"))
+local AnimSets = require(game:GetService("ReplicatedStorage"):WaitForChild("Combat"):WaitForChild("AnimSets"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local MC = require(ReplicatedStorage:WaitForChild("MovementConfig"))
@@ -798,9 +800,23 @@ function Bots.spawn(opts)
 	-- face the opponent (or the weapon it's going for) every frame, yaw only, at a
 	-- player's turn rate; then the reflexes
 	local lastWarn = 0
+	-- forged weapons aim: the arms turn with the bot's "look" about its eyes, at the
+	-- chest of whoever it faces (the same rig math players use), eased
+	local aimJ, aimO = RigPose.joints(model), RigPose.origins(model)
+	local aimPitch = 0
 	table.insert(bot.conns, RunService.Heartbeat:Connect(function(dt)
 		local f = bot.facing
 		local down = not bot.alive or hum.Health <= 0 or model:GetAttribute("Ragdolled") == true
+		if aimJ and aimO and not down and AnimSets.forged() then
+			local want = 0
+			if f and f.Parent then
+				local eye = hrp.Position + RigPose.CONFIG.AIM_EYE
+				local d = f.Position - eye
+				want = math.atan2(d.Y, Vector3.new(d.X, 0, d.Z).Magnitude)
+			end
+			aimPitch += (math.clamp(want, -1.1, 1.1) - aimPitch) * math.clamp(dt * 10, 0, 1)
+			RigPose.aimArms(aimJ, aimO.RootJoint, aimO["Right Shoulder"], aimO["Left Shoulder"], aimPitch)
+		end
 		local look = bot.lookAt or (f and f.Parent and Vector3.new(f.Position.X - hrp.Position.X, 0, f.Position.Z - hrp.Position.Z)) or nil
 		align.Enabled = not down and look ~= nil
 		if not align.Enabled then bot.yaw = nil; return end

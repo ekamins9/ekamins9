@@ -15,6 +15,10 @@ RigPose.CONFIG = {
 	TORSO_PITCH = 0.5,
 	TORSO_PIVOT = 1.0,
 	ARM_PITCH   = 0.7,
+	-- forged weapons AIM: the arms and weapon turn with the camera's pitch about
+	-- the eyes, so a swing or a thrust goes where the crosshair points
+	AIM_EYE     = Vector3.new(0, 1.5, 0),   -- the eyes, in root space
+	AIM_DIST    = 7,                         -- (third person) studs past you where the attack meets the crosshair
 	RIGHT_ARM_DIR = 1,
 	LEFT_ARM_DIR  = -1,
 	LEAN_DIR      = 1,
@@ -80,7 +84,11 @@ function RigPose.compute(i, o)
 	local counter  = o.RootJoint * rootBend:Inverse()   -- legs stay planted under the bent torso
 	local legFold  = C.CROUCH_LEG * C.CROUCH_LEG_DIR * i.crouch
 	local swayCF   = CFrame.Angles(i.swayY, i.swayX, 0)
+	-- aiming (a forged weapon out): RigPose.apply turns the arms about the eyes
+	local aim = (i.aim or 0) > 0.5 and {pitch = i.aimP or i.pitch, yaw = i.aimY or 0, rootC0 = o.RootJoint,
+		rs = swayCF * o["Right Shoulder"], ls = swayCF * o["Left Shoulder"]} or nil
 	return {
+		_aim = aim,
 		Neck      = o.Neck * CFrame.Angles(p * C.NECK_PITCH, 0, 0),
 		RootJoint = CFrame.new(0, i.bob - C.CROUCH_DROP * i.crouch, 0) * rootBend,
 		["Left Hip"]  = counter * o["Left Hip"]  * CFrame.Angles(0, 0, -legFold),
@@ -110,6 +118,34 @@ local function animSets()
 	return AnimSetsMod
 end
 
+-- AIM: the shoulders' C0s that turn the arms (and the weapon in the hand) by
+-- `pitch` about the eyes, whatever the torso's own bend and animated turn —
+-- so the weapon's path crosses the line of sight exactly as the clip has it
+-- crossing straight ahead. rootC0 / rs / ls are the rest C0s (origins).
+function RigPose.aimArms(j, rootC0, rs, ls, pitch, yaw)
+	local rj = j.RootJoint
+	if not (rj and j["Right Shoulder"] and j["Left Shoulder"]) then return end
+	local c1r, ttor = rj.C1, rj.Transform
+	local E = C.AIM_EYE
+	local turn = CFrame.new(E) * CFrame.Angles(0, yaw or 0, 0) * CFrame.Angles(pitch, 0, 0) * CFrame.new(-E)
+	local k = (c1r * ttor:Inverse() * rj.C0:Inverse()) * turn * (rootC0 * ttor * c1r:Inverse())
+	j["Right Shoulder"].C0 = k * rs
+	j["Left Shoulder"].C0 = k * ls
+end
+
+-- where an attack should meet the crosshair: the pitch and yaw (root space,
+-- about the eyes) toward the point on the camera's ray AIM_DIST studs past the
+-- character. First person this is just the camera's pitch; third person (camera
+-- behind and over the shoulder) it converges the swing on the crosshair.
+function RigPose.aimAngles(rootCF, camCF)
+	local eye = rootCF:PointToWorldSpace(C.AIM_EYE)
+	local along = math.max((eye - camCF.Position):Dot(camCF.LookVector), 0)
+	local p = camCF.Position + camCF.LookVector * (along + C.AIM_DIST)
+	local rel = rootCF:PointToObjectSpace(p) - C.AIM_EYE
+	local flat = math.sqrt(rel.X * rel.X + rel.Z * rel.Z)
+	return math.atan2(rel.Y, math.max(flat, 1e-3)), math.atan2(-rel.X, -rel.Z)
+end
+
 -- lerps each joint's C0 toward the target; legAlpha lets kicks snap faster
 function RigPose.apply(j, target, alpha, legAlpha)
 	legAlpha = legAlpha or alpha
@@ -126,7 +162,7 @@ function RigPose.apply(j, target, alpha, legAlpha)
 	j._base = j._base or {}
 	for name, cf in pairs(target) do
 		local m = j[name]
-		if m and m.Parent then
+		if m and m.Parent and type(name) == "string" and name:sub(1, 1) ~= "_" then
 			local hip = name == "Left Hip" or name == "Right Hip"
 			local a = hip and legAlpha or alpha
 			if hip then
@@ -138,10 +174,12 @@ function RigPose.apply(j, target, alpha, legAlpha)
 			end
 		end
 	end
+	local aim = target._aim
+	if aim then RigPose.aimArms(j, aim.rootC0, aim.rs, aim.ls, aim.pitch, aim.yaw) end
 end
 
 -- wire format: a flat array of 9 numbers
-local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY", "hitX", "hitZ"}
+local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY", "hitX", "hitZ", "aim", "aimP", "aimY"}
 local LIMIT = 4   -- sanity clamp on every input
 
 function RigPose.pack(i)

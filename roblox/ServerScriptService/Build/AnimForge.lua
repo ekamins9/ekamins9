@@ -38,10 +38,18 @@ local rad, sin, cos, clamp = math.rad, math.sin, math.cos, math.clamp
 local V3, CF, ANG = Vector3.new, CFrame.new, CFrame.Angles
 local PI = math.pi
 
-AF.FPS    = 30      -- samples per second written into each clip
+AF.FPS    = 40      -- samples per second written into each clip
 AF.STRIKE = 0.30    -- Load → Through (seconds at speed 1)
 AF.WINDUP = 0.30    -- Ready → Load (rescaled by the game to the real windup)
 AF.FOLLOW = 0.45    -- Through → Settle (rescaled to the recovery)
+
+-- WHERE THE CROSSHAIR IS: looking straight ahead, the line of sight runs from
+-- the eyes (y 1.5) forward. In game the arms and weapon turn with the camera's
+-- pitch about the eyes (RigPose.aimArms), so an attack aimed at this line in the
+-- clip lands on the crosshair wherever it points.
+AF.EYE_Y      = 1.5
+AF.SWING_Y    = 1.15                    -- a level swing's hands: the blade sweeps just under the crosshair
+AF.AIM_POINT  = V3(0, 1.5, -5.5)        -- a thrust drives its point here (on the line of sight)
 
 --------------------------------------------------------------------
 --  THE R6 RIG — Part1 = Part0 * C0 * Transform * C1:Inverse()
@@ -172,15 +180,17 @@ AF.CLASSES = CLASSES
 -- ln = lean, tl = tilt; hand = extra offset of the aim point; stab = hand
 -- position given directly (thrusts move the hand, not the blade)
 local MOVES = {
+	-- A SWING IS LEVEL: the blade cuts a flat plane from the load to the finish
+	-- (el 0 — the player's mouse pitch tilts that plane, so the clip mustn't)
 	Swing = {
 		windup = {
-			{u = 0.55, az = 75,  el = 48, ease = "sine"},
-			{u = 1.0,  az = 138, el = 30, ln = -4, ease = "sineOut"},        -- loaded: blade back over the right shoulder
+			{u = 0.55, az = 80,  el = 30, ease = "sine"},
+			{u = 1.0,  az = 138, el = 0, ln = -4, ease = "sineOut"},         -- loaded: blade level, back past the right shoulder
 		},
 		strike = {
-			{u = 0.30, az = 100, el = 14, ease = "quadIn"},                    -- the release accelerates…
-			{u = 0.58, az = 8,   el = 2,  ln = 8, ease = "linear"},            -- …full speed through the front (contact)
-			{u = 1.0,  az = -78, el = -8, ln = 6, ease = "quadOut"},           -- carries through to the left
+			{u = 0.30, az = 100, el = 0, ease = "quadIn"},                     -- the release accelerates…
+			{u = 0.58, az = 8,   el = 0, ln = 6, ease = "linear"},             -- …full speed through the front (contact)
+			{u = 1.0,  az = -78, el = 0, ln = 5, ease = "quadOut"},            -- carries through to the left, still level
 		},
 		follow = {
 			{u = 0.45, az = -105, el = -28, ln = 4, ease = "cubicOut"},       -- the weight pulls the blade down and round
@@ -193,12 +203,12 @@ local MOVES = {
 			{u = 1.0, az = 18, el = 152, at = V3(0.75, 2.2, -0.5), tw = 22, ln = -8, ease = "sineOut"},   -- loaded: hands high, the tip behind the head
 		},
 		strike = {
-			{u = 0.32, az = 14, el = 108, at = V3(0.62, 2.1, -0.9), tw = 12, ln = -2, ease = "quadIn"},
-			{u = 0.6,  az = 4,  el = 22,  at = V3(0.35, 0.8, -1.65), tw = -4, ln = 12, ease = "linear"},  -- chops down through head height
-			{u = 1.0,  az = -8, el = -36, at = V3(0.25, -0.3, -1.35), tw = -12, ln = 16, ease = "quadOut"},
+			{u = 0.32, az = 6, el = 108, at = V3(0.62, 2.1, -0.9), tw = 12, ln = -2, ease = "quadIn"},
+			{u = 0.6,  az = 0,  el = 22,  at = V3(0.3, 0.8, -1.65), tw = -4, ln = 12, ease = "linear"},  -- chops down through head height
+			{u = 1.0,  az = -3, el = -36, at = V3(0.25, -0.3, -1.35), tw = -12, ln = 16, ease = "quadOut"},
 		},
 		follow = {
-			{u = 0.45, az = -14, el = -58, at = V3(0.2, -0.55, -1.05), tw = -14, ln = 12, ease = "cubicOut"},
+			{u = 0.45, az = -6, el = -58, at = V3(0.2, -0.55, -1.05), tw = -14, ln = 12, ease = "cubicOut"},
 			{u = 1.0,  guard = true, ease = "sine"},
 		},
 	},
@@ -219,16 +229,16 @@ local MOVES = {
 	},
 	Stab = {   -- the whole body coils to the right (the head stays on the target), then unwinds as the arms drive the point out
 		windup = {
-			{u = 0.5, az = 6, el = 12, at = V3(0.95, -0.05, -0.3), tw = 30, ln = -2, ease = "sine"},
-			{u = 1.0, az = 4, el = 6,  at = V3(1.0, -0.1, 0.35), tw = 48, ln = -5, ease = "sineOut"},   -- coiled: drawn back past the hip
+			{u = 0.5, az = 6, el = 12, at = V3(0.95, 0.45, -0.3), tw = 30, ln = -2, ease = "sine"},
+			{u = 1.0, az = 4, el = 6,  at = V3(1.0, 0.35, 0.35), tw = 48, ln = -5, ease = "sineOut"},   -- coiled: drawn back past the hip
 		},
 		strike = {
-			{u = 0.32, az = 3, el = 5, at = V3(0.8, 0.0, -0.5), tw = 22, ln = 4, ease = "quadIn"},
-			{u = 0.6,  az = 1, el = 4, at = V3(0.35, 0.1, -1.6), tw = -14, ln = 12, ease = "linear"},   -- the drive
-			{u = 1.0,  az = 0, el = 3, at = V3(0.2, 0.1, -1.9), tw = -22, ln = 15, ease = "expoOut"},
+			{u = 0.32, az = 3, el = 5, at = V3(0.8, 0.55, -0.5), tw = 22, ln = 4, ease = "quadIn"},
+			{u = 0.6,  az = 1, el = 4, at = V3(0.35, 0.75, -1.6), tw = -14, ln = 12, ease = "linear"},   -- the drive
+			{u = 1.0,  az = 0, el = 3, at = V3(0.2, 0.82, -1.9), tw = -22, ln = 15, ease = "expoOut"},
 		},
 		follow = {
-			{u = 0.4, az = 2, el = 10, at = V3(0.35, 0.0, -1.5), tw = -14, ln = 10, ease = "sine"},
+			{u = 0.4, az = 2, el = 10, at = V3(0.35, 0.65, -1.5), tw = -14, ln = 10, ease = "sine"},
 			{u = 1.0, guard = true, ease = "sine"},
 		},
 	},
@@ -294,7 +304,7 @@ solveRaw = function(cls, p, side, edgeHint, legs, prev)
 	rAim = rAim.Unit
 	if prev then rAim = capTurn(prev.rAim, rAim, AF.ARM_CAP.right) end
 	local rFront = prev and transport(prev.rFront, prev.rAim, rAim) or naturalFront(torso, rAim)
-	local rArm, rHand = limb(rShoulder, rAim, rFront, J.RS.C1.Position, HAND, clamp(rDist - ARM_LEN, -0.15, 0.3))
+	local rArm, rHand = limb(rShoulder, rAim, rFront, J.RS.C1.Position, HAND, clamp(rDist - ARM_LEN, -0.42, 0.45))   -- (the shoulder reaches / draws in to hold the line)
 
 	-- the weapon: blade where the pose says, edge leading
 	-- (held poses: the edge toward the enemy)
@@ -416,12 +426,26 @@ function AF.timeline(cls, kind)
 			-- the heavy classes chop: overheads come further over, underhands lower
 			if cls.chop and kind == "Overhead" and not k.guard then p.el = p.el + (p.el > 60 and 6 or -4) * cls.chop end
 			-- polearms carry the head lower (the weight is at the far end)
-			if cls.low and not k.guard and kind ~= "Overhead" then p.el = p.el - 8 end
+			if cls.low and not k.guard and kind ~= "Overhead" and kind ~= "Swing" then p.el = p.el - 8 end
+			-- a SWING sweeps level at the crosshair's height (the hands rise to it)
+			if kind == "Swing" and not k.guard then
+				-- (part-way up while winding, all the way from the load through the strike,
+				-- easing back down in the follow-through)
+				local share = (phase == "strike" or k.u >= 0.9) and 1 or 0.6
+				if phase == "follow" then share = 0.6 end
+				local lift = (AF.SWING_Y - cls.pivot.Y) * share
+				p.hand = (p.hand or Vector3.zero) + V3(0, lift, 0)
+			end
 			if p.at then
 				local at = p.at
 				-- daggers stab short and fast; two hands work from the centre line
 				if cls.quick and kind == "Stab" then at = at * V3(0.9, 1, 0.85) end
 				if cls.twoHanded then at = V3(at.X * 0.55, at.Y, at.Z) end
+				-- a THRUST points at the crosshair the whole way
+				if kind == "Stab" then
+					local d = (AF.AIM_POINT - at).Unit
+					p.az, p.el = math.deg(math.atan2(d.X, -d.Z)), math.deg(math.asin(clamp(d.Y, -1, 1)))
+				end
 				p.hand = offsetFor(cls, p.az, p.el, at)
 				p.at = nil
 			end

@@ -1,5 +1,14 @@
 # Updated scripts: objective rings, training ring deaths, combat animations
 
+**Attacks go where you aim (newest; all 66 clips rebuilt at 40 fps):**
+- **Swings are level:** the blade cuts a flat plane at crosshair height, with the hands at 1.15.
+- **Thrusts drive at the crosshair**, and **overheads chop straight down the middle**.
+- **Aiming:**
+  - With a forged weapon out, the arms and weapon turn with your view about your eyes (`RigPose.aimArms`), in pitch and yaw.
+  - The target point is on the crosshair ray, 7 studs past you (`AIM_DIST`): in first person that's simply your look, and in third person (camera over the shoulder) it brings the attack onto the crosshair.
+  - Relayed to other players (new `aim` / `aimP` / `aimY` inputs). Bots aim at their target's chest.
+- **Measured in play (third person):** right swing 0.4°, stab 0.7°, left swing 2.6°, overhead 3.3° from the crosshair.
+
 **Animation pass 3 (newest; all 66 clips rebuilt):**
 - **Overhead:** the hands go up above the head (y 2.1), in front of it, never through it; the blade lies back over the top and chops down.
 - **Stab:** the whole body coils to the right with the head on the target, then unwinds as the arms drive the point out.
@@ -23,6 +32,7 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [AnimForge.lua](ServerScriptService/Build/AnimForge.lua), [AnimSets.lua](ReplicatedStorage/Combat/AnimSets.lua), [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua), [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | Build / Combat | ModuleScript | animation pass 3 (above) |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua), [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [Bots.lua](ServerScriptService/Combat/Bots.lua) | ReplicatedStorage / StarterCharacterScripts / Combat | Module / LocalScript | attacks aim at the crosshair |
 | [ObjectiveFX.client.lua](StarterPlayerScripts/ObjectiveFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ ObjectiveFX | LocalScript | **new**: the ground rings |
 | [KOTH.lua](ServerScriptService/Game/Modes/KOTH.lua) | ServerScriptService ▸ Game ▸ Modes ▸ KOTH | ModuleScript | disc capture, publishes the hill's state |
 | [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Siege | ModuleScript | publishes the objective's radius; capture box hidden |

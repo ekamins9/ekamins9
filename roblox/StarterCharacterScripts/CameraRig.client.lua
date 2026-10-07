@@ -38,6 +38,10 @@ local Modifiers      = require(ReplicatedStorage:WaitForChild("Modifiers"))
 local Sounds         = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local RigPose        = require(ReplicatedStorage:WaitForChild("RigPose"))
+local AnimSetsMod = (function()
+	local ok, m = pcall(function() return require(game:GetService("ReplicatedStorage"):WaitForChild("Combat"):WaitForChild("AnimSets")) end)
+	return ok and m or nil
+end)()
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
 ClientSettings.load()
@@ -681,7 +685,10 @@ local function loopBody(dt)
 		swayY  = swayY,
 		hitX   = joltX,
 		hitZ   = joltZ,
+		-- a forged weapon in hand: arms and weapon aim with the camera about the eyes
+		aim    = (character:FindFirstChildOfClass("Tool") and AnimSetsMod and AnimSetsMod.forged()) and 1 or 0,
 	}
+	inputs.aimP, inputs.aimY = RigPose.aimAngles(HRP.CFrame, Camera.CFrame)
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
 	-- heartbeat: proves THIS loop is the one drawing the body
