@@ -862,6 +862,25 @@ function HX.copies(key)
 	return p and p.copies and p.copies[key] or {}
 end
 HX.RANK = {Masterwork = 1, Radiant = 2, Golden = 1, Spectral = 2}
+HX.FX = require(ReplicatedStorage:WaitForChild("UIFX"))   -- menu sounds, flashes, banners (ReplicatedStorage ▸ UIFX)
+-- the moment a pull lands: a beat of suspense, then flash + banner + sting (+ shake when it's big)
+function HX.revealMoment(anchor, rarity, variant, dup)
+	local FX = HX.FX
+	local col = RARITY_COL[rarity] or Color3.new(1, 1, 1)
+	local big = FX.BIG[rarity] == true
+	if big then
+		-- the big ones hold their breath a moment longer, with a first low flash
+		FX.flash(anchor, col, 0.25, 0.35)
+		task.wait(0.45)
+	end
+	FX.flash(anchor, col, big and 0.75 or 0.45, big and 0.9 or 0.5)
+	FX.banner(anchor, string.upper(rarity) .. "!", col, big)
+	FX.reveal(rarity)
+	if variant then task.delay(0.35, function() FX.banner(anchor, string.upper(variant) .. " FINISH", HX.VARIANT_COL[variant] or col, false) end) end
+	if dup then task.delay(0.25, function() FX.play("Coins") end) end
+	if big then FX.shake(anchor:FindFirstAncestorOfClass("ScreenGui") and anchor:FindFirstAncestorOfClass("ScreenGui"):FindFirstChildWhichIsA("Frame") or anchor, 10, 0.5) end
+	task.wait(big and 1.1 or 0.55)
+end
 function HX.best(key)
 	local RANK = HX.RANK
 	local best
@@ -1473,6 +1492,57 @@ function Preview.egg(parent, eggId, size, wobble, still)
 	end)
 	return holder
 end
+-- HATCHING: the egg on a dark stage — it rocks, cracks three times (harder
+-- each time, a crack spreading over it), bursts in a flash, and the reveal
+-- comes in (rarity flash + banner + sting). Blocks until it's done.
+function HX.hatchMoment(anchor, eggId, rarity, variant, dup)
+	local FX = HX.FX
+	local sg = anchor and anchor:FindFirstAncestorOfClass("ScreenGui")
+	if not (sg and eggId and Catalog.EGG[eggId]) then return end
+	local cover = Instance.new("Frame")
+	cover.Name = "_Hatching"; cover.Size = UDim2.fromScale(1, 1); cover.BorderSizePixel = 0; cover.ZIndex = 900
+	cover.BackgroundColor3 = Color3.fromRGB(8, 7, 12); cover.BackgroundTransparency = 1
+	cover.Active = true; cover.Parent = sg
+	game:GetService("TweenService"):Create(cover, TweenInfo.new(0.25), {BackgroundTransparency = 0.25}):Play()
+	local shake = 0.08
+	local stage = Preview.egg(cover, eggId, UDim2.fromOffset(420, 420), function() return shake end)
+	stage.AnchorPoint = Vector2.new(0.5, 0.5); stage.Position = UDim2.fromScale(0.5, 0.5); stage.ZIndex = 901
+	stage.BackgroundTransparency = 1
+	-- cracks: jagged white lines laid over the egg, more with each blow
+	local function crack(n)
+		for k = 1, 2 + n do
+			local ln = Instance.new("Frame")
+			ln.BorderSizePixel = 0; ln.BackgroundColor3 = Color3.new(1, 1, 1); ln.ZIndex = 905
+			ln.AnchorPoint = Vector2.new(0.5, 0.5)
+			ln.Size = UDim2.fromOffset(18 + math.random(26), 3)
+			ln.Position = UDim2.new(0.5, math.random(-46, 46), 0.48, math.random(-70, 50))
+			ln.Rotation = math.random(-70, 70)
+			ln.Parent = stage
+		end
+	end
+	task.wait(0.35)
+	for n = 1, 3 do
+		shake = 0.3 + n * 0.25
+		task.wait(0.5 - n * 0.08)
+		FX.play("EggCrack", {Speed = 1 + n * 0.08})
+		FX.flash(cover, Color3.new(1, 1, 1), 0.12 + n * 0.06, 0.18)
+		FX.shake(stage, 4 + n * 3, 0.22)
+		crack(n)
+		shake = 0.1
+		task.wait(0.18)
+	end
+	shake = 1.2
+	task.wait(0.35)
+	-- the burst
+	FX.play("EggBurst"); FX.play("Shells")
+	FX.flash(cover, Color3.new(1, 1, 1), 0.95, 0.6)
+	stage:Destroy()
+	task.wait(0.15)
+	HX.revealMoment(cover, rarity, variant, dup)
+	game:GetService("TweenService"):Create(cover, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
+	task.delay(0.3, function() cover:Destroy() end)
+end
+
 -- a companion on a little stage (still = a frozen pose; dark = a silhouette)
 function Preview.companion(parent, id, size, still, stars, dark)
 	local holder, world, cam = Preview.box(parent, size)
@@ -3897,15 +3967,20 @@ do
 			local total = #pool * 3 + wonIndex - 1
 			local t0 = os.clock()
 			local dur = 3.6
+			HX.FX.play("DrumRoll")
+			local tick = HX.FX.ticker("Tick")
 			while os.clock() - t0 < dur do
 				local fr = (os.clock() - t0) / dur
 				local eased = 1 - (1 - fr) * (1 - fr) * (1 - fr)
 				local pos = eased * total * cardW
 				sf.CanvasPosition = Vector2.new(pos % (#pool * cardW), 0)
+				-- a tick each card that passes; higher as it slows to a stop
+				tick(math.floor(pos / cardW + 0.5), 1 + fr * 0.35)
 				task.wait()
 			end
 			sf.CanvasPosition = Vector2.new((wonIndex - 1) * cardW, 0)
-			task.wait(0.4)
+			task.wait(0.35)
+			HX.revealMoment(sf, res.rarity, res.variant, res.dup)
 			ui.rolling = false
 			table.insert(ui.pulls, 1, res)
 			local kind = res.kind or "skin"
@@ -4596,7 +4671,10 @@ do
 	local function hatch(i, now)
 		if busy then return end
 		busy = true
+		local nest = state.hatchery and state.hatchery.nests and state.hatchery.nests[tostring(i)]
+		local eggId = nest and nest.egg
 		local r = call("Hatch", i, now == true)
+		if r.ok and r.result then HX.hatchMoment(body, eggId, r.result.rarity, r.result.variant, r.result.dup) end
 		busy = false
 		apply(r)
 		if not r.ok or not r.result then toast(r.msg or "", COL.BAD); render.HATCHERY(); return end

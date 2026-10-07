@@ -1,4 +1,36 @@
-# Updated scripts: reeling after a clean hit
+# Updated scripts: music, menu sounds, crate and egg openings
+
+- **Music** (`StarterPlayerScripts ▸ Music`, tracks in `ReplicatedStorage ▸ MusicConfig`, all APM licensed):
+  - calm courtly pieces in the Courtyard
+  - a low underscore between rounds
+  - battle cues in matches
+  - frantic strings and drums when a horde wave comes, tense underscore in the breaks
+  - a dark chant while a boss lives
+  - a win or lose sting when a round ends
+  - Moods crossfade, and each list shuffles. A track that won't load is skipped.
+- **Menu sounds** (`ReplicatedStorage ▸ UIFX`, every id in one table):
+  - every button clicks when pressed and ticks softly on hover (`UIClicks`); close / back has its own sound
+- **Crate opening:** a snare roll under the spin and a tick per card that passes (rising as it slows). Then a beat of suspense, a flash in the rarity's colour, a banner ("LEGENDARY!") and a stinger that grows with the rarity.
+  - Legendary / Mythic get a first low flash, a bigger banner and a screen shake.
+  - A finish shows its own banner, and duplicates add coins.
+- **Egg hatching:**
+  - Menu: the egg on a dark stage rocks, cracks three times (harder each time, cracks spreading over it), bursts in a white flash, then the rarity reveal.
+  - Courtyard Hatchery: the same three cracks, then shell bits fly, the rarity's light flashes and its sting plays.
+- **Settings:** new "Music volume" and "Menu sounds" sliders.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [UIFX.lua](ReplicatedStorage/UIFX.lua) | ReplicatedStorage ▸ UIFX | ModuleScript | **new**: menu sounds, flash, banner, shake, ticker |
+| [MusicConfig.lua](ReplicatedStorage/MusicConfig.lua) | ReplicatedStorage ▸ MusicConfig | ModuleScript | **new**: tracks by mood |
+| [Music.client.lua](StarterPlayerScripts/Music.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Music | LocalScript | **new**: the score |
+| [UIClicks.client.lua](StarterPlayerScripts/UIClicks.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ UIClicks | LocalScript | **new**: button sounds |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | crate spin sounds + reveal, hatch sequence |
+| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Pastimes | LocalScript | Courtyard hatch: cracks, burst, sting |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | Music / Menu sounds sliders |
+
+---
+
+## Before that: reeling after a clean hit
 
 - **Reeling:** after a clean hit the victim can't attack or kick for 0.5 s (`HIT_STUN`), the same for every weapon.
   - They can still block and parry.

@@ -27,6 +27,8 @@ ClientSettings.SLIDERS = {
 	{key = "Shake",   label = "Impact shake",   min = 0,  max = 2,   hint = "flinch on hits, kick on swings"},
 	{key = "Breathe", label = "Idle breathing", min = 0,  max = 2,   hint = "slow drift while standing still"},
 	{key = "FPClunk", label = "First-person clunk boost", min = 0, max = 2, hint = "extra step weight in first person"},
+	{key = "Music",   label = "Music volume",   min = 0,  max = 2,   hint = "the score: the courtyard, battles, the horde, bosses"},
+	{key = "UISounds", label = "Menu sounds",   min = 0,  max = 2,   hint = "clicks, crate spins, eggs cracking, reveals"},
 	{key = "FOV",     label = "First-person FOV", min = 70, max = 110, step = 1, hint = "70 is already wide; higher pulls the view back to show more of the sword (looking down slides the eye forward again, so you see your front, never the top of your chest)"},
 }
 
@@ -71,7 +73,7 @@ ClientSettings.CHOICES = {
 }
 
 ClientSettings.DEFAULTS = {
-	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70,
+	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1,
 	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end

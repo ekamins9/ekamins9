@@ -19,12 +19,13 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Companions = require(ReplicatedStorage:WaitForChild("Companions"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
+local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
 
 local player = Players.LocalPlayer
 local hubRemote = ReplicatedStorage:WaitForChild("HubRemote")
 _G.MenuBus = _G.MenuBus or Instance.new("BindableEvent")
 
-local RARITY = {Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40)}
+local RARITY = {Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40), Mythic = Color3.fromRGB(255, 52, 78)}
 
 local function call(op, ...)
 	local ok, res = pcall(hubRemote.InvokeServer, hubRemote, op, ...)
@@ -319,16 +320,42 @@ local function hatchAt(i)
 	local n = nests[i]
 	if not n or not n.marker then return end
 	hatching[i] = true
-	-- a hard shake, then the server's roll
-	local t0 = os.clock()
-	while os.clock() - t0 < 0.6 do
-		if n.rig then Companions.poseEgg(n.rig, n.marker.CFrame * CFrame.new(0, -0.25, 0), os.clock() * 2.5, 1) end
-		RunService.RenderStepped:Wait()
-	end
+	-- the roll first (so a refusal doesn't crack an egg for nothing), then the show:
+	-- it rocks, cracks three times (harder each time), and bursts
 	local r = call("Hatch", i)
-	hatching[i] = nil
-	if not r.ok or not r.result then say(r.msg or "couldn't hatch", Theme.BAD); return end
+	if not r.ok or not r.result then hatching[i] = nil; say(r.msg or "couldn't hatch", Theme.BAD); return end
 	local res = r.result
+	local base = n.marker.CFrame * CFrame.new(0, -0.25, 0)
+	local function rock(dur, hard)
+		local t0 = os.clock()
+		while os.clock() - t0 < dur do
+			if n.rig then Companions.poseEgg(n.rig, base, os.clock() * 2.5, hard) end
+			RunService.RenderStepped:Wait()
+		end
+	end
+	rock(0.35, 0.3)
+	for k = 1, 3 do
+		UIFX.play("EggCrack", {Speed = 1 + k * 0.08})
+		rock(0.42 - k * 0.05, 0.45 + k * 0.25)
+	end
+	rock(0.3, 1.3)
+	hatching[i] = nil
+	-- the burst: shell bits fly, a flash of the rarity's colour
+	local col = RARITY[res.rarity] or Color3.new(1, 1, 1)
+	local at = Instance.new("Part")
+	at.Anchored, at.CanCollide, at.CanQuery, at.CanTouch, at.Transparency = true, false, false, false, 1
+	at.Size = Vector3.new(0.2, 0.2, 0.2); at.CFrame = n.marker.CFrame * CFrame.new(0, 0.6, 0); at.Parent = workspace
+	local bits = Instance.new("ParticleEmitter")
+	bits.Color = ColorSequence.new(Color3.fromRGB(250, 244, 226)); bits.Size = NumberSequence.new(0.35, 0.05)
+	bits.Lifetime = NumberRange.new(0.5, 0.9); bits.Speed = NumberRange.new(8, 16); bits.SpreadAngle = Vector2.new(180, 180)
+	bits.Acceleration = Vector3.new(0, -40, 0); bits.Rotation = NumberRange.new(0, 360); bits.RotSpeed = NumberRange.new(-300, 300)
+	bits.Rate = 0; bits.Parent = at
+	bits:Emit(26)
+	local glow = Instance.new("PointLight"); glow.Color = col; glow.Range = 14; glow.Brightness = 6; glow.Parent = at
+	TweenService:Create(glow, TweenInfo.new(0.9), {Brightness = 0}):Play()
+	Debris:AddItem(at, 1.5)
+	UIFX.play("EggBurst"); UIFX.play("Shells")
+	task.delay(0.15, function() UIFX.reveal(res.rarity) end)
 	if n.rig then n.rig.model:Destroy(); n.rig = nil end
 	popCompanion(n.marker.CFrame, res)
 	local line = res.dup and ((res.refund or 0) > 0 and string.format("%s again: +%d Marks", res.name, res.refund) or string.format("%s again: ★%d", res.name, res.stars or 1))
