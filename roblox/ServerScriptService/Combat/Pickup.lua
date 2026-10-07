@@ -1,7 +1,9 @@
 --[[ PICKUP — weapons on the floor. A Tool that leaves a hand (disarm,
      death, or a swap) is dropped here: thrown clear, made solid, given a
      ProximityPrompt, and despawned after DESPAWN seconds. Anyone alive can
-     pick it up.
+     pick it up — if they can hold it: no right arm holds nothing, one arm holds
+     only a one-handed weapon (the Config's TWO_HANDED). A weapon you can't hold
+     shows you no prompt (Movement hides it) and the server refuses it.
 
      Slots: one PRIMARY plus one SECONDARY (a weapon whose Config has
      SECONDARY = true), MAX_WEAPONS in total. Picking up past a full slot
@@ -52,6 +54,14 @@ end
 
 function Pickup.isSecondary(tool)
 	return Pickup.config(tool).SECONDARY == true
+end
+
+-- could this character hold it? (the same rule as Injury.canWield, read off
+-- the LimbLost_* attributes here: Injury requires this module)
+function Pickup.canHold(char, tool)
+	if not char then return false end
+	if char:GetAttribute("LimbLost_RightArm") == true then return false end
+	return not (Pickup.config(tool).TWO_HANDED == true and char:GetAttribute("LimbLost_LeftArm") == true)
 end
 
 function Pickup.isDropped(tool)
@@ -135,6 +145,7 @@ function Pickup.drop(tool, char, dir, speed)
 		prompt.HoldDuration = C.PROMPT_HOLD
 		prompt.MaxActivationDistance = C.PROMPT_RANGE
 		prompt.RequiresLineOfSight = false
+		prompt:SetAttribute("TwoHanded", cfg.TWO_HANDED == true)   -- (one-armed, you're not offered it)
 		prompt.Parent = handle
 		prompt.Triggered:Connect(function(plr) Pickup.take(plr, tool) end)
 	end
@@ -187,6 +198,7 @@ function Pickup.take(plr, tool)
 	local hrp  = char and char:FindFirstChild("HumanoidRootPart")
 	if not (hum and hrp and hum.Health > 0) then return false end
 	if char:GetAttribute("Ragdolled") or (char:GetAttribute("StunnedUntil") or 0) > os.clock() then return false end
+	if not Pickup.canHold(char, tool) then return false end
 	local handle = handleOf(tool)
 	if handle and (handle.Position - hrp.Position).Magnitude > C.PROMPT_RANGE + 4 then return false end
 	local bp = plr:FindFirstChild("Backpack")
@@ -227,6 +239,7 @@ function Pickup.takeNpc(char, tool)
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	if not (hum and hrp and hum.Health > 0) then return false end
 	if char:GetAttribute("Ragdolled") or (char:GetAttribute("StunnedUntil") or 0) > os.clock() then return false end
+	if not Pickup.canHold(char, tool) then return false end
 	local handle = handleOf(tool)
 	if handle and (handle.Position - hrp.Position).Magnitude > C.PROMPT_RANGE + 4 then return false end
 	local held = char:FindFirstChildOfClass("Tool")
@@ -238,12 +251,13 @@ function Pickup.takeNpc(char, tool)
 	return true
 end
 
--- the nearest weapon lying on the floor within `range` of pos (and its distance)
-function Pickup.nearest(pos, range)
+-- the nearest weapon lying on the floor within `range` of pos (and its distance);
+-- with `char`, only one that character can hold
+function Pickup.nearest(pos, range, char)
 	local best, bestD = nil, range or math.huge
 	local f = workspace:FindFirstChild("DroppedWeapons")
 	for _, t in ipairs(f and f:GetChildren() or {}) do
-		if t:IsA("Tool") and Pickup.isDropped(t) then
+		if t:IsA("Tool") and Pickup.isDropped(t) and (not char or Pickup.canHold(char, t)) then
 			local h = handleOf(t)
 			local d = h and (h.Position - pos).Magnitude
 			if d and d < bestD then best, bestD = t, d end

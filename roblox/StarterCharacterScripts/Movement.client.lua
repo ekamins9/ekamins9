@@ -273,6 +273,21 @@ end))
 table.insert(conns, ProximityPromptService.PromptShown:Connect(function(prompt)
 	if prompt.Name == "PickupPrompt" then prompt.KeyboardKeyCode = ClientSettings.key("Pickup") end
 end))
+-- a weapon you can't hold isn't offered: no right arm, nothing; one arm, no
+-- two-handers (the server refuses them too: Pickup.canHold)
+task.spawn(function()
+	while character.Parent do
+		local noRight = character:GetAttribute("LimbLost_RightArm") == true
+		local noLeft = character:GetAttribute("LimbLost_LeftArm") == true
+		local f = workspace:FindFirstChild("DroppedWeapons")
+		for _, d in ipairs(f and f:GetDescendants() or {}) do
+			if d:IsA("ProximityPrompt") and d.Name == "PickupPrompt" then
+				d.Enabled = not noRight and not (noLeft and d:GetAttribute("TwoHanded") == true)
+			end
+		end
+		task.wait(0.3)
+	end
+end)
 
 Humanoid.Died:Once(function()
 	sprintHeld = false

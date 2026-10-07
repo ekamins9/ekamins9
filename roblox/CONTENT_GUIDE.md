@@ -93,7 +93,8 @@ Stats come from the **weight only** (`Catalog ▸ Weights`): every Heavy piece g
 health / speed / protection, so looks never buy power. A set may skip slots (no
 `HeadClothing` → no helm piece). A weight's row: `health` (added to 100), `prot` (damage
 removed on covered limbs), `speed` (walk), `sprint` (sprint multiplier), `stamina` (× the 100
-bar), `regen` (× stamina regen), `dodgeCost` and `dodgeReach` (× the dodge's cost and distance),
+bar), `regen` (× stamina regen), `cost` (× every stamina cost: swings, feints, kicks, blocks),
+`dodgeCost` and `dodgeReach` (× the dodge's cost and distance),
 `clunk` (footsteps). Keep the trade honest: what a weight gains in health and armor it pays
 in speed, stamina and footwork (see the README's *Classes* section for the current numbers).
 

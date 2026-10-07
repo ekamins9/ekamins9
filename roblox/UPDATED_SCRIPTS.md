@@ -1,34 +1,40 @@
-# Updated scripts: three Horde maps the horde walks into
+# Updated scripts: bots that walk, fumble and take turns; one-armed pickups; screams; heavier stamina
 
-- **The Wildwood**: a dusk forest clearing, a muddy road, an ambushed merchant caravan (a wagon
-  on its side, one sagging on a broken wheel, cargo and arrows everywhere, a campfire, lanterns,
-  fireflies). The horde comes out of the trees down six trails and along the road (8 gates).
-- **Ravenhold**: a ruined keep at night. Smashed main gate under a jammed portcullis, three
-  breaches and a fallen corner (5 gates, mist outside each); a roofless chapel, a well, a gibbet,
-  graves, a broken colonnade, braziers.
-- **Stormbreak**: a palisade camp above a stormy beach, three longships run up on the sand,
-  raiders in at the sea gate, two beach gaps and the land gate (4 gates); tents, a smithy, a
-  command tent, a bonfire, rain.
-- **Horde** now plays the Wildwood, the Colosseum, Ravenhold and Stormbreak. The Sandpit stays
-  in the other modes.
-- **Bots walk round things**: a tree, a wagon or a wall in the way turns a bot to the open side
-  (all maps).
-- **Each map's own haze**: maps can set the Atmosphere (`K.atmosphere`); every map starts from
-  the place's lighting, so one map's dusk no longer carries into the next.
-- **Spawns** that a build put inside a prop are moved out until a body fits (5 on the
-  Wildwood, 3 on Stormbreak).
+- **Bot legs move.** The walk was written each frame before the Animator ran, and the weapon's
+  idle pose reset the hips before the legs ever moved. It now runs after the animation step.
+- **Bots fight like people:**
+  - They sometimes don't read a swing at all, and their timing is looser (worse when winded).
+  - A feint can fool them: they drop the guard they raised, and your real swing lands inside
+    their re-guard cooldown. Squires nearly always fall for it, Champions rarely.
+  - Each gets a temper: brute, duelist, wary, or flanker (works round behind you).
+  - **They take turns**: round each player only the nearest two (a brute: three) fight. The
+    rest hold a ring 10–15 studs out and circle until a gap opens.
+- **A bug that froze fighters**: a combo queued behind a missed swing called a function before
+  it existed. That errored every frame and locked the swinger. Fixed.
+- **One arm, one-handed weapons.** Without a right arm you can pick up nothing; with one arm,
+  only one-handers. You aren't offered the prompt, the server refuses the pickup, and bots
+  don't go for them. No more pick-up / drop loop.
+- **Bleeding out**: long screams of agony every 3–4 s, weaker as the blood runs out, gasps at
+  the end. No health comes back while bleeding: Roblox's built-in 1 %/s regen was healing
+  everyone and is switched off now.
+- **Stamina bites**:
+  - A landed hit now about breaks even (bonus 8 → 2); kills give back 20 % (was 35 %).
+  - Parries refund 5 (was 10); feints cost 18.
+  - A held guard drains 5/s; regen is 13/s, from 1.6 s after combat, 20 % inside that.
+  - **Heavy pays 20 % more for everything**, has 75 stamina and regens 35 % slower; Light pays
+    10 % less, has 120 stamina and regens 30 % faster.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [MapWildwood.lua](ServerScriptService/Build/MapWildwood.lua) | ServerScriptService ▸ Build ▸ MapWildwood | ModuleScript | **new** |
-| [MapRavenhold.lua](ServerScriptService/Build/MapRavenhold.lua) | ServerScriptService ▸ Build ▸ MapRavenhold | ModuleScript | **new** |
-| [MapStormbreak.lua](ServerScriptService/Build/MapStormbreak.lua) | ServerScriptService ▸ Build ▸ MapStormbreak | ModuleScript | **new** |
-| [MapProps.lua](ServerScriptService/Build/MapProps.lua) | ServerScriptService ▸ Build ▸ MapProps | ModuleScript | **new**: wagons, wheels, trees, campfire, lantern, brazier, grave, arrow, sack, longship |
-| [Maps.lua](ServerScriptService/Build/Maps.lua) | ServerScriptService ▸ Build ▸ Maps | ModuleScript | registers the three maps |
-| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build ▸ MapKit | ModuleScript | `K.atmosphere`; `K.clearSpawns` (run by `K.finish`) |
-| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game ▸ MapLoader | ModuleScript | Atmo_* attributes; lighting reset per map |
-| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | `Bot:steer` round obstacles |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | Horde's maps; map titles |
-| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | the maps; painting ground, haze, Horde gates |
-
-The built maps live in `ServerStorage ▸ Maps` in Studio: **save the place** to keep them.
+| [NpcAnimator.client.lua](StarterPlayerScripts/NpcAnimator.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ NpcAnimator | LocalScript | PreSimulation: the legs swing |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | miss / fooled / fatigue, tempers, turn-taking ring, one-armed rearm |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | stamina numbers, `StaminaCostMult`, the queued-combo fix |
+| [Pickup.lua](ServerScriptService/Combat/Pickup.lua) | ServerScriptService ▸ Combat ▸ Pickup | ModuleScript | `canHold`; take / takeNpc / nearest respect it |
+| [Movement.client.lua](StarterCharacterScripts/Movement.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ Movement | LocalScript | hides pickups you can't hold |
+| [Injury.lua](ServerScriptService/Combat/Injury.lua) | ServerScriptService ▸ Combat ▸ Injury | ModuleScript | screams while bleeding out |
+| [CharacterSystems.server.lua](ServerScriptService/CharacterSystems.server.lua) | ServerScriptService ▸ CharacterSystems | Script | no regen while bleeding; stamina numbers |
+| [Health.server.lua](StarterCharacterScripts/Health.server.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ Health | Script | **new**, empty: turns off Roblox's regen |
+| [SoundBank.lua](ReplicatedStorage/SoundBank.lua) | ReplicatedStorage ▸ SoundBank | ModuleScript | `VoiceScream`, `VoiceGasp` |
+| [Weights.lua](ReplicatedStorage/Catalog/Weights.lua) | ReplicatedStorage ▸ Catalog ▸ Weights | ModuleScript | `cost`; Heavy / Light retuned |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | publishes `StaminaCostMult` |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | all of the above |

@@ -435,10 +435,12 @@ CombatServer.DEFAULTS = {
 	-- a swing that touches nothing costs MISS_COST_MULT × staminaCost extra; a swing
 	-- that hits a wall / the floor stops there with no penalty and no refund.
 	-- A timed parry is free and pays (PARRY_REFUND); a held block pays blockCost.
-	MISS_COST_MULT   = 0.5,
+	-- Every cost is scaled by the armor's StaminaCostMult (Catalog ▸ Weights): plate
+	-- pays more for everything it does, cloth less.
+	MISS_COST_MULT   = 0.6,
 	HIT_REFUND       = 6,
-	HIT_BONUS        = 8,     -- on top of the refund: a landed blow leaves you better off than before it
-	KILL_REFUND      = 0.35,  -- a kill gives back this share of your max stamina
+	HIT_BONUS        = 2,     -- on top of the refund: a landed blow about breaks even (a long fight still wears you down)
+	KILL_REFUND      = 0.2,   -- a kill gives back this share of your max stamina
 	WALL_CHECK       = true,  -- reject hits whose line from you to the hit point passes through geometry,
 	WALL_RECOVERY    = 0.35,  --    and a blade that hits a wall stops (this long before you can act)
 	KICK_REFUND      = 8,     -- a kick that lands gives this back; one that misses costs KICK_MISS_COST;
@@ -483,14 +485,14 @@ CombatServer.DEFAULTS = {
 
 	-- guard / parry / stamina (the BlockMeter attribute IS the stamina bar)
 	BLOCK_MAX         = 100,
-	BLOCK_HOLD_DRAIN  = 3,     -- stamina per second while the guard is HELD (the turtle tax; a timed
+	BLOCK_HOLD_DRAIN  = 5,     -- stamina per second while the guard is HELD (the turtle tax; a timed
 	                           --    parry costs nothing) — ticked by CharacterSystems
 	EXHAUSTED_MIN     = 1,     -- you need at least the attack's staminaCost (and this) to start a swing;
 	                           --    at 0 stamina you cannot attack or kick — only guard and walk
-	BLOCK_REGEN       = 17,    -- per second (× the armor weight's regen)…
-	STAMINA_REGEN_DELAY = 1.3, -- …at full rate only this long after the last combat event (attack, feint,
+	BLOCK_REGEN       = 13,    -- per second (× the armor weight's regen)…
+	STAMINA_REGEN_DELAY = 1.6, -- …at full rate only this long after the last combat event (attack, feint,
 	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing;
-	COMBAT_REGEN      = 0.35,  --    inside that delay it still trickles back at this share of the rate
+	COMBAT_REGEN      = 0.2,   --    inside that delay it still trickles back at this share of the rate
 	BLOCK_COST_MULT   = 0.8,   -- a held guard pays this × the attack's blockCost (a timed parry pays nothing)
 	BLOCK_BREAK_STUN  = 2.50,
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
@@ -501,7 +503,7 @@ CombatServer.DEFAULTS = {
 	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
 	PARRY_COST_MULT   = 0,     -- a timed parry costs this fraction of the attack's blockCost (0: parries are free;
 	                           --    holding block still pays the full blockCost — the turtle tax)
-	PARRY_REFUND      = 10,    -- …and REFUNDS the attacker's swing cost (PARRY_REFUND if the attack has
+	PARRY_REFUND      = 5,     -- …and REFUNDS the attacker's swing cost (PARRY_REFUND if the attack has
 	                           --    less) × (1 + PARRY_STREAK_STEP × (streak − 1)): parries within PARRY_STREAK_WINDOW of
 	PARRY_STREAK_STEP = 0.5,   --    each other grow the payout (1vX: 10, 15, 20, 25, 30)
 	PARRY_STREAK_WINDOW = 2.0,
@@ -516,7 +518,7 @@ CombatServer.DEFAULTS = {
 	                           --    cooldown) with a fresh parry window: the riposte can be parried back
 	RIPOSTE_DURATION  = 1.20,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
 	RIPOSTE_SPEED     = 1.6,   --    itself plays at normal speed — there's still a windup, just a quick one)
-	FEINT_COST        = 16,    -- a feint is a real stamina gamble next to a 10-stamina swing
+	FEINT_COST        = 18,    -- a feint is a real stamina gamble next to a 10-stamina swing
 	FEINT_RECOVERY    = 0.25,
 
 	-- kick: short, unblockable, staggers a held block. Leg animation is
@@ -700,7 +702,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function stamina()    return attr("BlockMeter") or cfg.BLOCK_MAX end
 	local markCombat = CombatServer.markCombat
 	local function drainStamina(char, amount) CombatServer.drainStamina(char, amount, cfg.BLOCK_MAX) end
-	local function spend(n)     if character then drainStamina(character, n) end end
+	-- (what armor weighs: everything costs StaminaCostMult × as much)
+	local function spend(n)     if character then drainStamina(character, n * (character:GetAttribute("StaminaCostMult") or 1)) end end
 	local npcTell   -- server-side stand-in for the client when no player holds the tool; set below
 	local function tell(...)
 		if player then remote:FireClient(player, ...)
@@ -913,7 +916,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				dprint("PARRIED by", target.Name)
 			else
 				-- BLOCK: drains defender stamina by the attack's blockCost; empty = guard broken
-				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1))
+				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1) * (target:GetAttribute("StaminaCostMult") or 1))
 				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
 				Injury.sparks(hitPos, 1)
@@ -1381,6 +1384,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- combo = true: chained straight out of the previous release, so there is
 	-- NO windup — the blade goes live now and the clip starts at its swing part
+	local canAfford   -- (below; a combo queued behind a whiff asks it from in here)
 	local function startAttack(name, combo)
 		local info = cfg.ATTACKS[name]
 		if not info then return end
@@ -1516,9 +1520,9 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	-- no stamina, no swing: the HUD says EXHAUSTED and you can only guard
-	local function canAfford(name)
+	function canAfford(name)
 		local info = cfg.ATTACKS[name]
-		local need = math.max(cfg.EXHAUSTED_MIN, info and info.staminaCost or 0)
+		local need = math.max(cfg.EXHAUSTED_MIN, (info and info.staminaCost or 0) * ((character and character:GetAttribute("StaminaCostMult")) or 1))
 		if stamina() >= need then return true end
 		if character then character:SetAttribute("ExhaustedTick", (character:GetAttribute("ExhaustedTick") or 0) + 1) end
 		dprint("attack denied: exhausted (" .. math.floor(stamina()) .. " < " .. need .. ")")

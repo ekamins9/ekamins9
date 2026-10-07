@@ -3,7 +3,11 @@
      its walk is drawn here, on every client, from how far its root moved since
      the last frame (smoothed): the hips swing like the R6 walk (Motor6D
      Transform, local only). The drill master and other standing NPCs
-     (attribute Idle) just breathe. ]]
+     (attribute Idle) just breathe.
+     It runs on PreSimulation: the Animator writes every joint's Transform each
+     frame (the weapon's idle pose covers the hips too), and the joints are
+     solved just after, so a swing written any earlier (RenderStepped) is
+     wiped before it ever moves a leg. ]]
 
 local RunService = game:GetService("RunService")
 
@@ -11,7 +15,7 @@ local state = setmetatable({}, {__mode = "k"})   -- [model] = {pos, speed, phase
 
 -- (the NPCs folder is looked up every frame: in the Courtyard it only appears
 -- with the first bot, long after this script starts)
-RunService.RenderStepped:Connect(function(dt)
+RunService.PreSimulation:Connect(function(dt)
 	local folder = workspace:FindFirstChild("NPCs")
 	if not folder then return end
 	for _, m in ipairs(folder:GetChildren()) do

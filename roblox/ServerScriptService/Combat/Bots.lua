@@ -67,16 +67,20 @@ local Bots = {}
 -- aggression  how often its footwork presses in (else it circles, watches, or gives ground)
 -- hesitate  how often it just stands and watches for a moment
 -- spare     chance it carries a secondary to draw when disarmed
+-- miss      chance it doesn't read a swing at all (no guard, no step: it eats it or trades)
+-- fooled    chance a feint gets it: the guard it raised for a swing that never came drops,
+--           and the real one finds it in its re-guard cooldown
+-- (winded — under 30 stamina — it misses more and its timing goes loose)
 Bots.SKILLS = {
-	Squire   = {react = 0.30, parry = 0.35, read = false, bait = 1,    jitter = 0.10,  riposte = 0.2,  punish = 0.25, chamber = 0,    feint = 0,    morph = 0,    combo = 0,
+	Squire   = {react = 0.32, parry = 0.3,  read = false, bait = 1,    jitter = 0.16,  riposte = 0.2,  punish = 0.25, chamber = 0,    feint = 0,    morph = 0,    combo = 0,
 		kick = 0.10, reserve = 0,  interval = {1.7, 2.7}, pace = 0.95, spare = 0.3, label = "Squire",   weight = "Light",
-		step = 0.3, aggression = 0.35, hesitate = 0.25},
-	Knight   = {react = 0.20, parry = 0.65, read = true,  bait = 0.35, jitter = 0.07,  riposte = 0.55, punish = 0.6,  chamber = 0.05, feint = 0.12, morph = 0.12, combo = 0.15,
+		step = 0.3, aggression = 0.35, hesitate = 0.25, miss = 0.3, fooled = 0.85},
+	Knight   = {react = 0.21, parry = 0.6,  read = true,  bait = 0.5,  jitter = 0.1,   riposte = 0.5,  punish = 0.55, chamber = 0.05, feint = 0.12, morph = 0.12, combo = 0.15,
 		kick = 0.35, reserve = 22, interval = {1.1, 1.9}, pace = 1,    spare = 0.8, label = "Knight",   weight = "Medium",
-		step = 0.35, aggression = 0.45, hesitate = 0.15},
-	Champion = {react = 0.13, parry = 0.85, read = true,  bait = 0.2,  jitter = 0.035, riposte = 0.85, punish = 0.9,  chamber = 0.15, feint = 0.28, morph = 0.22, combo = 0.35,
+		step = 0.35, aggression = 0.45, hesitate = 0.15, miss = 0.14, fooled = 0.55},
+	Champion = {react = 0.14, parry = 0.8,  read = true,  bait = 0.3,  jitter = 0.06,  riposte = 0.8,  punish = 0.85, chamber = 0.15, feint = 0.28, morph = 0.22, combo = 0.35,
 		kick = 0.6,  reserve = 35, interval = {0.8, 1.4}, pace = 1,    spare = 1,   label = "Champion", weight = "Heavy",
-		step = 0.3, aggression = 0.55, hesitate = 0.1},
+		step = 0.3, aggression = 0.55, hesitate = 0.1, miss = 0.06, fooled = 0.3},
 	-- the training yard's drill dummies: one throws slow, readable swings and
 	-- overheads from where it stands; the other only ever holds its guard
 	Drill    = {react = 9, parry = 0, read = false, bait = 0, jitter = 0, riposte = 0, punish = 0, chamber = 0, feint = 0, morph = 0, combo = 0,
@@ -90,6 +94,44 @@ local TURN_CAP_DPS = 400    -- …and while it swings: the players' turn cap (Ca
 local FEINT_COST = CombatServer.DEFAULTS.FEINT_COST or 16
 local MORPH_COST = CombatServer.DEFAULTS.MORPH_COST or 10
 local IDLE = {phase = "idle", windupStart = -1, windupEnd = -1, releaseEnd = -1}
+
+-- TEMPERS: no two bots fight quite alike. Each gets one at random (opts.temper picks):
+-- agg / hes shift how often it presses in or stands and watches; engage is how many
+-- may fight one foe at once before it waits its turn (a brute barely waits); a
+-- flanker, waiting, works its way round behind you
+Bots.TEMPERS = {
+	brute   = {agg = 0.25,  hes = -0.1, engage = 3},
+	duelist = {agg = 0,     hes = 0,    engage = 2},
+	wary    = {agg = -0.2,  hes = 0.15, engage = 2},
+	flanker = {agg = -0.05, hes = 0,    engage = 2, flank = true},
+}
+local TEMPER_NAMES = {"brute", "duelist", "duelist", "wary", "flanker"}
+
+-- THE CROWD: round each foe, bots are ranked by how near they stand; only the
+-- first few (the temper's `engage`) fight, the rest keep a ring a few strides out
+-- and circle, waiting for a gap. A crowd that all rushes in at once is a blender,
+-- not a fight. (Ranked a few times a second, for every bot at once.)
+local live = {}
+local slotCache, slotAt = {}, 0
+local function slotOf(bot)
+	local now = os.clock()
+	if now - slotAt > 0.4 then
+		slotAt = now
+		slotCache = {}
+		local by = {}
+		for b in pairs(live) do
+			if b.alive and b.ctrl and b.foe and b.foe.Parent then
+				by[b.foe] = by[b.foe] or {}
+				table.insert(by[b.foe], b)
+			end
+		end
+		for _, list in pairs(by) do
+			table.sort(list, function(a, c) return (a.dist or 99) < (c.dist or 99) end)
+			for i, b in ipairs(list) do slotCache[b] = i end
+		end
+	end
+	return slotCache[bot] or 1
+end
 
 -- what each rank wears, so you can tell them apart at a glance: a set picked
 -- from its list (armor sets of its weight: Catalog ▸ Pieces "<Set>_Helm/Top/Legs"),
@@ -119,7 +161,6 @@ end
 local folder = workspace:FindFirstChild("NPCs")
 if not folder then folder = Instance.new("Folder"); folder.Name = "NPCs"; folder.Parent = workspace end
 
-local live = {}
 
 local R6 = require(script.Parent:WaitForChild("R6"))
 
@@ -277,7 +318,9 @@ end
 function Bot:rearm(now)
 	if self.arming then return Vector3.zero end
 	self.disarmedAt = self.disarmedAt or now
-	local best, d = Pickup.nearest(self.hrp.Position, 45)
+	local best, d = Pickup.nearest(self.hrp.Position, 45, self.model)   -- (one-armed: one-handers only)
+	local spareSrc = self.spare and findWeapon(self.spare)
+	if spareSrc and not Pickup.canHold(self.model, spareSrc) then self.spare = nil end
 	if self.spare and (not best or d > 14 or now - self.disarmedAt > 2.5) then
 		local name = self.spare
 		self.spare = nil
@@ -330,6 +373,8 @@ function Bot:choosePlan(f, me)
 		if f.windupEnd < me.windupEnd and math.random() < sk.parry * 0.7 and st >= FEINT_COST + 4 then return "parry" end
 		return "none"
 	end
+	-- it didn't read that one (more often when it's winded)
+	if math.random() < (sk.miss or 0) * (st < 30 and 1.8 or 1) then return "none" end
 	if sk.chamber > 0 and math.random() < sk.chamber and st >= sk.reserve * 0.5 + 8 and mirrorOf(self, f.name, f.kind) then return "chamber" end
 	if math.random() < sk.parry then return "parry" end
 	if math.random() < (sk.step or 0.3) then return "step" end
@@ -346,7 +391,9 @@ function Bot:pickMood(soon)
 	if soon then mood = "press"
 	elseif self.recovering then mood = math.random() < 0.6 and "back" or "circle"
 	else
-		local agg, hes = sk.aggression or 0.45, sk.hesitate or 0.15
+		local t = self.temper or Bots.TEMPERS.duelist
+		local agg = math.clamp((sk.aggression or 0.45) + t.agg, 0.05, 0.9)
+		local hes = math.max(0, (sk.hesitate or 0.15) + t.hes)
 		local r = math.random()
 		mood = r < agg and "press" or (r < agg + 0.3 and "circle") or (r < agg + 0.3 + hes and "wait") or "back"
 	end
@@ -414,7 +461,7 @@ function Bot:reflex()
 		if f.windupStart ~= self.seenStart then
 			self.seenStart = f.windupStart
 			self.plan = self:choosePlan(f, me)
-			self.jit = (math.random() * 2 - 1) * sk.jitter
+			self.jit = (math.random() * 2 - 1) * sk.jitter * (staminaOf(model) < 30 and 1.7 or 1)
 			self.early = not sk.read or math.random() < sk.bait
 			if self.plan == "step" then
 				-- it has to see the swing coming first, and then it's a step, not a retreat
@@ -437,9 +484,9 @@ function Bot:reflex()
 				at = f.windupEnd + arrive - 0.2 + self.jit
 			end
 			at = math.max(at, f.windupStart + sk.react)
-			if now >= at and (me.phase ~= "windup" or staminaOf(model) >= FEINT_COST) then
+			if now >= at and now >= (self.fooledUntil or 0) and (me.phase ~= "windup" or staminaOf(model) >= FEINT_COST) then
 				ctrl.blockStart()
-				if model:GetAttribute("Blocking") then self.guardAt = now end
+				if model:GetAttribute("Blocking") then self.guardAt, self.guardFor, self.sawRelease = now, f.windupStart, false end
 			end
 		elseif self.plan == "chamber" and me.phase == "idle" and not blocking then
 			if now >= f.windupEnd - 0.08 + self.jit * 0.5 then
@@ -453,6 +500,19 @@ function Bot:reflex()
 	-- the guard comes down once the swing it went up for is over (a combo's next swing keeps it up)
 	if blocking then
 		self.guardAt = self.guardAt or now
+		if self.guardFor == f.windupStart and f.phase == "release" then self.sawRelease = true end
+		-- a feint: the swing it raised its guard for never came (they went idle, or into a
+		-- new windup). Taken in, it drops its guard like a startled player would, and the
+		-- real swing finds it inside the re-guard cooldown
+		if self.guardFor and not self.sawRelease and (f.phase == "idle" or f.windupStart ~= self.guardFor) then
+			self.guardFor = nil
+			if math.random() < (sk.fooled or 0) then
+				ctrl.blockStop()
+				self.guardAt = nil
+				self.fooledUntil = now + 0.3 + math.random() * 0.35
+				return
+			end
+		end
 		if (not live_ and now - self.guardAt > 0.15) or now - self.guardAt > 1.2 then
 			ctrl.blockStop()
 			self.guardAt = nil
@@ -583,6 +643,9 @@ function Bot:think()
 	local soon = (now >= self.nextAttack - 0.4 and not self.recovering) or foeOpen or foeWeak
 	if now >= (self.moodUntil or 0) or (soon and self.mood ~= "press") then self:pickMood(soon) end
 	local side = Vector3.new(-dir.Z, 0, dir.X)
+	-- not its turn: someone nearer is fighting this foe (unless the foe's wide open)
+	local waiting = ctrl ~= nil and slotOf(self) > ((self.temper and self.temper.engage) or 2) and not foeOpen
+	self.waiting = waiting
 	if not ctrl then
 		-- nothing in hand: go and get something (or draw the spare), else keep away
 		want = self:rearm(now) or -dir
@@ -592,6 +655,23 @@ function Bot:think()
 		want = dist > hitDist and dir or Vector3.zero            -- step into our swing
 	elseif me.phase == "recovery" then
 		want = -dir * 0.4
+	elseif waiting then
+		-- keep the ring, circling; a flanker works its way round behind them
+		if now > self.strafeUntil then
+			self.strafe = math.random() < 0.5 and -1 or 1
+			self.strafeUntil = now + 1.2 + math.random() * 2
+		end
+		local around = side * self.strafe
+		if self.temper and self.temper.flank then
+			local lk = thrp.CFrame.LookVector
+			local back = Vector3.new(-lk.X, 0, -lk.Z)
+			if back.Magnitude > 0.1 then
+				local to = thrp.Position + back.Unit * self.ring - hrp.Position
+				to = Vector3.new(to.X, 0, to.Z)
+				if to.Magnitude > 3 then around = to.Unit end
+			end
+		end
+		want = around * 0.55 + dir * math.clamp((dist - self.ring) / 4, -1, 1)
 	else
 		local mood = self.mood or "circle"
 		local goal = mood == "press" and strike or (mood == "back" and hold + 3) or hold
@@ -625,7 +705,7 @@ function Bot:think()
 	local mv = mag > 0.05 and self.mv.Unit or Vector3.zero
 	-- it doesn't break into a run the moment you step away: a beat of walking,
 	-- then a burst of sprint, a breather, another burst — and not when winded
-	local far = dist > math.max(self.reach, foeReach) + 6
+	local far = dist > math.max(self.reach, foeReach) + 6 and not (waiting and dist < self.ring + 8)
 	if far then
 		self.farSince = self.farSince or now
 		local t = now - self.farSince - (self.chaseBeat or 0.9)
@@ -640,6 +720,7 @@ function Bot:think()
 	-- offence
 	if not ctrl or busy or blocking or self.arming then return end
 	if threat and self.plan ~= "none" then return end            -- that swing is being met (or dodged)
+	if waiting and dist > hitDist then return end                 -- not its turn
 	-- a guard held up too long: kick it
 	if self.foeGuardAt and now - self.foeGuardAt > 0.45 and dist <= 6.5 and now >= (self.nextKick or 0) then
 		self.nextKick = now + 1.5
@@ -695,6 +776,8 @@ function Bots.spawn(opts)
 	local bot = setmetatable({model = model, hum = hum, hrp = hrp, skill = skill, target = opts.target, arena = opts.arena,
 		alive = true, conns = {}, nextAttack = startAt + 1.2, strafe = 1, strafeUntil = 0, learned = {},
 		startAt = startAt, invulnerable = opts.invulnerable == true, attacks = {}, reach = 5, cfg = {}}, Bot)
+	bot.temper = Bots.TEMPERS[opts.temper] or Bots.TEMPERS[TEMPER_NAMES[math.random(#TEMPER_NAMES)]]
+	bot.ring = 10 + math.random() * 5          -- how far out it waits its turn
 	if opts.invulnerable then hum.MaxHealth = 5000; hum.Health = 5000 end
 	-- a secondary on its belt for when it's disarmed
 	if opts.spare ~= false and not skill.dummy then

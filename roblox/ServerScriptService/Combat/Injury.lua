@@ -24,6 +24,8 @@ local Injury = {}
 Injury.CONFIG = {
 	BLEED_HP         = 25,    -- health you're left with after losing a limb…
 	BLEED_TIME       = 10,    -- …and how long until it's gone (a bandage system can clear Bleeding)
+	SCREAM_GAP       = {2.8, 4.4},   -- seconds between cries while bleeding out (no health comes back meanwhile)
+	GASP_BELOW       = 0.35,  -- under this share of BLEED_HP the screams turn to gasps
 	LEG_SPEED        = 0.45,  -- WalkSpeed factor per lost leg
 	LEG_CLUNK        = 1.5,   -- footstep clunk factor per lost leg
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at (it lands as a pickup)
@@ -172,12 +174,14 @@ function Injury.startBleed(char)
 	char:SetAttribute("Bleeding", true)
 	char:SetAttribute("BleedDPS", C.BLEED_HP / C.BLEED_TIME)
 	Sounds.play(SoundConfig.Bleed, char:FindFirstChild("Torso") or char.PrimaryPart)
-	Sounds.voice("Hurt", char:FindFirstChild("Head") or char.PrimaryPart, {Who = char, Chance = 1})
+	Sounds.voice("Scream", char:FindFirstChild("Head") or char.PrimaryPart, {Who = char, Chance = 1})
+	char:SetAttribute("NextCryAt", os.clock() + C.SCREAM_GAP[1] + math.random() * (C.SCREAM_GAP[2] - C.SCREAM_GAP[1]))
 end
 
 function Injury.stopBleed(char)
 	char:SetAttribute("Bleeding", nil)
 	char:SetAttribute("BleedDPS", nil)
+	char:SetAttribute("NextCryAt", nil)
 end
 
 function Injury.tick(char, dt)
@@ -187,6 +191,14 @@ function Injury.tick(char, dt)
 		local dmg = (char:GetAttribute("BleedDPS") or 2.5) * dt
 		if hum.Health - dmg <= 0 then char:SetAttribute("LastHitKind", "bleed") end
 		hum:TakeDamage(dmg)
+		-- they scream as they go, weaker and lower as the blood runs out, then only gasp
+		local now = os.clock()
+		if hum.Health > 0 and now >= (char:GetAttribute("NextCryAt") or 0) then
+			local left = math.clamp(hum.Health / C.BLEED_HP, 0, 1)
+			char:SetAttribute("NextCryAt", now + C.SCREAM_GAP[1] + math.random() * (C.SCREAM_GAP[2] - C.SCREAM_GAP[1]))
+			Sounds.voice(left < C.GASP_BELOW and "Gasp" or "Scream", char:FindFirstChild("Head") or char.PrimaryPart,
+				{Who = char, Chance = 1, Volume = 0.55 + 0.45 * left, Speed = 0.93 + 0.07 * left})
+		end
 	end
 end
 

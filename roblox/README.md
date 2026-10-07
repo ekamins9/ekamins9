@@ -130,14 +130,16 @@ pieces). **Adding content is config only: see [CONTENT_GUIDE.md](CONTENT_GUIDE.m
 
 **The weights trade real things** (`Catalog ▸ Weights`; the class cards show HP / ARMOR / SPEED /
 STAMINA bars and the full line under each class):
-- **Light (Vanguard):** 100 HP, 3% armor, 106% walk speed, the fastest sprint (×1.55), 115 stamina
-  coming back 25% faster, dodges that cost 70% and go 25% further. One mistake from death.
+- **Light (Vanguard):** 100 HP, 3% armor, 106% walk speed, the fastest sprint (×1.55), 120 stamina
+  coming back 30% faster, everything 10% cheaper, dodges that cost 70% and go 25% further. One
+  mistake from death.
 - **Medium (Footman):** 106 HP, 12% armor, 96% speed, ×1.45 sprint, 100 stamina: the all-rounder.
-- **Heavy (Knight):** 112 HP, 22% armor on covered limbs, 87% speed, ×1.32 sprint, 85 stamina
-  coming back 20% slower, dodges that cost 140% and go 20% shorter. About 1.4× a Light's
-  staying power (it was 2×): a Light that keeps moving and keeps the pressure on runs it dry.
+- **Heavy (Knight):** 112 HP, 22% armor on covered limbs, 87% speed, ×1.32 sprint, 75 stamina
+  coming back 35% slower, **everything 20% dearer** (swings, feints, kicks, blocks, a held guard:
+  `cost` → `StaminaCostMult`), dodges that cost 160% and go 20% shorter. It takes the hits, but
+  a long exchange leaves it gasping: a Light that keeps moving and keeps the pressure on runs it dry.
   Blunt weapons and armor-piercing points ignore part of the armor (`ARMOR_PEN`, below).
-Dresser publishes them as `StaminaMult`, `RegenMult`, `SprintMult`, `DodgeCost`, `DodgeReach`;
+Dresser publishes them as `StaminaMult`, `RegenMult`, `StaminaCostMult`, `SprintMult`, `DodgeCost`, `DodgeReach`;
 CombatServer scales `BlockMax` / `StaminaRegen` (and rescales if you're re-dressed),
 MovementServer the sprint and the dodge's cost, Movement the dodge's reach.
 
@@ -608,24 +610,26 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   + the white edge flash mean you got it.
 - **Flinch only in windup** (`FLINCH_ONLY_WINDUP`): a hit stops a swing that hasn't committed;
   one already in release finishes. Trading is a choice now. Kicks still stop anything.
-- **Stamina ledger: fighting well pays, flailing and turtling cost.** The windup always costs
-  `staminaCost`; **every enemy a swing hits refunds the cost plus `HIT_BONUS` (8)** — landing blows
-  refills you (cut through three = three refunds); **a kill gives back `KILL_REFUND` (35 %) of your
-  max** (the HUD says KILL +N); a whiff costs `MISS_COST_MULT` × the cost extra; a blade that hits
+- **Stamina ledger: fighting well pays, flailing and turtling cost — and a long fight wears
+  everyone down.** The windup always costs `staminaCost` (× the armor's `StaminaCostMult`);
+  **every enemy a swing hits refunds the cost plus `HIT_BONUS` (2)** — a landed blow about breaks
+  even (cut through three = three refunds); **a kill gives back `KILL_REFUND` (20 %) of your
+  max** (the HUD says KILL +N); a whiff costs `MISS_COST_MULT` (0.6) × the cost extra; a blade that hits
   a **wall / floor** stops there (clang, `WALL_RECOVERY`) with no penalty and no refund. Kick: land =
   `KICK_REFUND` back, whiff = `KICK_MISS_COST` + longer recovery, kick a wall = neither. A dodge
-  that makes a swing miss you refunds `DODGE_REFUND`. Regen runs at full rate 1.3 s after the
-  last combat event and at `COMBAT_REGEN` (35 %) inside that, so a long fight you're winning
-  doesn't run you dry; misses, held blocks and feints are what drain you.
+  that makes a swing miss you refunds `DODGE_REFUND`. Regen (13/s × the weight's `RegenMult`)
+  runs at full rate 1.6 s after the last combat event and at `COMBAT_REGEN` (20 %) inside that:
+  misses, held blocks and feints drain you, and even clean fighting slowly does.
 - **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds the attacker's swing
-  cost (at least `PARRY_REFUND`, 10), growing by `PARRY_STREAK_STEP` (50 %) per parry within
-  `PARRY_STREAK_WINDOW` (2 s) up to `PARRY_STREAK_MAX` — 1vX parry-parry-parry is 10, 15, 20…; the
+  cost (at least `PARRY_REFUND`, 5), growing by `PARRY_STREAK_STEP` (50 %) per parry within
+  `PARRY_STREAK_WINDOW` (2 s) up to `PARRY_STREAK_MAX` — 1vX parry-parry-parry grows each time; the
   HUD word and the sparks grow with it. Holding block pays the full `blockCost` every hit **and**
-  `BLOCK_HOLD_DRAIN` (3/s) while it is up (the turtle tax), and can't attack while up.
+  `BLOCK_HOLD_DRAIN` (5/s) while it is up (the turtle tax), and can't attack while up.
 - **Exhausted**: a swing needs its `staminaCost` in the bank and a kick needs `KICK_COST`; at 0
   stamina you can only guard and walk (the HUD says EXHAUSTED). No more stabbing on empty.
 - **Health regen**: `CharacterSystems` heals 2.5/s once stamina is full, you are not blocking,
-  attacking or sprinting, and nothing has happened for 5 s. Health never slows you
+  attacking or sprinting, and nothing has happened for 5 s — never while bleeding out. Roblox's
+  own 1 %/s regen is switched off (an empty `StarterCharacterScripts ▸ Health`). Health never slows you
   (`WalkSpeedGovernor` `MIN_HEALTH_F` 1): clutch at 5 HP at full speed.
 - **Being parried doesn't stun you** (`PARRY_PUNISH_STUN` 0): your swing dies and eases back
   (`RECOIL`), and for `PARRIED_GUARD_WINDOW` (0.8 s) your guard comes up at once with a fresh parry
@@ -770,7 +774,10 @@ dodge, kick or swing until it runs out.
 ## Weapons on the floor (Pickup)
 
 A weapon that leaves a hand — disarm, death, or a swap — lands as a pickup with a prompt (hold
-V) in `workspace.DroppedWeapons`, for `DESPAWN` (60) seconds.
+V) in `workspace.DroppedWeapons`, for `DESPAWN` (25) seconds. Only what you can hold is offered:
+without a right arm nothing, with one arm only one-handed weapons (`Pickup.canHold`, the
+weapon Config's `TWO_HANDED`); the prompt is hidden on your screen and the server refuses it
+(bots don't go for them either).
 
 **Corpses (`Combat ▸ Corpses`).** The dead stay on the field: 2.8 s after a death the body is
 laid out where it fell — a still copy of everything you could see of it (armor, hair, face), the
@@ -868,9 +875,15 @@ controller runs in NPC mode.
 - **The players' rules:** the same walk speed (`MovementConfig` × the armor's and weapon's
   `SpeedMult` × 0.8 sideways / 0.65 backwards, a sprint to close distance), the players' 400°/s
   turn cap while swinging (720°/s otherwise), the same stamina.
+- **Tempers** (`Bots.TEMPERS`, one each at random): a *brute* presses more and barely waits its
+  turn, a *duelist* plays it straight, a *wary* one hangs back and watches, a *flanker* works its
+  way round behind you.
+- **The crowd takes turns:** round each foe only the nearest two (a brute: three) fight; the
+  rest keep a ring 10–15 studs out, circling, and step in when a gap opens or you leave yourself
+  wide open. Six bots on one player is a fight, not a blender.
 - **Brain** (10 Hz): footwork in moods that last a second or two — press in, circle at the
-  edge of reach, stand and watch (`hesitate`), or give ground — weighted by `aggression` and its
-  stamina, instead of one perfect spacing; it eases from one heading into the next (momentum),
+  edge of reach, stand and watch (`hesitate`), or give ground — weighted by `aggression`, its
+  temper and its stamina, instead of one perfect spacing; it eases from one heading into the next (momentum),
   walks a beat before it chases (0.6–1.4 s) and then sprints only in bursts (2.6 s of every 4,
   not when winded). It steps in to swing (the blade lands at about 0.72 × `REACH`), punishes
   whiffs and parried swings, presses a foe low on stamina or stunned, kicks a guard held up too
@@ -880,7 +893,10 @@ controller runs in NPC mode.
   the blow.
 - **Reflexes** (every frame, from the foe's controller `snapshot`): a parry timed so the blade
   arrives mid-window, learning how long each of your attacks takes to land (`learned`); `bait` is
-  the chance it guards early, which a late feint catches; a riposte after its own parry; feints
+  the chance it guards early, which a late feint catches — and `fooled` the chance a feint gets
+  it: its guard drops when the swing never comes, and your real one finds it in its re-guard
+  cooldown. `miss` is the chance it doesn't read a swing at all, and its timing is off by up to
+  `jitter`; winded (under 30 stamina) it misses more and times worse. A riposte after its own parry; feints
   and morphs when you raise your guard early against its swing; combos after a hit; chambers.
 - **Disarmed:** it draws its spare (`spare`: a secondary) or goes and picks a weapon up
   (`Pickup.takeNpc`), facing where it walks.
@@ -889,7 +905,8 @@ controller runs in NPC mode.
   Squires, mail and surcoats in navy and white for Knights, full plate in black and blood for
   Champions. Clients draw their walk (`NpcAnimator`: the hips swing with the root's replicated
   velocity, or the distance it covered over 0.15 s — frame-to-frame jumps made a sprinting bot
-  read as standing still) and play their footsteps.
+  read as standing still) and play their footsteps. The swing is written on `PreSimulation`,
+  after the Animator: written any earlier, the weapon's idle pose wiped it before the legs moved.
 - `Combat ▸ R6` builds a plain R6 rig from parts for bots, dummies and NPCs.
 - Studio: `/bot Knight Longsword`, `/bot clear`.
 
@@ -919,15 +936,18 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
   players see it, so ducking under a high swing or leaning back from a stab is a real dodge.
 - **Stamina** (`BlockMeter`): attacks, feints, kicks, blocks drain it. Hits 0 from a
   block → guard break stun. Guard hit while already at 0 → **weapon flies out of your hand**.
-  A swing that cuts someone cleanly gives its whole cost back plus `HIT_BONUS` (8); a kill
-  gives 35 % of your max; a blocked or parried one gives nothing; a whiff costs half again
-  (`MISS_COST_MULT` 0.5). A held guard pays `BLOCK_COST_MULT` (0.8) × the attack's blockCost; a
-  timed parry or a chamber pays nothing and a parry refunds. Regen: 17/s (× the weight's
-  `RegenMult`) from 1.3 s after the last combat event, 35 % of that before it.
+  A swing that cuts someone cleanly gives its whole cost back plus `HIT_BONUS` (2); a kill
+  gives 20 % of your max; a blocked or parried one gives nothing; a whiff costs 0.6 again
+  (`MISS_COST_MULT`). A held guard pays `BLOCK_COST_MULT` (0.8) × the attack's blockCost; a
+  timed parry or a chamber pays nothing and a parry refunds. Every cost × the armor's
+  `StaminaCostMult`. Regen: 13/s (× the weight's `RegenMult`) from 1.6 s after the last combat
+  event, 20 % of that before it.
 - **Armor**: protection on a covered limb × (1 − the weapon's `ARMOR_PEN`).
 - **Head**: `HEAD_DAMAGE_MULT` × damage (2× by default) — no automatic kill.
 - **Kills**: a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
-  with `BLEED_OUT_CHANCE` an arm/leg victim survives on `BLEED_HP` and bleeds out instead.
+  with `BLEED_OUT_CHANCE` an arm/leg victim survives on `BLEED_HP` and bleeds out instead,
+  screaming (`VoiceScream`, every `SCREAM_GAP` seconds, weaker as the blood runs out, gasps at
+  the end: `VoiceGasp`), with no health coming back.
   A lethal **stab** leaves the weapon run through the body (`IMPALE`) until the corpse despawns.
   Lose the right arm → weapon dropped, can't wield. Lose the left arm → dropped only if
   `TWO_HANDED`. Trying to block one-armed flings the weapon. Each lost leg multiplies speed

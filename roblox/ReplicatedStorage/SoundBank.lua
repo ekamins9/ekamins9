@@ -105,6 +105,12 @@ SoundBank.POOLS = {
 		9125651099, 9125652466, 9125652133, 9125652943, 9125651079, 9125652963,
 		9114029789, 9114029889, 9114030161, 9114029818,
 	}},
+	VoiceScream = {volume = 0.8, speed = {0.96, 1.03}, far = 110, takes = {   -- bleeding out: long cries of agony
+		9116454870, 9116454942, 9116454961, 9116455473, 9116455235, 9116455270,
+	}},
+	VoiceGasp = {volume = 0.6, speed = {0.95, 1.02}, far = 60, takes = {     -- …and at the end, gasps
+		9114029789, 9114029889, 9114030161, 9114029818,
+	}},
 }
 -- kicks and a parry's effort borrow the swing efforts
 SoundBank.POOLS.VoiceKick = SoundBank.POOLS.VoiceSwing

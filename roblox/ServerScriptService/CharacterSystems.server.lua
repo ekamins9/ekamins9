@@ -23,10 +23,10 @@ local DEATH_SHOVE = 10   -- studs/s the corpse falls away from the last hit
 -- stamina (the BlockMeter attribute) — a weapon overrides these through the
 -- BlockMax / StaminaRegen / StaminaRegenDelay attributes it publishes on equip
 local STAMINA_MAX   = 100
-local STAMINA_REGEN = 17    -- per second…
-local STAMINA_DELAY = 1.3   -- …at full rate this long after the last combat event
-local COMBAT_REGEN  = 0.35  -- …and this share of it before that (weapons publish CombatRegenMult)
-local HOLD_DRAIN    = 3     -- stamina per second while the guard is held (weapon overrides via BlockHoldDrain)
+local STAMINA_REGEN = 13    -- per second…
+local STAMINA_DELAY = 1.6   -- …at full rate this long after the last combat event
+local COMBAT_REGEN  = 0.2   -- …and this share of it before that (weapons publish CombatRegenMult)
+local HOLD_DRAIN    = 5     -- stamina per second while the guard is held (weapon overrides via BlockHoldDrain)
 -- health regen: slow, and only when you are truly out of the fight — full stamina,
 -- not blocking / attacking / sprinting, nothing happened for HEALTH_DELAY
 local HEALTH_REGEN  = 2.5   -- health per second
@@ -84,14 +84,14 @@ local function setup(char)
 		end
 		-- holding the guard costs stamina (a timed parry is free): the turtle tax
 		if hum.Health > 0 and char:GetAttribute("Blocking") then
-			local drain = char:GetAttribute("BlockHoldDrain") or HOLD_DRAIN
+			local drain = (char:GetAttribute("BlockHoldDrain") or HOLD_DRAIN) * (char:GetAttribute("StaminaCostMult") or 1)
 			if drain > 0 then
 				local m = char:GetAttribute("BlockMeter") or (char:GetAttribute("BlockMax") or STAMINA_MAX)
 				if m > 0 then char:SetAttribute("BlockMeter", math.max(0, m - drain * dt)) end
 			end
 		end
-		-- health regen: full stamina, idle, out of combat for HEALTH_DELAY
-		if hum.Health > 0 and hum.Health < hum.MaxHealth
+		-- health regen: full stamina, idle, out of combat for HEALTH_DELAY — never while bleeding out
+		if hum.Health > 0 and hum.Health < hum.MaxHealth and char:GetAttribute("Bleeding") ~= true
 			and not char:GetAttribute("Blocking") and not char:GetAttribute("Acting")
 			and char:GetAttribute("SpeedMult_Sprint") == nil
 			and (char:GetAttribute("BlockMeter") or 0) >= (char:GetAttribute("BlockMax") or STAMINA_MAX) - 0.01

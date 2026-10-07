@@ -9,9 +9,11 @@
 --   speed      WalkSpeed multiplier               sprint    sprint multiplier (MovementConfig.SPRINT_MULT is Medium's)
 --   stamina    max stamina multiplier (100 base)  regen     stamina regen multiplier
 --   dodgeCost  dodge stamina multiplier           dodgeReach  dodge distance multiplier
+--   cost       stamina cost multiplier on everything else: swings, feints, kicks, misses,
+--              blocked blows, a held guard (plate is heavy to swing in)
 --   clunk      footstep weight
 return {
-	Light  = {health = 0,  prot = 0.03, speed = 1.06, sprint = 1.55, stamina = 1.15, regen = 1.25, dodgeCost = 0.7, dodgeReach = 1.25, clunk = 0.90},
-	Medium = {health = 6,  prot = 0.12, speed = 0.96, sprint = 1.45, stamina = 1.00, regen = 1.00, dodgeCost = 1.0, dodgeReach = 1.00, clunk = 1.15},
-	Heavy  = {health = 12, prot = 0.22, speed = 0.87, sprint = 1.32, stamina = 0.85, regen = 0.80, dodgeCost = 1.4, dodgeReach = 0.80, clunk = 1.40},
+	Light  = {health = 0,  prot = 0.03, speed = 1.06, sprint = 1.55, stamina = 1.20, regen = 1.30, cost = 0.9, dodgeCost = 0.7, dodgeReach = 1.25, clunk = 0.90},
+	Medium = {health = 6,  prot = 0.12, speed = 0.96, sprint = 1.45, stamina = 1.00, regen = 1.00, cost = 1.0, dodgeCost = 1.0, dodgeReach = 1.00, clunk = 1.15},
+	Heavy  = {health = 12, prot = 0.22, speed = 0.87, sprint = 1.32, stamina = 0.75, regen = 0.65, cost = 1.2, dodgeCost = 1.6, dodgeReach = 0.80, clunk = 1.40},
 }
