@@ -38,15 +38,25 @@ def multipart(fields, file_field, path, content_type):
 
 
 def request(url, key, data=None, content_type=None, method=None):
-    req = urllib.request.Request(url, data=data, method=method or ("POST" if data else "GET"))
-    req.add_header("x-api-key", key)
-    if content_type:
-        req.add_header("Content-Type", content_type)
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            return json.loads(r.read().decode() or "{}")
-    except urllib.error.HTTPError as e:
-        sys.exit("HTTP %d: %s" % (e.code, e.read().decode()[:600]))
+    """one API call; rate limits (429) and server hiccups are waited out and retried"""
+    for attempt in range(8):
+        req = urllib.request.Request(url, data=data, method=method or ("POST" if data else "GET"))
+        req.add_header("x-api-key", key)
+        if content_type:
+            req.add_header("Content-Type", content_type)
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.loads(r.read().decode() or "{}")
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 502, 503, 504) and attempt < 7:
+                time.sleep(min(60, 3 * 2 ** attempt))
+                continue
+            sys.exit("HTTP %d: %s" % (e.code, e.read().decode()[:600]))
+        except urllib.error.URLError:
+            if attempt < 7:
+                time.sleep(5)
+                continue
+            raise
 
 
 def upload(path, asset_type=None, name=None, desc=None, key=None, user_id=None, group_id=None, quiet=False):

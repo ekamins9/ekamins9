@@ -11,5 +11,5 @@ return {
 	Rarity      = "Epic",
 	PriceCrowns = 45,
 	Covers      = {"Hair", "Face"},
-	HelmName = "Blackguard Great Helm", TopName = "Blackguard Plate", LegsName = "Blackguard Legs",
+	HelmName = "Blackguard Horned Helm", TopName = "Blackguard Plate", LegsName = "Blackguard Legs",
 }

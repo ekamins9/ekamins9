@@ -3,6 +3,7 @@
     python scripts/build_weapons.py Longsword Greatsword     # these
     python scripts/build_weapons.py all                       # every weapon in blender/weapons.py
     python scripts/build_weapons.py all --no-upload           # just the Blender step
+    python scripts/build_weapons.py all --upload-only         # no Blender: finish the uploads, write assemble.lua
 
 Steps per weapon:
   1. Blender headless (blender/weapons.py) → blender/out/<W>_Blade.fbx, <W>_Grip.fbx, <W>.json
@@ -47,17 +48,27 @@ def run_blender(names):
 def main():
     argv = sys.argv[1:]
     do_upload = "--no-upload" not in argv
+    resume = "--upload-only" in argv   # no Blender: upload the regions the last bake left without ids
     argv = [a for a in argv if not a.startswith("--")]
     names = argv or ["all"]
-    run_blender(names)
+    if not resume:
+        run_blender(names)
     if names == ["all"]:
-        names = sorted(f[:-5] for f in os.listdir(OUT) if f.endswith(".json") and f != "assemble.json")
+        # every weapon's <name>.json in blender/out (blueprints.json and the rest are not weapons)
+        names = []
+        for f in sorted(os.listdir(OUT)):
+            if f.endswith(".json"):
+                try:
+                    if "weapon" in json.load(open(os.path.join(OUT, f), encoding="utf-8")):
+                        names.append(f[:-5])
+                except (ValueError, OSError):
+                    pass
     lua = ["local MeshTool = require(game.ServerScriptService.Build.MeshTool)", "local built = {}"]
     for n in names:
         meta_path = os.path.join(OUT, n + ".json")
         meta = json.load(open(meta_path, encoding="utf-8"))
         for region, r in meta["regions"].items():
-            if do_upload:
+            if do_upload and not (resume and r.get("id")):
                 r["id"] = upload(os.path.join(OUT, r["file"]), "Model", f"{n} {region}", quiet=True)
                 print(f"uploaded {n} {region}")
         json.dump(meta, open(meta_path, "w", encoding="utf-8"), indent=1)

@@ -5,11 +5,11 @@
 -- the set lists nothing; a set may skip slots. Stats come from Type only.
 return {
 	Name        = "Sellswords",
-	Description = "Mismatched mail and a dented kettle hat. Paid by the week, loyal by the hour.",
+	Description = "Mismatched mail, odd plates and a battered barbute. Paid by the week, loyal by the hour.",
 	Type        = "Medium",       -- Light | Medium | Heavy
 	Pack        = "Sellswords",
 	Rarity      = "Common",
 	PriceMarks  = 250,
 	Covers      = {"Hair"},
-	HelmName = "Sellsword's Kettle", TopName = "Sellsword's Brigandine", LegsName = "Sellsword's Chausses",
+	HelmName = "Sellsword's Barbute", TopName = "Sellsword's Brigandine", LegsName = "Sellsword's Chausses",
 }

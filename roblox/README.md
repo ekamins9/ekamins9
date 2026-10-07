@@ -299,7 +299,9 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
 - **Companions** (`Catalog ▸ Companions`, 21 to find): a hatched egg rolls one by the egg's
   odds. A duplicate adds a star (up to 5, and five stars sparkle); past that it pays Marks.
   Your companion follows you around (built from parts by `Companions`, drawn locally for every
-  player). SETTINGS ▸ Companions: All / Mine / None.
+  player). Every body is made of rounded sphere-mesh shapes: four-legged beasts have round
+  bodies, cheeks, snouts, paws and a segmented tail, drakes a rounded neck and head, nostrils,
+  wing claws and back spines, and every eye has a white glint. SETTINGS ▸ Companions: All / Mine / None.
 - Testing in Studio: `/egg Royal 2`, `/ripen` (every nest ready), `/playtime 30`.
 
 ## Skin effects, kill effects, emotes (looks only)
@@ -403,7 +405,7 @@ ServerStorage
 The server mirrors the folder into `ReplicatedStorage ▸ Cosmetics ▸ Armor` and the catalog
 auto-imports every set as three **pieces** — `<Set>_Helm`, `<Set>_Top`, `<Set>_Legs` — of the
 weight in `Config.Type`. `Config` may also set `Name`, `Pack`, `Rarity`, `PriceMarks`,
-`PriceCrowns`, `Covers` (`{"Hair"}`, `{"Hair", "Face"}`), per-piece names and a description;
+`PriceCrowns`, `Covers` (`{"Hair"}`, `{"Hair", "Face"}`, `{"Hair", "Beard"}` for a mask or a coif the eyes look out of), per-piece names and a description;
 stats never come from a set (`Catalog ▸ Weights`). Color blocks are parts with attribute
 `ColorSlot` = `Primary` / `Secondary` / `Accent` / `Metal`. Full details and every other kind
 of content: [CONTENT_GUIDE.md](CONTENT_GUIDE.md).
@@ -419,6 +421,47 @@ per-limb protection check finds it. Rules the pieces play by:
 - Severed limbs take their armor with them; a skewered head takes its helmet onto the blade.
 - Helmets (`HeadClothing`) are hidden in first person like hats.
 - Test dummies still wear whole sets: `/spawn attack Pitchfork PeasantSkin`.
+
+### What each set looks like
+
+No two helms share a shape, and the weight reads at a glance: light sets are cloth, leather and
+mail hoods; medium sets mix mail and half plate; heavy sets are full plate with broad, layered
+shoulders.
+
+| Set | Helm | Body | Legs |
+|---|---|---|---|
+| Peasant | wide straw hat | linen tunic, rope belt, pouch | rolled trousers, wrapped shins |
+| Road Levy | mail coif, cloth band | padded jack, bedroll, waterskin | hose, knee patches, garters |
+| Marsh Wardens | hood with liripipe, dagged cowl | laced jerkin, cloak, quiver | thigh-high waders |
+| Harriers of the Coast | sailor's cap, red kerchief, earring | striped shirt, open vest, sash, bandolier | breeches, striped stockings |
+| Night Hunters | head-wrap, black half-mask | high-collared jack, shoulder cape, throwing knives | soft strapped boots, thigh knife |
+| Gambeson | steel cap over a padded coif | quilted gambeson, mail hem | quilted chausses, knee pads |
+| Sellswords | battered barbute (T face) | studded brigandine, one iron shoulder | one leg mail, one leather and iron |
+| River Guard | open bascinet, mail aventail | quilted surcoat with waves, baldric | padded cuisses, greaves |
+| Gilded Court | burgonet: gold comb, peak, cheek plates | velvet brigandine, gold chain, half-cape | cavalier boots, gold knee discs |
+| Wolf Company | steel wolf's head with fangs | grey mail, fur mantle, wolf teeth | cross-gartered leather, fur boots |
+| Knight | close helm, comb, beaked visor | plain plate | plain plate |
+| Tourney Knight | frog-mouth helm, plumes, mantling | grand guard, lance rest, quartered tabard | gothic plate, pointed toes |
+| Iron Crow | hounskull (beak visor), crow feathers | black plate under a feather mantle | talon sabatons |
+| Blackguard | horned great helm | spiked shoulders, red cords, tattered cape | spiked knees |
+| Knights of the Sun | armet under a crown of rays | fluted plate, sunburst, sun-disc shoulders | fluted plate, bear-paw toes |
+
+Earned pieces stand apart the same way: the Champion's sugarloaf helm with its crown, the
+Duelist's long-tailed sallet, the Bloodied Kettle, the Wolf Pelt Hood, the Banneret's chevron
+surcoat with a livery collar, the Hunter's fur-collared cloak and horn, the Sergeant's banded
+surcoat, the Runner's crossed wraps, the Veteran's strapped mail and iron.
+
+**How the meshes are made.** `Build ▸ Armor` is the source: spec lists of boxes (rounded,
+tapered), drums, cones, eggs and rings, and helpers that lay slits, studs and trim along a
+curved surface. The pipeline (Studio MCP + Blender + Open Cloud):
+1. In Studio, run `scripts/export_blueprints.lua` through the MCP, fetch the JSON in slices
+   and join them: `python scripts/join_blueprints.py <slices…>` → `blender/out/blueprints.json`.
+2. Look before you upload: `blender.exe -b --python blender/preview_armor.py -- blender/out/blueprints.json --sheet figures`
+   (or `--sheet heads | torsos | legs`, `--sets IronCrow,Blackguard` for front / side / back) on
+   an R6 mannequin with the starter colors.
+3. `python scripts/build_armor.py <sets / piece ids>` bakes one mesh per color region and uploads
+   it (`--upload-only` resumes); asset ids stay in `blender/out` (gitignored).
+4. Run `blender/out/armor/assemble_armor.lua` in Studio edit mode (`Build ▸ MeshArmor`), then save.
 
 ## Weapons (26) and blueprints
 
@@ -439,12 +482,29 @@ Dagger 35%… edges 0. The Shortsword is the quick sidearm (`SPEED_MULT` 0.55). 
 (attributes: Reach, Swing/Stab/Overhead Damage · Windup · Cost · Block (what a held guard pays),
 HeadMult, Move, ArmorPen, TwoHanded, Secondary, Description) and the Armory shows them as
 bars against every other weapon.
+**Every weapon has its own look** (`blender/weapons.py`, previewed with `blender/preview_weapons.py`,
+built with `python scripts/build_weapons.py all`): blades are beveled with bright ground edges
+and dark fullers; the Longsword has flared quillons and a scent-stopper pommel, the Arming Sword
+a wire grip and a wheel pommel, the Greatsword parrying lugs, the Zweihander a flamberge blade,
+parrying hooks and side rings, the Executioner's Sword a square end pierced with three holes,
+the Estoc a ring guard, the Rapier a swept hilt with a knuckle bow, the Rondel Dagger its two
+discs, the Falchion a swelling clipped blade, the Kriegsmesser a nagel and riveted grip scales,
+the Cleaver a butcher's chopper. Axes are cut from real outlines (a bearded War Axe, a crescent
+Battle Axe, the Bardiche's long blade on two sockets) and ground to an edge; hafts carry
+langets, rivets and butt spikes; the War Hammer and Poleaxe have crowned faces and curved beaks,
+the Mace gothic flanges, the Morning Star a ring of spikes, the Maul an iron-banded block; the
+Spear and Glaive wear tassels. Every weapon keeps the size its Hitbox was tuned for.
 Armor sets work the same way: `Build ▸ Armor` has a blueprint for every release set in
 `ServerStorage ▸ Armor` (Road Levy, Marsh Wardens, Harriers of the Coast, Night Hunters ·
 Sellswords, River Guard, Gilded Court, Wolf Company · Tourney Knight, Iron Crow, Blackguard,
 Knights of the Sun), for the nine earned pieces (Wolf Pelt Hood, Champion's Great Helm…) and
-fallbacks for Knight, Gambeson and Peasant; `Build ▸ Body` has every hair, beard and face in
-`Catalog ▸ Body`. See [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0 and [RELEASE_CONTENT.md](RELEASE_CONTENT.md).
+for Knight, Gambeson and Peasant. They are the source of the armor meshes (see *What each set
+looks like* above) and the fallback wherever a set has no model; `Build ▸ Body` has every hair
+and beard in `Catalog ▸ Body`, baked the same way (`python scripts/build_armor.py Hair Beard`):
+hair is a bowl spun to the round head's own profile (`Builder.lathe`) with locks, a fringe, a
+tied tail, a topknot, a monk's ring, a crest, a curly mane or a crown of braids laid on it;
+beards hang below the mouth and climb the cheeks, with a moustache, braids and brass beads or a
+forked point. See [CONTENT_GUIDE.md](CONTENT_GUIDE.md) §0 and [RELEASE_CONTENT.md](RELEASE_CONTENT.md).
 
 ## Making a new weapon
 

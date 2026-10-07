@@ -83,7 +83,7 @@ return {
 	Rarity      = "Rare",         -- Common | Rare | Epic | Legendary (label only)
 	PriceMarks  = 700,            -- 0 or missing = free
 	PriceCrowns = 35,             -- 0 or missing = not sold for Crowns
-	Covers      = {"Hair"},       -- what the helmet hides: "Hair", "Face", both, or {}
+	Covers      = {"Hair"},       -- what the helmet hides: "Hair", "Face" (face and beard), "Beard" (beard only), or {}
 	HelmName = "Crow Sallet", TopName = "Crow Hauberk", LegsName = "Crow Chausses",  -- optional
 	Description = "Black iron, worn by the Crow company.",
 }

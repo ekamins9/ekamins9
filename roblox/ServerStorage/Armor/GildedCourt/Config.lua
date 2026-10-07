@@ -11,5 +11,5 @@ return {
 	Rarity      = "Epic",
 	PriceCrowns = 45,
 	Covers      = {"Hair"},
-	HelmName = "Courtier's Sallet", TopName = "Courtier's Brigandine", LegsName = "Courtier's Hose",
+	HelmName = "Courtier's Burgonet", TopName = "Courtier's Brigandine", LegsName = "Courtier's Boots",
 }

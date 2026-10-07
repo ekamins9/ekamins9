@@ -113,7 +113,7 @@ end
 --------------------------------------------------------------------
 --  BODY
 --------------------------------------------------------------------
-local function applyBody(char, app, coversHair, coversFace)
+local function applyBody(char, app, coversHair, coversFace, coversBeard)
 	app = app or {}
 	local body = Instance.new("Folder"); body.Name = "Body"
 	-- skin tone
@@ -136,7 +136,7 @@ local function applyBody(char, app, coversHair, coversFace)
 		end
 	end
 	add("Hair", app.hair, coversHair)
-	add("Beard", app.beard, coversFace)
+	add("Beard", app.beard, coversFace or coversBeard)
 	-- face: a texture on the head's own face Decal. The textures are Decals in
 	-- Cosmetics ▸ Body ▸ Face ▸ <id> (made in Studio, see blender/faces.py), or a
 	-- `texture` id in Catalog ▸ Body. A helmet that covers the face hides it.
@@ -177,7 +177,7 @@ function Dresser.dress(char, opts)
 	local stats = Catalog.WEIGHTS[weight] or Catalog.WEIGHTS.Light
 
 	local container = Instance.new("Folder"); container.Name = "Armor"
-	local coversHair, coversFace = false, false
+	local coversHair, coversFace, coversBeard = false, false, false
 	local worn = {}
 	for _, slot in ipairs(Catalog.SLOTS) do
 		local id = lo[slot]
@@ -185,7 +185,9 @@ function Dresser.dress(char, opts)
 		if piece then
 			table.insert(worn, id)
 			if slot == "helmet" then
-				for _, c in ipairs(piece.covers or {}) do if c == "Hair" then coversHair = true elseif c == "Face" then coversFace = true end end
+				for _, c in ipairs(piece.covers or {}) do
+					if c == "Hair" then coversHair = true elseif c == "Face" then coversFace = true elseif c == "Beard" then coversBeard = true end
+				end
 			end
 			for modelName, template in pairs(Catalog.pieceModels(id)) do
 				local limb = char:FindFirstChild(LIMB_OF[modelName])
@@ -200,7 +202,7 @@ function Dresser.dress(char, opts)
 	-- layers that sit flush (a glove as wide as its sleeve) would flicker: nudge them apart
 	Defight.run(container)
 	local painted = Dresser.paint(container, lo.colors, opts.team)
-	applyBody(char, opts.appearance, coversHair, coversFace)
+	applyBody(char, opts.appearance, coversHair, coversFace, coversBeard)
 
 	-- stats (real characters; harmless on a preview rig)
 	local hum = char:FindFirstChildOfClass("Humanoid")

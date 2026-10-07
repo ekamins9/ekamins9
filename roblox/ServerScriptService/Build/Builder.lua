@@ -7,11 +7,20 @@
      In Studio edit mode you can materialize editable copies from the command
      bar:   require(game.ServerScriptService.Build.Blueprints).ensureAll()
 
-     A spec:  {kind = "box" | "cyl" | "ball" | "wedge" | "cwedge",
+     A spec:  {kind = "box" | "cyl" | "ball" | "wedge" | "cwedge" | "cone" | "torus" | "lathe",
                name = "Blade", size = Vector3, cf = CFrame (relative to the model origin),
                color = Color3, material = Enum.Material, transparency = 0..1,
                reflectance = 0..1, attrs = {SkinPart = "Blade"}}
      "cyl" is a cylinder whose axis is the spec's local Y (size = diameter, height, diameter).
+     "cone" stands the same way with its point at +Y (top = the top's share of the
+     foot's width, 0 = a point); meshes bake it true, plain parts make it a cylinder.
+     "ball" may be stretched (an egg): meshes bake it so, plain parts stay round.
+     "torus" is a ring lying in the spec's XZ plane: size = (outer width, tube
+     thickness, outer depth); plain parts make it a thin cylinder. A box's
+     `bevel` rounds its edges in the mesh and its `top` narrows its top face to
+     that share of the bottom's width and depth (plain parts stay square).
+     "lathe" spins `profile` ({{radius, y}, …} from bottom to top) round its Y:
+     a dome, a bowl of hair, a bun; plain parts make it a cylinder.
      Every part comes out anchored, non-colliding, massless; Dresser / the
      Tool code re-weld as they need. ]]
 
@@ -74,14 +83,15 @@ function B.make(spec, origin)
 	elseif kind == "cwedge" then part = Instance.new("CornerWedgePart")
 	else
 		part = Instance.new("Part")
-		if kind == "cyl" then part.Shape = Enum.PartType.Cylinder
+		if kind == "cyl" or kind == "cone" or kind == "torus" or kind == "lathe" then part.Shape = Enum.PartType.Cylinder
 		elseif kind == "ball" then part.Shape = Enum.PartType.Ball
 		else part.Shape = Enum.PartType.Block end
 	end
 	local size, cf = spec.size, spec.cf or CFrame.identity
-	if kind == "cyl" then
+	if kind == "cyl" or kind == "cone" or kind == "torus" or kind == "lathe" then
 		-- a cylinder's axis is X; the spec gives (diameter, height, diameter) along its Y
-		size = Vector3.new(size.Y, size.X, size.Z)
+		local w = kind == "cone" and (1 + (spec.top or 0)) / 2 or 1
+		size = Vector3.new(size.Y, size.X * w, size.Z * w)
 		cf = cf * CFrame.Angles(0, 0, DEG(90))
 	end
 	part.Name = spec.name or "Part"
@@ -156,6 +166,25 @@ function B.ball(name, diameter, cf, color, material, attrs)
 end
 function B.wedge(name, size, cf, color, material, attrs)
 	return {kind = "wedge", name = name, size = size, cf = cf, color = color, material = material, attrs = attrs}
+end
+-- an ellipsoid: a ball of any proportions (size = the full extents)
+function B.egg(name, size, cf, color, material, attrs)
+	return {kind = "ball", name = name, size = size, cf = cf, color = color, material = material, attrs = attrs}
+end
+-- a cone standing on `cf` along its Y (cf = the middle of its height); top = 0 for a point
+function B.cone(name, diameter, height, cf, color, material, attrs, top)
+	return {kind = "cone", name = name, size = Vector3.new(diameter, height, diameter), cf = cf, color = color, material = material, attrs = attrs, top = top}
+end
+-- a ring (torus) lying flat in its XZ plane; size = (outer width, tube thickness, outer depth)
+function B.torus(name, size, cf, color, material, attrs)
+	return {kind = "torus", name = name, size = size, cf = cf, color = color, material = material, attrs = attrs}
+end
+-- a solid spun round its Y from profile {{radius, y}, …} (bottom to top); cf places its origin
+function B.lathe(name, profile, cf, color, material, attrs)
+	local r, y0, y1 = 0, math.huge, -math.huge
+	for _, p in ipairs(profile) do r = math.max(r, p[1]); y0 = math.min(y0, p[2]); y1 = math.max(y1, p[2]) end
+	return {kind = "lathe", name = name, profile = profile, size = Vector3.new(r * 2, math.max(0.05, y1 - y0), r * 2),
+		cf = (cf or CFrame.identity) * CFrame.new(0, (y0 + y1) / 2, 0), color = color, material = material, attrs = attrs}
 end
 -- append list b to list a
 function B.join(a, ...)

@@ -5,7 +5,7 @@
 -- the set lists nothing; a set may skip slots. Stats come from Type only.
 return {
 	Name        = "Tourney Knight",
-	Description = "Plain plate with a tourney crest. The armor a young knight is given, not the one he earns.",
+	Description = "Jousting plate: a frog-mouthed helm under a crest of plumes, a grand guard on the left. The armor a young knight is given, not the one he earns.",
 	Type        = "Heavy",       -- Light | Medium | Heavy
 	Pack        = "TourneyKnight",
 	Rarity      = "Common",

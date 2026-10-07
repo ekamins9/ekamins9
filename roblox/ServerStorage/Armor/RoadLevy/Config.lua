@@ -5,11 +5,11 @@
 -- the set lists nothing; a set may skip slots. Stats come from Type only.
 return {
 	Name        = "Road Levy",
-	Description = "Padded jack and a leather cap: what the roads give a man who must fight for them.",
+	Description = "A padded jack, a mail coif and a bedroll: what the roads give a man who must fight for them.",
 	Type        = "Light",       -- Light | Medium | Heavy
 	Pack        = "RoadLevy",
 	Rarity      = "Common",
 	PriceMarks  = 250,
-	Covers      = {"Hair"},
-	HelmName = "Levy Cap", TopName = "Levy Jack", LegsName = "Levy Hose",
+	Covers      = {"Hair", "Beard"},
+	HelmName = "Levy Coif", TopName = "Levy Jack", LegsName = "Levy Hose",
 }

@@ -5,12 +5,12 @@
 -- the set lists nothing; a set may skip slots. Stats come from Type only.
 return {
 	Name        = "The Iron Crow",
-	Description = "Black iron, worn by the Crow company. The beak-visored sallet is known on every field.",
+	Description = "Black iron and crow feathers, worn by the Crow company. The beaked hounskull is known on every field.",
 	Type        = "Heavy",       -- Light | Medium | Heavy
 	Pack        = "IronCrow",
 	Rarity      = "Rare",
 	PriceMarks  = 450,
 	PriceCrowns = 25,
 	Covers      = {"Hair", "Face"},
-	HelmName = "Crow Sallet", TopName = "Crow Hauberk", LegsName = "Crow Chausses",
+	HelmName = "Crow Hounskull", TopName = "Crow Mantle", LegsName = "Crow Talons",
 }

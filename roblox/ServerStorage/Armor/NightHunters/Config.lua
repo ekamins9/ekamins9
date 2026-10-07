@@ -10,6 +10,6 @@ return {
 	Pack        = "NightHunters",
 	Rarity      = "Legendary",
 	PriceCrowns = 90,
-	Covers      = {"Hair", "Face"},
+	Covers      = {"Hair", "Beard"},   -- the eyes show over the mask
 	HelmName = "Hunter's Mask", TopName = "Hunter's Black Jack", LegsName = "Hunter's Black Hose",
 }

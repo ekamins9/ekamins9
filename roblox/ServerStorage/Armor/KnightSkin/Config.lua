@@ -5,6 +5,7 @@ return {
 	Name        = "Knight Skin",
 	Description = "A beautiful shiny suit of armor, worn only by the finest of knights. Slow, heavy, and very hard to cut.",
 	Type        = "Heavy",       -- Light | Medium | Heavy
+	Covers      = {"Hair", "Face"},
 	Health      = 50,            -- extra max health
 	SpeedMult   = 0.75,          -- 25% slower
 	ClunkMult   = 1.8,           -- much heavier footsteps

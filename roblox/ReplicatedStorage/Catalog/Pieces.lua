@@ -11,7 +11,7 @@
         Rarity      = "Rare"             -- Common | Rare | Epic | Legendary
         PriceMarks  = 700                -- 0 (default) = free
         PriceCrowns = 35
-        Covers      = {"Hair"}           -- what the helmet hides: "Hair", "Face", both, or {}
+        Covers      = {"Hair"}           -- what the helmet hides: "Hair", "Face" (face and beard), "Beard", or {}
         HelmName / TopName / LegsName    -- optional per-piece names
      Color blocks: give any part in the models an attribute ColorSlot =
      "Primary" | "Secondary" | "Accent" | "Metal" and the player's colors paint
@@ -39,7 +39,7 @@ return {
 		{id = "RunnersWraps",       name = "Runner's Wraps",        slot = "bottom", weight = "Light",  pack = "Earned", rarity = "Rare",
 		 unlock = {stat = "parry", n = 200},          description = "Wrapped legs of a fighter who turns every blade aside."},
 		{id = "HuntersCloak",       name = "Hunter's Cloak",        slot = "top",    weight = "Light",  pack = "Earned", rarity = "Epic",
-		 unlock = {level = 10},                       description = "A green cloak over a quilted jack. Level 10."},
+		 unlock = {level = 10},                       description = "A fur-collared hunting cloak, a horn at the hip. Level 10."},
 		{id = "BloodiedKettle",     name = "Bloodied Kettle Helm",  slot = "helmet", weight = "Medium", pack = "Earned", rarity = "Epic",      covers = {"Hair"},
 		 unlock = {kills = 150, family = "OneHanded"}, description = "A kettle hat that has seen too many swords."},
 		{id = "SergeantsSurcoat",   name = "Sergeant's Surcoat",    slot = "top",    weight = "Medium", pack = "Earned", rarity = "Rare",
@@ -47,7 +47,7 @@ return {
 		{id = "DuelistsSallet",     name = "Duelist's Sallet",      slot = "helmet", weight = "Medium", pack = "Earned", rarity = "Legendary", covers = {"Hair", "Face"},
 		 unlock = {wins = 10, bracket = "1v1"},       description = "Visored and silent. Ten wins alone in The Lists."},
 		{id = "ChampionsGreatHelm", name = "Champion's Great Helm", slot = "helmet", weight = "Heavy",  pack = "Earned", rarity = "Legendary", covers = {"Hair", "Face"},
-		 unlock = {kills = 200, family = "TwoHanded"}, description = "A crested great helm for the two-hander who has felled two hundred."},
+		 unlock = {kills = 200, family = "TwoHanded"}, description = "A sugarloaf helm crowned in gold, for the two-hander who has felled two hundred."},
 		{id = "BanneretsTabard",    name = "Banneret's Tabard",     slot = "top",    weight = "Heavy",  pack = "Earned", rarity = "Epic",
 		 unlock = {level = 25},                       description = "Plate under a banner-cloth. Level 25."},
 		{id = "VeteransChausses",   name = "Veteran's Chausses",    slot = "bottom", weight = "Heavy",  pack = "Earned", rarity = "Epic",

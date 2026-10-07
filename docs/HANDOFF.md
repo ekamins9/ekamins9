@@ -149,6 +149,24 @@ end
 Any other place the user opened in Studio while the plugin was installed has the
 same injected scripts.
 
+## 4d. The look pass (2026-10-06, late)
+
+Every armor set and piece, all 26 weapons, every hairstyle and beard and the companions were
+redesigned so each reads differently (see `roblox/README.md` ▸ *What each set looks like*).
+The loop that made it possible, worth reusing for any new look:
+- **Preview before uploading.** `blender/preview_armor.py` renders blueprints on an R6
+  mannequin (sheets of heads, torsos, legs, full figures, hair; or one set front / side / back);
+  `blender/preview_weapons.py` renders weapons in a row. Read the PNG, fix, re-render.
+- **Blueprints come out of Studio** through `scripts/export_blueprints.lua` (run via the MCP;
+  the result is cut at 100k characters, so fetch it in slices) and
+  `scripts/join_blueprints.py`. The MCP caches `require` per session: export from a fresh clone
+  of the folder (the script does) or you get the old module.
+- **The R6 head is round** (a 1.2-wide drum with rounded rims, not a cube): closed helms are a
+  drum + dome round it; torso / limb wraps must be rounded boxes (an oval leaves the box's
+  corners poking out).
+- **Uploads are slow** (~3 a minute through Open Cloud); `build_armor.py --upload-only`
+  resumes and `--reverse` lets a second uploader work from the other end.
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.

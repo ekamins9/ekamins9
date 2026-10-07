@@ -11,6 +11,6 @@ return {
 	Rarity      = "Rare",
 	PriceMarks  = 450,
 	PriceCrowns = 25,
-	Covers      = {"Hair"},
+	Covers      = {"Hair", "Beard"},
 	HelmName = "Guard's Bascinet", TopName = "Guard's Surcoat", LegsName = "Guard's Greaves",
 }

@@ -43,6 +43,12 @@ local CF = CFrame.new
 local A = CFrame.Angles
 
 local BODY = {}
+local SHINE = Color3.fromRGB(255, 255, 255)
+-- a dark eye with a white glint (it looks out along -Z)
+local function eye(L, x, y, z, d, color, h)
+	S(L, "Eye", "ball", V(d, d * 1.1, d * 0.6), V(x, y, z), color or DARK, h)
+	S(L, "Shine", "ball", V(d * 0.34, d * 0.34, d * 0.2), V(x + d * 0.16, y + d * 0.2, z - d * 0.26), SHINE, h)
+end
 
 -- a round little bird: flaps (or, a walker, struts)
 BODY.bird = function(d)
@@ -62,7 +68,7 @@ BODY.bird = function(d)
 		S(L, "Beak", "wedge", V(0.12, 0.14, 0.12), CF(0, headY - 0.14, headZ - 0.56), Color3.fromRGB(230, 190, 90), {ch = "head", hinge = V(0, headY - 0.2, headZ)})
 	else
 		for _, x in ipairs({-0.2, 0.2}) do
-			S(L, "Eye", "ball", V(0.14, 0.14, 0.08), V(x, headY + 0.08, headZ - 0.32), DARK, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
+			eye(L, x, headY + 0.08, headZ - 0.31, 0.15, DARK, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
 		end
 		local beakCol = walker and Color3.fromRGB(240, 192, 64) or accent
 		S(L, "Beak", "wedge", V(0.18, 0.18, 0.32), CF(0, headY - 0.04, headZ - 0.46), beakCol, {ch = "head", hinge = V(0, headY - 0.2, headZ)})
@@ -88,32 +94,38 @@ end
 BODY.beast = function(d)
 	local L = {}
 	local main, second, accent = d.main, d.second, d.accent
-	S(L, "Body", "block", V(0.9, 0.78, 1.5), V(0, 0, 0), main)
-	S(L, "Belly", "block", V(0.76, 0.2, 1.2), V(0, -0.36, -0.02), second)
+	S(L, "Body", "ball", V(0.98, 0.86, 1.56), V(0, 0, 0), main)
+	S(L, "Chest", "ball", V(0.84, 0.8, 0.7), V(0, 0.06, -0.5), main)
+	S(L, "Belly", "ball", V(0.72, 0.46, 1.2), V(0, -0.24, -0.02), second)
 	local hy, hz = 0.52, -0.95
 	local H = {ch = "head", hinge = V(0, hy - 0.2, hz + 0.25)}
-	S(L, "Head", "block", V(0.82, 0.76, 0.78), V(0, hy, hz), main, H)
-	S(L, "Snout", "block", V(0.46, 0.34, 0.36), V(0, hy - 0.16, hz - 0.5), second, H)
-	S(L, "Nose", "block", V(0.18, 0.14, 0.08), V(0, hy - 0.04, hz - 0.7), DARK, H)
+	S(L, "Head", "ball", V(0.86, 0.8, 0.82), V(0, hy, hz), main, H)
+	S(L, "Cheeks", "ball", V(0.9, 0.5, 0.6), V(0, hy - 0.14, hz - 0.12), main, H)
+	S(L, "Snout", "ball", V(0.48, 0.36, 0.5), V(0, hy - 0.14, hz - 0.42), second, H)
+	S(L, "Nose", "ball", V(0.2, 0.15, 0.12), V(0, hy - 0.04, hz - 0.67), DARK, H)
 	for _, side in ipairs({-1, 1}) do
-		S(L, "Eye", "block", V(0.15, 0.15, 0.05), V(side * 0.21, hy + 0.1, hz - 0.4), accent, H)
+		eye(L, side * 0.21, hy + 0.1, hz - 0.36, 0.17, DARK, H)
+		S(L, "Iris", "ball", V(0.1, 0.1, 0.05), V(side * 0.21, hy + 0.08, hz - 0.45), accent, H)
 		if d.style ~= "antlers" then
-			S(L, "Ear", "wedge", V(0.2, 0.34, 0.26), CF(side * 0.27, hy + 0.54, hz + 0.06) * A(0, rad(side * 90), 0), main, H)
+			S(L, "Ear", "wedge", V(0.22, 0.38, 0.28), CF(side * 0.27, hy + 0.52, hz + 0.06) * A(0, rad(side * 90), rad(side * -10)), main, H)
+			S(L, "EarIn", "wedge", V(0.12, 0.24, 0.14), CF(side * 0.27, hy + 0.5, hz) * A(0, rad(side * 90), rad(side * -10)), second, H)
 		else
 			S(L, "Ear", "wedge", V(0.12, 0.22, 0.3), CF(side * 0.42, hy + 0.3, hz + 0.1) * A(0, rad(side * 90), rad(side * -40)), main, H)
 		end
 		-- legs: front pair at -z, back pair at +z
 		for _, z in ipairs({-0.5, 0.5}) do
 			local ch = (z < 0 and "legF" or "legB") .. (side < 0 and "L" or "R")
-			S(L, "Leg", "block", V(0.26, 0.62, 0.26), V(side * 0.3, -0.62, z), main, {ch = ch, hinge = V(side * 0.3, -0.34, z)})
-			S(L, "Paw", "block", V(0.28, 0.12, 0.32), V(side * 0.3, -0.9, z - 0.03), second, {ch = ch, hinge = V(side * 0.3, -0.34, z)})
+			S(L, "Leg", "ball", V(0.3, 0.7, 0.32), V(side * 0.3, -0.58, z), main, {ch = ch, hinge = V(side * 0.3, -0.34, z)})
+			S(L, "Paw", "ball", V(0.32, 0.16, 0.38), V(side * 0.3, -0.9, z - 0.05), second, {ch = ch, hinge = V(side * 0.3, -0.34, z)})
 		end
 	end
-	S(L, "Tail", "block", V(0.18, 0.18, 0.78), CF(0, 0.26, 1.02) * A(rad(32), 0, 0), main, {ch = "tail", hinge = V(0, 0.18, 0.74)})
-	S(L, "TailTip", "block", V(0.2, 0.2, 0.22), CF(0, 0.52, 1.4) * A(rad(32), 0, 0), second, {ch = "tail", hinge = V(0, 0.18, 0.74)})
+	S(L, "Tail", "ball", V(0.24, 0.24, 0.6), CF(0, 0.2, 0.92) * A(rad(32), 0, 0), main, {ch = "tail", hinge = V(0, 0.18, 0.74)})
+	S(L, "Tail", "ball", V(0.26, 0.26, 0.5), CF(0, 0.42, 1.22) * A(rad(40), 0, 0), main, {ch = "tail", hinge = V(0, 0.18, 0.74)})
+	S(L, "TailTip", "ball", V(0.3, 0.3, 0.36), CF(0, 0.62, 1.44) * A(rad(40), 0, 0), second, {ch = "tail", hinge = V(0, 0.18, 0.74)})
 	if d.style == "mane" then
-		S(L, "Mane", "block", V(1.12, 1.04, 0.42), V(0, hy + 0.04, hz + 0.42), second, H)
-		S(L, "Tuft", "block", V(0.5, 0.2, 0.5), V(0, hy + 0.46, hz + 0.12), second, H)
+		S(L, "Mane", "ball", V(1.24, 1.16, 0.6), V(0, hy + 0.02, hz + 0.38), second, H)
+		S(L, "Mane", "ball", V(1.0, 0.9, 0.5), V(0, hy - 0.1, hz + 0.6), second, H)
+		S(L, "Tuft", "ball", V(0.5, 0.3, 0.5), V(0, hy + 0.44, hz + 0.1), second, H)
 	elseif d.style == "antlers" then
 		local g = d.glow or accent
 		for _, side in ipairs({-1, 1}) do
@@ -122,7 +134,7 @@ BODY.beast = function(d)
 			S(L, "Tine", "block", V(0.08, 0.3, 0.08), CF(side * 0.32, hy + 1.02, hz + 0.18) * A(rad(30), 0, rad(side * -10)), g, {neon = true, ch = "head", hinge = H.hinge})
 		end
 	elseif d.style == "crown" then
-		S(L, "Collar", "block", V(0.86, 0.14, 0.3), V(0, hy - 0.38, hz + 0.38), accent, H)
+		S(L, "Collar", "ball", V(0.9, 0.16, 0.5), V(0, hy - 0.34, hz + 0.36), accent, H)
 		S(L, "CrownBand", "block", V(0.5, 0.12, 0.5), V(0, hy + 0.44, hz + 0.02), accent, H)
 		for _, x in ipairs({-0.18, 0, 0.18}) do S(L, "CrownTip", "wedge", V(0.12, 0.2, 0.12), CF(x, hy + 0.6, hz - 0.2) * A(0, math.pi, 0), accent, H) end
 	end
@@ -142,14 +154,14 @@ BODY.hopper = function(d)
 		for _, side in ipairs({-1, 1}) do
 			S(L, "Ear", "block", V(0.15, 0.68, 0.08), CF(side * 0.14, 1.02, -0.44) * A(rad(-12), 0, rad(side * -8)), main, H)
 			S(L, "EarIn", "block", V(0.08, 0.5, 0.04), CF(side * 0.14, 1.0, -0.49) * A(rad(-12), 0, rad(side * -8)), second, H)
-			S(L, "Eye", "ball", V(0.12, 0.12, 0.08), V(side * 0.19, 0.56, -0.84), DARK, H)
+			eye(L, side * 0.19, 0.56, -0.83, 0.13, DARK, H)
 		end
 		S(L, "Nose", "ball", V(0.1, 0.08, 0.06), V(0, 0.44, -0.89), Color3.fromRGB(220, 150, 150), H)
 		S(L, "Tail", "ball", V(0.3, 0.3, 0.3), V(0, 0.12, 0.62), second)
 	else
 		for _, side in ipairs({-1, 1}) do
 			S(L, "EyeBump", "ball", V(0.3, 0.3, 0.3), V(side * 0.24, 0.38, -0.36), main, {ch = "head", hinge = V(0, 0.2, -0.3)})
-			S(L, "Eye", "ball", V(0.16, 0.16, 0.1), V(side * 0.26, 0.44, -0.5), accent, {ch = "head", hinge = V(0, 0.2, -0.3)})
+			eye(L, side * 0.26, 0.44, -0.49, 0.17, accent, {ch = "head", hinge = V(0, 0.2, -0.3)})
 		end
 		S(L, "Mouth", "block", V(0.62, 0.04, 0.04), V(0, 0.06, -0.55), DARK)
 	end
@@ -182,29 +194,40 @@ BODY.drake = function(d)
 	S(L, "Belly", "ball", V(0.66, 0.5, 1.0), V(0, -0.2, -0.06), second, {neon = d.glow ~= nil and not griffin})
 	local hy, hz = 0.6, -0.92
 	local H = {ch = "head", hinge = V(0, hy - 0.3, hz + 0.3)}
-	S(L, "Neck", "block", V(0.36, 0.5, 0.36), CF(0, hy - 0.26, hz + 0.32) * A(rad(-30), 0, 0), griffin and second or main, H)
-	S(L, "Head", "block", V(0.58, 0.52, 0.72), V(0, hy, hz), griffin and second or main, H)
+	S(L, "Neck", "ball", V(0.4, 0.62, 0.4), CF(0, hy - 0.26, hz + 0.32) * A(rad(-30), 0, 0), griffin and second or main, H)
+	S(L, "Head", "ball", V(0.64, 0.56, 0.78), V(0, hy, hz), griffin and second or main, H)
 	if griffin then
 		S(L, "Beak", "wedge", V(0.26, 0.3, 0.36), CF(0, hy - 0.06, hz - 0.5), accent, H)
 	else
-		S(L, "Snout", "block", V(0.42, 0.28, 0.42), V(0, hy - 0.08, hz - 0.5), main, H)
+		S(L, "Snout", "ball", V(0.44, 0.3, 0.5), V(0, hy - 0.08, hz - 0.46), main, H)
+		for _, side in ipairs({-1, 1}) do S(L, "Nostril", "ball", V(0.06, 0.05, 0.04), V(side * 0.09, hy - 0.02, hz - 0.71), DARK, H) end
 		for _, side in ipairs({-1, 1}) do
 			S(L, "Horn", "wedge", V(0.12, 0.38, 0.14), CF(side * 0.18, hy + 0.4, hz + 0.24) * A(rad(-35), math.pi, 0), accent, H)
 		end
 	end
 	for _, side in ipairs({-1, 1}) do
-		S(L, "Eye", "block", V(0.12, 0.12, 0.05), V(side * 0.18, hy + 0.08, hz - 0.37), d.glow or DARK, {neon = d.glow ~= nil, ch = "head", hinge = H.hinge})
+		if d.glow then
+			S(L, "Eye", "ball", V(0.13, 0.13, 0.07), V(side * 0.18, hy + 0.08, hz - 0.36), d.glow, {neon = true, ch = "head", hinge = H.hinge})
+		else
+			eye(L, side * 0.18, hy + 0.08, hz - 0.35, 0.14, DARK, {ch = "head", hinge = H.hinge})
+		end
 		local wch = side < 0 and "wingL" or "wingR"
 		local hinge = V(side * 0.38, 0.32, 0.0)
 		-- the arm along the front edge, the membrane a flat triangle swept back to the tip
-		S(L, "WingArm", "block", V(0.9, 0.1, 0.12), V(side * 0.82, 0.34, -0.26), main, {ch = wch, hinge = hinge})
+		S(L, "WingArm", "ball", V(0.94, 0.12, 0.14), V(side * 0.82, 0.34, -0.26), main, {ch = wch, hinge = hinge})
+		S(L, "WingClaw", "wedge", V(0.06, 0.16, 0.1), CF(side * 1.28, 0.38, -0.3), accent, {ch = wch, hinge = hinge})
 		S(L, "Wing", "wedge", V(0.05, 0.95, 0.85), CF(side * 0.85, 0.3, 0.14) * A(0, 0, rad(-side * 90)), second, {ch = wch, hinge = hinge})
 		for _, z in ipairs({-0.38, 0.38}) do
-			S(L, "Leg", "block", V(0.2, 0.34, 0.2), V(side * 0.3, -0.5, z), main, {ch = (z < 0 and "legF" or "legB") .. (side < 0 and "L" or "R"), hinge = V(side * 0.3, -0.34, z)})
+			local lch = (z < 0 and "legF" or "legB") .. (side < 0 and "L" or "R")
+			S(L, "Leg", "ball", V(0.24, 0.42, 0.26), V(side * 0.3, -0.48, z), main, {ch = lch, hinge = V(side * 0.3, -0.34, z)})
+			S(L, "Claw", "ball", V(0.26, 0.1, 0.3), V(side * 0.3, -0.68, z - 0.04), accent, {ch = lch, hinge = V(side * 0.3, -0.34, z)})
 		end
 	end
-	S(L, "Tail1", "block", V(0.3, 0.26, 0.72), CF(0, 0.02, 0.92) * A(rad(10), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
-	S(L, "Tail2", "block", V(0.18, 0.18, 0.6), CF(0, -0.06, 1.5) * A(rad(4), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
+	S(L, "Tail1", "ball", V(0.34, 0.3, 0.8), CF(0, 0.02, 0.92) * A(rad(10), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
+	S(L, "Tail2", "ball", V(0.22, 0.2, 0.7), CF(0, -0.06, 1.5) * A(rad(4), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
+	for i = 0, 3 do   -- a row of spines down the back
+		S(L, "Spine", "wedge", V(0.06, 0.16, 0.16), CF(0, 0.42 - i * 0.03, -0.2 + i * 0.3), accent)
+	end
 	S(L, "TailTip", "wedge", V(0.34, 0.08, 0.3), CF(0, -0.08, 1.88), griffin and second or accent, {ch = "tail", hinge = V(0, 0.05, 0.6)})
 	return L, {flying = true, foot = 0.7, flap = 0.6}
 end

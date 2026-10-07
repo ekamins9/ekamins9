@@ -7,8 +7,11 @@ Input JSON (scripts/export_blueprints.lua writes it):
   {"sets": {"RoadLevy": {"HeadClothing": [spec, …], …}, …},
    "pieces": {"WolfPeltHood": {"HeadClothing": [...]}, …},
    "body": {"Hair": {"Cropped": [...]}, "Beard": {...}, "Face": {...}}}
-  spec = {k: box|cyl|ball|wedge|cwedge, n: name, s: [sx,sy,sz], cf: [12 CFrame components],
-          c: [r,g,b], m: material, t: transparency, a: {ColorSlot=…, KeepColor=…, SkinPart=…}}
+  spec = {k: box|cyl|ball|wedge|cwedge|cone, n: name, s: [sx,sy,sz], cf: [12 CFrame components],
+          c: [r,g,b], m: material, t: transparency, a: {ColorSlot=…, KeepColor=…, SkinPart=…},
+          tp: a cone's (or a box's) top width as a share of its foot (0 = a point), bv: a box's bevel}
+  k = torus: a ring in the spec's XZ plane, s = (outer width, tube thickness, outer depth).
+  k = lathe: pf = [[radius, y], …] spun round the spec's Y (cf sits at the middle of its y range).
   Specs are in the LIMB frame (Middle = the limb box at the origin), studs.
 
 Output per model (e.g. RoadLevy/HeadClothing): one FBX per REGION, where a
@@ -35,14 +38,23 @@ def cframe(cf):
     return Matrix(((r00, r01, r02, x), (r10, r11, r12, y), (r20, r21, r22, z), (0, 0, 0, 1)))
 
 
-def box_mesh(sx, sy, sz, bevel):
+def segs(d, big, mid, small):
+    """fewer facets for small parts: rivets and studs don't need 24 sides"""
+    return big if d >= 0.3 else (mid if d >= 0.12 else small)
+
+
+def box_mesh(sx, sy, sz, bevel, top=None):
+    """a box; `top` narrows (or widens) its top face to that share of the bottom's
+    width and depth (a skirt, a fauld, a breastplate drawn in at the waist)"""
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
     for v in bm.verts:
-        v.co = Vector((v.co.x * sx, v.co.y * sy, v.co.z * sz))
-    b = min(bevel, sx * 0.3, sy * 0.3, sz * 0.3)
+        k = (top if v.co.y > 0 else 1.0) if top else 1.0
+        v.co = Vector((v.co.x * sx * k, v.co.y * sy, v.co.z * sz * k))
+    b = min(bevel, sx * 0.45, sy * 0.45, sz * 0.45)
     if b > 0.004:
-        bmesh.ops.bevel(bm, geom=list(bm.edges) + list(bm.verts), offset=b, segments=SEGS, profile=0.6, affect="EDGES")
+        bmesh.ops.bevel(bm, geom=list(bm.edges) + list(bm.verts), offset=b, segments=SEGS if b < 0.08 else 4,
+                        profile=0.6 if b < 0.08 else 0.5, affect="EDGES")
     return bm
 
 
@@ -50,7 +62,7 @@ def cyl_mesh(sx, sy, sz):
     """a Build blueprint cylinder: its axis is the spec's local Y and its size
     is (diameter along X, height, diameter along Z), as B.cyl in Builder.lua"""
     bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=24, radius1=0.5, radius2=0.5, depth=1.0)
+    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=segs(max(sx, sz), 24, 12, 8), radius1=0.5, radius2=0.5, depth=1.0)
     # create_cone runs along Z: stand it up along Y, then scale to the spec
     rot = Matrix.Rotation(math.radians(-90), 4, "X")
     for v in bm.verts:
@@ -59,9 +71,67 @@ def cyl_mesh(sx, sy, sz):
     return bm
 
 
+def cone_mesh(sx, sy, sz, top=0.0):
+    """a cone standing along the spec's local Y, its point (or its narrower top,
+    `top` × the foot's width) at +Y; size as a cylinder's"""
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=segs(max(sx, sz), 24, 12, 8), radius1=0.5,
+                          radius2=0.5 * max(0.0, top), depth=1.0)
+    rot = Matrix.Rotation(math.radians(-90), 4, "X")
+    for v in bm.verts:
+        p = rot @ v.co
+        v.co = Vector((p.x * sx, p.y * sy, p.z * sz))
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    return bm
+
+
+def torus_mesh(sx, sy, sz):
+    """a ring in the XZ plane: outer extents sx × sz, tube thickness sy"""
+    bm = bmesh.new()
+    r = sy / 2
+    rx, rz = max(sx / 2 - r, 0.001), max(sz / 2 - r, 0.001)
+    nu, nv = segs(max(sx, sz), 28, 16, 10), (8 if sy >= 0.06 else 6)
+    rings = []
+    for i in range(nu):
+        t = 2 * math.pi * i / nu
+        rings.append([bm.verts.new(((rx + r * math.cos(2 * math.pi * j / nv)) * math.cos(t), r * math.sin(2 * math.pi * j / nv),
+                                    (rz + r * math.cos(2 * math.pi * j / nv)) * math.sin(t))) for j in range(nv)])
+    for i in range(nu):
+        a, b = rings[i], rings[(i + 1) % nu]
+        for j in range(nv):
+            bm.faces.new((a[j], b[j], b[(j + 1) % nv], a[(j + 1) % nv]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return bm
+
+
+def lathe_mesh(profile, sy):
+    """a solid of revolution round Y; profile y values are about the spec's origin
+    (Builder.lathe moved the frame to the middle of the y range)"""
+    ys = [p[1] for p in profile]
+    mid = (min(ys) + max(ys)) / 2
+    n = segs(2 * max(p[0] for p in profile), 28, 14, 8)
+    bm = bmesh.new()
+    rings = []
+    for r, y in profile:
+        r = max(r, 0.002)
+        rings.append([bm.verts.new((r * math.cos(2 * math.pi * k / n), y - mid, r * math.sin(2 * math.pi * k / n))) for k in range(n)])
+    for a, b in zip(rings, rings[1:]):
+        for k in range(n):
+            bm.faces.new((a[k], a[(k + 1) % n], b[(k + 1) % n], b[k]))
+    bm.faces.new(tuple(reversed(rings[0])))
+    bm.faces.new(tuple(rings[-1]))
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return bm
+
+
 def ball_mesh(sx, sy, sz):
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=10, radius=0.5)
+    d = max(sx, sy, sz)
+    u, v = (24, 14) if d >= 0.8 else (16, 10) if d >= 0.3 else ((10, 6) if d >= 0.12 else (6, 4))
+    if min(sx, sy, sz) < 0.1 and d < 0.8:   # flat leaves (feathers, dags, splashes) need few facets
+        u, v = min(u, 12), min(v, 6)
+    bmesh.ops.create_uvsphere(bm, u_segments=u, v_segments=v, radius=0.5)
     for v in bm.verts:
         v.co = Vector((v.co.x * sx, v.co.y * sy, v.co.z * sz))
     return bm
@@ -98,12 +168,18 @@ def part_mesh(spec):
         bm = cyl_mesh(sx, sy, sz)
     elif k == "ball":
         bm = ball_mesh(sx, sy, sz)
+    elif k == "cone":
+        bm = cone_mesh(sx, sy, sz, spec.get("tp") or 0.0)
+    elif k == "torus":
+        bm = torus_mesh(sx, sy, sz)
+    elif k == "lathe":
+        bm = lathe_mesh(spec["pf"], sy)
     elif k == "wedge":
         bm = wedge_mesh(sx, sy, sz)
     elif k == "cwedge":
         bm = wedge_mesh(sx, sy, sz, corner=True)
     else:
-        bm = box_mesh(sx, sy, sz, BEVEL)
+        bm = box_mesh(sx, sy, sz, spec.get("bv") or BEVEL, spec.get("tp"))
     m = cframe(spec["cf"])
     for v in bm.verts:
         v.co = m @ v.co

@@ -3,6 +3,7 @@
     python scripts/build_armor.py                 # everything in blender/out/blueprints.json
     python scripts/build_armor.py RoadLevy Hair   # only these sets / piece ids / body kinds
     python scripts/build_armor.py --no-upload     # Blender only
+    python scripts/build_armor.py --upload-only   # no Blender: upload what the last bake left without ids
 
 blender/out/blueprints.json comes from Studio (the Build ▸ Armor / Body specs;
 see blender/parts2mesh.py). Outputs land in blender/out/armor/: one FBX per
@@ -24,15 +25,29 @@ def main():
     argv = sys.argv[1:]
     do_upload = "--no-upload" not in argv
     only = [a for a in argv if not a.startswith("--")]
-    cmd = [BLENDER, "-b", "--python", os.path.join(ROOT, "blender", "parts2mesh.py"), "--", SRC, "--out", OUT]
-    if only:
-        cmd += ["--only", ",".join(only)]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    wrote = [l for l in r.stdout.splitlines() if l.startswith("WROTE")]
-    if r.returncode != 0 or not wrote:
-        sys.exit("blender failed:\n" + r.stdout[-3000:] + r.stderr[-3000:])
-    print(f"blender wrote {len(wrote)} models")
-    names = [l.split(" ", 2)[1] for l in wrote]
+    if "--upload-only" in argv:
+        # resume: every model the last bake wrote (that `only` names), uploading regions still without an id
+        names = []
+        for fn in sorted(os.listdir(OUT)):
+            if not fn.endswith(".json"):
+                continue
+            model = json.load(open(os.path.join(OUT, fn), encoding="utf-8")).get("model")
+            parts = (model or "").split("/")
+            if model and (not only or model in only or parts[0] in only
+                          or (parts[0] in ("Pieces", "Body") and len(parts) > 1 and parts[1] in only)):
+                names.append(model)
+        if "--reverse" in argv:   # a second uploader can work from the other end
+            names.reverse()
+    else:
+        cmd = [BLENDER, "-b", "--python", os.path.join(ROOT, "blender", "parts2mesh.py"), "--", SRC, "--out", OUT]
+        if only:
+            cmd += ["--only", ",".join(only)]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        wrote = [l for l in r.stdout.splitlines() if l.startswith("WROTE")]
+        if r.returncode != 0 or not wrote:
+            sys.exit("blender failed:\n" + r.stdout[-3000:] + r.stderr[-3000:])
+        print(f"blender wrote {len(wrote)} models")
+        names = [l.split(" ", 2)[1] for l in wrote]
     lua = ["local MeshArmor = require(game.ServerScriptService.Build.MeshArmor)", "local n = 0"]
     for name in names:
         safe = name.replace("/", "_")
