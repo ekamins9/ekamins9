@@ -60,7 +60,7 @@ GameConfig.MODES = {
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
-		maps = {"RoseCourt", "Sandpit", "Colosseum"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -71,37 +71,37 @@ GameConfig.MODES = {
 	FFA = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
 		description = "Everyone for themselves. Most kills when the clock runs out wins.",
-		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
+		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Cinderfall", "Duneshrine", "HollowGrove", "Harvestvale", "Thornpit"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
 		botFill = 8,   -- fighters on the field, bots making up the numbers (Game ▸ BotFill)
 	},
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Honor rules: one on one. Stay out of other people's fights.",
-		maps = {"RoseCourt", "Sandpit", "Millfield"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"RoseCourt", "Sandpit", "Millfield", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Cinderfall"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
 		botFill = 4,
 	},
 	TDM = {
 		name = "Team Deathmatch", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Two armies, one ticket pool each. Bleed theirs dry first.",
-		maps = {"Highbridge", "Millfield", "Sandpit"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Highbridge", "Millfield", "Sandpit", "RoseCourt", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen", "Redgorge", "Mistbridge", "Cinderfall"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		tickets = 60, waveSpawn = 8, botFill = 12,
 	},
 	LTS = {
 		name = "Last Team Standing", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 2,
 		description = "No respawns. Win the round by wiping the other side. First to 4 rounds.",
-		maps = {"Highbridge", "Sandpit", "Millfield", "Colosseum"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
+		maps = {"Highbridge", "Sandpit", "Millfield", "Colosseum", "Abbeyfield", "Blackwater", "Redgorge", "Mistbridge", "Duneshrine", "Pinewatch", "Bloodpit", "Mirepit"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
 		roundsToWin = 4, botFill = 8,
 	},
 	Horde = {
 		name = "Horde", category = "Horde", teams = 0, maxPlayers = 6, minPlayers = 1,
 		description = "You and your party against waves of bots, bigger and better trained each time; every fifth wave brings a Warlord. The fallen come back between waves.",
-		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
+		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak", "HollowGrove", "Pinewatch", "Marshfen", "Cinderfall", "Bloodpit", "Frosthollow"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,   -- the party can't hurt each other; the bots can hurt you
 	},
 	Siege = {
 		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Attackers push the ram, break the gate and take the castle stage by stage. Defenders hold until the clock runs out. Every stage taken adds time; sides swap each round.",
-		maps = {"Frostgate"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"Frostgate", "Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
 		waveSpawn = 10,   -- reinforcements come in waves (after the first moments of a round)
 		botFill = 12,
 		-- the attackers' side of it, over the map's own stage numbers (Map ▸ Objectives):
@@ -111,14 +111,20 @@ GameConfig.MODES = {
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
-		maps = {"Millfield", "Colosseum"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6, botFill = 10,
+		maps = {"Millfield", "Colosseum", "Harvestvale", "Frosthollow", "Marshfen", "Duneshrine", "Cinderfall", "HollowGrove", "Pinewatch", "Abbeyfield", "Moonring"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6, botFill = 10,
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
 -- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
 GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Frostgate = "Frostgate",
 	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum", RoseCourt = "The Rose Court",
-	Wildwood = "The Wildwood", Ravenhold = "Ravenhold", Stormbreak = "Stormbreak"}
+	Wildwood = "The Wildwood", Ravenhold = "Ravenhold", Stormbreak = "Stormbreak",
+	-- the themed maps (Build ▸ MapForge)
+	Emberkeep = "Emberkeep", Sunspire = "Sunspire", Thornwall = "Thornwall", Mistmoor = "Mistmoor", Greenhollow = "Greenhollow",
+	Stormhold = "Stormhold", Ashenford = "Ashenford", Rimeholt = "Rimeholt", Blossomgate = "Blossomgate",
+	Bloodpit = "The Bloodpit", Moonring = "Moonring", Dustbowl = "The Dustbowl", Thornpit = "Thornpit", Mirepit = "Mirepit",
+	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
+	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- order on the Play tab

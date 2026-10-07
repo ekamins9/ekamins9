@@ -323,13 +323,21 @@ function Maps.Wildwood() return require(script.Parent:WaitForChild("MapWildwood"
 function Maps.Ravenhold() return require(script.Parent:WaitForChild("MapRavenhold"))(K) end
 function Maps.Stormbreak() return require(script.Parent:WaitForChild("MapStormbreak"))(K) end
 
+-- the themed maps (Build ▸ MapForge): one line each there
+local Forge = require(script.Parent:WaitForChild("MapForge"))
+
 function Maps.build(name)
 	local fn = Maps[name]
-	if type(fn) ~= "function" then error("no map called " .. tostring(name)) end
-	return fn()
+	if type(fn) == "function" and name ~= "build" and name ~= "buildAll" and name ~= "buildForge" then return fn() end
+	if Forge.MAPS[name] then return Forge.build(K, name) end
+	error("no map called " .. tostring(name))
+end
+function Maps.buildForge()
+	for _, n in ipairs(Forge.ORDER) do Maps.build(n) end
 end
 function Maps.buildAll()
 	for _, n in ipairs({"Sandpit", "Highbridge", "Millfield", "TrainingYard", "Courtyard", "Frostgate", "Colosseum", "RoseCourt", "Wildwood", "Ravenhold", "Stormbreak"}) do Maps.build(n) end
+	Maps.buildForge()
 end
 
 return Maps

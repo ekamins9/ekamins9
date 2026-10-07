@@ -1,4 +1,31 @@
-# Updated scripts: leaderboards, season rewards, player profiles, privacy
+# Updated scripts: 25 new maps, every mode has 10 or more
+
+- **A map forge:** each new map is one line, a layout in a theme.
+  - **Layouts:** arena, castle courtyard, village, bridge, ruins, forest clearing, siege castle.
+  - **Themes:** summer, autumn, winter, moonlit snow, desert noon, desert dusk, swamp mist, storm night, ember night, spring, dawn mist, ash, firefly forest.
+  - Each theme sets the time of day, haze, colours, trees and weather (snow, rain, ash, falling leaves, petals, embers, fireflies, dust, mist).
+- **25 new maps:**
+  - **Siege:** Emberkeep, Sunspire, Thornwall, Mistmoor, Greenhollow, Stormhold, Ashenford, Rimeholt, Blossomgate. Each castle has its own champion.
+  - **Arenas:** the Bloodpit, Moonring, the Dustbowl, Thornpit, Mirepit.
+  - **Courtyards:** Abbeyfield, Blackwater.
+  - **Villages:** Harvestvale, Frosthollow, Marshfen.
+  - **Bridges:** Redgorge, Mistbridge.
+  - **Ruins:** Cinderfall, Duneshrine.
+  - **Clearings:** Hollow Grove, Pinewatch.
+- **Every mode now lists 10 or more maps:** Siege 10, Lists 10, Duel 11, FFA 12, TDM 12, LTS 12, KOTH 11, Horde 10.
+- **Fix:** the KOTH hill showed as a yellow drum in every other mode. The loader now hides it.
+- **In Studio:** build them with `require(game.ServerScriptService.Build.Maps).buildForge()`, then **save the place**. The maps and their vote pictures live in the place.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build ▸ MapForge | ModuleScript | **new**: themes, layouts, the 25 maps |
+| [Maps.lua](ServerScriptService/Build/Maps.lua) | ServerScriptService ▸ Build ▸ Maps | ModuleScript | builds forge maps, `buildForge()` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | map titles; every mode's maps |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game ▸ MapLoader | ModuleScript | zones hidden on load |
+
+---
+
+## Before that: leaderboards, season rewards, player profiles, privacy
 
 - **A LEADERBOARDS screen** (open it from the lobby board's "TOP 100 · SEASON REWARDS"):
   - The Warfront and each ranked bracket, top 100 each.

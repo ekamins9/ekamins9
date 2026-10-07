@@ -448,6 +448,16 @@ and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
 
 ## 11. Maps, modes, doors
 
+- **A themed map in one line (`Build ▸ MapForge`):** add a row to `F.MAPS`:
+  `Name = {title = "…", layout = "arena", theme = "winterNight", seed = 210}` (a siege also takes
+  `champion = {name = "…", weapon = "Greatsword"}`), add the name to `F.ORDER`, to
+  `GameConfig.MAP_TITLES` and to the modes' `maps`, then in Studio
+  `require(game.ServerScriptService.Build.Maps).build("Name")`, shoot its picture (below), **save
+  the place**. Layouts: `arena bailey village bridge ruins clearing siege`. Themes (time of day,
+  season, palette, trees, weather): `summer autumn winter winterNight desert desertDusk swamp
+  stormNight ember spring dawnMist ash nightForest`; a new theme is one table in `F.THEMES`
+  (`weather`: snow rain ash leaves petals embers fireflies dust mist). Every forge map has team,
+  free, Siege (siege layout) and Horde markers and a hill, so it fits every mode its size suits.
 - **Map:** a Model in `ServerStorage ▸ Maps ▸ <Name>` with a `Spawns` folder (parts; attribute
   `Team = "A"/"B"` for team spawns), optional `Zones ▸ Hill`, and optional `Spots` (named marker
   parts the mode scripts look for; `K.spot` makes them). Add its name to a mode's `maps` in

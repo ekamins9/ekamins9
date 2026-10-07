@@ -128,7 +128,8 @@ function MapLoader.load(name)
 	local zones = m:FindFirstChild("Zones")
 	if zones then
 		for _, z in ipairs(zones:GetDescendants()) do
-			if z:IsA("BasePart") then z.CanCollide, z.CanQuery, z.CanTouch, z.Anchored = false, false, false, true end
+			-- (unseen: KOTH draws its own ring on the ground; no other mode shows a hill)
+			if z:IsA("BasePart") then z.CanCollide, z.CanQuery, z.CanTouch, z.Anchored, z.Transparency = false, false, false, true, 1 end
 		end
 	end
 	local cam = m:FindFirstChild("MenuCamera")

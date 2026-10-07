@@ -623,7 +623,22 @@ A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 `start / tick / onKill / onDeath / canSpawn / spawnCFrame / isOver / objective / result`.
 
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
-names them. Inside a map: `Spawns` (Folder of parts; attribute `Team = "A"` / `"B"` on team
+names them. Every mode has 10 or more: the hand-built ones (`Build ▸ Maps`, `Build ▸ Map<Name>`)
+and 25 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
+- **Siege:** Emberkeep (ember night), Sunspire (desert noon), Thornwall (autumn), Mistmoor
+  (swamp mist), Greenhollow (summer), Stormhold (storm night), Ashenford (ash), Rimeholt (moonlit
+  snow), Blossomgate (spring). Each is a castle to take: the ram up the road, the bailey, the great
+  hall, and its own champion on the throne.
+- **Arenas:** the Bloodpit, Moonring, the Dustbowl, Thornpit, Mirepit.
+- **Castle courtyards:** Abbeyfield, Blackwater.
+- **Villages:** Harvestvale, Frosthollow, Marshfen.
+- **Bridges:** Redgorge (a dry gorge), Mistbridge.
+- **Ruins:** Cinderfall, Duneshrine.
+- **Clearings:** Hollow Grove (fireflies at night), Pinewatch.
+
+Every forge map carries its weather (snow, rain, ash, leaves, petals, embers, fireflies, dust or
+mist, an emitter inside it) and everything every mode needs (team and free spawns, a hill,
+Horde gates, Siege stages on the castles). The loader hides `Zones` parts; KOTH draws its own ring. Inside a map: `Spawns` (Folder of parts; attribute `Team = "A"` / `"B"` on team
 spawns, none = anyone; made invisible on load), optional `Zones` → `Hill` (a Part; KOTH capture
 volume: a Cylinder's disc, or the circle inside a block's footprint — hidden in play), and the geometry.
 **Objective indicators** (`StarterPlayerScripts ▸ ObjectiveFX`): the KOTH hill, the Siege ram and a
