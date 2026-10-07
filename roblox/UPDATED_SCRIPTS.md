@@ -1,4 +1,31 @@
-# Updated scripts: the bow flipped, a ready stance, no arm jolt; a warning before leaving a battle
+# Updated scripts: custom server bots and the host's server panel
+
+- **Custom servers have bots:**
+  - Set them when you make the server: on or off, how many fighters in all (players plus bots), and their skill (Mixed, Squire, Knight or Champion).
+  - Ranked never has bots.
+- **The host's SERVER PANEL:** the host gets a YOUR SERVER card in the lobby. The panel:
+  - **Players:** kick someone (they stay out while the server runs), or hand the server over.
+  - **Bots:** fill on/off, how many and how good, changed live. Spawn practice bots where you stand (+1 / +3, pick their skill), or clear them.
+  - **The round:** pick the next mode and map, or end the round now.
+  - **Rules, changed live:** friendly fire, respawns, weapons on the ground, round length, player limit, who can join.
+  - If the host leaves, whoever has been there longest takes over.
+- **Fixes:**
+  - A custom server's chosen map is now used (it always rotated).
+  - "Weapons on the ground" now does something: off means a dropped weapon can't be picked up and goes in a few seconds.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HostServer.server.lua](ServerScriptService/Hub/HostServer.server.lua) | ServerScriptService ▸ Hub ▸ HostServer | Script | **new**: the host's controls (HostRemote) |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | host card + SERVER PANEL; bot settings when creating |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game ▸ BotFill | ModuleScript | custom servers by their settings |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | bot settings checked |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game ▸ GameServer | Script | custom map used; Round GroundWeapons |
+| [Pickup.lua](ServerScriptService/Combat/Pickup.lua) | ServerScriptService ▸ Combat ▸ Pickup | ModuleScript | no pickups when ground weapons are off |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | bot defaults, `BOT_SKILLS` |
+
+---
+
+## Before that: the bow flipped, a ready stance, no arm jolt; a warning before leaving a battle
 
 - **The bow is in the right hand and the left draws.** With the camera over your right shoulder, the body now turns away from the view instead of across it, and the bow stands next to the crosshair.
 - **A ready stance** when not drawing: the bow held low across the body, the string hand by it. It blends into the full draw.

@@ -2199,11 +2199,152 @@ do
 		go.Size = UDim2.new(1, 0, 0, 38)
 	end
 
+	----------------------------------------------------------------
+	--  THE HOST'S SERVER PANEL (a custom server's owner: Hub ▸ HostServer)
+	----------------------------------------------------------------
+	HX.hostRemote = ReplicatedStorage:WaitForChild("HostRemote", 10)
+	function HX.hostCall(op, a, b)
+		if not HX.hostRemote then return {ok = false, msg = "no host service"} end
+		local ok, r = pcall(HX.hostRemote.InvokeServer, HX.hostRemote, op, a, b)
+		return (ok and type(r) == "table") and r or {ok = false, msg = "no answer"}
+	end
+	-- (HostId is only set on a custom server: Hub ▸ HostServer)
+	function HX.amHost() return (roundNode:GetAttribute("HostId") or 0) == player.UserId end
+	function HX.cycleIn(list_, cur, dir)
+		local idx = 1
+		for i, v in ipairs(list_) do if v == cur then idx = i end end
+		return list_[(idx - 1 + dir) % #list_ + 1]
+	end
+	HX.openHostPanel = function()
+		local r = HX.hostCall("Info")
+		if not (r.ok and r.isHost) then toast("Only the host runs this server.", COL.BAD); return end
+		local s = r.settings or {}
+		local function act(op, a, b)
+			local res = HX.hostCall(op, a, b)
+			if res.msg and res.msg ~= "set" then toast(res.msg, res.ok and COL.GOOD or COL.BAD) end
+			HX.openHostPanel()
+		end
+		modal("YOUR SERVER  ·  HOST CONTROLS", "", {}, function(box)
+			local sc = scroll(box, 6)
+			sc.Size = UDim2.new(1, 0, 0, 470)
+			sc.LayoutOrder = 3
+			local function line(height)
+				local f = frame(sc, COL.GLASS2, 8); f.Size = UDim2.new(1, 0, 0, height or 34); f.LayoutOrder = nextOrder(); f.BackgroundTransparency = 0.1
+				padding(f, 12, 6, 0, 0)
+				return f
+			end
+			local function small(parent, text, color, x, w, fn)
+				local b = button(parent, text, 12, color)
+				b.AnchorPoint = Vector2.new(1, 0.5); b.Position = UDim2.new(1, -x, 0.5, 0); b.Size = UDim2.fromOffset(w, 26)
+				b.Activated:Connect(fn)
+				return b
+			end
+			local function sel(text, value, onDir)
+				local f = line()
+				local l = label(f, text, 13, FONT_BODY, COL.DIM); l.Size = UDim2.new(0.45, 0, 1, 0)
+				local v = label(f, value, 13, FONT, COL.TEXT); v.Position = UDim2.new(0.45, 0, 0, 0); v.Size = UDim2.new(0.55, -70, 1, 0)
+				v.TextXAlignment = Enum.TextXAlignment.Right; v.TextWrapped = false; v.TextTruncate = Enum.TextTruncate.AtEnd
+				small(f, "‹", COL.CARD, 32, 28, function() onDir(-1) end)
+				small(f, "›", COL.CARD, 0, 28, function() onDir(1) end)
+			end
+			local function tog(text, key)
+				local f = line()
+				local l = label(f, text, 13, FONT_BODY, COL.DIM); l.Size = UDim2.new(0.7, 0, 1, 0)
+				small(f, s[key] ~= false and "ON" or "OFF", s[key] ~= false and COL.GOOD or COL.CARD, 0, 60, function() act("Set", key, s[key] == false) end)
+			end
+
+			-- PLAYERS: kick, hand over
+			heading(sc, string.format("Players  ·  %d here", #r.players))
+			for _, p in ipairs(r.players) do
+				local f = line(36)
+				local t = label(f, string.format("%s%s%s", p.display, p.host and "  ★ HOST" or "", p.team ~= "" and ("  ·  " .. p.team) or ""), 14, FONT, p.host and COL.ACCENT or COL.TEXT)
+				t.Size = UDim2.new(0.5, 0, 1, 0); t.TextWrapped = false; t.TextTruncate = Enum.TextTruncate.AtEnd
+				local kd = label(f, string.format("%d K  ·  %d D", p.kills, p.deaths), 12, FONT_BODY, COL.DIM)
+				kd.Position = UDim2.new(0.5, 0, 0, 0); kd.Size = UDim2.new(0.5, -170, 1, 0)
+				if p.id ~= player.UserId then
+					small(f, "KICK", COL.RED, 0, 70, function()
+						modal("KICK " .. string.upper(p.display) .. "?", "They're removed from this server and can't come back while it runs.",
+							{{"KICK", COL.RED, function() act("Kick", p.id) end}})
+					end)
+					small(f, "MAKE HOST", COL.BLUE, 76, 90, function() act("MakeHost", p.id) end)
+				end
+			end
+
+			-- BOTS
+			heading(sc, string.format("Bots  ·  %d filling in, %d practice", r.bots or 0, r.extraBots or 0))
+			tog("Bots fill empty places", "bots")
+			local counts = {0, 2, 4, 6, 8, 10, 12, 16, 20, 24}
+			sel("Fighters in all (players + bots)", tostring(s.botCount or 8), function(d) act("Set", "botCount", HX.cycleIn(counts, s.botCount or 8, d)) end)
+			sel("Bot skill", s.botSkill or "Mixed", function(d) act("Set", "botSkill", HX.cycleIn(GameConfig.BOT_SKILLS, s.botSkill or "Mixed", d)) end)
+			do
+				local f = line(40)
+				local l = label(f, "Practice bots where you stand", 13, FONT_BODY, COL.DIM); l.Size = UDim2.new(0.4, 0, 1, 0)
+				ui.hostBotSkill = ui.hostBotSkill or "Knight"
+				small(f, "CLEAR", COL.RED, 0, 66, function() act("ClearBots") end)
+				small(f, "+3", COL.GREEN, 72, 44, function() act("SpawnBots", 3, ui.hostBotSkill) end)
+				small(f, "+1", COL.GREEN, 122, 44, function() act("SpawnBots", 1, ui.hostBotSkill) end)
+				small(f, string.upper(ui.hostBotSkill), COL.CARD, 172, 96, function()
+					local skills = {"Squire", "Knight", "Champion"}
+					ui.hostBotSkill = HX.cycleIn(skills, ui.hostBotSkill, 1)
+					HX.openHostPanel()
+				end)
+			end
+
+			-- THE ROUND: mode, map, end it
+			heading(sc, "The round")
+			local nextMode = r.nextMode ~= "" and r.nextMode or r.mode
+			local md = GameConfig.MODES[nextMode]
+			sel("Next mode", (md and md.name or nextMode) .. (r.nextMode == "" and "  (same)" or ""), function(d)
+				act("NextMode", HX.cycleIn(r.modes, nextMode, d))
+			end)
+			local maps = r.maps or {}
+			if #maps > 0 then
+				sel("Next map", r.nextMap ~= "" and GameConfig.mapTitle(r.nextMap) or "rotate", function(d)
+					act("NextMap", HX.cycleIn(maps, r.nextMap ~= "" and r.nextMap or maps[1], d))
+				end)
+			end
+			do
+				local f = line(40)
+				local l = label(f, "Mode and map changes start the next round.", 12, FONT_BODY, COL.DIM); l.Size = UDim2.new(0.6, 0, 1, 0)
+				small(f, "END ROUND NOW", COL.RED, 0, 150, function()
+					modal("END THIS ROUND?", "Everyone goes to the results and the next round starts after the break.",
+						{{"END IT", COL.RED, function() act("EndRound") end}})
+				end)
+			end
+
+			-- THE RULES
+			heading(sc, "Rules")
+			tog("Friendly fire", "friendlyFire")
+			tog("Respawns", "respawns")
+			tog("Weapons on the ground", "groundWeapons")
+			local lengths = {180, 300, 480, 600, 900, 1200}
+			sel("Round length (next round)", string.format("%d min", math.floor((s.roundLength or 300) / 60)), function(d)
+				act("Set", "roundLength", HX.cycleIn(lengths, s.roundLength or 300, d))
+			end)
+			local limits = {2, 4, 6, 8, 12, 16, 24, 32, 40}
+			sel("Player limit", tostring(s.limit or 12), function(d) act("Set", "limit", HX.cycleIn(limits, s.limit or 12, d)) end)
+			local access = {"Public", "Friends", "Locked"}
+			sel("Who can join", s.access == "Friends" and "Friends of players" or (s.access == "Locked" and "Nobody new" or "Anyone"), function(d)
+				act("Set", "access", HX.cycleIn(access, s.access or "Public", d))
+			end)
+		end, 640)
+	end
+
+	function HX.renderHostCard(parent)
+		local p = panel(parent, nil)
+		local h = title(p, "YOUR SERVER", 20); h.Size = UDim2.new(1, 0, 0, 24); h.LayoutOrder = 0
+		dim(p, "You're the host: players, bots, the mode and map, the rules.", 12)
+		local b = bigBtn(p, "SERVER PANEL  ›", COL.GOLD, HX.openHostPanel)
+		b.Size = UDim2.new(1, 0, 0, 38)
+	end
+
 	renderRight = function()
 		clear(rightList)
+		if HX.amHost() then HX.renderHostCard(rightList) end
 		renderBoard(rightList)
 		renderShopCard(rightList)
 	end
+	roundNode:GetAttributeChangedSignal("HostId"):Connect(function() if open then renderRight() end end)
 
 	----------------------------------------------------------------
 	--  the dock
@@ -5185,6 +5326,12 @@ do
 		tog("Friendly fire", "friendlyFire")
 		tog("Respawns", "respawns")
 		tog("Weapons on the ground", "groundWeapons")
+		tog("Bots fill empty places", "bots")
+		if c.bots then
+			local counts = {2, 4, 6, 8, 10, 12, 16, 20, 24}
+			sel("Fighters in all (players + bots)", tostring(c.botCount or 8), function() c.botCount = cycle(counts, c.botCount or 8, -1) end, function() c.botCount = cycle(counts, c.botCount or 8, 1) end)
+			sel("Bot skill", c.botSkill or "Mixed", function() c.botSkill = cycle(GameConfig.BOT_SKILLS, c.botSkill or "Mixed", -1) end, function() c.botSkill = cycle(GameConfig.BOT_SKILLS, c.botSkill or "Mixed", 1) end)
+		end
 		tog("Cheats / host commands", "cheats")
 		dim(customList, c.cheats and "Marked as a cheat server: /god /heal /speed /tp /bring /give /kick for the host. No Marks, XP or rating for anyone in it."
 			or "Cheats give the host /god /heal /speed /tp /bring /give /kick. The server is marked and pays no Marks, XP or rating.")

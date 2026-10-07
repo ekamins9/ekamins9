@@ -506,6 +506,9 @@ local function cleanSettings(s)
 	out.respawns = s.respawns ~= false
 	out.groundWeapons = s.groundWeapons ~= false
 	out.cheats = s.cheats == true
+	out.bots = s.bots ~= false
+	out.botCount = math.clamp(math.floor(tonumber(s.botCount) or D.botCount), 0, 24)
+	out.botSkill = table.find(GameConfig.BOT_SKILLS, s.botSkill) and s.botSkill or D.botSkill
 	out.name = type(s.name) == "string" and s.name:gsub("^%s+", ""):gsub("%s+$", ""):sub(1, 32) or ""
 	return out
 end

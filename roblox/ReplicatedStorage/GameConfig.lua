@@ -157,7 +157,10 @@ GameConfig.FRIENDLY_FIRE = 0.5
 
 -- custom server settings a host may choose (defaults; limits enforced server-side)
 GameConfig.CUSTOM_DEFAULTS = {door = "Warfront", mode = "FFA", map = "", limit = 12, roundLength = 5 * 60,
-	access = "Public", friendlyFire = true, respawns = true, groundWeapons = true, cheats = false}
+	access = "Public", friendlyFire = true, respawns = true, groundWeapons = true, cheats = false,
+	-- bots on a custom server (Game ▸ BotFill): on/off, how many fighters in all (players + bots), how good
+	bots = true, botCount = 8, botSkill = "Mixed"}
+GameConfig.BOT_SKILLS = {"Mixed", "Squire", "Knight", "Champion"}   -- a custom server's bot skill choices
 
 --------------------------------------------------------------------
 function GameConfig.mode(id) return GameConfig.MODES[id] end

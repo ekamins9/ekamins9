@@ -16,7 +16,9 @@
      bot comes back in its own seat (same name, same score); the seat goes when a
      player takes it. Seats last through the intermission and clear at the next round.
 
-     Not on custom servers, ranked ones (The Lists), Horde or the hubs. ]]
+     Custom servers follow their host's settings (bots on/off, botCount, botSkill:
+     GameConfig.CUSTOM_DEFAULTS; the host panel changes them live: Hub ▸ HostServer).
+     Never on ranked servers (The Lists), Horde or the hubs. ]]
 
 local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
@@ -80,9 +82,22 @@ end
 -- is this server one that gets bots?
 local function wanted()
 	local sv = Game.server
-	if sv.custom or sv.ranked or sv.door ~= "Warfront" then return nil end
+	if sv.ranked or sv.door ~= "Warfront" then return nil end
 	local def = Game.current and Game.current.def
+	if sv.custom then
+		local s = sv.settings
+		if not (s and s.bots ~= false) then return nil end
+		local n = math.floor(tonumber(s.botCount) or 0)
+		return (def and n > 0) and n or nil
+	end
 	return def and def.botFill or nil
+end
+-- the skills bots come in: a custom server's choice, else the usual mix
+local function mixHere()
+	local s = Game.server.custom and Game.server.settings
+	local skill = s and s.botSkill
+	if skill and skill ~= "Mixed" and bots().SKILLS[skill] then return {{skill, 1}} end
+	return C.MIX
 end
 
 local function newcomerHere()
@@ -122,7 +137,7 @@ local function objective()
 end
 
 local function spawnOne(team)
-	local skill = pick(newcomerHere() and C.NEWCOMER_MIX or C.MIX)
+	local skill = pick(newcomerHere() and C.NEWCOMER_MIX or mixHere())
 	local list = weaponList()
 	local cf = Game.spawnCFrameForTeam(team)
 	if not cf then return end

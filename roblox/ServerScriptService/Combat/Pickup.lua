@@ -129,6 +129,10 @@ function Pickup.drop(tool, char, dir, speed)
 		end
 	end
 
+	-- a custom server with "weapons on the ground" off (Round GroundWeapons = false):
+	-- it still falls, but nobody can pick it up and it's gone in a moment
+	local round = ReplicatedStorage:FindFirstChild("Round")
+	local noPickup = round ~= nil and round:GetAttribute("GroundWeapons") == false
 	if handle then
 		if hrp then
 			handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
@@ -137,7 +141,8 @@ function Pickup.drop(tool, char, dir, speed)
 			handle.AssemblyAngularVelocity = Vector3.new(math.random() * 8, math.random() * 8, math.random() * 8)
 		end
 		local cfg = Pickup.config(tool)
-		local prompt = Instance.new("ProximityPrompt")
+		local prompt = not noPickup and Instance.new("ProximityPrompt") or nil
+		if prompt then
 		prompt.Name = "PickupPrompt"
 		prompt.ActionText = "Pick up"
 		prompt.ObjectText = (cfg.Name or tool.Name) .. (cfg.SECONDARY and "  (secondary)" or "")
@@ -148,13 +153,14 @@ function Pickup.drop(tool, char, dir, speed)
 		prompt:SetAttribute("TwoHanded", cfg.TWO_HANDED == true)   -- (one-armed, you're not offered it)
 		prompt.Parent = handle
 		prompt.Triggered:Connect(function(plr) Pickup.take(plr, tool) end)
+		end
 	end
 
 	-- the janitor fades it out after DESPAWN (or sooner, when too many lie around),
 	-- but only if it's STILL lying here: one someone picked up is theirs
 	local stamp = os.clock()
 	tool:SetAttribute("DropStamp", stamp)
-	Janitor.add(tool, "Weapon", {life = C.DESPAWN,
+	Janitor.add(tool, "Weapon", {life = noPickup and 4 or C.DESPAWN,
 		still = function() return tool.Parent ~= nil and Pickup.isDropped(tool) and tool:GetAttribute("DropStamp") == stamp end})
 	log("dropped", tool.Name, char and ("by " .. char.Name) or "")
 	return true

@@ -119,6 +119,7 @@ task.spawn(function()
 		-- custom server settings
 		local st = Game.server.settings
 		node:SetAttribute("FriendlyFire", not (st and st.friendlyFire == false))
+		node:SetAttribute("GroundWeapons", not (st and st.groundWeapons == false))
 		node:SetAttribute("NoRewards", Game.server.noRewards == true)
 		node:SetAttribute("Door", Game.server.door or "")
 		node:SetAttribute("Bracket", Game.server.bracket or "")
@@ -141,7 +142,10 @@ task.spawn(function()
 		if not (map and table.find(def.maps or {}, map)) then
 			map = candidates(def)[1]
 		end
-		-- staff picked the next map (Admin)
+		-- a custom server's host fixed the map (settings.map; "" = rotate), if this mode plays on it
+		local fixed = st and st.map
+		if Game.server.custom and fixed and fixed ~= "" and table.find(def.maps or {}, fixed) and MapLoader.exists(fixed) then map = fixed end
+		-- staff (Admin) or the host (HostServer) picked the next map
 		if Game.adminNextMap and MapLoader.exists(Game.adminNextMap) then map = Game.adminNextMap end
 		Game.adminNextMap = nil
 		MapLoader.load(map)

@@ -140,6 +140,25 @@ secondary): **Knight** Greatsword + War Hammer, **Footman** Spear + Shortsword, 
 Arming Sword + Shortsword. Older saves whose class still had the lone default Shortsword get the
 pair (profile `loadoutV`).
 
+## Custom servers: bots and the host's panel (`Hub ▸ HostServer`)
+
+Making a custom server (SERVERS → CREATE) also sets its **bots**: on/off, how many fighters in all
+(players + bots, 2–24), their skill (Mixed, Squire, Knight, Champion), in `GameConfig.CUSTOM_DEFAULTS`
+and checked by `HubServer.cleanSettings`. BotFill fills a custom server by those (never a ranked one).
+A fixed map (`settings.map`) is honoured; "weapons on the ground" off means a dropped weapon falls but
+can't be picked up and goes in 4 s (Round `GroundWeapons`, `Pickup.drop`).
+
+**The host** (who made it; if they leave, whoever has been there longest; Round `HostId`) gets a
+**YOUR SERVER** card in the lobby and a **SERVER PANEL**. Everything is decided by `HostServer`
+(`HostRemote`), only for the host:
+- **Players:** each one's team and K/D; **KICK** (with a confirm; kept out while the server runs),
+  **MAKE HOST**.
+- **Bots:** fill on/off, how many, what skill (live); **practice bots** where you stand (+1, +3,
+  pick their skill; 12 at most; they fight everyone) and **CLEAR**.
+- **The round:** next mode (this server's door's modes), next map (that mode's maps), **END ROUND NOW**.
+- **Rules (live):** friendly fire, respawns, weapons on the ground, round length (next round),
+  player limit, who can join.
+
 ## Bot fill (`Game ▸ BotFill`)
 
 A Warfront match is never empty: while a round runs, bots make up the numbers to the mode's
