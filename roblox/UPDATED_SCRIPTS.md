@@ -1,4 +1,30 @@
-# Updated scripts: music, menu sounds, crate and egg openings
+# Updated scripts: smaller themed crates, egg previews, "what's coming" timers
+
+- **Crates are small and themed again.**
+  - The permanent crates were finish × every-weapon grids: Hafted had 65 items with 12 legendaries, Bladesmith 46, Royal 24 with 14 legendaries.
+  - Each now carries its finishes on a picked few weapons (`CRATE_PICKS` in `scripts/gen_content.py`):
+
+    | Crate | Items | Commons | Rares | Epics | Legendaries |
+    |---|---|---|---|---|---|
+    | Bladesmith | 18 | 6 | 8 | 3 | 1 |
+    | Hafted | 18 | 6 | 6 | 4 | 2 |
+    | Royal | 12 | — | 4 | 3 | 5 |
+
+  - The same finishes on other weapons moved to the daily WEAPONS shelf (priced by rarity), so nothing is lost. Skin ids are unchanged, so owned skins stay owned.
+  - Every crate is now 11–18 items.
+- **Eggs: WHAT'S INSIDE.** Each shelf egg opens a preview of everyone it can hatch: each companion's own chance, whether you have it, and the finish odds.
+- **What's coming:** the crates list says "NEW CRATE IN 2d 21h · ROYAL ARMOURY", and the egg shelf "NEW EGG IN … · GRAVE EGG". These count down to the next weekly drop that brings one (`Drops.nextWith`). "Leaves in" timers were already there.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [scripts/gen_content.py](../scripts/gen_content.py) | — | Python | `CRATE_PICKS`, `SHELF_PRICE` |
+| [Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | regenerated |
+| [Drops.lua](ReplicatedStorage/Drops.lua) | ReplicatedStorage ▸ Drops | ModuleScript | `nextWith` |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | egg WHAT'S INSIDE, next crate / egg lines |
+
+---
+
+## Before that: music, menu sounds, crate and egg openings
 
 - **Music** (`StarterPlayerScripts ▸ Music`, tracks in `ReplicatedStorage ▸ MusicConfig`, all APM licensed):
   - calm courtly pieces in the Courtyard

@@ -3904,6 +3904,14 @@ do
 			table.insert(names, {text = (lc.event and "★ " or (lc.featured and "◆ " or "")) .. lc.c.name, id = lc.id})
 		end
 		chips(rightList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; ui.crateItem = nil; render.SHOP() end, 34)
+		do   -- what's coming: the next drop that brings a crate
+			local nd, nt = HX.Drops.nextWith("crate")
+			local nc = nd and Catalog.CRATES[nd.crate]
+			if nc and nt then
+				local up = title(rightList, string.format("NEW CRATE IN %s  ·  %s", HX.span(nt - HX.Drops.now()), string.upper(nc.name)), 13, COL.ACCENT)
+				up.Size = UDim2.new(1, 0, 0, 18); up.LayoutOrder = nextOrder()
+			end
+		end
 		local lc = liveOf[ui.crate]
 		local c1 = panel(rightList, crate.name)
 		local P = state.profile or {}
@@ -4850,6 +4858,14 @@ do
 		local V = E.variants or {}
 		dim(shelf, string.format("Every hatch also rolls a finish: Golden %s · Spectral %s (otherwise ordinary).", HX.pct(V.Golden or 0), HX.pct(V.Spectral or 0)), 12)
 		if P.restricted then dim(shelf, "In your region eggs aren't sold: they come as gifts (playtime, login days, the pass, events).", 12) end
+		do   -- what's coming: the next drop that brings an egg
+			local nd, nt = HX.Drops.nextWith("egg")
+			local ne = nd and Catalog.EGG[nd.egg]
+			if ne and nt then
+				local up = title(shelf, string.format("NEW EGG IN %s  ·  %s", HX.span(nt - HX.Drops.now()), string.upper(ne.name)), 13, COL.ACCENT)
+				up.Size = UDim2.new(1, 0, 0, 18); up.LayoutOrder = nextOrder()
+			end
+		end
 		for _, eg in ipairs(E.eggs) do
 			local live, leaves = HX.Drops.eggLive(eg.id)
 			if not (live and Catalog.released(eg)) then continue end
@@ -4861,7 +4877,34 @@ do
 			local odds = {}
 			for _, r in ipairs(Catalog.RARITIES) do if eg.odds[r] then table.insert(odds, eg.odds[r] .. "% " .. r) end end
 			local d1 = label(c, "hatches in " .. mins .. "  ·  " .. table.concat(odds, " · ") .. (leaves and ("  ·  LEAVES IN " .. HX.span(leaves - HX.Drops.now())) or ""), 11, FONT_BODY, leaves and COL.ACCENT or COL.DIM)
-			d1.Position = UDim2.fromOffset(98, 30); d1.Size = UDim2.new(1, -230, 0, 56); d1.TextYAlignment = Enum.TextYAlignment.Top
+			d1.Position = UDim2.fromOffset(98, 30); d1.Size = UDim2.new(1, -258, 0, 56); d1.TextYAlignment = Enum.TextYAlignment.Top
+			-- WHAT'S INSIDE: everyone it can hatch, each one's own chance, which you have
+			local peek = button(c, "WHAT'S INSIDE", 11, COL.GLASS)
+			peek.AnchorPoint = Vector2.new(1, 1); peek.Position = UDim2.new(1, -136, 1, -8); peek.Size = UDim2.fromOffset(112, 26)
+			peek.Activated:Connect(function()
+				local pool = Catalog.eggPool(eg.id)
+				local per = {}
+				for _, comp in ipairs(pool) do per[comp.rarity] = (per[comp.rarity] or 0) + 1 end
+				table.sort(pool, function(a, b)
+					if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
+					return a.name < b.name
+				end)
+				local mineP = state.profile or {}
+				modal(string.upper(eg.name) .. "  ·  WHAT'S INSIDE", string.format("%d companions. Every hatch also rolls a finish: Golden %s · Spectral %s.", #pool, HX.pct(V.Golden or 0), HX.pct(V.Spectral or 0)), nil, function(box)
+					local g = Instance.new("Frame"); g.BackgroundTransparency = 1; g.Size = UDim2.new(1, 0, 0, 0); g.AutomaticSize = Enum.AutomaticSize.Y; g.LayoutOrder = 5; g.Parent = box
+					local gl = Instance.new("UIGridLayout", g); gl.CellSize = UDim2.fromOffset(128, 158); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
+					for k, comp in ipairs(pool) do
+						local cell = frame(g, COL.GLASS2, 10); cell.LayoutOrder = k
+						border(cell, RARITY_COL[comp.rarity] or COL.DIM, 2, 0.3)
+						local have = (mineP.owned and mineP.owned.companions and mineP.owned.companions[comp.id]) or (mineP.copies and mineP.copies["pet:" .. comp.id])
+						local pv = Preview.companion(cell, comp.id, UDim2.new(1, -8, 0, 96), true); pv.Position = UDim2.fromOffset(4, 4); pv.BackgroundTransparency = 1
+						local nmL = title(cell, comp.name, 12, RARITY_COL[comp.rarity]); nmL.Position = UDim2.fromOffset(6, 102); nmL.Size = UDim2.new(1, -12, 0, 16); nmL.TextTruncate = Enum.TextTruncate.AtEnd
+						local chance = (eg.odds[comp.rarity] or 0) / math.max(per[comp.rarity] or 1, 1)
+						local ch = title(cell, HX.pct(chance) .. (have and "  ·  OWNED" or ""), 11, have and COL.GOOD or COL.DIM); ch.Position = UDim2.fromOffset(6, 120); ch.Size = UDim2.new(1, -12, 0, 14)
+						local rl = title(cell, string.upper(comp.rarity), 10, RARITY_COL[comp.rarity]); rl.Position = UDim2.fromOffset(6, 136); rl.Size = UDim2.new(1, -12, 0, 14)
+					end
+				end, 600)
+			end)
 			local price = eg.marks and (fmt(eg.marks) .. " MARKS") or (eg.crowns and (fmt(eg.crowns) .. " CROWNS"))
 			if price and not P.restricted then
 				local b = button(c, "BUY  ·  " .. price, 13, eg.crowns and COL.GOLD or COL.GREEN)

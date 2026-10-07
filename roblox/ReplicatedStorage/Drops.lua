@@ -100,6 +100,14 @@ function Drops.next(now)
 	end
 	return nil
 end
+-- the next drop (not yet live) that brings a field — "crate" / "egg" — and when
+function Drops.nextWith(field, now)
+	now = now or Drops.now()
+	for _, d in ipairs(drops()) do
+		if d[field] and not Drops.released(d.id, now) then return d, parse(d.at) end
+	end
+	return nil
+end
 function Drops.list() return drops() end
 
 -- is now inside [from, to)? from/to: drop ids or times; a drop's start is its release

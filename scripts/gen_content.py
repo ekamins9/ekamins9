@@ -165,6 +165,29 @@ def skins_for(wid):
     if wid in ("Spear", "Quarterstaff", "Pitchfork", "Shortsword", "WarAxe", "ArmingSword"): base.append(("Verdigris", None))
     return base
 
+# CRATES STAY SMALL AND THEMED: a crate finish is IN its crate only on these
+# weapons (about 12-17 items a crate, a few legendaries). The finish on every
+# other weapon is still made, but sold on the daily WEAPONS shelf instead
+# (SHELF_PRICE by rarity, on the days the store offers it): never lost.
+CRATE_PICKS = {
+ # Bladesmith (swords)
+ "Pitted":      {"Longsword", "ArmingSword", "Messer", "Dagger"},
+ "Bluesteel":   {"Zweihander", "Rapier", "Falchion"},
+ "Blackened":   {"Executioner", "Estoc", "Cleaver"},
+ "Crowfeather": {"Longsword", "Dagger"},
+ # Hafted (axes, maces, polearms)
+ "Oiled":       {"Halberd", "Spear"},
+ "Bronzed":     {"BattleAxe", "Maul"},
+ "Ember":       {"Glaive", "Poleaxe", "WarAxe", "Quarterstaff"},
+ "Bloodrust":   {"Maul", "Bardiche", "MorningStar"},
+ "Frostbite":   {"Halberd", "BattleAxe"},
+ # Royal
+ "Royal":       {"Longsword", "Zweihander", "Rapier"},
+ "Gilded":      {"Longsword"},
+}
+SHELF_PRICE = {"Common": "marks = 500", "Rare": "marks = 900, crowns = 45", "Epic": "marks = 1600, crowns = 80",
+               "Legendary": "marks = 3200, crowns = 160", "Mythic": "marks = 6000, crowns = 300"}
+
 # THE DAILY STORE'S WEAPONS SHELF: every weapon gets two of these (one plain,
 # one showy), sold only on the days Catalog > Store offers them
 SHOP_STYLES = {
@@ -357,7 +380,10 @@ def gen_catalog_skins():
             if skin == "Veteran":
                 lines.append('\t{weapon = "%s", name = "Veteran", rarity = "Epic", crate = "earned", kills = 100, %s},' % (wid, looks(d)))
                 continue
-            c = 'crate = "%s"' % crate if crate else 'marks = 600'
+            if crate and skin in CRATE_PICKS and wid not in CRATE_PICKS[skin]:
+                c = SHELF_PRICE[d["rarity"]]          # (not in the crate: on the WEAPONS shelf instead)
+            else:
+                c = 'crate = "%s"' % crate if crate else 'marks = 600'
             lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", %s, %s},' % (wid, skin, d["rarity"], c, looks(d, skin)))
     lines.append('\t-- GENERATED: the WEAPONS shelf of the daily store (two per weapon)')
     for i, (wid, name, *_rest) in enumerate(WEAPONS):
