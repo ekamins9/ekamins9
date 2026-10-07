@@ -6,7 +6,9 @@
                             appearance = {skin, hair, hairColor, beard, face},
                             weight = "Heavy", team = "A"|"B"|nil, preview = bool})
        Dresser.undress(char)              removes armor + body, resets stats
-       Dresser.applySkin(tool, skinId)    recolors a weapon Tool, adds the skin's trim (SkinTrims) and its trail / aura (SkinFX)
+       Dresser.applySkin(tool, skinId, variant)   puts the skin on a weapon Tool: its Forge model
+                                          (Cosmetics ▸ Skins) or, without one, tints + trim (SkinTrims);
+                                          then its trail / aura and its finish (SkinFX: Masterwork, Radiant)
        Dresser.attachWeapon(rig, weaponId, skinId)   preview only: welds Cosmetics ▸ Weapons ▸ <id> to the right hand
 
      Welding follows the armor convention: every clothing model has a part
@@ -328,12 +330,18 @@ end
 -- real Tool on the server (or a preview copy): tint SkinPart parts (or swap
 -- in the skin model's parts around the Handle), then build the skin's trim —
 -- the parts that change the weapon's shape (SkinTrims)
-function Dresser.applySkin(tool, skinId)
+function Dresser.applySkin(tool, skinId, variant)
 	local skin = skinId and Catalog.SKIN[skinId]
 	SkinTrims.clear(tool)
 	SkinFX.clear(tool)
 	if not skin or skin.name == "Default" then return false end
 	tool:SetAttribute("Skin", skin.name)   -- the HUD's weapon chip shows it
+	tool:SetAttribute("SkinVariant", variant)
+	local old = tool:FindFirstChild("Skin")
+	if old and old:IsA("Model") then old:Destroy() end
+	for _, p in ipairs(tool:GetDescendants()) do
+		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
+	end
 	local handle = tool:FindFirstChild("Handle")
 	local model = Catalog.skinModel(skinId)
 	if model and handle then
@@ -353,6 +361,7 @@ function Dresser.applySkin(tool, skinId)
 			end
 			clone.Name = "Skin"
 			clone.Parent = tool
+			SkinFX.apply(tool, skin, variant)   -- the trail, the aura and the finish ride on the model
 			return true
 		end
 	end
@@ -365,12 +374,12 @@ function Dresser.applySkin(tool, skinId)
 		end
 	end
 	if SkinTrims.apply(tool, skin) then n += 1 end
-	if SkinFX.apply(tool, skin) then n += 1 end
+	if SkinFX.apply(tool, skin, variant) then n += 1 end
 	return n > 0
 end
 
 -- preview rig: weld a display model of the weapon into the right hand
-function Dresser.attachWeapon(rig, weaponId, skinId)
+function Dresser.attachWeapon(rig, weaponId, skinId, variant)
 	local old = rig:FindFirstChild("WeaponPreview"); if old then old:Destroy() end
 	local arm = rig:FindFirstChild("Right Arm")
 	local t = weaponId and Catalog.weaponModel(weaponId)
@@ -396,7 +405,7 @@ function Dresser.attachWeapon(rig, weaponId, skinId)
 	end
 	m.Name = "WeaponPreview"
 	m.Parent = rig
-	if skinId then Dresser.applySkin(m, skinId) end
+	if skinId then Dresser.applySkin(m, skinId, variant) end
 	return true
 end
 

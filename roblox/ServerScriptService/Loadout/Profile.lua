@@ -1,5 +1,11 @@
 --[[ PROFILE v2 — one saved record per player (DataStore "Profiles_v2"):
-       wallet      {marks, crowns}
+       wallet      {marks, crowns, keys}   (keys: earned only, open any crate)
+       copies      {[skinId | "pet:"..companionId] = {{u = copy id, n = serial, v = variant,
+                    at = time, from = source, b = true if bound (never tradable)}, …}}
+                   every skin out of a crate / the shop and every hatched companion is
+                   its own COPY: duplicates are kept (trade, scrap or forge them)
+       tally       {[skinId] = kills with it}
+       claims      {[claimId] = time claimed}   founder  Founder number (nil = not a Founder)
        level, xp   account level (Catalog.ECONOMY.levels)
        appearance  {skin, hair, hairColor, beard, face, title}
        owned       {pieces = {id=true}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}}
@@ -64,7 +70,7 @@ local function default()
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
-		gauntlet = 0, askedTraining = false}
+		gauntlet = 0, askedTraining = false, copies = {}, tally = {}, claims = {}, copySeq = 0}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -99,6 +105,7 @@ local function fill(p)
 	for k, v in pairs(Catalog.BODY.defaults) do if p.appearance[k] == nil then p.appearance[k] = v end end
 	if not GameConfig.CLASSES[p.active] then p.active = GameConfig.DEFAULT_CLASS end
 	p.stats.byWeapon = p.stats.byWeapon or {}
+	p.wallet.keys = p.wallet.keys or 0
 	return p
 end
 
@@ -159,7 +166,61 @@ function Profile.has(plr, kind, id)
 		for _, t in ipairs(Catalog.BODY.titles) do if t == id then return true end end
 		for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do if t.title == id and Catalog.unlocked(t.unlock, p) then return true end end
 	end
+	if kind == "skins" and Profile.copyCount(p, id) > 0 then return true end
+	if kind == "companions" and Profile.copyCount(p, "pet:" .. tostring(id)) > 0 then return true end
 	return p.owned[kind] and p.owned[kind][id] == true
+end
+
+--------------------------------------------------------------------
+--  COPIES: each skin / companion you hold, one by one
+--------------------------------------------------------------------
+local VARIANT_RANK = {Masterwork = 1, Radiant = 2, Golden = 1, Spectral = 2}
+Profile.VARIANT_RANK = VARIANT_RANK
+function Profile.copies(p, key)
+	p.copies = p.copies or {}
+	return p.copies[key] or {}
+end
+function Profile.copyCount(p, key) return #Profile.copies(p, key) end
+-- the copy that shows: the best finish, then the lowest number
+function Profile.bestCopy(p, key)
+	local best
+	for _, c in ipairs(Profile.copies(p, key)) do
+		local rb, rc = best and (VARIANT_RANK[best.v] or 0) or -1, VARIANT_RANK[c.v] or 0
+		if not best or rc > rb or (rc == rb and (c.n or math.huge) < (best.n or math.huge)) then best = c end
+	end
+	return best
+end
+function Profile.addCopy(plr, key, info)
+	local p = Profile.get(plr)
+	p.copies = p.copies or {}
+	p.copySeq = (p.copySeq or 0) + 1
+	local c = {u = tostring(plr.UserId) .. "-" .. p.copySeq, n = info.n, v = info.v, at = info.at or os.time(), from = info.from, b = info.bound or nil}
+	p.copies[key] = p.copies[key] or {}
+	table.insert(p.copies[key], c)
+	dirty[plr] = true
+	return c
+end
+function Profile.findCopy(p, uid)
+	for key, list in pairs(p.copies or {}) do
+		for i, c in ipairs(list) do if c.u == uid then return key, c, i end end
+	end
+	return nil
+end
+function Profile.takeCopy(plr, uid)
+	local p = Profile.get(plr)
+	local key, c, i = Profile.findCopy(p, uid)
+	if not key then return nil end
+	table.remove(p.copies[key], i)
+	if #p.copies[key] == 0 then p.copies[key] = nil end
+	dirty[plr] = true
+	return key, c
+end
+function Profile.giveCopy(plr, key, c)
+	local p = Profile.get(plr)
+	p.copies = p.copies or {}
+	p.copies[key] = p.copies[key] or {}
+	table.insert(p.copies[key], c)
+	dirty[plr] = true
 end
 function Profile.grant(plr, kind, id)
 	local p = Profile.get(plr)
@@ -236,7 +297,11 @@ function Profile.summary(plr)
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
 		login = p.login, killfx = p.killfx, emotes = p.emotes,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
-		gauntlet = p.gauntlet, askedTraining = p.askedTraining}
+		gauntlet = p.gauntlet, askedTraining = p.askedTraining,
+	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder,
+	trading = Profile.tradingHook and Profile.tradingHook(plr) or nil,
+	restricted = Profile.restrictedHook and Profile.restrictedHook(plr) or false,
+	armoury = Profile.ratingHook and Profile.ratingHook(p) or 0}
 end
 
 Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)

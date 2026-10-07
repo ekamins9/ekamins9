@@ -107,7 +107,10 @@ BODY.beast = function(d)
 	for _, side in ipairs({-1, 1}) do
 		eye(L, side * 0.21, hy + 0.1, hz - 0.36, 0.17, DARK, H)
 		S(L, "Iris", "ball", V(0.1, 0.1, 0.05), V(side * 0.21, hy + 0.08, hz - 0.45), accent, H)
-		if d.style ~= "antlers" then
+		if d.style == "round" then
+			S(L, "Ear", "ball", V(0.26, 0.26, 0.14), V(side * 0.3, hy + 0.4, hz + 0.08), main, H)
+			S(L, "EarIn", "ball", V(0.14, 0.14, 0.06), V(side * 0.3, hy + 0.4, hz + 0.02), second, H)
+		elseif d.style ~= "antlers" and d.style ~= "reindeer" then
 			S(L, "Ear", "wedge", V(0.22, 0.38, 0.28), CF(side * 0.27, hy + 0.52, hz + 0.06) * A(0, rad(side * 90), rad(side * -10)), main, H)
 			S(L, "EarIn", "wedge", V(0.12, 0.24, 0.14), CF(side * 0.27, hy + 0.5, hz) * A(0, rad(side * 90), rad(side * -10)), second, H)
 		else
@@ -133,6 +136,32 @@ BODY.beast = function(d)
 			S(L, "Antler", "block", V(0.1, 0.62, 0.1), CF(side * 0.24, hy + 0.66, hz + 0.08) * A(0, 0, rad(side * -24)), g, {neon = true, ch = "head", hinge = H.hinge})
 			S(L, "Tine", "block", V(0.08, 0.36, 0.08), CF(side * 0.4, hy + 0.92, hz - 0.04) * A(rad(-30), 0, rad(side * -50)), g, {neon = true, ch = "head", hinge = H.hinge})
 			S(L, "Tine", "block", V(0.08, 0.3, 0.08), CF(side * 0.32, hy + 1.02, hz + 0.18) * A(rad(30), 0, rad(side * -10)), g, {neon = true, ch = "head", hinge = H.hinge})
+		end
+	elseif d.style == "reindeer" then
+		-- plain antlers (not glowing) and, given a glow, a shining nose
+		for _, side in ipairs({-1, 1}) do
+			S(L, "Antler", "block", V(0.08, 0.5, 0.08), CF(side * 0.22, hy + 0.6, hz + 0.08) * A(0, 0, rad(side * -22)), accent, H)
+			S(L, "Tine", "block", V(0.06, 0.26, 0.06), CF(side * 0.34, hy + 0.8, hz) * A(rad(-30), 0, rad(side * -50)), accent, H)
+		end
+		if d.glow then S(L, "RedNose", "ball", V(0.2, 0.17, 0.14), V(0, hy - 0.06, hz - 0.7), d.glow, {neon = true, ch = "head", hinge = H.hinge}) end
+		for i = 1, 5 do   -- the fawn's spots
+			S(L, "Spot", "ball", V(0.16, 0.06, 0.16), V(((i * 37) % 7 - 3) * 0.1, 0.42, -0.4 + i * 0.18), second)
+		end
+	elseif d.style == "tusks" then
+		for _, side in ipairs({-1, 1}) do
+			S(L, "Tusk", "wedge", V(0.06, 0.2, 0.08), CF(side * 0.16, hy - 0.12, hz - 0.62) * A(0, 0, rad(side * 15)), accent, H)
+		end
+		S(L, "Ridge", "ball", V(0.22, 0.24, 1.3), V(0, 0.42, -0.1), second)
+	elseif d.style == "bones" then
+		-- a skeleton: dark ribs across the body, glowing eyes
+		for i = 0, 4 do
+			S(L, "Rib", "block", V(1.0, 0.07, 0.07), V(0, 0.1, -0.5 + i * 0.22), d.second)
+		end
+		S(L, "Spine", "block", V(0.1, 0.08, 1.4), V(0, 0.44, 0), d.second)
+		if d.glow then
+			for _, side in ipairs({-1, 1}) do
+				S(L, "GlowEye", "ball", V(0.12, 0.12, 0.06), V(side * 0.21, hy + 0.1, hz - 0.47), d.glow, {neon = true, ch = "head", hinge = H.hinge})
+			end
 		end
 	elseif d.style == "crown" then
 		S(L, "Collar", "ball", V(0.9, 0.16, 0.5), V(0, hy - 0.34, hz + 0.36), accent, H)
@@ -183,6 +212,25 @@ BODY.wisp = function(d)
 	S(L, "Tail", "ball", V(0.5, 0.5, 0.8), V(0, -0.22, 0.52), d.second, {transp = 0.55, glass = true, ch = "tailBob", hinge = V(0, -0.1, 0.2)})
 	for _, side in ipairs({-1, 1}) do S(L, "Eye", "ball", V(0.12, 0.17, 0.06), V(side * 0.15, 0.08, -0.6), d.accent) end
 	for i = 1, 3 do S(L, "Spark", "ball", V(0.17, 0.17, 0.17), V(0.95, 0, 0), g, {neon = true, ch = "orbit", hinge = V(0, 0, 0), phase = i * 2.094}) end
+	if d.style == "pumpkin" then
+		-- a carved pumpkin round the light: ribbed shell, a stem, a face lit from inside
+		for k = 0, 5 do
+			local a = k / 6 * math.pi * 2
+			S(L, "Rib", "ball", V(0.62, 1.0, 0.62), V(cos(a) * 0.28, 0, sin(a) * 0.28), d.main)
+		end
+		S(L, "Stem", "block", V(0.12, 0.28, 0.12), CF(0, 0.6, 0) * A(0, 0, rad(12)), Color3.fromRGB(70, 90, 40))
+		for _, side in ipairs({-1, 1}) do
+			S(L, "FaceEye", "wedge", V(0.16, 0.16, 0.06), CF(side * 0.17, 0.12, -0.62), g, {neon = true})
+		end
+		S(L, "FaceGrin", "block", V(0.42, 0.08, 0.06), V(0, -0.14, -0.6), g, {neon = true})
+	elseif d.style == "kraken" then
+		for k = 0, 5 do
+			local a = k / 6 * math.pi * 2
+			S(L, "Arm", "ball", V(0.16, 0.7, 0.16), CF(cos(a) * 0.3, -0.62, sin(a) * 0.3) * A(sin(a) * rad(25), 0, -cos(a) * rad(25)), d.main,
+				{ch = "tailBob", hinge = V(cos(a) * 0.25, -0.3, sin(a) * 0.25)})
+		end
+		S(L, "Mantle", "ball", V(0.9, 1.1, 0.9), V(0, 0.18, 0.05), d.main, {transp = 0.15})
+	end
 	return L, {flying = true, foot = 0.6, flap = 0, float = true}
 end
 
@@ -199,6 +247,12 @@ BODY.drake = function(d)
 	S(L, "Head", "ball", V(0.64, 0.56, 0.78), V(0, hy, hz), griffin and second or main, H)
 	if griffin then
 		S(L, "Beak", "wedge", V(0.26, 0.3, 0.36), CF(0, hy - 0.06, hz - 0.5), accent, H)
+	elseif d.style == "bat" then
+		S(L, "Snout", "ball", V(0.3, 0.22, 0.3), V(0, hy - 0.1, hz - 0.36), main, H)
+		for _, side in ipairs({-1, 1}) do
+			S(L, "Ear", "wedge", V(0.1, 0.46, 0.26), CF(side * 0.22, hy + 0.42, hz + 0.06) * A(0, rad(side * 90), rad(side * -14)), main, H)
+			S(L, "Fang", "wedge", V(0.04, 0.08, 0.04), CF(side * 0.06, hy - 0.24, hz - 0.46) * A(0, 0, math.pi), accent, H)
+		end
 	else
 		S(L, "Snout", "ball", V(0.44, 0.3, 0.5), V(0, hy - 0.08, hz - 0.46), main, H)
 		for _, side in ipairs({-1, 1}) do S(L, "Nostril", "ball", V(0.06, 0.05, 0.04), V(side * 0.09, hy - 0.02, hz - 0.71), DARK, H) end
@@ -226,8 +280,8 @@ BODY.drake = function(d)
 	end
 	S(L, "Tail1", "ball", V(0.34, 0.3, 0.8), CF(0, 0.02, 0.92) * A(rad(10), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
 	S(L, "Tail2", "ball", V(0.22, 0.2, 0.7), CF(0, -0.06, 1.5) * A(rad(4), 0, 0), main, {ch = "tail", hinge = V(0, 0.05, 0.6)})
-	for i = 0, 3 do   -- a row of spines down the back
-		S(L, "Spine", "wedge", V(0.06, 0.16, 0.16), CF(0, 0.42 - i * 0.03, -0.2 + i * 0.3), accent)
+	for i = 0, 3 do   -- a row of spines down the back (a bat has none)
+		if d.style ~= "bat" then S(L, "Spine", "wedge", V(0.06, 0.16, 0.16), CF(0, 0.42 - i * 0.03, -0.2 + i * 0.3), accent) end
 	end
 	S(L, "TailTip", "wedge", V(0.34, 0.08, 0.3), CF(0, -0.08, 1.88), griffin and second or accent, {ch = "tail", hinge = V(0, 0.05, 0.6)})
 	return L, {flying = true, foot = 0.7, flap = 0.6}
@@ -291,6 +345,33 @@ local function addFx(root, kind, scale)
 	return e
 end
 
+-- VARIANTS (rolled on hatching, Catalog ▸ Eggs ▸ variants): Golden gilds every
+-- part and sparkles; Spectral turns it into a glowing, see-through ghost
+local GOLD = Color3.fromRGB(255, 198, 64)
+local GHOST = Color3.fromRGB(150, 235, 255)
+local function applyVariant(model, root, variant, scale)
+	if variant == "Golden" then
+		for _, p in ipairs(model:GetDescendants()) do
+			if p:IsA("BasePart") and p ~= root and p.Material ~= Enum.Material.Neon then
+				local h, s, v = p.Color:ToHSV()
+				p.Color = GOLD:Lerp(Color3.fromHSV(h, s * 0.3, math.max(v, 0.35)), 0.25)
+				p.Material = Enum.Material.Foil
+				p.Reflectance = 0.15
+			end
+		end
+	elseif variant == "Spectral" then
+		for _, p in ipairs(model:GetDescendants()) do
+			if p:IsA("BasePart") and p ~= root then
+				local _, _, v = p.Color:ToHSV()
+				p.Color = GHOST:Lerp(Color3.new(v, v, v), 0.25)
+				p.Material = Enum.Material.Neon
+				p.Transparency = math.max(p.Transparency, 0.45)
+			end
+		end
+	end
+end
+Companions.applyVariant = applyVariant
+
 function Companions.build(id, opts)
 	opts = opts or {}
 	local d = Catalog.COMPANION and Catalog.COMPANION[id]
@@ -313,9 +394,11 @@ function Companions.build(id, opts)
 		table.insert(parts, {part = p, rest = scaled(s.offset, scale), hinge = s.hinge and s.hinge * scale or nil, ch = s.ch, phase = s.phase or 0})
 		table.insert(list, p)
 	end
+	applyVariant(model, root, opts.variant, scale)
 	if opts.world then
 		if d.fx then addFx(root, d.fx, scale) end
-		if (opts.stars or 0) >= 5 then addFx(root, "sparkle", scale) end
+		if (opts.stars or 0) >= 5 or opts.variant == "Golden" then addFx(root, "sparkle", scale) end
+		if opts.variant == "Spectral" then addFx(root, "spirit", scale) end
 		if d.glow then
 			local l = Instance.new("PointLight"); l.Color = d.glow; l.Range = 7; l.Brightness = 0.8; l.Parent = root
 		end

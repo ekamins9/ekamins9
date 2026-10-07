@@ -187,6 +187,8 @@ task.spawn(function()
 				if comp ~= "" and not Profile.has(plr, "companions", comp) then comp = "" end
 				set(plr, "Companion", comp)
 				set(plr, "CompanionStars", comp ~= "" and (p.stars and p.stars[comp] or 1) or 0)
+				local bestPet = comp ~= "" and Profile.bestCopy(p, "pet:" .. comp) or nil
+				set(plr, "CompanionVariant", bestPet and bestPet.v or "")   -- Golden / Spectral
 				-- what the name tags, the kill feed and the board show (StarterPlayerScripts ▸ NameTags)
 				set(plr, "Title", type(p.appearance) == "table" and type(p.appearance.title) == "string" and p.appearance.title or "")
 				set(plr, "Level", p.level or 1)

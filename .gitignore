@@ -5,3 +5,6 @@
 /build/
 __pycache__/
 blender/out/
+
+# asset ids for Studio-only assembly (scripts/skin_entries.py)
+roblox/ServerScriptService/Build/_SkinUploads.lua

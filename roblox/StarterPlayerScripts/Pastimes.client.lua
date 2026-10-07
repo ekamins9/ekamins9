@@ -89,16 +89,17 @@ RunService.RenderStepped:Connect(function(dt)
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		local f = followers[plr]
 		local stars = plr:GetAttribute("CompanionStars") or 0
+		local variant = plr:GetAttribute("CompanionVariant") or ""
 		if not (id and hrp and hum and hum.Health > 0) then
 			if f then drop(plr) end
 		else
-			if f and (f.id ~= id or f.stars ~= stars) then drop(plr); f = nil end
+			if f and (f.id ~= id or f.stars ~= stars or f.variant ~= variant) then drop(plr); f = nil end
 			if not f then
-				local rig = Companions.build(id, {world = true, stars = stars})
+				local rig = Companions.build(id, {world = true, stars = stars, variant = variant ~= "" and variant or nil})
 				if rig then
 					rig.model.Parent = fx
 					local start = (hrp.CFrame * CFrame.new(2.6, 0, 2.2)).Position
-					f = {rig = rig, id = id, stars = stars, pos = start, yaw = 0, groundY = hrp.Position.Y - 3, rayAt = 0}
+					f = {rig = rig, id = id, stars = stars, variant = variant, pos = start, yaw = 0, groundY = hrp.Position.Y - 3, rayAt = 0}
 					followers[plr] = f
 				end
 			end
@@ -291,7 +292,7 @@ local function popCompanion(at, res)
 	flash.Size = Vector3.new(1, 1, 1); flash.CFrame = CFrame.new(at.Position + Vector3.new(0, 1, 0)); flash.Parent = nestFolder
 	TweenService:Create(flash, TweenInfo.new(0.5), {Size = Vector3.new(7, 7, 7), Transparency = 1}):Play()
 	Debris:AddItem(flash, 0.6)
-	local rig = Companions.build(res.id, {world = true, stars = res.stars})
+	local rig = Companions.build(res.id, {world = true, stars = res.stars, variant = res.variant})
 	if not rig then return end
 	rig.model.Parent = nestFolder
 	local bb = Instance.new("BillboardGui")

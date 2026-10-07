@@ -404,6 +404,22 @@ tabs.SERVER = function()
 			b.Activated:Connect(function() act("nextmap", {map = m}) end)
 		end
 	end
+	if can("drops") then
+		-- the Calendar's drops: each goes live by itself at its time; release one early
+		-- or hold one back here, on every server at once
+		section("DROPS  ·  RELEASE EARLY / HOLD BACK")
+		local Drops = require(game:GetService("ReplicatedStorage"):WaitForChild("Drops"))
+		local dl = flow(s); dl.LayoutOrder = order; order += 1
+		for i, d in ipairs(Drops.list()) do
+			local out = Drops.released(d.id)
+			local b = button(dl, (out and "✔ " or "") .. string.upper(d.name), out and Theme.GLASS2 or Theme.BLUE); b.LayoutOrder = i; b.TextSize = 12
+			b.Activated:Connect(function()
+				confirm("drop" .. d.id, function() act("drop", {op = out and "hold" or "now", id = d.id}) end)
+			end)
+		end
+		local r = hrow(s); r.LayoutOrder = order; order += 1
+		button(r, "BACK TO THE CALENDAR (CLEAR OVERRIDES)", Theme.GLASS2, 340).Activated:Connect(function() act("drop", {op = "clear"}) end)
+	end
 	if can("announce") then
 		section("ANNOUNCE")
 		local r = hrow(s); r.LayoutOrder = order; order += 1

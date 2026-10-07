@@ -94,6 +94,13 @@ function Stats.weaponKill(plr, weaponId)
 	local w = Catalog.WEAPON[weaponId]
 	Stats.add(plr, "kill", 1)
 	if w then Stats.add(plr, "kill_" .. w.family, 1); p.stats.byWeapon[weaponId] = (p.stats.byWeapon[weaponId] or 0) + 1 end
+	-- the skin in hand counts the kill (its tally shows on its card)
+	local tool = plr.Character and plr.Character:FindFirstChildOfClass("Tool")
+	local skin = tool and tool.Name == weaponId and tool:GetAttribute("Skin")
+	if skin then
+		local ok, Collection = pcall(require, script.Parent:WaitForChild("Collection"))
+		if ok then Collection.tally(plr, weaponId .. ":" .. skin) end
+	end
 	-- earned skins
 	for _, s in ipairs(Catalog.SKINS) do
 		if s.crate == "earned" and s.weapon == weaponId and (p.stats.byWeapon[weaponId] or 0) >= (s.kills or 1e9) and not Profile.has(plr, "skins", s.id) then

@@ -2,7 +2,8 @@
        Economy.award(plr, events)        round-end pay: {round=1, win=1, kill=n, parry=n, chamber=n, drill=n}
        Economy.spend(plr, marks, crowns) -> ok, msg
        Economy.buy(plr, kind, id, currency)   kind: piece | pack | color | hairColor | beard | weapon
-       Economy.openCrate(plr, crateId)   -> result {skinId, name, rarity, dup, refund} | nil, msg
+       Economy.openCrate(plr, crateId, free, payWith)   -> result {skinId, name, rarity, dup, refund,
+                                          variant, serial} | nil, msg   payWith "keys" | "crowns"
        Economy.exchange(plr, tier)       Crowns -> Marks
        Economy.grantProduct(plr, productId, receiptId)   Robux Crown bundles (EconomyServer's ProcessReceipt)
        Economy.levelFor(xp)
@@ -19,8 +20,15 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
+local Drops = require(ReplicatedStorage:WaitForChild("Drops"))
 
 local Economy = {}
+local Collection   -- (requires Economy back: loaded on first use)
+local function collection()
+	Collection = Collection or require(script.Parent:WaitForChild("Collection"))
+	return Collection
+end
+Economy.collection = collection
 local E = Catalog.ECONOMY
 local function log(...) DebugFlags.log("Economy", ...) end
 Economy.changed = Instance.new("BindableEvent")   -- (plr) wallet / inventory changed → HubServer pushes to the client
@@ -51,6 +59,8 @@ function Economy.addXP(plr, xp)
 		local need = E.levels[p.level + 1] or E.levels[#E.levels]
 		if p.xp >= need then p.xp -= need; p.level += 1; leveled += 1; p.wallet.marks += E.levelMarks else break end
 	end
+	-- a Key per level, earned only
+	if leveled > 0 then p.wallet.keys = (p.wallet.keys or 0) + leveled * ((E.keys or {}).levelUp or 0) end
 	Profile.markDirty(plr)
 	return leveled
 end
@@ -66,10 +76,16 @@ function Economy.award(plr, events)
 		local e = E.earn[key]
 		if e and type(n) == "number" and n > 0 then marks += e.marks * n; xp += e.xp * n end
 	end
+	-- the Calendar's events: double XP weekends, raid weekends (per mode)
+	local round = ReplicatedStorage:FindFirstChild("Round")
+	local mode = round and round:GetAttribute("Mode")
+	marks = math.floor(marks * Drops.earnMult("marks", mode))
+	xp = math.floor(xp * Drops.earnMult("xp", mode))
 	local today = os.date("!%Y-%m-%d")
 	local firstWin = false
 	if events and (events.win or 0) > 0 and p.lastWinDay ~= today then
 		p.lastWinDay = today; marks += E.earn.firstWinOfDay.marks; firstWin = true
+		p.wallet.keys = (p.wallet.keys or 0) + ((E.keys or {}).firstWin or 0)
 	end
 	p.wallet.marks += marks
 	local levels = Economy.addXP(plr, xp)
@@ -155,10 +171,18 @@ function Economy.buy(plr, kind, id, currency)
 		if src == "earned" then return false, "that skin is earned by playing" end
 		if src == "pass" then return false, "that skin comes from the season pass" end
 		if src == "crate" then return false, "that skin comes from a crate" end
-		if not Catalog.skinOnSale(id) then return false, "not in today's shop" end
+		if not Catalog.skinOnSale(id) then return false, Catalog.soldOut(sk) and "sold out: every one has been made" or "not in today's shop" end
 		local m, c = price(sk.marks, sk.crowns, currency); if not m then return false, c end
-		local ok, msg = Economy.spend(plr, m, c); if not ok then return false, msg end
-		Profile.grant(plr, "skins", id); Economy.changed:Fire(plr); return true, sk.name .. " bought"
+		local p = Profile.get(plr)
+		if p.wallet.marks < m then return false, "not enough Marks" end
+		if p.wallet.crowns < c then return false, "not enough Crowns" end
+		-- a numbered one takes its number first (a limited one may just have sold out)
+		local it, why = collection().grantNumbered(plr, id, "the shop")
+		if not it then return false, why or "sold out" end
+		local ok, msg = Economy.spend(plr, m, c)
+		if not ok then log("paid after numbering failed", plr.Name, id, msg) end
+		Economy.changed:Fire(plr)
+		return true, sk.name .. (it.n and (" #" .. it.n) or "") .. " bought"
 	end
 	return false, "unknown purchase"
 end
@@ -166,7 +190,18 @@ end
 --------------------------------------------------------------------
 --  CRATES
 --------------------------------------------------------------------
-function Economy.openCrate(plr, crateId, free)
+-- the odds a player faces on their next open: the crate's, or — when the pity
+-- is due — Legendary-or-better, split as the crate splits them (shown to the player)
+function Economy.crateOdds(crate, since)
+	if since >= (crate.pity or 20) - 1 then
+		local l, m = crate.odds.Legendary or 0, crate.odds.Mythic or 0
+		if l + m <= 0 then return {Legendary = 100}, true end
+		return {Legendary = 100 * l / (l + m), Mythic = 100 * m / (l + m)}, true
+	end
+	return crate.odds, false
+end
+
+function Economy.openCrate(plr, crateId, free, payWith)
 	local crate = Catalog.CRATES[crateId]
 	if not crate then return nil, "no such crate" end
 	local pool = Catalog.crateItems(crateId)
@@ -174,30 +209,53 @@ function Economy.openCrate(plr, crateId, free)
 	local p = Profile.get(plr)
 	p.crates[crateId] = p.crates[crateId] or {opens = 0, sinceLegendary = 0}
 	local cc = p.crates[crateId]
+	local from = crate.name
 	if not free then
-		local ok, msg = Economy.spend(plr, 0, crate.cost); if not ok then return nil, msg end
-	end
-	-- rarity by odds, pity overrides
-	local rarity
-	if cc.sinceLegendary >= (crate.pity or 20) - 1 then rarity = "Legendary"
-	else
-		local r, acc = math.random() * 100, 0
-		for _, name in ipairs({"Legendary", "Epic", "Rare", "Common"}) do
-			acc += crate.odds[name] or 0
-			if r < acc then rarity = name; break end
+		if not Drops.crateLive(crateId) then return nil, crate.name .. " isn't in rotation right now" end
+		if payWith == "crowns" then
+			-- paid random items: never for a player whose region bars them
+			if collection().restricted(plr) then return nil, "Crates open with Keys in your region (earn them by playing)" end
+			local ok, msg = Economy.spend(plr, 0, crate.cost); if not ok then return nil, msg end
+		else
+			local need = crate.keys or 1
+			if (p.wallet.keys or 0) < need then return nil, string.format("you need %d Key%s (earned: level-ups, the first win of the day, tasks)", need, need > 1 and "s" or "") end
+			p.wallet.keys -= need
 		end
-		rarity = rarity or "Common"
+	elseif collection().restricted(plr) and free == "paid" then
+		-- a crate inside something bought with Robux (the premium pass): a fixed reward instead
+		local marks = (crate.cost or 60) * 10
+		p.wallet.marks += marks
+		Profile.markDirty(plr); Economy.changed:Fire(plr)
+		return {kind = "marks", name = string.format("%d Marks (in place of a %s)", marks, crate.name), rarity = "Rare", dup = false, refund = 0, opens = cc.opens}
 	end
+	-- rarity by odds (the pity, when due, is Legendary or better)
+	local odds = Economy.crateOdds(crate, cc.sinceLegendary)
+	local rarity
+	local r, acc = math.random() * 100, 0
+	for _, name in ipairs({"Mythic", "Legendary", "Epic", "Rare", "Common"}) do
+		acc += odds[name] or 0
+		if r < acc then rarity = name; break end
+	end
+	rarity = rarity or "Common"
 	local picks = {}
 	for _, s in ipairs(pool) do if s.rarity == rarity then table.insert(picks, s) end end
 	if #picks == 0 then picks = pool end
 	local win = picks[math.random(#picks)]
 	cc.opens += 1
-	cc.sinceLegendary = win.rarity == "Legendary" and 0 or cc.sinceLegendary + 1
+	cc.sinceLegendary = (win.rarity == "Legendary" or win.rarity == "Mythic") and 0 or cc.sinceLegendary + 1
 	local ownKind = win.kind == "skin" and "skins" or (win.kind == "killfx" and "killfx" or "emotes")
 	local dup = Profile.has(plr, ownKind, win.id)
 	local refund = 0
-	if dup then refund = (crate.refund or {})[win.rarity] or 0; p.wallet.marks += refund
+	local variant, serial
+	if win.kind == "skin" then variant = collection().rollSkinVariant() end
+	local copies
+	if win.kind == "skin" then
+		-- every skin is a copy of its own: a duplicate is kept (trade, scrap or forge it)
+		local it = collection().grantNumbered(plr, win.id, from, variant)
+		serial = it and it.n
+		copies = Profile.copyCount(p, win.id)
+	elseif dup then
+		refund = (crate.refund or {})[win.rarity] or 0; p.wallet.marks += refund
 	else Profile.grant(plr, ownKind, win.id) end
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
@@ -205,7 +263,8 @@ function Economy.openCrate(plr, crateId, free)
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
 		or ((win.kind == "killfx" and "Kill effect · " or "Emote · ") .. win.name)
 	return {kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
-		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens}
+		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
+		copies = copies}
 end
 
 --------------------------------------------------------------------
@@ -220,6 +279,7 @@ function Economy.grantReward(plr, r)
 	local bits, crateResult = {}, nil
 	if r.marks then p.wallet.marks += r.marks; table.insert(bits, string.format("+%d Marks", r.marks)) end
 	if r.crowns then p.wallet.crowns += r.crowns; table.insert(bits, string.format("+%d Crowns", r.crowns)) end
+	if r.keys then p.wallet.keys = (p.wallet.keys or 0) + r.keys; table.insert(bits, string.format("+%d Key%s", r.keys, r.keys > 1 and "s" or "")) end
 	if r.skin and Catalog.SKIN[r.skin] then
 		Profile.grant(plr, "skins", r.skin)
 		local s = Catalog.SKIN[r.skin]
@@ -230,13 +290,21 @@ function Economy.grantReward(plr, r)
 	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
 	if r.killfx and Catalog.KILLFX_BY[r.killfx] then Profile.grant(plr, "killfx", r.killfx); table.insert(bits, "the kill effect " .. Catalog.KILLFX_BY[r.killfx].name) end
 	if r.emote and Catalog.EMOTE[r.emote] then Profile.grant(plr, "emotes", r.emote); table.insert(bits, "the emote " .. Catalog.EMOTE[r.emote].name) end
-	if r.egg and Catalog.EGG[r.egg] then pastimes().grantEgg(plr, r.egg, r.n or 1); table.insert(bits, Catalog.EGG[r.egg].name) end
+	if r.egg and Catalog.EGG[r.egg] then
+		if r.paid and collection().restricted(plr) then
+			-- an egg inside something bought (a random hatch): Marks instead, where paid random items are barred
+			local m = 600 * (r.n or 1)
+			p.wallet.marks += m; table.insert(bits, string.format("+%d Marks (in place of the %s)", m, Catalog.EGG[r.egg].name))
+		else
+			pastimes().grantEgg(plr, r.egg, r.n or 1); table.insert(bits, Catalog.EGG[r.egg].name)
+		end
+	end
 	if r.companion and Catalog.COMPANION[r.companion] then
 		local res = pastimes().grantCompanion(plr, r.companion)
 		table.insert(bits, "the companion " .. Catalog.COMPANION[r.companion].name .. ((res and res.dup) and " (★ up)" or ""))
 	end
 	if r.crate then
-		crateResult = Economy.openCrate(plr, r.crate, true)
+		crateResult = Economy.openCrate(plr, r.crate, r.paid and "paid" or true)
 		if crateResult then table.insert(bits, crateResult.name .. (crateResult.dup and string.format(" (dup, +%d Marks)", crateResult.refund) or "")) end
 	end
 	Profile.markDirty(plr)
@@ -289,6 +357,7 @@ function Economy.passClaim(plr, tier, track)
 	if rec.claimed[track][tostring(tier)] then return false, "already claimed" end
 	local reward = t[track]
 	if not reward then return false, "nothing on that tier" end
+	if track == "premium" then reward = table.clone(reward); reward.paid = true end   -- (bought with Crowns)
 	rec.claimed[track][tostring(tier)] = true
 	local line, crate = Economy.grantReward(plr, reward)
 	return true, "TIER " .. tier .. "  ·  " .. line, crate
@@ -303,6 +372,7 @@ function Economy.passClaimAll(plr)
 		for _, track in ipairs({"free", "premium"}) do
 			local reward = P.tiers[tier][track]
 			if reward and not rec.claimed[track][tostring(tier)] and (track == "free" or rec.premium) then
+				if track == "premium" then reward = table.clone(reward); reward.paid = true end
 				rec.claimed[track][tostring(tier)] = true
 				local line, crate = Economy.grantReward(plr, reward)
 				table.insert(lines, line)

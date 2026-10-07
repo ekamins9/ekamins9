@@ -4,10 +4,13 @@
         /speed 2      walk speed multiplier        /tp <name>     teleport to a player
         /bring <name> pull a player to you         /give <Weapon> a weapon from ServerStorage ▸ Weapons
         /kick <name>  remove a player
-     TESTING (Studio only, any server): /marks <n>  /crowns <n>  /xp <n>  /level <n>  /passxp <n>
+     TESTING (Studio only, any server): /marks <n>  /crowns <n>  /keys <n>  /xp <n>  /level <n>  /passxp <n>
         add that much to your wallet / XP (level = level-ups) / season pass XP, e.g. /marks 5000
         /egg <Id> [n]  eggs for the Hatchery   /ripen  every nest ready   /playtime <minutes>
-        /bot [Squire|Knight|Champion] [Weapon]  a practice bot that fights you   /bot clear ]]
+        /bot [Squire|Knight|Champion] [Weapon]  a practice bot that fights you   /bot clear
+        /clock 2026-10-31 [16:00]  pretend it is that time (UTC): drops, events, crates
+                      and eggs follow   /clock +3d · +6h   /clock reset
+        /drop now <id> · /drop hold <id> · /drop clear   (staff on live servers: Admin ▸ drop) ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -43,10 +46,41 @@ local function handle(plr, text)
 	local cmd, rest = text:match("^/(%a+)%s*(.*)$")
 	if not cmd then return end
 	cmd = cmd:lower()
-	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, xp = 1, level = 1, passxp = 1, egg = 1, ripen = 1, playtime = 1, bot = 1})[cmd] then return end
+	if not ({god = 1, heal = 1, speed = 1, tp = 1, bring = 1, give = 1, kick = 1, marks = 1, crowns = 1, keys = 1, xp = 1, level = 1, passxp = 1, egg = 1, ripen = 1, playtime = 1, bot = 1, clock = 1, drop = 1})[cmd] then return end
 	if os.clock() - (last[plr] or -1e9) < 0.3 then return end
 	last[plr] = os.clock()
 	-- testing cheats: Studio only, no server setting needed
+	if cmd == "clock" then
+		if not STUDIO then return end
+		local RS = game:GetService("ReplicatedStorage")
+		local Drops = require(RS:WaitForChild("Drops"))
+		local real = workspace:GetServerTimeNow()
+		local n, unit = rest:match("^%+(%d+)([dhm])$")
+		if rest == "reset" or rest == "" then RS:SetAttribute("ClockOffset", 0)
+		elseif n then
+			local add = tonumber(n) * ({d = 86400, h = 3600, m = 60})[unit]
+			RS:SetAttribute("ClockOffset", (RS:GetAttribute("ClockOffset") or 0) + add)
+		else
+			local t = Drops.time(rest:find(":") and rest or (rest .. " 12:00"))
+			if t then RS:SetAttribute("ClockOffset", t - real) end
+		end
+		local cur = Drops.current()
+		print(string.format("[Clock] %s UTC  ·  drop: %s", os.date("!%Y-%m-%d %H:%M", math.floor(Drops.now())), cur and cur.name or "none"))
+		return
+	end
+	if cmd == "drop" then
+		if not STUDIO then return end
+		local RS = game:GetService("ReplicatedStorage")
+		local op, id = rest:match("^(%a+)%s*(%S*)")
+		local function set(attr) local t = {} for x in string.gmatch(RS:GetAttribute(attr) or "", "[^,%s]+") do t[x] = true end return t end
+		local function join(t) local o = {} for k in pairs(t) do table.insert(o, k) end return table.concat(o, ",") end
+		local forced, held = set("DropsForced"), set("DropsHeld")
+		if op == "now" then forced[id] = true; held[id] = nil
+		elseif op == "hold" then held[id] = true; forced[id] = nil
+		elseif op == "clear" then forced, held = {}, {} end
+		RS:SetAttribute("DropsForced", join(forced)); RS:SetAttribute("DropsHeld", join(held))
+		return
+	end
 	if cmd == "bot" then
 		if not STUDIO then return end
 		local Bots = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Bots"))
@@ -72,13 +106,14 @@ local function handle(plr, text)
 		Economy.changed:Fire(plr)
 		return
 	end
-	if cmd == "marks" or cmd == "crowns" or cmd == "xp" or cmd == "level" or cmd == "passxp" then
+	if cmd == "marks" or cmd == "crowns" or cmd == "keys" or cmd == "xp" or cmd == "level" or cmd == "passxp" then
 		if not STUDIO then return end
 		local n = math.floor(tonumber(rest) or 0)
 		if n == 0 then return end
 		local p = Profile.get(plr)
 		if cmd == "marks" then p.wallet.marks = math.max(0, p.wallet.marks + n)
 		elseif cmd == "crowns" then p.wallet.crowns = math.max(0, p.wallet.crowns + n)
+		elseif cmd == "keys" then p.wallet.keys = math.max(0, (p.wallet.keys or 0) + n)
 		elseif cmd == "xp" then Economy.addXP(plr, math.max(0, n))
 		elseif cmd == "passxp" then Economy.addPassXP(plr, math.max(0, n))
 		elseif cmd == "level" then
@@ -103,7 +138,7 @@ local function handle(plr, text)
 	end
 end
 pcall(function()
-	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "xp", "level", "passxp", "egg", "ripen", "playtime", "bot"}) do
+	for _, name in ipairs({"god", "heal", "speed", "tp", "bring", "give", "kick", "marks", "crowns", "keys", "xp", "level", "passxp", "egg", "ripen", "playtime", "bot", "clock", "drop"}) do
 		local c = Instance.new("TextChatCommand"); c.Name = "Cheat_" .. name; c.PrimaryAlias = "/" .. name; c.Parent = TextChatService
 		c.Triggered:Connect(function(source, text) local p = Players:GetPlayerByUserId(source.UserId); if p then handle(p, text) end end)
 	end

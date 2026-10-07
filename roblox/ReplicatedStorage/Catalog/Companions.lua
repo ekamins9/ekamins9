@@ -12,6 +12,10 @@
        fx       world-only particles: embers · frost · spirit · sparkle
        egg      only that egg hatches it (default: any egg, by rarity)
        pass     a season-pass reward (never hatched)
+       drop     hidden until that drop of Catalog ▸ Calendar is out
+       style    (more) bat (a drake as a bat) · pumpkin (a wisp) · bones (a skeleton
+                beast) · tusks · reindeer · round (round ears) · kraken (a wisp with arms)
+     Every hatch also rolls a VARIANT (Catalog ▸ Eggs ▸ variants): Golden or Spectral.
      Duplicates add a star (up to Catalog ▸ Eggs ▸ stars); five stars sparkle. ]]
 local C = Color3.fromRGB
 return {
@@ -62,4 +66,68 @@ return {
 	-- the season pass
 	{id = "IronHound", name = "Iron Hound", rarity = "Legendary", body = "beast", size = 1, style = "crown", pass = true,
 		main = C(112, 114, 122), second = C(70, 72, 80), accent = C(230, 182, 60), description = "The Iron Crown's own hound. Season 1."},
+
+	-- THE DROPS' EGGS (Catalog ▸ Calendar): each egg's own, gone when the egg is
+	-- GRAVE EGG — The Hollow Night
+	{id = "Bat", name = "Belfry Bat", rarity = "Common", body = "drake", style = "bat", size = 0.6, egg = "Grave", drop = "HollowNight",
+		main = C(40, 34, 44), second = C(70, 56, 76), accent = C(230, 210, 200), description = "Hangs upside down from your shoulder. Squeaks at owls."},
+	{id = "PumpkinWisp", name = "Pumpkin Wisp", rarity = "Rare", body = "wisp", style = "pumpkin", size = 0.8, egg = "Grave", drop = "HollowNight",
+		main = C(232, 118, 30), second = C(255, 190, 90), accent = C(30, 20, 10), glow = C(255, 150, 40), description = "Carved, lit, and following you home."},
+	{id = "SkeletonCat", name = "Skeleton Cat", rarity = "Epic", body = "beast", style = "bones", size = 0.8, egg = "Grave", drop = "HollowNight",
+		main = C(222, 214, 196), second = C(150, 144, 132), accent = C(120, 255, 170), glow = C(120, 255, 170), description = "Nine lives. Used all of them."},
+	{id = "CryptRaven", name = "Crypt Raven", rarity = "Epic", body = "bird", size = 0.95, fx = "spirit", egg = "Grave", drop = "HollowNight",
+		main = C(26, 24, 34), second = C(70, 50, 100), accent = C(190, 110, 255), description = "Nevermore. Mostly."},
+	{id = "JackOWisp", name = "Jack o' Wisp", rarity = "Legendary", body = "wisp", style = "pumpkin", size = 1.05, fx = "embers", egg = "Grave", drop = "HollowNight",
+		main = C(255, 120, 20), second = C(255, 210, 120), accent = C(20, 10, 4), glow = C(255, 120, 20), description = "The lantern that walks the Hollow Night."},
+	{id = "WraithHound", name = "Wraith Hound", rarity = "Mythic", body = "beast", style = "bones", size = 1.1, fx = "spirit", egg = "Grave", drop = "HollowNight",
+		main = C(60, 70, 80), second = C(30, 34, 40), accent = C(120, 255, 200), glow = C(120, 255, 200), description = "Hollow Night 2026. It never hatches again."},
+	-- STAG EGG — The Wild Hunt
+	{id = "BoarPiglet", name = "Boar Piglet", rarity = "Common", body = "beast", style = "tusks", size = 0.75, egg = "Stag", drop = "WildHunt",
+		main = C(110, 80, 56), second = C(150, 116, 84), accent = C(240, 232, 214), description = "Snuffles truffles. Charges ankles."},
+	{id = "Hawk", name = "Goshawk", rarity = "Rare", body = "bird", size = 0.95, egg = "Stag", drop = "WildHunt",
+		main = C(96, 84, 72), second = C(220, 214, 200), accent = C(250, 196, 60), description = "Returns to the glove. Mostly yours."},
+	{id = "Badger", name = "Badger", rarity = "Rare", body = "beast", style = "round", size = 0.8, egg = "Stag", drop = "WildHunt",
+		main = C(70, 70, 76), second = C(236, 236, 236), accent = C(20, 20, 24), description = "Grumpy. Fearless. Correct."},
+	{id = "Fawn", name = "Spotted Fawn", rarity = "Epic", body = "beast", style = "reindeer", size = 0.9, egg = "Stag", drop = "WildHunt",
+		main = C(176, 120, 72), second = C(246, 236, 220), accent = C(120, 90, 60), description = "Wobbly legs, brave heart."},
+	{id = "ElderStag", name = "Elder Stag", rarity = "Legendary", body = "beast", style = "antlers", size = 1.15, fx = "spirit", egg = "Stag", drop = "WildHunt",
+		main = C(120, 96, 70), second = C(200, 186, 150), accent = C(30, 60, 30), glow = C(140, 255, 120), description = "Old as the Wildwood. The Hunt follows it."},
+	-- FJORD EGG — Northmen
+	{id = "Puffin", name = "Puffin", rarity = "Common", body = "bird", style = "walker", size = 0.75, egg = "Fjord", drop = "Northmen",
+		main = C(28, 28, 34), second = C(246, 246, 246), accent = C(255, 120, 40), description = "A sea-parrot in a dinner jacket."},
+	{id = "BearCub", name = "Bear Cub", rarity = "Rare", body = "beast", style = "round", size = 1.0, egg = "Fjord", drop = "Northmen",
+		main = C(96, 66, 44), second = C(150, 112, 80), accent = C(20, 16, 14), description = "Rolls more than it walks."},
+	{id = "NorthRaven", name = "Raven of the North", rarity = "Epic", body = "bird", size = 1.0, fx = "frost", egg = "Fjord", drop = "Northmen",
+		main = C(60, 70, 90), second = C(120, 140, 170), accent = C(170, 220, 255), description = "Thought or Memory. It won't say which."},
+	{id = "SeaSerpent", name = "Sea Serpent", rarity = "Legendary", body = "drake", size = 1.05, egg = "Fjord", drop = "Northmen",
+		main = C(40, 120, 130), second = C(140, 220, 210), accent = C(232, 210, 120), glow = C(90, 255, 230), description = "Coiled under the longships. Now under your bed."},
+	-- FROST EGG — Frostfall
+	{id = "ArcticHare", name = "Arctic Hare", rarity = "Common", body = "hopper", style = "longears", size = 0.85, egg = "Frost", drop = "Frostfall",
+		main = C(246, 248, 252), second = C(220, 230, 240), accent = C(30, 30, 40), description = "Invisible until it blinks."},
+	{id = "SnowOwl", name = "Snow Owl", rarity = "Rare", body = "bird", style = "owl", size = 0.95, egg = "Frost", drop = "Frostfall",
+		main = C(244, 246, 250), second = C(255, 255, 255), accent = C(255, 210, 60), description = "Silent wings, cold stare."},
+	{id = "Stoat", name = "Winter Stoat", rarity = "Epic", body = "beast", size = 0.7, fx = "frost", egg = "Frost", drop = "Frostfall",
+		main = C(246, 246, 250), second = C(255, 255, 255), accent = C(20, 20, 24), description = "Ermine for a king's collar. It disagrees."},
+	{id = "IceDrake", name = "Ice Drake", rarity = "Legendary", body = "drake", size = 1.0, fx = "frost", egg = "Frost", drop = "Frostfall",
+		main = C(180, 220, 250), second = C(230, 246, 255), accent = C(110, 170, 240), glow = C(150, 230, 255), description = "Breathes snow. Melts nothing."},
+	-- YULE EGG — Yuletide
+	{id = "Robin", name = "Robin", rarity = "Common", body = "bird", size = 0.75, egg = "Yule", drop = "Yuletide",
+		main = C(120, 92, 70), second = C(230, 90, 50), accent = C(240, 190, 80), description = "First on the snow, loudest in the yard."},
+	{id = "GingerHen", name = "Gingerbread Hen", rarity = "Rare", body = "bird", style = "walker", size = 0.95, egg = "Yule", drop = "Yuletide",
+		main = C(176, 110, 60), second = C(250, 246, 240), accent = C(220, 40, 50), description = "Do not dunk."},
+	{id = "Reindeer", name = "Reindeer Fawn", rarity = "Epic", body = "beast", style = "reindeer", size = 0.95, egg = "Yule", drop = "Yuletide",
+		main = C(150, 104, 66), second = C(236, 224, 206), accent = C(110, 76, 50), glow = C(255, 40, 40), description = "That nose, though."},
+	{id = "YuleWisp", name = "Yule Wisp", rarity = "Legendary", body = "wisp", size = 0.95, fx = "sparkle", egg = "Yule", drop = "Yuletide",
+		main = C(60, 200, 90), second = C(220, 255, 230), accent = C(200, 30, 40), glow = C(90, 255, 120), description = "A candle from the Yule log that refused to go out."},
+	{id = "Krampling", name = "Krampling", rarity = "Mythic", body = "drake", size = 0.9, fx = "embers", egg = "Yule", drop = "Yuletide",
+		main = C(40, 26, 26), second = C(120, 20, 20), accent = C(230, 220, 200), glow = C(255, 50, 40), description = "Yuletide 2026. Naughty list only."},
+	-- TIDE EGG — Black Sails
+	{id = "Gull", name = "Harbour Gull", rarity = "Common", body = "bird", size = 0.85, egg = "Tide", drop = "BlackSails",
+		main = C(236, 238, 242), second = C(170, 176, 186), accent = C(250, 200, 60), description = "Steals chips. Steals swords."},
+	{id = "Parrot", name = "Parrot", rarity = "Rare", body = "bird", size = 0.9, egg = "Tide", drop = "BlackSails",
+		main = C(220, 40, 40), second = C(50, 110, 230), accent = C(255, 210, 40), description = "Says one word. You won't like it."},
+	{id = "KrakenPup", name = "Kraken Pup", rarity = "Epic", body = "wisp", style = "kraken", size = 0.9, egg = "Tide", drop = "BlackSails",
+		main = C(110, 60, 140), second = C(170, 110, 200), accent = C(250, 220, 120), glow = C(200, 120, 255), description = "Eight arms, all of them hugs."},
+	{id = "SeaDrake", name = "Sea Drake", rarity = "Legendary", body = "drake", size = 1.0, egg = "Tide", drop = "BlackSails",
+		main = C(30, 90, 100), second = C(90, 200, 190), accent = C(200, 170, 90), glow = C(90, 255, 210), description = "Smells of salt and old treasure."},
 }

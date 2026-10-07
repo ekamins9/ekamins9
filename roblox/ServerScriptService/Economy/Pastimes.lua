@@ -26,6 +26,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local Economy = require(script.Parent:WaitForChild("Economy"))
+local Drops = require(ReplicatedStorage:WaitForChild("Drops"))
 
 local Pastimes = {}
 local EGGS = Catalog.EGGS
@@ -116,6 +117,10 @@ function Pastimes.eggBuy(plr, id)
 	local e = Catalog.EGG[id]
 	if not e then return false, "no such egg" end
 	if not e.marks and not e.crowns then return false, e.name .. " isn't sold: it comes from gifts and the pass" end
+	if not Drops.eggLive(id) then return false, e.name .. " isn't in the Hatchery right now" end
+	if not Catalog.released(e) then return false, "coming soon" end
+	-- paid random items: never for a player whose region bars them
+	if Economy.collection().restricted(plr) then return false, "In your region eggs come as gifts (login, playtime, the pass), not for sale" end
 	local ok, msg = Economy.spend(plr, e.marks or 0, e.crowns or 0)
 	if not ok then return false, msg end
 	Pastimes.grantEgg(plr, id, 1)
@@ -158,32 +163,36 @@ end
 
 local function roll(odds)
 	local r, acc = math.random() * 100, 0
-	for _, name in ipairs({"Legendary", "Epic", "Rare", "Common"}) do
+	for _, name in ipairs({"Mythic", "Legendary", "Epic", "Rare", "Common"}) do
 		acc += odds[name] or 0
 		if r < acc then return name end
 	end
 	return "Common"
 end
 
-function Pastimes.grantCompanion(plr, id)
+function Pastimes.grantCompanion(plr, id, variant, from)
 	local c = Catalog.COMPANION[id]
 	if not c then return nil end
 	local p = hatcheryRecord(plr)
 	local dup = Profile.has(plr, "companions", id)
+	-- every hatch is a copy of its own (tradable): its finish, a number if Mythic
+	local C = Economy.collection()
+	local serial
+	if c.rarity == "Mythic" then serial = C.serial("pet:" .. id) end
+	local it = Profile.addCopy(plr, "pet:" .. id, {v = variant, n = serial, from = from or "a gift", bound = c.pass == true})
 	local refund = 0
 	if dup then
-		local s = p.stars[id] or 1
-		if s < (EGGS.stars or 5) then p.stars[id] = s + 1
-		else refund = (EGGS.refund or {})[c.rarity] or 0; p.wallet.marks += refund end
+		-- stars: how many you hold, up to five (spares beyond that are yours to trade or scrap)
+		p.stars[id] = math.min(EGGS.stars or 5, math.max((p.stars[id] or 1) + 1, Profile.copyCount(p, "pet:" .. id)))
 	else
-		Profile.grant(plr, "companions", id)
 		p.stars[id] = 1
 		-- the first one comes along at once
 		if (p.companion or "") == "" then p.companion = id end
 	end
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
-	return {id = id, name = c.name, rarity = c.rarity, dup = dup, stars = p.stars[id], refund = refund}
+	return {id = id, name = c.name, rarity = c.rarity, dup = dup, stars = p.stars[id], refund = refund, variant = variant, serial = it.n,
+		copies = Profile.copyCount(p, "pet:" .. id)}
 end
 
 function Pastimes.hatch(plr, nest, now)
@@ -195,6 +204,7 @@ function Pastimes.hatch(plr, nest, now)
 	local left = needOf(n.egg) - progressOf(n, os.time())
 	if left > 0 then
 		if not now then return nil, "not ready yet" end
+		if Economy.collection().restricted(plr) then return nil, "not ready yet (no hatching early in your region)" end
 		local ok, msg = Economy.spend(plr, 0, Pastimes.skipCost(left))
 		if not ok then return nil, msg end
 	end
@@ -206,7 +216,7 @@ function Pastimes.hatch(plr, nest, now)
 	if #picks == 0 then return nil, "nothing hatches from this egg yet" end
 	local win = picks[math.random(#picks)]
 	p.nests[nest] = nil
-	local res = Pastimes.grantCompanion(plr, win.id)
+	local res = Pastimes.grantCompanion(plr, win.id, Economy.collection().rollPetVariant(), e.name)
 	res.egg = n.egg
 	res.nest = tonumber(nest)
 	return res

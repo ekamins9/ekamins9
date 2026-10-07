@@ -356,6 +356,59 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
     blade length. The animation (the weapon's idle guard) fades out and back in over 0.2 s, so
     nothing snaps.
 
+## Drops, rarity, collections, trading (`Catalog ▸ Calendar`, `Drops`, `Economy ▸ Collection`, `Economy ▸ Trading`)
+
+**The Forge.** Every weapon skin is its own mesh (`blender/forge.py` + `blender/themes.py`: new
+edges, guards, pommels, grips, ornaments, painted patterns, Neon inlays), welded on from
+`Cosmetics ▸ Skins ▸ <weapon> ▸ <skin>` by `Dresser.applySkin`. Built, uploaded and assembled by
+`blender/forge.py → scripts/upload_skins.py → scripts/skin_entries.py → Build ▸ SkinModels`
+(see CONTENT_GUIDE §5). Without the model a skin falls back to its tints + trim.
+
+**The calendar.** `Catalog ▸ Calendar` holds 13 weekly drops (10 Oct 2026 → 2 Jan 2027: the
+Founders' Forge, Bonewright, the Hollow Night, All Hallows' Eve, Ironclad, the Wild Hunt,
+Northmen, Sea-Wolves, Frostfall, Yuletide, Twelfth Night, Midwinter, Black Sails), the events
+(Halloween, a double-XP weekend, a Horde raid weekend, Yuletide), which crates and eggs are in
+rotation when, free numbered claims (Jack's Grin on Halloween, First Light at New Year, a Yule
+gift a day 13–24 Dec) and the Founders' window (everyone who plays before 9 Nov gets the
+Founder's Oath, numbered in the order they came, and the title Founder). `ReplicatedStorage ▸
+Drops` reads it with the server's clock, so a drop appears on every server at the same second;
+nothing with `drop = "<id>"` shows before then. Staff: F2 ▸ DROPS releases one early or holds
+one back (every server; remembered in DataStore `AdminDrops_v1`). Studio: `/clock 2026-10-31`,
+`/clock +3d`, `/clock reset`, `/drop now <id>`.
+
+**Rarity and scarcity.** Five tiers (Common, Rare, Epic, Legendary, **Mythic**), and the reasons
+something is rare are shown on it: VAULTED (its crate is out of rotation, may return), RELIC
+(gone for good: event crates, past claims, the Founders' window), LIMITED (a fixed number made,
+e.g. the Frostgift: 2,026, with the stock live in the shop), a serial number (#12: every Mythic,
+limited, claim and Founder copy; counted globally in DataStore `Serials_v1`).
+
+**Copies.** Every skin out of a crate or the shop and every hatched companion is a COPY of its own
+(`Profile.copies`): its number, its finish, when and where it came from, how many times it has
+been traded. Duplicates are kept: trade them, **scrap** a spare for Marks, or **forge** three into
+one with the next finish. Finishes: Masterwork (5%, a gold glint), Radiant (1%, its glow, trail
+and aura cycle through colours); companions Golden (4%) or Spectral (1%). Each skin counts its
+kills (shown on its card). Earned, pass, pack, claim and Founder items are BOUND (never traded).
+The **Armoury rating** (`Collection.rating`) adds it all up: rarity × finish × relic / limited /
+low-number bonuses.
+
+**Crates.** Only crates in rotation can be opened (events first, then the featured ones, then the
+always-there Bladesmith, Hafted and Relic). Open with **Keys** (earned only: a Key per level-up,
+one for the first win of the day, more from events) or Crowns. The odds (with the finish
+chances) are on screen before every open, and when the pity is due they say so (Legendary or
+better). **Roblox's paid-random-item rules:** where `PolicyService` restricts paid random items
+(`ArePaidRandomItemsRestricted`), Crowns don't open crates (Keys do), eggs aren't sold, early
+hatching is off, and crates or eggs inside a purchase (the premium pass) become Marks.
+
+**Trading** (TRADE in the dock). Same server, level 5 and up, only where Roblox allows trading paid
+items (`IsPaidItemTradingAllowed`). Both sides put up to 8 copies up, both press READY, a
+5-second countdown runs (any change un-readies both), both CONFIRM; the server re-checks every
+copy, swaps them in one step and saves both profiles at once. Each side shows its worth (rating
+points). Logged in DataStore `TradeLog_v1`.
+
+**The shop.** The DAILY tab opens with this week's drop (name, blurb, its headliner, the events
+running, NEXT DROP IN … · ???) and the menu shows it once a session. The WEAPONS shelf's headliner
+can be a Calendar feature (a limited skin until it sells out).
+
 ## Game modes, maps, places (`GameConfig`)
 
 **One place, many servers, and a server never changes mode.** Every *public* server (what

@@ -13,8 +13,11 @@
        Catalog.skinModel(skinId) / weaponModel(weaponId) / bodyModel(kind, id)
        Catalog.rig()                         the preview rig template (Cosmetics.Rig) or nil
        Catalog.unlocked(unlock, profile) / unlockProgress / unlockText   kill / level / win / task unlocks
-       Catalog.skinSource(skin)              "crate" | "earned" | "pack" | "shop" | "free"
+       Catalog.skinSource(skin)              "crate" | "earned" | "pack" | "shop" | "founder" | "claim" | "free"
        Catalog.skinOffers(day) / skinOnSale(id, day)   the store's daily WEAPONS section
+       Catalog.released(item)                is it out yet? (its `drop`, Catalog ▸ Calendar)
+       Catalog.RARITY_RANK[rarity]           1 Common … 5 Mythic
+       Catalog.limitedMade(skinId)           how many of a limited skin exist (server-published)
 
      SKINS ARE NEVER SOLD AT WILL: a skin comes out of a crate, is earned
      (kills with the weapon, daily tasks done: its `unlock`), comes with a pack
@@ -52,6 +55,7 @@ Catalog.GIFTS     = child("Gifts")
 Catalog.EGGS      = child("Eggs")
 Catalog.COMPANIONS = child("Companions")
 Catalog.DRILLS    = child("Drills")
+Catalog.CALENDAR  = child("Calendar")
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears
@@ -59,7 +63,27 @@ Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot w
 	top    = {"TorsoClothing", "LeftArmClothing", "RightArmClothing"},
 	bottom = {"LeftLegClothing", "RightLegClothing"},
 }
-Catalog.RARITIES = {"Common", "Rare", "Epic", "Legendary"}
+Catalog.RARITIES = {"Common", "Rare", "Epic", "Legendary", "Mythic"}
+Catalog.RARITY_RANK = {Common = 1, Rare = 2, Epic = 3, Legendary = 4, Mythic = 5}
+-- Catalog ▸ Calendar's drops gate what is out (ReplicatedStorage ▸ Drops)
+local Drops
+local function drops()
+	Drops = Drops or require(ReplicatedStorage:WaitForChild("Drops"))
+	return Drops
+end
+function Catalog.drops() return drops() end
+function Catalog.released(item)
+	return item == nil or item.drop == nil or drops().released(item.drop)
+end
+-- limited skins: the server counts the copies made in ReplicatedStorage ▸ LimitedStock
+function Catalog.limitedMade(skinId)
+	local f = ReplicatedStorage:FindFirstChild("LimitedStock")
+	local v = f and f:FindFirstChild(skinId)
+	return v and v.Value or 0
+end
+function Catalog.soldOut(s)
+	return s ~= nil and s.limited ~= nil and Catalog.limitedMade(s.id) >= s.limited
+end
 
 --------------------------------------------------------------------
 --  ASSET FOLDERS (ReplicatedStorage ▸ Cosmetics ▸ …)
@@ -261,7 +285,7 @@ end
 
 function Catalog.skinsFor(weaponId)
 	local out = {}
-	for _, s in ipairs(Catalog.SKINS) do if s.weapon == weaponId then table.insert(out, s) end end
+	for _, s in ipairs(Catalog.SKINS) do if s.weapon == weaponId and Catalog.released(s) then table.insert(out, s) end end
 	return out
 end
 
@@ -313,6 +337,8 @@ end
 --------------------------------------------------------------------
 function Catalog.skinSource(s)
 	if not s then return "free" end
+	if s.founder then return "founder" end
+	if s.claim then return "claim" end
 	if s.pass then return "pass" end
 	if s.unlock then return "earned" end
 	if s.crate then return "crate" end
@@ -330,14 +356,21 @@ function Catalog.skinOffers(dateKey)
 	local retired = {}
 	for _, id in ipairs(S.skinRetired or {}) do retired[id] = true end
 	local out = {}
+	-- the Calendar's features head the shelf while they run (a limited one until it sells out)
+	for _, id in ipairs(drops().features()) do
+		local s = Catalog.SKIN[id]
+		if s and Catalog.released(s) and not Catalog.soldOut(s) then table.insert(out, id) end
+	end
 	local pinned = S.skinPins and S.skinPins[dateKey]
 	if pinned then
 		for _, id in ipairs(pinned) do if Catalog.SKIN[id] and not retired[id] then table.insert(out, id) end end
 		return out
 	end
+	local featured = {}
+	for _, id in ipairs(out) do featured[id] = true end
 	local pool = {}
 	for _, s in ipairs(Catalog.SKINS) do
-		if Catalog.skinSource(s) == "shop" and not retired[s.id] then table.insert(pool, s) end
+		if Catalog.skinSource(s) == "shop" and not retired[s.id] and not s.limited and not featured[s.id] and Catalog.released(s) then table.insert(pool, s) end
 	end
 	table.sort(pool, function(a, b) return a.id < b.id end)
 	local rng = Random.new(dayNumber(dateKey) * 7919 + 17)
@@ -346,8 +379,10 @@ function Catalog.skinOffers(dateKey)
 	-- one weapon and one style each, so the shelf is never four of a kind
 	local usedWeapon, usedName = {}, {}
 	local function take(s) table.insert(out, s.id); usedWeapon[s.weapon] = true; usedName[s.name] = true end
-	for _, s in ipairs(pool) do
-		if s.rarity == "Legendary" or s.rarity == "Epic" then take(s); break end
+	if #out == 0 then
+		for _, s in ipairs(pool) do
+			if s.rarity == "Legendary" or s.rarity == "Epic" then take(s); break end
+		end
 	end
 	for _, s in ipairs(pool) do
 		if #out >= slots then break end
@@ -361,6 +396,7 @@ function Catalog.skinOnSale(skinId, dateKey)
 	local s = Catalog.SKIN[skinId]
 	if not s then return false end
 	local src = Catalog.skinSource(s)
+	if not Catalog.released(s) or Catalog.soldOut(s) then return false end
 	if src == "pack" then return Catalog.onSale(s.pack, dateKey) end
 	if src == "shop" then
 		for _, id in ipairs(Catalog.skinOffers(dateKey)) do if id == skinId then return true end end
@@ -382,7 +418,9 @@ end
 function Catalog.crateItems(crateId)
 	local out = {}
 	for _, s in ipairs(Catalog.crateSkins(crateId)) do
-		table.insert(out, {kind = "skin", id = s.id, name = s.name, rarity = s.rarity, weapon = s.weapon, ref = s})
+		if Catalog.released(s) then
+			table.insert(out, {kind = "skin", id = s.id, name = s.name, rarity = s.rarity, weapon = s.weapon, ref = s})
+		end
 	end
 	for _, f in ipairs(Catalog.KILLFX) do
 		if f.crate == crateId then table.insert(out, {kind = "killfx", id = f.id, name = f.name, rarity = f.rarity, ref = f}) end
@@ -396,8 +434,9 @@ end
 -- the companions an egg can hatch (any not tied to another egg, not a pass reward)
 function Catalog.eggPool(eggId)
 	local out = {}
+	local only = Catalog.EGG[eggId] and Catalog.EGG[eggId].exclusive
 	for _, c in ipairs(Catalog.COMPANIONS) do
-		if not c.pass and (c.egg == nil or c.egg == eggId) then table.insert(out, c) end
+		if not c.pass and ((c.egg == nil and not only) or c.egg == eggId) and Catalog.released(c) then table.insert(out, c) end
 	end
 	return out
 end
@@ -405,7 +444,12 @@ end
 function Catalog.companionSource(c)
 	if not c then return "" end
 	if c.pass then return "a season pass reward" end
-	if c.egg then return "hatches only from the " .. (Catalog.EGG[c.egg] and Catalog.EGG[c.egg].name or c.egg) end
+	if c.egg then
+		local live = drops().eggLive(c.egg)
+		local name = (Catalog.EGG[c.egg] and Catalog.EGG[c.egg].name or c.egg)
+		if not live and not drops().eggReturns(c.egg) then return "a relic of the " .. name .. ": never hatching again" end
+		return "hatches only from the " .. name .. (live and "" or " (not in the Hatchery now)")
+	end
 	return "hatches from any egg"
 end
 
@@ -437,6 +481,8 @@ if RunService:IsServer() then
 		for _, s in ipairs(Catalog.SKINS) do
 			if not Catalog.WEAPON[s.weapon] then warn("[Catalog] skin", s.id, "names unknown weapon", s.weapon) end
 			if s.crate and s.crate ~= "earned" and not Catalog.CRATES[s.crate] then warn("[Catalog] skin", s.id, "names unknown crate", s.crate) end
+			if not Catalog.RARITY_RANK[s.rarity] then warn("[Catalog] skin", s.id, "has unknown rarity", s.rarity) end
+			if s.drop and not drops().get(s.drop) then warn("[Catalog] skin", s.id, "names unknown drop", s.drop) end
 			if s.trim and okT and not trims[s.trim] then warn("[Catalog] skin", s.id, "names unknown trim", s.trim) end
 			if seen[s.id] then warn("[Catalog] skin", s.id, "is listed twice") end
 			seen[s.id] = true
@@ -464,10 +510,25 @@ if RunService:IsServer() then
 			for r, n in pairs(e.odds) do
 				sum += n
 				local any = false
-				for _, c in ipairs(Catalog.eggPool(e.id)) do if c.rarity == r then any = true end end
+				for _, c in ipairs(Catalog.COMPANIONS) do   -- (released or not: a drop's egg is checked before its drop)
+					if c.rarity == r and not c.pass and ((c.egg == nil and not e.exclusive) or c.egg == e.id) then any = true end
+				end
 				if n > 0 and not any then warn("[Catalog] egg", e.id, "can roll", r, "but no companion of that rarity hatches from it") end
 			end
-			if sum ~= 100 then warn("[Catalog] egg", e.id, "odds add up to", sum, "(should be 100)") end
+			if math.abs(sum - 100) > 0.001 then warn("[Catalog] egg", e.id, "odds add up to", sum, "(should be 100)") end
+		end
+		-- crates: odds add up, every rarity they can roll has an item, the Calendar knows them
+		for id, c in pairs(Catalog.CRATES) do
+			local sum = 0
+			for r, n in pairs(c.odds or {}) do
+				sum += n
+				local any = false
+				for _, s in ipairs(Catalog.SKINS) do if s.crate == id and s.rarity == r then any = true end end
+				for _, f in ipairs(Catalog.KILLFX) do if f.crate == id and f.rarity == r then any = true end end
+				for _, e in ipairs(Catalog.EMOTES) do if e.crate == id and e.rarity == r then any = true end end
+				if n > 0 and not any then warn("[Catalog] crate", id, "can roll", r, "but has nothing of that rarity") end
+			end
+			if math.abs(sum - 100) > 0.001 then warn("[Catalog] crate", id, "odds add up to", sum, "(should be 100)") end
 		end
 		local okC, Comp = pcall(require, ReplicatedStorage:WaitForChild("Companions", 5))
 		local bodies = {}

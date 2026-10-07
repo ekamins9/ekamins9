@@ -39,8 +39,9 @@ local function track(h)
 	task.delay(0.2, function()
 		if not h.Parent or tracked[h] then return end
 		local tool = h.Parent
-		local st = {tip = h:FindFirstChild("TrailTip"), emitters = {}, boost = 0, burstAt = 0, soundAt = 0, seed = rng:NextNumber(0, 6.28)}
+		local st = {tip = h:FindFirstChild("TrailTip"), emitters = {}, boost = 0, burstAt = 0, soundAt = 0, seed = rng:NextNumber(0, 6.28), radiant = {}}
 		for _, d in ipairs(tool:GetDescendants()) do
+			if d:GetAttribute("Radiant") then table.insert(st.radiant, d) end
 			if d:IsA("ParticleEmitter") and d:GetAttribute("SkinFX") then
 				if d.Name == "SkinBurst" then st.burst, st.burstCount = d, d:GetAttribute("Count") or 5
 				else st.emitters[d] = d:GetAttribute("BaseRate") or d.Rate end
@@ -74,6 +75,15 @@ RunService.Heartbeat:Connect(function(dt)
 	local eye = cam.CFrame.Position
 	local now = os.clock()
 	for h, st in pairs(tracked) do
+		-- a Radiant finish: every glowing bit walks through the colours
+		if #st.radiant > 0 and h.Parent then
+			local c = Color3.fromHSV((now * 0.18 + st.seed) % 1, 0.65, 1)
+			local c2 = Color3.fromHSV((now * 0.18 + st.seed + 0.25) % 1, 0.65, 1)
+			for _, d in ipairs(st.radiant) do
+				if d:IsA("BasePart") or d:IsA("PointLight") then d.Color = c
+				elseif d:IsA("Trail") or d:IsA("ParticleEmitter") then d.Color = ColorSequence.new(c, c2) end
+			end
+		end
 		if not h.Parent then
 			untrack(h)
 		elseif st.tip and st.tip.Parent and h:IsDescendantOf(workspace) then

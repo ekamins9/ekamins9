@@ -8,7 +8,13 @@
        levels     XP needed for each level-up (index = level reached); past the list, the last value repeats
        levelMarks Marks paid per level-up
        weaponLevels   handy reference for Weapons unlock = {level = n}
-       premiumColor / premiumBody   default Crown prices when a Palette or Body entry sets crowns = true ]]
+       premiumColor / premiumBody   default Crown prices when a Palette or Body entry sets crowns = true
+       keys       Keys (open any crate, earned only, never sold): per level-up, for the first
+                  win of the day, every `perContracts` daily tasks finished
+       variants   every skin out of a crate rolls a finish at these percent chances
+                  (shown with the odds): Masterwork (gold inlay, a shimmer) and Radiant
+                  (its glow shifts through colours, an aura); three copies forge one up
+       trading    who may trade (level), how many items a side, the countdown before confirming ]]
 return {
 	earn = {
 		round   = {marks = 60,  xp = 120},   -- played a round to the end
@@ -40,4 +46,7 @@ return {
 	ratingStart = 1500,
 	placementMatches = 10,
 	queueLockMinutes = 10, -- after abandoning a ranked match
+	keys = {levelUp = 1, firstWin = 1, perContracts = 5},
+	variants = {Masterwork = 5, Radiant = 1},
+	trading = {minLevel = 5, maxItems = 8, countdown = 5},   -- (Economy ▸ Trading)
 }

@@ -32,7 +32,7 @@ return {
 	roles = {
 		Owner     = {rank = 100, color = Color3.fromRGB(255, 196, 60), perms = "*"},
 		Admin     = {rank = 60, color = Color3.fromRGB(235, 84, 72),
-			perms = {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots",
+			perms = {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "drops",
 				"currency", "items", "unlock", "progress", "staff", "log"}},
 		Moderator = {rank = 40, color = Color3.fromRGB(84, 150, 245),
 			perms = {"view", "kick", "tempban", "teleport", "health", "announce", "rounds", "log"}},

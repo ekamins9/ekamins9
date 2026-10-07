@@ -139,15 +139,16 @@ table.sort(SkinFX.AURAS)
 
 local NAME = {embers = "Embers", frost = "Frost", holy = "Holy light", shadow = "Shadow", storm = "Storm", toxic = "Venom", petals = "Petals", gold = "Gold dust", blood = "Blood mist"}
 
-local function wantsTrail(skin)
+local function wantsTrail(skin, variant)
+	if variant then return true end
 	if skin.trail ~= nil then return skin.trail == true end
-	return skin.rarity == "Epic" or skin.rarity == "Legendary"
+	return skin.rarity == "Epic" or skin.rarity == "Legendary" or skin.rarity == "Mythic"
 end
 
 function SkinFX.describe(skin)
 	if not skin then return nil end
 	local bits = {}
-	if wantsTrail(skin) then table.insert(bits, "Trail") end
+	if wantsTrail(skin, variant) then table.insert(bits, "Trail") end
 	if skin.fx and NAME[skin.fx] then table.insert(bits, NAME[skin.fx]) end
 	return #bits > 0 and table.concat(bits, " · ") or nil
 end
@@ -161,7 +162,7 @@ function SkinFX.clear(tool)
 			if a:GetAttribute("SkinFX") then a:Destroy() end
 		end
 		CollectionService:RemoveTag(h, "SkinFX")
-		for _, k in ipairs({"SkinAura", "SkinRarity"}) do h:SetAttribute(k, nil) end
+		for _, k in ipairs({"SkinAura", "SkinRarity", "SkinVariant"}) do h:SetAttribute(k, nil) end
 	end
 	for _, d in ipairs(tool:GetDescendants()) do
 		if (d:IsA("ParticleEmitter") or d:IsA("PointLight")) and d:GetAttribute("SkinFX") then d:Destroy() end
@@ -172,7 +173,8 @@ end
 local function bladePart(tool)
 	local best, vol = nil, 0
 	for _, p in ipairs(tool:GetDescendants()) do
-		if p:IsA("BasePart") and p:GetAttribute("SkinPart") == "Blade" and p.Transparency < 1 then
+		-- (a Forge model's body counts as the blade: it is what is seen)
+		if p:IsA("BasePart") and (p:GetAttribute("SkinPart") == "Blade" or p:GetAttribute("SkinBody")) and p.Transparency < 1 then
 			local v = p.Size.X * p.Size.Y * p.Size.Z
 			if v > vol then best, vol = p, v end
 		end
@@ -209,20 +211,20 @@ local function attachment(handle, name, pos)
 	return a
 end
 
-function SkinFX.apply(tool, skin)
+function SkinFX.apply(tool, skin, variant)
 	SkinFX.clear(tool)
 	if not skin or skin.name == "Default" then return false end
 	local handle = tool:FindFirstChild("Handle")
 	local F = SkinTrims.frame(tool)
 	if not (handle and F) then return false end
 	local any = false
-	local legendary = skin.rarity == "Legendary"
+	local legendary = skin.rarity == "Legendary" or skin.rarity == "Mythic" or variant == "Radiant"
 	local col = skin.glow or skin.accent or RARITY[skin.rarity] or RARITY.Epic
 	-- the blade's line, guard to tip, in the Handle's space
 	local base = Vector3.new(F.bX, F.guard + math.min(0.25, F.bLen * 0.15), 0)
 	local tipPos = Vector3.new(F.bX, F.tip - 0.05, 0)
 	local tip = attachment(handle, "TrailTip", tipPos)
-	if wantsTrail(skin) then
+	if wantsTrail(skin, variant) then
 		local a0 = attachment(handle, "TrailBase", base)
 		-- the core: a bright ribbon along the blade
 		local t = Instance.new("Trail")
@@ -282,8 +284,30 @@ function SkinFX.apply(tool, skin)
 		handle:SetAttribute("SkinAura", skin.fx)
 		any = true
 	end
+	-- THE FINISH: Masterwork glints gold along the blade; Radiant cycles every
+	-- colour through its glow, its trail and an aura (the client driver turns
+	-- the hue: everything tagged with the Radiant attribute)
+	local body = bladePart(tool) or handle
+	if variant == "Masterwork" then
+		local e = emitter({tex = TEX.spark, c0 = C(255, 236, 160), c1 = C(232, 170, 50), size = {{0, 0.16}, {0.5, 0.22}, {1, 0}},
+			rate = 6, life = {0.5, 1.0}, speed = {0.02, 0.15}, spread = 180, light = 1}, "SkinMasterwork")
+		e.Parent = body
+		any = true
+	elseif variant == "Radiant" then
+		local e = emitter({tex = TEX.spark, c0 = C(255, 120, 220), c1 = C(120, 220, 255), size = {{0, 0.22}, {0.5, 0.3}, {1, 0}},
+			rate = 14, life = {0.6, 1.2}, speed = {0.1, 0.4}, spread = 180, light = 1}, "SkinRadiant")
+		e:SetAttribute("Radiant", true)
+		e.Parent = body
+		for _, d in ipairs(tool:GetDescendants()) do
+			if (d:IsA("Trail") and d:GetAttribute("SkinFX")) or (d:IsA("BasePart") and d.Material == Enum.Material.Neon) or (d:IsA("PointLight") and d:GetAttribute("SkinFX")) then
+				d:SetAttribute("Radiant", true)
+			end
+		end
+		any = true
+	end
 	if any then
 		handle:SetAttribute("SkinRarity", skin.rarity)
+		handle:SetAttribute("SkinVariant", variant)
 		CollectionService:AddTag(handle, "SkinFX")
 	end
 	return any

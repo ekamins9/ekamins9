@@ -50,6 +50,41 @@ GOLD = (0.95, 0.75, 0.28)
 RED = (0.62, 0.12, 0.10)
 ROPE = (0.74, 0.63, 0.43)
 WIRE = (0.66, 0.68, 0.72)
+# a face painted GLOW goes to the skin's Neon region (blender/forge.py splits it off)
+GLOW = (1.0, 0.0, 1.0)
+
+# THE FORGE (blender/forge.py) builds a weapon under a THEME: these hooks let it
+# change the edge, the guard, the pommel, the grip and the haft's foot of any
+# weapon without touching the weapon's own recipe. None = the plain weapon.
+THEME = None
+GUARD_FN = None    # (y, span, t) -> [bmesh]: replaces guard()
+POMMEL_FN = None   # (y, size) -> [bmesh]: replaces pommel()
+BUTT_FN = None     # (y, r) -> [bmesh]: replaces butt()
+GRIP_FN = None     # (length, r, y) -> [bmesh] or None: replaces grip()
+
+
+def edge_mod(w, f, length=1.0):
+    """the theme's edge: serrate (teeth), jag (chipped), nicks (a few notches),
+    wave (a ripple). f runs 0..1 up the blade's body"""
+    e = THEME and THEME.get("edge")
+    if not e or f < 0.06:
+        return w
+    if e == "serrate":
+        teeth = THEME.get("teeth", 9)
+        ph = (f * teeth) % 1.0
+        return w * (1.0 + 0.32 * (1.0 - ph) * (0.6 + 0.4 * (1 - f)))
+    if e == "jag":
+        k = int(f * 23)
+        return w * (1.0 + 0.22 * (((k * 7919) % 13) / 12.0 - 0.35))
+    if e == "nicks":
+        k = int(f * 17)
+        return w * (0.82 if (k * 31) % 7 == 3 else 1.0)
+    if e == "wave":
+        return w * (1.0 + 0.18 * math.sin(2 * math.pi * 5 * f))
+    if e == "barb":
+        ph = (f * 5) % 1.0
+        return w * (1.0 + 0.45 * max(0.0, ph - 0.55) / 0.45 * (f > 0.3))
+    return w
 
 
 # --------------------------------------------------------------------------
@@ -229,6 +264,8 @@ def plate(outline, color, t=0.06, ground=None, bevel=0.14, t_edge=0.012, edge_co
     `t` thick along Z (one number or one per point). The outline points whose
     index is in `ground` are an edge: the piece thins to t_edge over `bevel`
     toward them, and they shine (edge_color)."""
+    if THEME and THEME.get("edge") in ("serrate", "jag", "nicks", "barb") and ground:
+        outline, t, ground = _tooth_outline(outline, t, set(ground))
     n = len(outline)
     ground = set(ground or ())
     tt = list(t) if isinstance(t, (list, tuple)) else [t] * n
@@ -279,6 +316,40 @@ def plate(outline, color, t=0.06, ground=None, bevel=0.14, t_edge=0.012, edge_co
     return bm
 
 
+def _tooth_outline(outline, t, ground):
+    """the theme's edge cut into a flat piece: every ground segment gets teeth
+    (or chips, or a notch) pushed out along the outline's outward normal"""
+    e = THEME.get("edge")
+    n = len(outline)
+    tt = list(t) if isinstance(t, (list, tuple)) else [t] * n
+    out, ot, og = [], [], set()
+    for i in range(n):
+        j = (i + 1) % n
+        out.append(outline[i]); ot.append(tt[i])
+        if i in ground:
+            og.add(len(out) - 1)
+        if i in ground and j in ground:
+            ax, ay = outline[i]; bx, by = outline[j]
+            dx, dy = bx - ax, by - ay
+            L = math.hypot(dx, dy)
+            if L < 1e-4:
+                continue
+            nx, ny = dy / L, -dx / L    # outward for a CCW outline
+            cuts = max(1, int(L / 0.09))
+            for c in range(1, cuts + 1):
+                fr = c / (cuts + 1)
+                px, py = ax + dx * fr, ay + dy * fr
+                if e == "serrate" or e == "barb":
+                    d = 0.06 if c % 2 else -0.01
+                elif e == "jag":
+                    d = (((i * 13 + c * 7) % 9) / 8.0 - 0.4) * 0.07
+                else:
+                    d = -0.05 if (i * 5 + c) % 6 == 2 else 0.0
+                out.append((px + nx * d, py + ny * d)); ot.append(tt[i] + (tt[j] - tt[i]) * fr)
+                og.add(len(out) - 1)
+    return out, ot, og
+
+
 def turn(bm, angle_y=0.0, angle_x=0.0, about=(0, 0, 0)):
     """rotate a bmesh about Y (then X) through the point `about`"""
     ax, ay, az = about
@@ -325,12 +396,15 @@ def blade(y0, length, w0, w1, t0, t1, tip=0.3, kind="double", fuller=0.0, fuller
     secs, groove = [], []
     if waves:
         steps = max(steps, waves * 6)
+    if THEME:
+        steps = min(int(steps * THEME.get("detail", 4)), max(steps, 60))
     for i in range(steps + 1):
         f = i / steps
         y = y0 + body * f
         w = w0 + (w1 - w0) * f + belly * math.sin(math.pi * 0.5 * f) ** 2
         if waves and f > 0.08:
             w *= 1 + wave_amp * math.sin(2 * math.pi * waves * (f - 0.08) / 0.92)
+        w = edge_mod(w, f, length)
         t = t0 + (t1 - t0) * f
         if kind == "single":
             pts = ring_single(w, t)
@@ -374,6 +448,8 @@ def guard(y, span, t=0.12, color=STEEL, droop=0.0, curl=0.0, flare=1.4, ends="ba
     bends both ends toward the blade (+Y, negative: toward the hand); s_curve bends
     them opposite ways; curl rolls the tips; ends = ball | flat | none; block: the
     centre's width, with langets `langet` long up the blade's flats"""
+    if GUARD_FN and THEME and THEME.get("guard"):
+        return GUARD_FN(y, span, t)
     parts = []
     for side in (-1, 1):
         pts, rs = [], []
@@ -398,6 +474,10 @@ def guard(y, span, t=0.12, color=STEEL, droop=0.0, curl=0.0, flare=1.4, ends="ba
 
 def grip(length, r=0.13, color=LEATHER, wrap="spiral", wrap_color=DARKLEATHER, ferrules=IRON, y=0.0):
     """a swelling grip from y - length/2 to y + length/2: wrap = spiral | rings | wire | none"""
+    if GRIP_FN and THEME and THEME.get("wrap"):
+        got = GRIP_FN(length, r, y)
+        if got is not None:
+            return got
     y0, y1 = y - length / 2, y + length / 2
     parts = [cylinder(y0, y1, r, r * 0.94, color, n=14, bulge=0.014)]
     if wrap == "spiral" or wrap == "wire":
@@ -422,6 +502,8 @@ def grip(length, r=0.13, color=LEATHER, wrap="spiral", wrap_color=DARKLEATHER, f
 
 def pommel(y, size=0.3, kind="wheel", color=STEEL):
     """the knob below the grip, its top at y"""
+    if POMMEL_FN and THEME and THEME.get("pommel"):
+        return POMMEL_FN(y, size)
     s = size
     if kind == "wheel":   # a disc facing the flats, a raised boss, the tang's peen
         c = y - s * 0.52
@@ -485,6 +567,8 @@ def socket(y0, y1, r, color=DARKSTEEL):
 
 def butt(y, r, kind="cap", color=IRON):
     """the foot of a haft: a cap or a spike"""
+    if BUTT_FN and THEME and THEME.get("pommel"):
+        return BUTT_FN(y, r)
     if kind == "spike":
         return [cylinder(y, y + 0.16, r + 0.02, r + 0.02, color, n=10), cone((0, y, 0), (0, y - 0.32, 0), r + 0.02, color, n=8)]
     return [cylinder(y - 0.02, y + 0.14, r + 0.025, r + 0.025, color, n=10), sphere((0, y - 0.02, 0), r + 0.025, color, u=10, v=4, scale=(1, 0.5, 1))]
@@ -555,11 +639,11 @@ def axe(y, x0, top, reach, beard_tip, beard_x, t=0.15, t_bit=0.06, belly=0.14, n
 def spear_head(y, length, w=0.4, t=0.09, wings=False, color=STEEL):
     """a leaf-shaped head with a raised midrib on a socket (wings: two lugs at its foot)"""
     secs = []
-    n = 10
+    n = int(10 * (THEME.get("detail", 4) if THEME else 1))
     for i in range(n + 1):
         f = i / n
         ww = w * (math.sin(math.pi * min(1.0, 0.12 + f * 1.05)) ** 0.8) if f < 0.97 else 0.02
-        ww = max(ww, 0.02)
+        ww = max(edge_mod(ww, f) if f < 0.9 else ww, 0.02)
         tt = t * (1 - 0.65 * f) + 0.012
         secs.append((y + length * f, ring_diamond(ww, tt, 0.0, bevel=0.45)))
     head = loft(secs, color, colorfn=lambda si, pi: EDGE if pi in (0, 6) else color)

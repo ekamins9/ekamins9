@@ -152,7 +152,11 @@ local function giveWeapon(plr, char, weaponId, skinId, equip)
 	local template = findWeapon(weaponId)
 	if not template then warn("[Loadout] no Tool named", weaponId, "in ServerStorage.Weapons"); return end
 	local tool = template:Clone()
-	if skinId then Dresser.applySkin(tool, skinId) end
+	if skinId then
+		-- the finish this player's copy has (Masterwork, Radiant)
+		local best = Profile.bestCopy(Profile.get(plr), skinId)
+		Dresser.applySkin(tool, skinId, best and best.v or nil)
+	end
 	tool.Parent = plr:WaitForChild("Backpack")
 	if equip then
 		local hum = char:FindFirstChildOfClass("Humanoid")

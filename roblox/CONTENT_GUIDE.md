@@ -170,66 +170,102 @@ play: Roblox's licensed library (Pro Sound Effects, APM) or your own uploads.
 
 ## 5. A weapon skin
 
-`Catalog ▸ Skins` is generated: edit the tables in `scripts/gen_content.py` (`TINTS`,
-`SHOP_STYLES`, `TASK_SKINS`) or the hand-written lines in `scripts/skins_handmade.part`, then
-run `python scripts/gen_content.py --skins`. A line looks like this (every weapon already has
-a free "Default"):
+`Catalog ▸ Skins` is generated: edit the tables in `scripts/gen_content.py` (`LOOK`,
+`DROP_SKINS`, `TINTS`, `SHOP_STYLES`, `TASK_SKINS`, `PASS_SKINS`) or the hand-written lines in
+`scripts/skins_handmade.part`, then run `python scripts/gen_content.py skins`. A drop skin
+looks like this (every weapon already has a free "Default"):
 
 ```lua
-{weapon = "Falchion", name = "Bluesteel", rarity = "Rare", crate = "Bladesmith",
- blade = Color3.fromRGB(138, 168, 216), grip = Color3.fromRGB(42, 42, 74),
- trim = "fuller", accent = Color3.fromRGB(70, 120, 220)},
+{weapon = "Executioner", name = "The Marrow King", rarity = "Mythic", crate = "Ossuary",
+ drop = "Bonewright", look = "marrowking", fx = "toxic"},
 ```
 
-**Where it comes from. Skins are never sold at will:**
-- `crate = "Bladesmith"`: rolled from that crate, and from nowhere else.
-- `crate = "earned", kills = 100`: unlocked by 100 kills with that weapon.
-- `unlock = {stat = "contract", n = 20}`: unlocked by finishing 20 daily tasks. Any unlock
-  works here, e.g. `{level = 10}` or `{stat = "parry", n = 500}`.
-- `pack = "IronCrow"` plus `marks` / `crowns`: sold with that pack, on the days the pack is in the
-  store. It counts toward the bundle price.
-- `marks` / `crowns` alone: a **WEAPONS shelf** skin. It is sold only on the days the store offers
-  it. That is `skinSlots` offers a day, drawn by the date, one weapon and one style each, the first
-  an Epic or Legendary headliner. Pin a day's lineup with `skinPins` in `Catalog ▸ Store`, or take
-  a skin off the shelf for good with `skinRetired`.
+**Rarity:** Common, Rare, Epic, Legendary, **Mythic** (one per drop crate, about 0.5%).
 
-**How it looks:**
-- **Tints:** parts in the Tool with attribute `SkinPart` = `"Blade"` or `"Grip"` are recolored
-  with `blade` / `grip`. Put that attribute on your weapons' parts once.
-- **Trim (the shape change):** `trim` names a builder in `ReplicatedStorage ▸ SkinTrims`. The
-  builders are `wrap rivets rings fuller studs notch laurel feather spikes flame frost runes royal
-  crown halo bone serpent wave thunder`. The trim adds parts around the weapon (winged guards,
-  gems, thorns, flames, a halo, a crown…), fitted from the weapon's own Blade / Grip boxes, so
-  one trim fits every weapon. `accent` colors its metal (default: gold on Epic / Legendary, steel
-  below) and `glow` its Neon. Add a new trim by writing a builder in `SkinTrims` and naming it in
-  a skin.
-- **Effects (`ReplicatedStorage ▸ SkinFX`):** Epic and Legendary skins leave a swing **trail**
-  in the colour of their `glow` (else `accent`, else the rarity). `trail = false` turns it off,
-  `trail = true` gives one to a lower rarity. `fx = "embers"` adds an **aura** of particles
-  around the blade: `embers frost holy shadow storm toxic petals gold blood` (every Legendary
-  has one; `FX_BY_NAME` in the generator picks them by skin name). Trails and particles only
-  show in the world, so the menu names them on the skin ("Trail · Embers").
-- **Models:** for a full re-model, put a Model in `Cosmetics ▸ Skins ▸ <Weapon> ▸ <SkinName>`
-  with its own `Handle`. Its parts replace the Tool's visible ones (welded by their offset from
-  the model's Handle). Hitbox and guard parts stay as they are.
+**Where it comes from. Skins are never sold at will:**
+- `crate = "Ossuary"`: rolled from that crate, only while the crate is in rotation
+  (`Catalog ▸ Calendar ▸ crates`). When the crate leaves, the skin is VAULTED; if the crate is
+  `retire = true` (event crates) it is a RELIC and never comes back.
+- `drop = "Bonewright"`: hidden everywhere until that drop goes live.
+- `limited = 2026` (with `crowns`): only that many are ever made, each numbered; the shop
+  shows the stock and SOLD OUT. Feature it with a Calendar `features` line.
+- `claim = "JacksGrin"`: a free numbered gift to everyone who plays while that Calendar claim
+  is open. `founder = true`: the same for the Founders' window.
+- `crate = "earned", kills = 100` / `unlock = {…}` / `pass = true` / `pack = …` / shelf
+  `marks` / `crowns`: as before (kills, tasks, the pass, a pack on its day, the WEAPONS shelf).
+
+**How it looks: the Forge.** `look = "<theme>"` names a theme in `blender/themes.py`. The Forge
+(`blender/forge.py`) builds the weapon's own recipe under the theme: a new edge (serrated,
+jagged, nicked, waved, barbed — axe heads too), a new guard and pommel, a new grip wrap,
+ornaments (a serpent, chains, candles, feathers, a web, thorns, a tassel), a pattern painted into
+the steel (damascus, rust, blued, frost, scales, stripes, stars, filigree, embers, bark, knotwork,
+waves, camo) and Neon inlays raycast onto the flats (runes, cracks, lightning veins, a core
+line, stars, a halo, crystals). One theme fits all 26 weapons.
+
+To make or change skins:
+1. Add / edit a theme in `blender/themes.py` (see the header for every option). Preview it:
+   `blender -b --python blender/forge.py -- --preview out.png Longsword:mytheme Mace:mytheme`.
+2. Name it on skins with `look = "mytheme"` (the generator's `LOOK` table by name, or the line).
+3. Build the meshes: `blender -b --python blender/forge.py -- --manifest` (every skin) or
+   `-- Longsword:"My Skin":mytheme` (one). They land in `blender/out/skins` (gitignored).
+4. Upload: `python scripts/upload_skins.py` (only what changed; ids stay in the gitignored
+   `blender/out/skins/uploads.json`).
+5. Assemble in Studio: `python scripts/skin_entries.py` writes the gitignored
+   `Build/_SkinUploads.lua`; then in Studio
+   `require(game.ServerScriptService.Build.SkinModels).build(require(game.ServerScriptService.Build._SkinUploads), 1, 40)`
+   (and 41, 80, …). Delete `_SkinUploads.lua` afterwards and **save the place**: the models live
+   in `ReplicatedStorage ▸ Cosmetics ▸ Skins ▸ <weapon> ▸ <skin>`.
+
+Without its model in Studio a skin falls back to the old tints (`blade` / `grip`) and trim.
+**Effects (`SkinFX`):** Epic and up leave a swing trail; `fx` adds an aura
+(`embers frost holy shadow storm toxic petals gold blood`).
+**Finishes:** every copy out of a crate rolls Masterwork (5%: a gold glint) or Radiant (1%: its
+glow, trail and aura cycle through colours) — `Catalog ▸ Economy ▸ variants`.
 
 ## 6. A crate
 
-Add a key in `Catalog ▸ Crates` and point skins at it:
+Add a key in `Catalog ▸ Crates`, a line in `Catalog ▸ Calendar ▸ crates` saying when it is in
+rotation, and point skins at it:
 
 ```lua
-Siege = {name = "Siege Crate", description = "Hammer and polearm skins.",
-         cost = 60, odds = {Common = 60, Rare = 28, Epic = 10, Legendary = 2}, pity = 20,
-         refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000}},
+Ossuary = {name = "Ossuary Crate", description = "Bone blades. Mythic: The Marrow King.",
+           cost = 75, odds = {Common = 50, Rare = 30, Epic = 14, Legendary = 5.5, Mythic = 0.5},
+           pity = 20, refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}},
+-- Calendar:  Ossuary = {windows = {{from = "Bonewright", to = "Ironclad"}}},
 ```
 
-`odds` must sum to 100 (they are shown to the player). `pity` guarantees a Legendary within
-that many opens. `refund` is the Marks paid for a duplicate. A crate can also list skins
-directly: `skins = {"Greatsword:Gilded", "Hammer:Bronze"}`.
+`odds` must sum to 100 and every rarity in them needs an item (the server warns). They are
+shown before every open, with the finish chances; `pity` guarantees a **Legendary or better**
+within that many opens (when it is due the odds on screen switch to say so). A crate opens for
+`cost` Crowns or `keys` Keys (default 1). Keys are earned only (level-ups, the first win of the
+day, events). **Roblox's paid-random-item rules:** where `PolicyService` restricts paid random
+items, Crowns can't open crates (Keys still can), eggs aren't sold, and a crate or egg inside
+something bought (the premium pass) becomes Marks. Don't remove those checks.
 
-A crate can hold **kill effects and emotes** too (the `Relic` crate holds only those): give the
-line in `Catalog ▸ KillFX` or `Catalog ▸ Emotes` `crate = "Relic"`. The strip, the stage and
-the prize pop-up show each kind its own way (a skin on its weapon, an effect or emote on you).
+A crate can also hold **kill effects and emotes** (`crate = "Relic"` on the line in
+`Catalog ▸ KillFX` / `Catalog ▸ Emotes`).
+
+## 6a. A drop (a weekly release) — the whole recipe
+
+Everything rides on `Catalog ▸ Calendar`. A drop goes live **by itself** at its `at` time (UTC)
+on every server: no restart, no update on the day.
+1. Add the drop: `{id = "Krakens", at = "2027-01-16 16:00", name = "…", tag = "NEW CRATE",
+   color = …, blurb = "…", headline = "Messer:Davy's Locker", crate = "BlackSails", egg = "Tide"}`.
+2. Its skins: rows in `DROP_SKINS` (gen_content.py) with `drop = "Krakens"` and a `look`;
+   regenerate, then Forge → upload → assemble (section 5).
+3. Its crate (section 6) with a Calendar window; its egg and companions (section 10c) with
+   `drop = "Krakens"` and an `eggs` window.
+4. An event? An `events` line (`from`, `to`, `earn = {xp = 2}` for a double-XP weekend,
+   `modes = {"Horde"}` to limit it). A free numbered gift? A `claims` line.
+5. **Publish the place before `at`.** Test it first in Studio: `/clock 2027-01-16 17:00` jumps
+   the clock there (`/clock reset` comes back); `/drop now Krakens` releases it early.
+6. On live servers staff can release a drop early or hold one back from the admin panel
+   (F2 ▸ server ▸ DROPS), on every server at once.
+
+**What stays and what rotates:** Bladesmith, Hafted and Relic crates and the Speckled, Mossy,
+Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2–3 weeks, then
+are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
+never return: their items become RELICS, which is what makes them worth something.
 
 ## 6b. Kill effects and emotes
 
@@ -363,6 +399,13 @@ accent, glow, style, fx, egg, pass, description}`.
 - `egg = "Royal"` means only that egg hatches it; `pass = true` means only a reward gives it.
 - Each egg must have a companion of every rarity it can roll (the catalog warns when one is
   missing).
+
+**Eggs in rotation:** `Catalog ▸ Calendar ▸ eggs` decides when an egg is on the shelf (like
+crates). A drop's egg sets `exclusive = true` and only hatches companions with `egg = "<id>"`,
+which carry `drop = "<drop id>"` so they stay hidden until it is out. Every hatch is a copy of
+its own (tradable) and rolls a finish: Golden (4%) or Spectral (1%) — `Catalog ▸ Eggs ▸ variants`.
+Mythic companions (one per event egg) are numbered. New body styles: `bat` (a drake), `pumpkin`
+and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
 
 ## 11. Maps, modes, doors
 

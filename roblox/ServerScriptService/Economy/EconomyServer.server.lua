@@ -8,6 +8,8 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local Economy = require(script.Parent:WaitForChild("Economy"))
+require(script.Parent:WaitForChild("Collection"))   -- claims, Founders, limited stock, the policy check
+require(script.Parent:WaitForChild("Trading"))      -- player-to-player trades
 local Catalog = require(game:GetService("ReplicatedStorage"):WaitForChild("Catalog"))
 
 -- fill product ids from the universe's Developer Products, by name

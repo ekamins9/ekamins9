@@ -94,7 +94,7 @@ local function permsOf(role)
 	local r = role and Roles.roles[role]
 	if not r then return {} end
 	if r.perms == "*" then
-		return {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "currency", "items", "unlock", "progress", "reset", "staff", "shutdown", "log"}
+		return {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "currency", "items", "unlock", "progress", "reset", "staff", "shutdown", "log", "drops"}
 	end
 	return r.perms
 end
@@ -263,10 +263,43 @@ end
 
 local NEEDS = {kick = "kick", unban = "ban", ["goto"] = "teleport", bring = "teleport", freeze = "teleport", heal = "health", kill = "health",
 	endround = "rounds", nextmode = "rounds", nextmap = "rounds", bots = "bots", clearbots = "bots", currency = "currency", item = "items",
-	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown"}
+	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops"}
 -- actions done to another player: you must outrank them (on yourself it's fine)
 local ON_PLAYER = {kick = true, ban = true, ["goto"] = false, bring = true, freeze = true, heal = false, kill = true, currency = true, item = true,
 	unlockall = true, level = true, reset = true, setrole = true}
+
+-- DROPS (Catalog ▸ Calendar): release one early or hold one back, on every
+-- server at once (MessagingService) and for servers that start later (DataStore)
+local ReplicatedStorageD = game:GetService("ReplicatedStorage")
+local dropStore
+pcall(function() dropStore = game:GetService("DataStoreService"):GetDataStore("AdminDrops_v1") end)
+local function setDrops(forced, held)
+	ReplicatedStorageD:SetAttribute("DropsForced", forced or "")
+	ReplicatedStorageD:SetAttribute("DropsHeld", held or "")
+end
+task.spawn(function()
+	if not dropStore then return end
+	local ok, v = pcall(dropStore.GetAsync, dropStore, "state")
+	if ok and type(v) == "table" then setDrops(v.forced, v.held) end
+end)
+local function dropAction(op, id)
+	local function set(attr)
+		local t = {}
+		for x in string.gmatch(ReplicatedStorageD:GetAttribute(attr) or "", "[^,%s]+") do t[x] = true end
+		return t
+	end
+	local function join(t) local out = {} for k in pairs(t) do table.insert(out, k) end table.sort(out) return table.concat(out, ",") end
+	local forced, held = set("DropsForced"), set("DropsHeld")
+	if op == "now" then forced[id] = true; held[id] = nil
+	elseif op == "hold" then held[id] = true; forced[id] = nil
+	elseif op == "clear" then forced, held = {}, {}
+	else return false, "drop: now <id> | hold <id> | clear" end
+	local f, h = join(forced), join(held)
+	setDrops(f, h)
+	publish({kind = "drops", forced = f, held = h})
+	if dropStore then task.spawn(function() pcall(dropStore.SetAsync, dropStore, "state", {forced = f, held = h}) end) end
+	return true, string.format("drops forced: %s  ·  held: %s", f ~= "" and f or "none", h ~= "" and h or "none")
+end
 
 local function act(plr, action, a)
 	local role = roleOf(plr.UserId)
@@ -292,6 +325,12 @@ local function act(plr, action, a)
 	end
 	local target = targetId and Players:GetPlayerByUserId(targetId)
 	local tname = (target and target.Name) or a.name or (targetId and tostring(targetId)) or ""
+
+	if action == "drop" then
+		local ok, msg = dropAction(tostring(a.op or ""), tostring(a.id or ""))
+		if ok then logAction(plr, "drop", nil, nil, tostring(a.op) .. " " .. tostring(a.id or "")) end
+		return ok, msg
+	end
 
 	if action == "kick" then
 		local reason = tostring(a.reason or ""):sub(1, 200)
@@ -536,6 +575,8 @@ task.spawn(function()
 			if d.kind == "kick" then
 				local p = Players:GetPlayerByUserId(d.userId or 0)
 				if p then p:Kick(tostring(d.text or "Removed by staff.")) end
+			elseif d.kind == "drops" then
+				setDrops(d.forced, d.held)
 			elseif d.kind == "announce" then
 				event:FireAllClients("Announce", tostring(d.text or ""), tostring(d.by or ""), tostring(d.role or ""))
 			elseif d.kind == "staff" then

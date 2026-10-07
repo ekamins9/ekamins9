@@ -160,7 +160,7 @@ def skins_for(wid):
     if wid in SWORDS:
         base = [("Pitted", "Bladesmith"), ("Blackened", "Bladesmith"), ("Bluesteel", "Bladesmith"), ("Crowfeather", "Bladesmith"), ("Gilded", "Royal"), ("Veteran", "earned")]
     else:
-        base = [("Oiled", "Hafted"), ("Bronzed", "Hafted"), ("Ember", "Hafted"), ("Bloodrust", "Hafted"), ("Frostbite", "Royal"), ("Veteran", "earned")]
+        base = [("Oiled", "Hafted"), ("Bronzed", "Hafted"), ("Ember", "Hafted"), ("Bloodrust", "Hafted"), ("Frostbite", "Hafted"), ("Veteran", "earned")]
     if wid in ("Longsword", "Zweihander", "Halberd", "Poleaxe", "Rapier", "ArmingSword"): base.insert(4, ("Royal", "Royal"))
     if wid in ("Spear", "Quarterstaff", "Pitchfork", "Shortsword", "WarAxe", "ArmingSword"): base.append(("Verdigris", None))
     return base
@@ -215,6 +215,89 @@ FX_BY_NAME = {"Gilded": "gold", "Frostbite": "frost", "Sunsteel": "holy", "Hellf
               "Warden's Vow": "holy", "Dawnbringer": "embers", "Last Bastion": "storm",
               "Last Light": "holy", "Anvil of Kings": "storm", "The Iron Crown": "blood"}
 
+# THE FORGE: every skin's mesh comes from a theme in blender/themes.py (blender/forge.py
+# builds it, Studio welds it on). By name; a name not listed keeps the old tint + trim.
+LOOK = {
+ "Pitted": "pitted", "Notched": "notched", "Whetted": "whetted", "Oiled": "oiled", "Bronzed": "bronzed", "Grey Iron": "greyiron",
+ "Tarred": "tarred", "Dented": "dented", "Ironhead": "greyiron", "Hunter": "hunter", "Ashen": "ashen", "Hayfork": "hayfork",
+ "Blackened": "blackened", "Bluesteel": "bluesteel", "Verdigris": "verdigris", "Ember": "ember", "Duelist": "duelist",
+ "Heraldic": "heraldic", "Wyrmscale": "wyrmscale", "Marsh Reed": "marshreed", "Riverstone": "riverstone",
+ "Sellsword's Edge": "sellsword", "Crow-black": "crowblack", "Tourney Gilt": "tourneygilt", "Ironclad": "ironclad",
+ "Crownspike": "crownspike", "Iron Oath": "ironoath", "Squire's Oath": "squiresoath", "Wayfarer": "wayfarer",
+ "Crowfeather": "crowfeather", "Royal": "royal", "Veteran": "veteran", "Bloodrust": "bloodrust", "Thornguard": "thornguard",
+ "Nightfall": "nightfall", "Executioner": "executioner", "Bloodletter": "bloodletter", "Reaper": "reaper",
+ "Skullsplitter": "skullsplitter", "Bronze": "bronzeking", "Gilt Hilt": "gilthilt", "Boarspear Red": "boarspear",
+ "Blackguard's Maul": "blackguard", "Ironbark": "ironbark", "Crownguard": "crownguard", "Iron Lion": "ironlion",
+ "Iron Tines": "irontines", "Kingsguard": "kingsguard", "Crown's Fang": "crownsfang", "Oathbound": "oathbound",
+ "Ironvow": "ironvow", "Lionheart": "lionheart",
+ "Gilded": "gilded", "Frostbite": "frostbite", "Saint's Mercy": "saintsmercy", "Hundredfold": "hundredfold",
+ "Sunforged": "sunforged", "Flamberge Wave": "flamberge", "Oathkeeper": "oathkeeper", "Serpent Tine": "serpenttine",
+ "Peasant's Pride": "peasantspride", "Kingsbane": "kingsbane", "Thunderhead": "thunderhead", "Sunsteel": "sunsteel",
+ "Hellforged": "hellforged", "Last Light": "lastlight", "Anvil of Kings": "anvilofkings", "The Iron Crown": "ironcrown",
+ "Warden's Vow": "wardensvow", "Dawnbringer": "dawnbringer", "Last Bastion": "lastbastion", "Gilded Greatsword": "gilded",
+}
+
+# THE DROPS (Catalog ▸ Calendar): what each weekly drop adds. A skin with `drop` is
+# hidden until that drop goes live; one in a crate leaves with the crate.
+#  (weapon, name, rarity, source, look, fx)   source: crate / claim / limited / founder
+def _drop(crate, drop, rows):
+    out = []
+    for rarity, look, name, weapons, fx in rows:
+        for w in weapons:
+            out.append((w, name, rarity, 'crate = "%s", drop = "%s"' % (crate, drop), look, fx))
+    return out
+DROP_SKINS = []
+DROP_SKINS += [("Longsword", "Founder's Oath", "Mythic", 'founder = true, drop = "Founders"', "founders", "holy")]
+DROP_SKINS += _drop("Ossuary", "Bonewright", [
+ ("Common", "gravedigger", "Gravedigger", ["Shortsword", "Spear", "Hammer", "Pitchfork"], None),
+ ("Rare", "bone", "Bone", ["Cleaver", "Dagger", "Mace", "Glaive"], None),
+ ("Epic", "ossuary", "Ossuary", ["Falchion", "Halberd", "WarAxe", "Greatsword"], None),
+ ("Legendary", "cryptlight", "Cryptlight", ["Longsword", "Poleaxe", "Messer"], "toxic"),
+ ("Mythic", "marrowking", "The Marrow King", ["Executioner"], "toxic")])
+DROP_SKINS += _drop("Hollow", "HollowNight", [
+ ("Rare", "pumpkin", "Pumpkin", ["Mace", "Maul", "Quarterstaff", "ArmingSword"], None),
+ ("Epic", "gravewood", "Gravewood", ["Billhook", "Glaive", "Rapier"], None),
+ ("Epic", "candlewax", "Candlewax", ["Longsword", "Estoc", "Hammer"], None),
+ ("Legendary", "witchlight", "Witchlight", ["Estoc", "Dagger", "Spear", "Zweihander"], "shadow"),
+ ("Mythic", "hollowheadsman", "The Hollow Headsman", ["Halberd"], "embers")])
+DROP_SKINS += [("Dagger", "Jack's Grin", "Epic", 'claim = "JacksGrin", drop = "AllHallows"', "jackgrin", "embers")]
+DROP_SKINS += _drop("Foundry", "Ironclad", [
+ ("Rare", "foundry", "Foundry", ["Hammer", "Maul", "Greatsword", "Cleaver"], None),
+ ("Epic", "ironclad2", "Ironclad Plate", ["WarAxe", "MorningStar", "Zweihander"], None),
+ ("Legendary", "slagheart", "Slagheart", ["Maul", "BattleAxe", "Falchion"], "embers"),
+ ("Mythic", "forgefather", "The Forgefather", ["Maul"], "embers")])
+DROP_SKINS += _drop("WildHunt", "WildHunt", [
+ ("Rare", "huntsman", "Huntsman", ["Spear", "Shortsword", "BattleAxe", "Falchion"], None),
+ ("Epic", "stagheart", "Stagheart", ["Glaive", "Longsword", "WarAxe"], None),
+ ("Legendary", "thornwild", "Thornwild", ["Poleaxe", "Rapier", "Mace"], "toxic"),
+ ("Mythic", "hornedking", "The Horned King", ["Bardiche"], "toxic")])
+DROP_SKINS += _drop("Longship", "Northmen", [
+ ("Rare", "runecarved", "Runecarved", ["WarAxe", "Spear", "ArmingSword", "Hammer"], None),
+ ("Epic", "longship", "Longship", ["Messer", "BattleAxe", "Greatsword"], None),
+ ("Epic", "seawolf", "Sea-Wolf", ["Glaive", "Dagger", "Mace"], None),
+ ("Legendary", "skald", "Skald", ["Longsword", "Halberd", "Maul"], "gold"),
+ ("Mythic", "jarlsbane", "Jarl's Bane", ["BattleAxe"], "storm")])
+DROP_SKINS += _drop("Rime", "Frostfall", [
+ ("Rare", "rime", "Rime", ["Estoc", "Spear", "Shortsword", "Mace"], None),
+ ("Epic", "glacier", "Glacier", ["Greatsword", "Halberd", "Falchion"], None),
+ ("Legendary", "frostbite", "Frostbite", ["Longsword", "Zweihander", "Dagger"], "frost"),
+ ("Mythic", "rimeheart", "Rimeheart", ["Greatsword"], "frost")])
+DROP_SKINS += _drop("Yule", "Yuletide", [
+ ("Rare", "candycane", "Candy Cane", ["Quarterstaff", "Rapier", "Spear", "Shortsword"], None),
+ ("Rare", "gingerbread", "Gingerbread", ["Mace", "Dagger", "Cleaver"], None),
+ ("Epic", "evergreen", "Evergreen", ["Longsword", "Halberd", "Falchion"], None),
+ ("Legendary", "starlight", "Starlight", ["Greatsword", "Estoc", "Glaive"], "gold"),
+ ("Mythic", "krampus", "Krampus' Chain", ["MorningStar"], "blood")])
+DROP_SKINS += [("Zweihander", "Frostgift", "Legendary", 'crowns = 400, limited = 2026, drop = "TwelfthNight"', "frostgift", "frost")]
+DROP_SKINS += [("Longsword", "First Light", "Legendary", 'claim = "FirstLight", drop = "Midwinter"', "firstlight", "holy")]
+DROP_SKINS += _drop("BlackSails", "BlackSails", [
+ ("Rare", "cutthroat", "Cutthroat", ["Falchion", "Messer", "Dagger", "Cleaver"], None),
+ ("Rare", "saltworn", "Saltworn", ["Spear", "Pitchfork", "Hammer"], None),
+ ("Epic", "kraken", "Kraken", ["Rapier", "Glaive", "Mace"], None),
+ ("Legendary", "blackflag", "Black Flag", ["Longsword", "Halberd", "BattleAxe"], "blood"),
+ ("Mythic", "davyjones", "Davy's Locker", ["Messer"], "toxic")])
+
+
 def rgb(t): return "Color3.fromRGB(%d, %d, %d)" % tuple(t)
 def looks(d, name=None):
     out = 'blade = %s, grip = %s, trim = "%s"' % (rgb(d["blade"]), rgb(d["grip"]), d["trim"])
@@ -229,7 +312,7 @@ SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERAT
      scripts/skins_handmade.part, the rest come from TINTS, SHOP_STYLES and TASK_SKINS.
      Every weapon gets a free "Default" skin automatically, so only extras are listed.
        weapon   the weapon id       name    unique within the weapon
-       rarity   Common | Rare | Epic | Legendary
+       rarity   Common | Rare | Epic | Legendary | Mythic
      WHERE A SKIN COMES FROM (never bought at will):
        crate    "Bladesmith" / "Hafted" / "Royal": rolled from that crate
        crate = "earned", kills = n        n kills with the weapon unlock it
@@ -237,6 +320,10 @@ SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERAT
        pass = true                        a season pass reward (Catalog ▸ Pass)
        pack + marks / crowns              sold with the pack, on the days it is in the store
        marks / crowns alone               the store's WEAPONS shelf, on the days it is offered
+       drop = "<id>"                      hidden until that drop of Catalog ▸ Calendar is live
+       limited = n                        only n are ever made, each numbered (#1..n)
+       claim = "<id>"                     a free gift while that Calendar claim is open (numbered)
+       founder = true                     given to everyone who plays before Calendar.founders ends
      LOOKS:
        blade / grip   tints for parts with attribute SkinPart = "Blade" / "Grip"
        trim     the shape change (ReplicatedStorage ▸ SkinTrims): wrap rivets rings fuller
@@ -246,6 +333,9 @@ SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERAT
        fx       an aura (ReplicatedStorage ▸ SkinFX): embers frost holy shadow storm toxic
                 petals gold blood. Epic and Legendary skins also leave a swing trail
                 (trail = false to opt out, trail = true to opt in below Epic)
+       look     the Forge theme (blender/themes.py): the skin's own mesh, built by
+                blender/forge.py and welded on from Cosmetics ▸ Skins ▸ <weapon> ▸ <name>
+                (without the model in Studio the tints + trim below stand in)
        model    optional Model in Cosmetics ▸ Skins ▸ <weapon> ▸ <model or name> that
                 replaces the Tool's visible parts (welded by offset from its Handle) ]]
 local C = Color3.fromRGB
@@ -257,7 +347,7 @@ def gen_catalog_skins():
     lines.append('\t-- HAND-WRITTEN (scripts/skins_handmade.part): the four original weapons')
     with open(os.path.join(os.path.dirname(__file__), "skins_handmade.part"), encoding="utf-8") as f:
         hand = f.read().rstrip("\n")
-    lines.append(hand)
+    lines.extend(hand.splitlines())
     handWeapons = set(re.findall(r'weapon = "(\w+)"', hand))
     lines.append('\t-- GENERATED: crate / kill skins for every other weapon')
     for (wid, name, *_rest) in WEAPONS:
@@ -281,7 +371,15 @@ def gen_catalog_skins():
     lines.append('\t-- GENERATED: task skins (finish daily tasks to earn them)')
     for (wid, sname, rar, n, d) in TASK_SKINS:
         lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", unlock = {stat = "contract", n = %d}, %s},' % (wid, sname, rar, n, looks(d, sname)))
+    lines.append('\t-- GENERATED: the weekly drops (Catalog > Calendar); hidden until their drop goes live')
+    for (wid, sname, rar, src, look, fx) in DROP_SKINS:
+        lines.append('\t{weapon = "%s", name = "%s", rarity = "%s", %s, look = "%s"%s},' % (wid, sname, rar, src, look, (', fx = "%s"' % fx) if fx else ""))
     lines.append('}')
+    # every skin wears its Forge look (by name), unless it already names one
+    for i, ln in enumerate(lines):
+        m = re.search(r'name = "([^"]+)"', ln)
+        if m and 'look = "' not in ln and m.group(1) in LOOK:
+            lines[i] = ln.rstrip().rstrip("},").rstrip() + ', look = "%s"},' % LOOK[m.group(1)]
     write(os.path.join(ROOT, "ReplicatedStorage", "Catalog", "Skins.lua"), "\n".join(lines) + "\n")
 
 # (unused) armor sets used to be generated here; the 12 release sets are hand-written in

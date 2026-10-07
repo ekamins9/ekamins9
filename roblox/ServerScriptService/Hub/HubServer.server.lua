@@ -756,9 +756,23 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		return {ok = true, appearance = app, profile = Profile.summary(plr)}
 	elseif op == "Buy" then local ok, msg = Economy.buy(plr, a, b, c); return {ok = ok, msg = msg, profile = Profile.summary(plr)}
 	elseif op == "OpenCrate" then
-		local res, msg = Economy.openCrate(plr, a)
+		local res, msg = Economy.openCrate(plr, a, false, b == "crowns" and "crowns" or "keys")
 		if not res then return {ok = false, msg = msg} end
 		return {ok = true, result = res, profile = Profile.summary(plr)}
+	elseif op == "Forge" then
+		local ok, msg, variant = Economy.collection().forge(plr, a)
+		return {ok = ok, msg = msg, variant = variant, profile = Profile.summary(plr)}
+	elseif op:sub(1, 5) == "Trade" then
+		local Trading = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Trading"))
+		local fn = ({TradeRequest = Trading.request, TradeAccept = Trading.accept, TradeDecline = Trading.decline, TradeOffer = Trading.offer,
+			TradeReady = Trading.ready, TradeConfirm = Trading.confirm, TradeCancel = Trading.cancel})[op]
+		if op == "TradeState" then return {ok = true, trade = Trading.view(plr)} end
+		if not fn then return {ok = false, msg = "unknown trade op"} end
+		local ok, msg = fn(plr, a)
+		return {ok = ok, msg = msg, trade = Trading.view(plr), profile = Profile.summary(plr)}
+	elseif op == "Scrap" then
+		local ok, msg = Economy.collection().scrap(plr, a)
+		return {ok = ok, msg = msg, profile = Profile.summary(plr)}
 	elseif op == "Exchange" then local ok, msg = Economy.exchange(plr, tonumber(a) or 0); return {ok = ok, msg = msg, profile = Profile.summary(plr)}
 	elseif op == "PassClaim" then
 		local ok, msg, crate = Economy.passClaim(plr, a, b)
