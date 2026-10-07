@@ -101,6 +101,15 @@ local function emotes()
 	return Emotes
 end
 
+local AnimSetsMod = nil
+local function animSets()
+	if AnimSetsMod == nil then
+		local ok, m = pcall(function() return require(script.Parent:WaitForChild("Combat", 2):WaitForChild("AnimSets", 2)) end)
+		AnimSetsMod = ok and m or false
+	end
+	return AnimSetsMod
+end
+
 -- lerps each joint's C0 toward the target; legAlpha lets kicks snap faster
 function RigPose.apply(j, target, alpha, legAlpha)
 	legAlpha = legAlpha or alpha
@@ -110,11 +119,23 @@ function RigPose.apply(j, target, alpha, legAlpha)
 		local t2 = E.modify(char, target)
 		if t2 then target = t2; alpha = 1; legAlpha = 1 end
 	end
+	-- forged animations turn the torso freely; the hips counter that turn so
+	-- the legs (walking or standing) stay planted under the hips (AnimSets)
+	local S = animSets()
+	local counter = S and S.forged() and j.RootJoint and S.counterHips(j.RootJoint) or nil
+	j._base = j._base or {}
 	for name, cf in pairs(target) do
 		local m = j[name]
 		if m and m.Parent then
-			local a = (name == "Left Hip" or name == "Right Hip") and legAlpha or alpha
-			m.C0 = m.C0:Lerp(cf, a)
+			local hip = name == "Left Hip" or name == "Right Hip"
+			local a = hip and legAlpha or alpha
+			if hip then
+				local base = (j._base[name] or m.C0):Lerp(cf, a)
+				j._base[name] = base
+				m.C0 = counter and counter * base or base
+			else
+				m.C0 = m.C0:Lerp(cf, a)
+			end
 		end
 	end
 end

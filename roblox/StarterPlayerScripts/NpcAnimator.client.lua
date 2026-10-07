@@ -10,6 +10,7 @@
      wiped before it ever moves a leg. ]]
 
 local RunService = game:GetService("RunService")
+local AnimSets = require(game:GetService("ReplicatedStorage"):WaitForChild("Combat"):WaitForChild("AnimSets"))
 
 local state = setmetatable({}, {__mode = "k"})   -- [model] = {pos, speed, phase, amp}
 
@@ -47,6 +48,15 @@ RunService.PreSimulation:Connect(function(dt)
 				s.phase += dt * (moving and (4 + s.speed * 0.55) or 1.2)
 				local rh, lh = torso:FindFirstChild("Right Hip"), torso:FindFirstChild("Left Hip")
 				local neck = torso:FindFirstChild("Neck")
+				-- forged swings turn the torso: the hips counter it so the legs stay planted
+				local rootJ = hrp:FindFirstChild("RootJoint")
+				if rh and lh and rootJ then
+					s.rh0 = s.rh0 or rh.C0
+					s.lh0 = s.lh0 or lh.C0
+					local counter = AnimSets.forged() and AnimSets.counterHips(rootJ) or CFrame.identity
+					rh.C0 = counter * s.rh0
+					lh.C0 = counter * s.lh0
+				end
 				-- (standing still the hips are left to the weapon's animations; the
 				-- arms always are: a two-handed grip needs both)
 				if s.amp > 0.005 then

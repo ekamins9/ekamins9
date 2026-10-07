@@ -27,6 +27,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local AnimSets       = require(script.Parent:WaitForChild("AnimSets"))
+local BladeSamples   = require(script.Parent:WaitForChild("BladeSamples"))
 local player     = Players.LocalPlayer
 
 local CombatClient = {}
@@ -54,6 +56,7 @@ CombatClient.DEFAULTS = {
 
 --------------------------------------------------------------------
 function CombatClient.attach(Tool, weaponConfig)
+	weaponConfig = AnimSets.apply(weaponConfig, Tool.Name)   -- the forged clips, when that style is on
 	local cfg = {}
 	for k, v in pairs(CombatClient.DEFAULTS) do cfg[k] = v end
 	for k, v in pairs(weaponConfig or {}) do cfg[k] = v end
@@ -70,17 +73,9 @@ function CombatClient.attach(Tool, weaponConfig)
 	local blades = {}   -- { {part=Hitbox, offsets={Vector3...}} }
 	for _, d in ipairs(Tool:GetDescendants()) do
 		if d:IsA("BasePart") and d.Name == cfg.HITBOX_NAME then
-			local s = d.Size
-			local axis, len
-			if s.X >= s.Y and s.X >= s.Z then axis, len = Vector3.xAxis, s.X
-			elseif s.Y >= s.Z then          axis, len = Vector3.yAxis, s.Y
-			else                            axis, len = Vector3.zAxis, s.Z end
-			local offsets = {}
-			for i = 0, cfg.BLADE_SAMPLES - 1 do
-				local t = cfg.BLADE_SAMPLES > 1 and (i / (cfg.BLADE_SAMPLES - 1) - 0.5) or 0
-				offsets[#offsets + 1] = axis * (len * t)
-			end
-			table.insert(blades, {part = d, offsets = offsets})
+			-- the spine plus, on a wide head, its outer faces (BladeSamples)
+			local offsets, e0, e1 = BladeSamples.offsets(d.Size, cfg.BLADE_SAMPLES)
+			table.insert(blades, {part = d, offsets = offsets, ends = {e0, e1}})
 		end
 	end
 	dprint("blade samples:", #blades * cfg.BLADE_SAMPLES)
@@ -97,9 +92,9 @@ function CombatClient.attach(Tool, weaponConfig)
 				if a then a:Destroy() end
 			end
 			local a0 = Instance.new("Attachment")
-			a0.Name, a0.Position, a0.Parent = "TrailA0", b.offsets[1], b.part
+			a0.Name, a0.Position, a0.Parent = "TrailA0", b.ends[1], b.part
 			local a1 = Instance.new("Attachment")
-			a1.Name, a1.Position, a1.Parent = "TrailA1", b.offsets[#b.offsets], b.part
+			a1.Name, a1.Position, a1.Parent = "TrailA1", b.ends[2], b.part
 			local t = Instance.new("Trail")
 			t.Attachment0, t.Attachment1 = a0, a1
 			t.Lifetime = cfg.TRAIL_LIFETIME
@@ -333,9 +328,30 @@ function CombatClient.attach(Tool, weaponConfig)
 		return math.clamp(b, 0.02, math.max(0.02, (phase or 1) * 0.5))
 	end
 
+	-- FORGED clips (AnimSets marks): the strike from Load to Through over the
+	-- active phase, then the follow-through to Settle over the recovery, then
+	-- a short hand-back to idle (Settle is the guard, so it is seamless)
+	local function forgedStrike(t, mk, token, arm, active, recovery)
+		if math.abs(t.TimePosition - mk.Load) > 0.06 then t.TimePosition = mk.Load end
+		local sp = (mk.Through - mk.Load) / math.max(active, 0.01)
+		t:AdjustSpeed(sp)
+		currentSpeed = sp
+		beginSweep(token, active)
+		task.delay(active, function()
+			if currentTrack ~= t or armToken ~= arm then return end
+			local rec = math.max(recovery or 0, 0.15)
+			local sp2 = (mk.Settle - mk.Through) / rec
+			t:AdjustSpeed(sp2)
+			currentSpeed = sp2
+			task.delay(rec * 0.85, function()
+				if currentTrack == t and armToken == arm then t:Stop(rec * 0.3); currentTrack = nil end
+			end)
+		end)
+	end
+
 	-- Windup now, release + sweep when it ends (re-armable). windup = 0 is a
 	-- combo: the next swing fades straight in over a short blend and runs.
-	local function armSwing(releaseId, speed, windup, active, recovery, token)
+	local function armSwing(releaseId, speed, windup, active, recovery, token, morph)
 		armToken += 1
 		local arm = armToken
 		if windup > 0 then endSweep() end   -- a morph out of the grace window: the blade goes cold again
@@ -343,6 +359,28 @@ function CombatClient.attach(Tool, weaponConfig)
 		local fadeIn = windup > 0 and windup or fadeA
 		lastSpeed = speed
 		local t = cached(releaseId)
+		local mk = AnimSets.marks(releaseId)
+		if mk then
+			-- the clip winds itself up: only a short blend in from wherever we are
+			fadeIn = math.min(windup > 0 and windup * 0.4 or fadeA, 0.12)
+			if currentTrack and currentTrack ~= t then currentTrack:Stop(fadeIn) end
+			currentTrack = nil
+			swingToken = token
+			if not t then return end
+			-- a combo starts loaded; a morph starts part-wound (we were already winding)
+			local start = windup <= 0 and mk.Load or (morph and mk.Load * 0.35 or 0)
+			t:Play(fadeIn)
+			t.TimePosition = start
+			local sp = windup > 0 and (mk.Load - start) / windup or 0
+			t:AdjustSpeed(sp)
+			currentTrack, currentSpeed = t, sp
+			local function releaseF()
+				if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end
+				forgedStrike(t, mk, token, arm, active, recovery)
+			end
+			if windup > 0 then task.delay(windup, releaseF) else releaseF() end
+			return
+		end
 		-- the outgoing clip fades over the same time the new one fades in — unless
 		-- it IS the new one (feint → same attack): then it just turns back around
 		if currentTrack and currentTrack ~= t then currentTrack:Stop(fadeIn) end
@@ -461,13 +499,25 @@ function CombatClient.attach(Tool, weaponConfig)
 		elseif what == "Morph" then
 			-- a = swing anim, b = speed, c = new windup, d = active, e = recovery, f = token
 			setLocalTurnCap((c or 0) + (d or 0) + 0.1)
-			armSwing(a, b or 1, c or 0, d or 0, e or 0, f)
+			armSwing(a, b or 1, c or 0, d or 0, e or 0, f, true)
 
 		elseif what == "Retime" then
 			-- a = remaining windup, b = active, c = recovery, d = token (chamber: release sooner)
 			local token, t = d, currentTrack
 			armToken += 1
 			local arm = armToken
+			local mk = t and AnimSets.marks(t.Animation and t.Animation.AnimationId)
+			if mk then
+				-- wind up the rest of the way in the time left, then strike
+				local left = math.max(a or 0, 0.01)
+				local sp = math.max((mk.Load - t.TimePosition) / left, 0)
+				t:AdjustSpeed(sp); currentSpeed = sp
+				task.delay(a or 0, function()
+					if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end
+					forgedStrike(t, mk, token, arm, b or 0, c or 0)
+				end)
+				return
+			end
 			if t then t:AdjustWeight(1, math.max(a or 0, 0.01)) end   -- finish the blend-in early
 			task.delay(a or 0, function()
 				if swingToken ~= token or armToken ~= arm or not equipped or currentTrack ~= t then return end

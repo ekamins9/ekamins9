@@ -661,8 +661,12 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   windup is cut to `CHAMBER_RELEASE` (0.2 s) — and you may **morph the chamber** into anything
   in that time, whatever the cutoff (`CHAMBER_MORPH_FREE` also resets your morph count). Sparks
   + the white edge flash mean you got it.
-- **Flinch only in windup** (`FLINCH_ONLY_WINDUP`): a hit stops a swing that hasn't committed;
-  one already in release finishes. Trading is a choice now. Kicks still stop anything.
+- **First hit wins** (`FLINCH_ONLY_WINDUP` false): a clean hit stops the target's swing in its
+  windup *or* its release — their swing's token dies, so their own hit a moment later is thrown
+  away. A hit during their recovery leaves it alone (cancelling it would give them their turn
+  back sooner). Kicks stop anything. **Bosses** (attribute `Boss`: Horde / Siege warlords) shrug
+  off hits and kicks and swing straight through: read them and parry. Set `FLINCH_ONLY_WINDUP`
+  true for the old rule (committed swings trade).
 - **Stamina ledger: fighting well pays, flailing and turtling cost — and a long fight wears
   everyone down.** The windup always costs `staminaCost` (× the armor's `StaminaCostMult`);
   **every enemy a swing hits refunds the cost plus `HIT_BONUS` (2)** — a landed blow about breaks
@@ -708,6 +712,25 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - **Animations fit the rules** (`FIT_ANIMS`): each attack's optional `windupAnim` is stretched to
   its windup, the release anim to active+recovery — so a morph, riposte or chamber re-times what
   you see. Attack names are `<Side><Type>` (see a weapon Config).
+- **Forged animations** (`Build ▸ AnimForge`, `Combat ▸ AnimSets`): every weapon class (Blade1H,
+  Blunt1H, Dagger, Blade2H, Heavy2H, Polearm) has its own idle, block, hit flinch and eight attacks
+  (left/right swing, overhead, underhand, stab), written as data and solved into R6 clips: the
+  blade travels a real arc round the body (sampled 30×/s with easing), the edge leads the strike
+  (wound up edge-first), the left hand rides the grip of two-handers and polearms, one-handers
+  swing the free arm for balance, the head stays on the target while the torso turns, and the
+  legs stay planted (the hips counter the torso's animated turn — `AnimSets.counterHips`, in
+  RigPose for players and NpcAnimator for bots). Each attack clip carries timing marks: the
+  windup segment plays over the real windup (no frozen first frame), **Load → Through** over the
+  active phase (0.3 s at speed 1 — the old clips' length, so the balance is unchanged), and the
+  follow-through to **Settle** (back at guard) over the recovery, so nothing snaps or lerps.
+  Underhands now exist for every weapon. The ids live only in Studio
+  (`ReplicatedStorage ▸ Animations ▸ <Class> ▸ <Clip>`); **its `Style` attribute switches between
+  `"Forged"` and `"Classic"`** (each Config's own clips) — the next weapon equipped uses it.
+  Rebuild: edit `AnimForge`, `require(...AnimForge).build()` in Studio, preview with
+  `.preview("Blade2H", "RightSwing")`, export + `scripts/upload_anims.py` (see its header).
+- **Hit sampling** (`Combat ▸ BladeSamples`): the sweep traces the Hitbox's spine every ~0.45
+  studs and, on wide heads (axes, halberds, mauls), its outer faces too — the hit lands when the
+  steel that leads the swing arrives, not when the haft's centre line does.
 - A whiffed kick recovers `KICK_MISS_EXTRA` longer. Spawn protection: a `ForceField` for
   `SPAWN_PROTECT` s (LoadoutServer); attacking, kicking or blocking ends it early.
 

@@ -66,10 +66,10 @@ def upload(path, asset_type=None, name=None, desc=None, key=None, user_id=None, 
         sys.exit("ROBLOX_API_KEY is not set (put it in .env)")
     ext = os.path.splitext(path)[1].lower()
     if asset_type is None:
-        asset_type = {".fbx": "Model", ".obj": "Model", ".png": "Decal", ".jpg": "Decal", ".jpeg": "Decal", ".tga": "Decal", ".bmp": "Decal", ".mp3": "Audio", ".ogg": "Audio"}.get(ext)
+        asset_type = {".fbx": "Model", ".obj": "Model", ".png": "Decal", ".jpg": "Decal", ".jpeg": "Decal", ".tga": "Decal", ".bmp": "Decal", ".mp3": "Audio", ".ogg": "Audio", ".rbxm": "Animation"}.get(ext)
     if asset_type is None:
         sys.exit("unknown asset type for " + ext)
-    content_type = {".fbx": "model/fbx", ".obj": "model/obj"}.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"
+    content_type = {".fbx": "model/fbx", ".obj": "model/obj", ".rbxm": "model/x-rbxm"}.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"
     creator = {"groupId": str(group_id)} if group_id else {"userId": str(user_id or os.environ.get("ROBLOX_USER_ID", ""))}
     meta = {
         "assetType": asset_type,
@@ -98,7 +98,7 @@ def upload(path, asset_type=None, name=None, desc=None, key=None, user_id=None, 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("path")
-    ap.add_argument("--type", dest="asset_type", help="Model | Decal | Audio (default from the extension)")
+    ap.add_argument("--type", dest="asset_type", help="Model | Decal | Audio | Animation (default from the extension)")
     ap.add_argument("--name")
     ap.add_argument("--desc")
     ap.add_argument("--group", help="upload to a group instead of the user")

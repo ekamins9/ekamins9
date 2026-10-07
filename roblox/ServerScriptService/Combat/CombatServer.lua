@@ -58,6 +58,8 @@ local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundBank   = require(ReplicatedStorage:WaitForChild("SoundBank"))
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
+local AnimSets    = require(ReplicatedStorage:WaitForChild("Combat"):WaitForChild("AnimSets"))
+local BladeSamples = require(ReplicatedStorage:WaitForChild("Combat"):WaitForChild("BladeSamples"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
 -- GameConfig (friendly-fire multiplier); optional so the combat still runs without it
 local GameConfig = (function()
@@ -425,8 +427,10 @@ CombatServer.DEFAULTS = {
 	                          --    damage = {head=, body=, legs=} for exact per-region numbers.
 	FIT_ANIMS        = true,  -- the swing clip is stretched to the active phase (so a riposte or
 	                          --    a slow weapon re-times the picture with the rules)
-	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
-	                          --    already in release finishes (trades are a real choice)
+	FLINCH_ONLY_WINDUP = false,-- false: a clean hit interrupts the target's swing in ANY phase —
+	                          --    windup, release or recovery — so whoever lands first wins the
+	                          --    exchange (their swing's token dies: its hit is thrown away).
+	                          --    true: only a windup is interrupted and committed swings trade
 	-- STAMINA LEDGER: fighting well pays, flailing and turtling cost. The windup
 	-- always costs staminaCost; every enemy the swing cuts cleanly gives it back
 	-- (the swing's whole staminaCost, at least HIT_REFUND) PLUS HIT_BONUS — so
@@ -551,6 +555,7 @@ CombatServer.DEFAULTS = {
 
 --------------------------------------------------------------------
 function CombatServer.attach(Tool, weaponConfig)
+	weaponConfig = AnimSets.apply(weaponConfig, Tool.Name)   -- the forged clips, when that style is on
 	local cfg = {}
 	for k, v in pairs(CombatServer.DEFAULTS) do cfg[k] = v end
 	for k, v in pairs(weaponConfig or {}) do cfg[k] = v end
@@ -670,15 +675,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	local BLADE_SAMPLES = 6
 	local blades = {}
 	for _, box in ipairs(hitboxes) do
-		local s = box.Size
-		local axis, len
-		if s.X >= s.Y and s.X >= s.Z then axis, len = Vector3.xAxis, s.X
-		elseif s.Y >= s.Z then          axis, len = Vector3.yAxis, s.Y
-		else                            axis, len = Vector3.zAxis, s.Z end
-		local offsets = {}
-		for i = 0, BLADE_SAMPLES - 1 do
-			offsets[#offsets + 1] = axis * (len * (i / (BLADE_SAMPLES - 1) - 0.5))
-		end
+		-- the spine and (wide heads) the leading faces; 3 lines at most on the server
+		local offsets = BladeSamples.offsets(box.Size, BLADE_SAMPLES, 3)
 		table.insert(blades, {part = box, offsets = offsets})
 	end
 	local function bladeInside(hull, margin)
@@ -1137,6 +1135,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if npc.current then npc.current:Stop(); npc.current = nil end
 		if npc.idle then npc.idle:Stop() end
 		if npc.block then npc.block:Stop() end
+		if npc.hit then npc.hit:Stop() end
 		for _, t in pairs(npc.tracks) do t:Stop() end
 	end
 
@@ -1236,12 +1235,55 @@ function CombatServer.attach(Tool, weaponConfig)
 		end
 		return t or nil
 	end
-	local function npcArmRelease(releaseId, speed, windup, active, recovery, token)
+	local function npcSweepStart(token, active)
+		npcRay.FilterDescendantsInstances = {character}
+		npcOverlap.FilterDescendantsInstances = {character}
+		local last = {}
+		for _, bl in ipairs(blades) do
+			local pts = {}
+			for i, off in ipairs(bl.offsets) do pts[i] = bl.part.CFrame:PointToWorldSpace(off) end
+			last[bl] = pts
+		end
+		npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
+	end
+	-- forged clips (AnimSets marks): strike over the active phase, follow-through over the recovery
+	local function npcForgedStrike(t, mk, token, arm, active, recovery)
+		if math.abs(t.TimePosition - mk.Load) > 0.06 then t.TimePosition = mk.Load end
+		t:AdjustSpeed((mk.Through - mk.Load) / math.max(active, 0.01))
+		npcSweepStart(token, active)
+		task.delay(active, function()
+			if npc.current ~= t or npcArm ~= arm then return end
+			local rec = math.max(recovery or 0, 0.15)
+			t:AdjustSpeed((mk.Settle - mk.Through) / rec)
+			task.delay(rec * 0.85, function()
+				if npc.current == t and npcArm == arm then t:Stop(rec * 0.3); npc.current = nil end
+			end)
+		end)
+	end
+	local function npcArmRelease(releaseId, speed, windup, active, recovery, token, morph)
 		npcArm += 1
 		local arm = npcArm
 		local fadeA = blendFor(speed, active)
 		local fadeIn = windup > 0 and windup or fadeA
 		local t = npcCached(releaseId)
+		local mk = AnimSets.marks(releaseId)
+		if mk then
+			fadeIn = math.min(windup > 0 and windup * 0.4 or fadeA, 0.12)
+			if npc.current and npc.current ~= t then npc.current:Stop(fadeIn) end
+			npc.current = nil
+			if not t then return end
+			local start = windup <= 0 and mk.Load or (morph and mk.Load * 0.35 or 0)
+			t:Play(fadeIn)
+			t.TimePosition = start
+			t:AdjustSpeed(windup > 0 and (mk.Load - start) / windup or 0)
+			npc.current = t
+			local function releaseF()
+				if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
+				npcForgedStrike(t, mk, token, arm, active, recovery)
+			end
+			if windup > 0 then task.delay(windup, releaseF) else releaseF() end
+			return
+		end
 		if npc.current and npc.current ~= t then npc.current:Stop(fadeIn) end
 		npc.current = nil
 		if not t then return end
@@ -1275,6 +1317,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			npc.tracks = {}
 			npc.idle  = npcTrack(a, Enum.AnimationPriority.Idle, true)
 			npc.block = npcTrack(b, Enum.AnimationPriority.Action, true)
+			npc.hit   = npcTrack(c, Enum.AnimationPriority.Action2, false)
 			if npc.idle then npc.idle:Play() end
 
 		elseif what == "PlayAttack" then
@@ -1283,12 +1326,21 @@ function CombatServer.attach(Tool, weaponConfig)
 
 		elseif what == "Morph" then
 			-- a = swing anim, b = speed, c = new windup, d = active, e = recovery, f = token
-			npcArmRelease(a, b or 1, c or 0, d or 0, e or 0, f)
+			npcArmRelease(a, b or 1, c or 0, d or 0, e or 0, f, true)
 
 		elseif what == "Retime" then
 			-- a = remaining windup, b = active, c = recovery, d = token: the windup got cut (chamber)
 			local t = npc.current
-			if t and state.attack then
+			local mk = t and AnimSets.marks(t.Animation and t.Animation.AnimationId)
+			if t and state.attack and mk then
+				npcArm += 1
+				local arm, token = npcArm, d
+				t:AdjustSpeed(math.max((mk.Load - t.TimePosition) / math.max(a or 0, 0.01), 0))
+				task.delay(a or 0, function()
+					if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
+					npcForgedStrike(t, mk, token, arm, b or 0, c or 0)
+				end)
+			elseif t and state.attack then
 				npcArm += 1
 				local arm, token = npcArm, d
 				t:AdjustWeight(1, math.max(a or 0, 0.01))
@@ -1326,6 +1378,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			npc.sweep = nil
 			npcArm += 1
 			if npc.current then npc.current:Stop(0.2); npc.current = nil end
+			if what == "Flinch" and npc.hit then npc.hit:Play(0.08) end
 		elseif what == "Cleanup" then
 			npcStopAll()
 		end
@@ -1355,7 +1408,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		local speed = (info.speed or 1) * ((cfg.TYPE_SPEED or {})[atype or ""] or 1) * cfg.SPEED_MULT
 		local wl = info.windup or cfg.WINDUP
 		if (attr("FastUntil") or 0) > os.clock() then wl = wl / cfg.RIPOSTE_SPEED end   -- riposte: quicker windup only
-		local al = CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE
+		local mk = AnimSets.marks(info.anim)
+		local al = (mk and (mk.Through - mk.Load)) or CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE
 		local rl = info.recovery or cfg.RECOVERY
 		return speed,
 			math.max(cfg.MIN_PHASE, wl / speed),
@@ -1641,11 +1695,16 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- being hit or kicked breaks our own action: mid-swing, mid-kick, or guard
 	local function interruptSelf(reason)
+		-- bosses (Horde / Siege warlords, attribute Boss) don't flinch: they swing
+		-- straight through hits and kicks — read them and parry
+		if character and character:GetAttribute("Boss") and (reason == "hit" or reason == "kicked") then return end
 		local cancelled = false
 		if state.phase ~= "idle" then
 			-- a hit only stops a swing that hasn't committed yet; a kick stops anything
 			local committed = state.phase == "release" or state.phase == "recovery"
-			if not (cfg.FLINCH_ONLY_WINDUP and reason == "hit" and committed) then
+			-- (a hit in their RECOVERY leaves it alone: cancelling it would hand them their turn sooner)
+			local spare = reason == "hit" and (state.phase == "recovery" or (cfg.FLINCH_ONLY_WINDUP and committed))
+			if not spare then
 				cancelSwing(reason)
 				cancelled = true
 			end

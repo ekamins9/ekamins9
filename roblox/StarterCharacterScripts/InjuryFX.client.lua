@@ -145,7 +145,7 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 	local winded = staFrac < LOW_STAMINA and (1 - staFrac / LOW_STAMINA) or 0
 	if Humanoid.Health <= 0 then winded = 0 end
 	staminaShown = staminaShown + (winded - staminaShown) * math.clamp(dt * 4, 0, 1)
-	local pulse = staFrac <= 0.001 and (0.15 + 0.15 * math.sin(t * 6)) or 0
+	local pulse = staFrac <= 0.001 and (0.15 + 0.15 * math.sin(os.clock() * 6)) or 0
 	local vig = math.clamp(staminaShown * 0.55 + pulse, 0, 0.8)
 	for _, f in ipairs(staminaFrames) do f.BackgroundTransparency = 1 - vig end
 	blur.Size = staminaShown * STAMINA_BLUR + (staFrac <= 0.001 and 2 or 0)
