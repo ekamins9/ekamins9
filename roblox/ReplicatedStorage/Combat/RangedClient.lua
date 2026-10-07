@@ -25,8 +25,8 @@ local ArrowFlight = require(ReplicatedStorage:WaitForChild("ArrowFlight"))
 
 local RangedClient = {}
 RangedClient.DEFAULTS = {
-	KIND = "bow", DRAW_TIME = 1.2, MIN_DRAW = 0.4, SPEED_MIN = 70, SPEED_MAX = 200, GRAVITY = 32, RELOAD = 4.5,
-	SWAY_BASE = 0.004, SWAY_GROW = 0.014, SWAY_MAX = 0.05, HOLD_AFTER = 1.4,
+	KIND = "bow", DRAW_TIME = 1.6, MIN_DRAW = 0.4, SPEED_MIN = 45, SPEED_MAX = 120, GRAVITY = 40, RELOAD = 5,
+	SWAY_BASE = 0.012, SWAY_GROW = 0.025, SWAY_MAX = 0.07, HOLD_AFTER = 0.6,
 }
 
 local player = Players.LocalPlayer
@@ -205,6 +205,8 @@ function RangedClient.attach(Tool, cfgIn)
 		if c:GetAttribute("Crouching") then amp *= 0.6 end
 		if (c:GetAttribute("BlockMeter") or 100) < 30 then amp *= 1.8 end
 		if isBow and not drawing then amp *= 0.5 end
+		-- (still pulling it back: the arm's working, the aim wanders more)
+		if isBow and drawing and draw < 1 then amp *= 1.6 end
 		sx = math.noise(now * 1.1, 3.7) * 2 * amp
 		sy = math.noise(now * 1.3, 11.2) * 2 * amp
 		-- the pose: aimed while drawing (or a moment after a shot), at the ready otherwise

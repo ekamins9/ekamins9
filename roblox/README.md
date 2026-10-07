@@ -178,25 +178,25 @@ decides every slot, for every class, in the menu and on the server). The lightes
 pieces, then **85 health, no armor protection, 4% faster** (`health` / `prot` / `speed` on the
 class, applied by `LoadoutServer`).
 
-**The longbow** (free) is held in the left hand. **Hold** the Swing bind (left mouse) to draw: 1.2 s
-to full, walking at 35% and no sprinting. **Let go** to loose; let go before 40% of the draw and
+**The longbow** (free) is held in the left hand. **Hold** the Swing bind (left mouse) to draw: 1.6 s
+to full, walking at 20% and no sprinting. **Let go** to loose; let go before 40% of the draw and
 the string is let down, no shot. The power is the draw the **server** timed: a part draw is weak
-and drops; a full draw flies flat at 200 studs/s. Held at full draw past 1.4 s it costs stamina and
-the aim starts to shake (more on the move or winded, less crouched); out of breath, the draw drops.
-After a shot the archer **nocks the next arrow** (1.3 s: the hand goes back to the quiver). Right
-mouse lets a draw down. A shot every ~2.5–3 s at best.
+and drops hard; a full draw flies at 120 studs/s and still drops. The aim always wanders a little,
+more while you're pulling; held at full draw past 0.6 s it costs stamina and shakes more and more (more on the move or winded, less crouched); out of breath, the draw drops.
+After a shot the archer **nocks the next arrow** (1.5 s: the hand goes back to the quiver). Right
+mouse lets a draw down. A shot every ~3.5 s at best.
 
-**The crossbow** (level 3) is shouldered like any weapon: **click** to loose (steady aim, 230
-studs/s, harder hit, more armor pierce), then a **4.5 s windlass reload** at 10% walking speed.
-Right mouse zooms down the tiller. A shot every ~5 s.
+**The crossbow** (level 3) is shouldered like any weapon: **click** to loose (steady aim, 160
+studs/s, harder hit, more armor pierce), then a **5 s windlass reload** at 8% walking speed.
+Right mouse zooms down the tiller. A shot every ~5.5 s.
 
 **Arrows are the server's**: stepped raycasts with gravity decide what they hit. Damage × power ×
-region (**head ×2.4** bow / ×2.2 crossbow: a full-draw headshot kills a Light or Medium, a bolt to
-the head kills anyone; legs ×0.7, arms ×0.8), less the struck limb's armor (pierce against its
+region (a full-draw bow 30 to the body, **head ×2**: 60, never a one-shot; a bolt 42, 84 to the head;
+legs ×0.7, arms ×0.8), less the struck limb's armor (pierce against its
 class, the weapon's `ARMOR_PEN`). A hit flinches and interrupts like a blade (and breaks a draw);
 credit `arrow` / `headshot` ("shot", "shot through the head"). **A raised guard facing the arrow
 blocks it** (a parry takes nothing, a block some stamina). Arrows **stick** where they land: in
-bodies (welded, they fall with the body) and the world (20 s). Quiver: 24 arrows / 14 bolts, one
+bodies (welded, they fall with the body) and the world (20 s). Quiver: 16 arrows / 14 bolts, one
 back every 6 / 8 s, full every life. Kick works with a bow in hand.
 
 What everyone sees (`RangedFX`): arrows in flight (`ArrowFlight`; your own fly the moment you

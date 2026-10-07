@@ -1,4 +1,22 @@
-# Updated scripts: the Archer
+# Updated scripts: bows toned down
+
+- **Longbow:**
+  - Slower to draw: 1.6 s to full, walking at 20%.
+  - Slower arrows that drop more: 45–120 studs/s, more gravity.
+  - Weaker: a full draw does 30 to the body and 60 to the head, never a one-shot.
+  - A shakier aim: always wandering a little, more while pulling, and more after 0.6 s held.
+  - Slower nock: 1.5 s. Fewer arrows: 16.
+- **Crossbow:** 160 studs/s, 42 to the body and 84 to the head, a 5 s reload at 8% walking speed.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Tools/Bow/Config.lua](Tools/Bow/Config.lua), [Tools/Crossbow/Config.lua](Tools/Crossbow/Config.lua) | ServerStorage ▸ Weapons ▸ Bow / Crossbow ▸ Config | ModuleScript | the numbers |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | defaults, draw slowdown 20% |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat ▸ RangedClient | ModuleScript | shakier while pulling |
+
+---
+
+## Before that: the Archer
 
 - **A new class, the Archer:** a bow or a crossbow plus a one-handed sidearm, and nothing big. It's the lightest class: 85 health, no armor protection, a bit faster.
 - **Longbow** (free, held in the left hand):
