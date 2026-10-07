@@ -348,4 +348,57 @@ end
 W.Greatsword = function() return sword{grip = 1.2, gripD = 0.28, blade = 4.0, w = 0.36, th = 0.12, guard = 1.6, guardT = 0.16, pommel = 0.34} end
 W.Shortsword = function() return sword{grip = 0.55, blade = 2.2, w = 0.28, guard = 0.9, pommel = 0.26, wraps = 2} end
 
+--------------------------------------------------------------------
+--  RANGED (Combat ▸ RangedServer). No Hitbox: they don't strike.
+--------------------------------------------------------------------
+-- THE LONGBOW, in the left hand: the limbs run along ±Y (upright with the arm
+-- raised), bowed toward +Z (the archer's side, where the string is). The
+-- string itself is two Beams between attachments RangedServer puts on the
+-- Handle (Config STRING), so it can be drawn back to the hand.
+W.Bow = function()
+	local wood, dark = C.WOOD, C.DARKWOOD
+	local out = {B.box("Handle", v(0.24, 0.62, 0.3), cf(0, 0, 0), C.DARKLEATHER, M.LEATHER, {SkinPart = "Grip"})}
+	out[#out + 1] = B.box("Shelf", v(0.26, 0.12, 0.34), cf(0, 0.36, -0.02), dark, M.WOOD, {SkinPart = "Grip"})
+	-- each limb: segments along an arc of radius Rb, tapering to the tip
+	local Rb, PHI, N = 4.0, 0.56, 6
+	for _, sgn in ipairs({1, -1}) do
+		for i = 1, N do
+			local a0, a1 = PHI * (i - 1) / N, PHI * i / N
+			local p0 = v(0, sgn * Rb * math.sin(a0), Rb * (1 - math.cos(a0)))
+			local p1 = v(0, sgn * Rb * math.sin(a1), Rb * (1 - math.cos(a1)))
+			local mid, len = (p0 + p1) / 2, (p1 - p0).Magnitude
+			local w = 0.22 - 0.1 * (i / N)
+			-- (a turn about X takes +Y to (0, cos, sin): straight along p0 → p1)
+			local tilt = math.atan2(p1.Z - p0.Z, p1.Y - p0.Y)
+			out[#out + 1] = B.box("Limb", v(w, len + 0.04, w * 1.25), CFrame.new(mid) * CFrame.Angles(tilt, 0, 0), wood, M.WOOD, {SkinPart = "Blade"})
+		end
+		-- the horn nock at the tip
+		local tip = v(0, sgn * Rb * math.sin(PHI), Rb * (1 - math.cos(PHI)))
+		out[#out + 1] = B.ball("Nock", 0.16, CFrame.new(tip), C.LINEN, M.PLASTIC, {SkinPart = "Grip"})
+	end
+	return out
+end
+
+-- THE CROSSBOW, in the right hand like any weapon: the grip upright, the
+-- tiller running forward along -Z, the prod across the front, the stock back
+-- to the shoulder. The Bolt shows while it's loaded (RangedServer: Loaded).
+W.Crossbow = function()
+	local a = {SkinPart = "Blade"}
+	local out = {B.box("Handle", v(0.24, 0.7, 0.3), cf(0, 0, 0), C.DARKWOOD, M.WOOD, {SkinPart = "Grip"})}
+	out[#out + 1] = B.box("Tiller", v(0.3, 0.3, 2.9), cf(0, 0.48, -0.95), C.WOOD, M.WOOD, a)
+	out[#out + 1] = B.box("Stock", v(0.3, 0.46, 0.95), cf(0, 0.36, 0.9), C.WOOD, M.WOOD, a)
+	out[#out + 1] = B.box("Butt", v(0.32, 0.6, 0.18), cf(0, 0.3, 1.42), C.DARKWOOD, M.WOOD, a)
+	out[#out + 1] = B.box("Nut", v(0.2, 0.14, 0.18), cf(0, 0.68, -0.6), C.IRON, M.METAL)
+	out[#out + 1] = B.box("Trigger", v(0.08, 0.3, 0.1), cf(0, 0.12, -0.42), C.IRON, M.METAL)
+	-- the prod: two steel limbs swept back a little
+	for _, sgn in ipairs({1, -1}) do
+		out[#out + 1] = B.box("Prod", v(1.3, 0.14, 0.18), cf(sgn * 0.62, 0.55, -2.18, 0, sgn * -12, 0), C.DARKSTEEL, M.METAL, a)
+	end
+	out[#out + 1] = B.box("Lath", v(0.36, 0.22, 0.26), cf(0, 0.55, -2.3), C.IRON, M.METAL)
+	out[#out + 1] = B.box("Stirrup", v(0.42, 0.06, 0.06), cf(0, 0.55, -2.62), C.IRON, M.METAL)
+	-- the bolt, lying in its groove
+	out[#out + 1] = B.box("Bolt", v(0.07, 0.07, 1.45), cf(0, 0.67, -1.32), Color3.fromRGB(150, 110, 66), M.WOOD)
+	return out
+end
+
 return W

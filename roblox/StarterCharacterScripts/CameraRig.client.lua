@@ -693,6 +693,11 @@ local function loopBody(dt)
 		swayY  = swayY,
 		hitX   = joltX,
 		hitZ   = joltZ,
+		-- a bow or a crossbow in hand (RangedClient): its stance, everyone sees it
+		ranged = character:GetAttribute("LocalRanged") or 0,
+		aim    = character:GetAttribute("LocalAim") or 0,
+		draw   = character:GetAttribute("LocalDraw") or 0,
+		reload = character:GetAttribute("LocalReload") or 0,
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
@@ -731,7 +736,8 @@ local function loopBody(dt)
 		or  (TP_FOV + dial * 12 + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0))
 	fovNow = fovNow + (fovTarget - fovNow) * math.clamp(dt * FOV_SMOOTH, 0, 1)
 	local punch = springC(sFov, 0, dtc, 220, 22)   -- snaps in, eases back in about a quarter second
-	Camera.FieldOfView = math.clamp(fovNow + punch, 40, 120)
+	-- a bow at full draw / a crossbow aimed down the tiller: a little zoom (RangedClient)
+	Camera.FieldOfView = math.clamp(fovNow + punch - 20 * (character:GetAttribute("LocalZoom") or 0), 40, 120)
 	if inFP then
 		-- forward-kinematics the head's world position from the C0s we just
 		-- set this frame — same "follows the head" feel as reading

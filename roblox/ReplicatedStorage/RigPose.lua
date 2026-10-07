@@ -37,6 +37,10 @@ RigPose.CONFIG = {
 	-- hit reaction: torso jolt away from the blow (hitX/hitZ inputs, radians)
 	HIT_JOLT        = 0.22,
 	HIT_JOLT_DIR    = 1,
+	-- ranged (bows, crossbows: the inputs ranged / aim / draw / reload)
+	BOW_TWIST       = 0.55,          -- the archer turns side-on to the target (radians)
+	TWIST_DIR       = -1,            -- flip if the wrong shoulder comes forward (the bow's, the left, leads)
+	SWING_DIR       = 1,             -- flip if "across the chest" swings the arms outward
 }
 local C = RigPose.CONFIG
 
@@ -80,7 +84,7 @@ function RigPose.compute(i, o)
 	local counter  = o.RootJoint * rootBend:Inverse()   -- legs stay planted under the bent torso
 	local legFold  = C.CROUCH_LEG * C.CROUCH_LEG_DIR * i.crouch
 	local swayCF   = CFrame.Angles(i.swayY, i.swayX, 0)
-	return {
+	local out = {
 		Neck      = o.Neck * CFrame.Angles(p * C.NECK_PITCH, 0, 0),
 		RootJoint = CFrame.new(0, i.bob - C.CROUCH_DROP * i.crouch, 0) * rootBend,
 		["Left Hip"]  = counter * o["Left Hip"]  * CFrame.Angles(0, 0, -legFold),
@@ -88,6 +92,51 @@ function RigPose.compute(i, o)
 		["Right Shoulder"] = swayCF * o["Right Shoulder"] * CFrame.Angles(0, 0, i.arm * C.RIGHT_ARM_DIR),
 		["Left Shoulder"]  = swayCF * o["Left Shoulder"]  * CFrame.Angles(0, 0, i.arm * C.LEFT_ARM_DIR),
 	}
+	local rk = i.ranged or 0
+	if rk > 0.5 then RigPose.ranged(out, i, o, rk > 1.5) end
+	return out
+end
+
+-- BOWS AND CROSSBOWS: arms and stance laid over the pose (CameraRig and
+-- RigReplicator feed the inputs; RangedClient sets them): aim 0..1 raises the
+-- weapon, draw 0..1 pulls a bow's string to the face, reload 0..1 is a
+-- crossbow's windlass. An arm: raised forward by `raise` (½π = level), swung
+-- across the chest by `across` (radians; negative swings it out).
+local function arm(o, name, raise, across)
+	local dir = name == "Right Shoulder" and C.RIGHT_ARM_DIR or C.LEFT_ARM_DIR
+	local side = name == "Right Shoulder" and 1 or -1
+	local base = o[name]
+	return CFrame.new(base.Position) * CFrame.Angles(0, across * side * C.SWING_DIR, 0) * base.Rotation * CFrame.Angles(0, 0, raise * dir)
+end
+function RigPose.ranged(out, i, o, crossbow)
+	local aim, draw, reload = math.clamp(i.aim or 0, 0, 1), math.clamp(i.draw or 0, 0, 1), math.clamp(i.reload or 0, 0, 1)
+	local level = math.pi / 2
+	local pitch = i.arm or 0
+	if not crossbow and reload > 0 and draw <= 0 then
+		-- nocking: the string hand goes back over the shoulder to the quiver and down to the string
+		local reach = math.sin(math.min(reload, 1) * math.pi)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", 0.9 + 0.3 * (1 - reach), 0.25)
+		out["Right Shoulder"] = arm(o, "Right Shoulder", 0.4 + 2.2 * reach, -0.35 * reach + 0.3 * (1 - reach))
+	elseif not crossbow then
+		-- side-on, the bow arm straight out at the target, the string hand drawn back to the jaw
+		-- (the torso turns by `twist`; each arm turns back by as much, so both still point at the target)
+		local twist = C.BOW_TWIST * aim * C.TWIST_DIR
+		out.RootJoint = out.RootJoint * CFrame.Angles(0, 0, twist)
+		out.Neck = out.Neck * CFrame.Angles(0, 0, -twist)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", aim * (level + pitch) + (1 - aim) * 0.35, twist)
+		out["Right Shoulder"] = arm(o, "Right Shoulder",
+			aim * (level + pitch) * (1 - 0.1 * draw) + (1 - aim) * 0.1,
+			-twist + aim * (0.2 + 0.55 * draw))
+	elseif reload > 0 and aim < 0.5 then
+		-- the windlass: the crossbow points down, the left hand cranks
+		local crank = math.abs(math.sin(reload * math.pi * 4))
+		out["Right Shoulder"] = arm(o, "Right Shoulder", 0.45, 0.15)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", 0.35 + 0.7 * crank, 0.55)
+	else
+		-- shouldered: the trigger hand and the hand under the tiller
+		out["Right Shoulder"] = arm(o, "Right Shoulder", aim * (level + pitch) + (1 - aim) * 0.4, aim * 0.12)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", aim * (level + pitch) * 0.97 + (1 - aim) * 0.3, aim * 0.62)
+	end
 end
 
 -- an emote (ReplicatedStorage ▸ Emotes) layers its pose over the targets and
@@ -120,7 +169,7 @@ function RigPose.apply(j, target, alpha, legAlpha)
 end
 
 -- wire format: a flat array of 9 numbers
-local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY", "hitX", "hitZ"}
+local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY", "hitX", "hitZ", "ranged", "aim", "draw", "reload"}
 local LIMIT = 4   -- sanity clamp on every input
 
 function RigPose.pack(i)
@@ -146,6 +195,6 @@ function RigPose.lerpInputs(from, to, alpha)
 	return i
 end
 
-RigPose.ZERO = {pitch = 0, bob = 0, leanX = 0, leanZ = 0, kick = 0, crouch = 0, arm = 0, swayX = 0, swayY = 0, hitX = 0, hitZ = 0}
+RigPose.ZERO = {pitch = 0, bob = 0, leanX = 0, leanZ = 0, kick = 0, crouch = 0, arm = 0, swayX = 0, swayY = 0, hitX = 0, hitZ = 0, ranged = 0, aim = 0, draw = 0, reload = 0}
 
 return RigPose

@@ -170,6 +170,45 @@ its key does (`CombatClient`, `Movement`, `CameraRig` listen). They scale with t
 hide while you're dead or in the menu; Roblox's own jump button is hidden. The training's
 lesson text names buttons instead of keys on a touch screen.
 
+## The Archer, bows and crossbows (`Combat ▸ RangedServer`, `Combat ▸ RangedClient`)
+
+The **Archer** (`GameConfig.CLASSES.Archer`, `ranged = true`) carries a **bow or a crossbow** as
+the primary and a **one-handed sidearm** as the secondary: no big weapons (`Catalog.weaponFits`
+decides every slot, for every class, in the menu and on the server). The lightest of all: Light
+pieces, then **85 health, no armor protection, 4% faster** (`health` / `prot` / `speed` on the
+class, applied by `LoadoutServer`).
+
+**The longbow** (free) is held in the left hand. **Hold** the Swing bind (left mouse) to draw: 1.2 s
+to full, walking at 35% and no sprinting. **Let go** to loose; let go before 40% of the draw and
+the string is let down, no shot. The power is the draw the **server** timed: a part draw is weak
+and drops; a full draw flies flat at 200 studs/s. Held at full draw past 1.4 s it costs stamina and
+the aim starts to shake (more on the move or winded, less crouched); out of breath, the draw drops.
+After a shot the archer **nocks the next arrow** (1.3 s: the hand goes back to the quiver). Right
+mouse lets a draw down. A shot every ~2.5–3 s at best.
+
+**The crossbow** (level 3) is shouldered like any weapon: **click** to loose (steady aim, 230
+studs/s, harder hit, more armor pierce), then a **4.5 s windlass reload** at 10% walking speed.
+Right mouse zooms down the tiller. A shot every ~5 s.
+
+**Arrows are the server's**: stepped raycasts with gravity decide what they hit. Damage × power ×
+region (**head ×2.4** bow / ×2.2 crossbow: a full-draw headshot kills a Light or Medium, a bolt to
+the head kills anyone; legs ×0.7, arms ×0.8), less the struck limb's armor (pierce against its
+class, the weapon's `ARMOR_PEN`). A hit flinches and interrupts like a blade (and breaks a draw);
+credit `arrow` / `headshot` ("shot", "shot through the head"). **A raised guard facing the arrow
+blocks it** (a parry takes nothing, a block some stamina). Arrows **stick** where they land: in
+bodies (welded, they fall with the body) and the world (20 s). Quiver: 24 arrows / 14 bolts, one
+back every 6 / 8 s, full every life. Kick works with a bow in hand.
+
+What everyone sees (`RangedFX`): arrows in flight (`ArrowFlight`; your own fly the moment you
+loose), every bow's **string drawn back to the hand with an arrow on it**, a crossbow's string at
+the nut while spanned and the bolt in its groove. The **stances** are `RigPose.ranged` (inputs
+`ranged`, `aim`, `draw`, `reload`, relayed like the rest of the pose): side-on with the bow arm at
+the target and the string hand at the jaw, the nock reaching back to the quiver, the crossbow
+shouldered or pointed down and cranked. The reticle shows the shake and closes as you draw; full
+draw zooms a little. On a touch screen, hold a SWING button to draw, BLOCK lets down. Bows hang
+across the back when not in hand (`Holsters`). Tuning: each Tool's `Config` over
+`RangedServer.DEFAULTS` / `RangedClient.DEFAULTS`.
+
 ## Classes, pieces, the Dresser
 
 `LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they pick a

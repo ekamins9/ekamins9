@@ -77,7 +77,8 @@ local function govern(char)
 			elseif dot < M.FORWARD_DOT then facing = M.STRAFE_MULT end
 			if sprintHeld[char] and dot >= M.SPRINT_MIN_DOT
 				and not char:GetAttribute("Blocking") and not char:GetAttribute("Crouching")
-				and not char:GetAttribute("Acting") and hum.Health > 0 and not incapacitated(char) then
+				and not char:GetAttribute("Acting") and not char:GetAttribute("SpeedMult_Draw")   -- (no sprinting with a bow drawn or a crossbow being wound)
+				and hum.Health > 0 and not incapacitated(char) then
 				sprint = char:GetAttribute("SprintMult") or M.SPRINT_MULT   -- the armor weight's (Catalog ▸ Weights)
 			end
 		end

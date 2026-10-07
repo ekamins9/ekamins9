@@ -2923,11 +2923,7 @@ do
 				else lo.colors[slot] = it.name; ui.dirty[id] = true; render.CLASSES() end
 			end, 28)
 		end
-		local function allowed(w)
-			if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
-			if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == w.id then ok = true end end; if not ok then return false end end
-			return true
-		end
+		local function allowed(w, slot) return Catalog.weaponFits(cls, w, slot or "primary") end
 		local wp = panel(list, "PRIMARY WEAPON")
 		local g = cardGrid(wp, 40)
 		local n = 0
@@ -2935,7 +2931,7 @@ do
 			if allowed(w) then
 				n += 1
 				local have = owns("weapons", w.id)
-				itemCard(g, n, w.name, have and (w.family == "OneHanded" and "one-handed" or (w.family == "TwoHanded" and "two-handed" or "polearm")) or unlockText(w), lo.weapon == w.id and not (t and (t.slot == "weapon" or t.slot == "weaponSkin")), have, nil, function()
+				itemCard(g, n, w.name, have and (w.family == "OneHanded" and "one-handed" or (w.family == "TwoHanded" and "two-handed" or (w.family == "Ranged" and "ranged" or "polearm"))) or unlockText(w), lo.weapon == w.id and not (t and (t.slot == "weapon" or t.slot == "weaponSkin")), have, nil, function()
 					if have then choose("weapon", w.id) else tryOn("weapon", w.id) end
 				end, t and t.slot == "weapon" and t.id == w.id)
 			end
@@ -2963,7 +2959,7 @@ do
 		itemCard(sg2, 0, "None", "", lo.secondary == nil, true, nil, function() choose("secondary", nil) end)
 		n = 0
 		for _, w in ipairs(Catalog.WEAPONS) do
-			if w.secondary and w.id ~= lo.weapon and allowed(w) then
+			if w.id ~= lo.weapon and allowed(w, "secondary") then
 				n += 1
 				local have = owns("weapons", w.id)
 				itemCard(sg2, n, w.name, have and "one-handed" or unlockText(w), lo.secondary == w.id, have, nil, function()
@@ -3300,7 +3296,10 @@ do
 			if (w.marks or 0) > 0 then fat("UNLOCK  ·  " .. fmt(w.marks) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "weapon", w.id, "marks"), render.ARMORY) end) end
 			local l = title(act, "Unlocks at " .. unlockText(w), 15, COL.DIM); l.Size = UDim2.fromOffset(300, 54); l.LayoutOrder = nextOrder()
 		elseif skinHave then
+			-- (a bow is the Archer's; a blade isn't)
 			local cls = classFor(nil)
+			if w.ranged then cls = "Archer"
+			elseif GameConfig.CLASSES[cls] and GameConfig.CLASSES[cls].ranged then cls = GameConfig.DEFAULT_CLASS end
 			fat("EQUIP ON " .. string.upper(className(cls)), COL.GREEN, function()
 				equip(cls, function(lo) lo.weapon = w.id; lo.weaponSkin = sel.id; if lo.secondary == w.id then lo.secondary = nil; lo.secondarySkin = nil end end, w.name .. (sel.name ~= "Default" and (" · " .. sel.name) or ""))
 			end)

@@ -28,10 +28,14 @@ local SPOTS = {
 	Hip    = CFrame.new(-1.12, -0.85, -0.15) * CFrame.Angles(r(150), 0, r(-8)),
 	-- a dagger at the right hip, point down
 	Dagger = CFrame.new(1.1, -0.85, 0.15) * CFrame.Angles(r(170), 0, r(10)),
+	-- a bow slung across the back, string out; a crossbow across the back, prod up
+	Bow      = CFrame.new(-0.2, 0.1, 0.62) * CFrame.Angles(0, 0, r(-28)),
+	Crossbow = CFrame.new(0, 0.2, 0.7) * CFrame.Angles(r(-90), 0, r(35)),
 }
 
 local function spotFor(weaponId)
 	if weaponId == "Dagger" then return SPOTS.Dagger end
+	if weaponId == "Bow" or weaponId == "Crossbow" then return SPOTS[weaponId] end
 	local w = Catalog.WEAPON[weaponId]
 	local fam = w and w.family
 	if fam == "Polearm" then return SPOTS.Pole end

@@ -93,6 +93,8 @@ local VERB = {
 	kick      = "kicked to death",
 	head      = "brained",       -- hit by a thrown head
 	bleed     = "bled out",
+	arrow     = "shot",
+	headshot  = "shot through the head",
 }
 
 local feedOrder = 0

@@ -279,16 +279,14 @@ function Profile.validateLoadout(plr, classId, lo)
 		local c = type(lo.colors) == "table" and lo.colors[s]
 		out.colors[s] = (c and Catalog.COLOR[c] and Profile.has(plr, "colors", c)) and c or Profile.defaultLoadout(classId).colors[s]
 	end
-	local function allowed(wid)
+	local function allowed(wid, slot)
 		local w = Catalog.WEAPON[wid]
 		if not w or not Profile.has(plr, "weapons", wid) then return false end
-		if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
-		if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == wid then ok = true end end; if not ok then return false end end
-		return true
+		return Catalog.weaponFits(cls, w, slot or "primary")
 	end
-	if lo.weapon and allowed(lo.weapon) then out.weapon = lo.weapon end
+	if lo.weapon and allowed(lo.weapon, "primary") then out.weapon = lo.weapon end
 	out.weaponSkin = (lo.weaponSkin and Catalog.SKIN[lo.weaponSkin] and Catalog.SKIN[lo.weaponSkin].weapon == out.weapon and Profile.has(plr, "skins", lo.weaponSkin)) and lo.weaponSkin or (out.weapon and out.weapon .. ":Default" or nil)
-	if lo.secondary and lo.secondary ~= out.weapon and allowed(lo.secondary) and Catalog.WEAPON[lo.secondary].secondary then
+	if lo.secondary and lo.secondary ~= out.weapon and allowed(lo.secondary, "secondary") then
 		out.secondary = lo.secondary
 		out.secondarySkin = (lo.secondarySkin and Catalog.SKIN[lo.secondarySkin] and Catalog.SKIN[lo.secondarySkin].weapon == out.secondary and Profile.has(plr, "skins", lo.secondarySkin)) and lo.secondarySkin or (out.secondary .. ":Default")
 	else out.secondary, out.secondarySkin = nil, nil end

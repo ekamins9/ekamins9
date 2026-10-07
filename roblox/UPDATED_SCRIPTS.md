@@ -1,4 +1,50 @@
-# Updated scripts: newcomer path, bot fill, touch controls, class loadouts
+# Updated scripts: the Archer
+
+- **A new class, the Archer:** a bow or a crossbow plus a one-handed sidearm, and nothing big. It's the lightest class: 85 health, no armor protection, a bit faster.
+- **Longbow** (free, held in the left hand):
+  - Hold left mouse to draw. A full draw takes 1.2 s; meanwhile you walk at 35% and can't sprint.
+  - Let go to loose. Letting go too early lets the string down without a shot.
+  - Holding a full draw too long shakes the aim and costs stamina.
+  - After every shot the archer reaches back and nocks the next arrow (1.3 s).
+  - About 2.5–3 s between shots.
+- **Crossbow** (level 3):
+  - Click to loose: a steady aim, a hard hit.
+  - Then a 4.5 s windlass reload at 10% walking speed. About 5 s between shots.
+- **Arrows are real:**
+  - Gravity, and the server decides every hit.
+  - Headshots ×2.4. A full-draw headshot kills a Light or Medium; a bolt to the head kills anyone.
+  - Armor resists by type. A raised guard facing the arrow blocks it.
+  - Arrows stick in bodies and the world. The kill feed says "shot" / "shot through the head".
+- **Everyone sees it:**
+  - The bow string pulled back to your hand with an arrow on it.
+  - The stances: side-on draw, reaching for the quiver, crossbow shouldered, the windlass crank.
+  - Arrows in flight. The reticle shakes and closes as you draw.
+- Phones: hold a SWING button to draw, BLOCK lets it down.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | **new** |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat ▸ RangedClient | ModuleScript | **new** |
+| [ArrowFlight.lua](ReplicatedStorage/ArrowFlight.lua) | ReplicatedStorage ▸ ArrowFlight | ModuleScript | **new** |
+| [RangedFX.client.lua](StarterPlayerScripts/RangedFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ RangedFX | LocalScript | **new** |
+| [Tools/Bow](Tools/Bow), [Tools/Crossbow](Tools/Crossbow) | ServerStorage ▸ Weapons ▸ Bow / Crossbow | Tool (Config, Server, Client) | **new** |
+| [Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | ServerScriptService ▸ Build ▸ Weapons | ModuleScript | bow and crossbow bodies |
+| [Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua), [scripts/gen_content.py](../scripts/gen_content.py) | ReplicatedStorage ▸ Catalog ▸ Weapons | ModuleScript | Bow, Crossbow (`ranged`) |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `Catalog.weaponFits` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | the Archer |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | bow / crossbow stances (new inputs) |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | ranged pose inputs, aim zoom |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | slots by `weaponFits` |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | class health / prot / speed |
+| [Holsters.server.lua](ServerScriptService/Loadout/Holsters.server.lua) | ServerScriptService ▸ Loadout ▸ Holsters | Script | bows on the back |
+| [MovementServer.server.lua](ServerScriptService/MovementServer.server.lua) | ServerScriptService ▸ MovementServer | Script | no sprint while drawing / winding |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | weapon slots by class, bows to the Archer |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Scoreboard | LocalScript | "shot" |
+| [TouchControls.client.lua](StarterPlayerScripts/TouchControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ TouchControls | LocalScript | held SWING |
+
+---
+
+## Before that: newcomer path, bot fill, touch controls, class loadouts
 
 - **A brand-new player never sees a menu first.**
   - The Courtyard sends them straight into **Basic Training**: 7 steps (swing, stab, overhead, block, parry, kick, beat a Squire).

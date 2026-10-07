@@ -95,8 +95,9 @@ end
 -- the right thumb's pad (bottom right): BLOCK in the corner, the rest around it
 local right = pad(Vector2.new(1, 1), UDim2.new(1, -8, 1, -8), UDim2.fromOffset(340, 330))
 round(right, "BLOCK", 285, 270, 96, COL.block, "Block", nil, true)
-round(right, "◀ SWING", 178, 272, 76, COL.swing, "Swing", "Left")
-round(right, "SWING ▶", 283, 163, 76, COL.swing, "Swing", "Right")
+-- (held: a bow is drawn while a SWING button is down and loosed when it's let go)
+round(right, "◀ SWING", 178, 272, 76, COL.swing, "Swing", "Left", true)
+round(right, "SWING ▶", 283, 163, 76, COL.swing, "Swing", "Right", true)
 round(right, "STAB", 205, 190, 62, COL.swing, "Stab")
 round(right, "OVER HEAD", 85, 275, 62, COL.swing, "Overhead")
 round(right, "KICK", 110, 185, 56, COL.other, "Kick")

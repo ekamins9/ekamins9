@@ -179,6 +179,19 @@ Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name]
 Catalog.KILLFX_BY = {}  for _, f in ipairs(Catalog.KILLFX) do Catalog.KILLFX_BY[f.id] = f end
 Catalog.EMOTE = {}      for _, e in ipairs(Catalog.EMOTES) do Catalog.EMOTE[e.id] = e end
 Catalog.EGG = {}        for _, e in ipairs(Catalog.EGGS.eggs) do Catalog.EGG[e.id] = e end
+
+-- may this weapon go in this slot for this class? A ranged class's primary is a
+-- bow or a crossbow and nobody else's is; a secondary is always a one-handed
+-- melee weapon (secondary = true). cls = a GameConfig.CLASSES entry; slot =
+-- "primary" | "secondary". (Ownership is the caller's business.)
+function Catalog.weaponFits(cls, w, slot)
+	if type(w) == "string" then w = Catalog.WEAPON[w] end
+	if not (cls and w) then return false end
+	if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
+	if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == w.id then ok = true end end; if not ok then return false end end
+	if slot == "secondary" then return w.secondary == true and not w.ranged end
+	return (w.ranged == true) == (cls.ranged == true)
+end
 Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end
 
 --------------------------------------------------------------------

@@ -218,6 +218,16 @@ spawnAs = function(plr, classId)
 	local team = Game.teamOf(plr)
 	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = team})
 	Game.Teams.mark(char, team)
+	-- a class lighter (or heavier) than its weight: the Archer (GameConfig.CLASSES health / prot / speed)
+	local cdef = GameConfig.CLASSES[classId]
+	if cdef.health then
+		local base = char:GetAttribute("BaseMaxHealth") or 100
+		hum.MaxHealth = math.max(10, hum.MaxHealth + cdef.health)
+		hum.Health = hum.MaxHealth
+		char:SetAttribute("BaseMaxHealth", base)
+	end
+	if cdef.prot then char:SetAttribute("ArmorProtection", cdef.prot) end
+	if cdef.speed then char:SetAttribute("SpeedMult_Class", cdef.speed) end
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP) end
 	if SPAWN_PROTECT > 0 and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then

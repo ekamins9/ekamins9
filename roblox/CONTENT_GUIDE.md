@@ -267,6 +267,17 @@ Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2
 are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
 never return: their items become RELICS, which is what makes them worth something.
 
+## 6e. Ranged weapons
+
+A bow or crossbow is a Tool under `Tools/<Name>` with `Config.lua` (ranged keys: `KIND` "bow" |
+"crossbow", `DRAW_TIME`, `NOCK_TIME`, `RELOAD`, `SPEED_MIN/MAX`, `GRAVITY`, `DAMAGE`, `HEAD_MULT`,
+`ARMOR_PEN`, `QUIVER`, `REGEN`, `SWAY_*`, `STRING` = the string's tips and rest in Handle space),
+a `Server.server.lua` calling `RangedServer.attach` and a `Client.client.lua` calling
+`RangedClient.attach`; its body is a blueprint in `Build ▸ Weapons` (a bow's limbs along ±Y, bowed
+toward +Z; a crossbow's tiller along -Z). List it in `Catalog ▸ Weapons` with `family = "Ranged",
+ranged = true` (and in `RANGED` in `scripts/gen_content.py`, so a regeneration keeps it). Only a
+class with `ranged = true` can carry it.
+
 ## 6d. Bot fill and the newcomer's course
 
 - How many fighters a Warfront mode fills to: `botFill` on the mode in `GameConfig.MODES`
