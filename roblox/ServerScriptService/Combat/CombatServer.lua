@@ -109,6 +109,25 @@ function CombatServer.dropProtection(char)
 	if ff then ff:Destroy() end
 end
 -- victim's client listens for HitTick to flinch the camera; HitDir says which way
+-- ARMOR vs DAMAGE TYPE: how well each armor class (the set's ArmorType) holds
+-- against each kind of blow, as a multiplier on its Protection. Plate turns a
+-- cut but a mace crushes it; mail stops a slash but a point slips its rings.
+CombatServer.ARMOR_VS = {
+	cut    = {Light = 1.0, Medium = 1.15, Heavy = 1.35},
+	chop   = {Light = 1.0, Medium = 0.9,  Heavy = 0.95},
+	pierce = {Light = 0.9, Medium = 0.85, Heavy = 0.9},
+	blunt  = {Light = 1.1, Medium = 0.75, Heavy = 0.55},
+}
+local BLUNT_WEAPONS = {Hammer = true, Mace = true, MorningStar = true, Maul = true, Quarterstaff = true}
+local AXE_WEAPONS = {WarAxe = true, BattleAxe = true, Bardiche = true, Halberd = true, Poleaxe = true, Cleaver = true, Executioner = true}
+function CombatServer.damageType(weaponName, cfg, kind)
+	if kind == "stab" then return "pierce" end
+	if cfg and cfg.DAMAGE_TYPE then return cfg.DAMAGE_TYPE end
+	if BLUNT_WEAPONS[weaponName] then return "blunt" end
+	if AXE_WEAPONS[weaponName] then return "chop" end
+	return "cut"
+end
+
 function CombatServer.flinch(target, dir)
 	target:SetAttribute("HitDir", dir)
 	target:SetAttribute("HitTick", (target:GetAttribute("HitTick") or 0) + 1)
@@ -146,6 +165,20 @@ function CombatServer.friendlyMult(a, b)
 	if override == false then return 0 end
 	return math.clamp(tonumber(GameConfig.FRIENDLY_FIRE) or 0, 0, 1)
 end
+-- EXECUTIONS (the Execute key, R by default): a finisher on an enemy who is done
+-- for (bleeding out, or nearly dead with their guard down), close and in front
+-- of you. The clip is your equipped one (player attribute Execution; Catalog >
+-- Executions, clips in ReplicatedStorage > ExecutionAnims). Both fighters are
+-- held for it; the blow kills; being hit before it lands calls it off.
+local ExecuteRule = require(ReplicatedStorage:WaitForChild("ExecuteRule"))
+CombatServer.EXECUTE = ExecuteRule.CONFIG   -- range, facing, low-health share, hold distance
+function CombatServer.canExecute(attacker, target) return ExecuteRule.can(attacker, target) end
+local Catalog   -- (lazily: only executions need it)
+function CombatServer.executionDef(id)
+	if not Catalog then Catalog = require(ReplicatedStorage:WaitForChild("Catalog")) end
+	return Catalog.EXECUTION_BY and Catalog.EXECUTION_BY[id]
+end
+
 -- who hurt whom last, for kill credit (Scoreboard reads these on death)
 function CombatServer.credit(target, attacker, weaponName, kind)
 	local plr = attacker and Players:GetPlayerFromCharacter(attacker)
@@ -398,6 +431,8 @@ CombatServer.DEFAULTS = {
 	SpeedMult   = 1.0,   -- weight: WalkSpeed multiplier while equipped (published as SpeedMult_Weapon)
 	ClunkMult   = 1.0,   -- weight: footstep clunk multiplier while equipped (published as ClunkMult_Weapon)
 	ARMOR_PEN   = 0,     -- the share of the target's armor protection this weapon ignores
+	DAMAGE_TYPE = nil,   -- "cut" | "chop" | "blunt" (swings; every stab pierces). nil = from the weapon:
+	                     --    blunt weapons crush, axes chop, the rest cut (CombatServer.damageType)
 	                     --    (blunt heads and armor-piercing points beat plate; edges don't)
 	SWING_SLOW  = 0.55,  -- WalkSpeed multiplier while attacking (published as SpeedMult_Swing)
 
@@ -607,7 +642,8 @@ function CombatServer.attach(Tool, weaponConfig)
 	local limbConns = {}
 	local conns = {}
 	local state = {
-		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick
+		token = 0, phase = "idle",          -- idle | windup | release | recovery | kick | execute
+		exec = nil,                         -- while executing: calls it off (cancelSwing)
 		attack = nil, attackName = nil, alreadyHit = {}, queued = nil,
 		windupStart = 0, windupEnd = 0, releaseEnd = 0, nextActionTime = 0, nextKickTime = 0, nextBlockTime = 0,
 		cycleIndex = 0, lastBlockStart = -1e9, guardStart = 0,
@@ -813,6 +849,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	local function cancelSwing(reason)
+		if state.exec then state.exec(reason) end
 		state.token += 1
 		state.phase, state.attack, state.attackName, state.queued = "idle", nil, nil, nil
 		setSwinging(false)
@@ -1017,6 +1054,15 @@ function CombatServer.attach(Tool, weaponConfig)
 			local limbName = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name
 				or (region == "head" and "Head") or "Torso"
 			local prot = Armor.protectionAt(target, limbName) * (1 - math.clamp(cfg.ARMOR_PEN or 0, 0, 1))
+			-- the kind of blow against the kind of armor (plate turns cuts, maces crush it)
+			local dtype = CombatServer.damageType(Tool.Name, cfg, info.kind)
+			local vs = CombatServer.ARMOR_VS[dtype]
+			local class = target:GetAttribute("ArmorType")
+			if prot > 0 and vs and vs[class] then
+				prot = prot * vs[class]
+				-- a blade skating off plate throws sparks
+				if dtype == "cut" and class == "Heavy" then Injury.sparks(hitPos, 0.8) end
+			end
 			if prot > 0 then
 				dmg = dmg * (1 - math.clamp(prot, 0, 0.95))
 				dprint("armor on", limbName, "absorbed", math.floor(prot * 100) .. "%")
@@ -1653,6 +1699,8 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	-- being hit or kicked breaks our own action: mid-swing, mid-kick, or guard
 	local function interruptSelf(reason)
+		-- mid-execution: a hit or a kick calls it off (bosses don't execute)
+		if state.phase == "execute" then cancelSwing(reason); tell("Flinch", reason); return end
 		-- bosses (Horde / Siege warlords, attribute Boss) don't flinch: they swing
 		-- straight through hits and kicks — read them and parry
 		if character and character:GetAttribute("Boss") and (reason == "hit" or reason == "kicked") then return end
@@ -1722,6 +1770,97 @@ function CombatServer.attach(Tool, weaponConfig)
 	end
 
 	----------------------------------------------------------------
+	--  EXECUTE (see CombatServer.EXECUTE)
+	----------------------------------------------------------------
+	local function doExecute(target)
+		if not (character and player) or isIncapacitated() or attr("Blocking") then return end
+		if state.phase ~= "idle" or os.clock() < state.nextActionTime then dprint("execute denied: busy"); return end
+		if typeof(target) ~= "Instance" or not target:IsA("Model") then return end
+		if not CombatServer.canExecute(character, target) then dprint("execute denied: not a valid target"); return end
+		local id = player:GetAttribute("Execution") or "Finisher"
+		local folder = ReplicatedStorage:FindFirstChild("ExecutionAnims")
+		local anim = folder and (folder:FindFirstChild(id) or folder:FindFirstChild("Finisher"))
+		if not (anim and anim:IsA("Animation")) then dprint("execute denied: no clip for", id); return end
+		local def = CombatServer.executionDef(anim.Name) or {}
+		local E = CombatServer.EXECUTE
+		local me, victim = character, target
+		local myRoot, vRoot = me:FindFirstChild("HumanoidRootPart"), victim:FindFirstChild("HumanoidRootPart")
+		local vHum = victim:FindFirstChildOfClass("Humanoid")
+		local impact = anim:GetAttribute("Impact") or 1
+		local stab = def.finish == "stab"
+
+		state.token += 1
+		local token = state.token
+		state.phase, state.attack, state.attackName = "execute", nil, nil
+		-- they stop whatever they were doing and are held facing us, DIST in front
+		CombatServer.interrupt(victim, "executed")
+		victim:SetAttribute("StunnedUntil", os.clock() + impact + 1)
+		victim:SetAttribute("BeingExecuted", true)
+		me:SetAttribute("Executing", true)
+		local bleedDps = victim:GetAttribute("BleedDPS")
+		if bleedDps then victim:SetAttribute("BleedDPS", 0) end   -- (no bleeding out mid-execution)
+		local y = vRoot.Position.Y
+		local spot = (myRoot.CFrame * CFrame.new(0, 0, -(def.dist or E.DIST))).Position
+		vRoot.CFrame = CFrame.lookAt(Vector3.new(spot.X, y, spot.Z), Vector3.new(myRoot.Position.X, y, myRoot.Position.Z))
+		local wasAnchored = {[myRoot] = myRoot.Anchored, [vRoot] = vRoot.Anchored}
+		myRoot.Anchored, vRoot.Anchored = true, true
+		local track = npcTrack(anim.AnimationId, Enum.AnimationPriority.Action4, false)
+		if track then track:Play(0.15) end
+		tell("Execute", impact)
+		dprint("EXECUTING", victim.Name, "with", anim.Name)
+
+		local function done(cancelled)
+			state.exec = nil
+			for part, was in pairs(wasAnchored) do if part.Parent then part.Anchored = was end end
+			wasAnchored = {}
+			if victim.Parent then
+				victim:SetAttribute("BeingExecuted", nil)
+				if cancelled and bleedDps and victim:GetAttribute("Bleeding") then victim:SetAttribute("BleedDPS", bleedDps) end
+				if cancelled then victim:SetAttribute("StunnedUntil", os.clock() + 0.3) end
+			end
+			if me.Parent then me:SetAttribute("Executing", nil) end
+			if track then track:Stop(0.25) end
+		end
+		state.exec = function(reason)
+			dprint("execution called off:", reason)
+			done(true)
+		end
+		-- the blow
+		task.delay(impact, function()
+			if state.token ~= token then return end
+			if not (humanoid and humanoid.Health > 0) then cancelSwing("dead"); return end
+			-- let them go first, so the body falls (and a beheading ragdolls) freely
+			if vRoot.Parent then vRoot.Anchored = wasAnchored[vRoot] end
+			wasAnchored[vRoot] = nil
+			if not (vHum and vHum.Health > 0 and victim.Parent) then return end
+			victim:SetAttribute("BeingExecuted", nil)
+			CombatServer.credit(victim, me, weaponName, "execution")
+			CombatServer.showDamage(me, victim, vHum.Health, stab and "torso" or "head", true, false)
+			local dir = (vRoot.Position - myRoot.Position) * Vector3.new(1, 0, 1)
+			dir = dir.Magnitude > 0.01 and dir.Unit or myRoot.CFrame.LookVector
+			local struck = stab and "Torso" or "Head"
+			hitSounds(victim:FindFirstChild(struck) or vRoot, victim, stab and "stab" or "slash", struck, true)
+			if not stab and Injury.hasLimb(victim, "Head") then
+				Injury.dismember(victim, "Head", dir, true)
+			else
+				vHum.Health = 0
+			end
+			local kmax = me:GetAttribute("BlockMax") or cfg.BLOCK_MAX
+			CombatServer.refundStamina(me, math.floor(kmax * cfg.KILL_REFUND + 0.5))
+			tell("KillConfirm", "head")
+		end)
+		-- the rest of the clip, then free
+		task.delay(impact + 0.1, function()
+			local left = (track and track.Length > 0) and math.max(track.Length - impact - 0.1, 0.2) or 0.8
+			task.wait(left)
+			if state.token ~= token then return end
+			done(false)
+			state.phase = "idle"
+			state.nextActionTime = os.clock() + E.AFTER
+		end)
+	end
+
+	----------------------------------------------------------------
 	--  WIRING
 	----------------------------------------------------------------
 	table.insert(conns, remote.OnServerEvent:Connect(function(who, action, a, b, c, d, e)
@@ -1739,11 +1878,13 @@ function CombatServer.attach(Tool, weaponConfig)
 			if character and Tool.Parent == character then tell("Setup", cfg.IDLE_ID, cfg.BLOCK_ID, animId(cfg.HIT_ID)); if attr("Blocking") then tell("Block", true) end end
 			return
 		end
+		if state.phase == "execute" then return end   -- (held for the finisher)
 		if action == "Attack"         then doAttack(a)
 		elseif action == "Feint"      then doFeint()
 		elseif action == "BlockStart" then doBlockStart()
 		elseif action == "BlockStop"  then doBlockStop()
-		elseif action == "Kick"       then doKick() end
+		elseif action == "Kick"       then doKick()
+		elseif action == "Execute"    then doExecute(a) end
 	end))
 
 	local function onEquipped()
@@ -1851,7 +1992,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		tool = Tool,
 		attack = doAttack, cycle = randomAttack, feint = doFeint,
 		blockStart = doBlockStart, blockStop = doBlockStop,
-		kick = doKick, interrupt = interruptSelf,
+		kick = doKick, interrupt = interruptSelf, execute = doExecute,
 		-- for other weapons' hit resolution (chambers)
 		snapshot = function()
 			return {phase = state.phase, kind = state.attack and state.attack.kind, windupStart = state.windupStart, name = state.attackName,

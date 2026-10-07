@@ -553,6 +553,7 @@ local function loopBody(dt)
 	-- (knocked down / seated), in which case forcing it upright every frame
 	-- would fight the ragdoll or the seat
 	local bodyFree = Humanoid.PlatformStand or Humanoid.Sit or character:GetAttribute("Ragdolled") == true or cursorFree
+		or character:GetAttribute("Executing") == true or character:GetAttribute("BeingExecuted") == true   -- (held by the server)
 	if not bodyFree then
 		HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, rot.Y, 0)
 	end
@@ -683,7 +684,7 @@ local function loopBody(dt)
 		hitZ   = joltZ,
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
-	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
+	RigPose.apply(Joints, RigPose.compute(RigPose.still(character, inputs), Origins), a, legA)
 	-- heartbeat: proves THIS loop is the one drawing the body
 	if DebugFlags.get("Logs") and now - lastAliveLog > 3 then
 		lastAliveLog = now

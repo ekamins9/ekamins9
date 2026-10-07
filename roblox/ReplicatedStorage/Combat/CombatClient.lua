@@ -520,6 +520,10 @@ function CombatClient.attach(Tool, weaponConfig)
 		elseif what == "Cancel" then
 			stopAttack()
 
+		elseif what == "Execute" then
+			-- a finisher (the server plays the clip): drop any swing in progress
+			stopAttack()
+
 		elseif what == "Flinch" then
 			flinch()
 

@@ -49,6 +49,7 @@ ClientSettings.KEYS = {
 	{key = "Feint",      label = "Feint (cancel windup)", default = "Q"},
 	{key = "SideFlip",   label = "Opposite side (hold)", default = "LeftAlt"},
 	{key = "Kick",       label = "Kick",             default = "G"},
+	{key = "Execute",    label = "Execute (finisher)", default = "R"},
 	{key = "Sprint",     label = "Sprint",           default = "LeftShift"},
 	{key = "Dodge",      label = "Dodge",            default = "F"},
 	{key = "Jump",       label = "Jump / stand up",  default = "Space"},

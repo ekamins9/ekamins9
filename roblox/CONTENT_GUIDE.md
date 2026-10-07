@@ -267,6 +267,25 @@ Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2
 are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
 never return: their items become RELICS, which is what makes them worth something.
 
+## 6c. Executions
+
+**Executions** (`Catalog ▸ Executions`): your finisher (README ▸ *Executions*). One is equipped at a
+time (ARMORY ▸ EXECUTIONS); everyone owns `Finisher`. A line:
+
+```lua
+{id = "Skewer", name = "Skewer", rarity = "Rare", crate = "Relic", finish = "stab", description = "..."},
+```
+
+`finish` is how the blow kills: `behead` (the default) or `stab`. Where it comes from works like a
+kill effect: `free = true`, `crate = "Relic"`, a pass tier (`execution = "<id>"`), or `unlock`.
+
+The clip: add a recipe to `EA.CLIPS` in `ServerScriptService ▸ Build ▸ ExecutionAnims` (steps of
+`{t, from = "<source clip>:<keyframe>", lean, twist}`, and `impact` = the second the blow lands),
+run `require(ServerScriptService.Build.ExecutionAnims).build()` in Studio, upload the
+KeyframeSequence it leaves in `ServerStorage ▸ ExecutionAnims`, and put an `Animation` named after
+the id, with that id and an `Impact` attribute, in `ReplicatedStorage ▸ ExecutionAnims`. Without
+it the server falls back to `Finisher`.
+
 ## 6b. Kill effects and emotes
 
 **Kill effects** (`Catalog ▸ KillFX`): what the body does when *you* land the killing blow,

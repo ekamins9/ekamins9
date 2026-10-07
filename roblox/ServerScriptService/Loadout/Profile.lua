@@ -19,6 +19,7 @@
        pass        {season, xp, premium, claimed = {free = {["3"] = true}, premium = {}}}
        login       {streak, claimed = "YYYY-MM-DD"}
        killfx      the equipped kill effect id     emotes   the emote wheel (up to 6 ids)
+       execution   the equipped execution id
        play        {day = "YYYY-MM-DD", seconds, claimed = {["1"] = true}}   today's playtime gifts
        eggs        {[eggId] = count}  waiting to be set in a nest
        nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
@@ -65,10 +66,10 @@ end
 
 local function default()
 	local p = {version = 2, wallet = {marks = 500, crowns = 0}, level = 1, xp = 0,
-		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}, companions = {}},
+		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}, companions = {}, executions = {}},
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
-		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
+		pass = {}, login = {}, killfx = "Shatter", execution = "Finisher", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, copies = {}, tally = {}, claims = {}, copySeq = 0}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
@@ -157,6 +158,7 @@ function Profile.has(plr, kind, id)
 	if kind == "skins" and type(id) == "string" and id:match(":Default$") then return true end
 	if kind == "skins" then local s = Catalog.SKIN[id]; if s and s.unlock and Catalog.unlocked(s.unlock, p) then return true end end
 	if kind == "killfx" then local f = Catalog.KILLFX_BY[id]; if f and (f.free or (f.unlock and Catalog.unlocked(f.unlock, p))) then return true end end
+	if kind == "executions" then local x = Catalog.EXECUTION_BY[id]; if x and (x.free or (x.unlock and Catalog.unlocked(x.unlock, p))) then return true end end
 	if kind == "emotes" then local e = Catalog.EMOTE[id]; if e and (e.free or (e.unlock and Catalog.unlocked(e.unlock, p))) then return true end end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
@@ -295,7 +297,7 @@ function Profile.summary(plr)
 	local p = Profile.get(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
-		login = p.login, killfx = p.killfx, emotes = p.emotes,
+		login = p.login, killfx = p.killfx, execution = p.execution, emotes = p.emotes,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
 		gauntlet = p.gauntlet, askedTraining = p.askedTraining,
 	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder,

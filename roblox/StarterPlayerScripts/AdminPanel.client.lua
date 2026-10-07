@@ -195,6 +195,7 @@ local ITEM_KINDS = {
 	{key = "weapon", label = "WEAPON", list = function() local t = {} for _, w in ipairs(Catalog.WEAPONS) do table.insert(t, {id = w.id, name = w.name or w.id}) end return t end},
 	{key = "emote", label = "EMOTE", list = function() local t = {} for _, e in ipairs(Catalog.EMOTES) do table.insert(t, {id = e.id, name = e.name or e.id}) end return t end},
 	{key = "killfx", label = "KILL FX", list = function() local t = {} for _, f in ipairs(Catalog.KILLFX) do table.insert(t, {id = f.id, name = f.name or f.id}) end return t end},
+	{key = "execution", label = "EXECUTION", list = function() local t = {} for _, x in ipairs(Catalog.EXECUTIONS) do table.insert(t, {id = x.id, name = x.name or x.id}) end return t end},
 	{key = "companion", label = "COMPANION", list = function() local t = {} for _, c in ipairs(Catalog.COMPANIONS) do table.insert(t, {id = c.id, name = c.name or c.id}) end return t end},
 	{key = "egg", label = "EGG", list = function() local t = {} for _, e in ipairs(Catalog.EGGS.eggs) do table.insert(t, {id = e.id, name = e.name or e.id}) end return t end},
 	{key = "crate", label = "CRATE", list = function() local t = {} for _, c in ipairs(Catalog.CRATES) do table.insert(t, {id = c.id, name = c.name or c.id}) end return t end},

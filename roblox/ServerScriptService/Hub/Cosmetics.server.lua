@@ -68,6 +68,8 @@ task.spawn(function()
 				local list = table.concat(type(p.emotes) == "table" and p.emotes or {}, ",")
 				if plr:GetAttribute("Emotes") ~= list then plr:SetAttribute("Emotes", list) end
 				if plr:GetAttribute("KillFx") ~= p.killfx then plr:SetAttribute("KillFx", p.killfx) end
+				local ex = (type(p.execution) == "string" and Catalog.EXECUTION_BY[p.execution] and Profile.has(plr, "executions", p.execution)) and p.execution or "Finisher"
+				if plr:GetAttribute("Execution") ~= ex then plr:SetAttribute("Execution", ex) end
 			end
 		end
 		task.wait(1.5)

@@ -188,11 +188,12 @@ and a UIScale fits it to any screen.
   (trail, aura), plus EQUIP / AS SECONDARY. **ARMOR** shows every set worn by you, piece by
   piece. You can toggle pieces, see the stats of its weight, and BUY (on the days its pack is in
   the shop) or EQUIP on a class of that weight. **KILL FX** plays each kill effect on you, over
-  and over, with EQUIP. **EMOTES** loops each emote on you and edits the six-slot wheel.
+  and over, with EQUIP. **EXECUTIONS** plays each finisher, you on a mannequin, with EQUIP.
+  **EMOTES** loops each emote on you and edits the six-slot wheel.
 - **SHOP**: **DAILY** has the packs plus the **WEAPONS shelf** (single skins, a headliner and
   three more, new every day; `Catalog ▸ Store`). **CRATES** has the chosen item on a big stage
   (a skin turning on its weapon, a kill effect or emote played on you), the strip, odds, pity
-  and the spinning drum. The **Relic Crate** holds kill effects and emotes. **CROWNS** has the Robux bundles and Crowns →
+  and the spinning drum. The **Relic Crate** holds kill effects, emotes and executions. **CROWNS** has the Robux bundles and Crowns →
   Marks. **COLORS** has the premium colours.
 - **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
   tasks), and **mastery** (kill-count skins, earned armor, earned titles) with progress bars.
@@ -316,6 +317,32 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   wing claws and back spines, and every eye has a white glint. SETTINGS ▸ Companions: All / Mine / None.
 - Testing in Studio: `/egg Royal 2`, `/ripen` (every nest ready), `/playtime 30`.
 
+## Executions
+
+A finisher on an enemy who's done for. With a weapon in hand, an enemy who is **bleeding out**,
+or at **20 % health or less with no guard up and no swing going**, close (6.5 studs) and in
+front of you, gets an **R  EXECUTE** tag over their head (`Executions.client`; the key is
+Settings ▸ Controls ▸ Execute). Pressing it sends `CombatRemote "Execute"` with the target. The
+weapon's server checks the same rule again (`ReplicatedStorage ▸ ExecuteRule`, shared by both),
+then:
+- holds both fighters: roots anchored, the victim 3.4 studs in front facing you, their swing or
+  guard cancelled, their bleeding paused, attributes `Executing` / `BeingExecuted` (the camera
+  rig and the procedural pose step aside for the clip);
+- plays your equipped clip (player attribute `Execution`, from the profile; `Finisher` for
+  everyone) on your character at Action4;
+- at the clip's `Impact` attribute, kills: a beheading, or for a `finish = "stab"` execution, run
+  through. Credit kind `execution` (the kill feed says "executed"); the usual kill stamina refund.
+- **Getting hit or kicked before the blow lands calls it off**, so a teammate can still save the
+  victim. Bosses can't be executed; teammates can't be either; and in a peaceful place players
+  can't execute players.
+
+Tuning: `ExecuteRule.CONFIG` (`RANGE`, `FACING`, `LOW_HP`, `DIST`, `AFTER`).
+
+The clips are built from the game's own hand-made clips (the Longsword's idle, overhead, stab and
+swing keyframes, re-timed and leaned) by `ServerScriptService ▸ Build ▸ ExecutionAnims`, uploaded,
+and kept in Studio as `ReplicatedStorage ▸ ExecutionAnims ▸ <id>` (Animation, attribute `Impact`).
+Content: `CONTENT_GUIDE.md` § 6c.
+
 ## Skin effects, kill effects, emotes (looks only)
 
 - **Skin effects** (`SkinFX`, applied by the `Dresser` after the tint and trim): Epic and
@@ -337,6 +364,8 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   bursts…), from Roblox's licensed libraries (Pro Sound Effects, APM Music) so they play in any
   game; the menu's preview plays them once, flat, on its first loop. Bots and dummies get their
   kill effect from `Scoreboard` (which watches `workspace.NPCs`) and nothing else, so it plays once.
+- **Executions** (`Catalog ▸ Executions`, clips in `ReplicatedStorage ▸ ExecutionAnims`): see
+  *Executions* below.
 - **Emotes** (`Emotes` + `Catalog ▸ Emotes`): hold **B**, point the mouse at an emote and let go
   (or tap B and click one). There are no number keys, because 1–9 are the backpack's weapon slots.
   The client starts the emote at once and asks `EmoteRemote "Play"`. The server checks ownership,
@@ -1018,7 +1047,13 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
   timed parry or a chamber pays nothing and a parry refunds. Every cost × the armor's
   `StaminaCostMult`. Regen: 13/s (× the weight's `RegenMult`) from 1.6 s after the last combat
   event, 20 % of that before it.
-- **Armor**: protection on a covered limb × (1 − the weapon's `ARMOR_PEN`).
+- **Armor**: protection on a covered limb × (1 − the weapon's `ARMOR_PEN`), × how well that
+  armor stands up to the blow's damage type (`CombatServer.ARMOR_VS`). The type is the weapon's
+  `DAMAGE_TYPE` if it sets one; otherwise every stab is **pierce**, hammers, maces, mauls and
+  staves are **blunt**, axes and polearm heads **chop**, and swords **cut**. Cuts glance off plate
+  (Heavy ×1.35, with sparks), pierce finds the gaps (×0.85–0.9), blunt hits go through plate
+  (Heavy ×0.55) and chops sit in between. Light armor takes every type about the same.
+- **Executions**: see *Executions* below.
 - **Head**: `HEAD_DAMAGE_MULT` × damage (2× by default) — no automatic kill.
 - **Kills**: a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
   with `BLEED_OUT_CHANCE` an arm/leg victim survives on `BLEED_HP` and bleeds out instead,

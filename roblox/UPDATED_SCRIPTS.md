@@ -1,4 +1,47 @@
-# Updated scripts: holstered weapons
+# Updated scripts: executions, and armor vs damage type
+
+- **Executions.**
+  - With a weapon in hand, an enemy who is bleeding out, or at 20 % health or less with their guard down and no swing going, gets an **R  EXECUTE** tag when they are close and in front of you.
+  - Press R (rebindable: Settings ▸ Controls ▸ Execute). Both fighters are held, your finisher plays, and the blow kills (a beheading, or run through).
+  - Getting hit or kicked before the blow lands calls it off. Bosses and teammates can't be executed, and players can't execute players in a peaceful place.
+  - The rule is shared by server and client: `ReplicatedStorage ▸ ExecuteRule`.
+- **Executions are cosmetics you own and equip**, like kill effects:
+  - Finisher (Common, everyone has it)
+  - Skewer (Rare)
+  - Headsman's Due (Epic)
+  - Kingslayer (Legendary)
+
+  The last three drop from the Relic Crate. ARMORY has an EXECUTIONS tab that plays each one (you on a mannequin), the crate stage and reveal show them, and the admin panel can grant them.
+- **The clips are made from your own clips:** the Longsword's idle, overhead, stab and swing keyframes, re-timed, held and leaned (`Build ▸ ExecutionAnims`). They are uploaded and kept in Studio as `ReplicatedStorage ▸ ExecutionAnims` (Animation instances with an `Impact` attribute). **Save the place** so they stay.
+- **Armor vs damage type.** Cuts glance off plate (Heavy takes ×1.35 protection, with sparks). Blunt weapons go through it (Heavy ×0.55). Stabs pierce (×0.85–0.9), and axes and polearms chop. Light armor takes every type about the same. The table is `CombatServer.ARMOR_VS`; a weapon can set its own `DAMAGE_TYPE`.
+- The kill feed says "executed".
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Executions.lua](ReplicatedStorage/Catalog/Executions.lua) | ReplicatedStorage ▸ Catalog ▸ Executions | ModuleScript | **new** |
+| [ExecuteRule.lua](ReplicatedStorage/ExecuteRule.lua) | ReplicatedStorage ▸ ExecuteRule | ModuleScript | **new** |
+| [Executions.client.lua](StarterPlayerScripts/Executions.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Executions | LocalScript | **new** |
+| [Build/ExecutionAnims.lua](ServerScriptService/Build/ExecutionAnims.lua) | ServerScriptService ▸ Build ▸ ExecutionAnims | ModuleScript | **new** (Studio tool) |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | Execute action; armor vs damage type |
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat ▸ CombatClient | ModuleScript | drops a swing when an execution starts |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `EXECUTIONS`, `EXECUTION_BY`, crate items, checks |
+| [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog ▸ Crates | ModuleScript | Relic description |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | Execute key (R) |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | `RigPose.still` (rest pose during an execution) |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | owned executions, equipped execution |
+| [Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy ▸ Economy | ModuleScript | crate wins and rewards of executions |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | Equip "execution" |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub ▸ Cosmetics | Script | player attribute `Execution` |
+| [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService ▸ Admin ▸ AdminServer | Script | grant executions |
+| [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ AdminPanel | LocalScript | EXECUTION item kind |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | EXECUTIONS tab, preview, crate stage and reveal |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Scoreboard | LocalScript | "executed" |
+| [RigReplicator.client.lua](StarterPlayerScripts/RigReplicator.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ RigReplicator | LocalScript | rest pose during an execution |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | doesn't turn a held body |
+
+---
+
+## Before that: holstered weapons
 
 - **The weapons you carry are worn on you**, so everyone sees your kit:
   - two-handed swords across the back, hilt over the right shoulder

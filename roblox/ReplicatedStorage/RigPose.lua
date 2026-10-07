@@ -119,6 +119,14 @@ function RigPose.apply(j, target, alpha, legAlpha)
 	end
 end
 
+-- mid-execution (either side of one: attributes Executing / BeingExecuted) the
+-- clip owns the body, so the procedural pose settles to rest under it
+local STILL = {pitch = 0, bob = 0, leanX = 0, leanZ = 0, kick = 0, crouch = 0, arm = 0, swayX = 0, swayY = 0, hitX = 0, hitZ = 0}
+function RigPose.still(char, i)
+	if char and (char:GetAttribute("Executing") or char:GetAttribute("BeingExecuted")) then return STILL end
+	return i
+end
+
 -- wire format: a flat array of 9 numbers
 local KEYS = {"pitch", "bob", "leanX", "leanZ", "kick", "crouch", "arm", "swayX", "swayY", "hitX", "hitZ"}
 local LIMIT = 4   -- sanity clamp on every input
