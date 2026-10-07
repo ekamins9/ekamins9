@@ -61,6 +61,37 @@ local HAND = V3(0, -1, 0)     -- grip point in arm space
 local FOOT = V3(0, -1, 0)     -- sole centre in leg space
 local ARM_LEN = (HAND - V3(0.5, 0.5, 0)).Magnitude   -- shoulder joint → hand, 1.58
 
+-- the arm's front for an arm aimed along `aim`: its rest front (the torso's
+-- forward) carried by the smallest turn from hanging straight down. Raise an arm
+-- ahead and its front faces up; out to the side, it stays forward — no sudden
+-- flips of the arm about its own length, whatever the blade does.
+local function naturalFront(torso, aim)
+	local down, fwd = -torso.UpVector, torso.LookVector
+	local axis = down:Cross(aim)
+	local d = clamp(down:Dot(aim), -1, 1)
+	if axis.Magnitude < 1e-4 then return d > 0 and fwd or -fwd end
+	return CFrame.fromAxisAngle(axis.Unit, math.acos(d)):VectorToWorldSpace(fwd)
+end
+
+-- carry a limb's front from its last aim to its new one by the smallest turn
+-- (parallel transport): the limb never spins about its own length
+local function transport(front, fromAim, toAim)
+	local axis = fromAim:Cross(toAim)
+	if axis.Magnitude < 1e-6 then return front end
+	local a = math.acos(clamp(fromAim:Dot(toAim), -1, 1))
+	return CFrame.fromAxisAngle(axis.Unit, a):VectorToWorldSpace(front)
+end
+
+-- turn `from` toward `to` by at most `cap` radians (an arm can only swing so fast)
+local function capTurn(from, to, cap)
+	local a = math.acos(clamp(from:Dot(to), -1, 1))
+	if a <= cap then return to end
+	local axis = from:Cross(to)
+	if axis.Magnitude < 1e-6 then return to end
+	return CFrame.fromAxisAngle(axis.Unit, cap):VectorToWorldSpace(from)
+end
+AF.ARM_CAP = {right = math.rad(40), left = math.rad(38)}   -- per 1/30 s
+
 local function transform(jt, p0, p1) return jt.C0:Inverse() * p0:Inverse() * p1 * jt.C1 end
 
 -- unit vector: az degrees from ahead (-Z) toward the right (+X), el degrees up
@@ -114,20 +145,22 @@ local EASE = {
 --   reach       how far along the blade from the pivot the right arm aims
 --   twistK      torso twist per degree of blade azimuth, capped at twistMax
 --   len         blade length the edge is reckoned at (for the leading-edge solve)
---   guard       the ready pose {az, el, twist, lean}; stance = feet
+--   doubleEdge  a sword: either edge may lead (no half-turn of the wrist to bring one round)
+--   guard       the ready pose {az, el, twist, lean}: blades held UP (el ~75), the edge
+--               toward the enemy, never levelled at them; stance = feet
 local CLASSES = {
-	Blade1H = {twoHanded = false, pivot = V3(0.45, 0.35, -0.25), reach = 1.6, twistK = 0.36, twistMax = 52, len = 2.6,
-		guard = {az = 12, el = 42, twist = 18, lean = 4}, stance = 0.55, backhand = 0.55, leftFree = true},
-	Blunt1H = {twoHanded = false, pivot = V3(0.5, 0.45, -0.2), reach = 1.5, twistK = 0.4, twistMax = 58, len = 1.8,
-		guard = {az = 18, el = 55, twist = 20, lean = 5}, stance = 0.6, backhand = 0.5, leftFree = true, chop = 1.2},
-	Dagger  = {twoHanded = false, pivot = V3(0.4, 0.2, -0.35), reach = 1.7, twistK = 0.3, twistMax = 40, len = 1.1,
-		guard = {az = 8, el = 15, twist = 25, lean = 10}, stance = 0.65, backhand = 0.6, leftFree = true, quick = true},
-	Blade2H = {twoHanded = true, gap = 0.62, pivot = V3(0.18, 0.25, -0.35), reach = 1.25, twistK = 0.4, twistMax = 55, len = 3.4,
-		guard = {az = 4, el = 38, twist = 12, lean = 4}, stance = 0.6},
-	Heavy2H = {twoHanded = true, gap = 0.95, slack = 0.3, pivot = V3(0.2, 0.3, -0.25), reach = 1.15, twistK = 0.46, twistMax = 62, len = 2.8,
-		guard = {az = 12, el = 30, twist = 18, lean = 6}, stance = 0.7, chop = 1.3, heavy = true},
-	Polearm = {twoHanded = true, gap = 1.35, slack = 0.6, pivot = V3(0.25, 0.05, -0.2), reach = 1.05, twistK = 0.42, twistMax = 55, len = 4.2,
-		guard = {az = 6, el = 18, twist = 22, lean = 6}, stance = 0.75, low = true},
+	Blade1H = {doubleEdge = true, guardAt = V3(0.55, -0.2, -1.15), twoHanded = false, pivot = V3(0.45, 0.2, -0.25), reach = 1.6, twistK = 0.36, twistMax = 52, len = 2.6,
+		guard = {az = 14, el = 74, twist = 18, lean = 4}, stance = 0.55, backhand = 0.55, leftFree = true},
+	Blunt1H = {guardAt = V3(0.55, -0.15, -1.1), twoHanded = false, pivot = V3(0.5, 0.3, -0.2), reach = 1.5, twistK = 0.4, twistMax = 58, len = 1.8,
+		guard = {az = 16, el = 76, twist = 20, lean = 5}, stance = 0.6, backhand = 0.5, leftFree = true, chop = 1.2},
+	Dagger  = {doubleEdge = true, guardAt = V3(0.5, -0.05, -1.25), twoHanded = false, pivot = V3(0.4, 0.05, -0.35), reach = 1.7, twistK = 0.3, twistMax = 40, len = 1.1,
+		guard = {az = 8, el = 55, twist = 25, lean = 10}, stance = 0.65, backhand = 0.6, leftFree = true, quick = true},
+	Blade2H = {doubleEdge = true, guardAt = V3(0.2, -0.3, -1.05), twoHanded = true, gap = 0.62, pivot = V3(0.18, 0.1, -0.35), reach = 1.25, twistK = 0.4, twistMax = 55, len = 3.4,
+		guard = {az = 8, el = 76, twist = 12, lean = 4}, stance = 0.6},
+	Heavy2H = {guardAt = V3(0.25, -0.35, -1.0), twoHanded = true, gap = 0.95, slack = 0.3, pivot = V3(0.2, 0.15, -0.25), reach = 1.15, twistK = 0.46, twistMax = 62, len = 2.8,
+		guard = {az = 12, el = 72, twist = 18, lean = 6}, stance = 0.7, chop = 1.3, heavy = true},
+	Polearm = {guardAt = V3(0.35, -0.3, -0.95), twoHanded = true, gap = 1.35, slack = 0.6, pivot = V3(0.25, -0.1, -0.2), reach = 1.05, twistK = 0.42, twistMax = 55, len = 4.2,
+		guard = {az = 8, el = 62, twist = 22, lean = 6}, stance = 0.75, low = true},
 }
 AF.CLASSES = CLASSES
 
@@ -210,21 +243,24 @@ AF.MOVES = MOVES
 AF.FLOOR = -2.75   -- the tip never goes below this (feet are at -3): the blade stops at the ground
 
 local solveRaw
-function AF.solve(cls, p, side, edgeHint, legs)
-	local w = solveRaw(cls, p, side, edgeHint, legs)
+function AF.solve(cls, p, side, edgeHint, legs, prev)
+	local w = solveRaw(cls, p, side, edgeHint, legs, prev)
 	local tries = 0
 	while (w.rHand + w.blade * cls.len).Y < AF.FLOOR and tries < 30 do
 		p = table.clone(p); p.el = (p.el or 0) + 3
-		w = solveRaw(cls, p, side, edgeHint, legs)
+		w = solveRaw(cls, p, side, edgeHint, legs, prev)
 		tries += 1
 	end
 	return w
 end
 
-solveRaw = function(cls, p, side, edgeHint, legs)
+solveRaw = function(cls, p, side, edgeHint, legs, prev)
 	side = side or 1
 	local az, el = p.az * side, p.el
-	local twist = p.tw and p.tw * side or clamp(p.az * cls.twistK, -cls.twistMax, cls.twistMax) * side
+	-- (a thrust is a right-handed move either way: the left one comes from just left of
+	-- centre with less turn, not from a mirrored body)
+	local sideK = (p.stab and side < 0) and (cls.twoHanded and 0.4 or -0.45) or side
+	local twist = p.tw and p.tw * sideK or clamp(p.az * cls.twistK, -cls.twistMax, cls.twistMax) * side
 	local lean, tilt = p.ln or 0, (p.tl or 0) * side
 	local blade = dir(az, el)
 
@@ -244,7 +280,13 @@ solveRaw = function(cls, p, side, edgeHint, legs)
 	local target
 	if p.stab then
 		local s = p.stab
-		target = V3(s.X * side, s.Y, s.Z)
+		if side > 0 then
+			target = V3(s.X, s.Y, s.Z)
+		elseif cls.twoHanded then
+			target = V3(s.X * 0.6, s.Y, s.Z)          -- two hands drive from the same side either way
+		else
+			target = V3(0.15 - s.X * 0.25, s.Y, s.Z)  -- one hand: from just left of centre
+		end
 	else
 		target = pivot + blade * cls.reach
 	end
@@ -253,27 +295,39 @@ solveRaw = function(cls, p, side, edgeHint, legs)
 	local rAim = (target - rShoulder)
 	local rDist = rAim.Magnitude
 	rAim = rAim.Unit
-	local rArm, rHand = limb(rShoulder, rAim, blade, J.RS.C1.Position, HAND, clamp(rDist - ARM_LEN, -0.15, 0.3))
+	if prev then rAim = capTurn(prev.rAim, rAim, AF.ARM_CAP.right) end
+	local rFront = prev and transport(prev.rFront, prev.rAim, rAim) or naturalFront(torso, rAim)
+	local rArm, rHand = limb(rShoulder, rAim, rFront, J.RS.C1.Position, HAND, clamp(rDist - ARM_LEN, -0.15, 0.3))
 
 	-- the weapon: blade where the pose says, edge leading
-	local edge = orth(edgeHint or V3(-side, 0, 0), blade) or orth(V3(1, 0, 0), blade)
+	-- (held poses: the edge toward the enemy)
+	local edge = orth(edgeHint or V3(0, 0, -1), blade) or orth(V3(-side, 0, 0), blade) or orth(V3(1, 0, 0), blade)
 	local handle = CFrame.fromMatrix(rHand, edge, blade, edge:Cross(blade))
 
 	-- the left hand: on the grip, or out for balance
 	local lShoulder = torso:PointToWorldSpace(J.LS.C0.Position)
-	local lTarget, lFront
+	local lTarget, lFront, gripG
 	if cls.twoHanded then
 		-- the left hand slides along the grip to the nearest point it can hold
 		-- (a polearm's haft gives it room; a sword's hilt hardly any)
+		-- the point on the grip exactly an arm's length from the shoulder (the root of
+		-- |c - b·g| = L nearest the class's gap), clamped to the grip: continuous
+		-- frame to frame, so the hand slides instead of jumping
 		local slack = cls.slack or 0.15
-		local best, bestErr
-		for i = 0, 8 do
-			local g = cls.gap - slack + (2 * slack) * i / 8
-			local pt = rHand - blade * g
-			local err = math.abs((pt - lShoulder).Magnitude - ARM_LEN)
-			if not bestErr or err < bestErr - 0.02 then best, bestErr = pt, err end
+		local c = rHand - lShoulder
+		local bc = blade:Dot(c)
+		local disc = bc * bc - c:Dot(c) + ARM_LEN * ARM_LEN
+		local g
+		if disc >= 0 then
+			local r1, r2 = bc + math.sqrt(disc), bc - math.sqrt(disc)
+			local ref = (prev and prev.g) or cls.gap   -- stay with last frame's solution
+			g = math.abs(r1 - ref) < math.abs(r2 - ref) and r1 or r2
+		else
+			g = bc
 		end
-		lTarget, lFront = best, blade
+		g = clamp(g, cls.gap - slack, cls.gap + slack)
+		lTarget, lFront = rHand - blade * g, blade
+		gripG = g
 	else
 		-- opposite the blade: out front when the blade is back, tucked when it comes through
 		local swingAz = clamp(az, -150, 150)
@@ -284,9 +338,12 @@ solveRaw = function(cls, p, side, edgeHint, legs)
 	end
 	local lAim = lTarget - lShoulder
 	local lDist = lAim.Magnitude
-	local lArm, lHand = limb(lShoulder, lAim.Unit, lFront, J.LS.C1.Position, HAND, clamp(lDist - ARM_LEN, -0.35, 0.55))
+	if prev then lAim = capTurn(prev.lAim, lAim.Unit, AF.ARM_CAP.left) end
+	local lFront2 = prev and transport(prev.lFront, prev.lAim, lAim.Unit) or naturalFront(torso, lAim.Unit)
+	local lArm, lHand = limb(lShoulder, lAim.Unit, lFront2, J.LS.C1.Position, HAND, clamp(lDist - ARM_LEN, -0.35, 0.55))
 
-	local out = {Torso = torso, Head = head, ["Right Arm"] = rArm, ["Left Arm"] = lArm, Handle = handle, rHand = rHand, lHand = lHand, lErr = (lHand - lTarget).Magnitude, blade = blade}
+	local out = {Torso = torso, Head = head, ["Right Arm"] = rArm, ["Left Arm"] = lArm, Handle = handle, rHand = rHand, lHand = lHand, lErr = (lHand - lTarget).Magnitude, blade = blade,
+		state = {rAim = rAim, rFront = orth(rFront, rAim) or rFront, lAim = lAim.Unit, lFront = orth(lFront2, lAim.Unit) or lFront2, g = gripG}}
 	if legs then
 		-- feet planted in the stance (idle / block only). Solved against the
 		-- UNTURNED torso: in game the hips counter the torso's animated turn
@@ -325,13 +382,17 @@ end
 --------------------------------------------------------------------
 local function guardPose(cls)
 	local g = cls.guard
-	return {az = g.az, el = g.el, tw = g.twist, ln = g.lean}
+	-- the hands sit low (chest / belly), the blade stands up out of them
+	local want = cls.guardAt or V3(0.5, -0.15, -1.1)
+	local natural = cls.pivot + dir(g.az, g.el) * cls.reach
+	return {az = g.az, el = g.el, tw = g.twist, ln = g.lean, hand = want - natural}
 end
 
 local function lerpPose(a, b, x)
 	local function L(k, def) local va, vb = a[k] or def, b[k] or def; return va + (vb - va) * x end
 	local p = {az = L("az", 0), el = L("el", 0), ln = L("ln", 0), tl = L("tl", 0)}
 	if a.tw or b.tw then p.tw = L("tw", nil) end
+	if a.hand or b.hand then p.hand = (a.hand or Vector3.zero):Lerp(b.hand or Vector3.zero, x) end
 	if a.stab or b.stab then
 		local sa = a.stab or (b.stab and nil)
 		local sb = b.stab
@@ -378,7 +439,6 @@ local function sample(keys, t)
 			local x = (t - a.t) / math.max(b.t - a.t, 1e-6)
 			x = (EASE[b.ease] or EASE.linear)(clamp(x, 0, 1))
 			local p = lerpPose(a.p, b.p, x)
-			-- (the hand offset is not interpolated; nothing animates it yet)
 			return p
 		end
 	end
@@ -397,43 +457,69 @@ function AF.frames(className, attack)
 		local t = i / AF.FPS
 		poses[i] = {t = t, p = sample(keys, t)}
 	end
-	-- the strike's direction of travel at its release sets the edge for the windup
-	local function tipAt(t)
-		local w = AF.solve(cls, sample(keys, t), side)
-		return w.rHand + w.blade * cls.len * 0.8
+	-- THE EDGE. The strike turns the blade about an axis (its swing plane's
+	-- normal); the edge that leads is that axis × the blade — it turns smoothly
+	-- with the blade, never jitters. Thrusts keep the edges level (flat to the
+	-- ground). From the guard it rolls into place over the first part of the
+	-- windup and back again as the follow-through returns to guard.
+	local function bladeAt(t) return AF.solve(cls, sample(keys, t), side).blade end
+	local axis
+	if kind == "Stab" then
+		axis = V3(0, 1, 0)
+	else
+		local b1, b2 = bladeAt(marks.Load + AF.STRIKE * 0.3), bladeAt(marks.Load + AF.STRIKE * 0.58)
+		axis = b1:Cross(b2)
+		axis = axis.Magnitude > 1e-4 and axis.Unit or V3(0, side, 0)
 	end
-	local strikeDir = (tipAt(marks.Load + AF.STRIKE * 0.5) - tipAt(marks.Load + AF.STRIKE * 0.2))
-	if kind == "Stab" then strikeDir = V3(-side, 0, 0) end   -- thrusts: edges level, flat to the ground
-	local out, lastEdge = {}, strikeDir.Unit
+	local function smooth(a, b, x) local k = clamp((x - a) / math.max(b - a, 1e-6), 0, 1); return k * k * (3 - 2 * k) end
+	-- The edge is CARRIED along the blade's path frame to frame (the smallest
+	-- turn that keeps it square to the blade), then turned toward where it
+	-- wants to be at a capped rate: the strike's leading edge through windup and
+	-- strike, the guard's (toward the enemy) on the way back. A sword takes
+	-- whichever of its two edges is nearer. No reference that can go undefined
+	-- mid-swing, no snaps.
+	local fwd = V3(0, 0, -1)
+	local function wantAt(t, blade)
+		if t <= marks.Through then return orth(axis:Cross(blade), blade) end
+		if math.abs(blade:Dot(fwd)) < 0.9 then return orth(fwd, blade) end
+		return nil
+	end
+	local function stepCap(t)
+		if t <= marks.Load then return rad(14) end
+		if t <= marks.Through then return rad(25) end
+		return rad(12)
+	end
+	local out, state = {}, nil
+	local prevBlade = bladeAt(0)
+	local edge = orth(fwd, prevBlade) or orth(V3(-1, 0, 0), prevBlade)
 	for i = 0, n do
 		local t = poses[i].t
-		local edge
-		if kind ~= "Stab" and t > marks.Load and i < n then
-			local a = tipAt(math.max(t - 0.5 / AF.FPS, 0))
-			local b = tipAt(t + 0.5 / AF.FPS)
-			local mv = b - a
-			edge = mv.Magnitude > 0.05 and mv.Unit or lastEdge
-			edge = lastEdge:Lerp(edge, 0.6)
-		elseif t <= marks.Load then
-			-- winding up: roll from the guard's edge to the strike's
-			local x = clamp(t / marks.Load, 0, 1)
-			edge = V3(-side, 0, 0):Lerp(strikeDir.Unit, EASE.sine(x))
-		else
-			edge = lastEdge
+		local blade = bladeAt(t)
+		edge = orth(transport(edge, prevBlade, blade), blade) or edge
+		local want = wantAt(t, blade)
+		if want then
+			if cls.doubleEdge and want:Dot(edge) < 0 then want = -want end
+			local a = math.atan2(blade:Dot(edge:Cross(want)), edge:Dot(want))
+			local cap = stepCap(t)
+			edge = CFrame.fromAxisAngle(blade, clamp(a, -cap, cap)):VectorToWorldSpace(edge)
+			edge = orth(edge, blade) or edge
 		end
-		lastEdge = edge
-		local w = AF.solve(cls, poses[i].p, side, edge)
-		out[#out + 1] = {t = t, w = w}
+		prevBlade = blade
+		local wf = AF.solve(cls, poses[i].p, side, edge, nil, state)
+		state = wf.state
+		out[#out + 1] = {t = t, w = wf}
 	end
 	return out, marks
 end
 
--- a held / looping pose: idle (breathing), block, hit flinch
+-- a held / looping pose: idle (breathing), block, hit flinch. None of them key the legs:
+-- Roblox's walk cycle plays at Core priority, below Idle, so legs keyed here would
+-- freeze the walk (the hips' counter keeps the legs planted instead)
 local HELD = {
 	Idle = function(cls)
 		local g = withTwist(cls, guardPose(cls))
 		local up = table.clone(g); up.el += 3; up.ln -= 1.5
-		return {{t = 0, p = g}, {t = 1.3, p = up}, {t = 2.6, p = g}}, true, true
+		return {{t = 0, p = g}, {t = 1.3, p = up}, {t = 2.6, p = g}}, true, false
 	end,
 	Block = function(cls)
 		-- 1H / 2H: the blade across the face, edge out; polearms: the haft across
@@ -445,7 +531,7 @@ local HELD = {
 		else
 			p = {az = -55, el = 38, tw = 12, ln = 3, hand = V3(0, 0.55, 0.1)}
 		end
-		return {{t = 0, p = p}, {t = 0.6, p = p}}, true, true
+		return {{t = 0, p = p}, {t = 0.6, p = table.clone(p)}}, true, false
 	end,
 	Hit = function(cls)
 		local g = withTwist(cls, guardPose(cls))
@@ -459,14 +545,14 @@ function AF.heldFrames(className, name)
 	local cls = CLASSES[className]
 	local keys, looped, legs = HELD[name](cls)
 	for _, k in ipairs(keys) do withTwist(cls, k.p) end
-	local out = {}
+	local out, state = {}, nil
 	local n = math.floor(keys[#keys].t * AF.FPS + 0.5)
 	for i = 0, n do
 		local t = i / AF.FPS
 		local p = sample(keys, t)
-		local hand = keys[1].p.hand
-		p.hand = hand
-		out[#out + 1] = {t = t, w = AF.solve(cls, p, 1, nil, legs)}
+		local w = AF.solve(cls, p, 1, nil, legs, state)
+		state = w.state
+		out[#out + 1] = {t = t, w = w}
 	end
 	return out, looped
 end
