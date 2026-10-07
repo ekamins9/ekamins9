@@ -5572,15 +5572,21 @@ end
 
 topClose.Activated:Connect(function() hide() end)
 
--- M: a pop-up closes first, then a screen (back to the lobby), then the menu
-UserInputService.InputBegan:Connect(function(input)
-	if input.KeyCode ~= MENU_KEY or listening then return end
-	if UserInputService:GetFocusedTextBox() then return end
+-- M (or the MENU button on a touch screen: _G.HubMenuToggle): a pop-up closes
+-- first, then a screen (back to the lobby), then the menu
+local function menuKey()
 	if open then
 		if modalBack.Visible then closeModal()
 		elseif currentTab ~= "PLAY" then selectTab("PLAY")
 		else hide() end
 	else show("PLAY") end
+end
+_G.HubMenuToggle = menuKey
+_G.HubMenuOpen = function() return open end
+UserInputService.InputBegan:Connect(function(input)
+	if input.KeyCode ~= MENU_KEY or listening then return end
+	if UserInputService:GetFocusedTextBox() then return end
+	menuKey()
 end)
 
 task.spawn(function()
@@ -5759,6 +5765,10 @@ do
 end
 
 hubEvent.OnClientEvent:Connect(function(what, a, b, c)
+	if what == "FirstBattleDone" then
+		toast("FIRST BATTLE DONE!  Off to the Courtyard: pick your class, gear and more in the menu.", COL.GOOD)
+		return
+	end
 	if what == "Toast" then
 		toast(a)
 	elseif what == "TradeInvite" and type(a) == "table" then

@@ -57,18 +57,21 @@ end
 
 local function other(t) return t == "A" and "B" or "A" end
 
--- living players of each side within r of pos (flat distance; |dy| ≤ h)
+-- living fighters of each side within r of pos (flat distance; |dy| ≤ h),
+-- fill bots too; `who` is the attacking players (they get the pay)
 local function countNear(pos, r, h, attackKey)
 	local a, d, who = 0, 0, {}
-	for _, p in ipairs(Players:GetPlayers()) do
-		local c = p.Character
-		local hrp = c and c:FindFirstChild("HumanoidRootPart")
-		local hum = c and c:FindFirstChildOfClass("Humanoid")
-		if hrp and hum and hum.Health > 0 then
+	for _, key in ipairs({"A", "B"}) do
+		for char, hrp in pairs(Teams.fighters(key)) do
 			local off = hrp.Position - pos
 			if Vector3.new(off.X, 0, off.Z).Magnitude <= r and math.abs(off.Y) <= (h or 12) then
-				local t = Teams.keyOf(p)
-				if t == attackKey then a += 1; table.insert(who, p) elseif t then d += 1 end
+				if key == attackKey then
+					a += 1
+					local p = Players:GetPlayerFromCharacter(char)
+					if p then table.insert(who, p) end
+				else
+					d += 1
+				end
 			end
 		end
 	end

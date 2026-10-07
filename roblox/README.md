@@ -113,6 +113,63 @@ delete it; `Game/GameServer` replaced it.
 menu clones the chosen one into your Backpack when you spawn. Empty StarterPack, or
 you'll spawn with two.
 
+## A newcomer's first minutes
+
+A brand-new player (profile `tutorial` 0; the player attribute `Tutorial` mirrors it) never sees
+a menu first:
+1. **The Courtyard sends them straight to BASIC TRAINING** (`HubServer`, a Tiltyard server of
+   their own). They spawn at once as the Footman (no class screen: `LoadoutServer` spawns anyone
+   with tutorial < 2) and walk a seven-step course (`Catalog ▸ Drills`, `basic = true`): swing,
+   stab, overhead, block, parry, kick, then beat a Squire in the ring. For each step they're
+   **placed right in front of its dummy, facing it** (`Training`, `FaceYaw` / `FaceTick` turn the
+   camera with them). The lesson dummies' blows are **harmless** (attribute `Harmless`): they land
+   and flinch, and a block or parry works, but they don't hurt. The card up top says STEP n / 7;
+   **SKIP TRAINING** (top right) goes straight to battle.
+2. **Trained (or skipped): tutorial 1, straight into a battle** (`_G.HubTravel` → a Warfront
+   server with room, or a new one in Team Deathmatch). Bots fill it (below), and a server with
+   a newcomer in it fields only Squires.
+3. **The first battle's round ends: tutorial 2**, a FIRST BATTLE DONE note, and back to the
+   Courtyard after the results, where the full menu (classes, loadouts, shop…) is theirs.
+
+Anyone who played before (level above 1, or asked about training already) starts at 2. Studio
+can't load saved profiles, so there every Play counts as a returning player unless
+`GameConfig.STUDIO_NEWCOMER` is true (test the path with it on).
+
+Every class now starts with its own pair of free weapons (`GameConfig.CLASSES` primary /
+secondary): **Knight** Greatsword + War Hammer, **Footman** Spear + Shortsword, **Vanguard**
+Arming Sword + Shortsword. Older saves whose class still had the lone default Shortsword get the
+pair (profile `loadoutV`).
+
+## Bot fill (`Game ▸ BotFill`)
+
+A Warfront match is never empty: while a round runs, bots make up the numbers to the mode's
+`botFill` (players + bots on the field; half a side in team modes): FFA 8, Duel 4, TDM 12, LTS 8,
+KOTH 10, Siege 12. A player who joins takes a bot's place (the one farthest from any player
+leaves); a fallen bot's place fills again after 5 s (Last Team Standing: one life a round, bots
+too, all in at the start). Skills: 60% Squire, 33% Knight, 7% Champion (Squires only with a
+newcomer on the server). Bots carry a team (`Team`, tabard, team colours) and the attribute
+`FillBot`.
+- They fight **everyone not on their side**, players and bots (`Bots.spawn{fightBots = true}`),
+  and with nobody within ~38 studs they **head for the objective** (`goal`: Round `ObjPos`, the
+  hill or the ram). Long trips use **pathfinding** (`Bot:pathDir`, PathfindingService, worked out
+  again every few seconds), so spawn rooms and walls don't trap them.
+- They **count**: a fallen bot costs its side a TDM ticket and gives its killer the kill
+  (`Game.onBotDeath`); they stand on KOTH's hill and push or block Siege's ram
+  (`Teams.fighters`); Last Team Standing counts them alive (`Teams.botsAlive`, `Game.fielded`).
+- A kill on a bot pays like a kill for the round, but stays off the lifetime kill count and the
+  leaderboard. Not on custom servers, ranked (The Lists), Horde or the hubs.
+
+## Touch screens (phones, tablets)
+
+On a touch screen with no keyboard, `TouchControls` puts the fight under the right thumb:
+**BLOCK** (hold) in the corner, **◀ SWING** and **SWING ▶** (the side), **STAB**, **OVERHEAD**,
+**KICK**, **FEINT** and **DODGE** around it; **SPRINT** (hold) and **JUMP** above Roblox's
+movement stick; **☰ MENU** top left (the M key). A drag on open screen (right of the stick)
+turns the camera. Buttons go through `ReplicatedStorage ▸ TouchInput`, so each does exactly what
+its key does (`CombatClient`, `Movement`, `CameraRig` listen). They scale with the screen and
+hide while you're dead or in the menu; Roblox's own jump button is hidden. The training's
+lesson text names buttons instead of keys on a touch screen.
+
 ## Classes, pieces, the Dresser
 
 `LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they pick a

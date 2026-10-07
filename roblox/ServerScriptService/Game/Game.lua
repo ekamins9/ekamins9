@@ -272,6 +272,26 @@ function Game.onDeath(victimPlr, killerPlr, victimChar)
 	Game.current:publishScores()
 end
 
+-- a fill bot fell (Game ▸ BotFill): the mode counts it like any death on its
+-- side (a TDM ticket), and its killer's kill
+function Game.onBotDeath(model, killerPlr)
+	local mode = Game.current
+	if not mode then return end
+	if killerPlr then mode:onKill(killerPlr, nil, model) end
+	if mode.onBotDeath then mode:onBotDeath(model:GetAttribute("Team"), model) end
+	mode:publishScores()
+end
+-- where a fighter of a side comes in: the mode's own rule, as for a player on that side
+function Game.spawnCFrameForTeam(key)
+	local stand = {Team = key and Teams.object(key) or nil}
+	local ok, cf = pcall(function() return Game.current and Game.current:spawnCFrame(stand) end)
+	if ok and typeof(cf) == "CFrame" then return cf end
+	return MapLoader.pickSpawn(key, {})
+end
+-- how many fill bots each side fielded this round (BotFill keeps it): a side
+-- of bots alone is still a side (Last Team Standing)
+Game.fielded = {A = 0, B = 0}
+
 function Game.waveWait(plr)
 	if Game.current and Game.current.waveWait then return Game.current:waveWait(plr) end
 	return 0

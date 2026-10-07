@@ -1,4 +1,53 @@
-# Updated scripts: new finishers, more pets, everyone sees kill effects
+# Updated scripts: newcomer path, bot fill, touch controls, class loadouts
+
+- **A brand-new player never sees a menu first.**
+  - The Courtyard sends them straight into **Basic Training**: 7 steps (swing, stab, overhead, block, parry, kick, beat a Squire).
+  - For each step they're placed right in front of its dummy, facing it.
+  - The lesson dummies' blows land and flinch, but don't hurt.
+  - **SKIP TRAINING** is top right.
+  - Then it's straight into a battle. After that first round they come back to the Courtyard with the full menu.
+  - Studio: set `GameConfig.STUDIO_NEWCOMER = true` to test the path (Studio can't load saves, so it's off by default).
+- **Bots fill every Warfront match.**
+  - Fill targets: FFA 8, Duel 4, TDM 12, LTS 8, KOTH 10, Siege 12. Players take bots' places as they join.
+  - Bots fight players and each other, head for the hill or the ram, and use pathfinding.
+  - They cost tickets, count on objectives and pay like kills for the round, but stay off the lifetime kill count and the leaderboard.
+  - Only Squires while a newcomer is on the server.
+- **Phones and tablets get on-screen fight controls:** BLOCK, both SWING sides, STAB, OVERHEAD, KICK, FEINT, DODGE, SPRINT, JUMP and MENU. Dragging the screen turns the camera.
+- **Each class starts with its own pair:**
+  - Knight: Greatsword + War Hammer
+  - Footman: Spear + Shortsword
+  - Vanguard: Arming Sword + Shortsword
+
+  Old saves with the lone Shortsword get them.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game ▸ BotFill | ModuleScript | **new** |
+| [TouchInput.lua](ReplicatedStorage/TouchInput.lua) | ReplicatedStorage ▸ TouchInput | ModuleScript | **new** |
+| [TouchControls.client.lua](StarterPlayerScripts/TouchControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ TouchControls | LocalScript | **new** |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | fight bots, objective goal, pathfinding |
+| [Game.lua](ServerScriptService/Game/Game.lua) | ServerScriptService ▸ Game ▸ Game | ModuleScript | onBotDeath, spawnCFrameForTeam, fielded |
+| [Teams.lua](ServerScriptService/Game/Teams.lua) | ServerScriptService ▸ Game ▸ Teams | ModuleScript | object, botsAlive, fighters |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game ▸ GameServer | Script | starts BotFill; an asked-for mode isn't voted away |
+| [TDM.lua](ServerScriptService/Game/Modes/TDM.lua), [LTS.lua](ServerScriptService/Game/Modes/LTS.lua), [KOTH.lua](ServerScriptService/Game/Modes/KOTH.lua), [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | count bots |
+| [Tiltyard.lua](ServerScriptService/Game/Modes/Tiltyard.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Tiltyard | ModuleScript | Studio can switch out of it |
+| [Training.lua](ServerScriptService/Game/Training.lua) | ServerScriptService ▸ Game ▸ Training | ModuleScript | basic training, placing, skip, harmless dummies |
+| [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ReplicatedStorage ▸ Catalog ▸ Drills | ModuleScript | `basic` steps, shorter goals |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | `Harmless` attackers |
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat ▸ CombatClient | ModuleScript | touch buttons |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | newcomer routing, first battle, `_G.HubTravel` |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | newcomers spawn at once |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | tutorial, class pairs, setTutorial |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService ▸ Scoreboard | Script | bot kills pay |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | botFill, class pairs, STUDIO_NEWCOMER |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Training | LocalScript | step card, skip, banners, button names |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | first battle note, `_G.HubMenuToggle` |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | FaceYaw, touch look |
+| [Movement.client.lua](StarterCharacterScripts/Movement.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ Movement | LocalScript | touch buttons |
+
+---
+
+## Before that: new finishers, more pets, everyone sees kill effects
 
 - **Executions are gone** (the R finisher, its menu tab, clips and catalog), and half-sword was dropped. Armor-vs-damage-type from the same change stays.
 - **Everyone sees everyone's kill effect.**

@@ -267,6 +267,14 @@ Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2
 are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
 never return: their items become RELICS, which is what makes them worth something.
 
+## 6d. Bot fill and the newcomer's course
+
+- How many fighters a Warfront mode fills to: `botFill` on the mode in `GameConfig.MODES`
+  (remove it and that mode gets no bots). Skill mix, weapons and names: `BotFill.CONFIG`.
+- Basic training's steps: `basic = true` on a lesson in `Catalog ▸ Drills` (in their order there).
+- A class's starting weapons: `primary` / `secondary` on the class in `GameConfig.CLASSES` (free
+  weapons; a secondary must have `secondary = true` in `Catalog ▸ Weapons`).
+
 ## 6b. Kill effects and emotes
 
 **Kill effects** (`Catalog ▸ KillFX`): what the body does when *you* land the killing blow,

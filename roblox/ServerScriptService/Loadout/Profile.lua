@@ -19,6 +19,8 @@
        pass        {season, xp, premium, claimed = {free = {["3"] = true}, premium = {}}}
        login       {streak, claimed = "YYYY-MM-DD"}
        killfx      the equipped kill effect id     emotes   the emote wheel (up to 6 ids)
+       tutorial    0 = brand new (training next) · 1 = trained or skipped (first match
+                   next) · 2 = done (the full menu). Player attribute Tutorial mirrors it.
        play        {day = "YYYY-MM-DD", seconds, claimed = {["1"] = true}}   today's playtime gifts
        eggs        {[eggId] = count}  waiting to be set in a nest
        nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
@@ -56,11 +58,16 @@ function Profile.defaultLoadout(classId)
 	local cls = GameConfig.CLASSES[classId]
 	local w = cls and cls.weight or "Light"
 	local function d(slot) local p = Catalog.defaultPiece(slot, w); return p and p.id or nil end
-	local weapon
-	for _, wd in ipairs(Catalog.WEAPONS) do if wd.unlock.free then weapon = wd.id; break end end
+	-- the class's own pair (GameConfig.CLASSES primary / secondary), else the first free weapon
+	local function free(id) local wd = id and Catalog.WEAPON[id]; return wd and wd.unlock and wd.unlock.free and id or nil end
+	local weapon = free(cls and cls.primary)
+	if not weapon then for _, wd in ipairs(Catalog.WEAPONS) do if wd.unlock.free then weapon = wd.id; break end end end
+	local second = free(cls and cls.secondary)
+	if second and (second == weapon or not Catalog.WEAPON[second].secondary) then second = nil end
 	return {helmet = d("helmet"), top = d("top"), bottom = d("bottom"),
 		colors = {Primary = "Navy", Secondary = "Slate", Accent = "Ochre", Metal = "Ash"},
-		weapon = weapon, weaponSkin = weapon and (weapon .. ":Default") or nil, secondary = nil, secondarySkin = nil}
+		weapon = weapon, weaponSkin = weapon and (weapon .. ":Default") or nil,
+		secondary = second, secondarySkin = second and (second .. ":Default") or nil}
 end
 
 local function default()
@@ -70,7 +77,8 @@ local function default()
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
-		gauntlet = 0, askedTraining = false, copies = {}, tally = {}, claims = {}, copySeq = 0}
+		gauntlet = 0, askedTraining = false, copies = {}, tally = {}, claims = {}, copySeq = 0,
+		tutorial = 0, loadoutV = 2}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -97,6 +105,18 @@ local function migrate(old)
 end
 
 local function fill(p)
+	-- someone who has played before isn't sent through the newcomer's path
+	if p.tutorial == nil then p.tutorial = (((p.level or 1) > 1) or p.askedTraining == true) and 2 or 0 end
+	-- every class used to start with the same lone sword: an untouched one gets its class's pair
+	if p.loadoutV == nil and type(p.classes) == "table" then
+		for id, lo in pairs(p.classes) do
+			if type(lo) == "table" and GameConfig.CLASSES[id] and lo.weapon == "Shortsword" and lo.secondary == nil then
+				local fresh = Profile.defaultLoadout(id)
+				lo.weapon, lo.weaponSkin, lo.secondary, lo.secondarySkin = fresh.weapon, fresh.weaponSkin, fresh.secondary, fresh.secondarySkin
+			end
+		end
+	end
+	p.loadoutV = 2
 	-- new fields on old v2 saves
 	local d = default()
 	for k, v in pairs(d) do if p[k] == nil then p[k] = v end end
@@ -121,8 +141,20 @@ local function load(plr)
 		elseif not ok and not warned then warned = true; warn("[Profile] load failed:", v) end
 	end
 	data = data or default()
+	if game:GetService("RunService"):IsStudio() and not GameConfig.STUDIO_NEWCOMER then data.tutorial = 2 end
 	cache[plr] = data
+	plr:SetAttribute("Tutorial", data.tutorial or 2)
 	return data
+end
+
+-- the newcomer's path moves on (0 → 1 → 2); never back
+function Profile.setTutorial(plr, n)
+	local p = Profile.get(plr)
+	if (p.tutorial or 2) >= n then return end
+	p.tutorial = n
+	if n >= 2 then p.askedTraining = true end
+	plr:SetAttribute("Tutorial", n)
+	Profile.markDirty(plr)
 end
 
 function Profile.get(plr) return cache[plr] or load(plr) end
@@ -295,7 +327,7 @@ function Profile.summary(plr)
 	local p = Profile.get(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
-		login = p.login, killfx = p.killfx, emotes = p.emotes,
+		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
 		gauntlet = p.gauntlet, askedTraining = p.askedTraining,
 	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder,

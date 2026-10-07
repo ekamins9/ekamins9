@@ -72,23 +72,25 @@ GameConfig.MODES = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
 		description = "Everyone for themselves. Most kills when the clock runs out wins.",
 		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
+		botFill = 8,   -- fighters on the field, bots making up the numbers (Game ▸ BotFill)
 	},
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Honor rules: one on one. Stay out of other people's fights.",
 		maps = {"RoseCourt", "Sandpit", "Millfield"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
+		botFill = 4,
 	},
 	TDM = {
 		name = "Team Deathmatch", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Two armies, one ticket pool each. Bleed theirs dry first.",
 		maps = {"Highbridge", "Millfield", "Sandpit"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
-		tickets = 60, waveSpawn = 8,
+		tickets = 60, waveSpawn = 8, botFill = 12,
 	},
 	LTS = {
 		name = "Last Team Standing", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 2,
 		description = "No respawns. Win the round by wiping the other side. First to 4 rounds.",
 		maps = {"Highbridge", "Sandpit", "Millfield", "Colosseum"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
-		roundsToWin = 4,
+		roundsToWin = 4, botFill = 8,
 	},
 	Horde = {
 		name = "Horde", category = "Horde", teams = 0, maxPlayers = 6, minPlayers = 1,
@@ -101,11 +103,12 @@ GameConfig.MODES = {
 		description = "Attackers push the ram, break the gate and take the castle stage by stage. Defenders hold until the clock runs out. Every stage taken adds time; sides swap each round.",
 		maps = {"Frostgate"}, roundLength = 4 * 60, intermission = 15, respawnDelay = 3,
 		waveSpawn = 10,   -- reinforcements come in waves (after the first moments of a round)
+		botFill = 12,
 	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
-		maps = {"Millfield", "Colosseum"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Millfield", "Colosseum"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6, botFill = 10,
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
@@ -123,16 +126,22 @@ GameConfig.TEAMS = {
 	B = {name = "Iron",  color = BrickColor.new("Bright red"),  rgb = Color3.fromRGB(200, 60, 50)},
 }
 
+-- primary / secondary: the weapons a class starts with (free ones; the player
+-- changes them in LOADOUT)
 GameConfig.CLASSES = {
-	Knight   = {name = "Knight",   weight = "Heavy",  armorType = "Heavy",  weapons = "any",
+	Knight   = {name = "Knight",   weight = "Heavy",  armorType = "Heavy",  weapons = "any", primary = "Greatsword", secondary = "Hammer",
 		description = "Plate from head to toe: the most health and armor. Slow, short of breath (less stamina, slower to get it back) and clumsy, costly dodges."},
-	Footman  = {name = "Footman",  weight = "Medium", armorType = "Medium", weapons = "any",
+	Footman  = {name = "Footman",  weight = "Medium", armorType = "Medium", weapons = "any", primary = "Spear", secondary = "Shortsword",
 		description = "Mail and gambeson. The all-rounder — quick enough, tough enough."},
-	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any",
+	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any", primary = "ArmingSword", secondary = "Shortsword",
 		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
 }
 GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard"}
 GameConfig.DEFAULT_CLASS = "Footman"
+
+-- Studio can't load saved profiles, so every Play would be a brand-new player
+-- sent through basic training: there, only when this is true (test the path)
+GameConfig.STUDIO_NEWCOMER = false
 
 -- friendly fire: damage dealt to a teammate is multiplied by this (0 = none);
 -- a custom server's settings may override it (Round attribute FriendlyFire)

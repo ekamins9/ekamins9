@@ -113,5 +113,36 @@ function Teams.aliveCount(key)
 end
 
 function Teams.def(key) return GameConfig.TEAMS[key] end
+function Teams.object(key) return objects[key] end
+
+-- the match's fill bots (Game ▸ BotFill) of a side, living
+function Teams.botsAlive(key)
+	local n = 0
+	local f = workspace:FindFirstChild("NPCs")
+	for _, m in ipairs(f and f:GetChildren() or {}) do
+		if m:GetAttribute("FillBot") and m:GetAttribute("Team") == key then
+			local hum = m:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 then n += 1 end
+		end
+	end
+	return n
+end
+-- every living fighter of a side, bots included: {[model] = root}
+function Teams.fighters(key)
+	local out = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		local c = p.Character
+		local hum = c and c:FindFirstChildOfClass("Humanoid")
+		if c and hum and hum.Health > 0 and (key == nil or Teams.keyOf(p) == key) and c:FindFirstChild("HumanoidRootPart") then out[c] = c.HumanoidRootPart end
+	end
+	local f = workspace:FindFirstChild("NPCs")
+	for _, m in ipairs(f and f:GetChildren() or {}) do
+		if m:GetAttribute("FillBot") and (key == nil or m:GetAttribute("Team") == key) then
+			local hum = m:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 and m:FindFirstChild("HumanoidRootPart") then out[m] = m.HumanoidRootPart end
+		end
+	end
+	return out
+end
 
 return Teams

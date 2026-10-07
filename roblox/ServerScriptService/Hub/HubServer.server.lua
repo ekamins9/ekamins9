@@ -441,7 +441,8 @@ end
 local function goHub(plr)
 	local group = groupFor(plr, false)
 	if STUDIO then
-		if Game.server.mode == "Hub" then return false, "you're in the Courtyard" end
+		-- (Studio switches one server's mode: what's running now, not what it started as)
+		if Game.modeId == "Hub" then return false, "you're in the Courtyard" end
 		return studioSwitch(plr, "Hub", {door = "Courtyard", settings = nil, noRewards = false, sides = nil, bracket = nil, ranked = false})
 	end
 	if Game.server.mode == "Hub" then return false, "you're in the Courtyard" end
@@ -480,7 +481,9 @@ local function play(plr, doorId, opts)
 			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, "Warfront  ·  " .. (e.modeName or "") .. (e.map ~= "" and ("  ·  " .. e.map) or ""))
 		end
 	end
-	return reserve(group, modeId, "Public", "", false, "Warfront", nil, "Warfront  ·  new server")
+	-- (no room anywhere: a new server; a newcomer's first one is Team Deathmatch)
+	local m = (opts.first and GameConfig.MODES[opts.mode]) and opts.mode or modeId
+	return reserve(group, m, "Public", "", false, "Warfront", nil, "Warfront  ·  new server")
 end
 
 -- custom server: settings = GameConfig.CUSTOM_DEFAULTS keys (clamped here)
@@ -829,6 +832,36 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	return {ok = false, msg = "unknown op"}
 end
 
+--------------------------------------------------------------------
+--  A NEWCOMER'S PATH (profile tutorial): the Courtyard sends someone brand new
+--  straight to basic training (Game ▸ Training), and someone who's trained (or
+--  skipped it) straight into a battle. After that first battle they come back
+--  here to the full menu.
+--------------------------------------------------------------------
+_G.HubTravel = function(plr, doorId, opts) return play(plr, doorId, opts) end
+
+local function routeNewcomer(plr)
+	if Game.server.mode ~= "Hub" then return end
+	local t = Profile.get(plr).tutorial or 2
+	if t >= 2 then return end
+	task.wait(STUDIO and 0.5 or 2)   -- (the client is up: it shows the travel screen)
+	if not plr.Parent then return end
+	if t == 0 then play(plr, "Tiltyard") else play(plr, "Warfront", {mode = "TDM", first = true}) end
+end
+
+-- the first battle is over: next stop, the menu
+Game.roundEnded.Event:Connect(function(modeId)
+	-- (a battle's round: not the Courtyard's or the training yard's, which "end" when Studio switches mode)
+	if Game.server.door ~= "Warfront" or modeId == "Hub" or modeId == "Tiltyard" or modeId == "Horde" then return end
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if (Profile.get(plr).tutorial or 2) == 1 then
+			Profile.setTutorial(plr, 2)
+			event:FireClient(plr, "FirstBattleDone")
+			task.delay(9, function() if plr.Parent then goHub(plr) end end)
+		end
+	end
+end)
+
 local function onArrival(plr)
 	Game.identify(plr)
 	local ok, data = pcall(plr.GetJoinData, plr)
@@ -845,6 +878,7 @@ local function onArrival(plr)
 		return
 	end
 	if registry then task.spawn(function() pcall(function() registry:SetAsync(myKey(), entry(), EXPIRY) end) end) end
+	task.spawn(routeNewcomer, plr)
 end
 Players.PlayerAdded:Connect(onArrival)
 for _, p in ipairs(Players:GetPlayers()) do onArrival(p) end

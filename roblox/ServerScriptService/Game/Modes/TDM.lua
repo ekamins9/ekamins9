@@ -16,6 +16,9 @@ function TDM:onDeath(victimPlr)
 	local t = Teams.keyOf(victimPlr)
 	if t and self.scores[t] > 0 then self.scores[t] -= 1 end
 end
+function TDM:onBotDeath(team)
+	if team and (self.scores[team] or 0) > 0 then self.scores[team] -= 1 end
+end
 function TDM:objective() return "TEAM DEATHMATCH  ·  tickets" end
 function TDM:isOver()
 	if self.scores.A <= 0 then return self:teamResult("B") end

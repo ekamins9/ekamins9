@@ -164,11 +164,18 @@ local function giveWeapon(plr, char, weaponId, skinId, equip)
 	end
 end
 
+local spawnAs   -- (below)
 local function show(plr, reason)
-	if plr.Parent then event:FireClient(plr, "Show", Profile.get(plr).active, reason) end
+	if not plr.Parent then return end
+	-- a newcomer (training, their first battle) doesn't pick a class yet: in they go
+	if reason == nil and (Profile.get(plr).tutorial or 2) < 2 and Game.modeId ~= "Hub" then
+		task.defer(function() spawnAs(plr, Profile.get(plr).active) end)
+		return
+	end
+	event:FireClient(plr, "Show", Profile.get(plr).active, reason)
 end
 
-local function spawnAs(plr, classId)
+spawnAs = function(plr, classId)
 	if spawning[plr] then return end
 	if isAlive(plr) then return end
 	if not GameConfig.CLASSES[classId] then classId = Profile.get(plr).active end

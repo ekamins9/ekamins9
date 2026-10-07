@@ -27,6 +27,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local TouchInput     = require(ReplicatedStorage:WaitForChild("TouchInput"))
 local player     = Players.LocalPlayer
 
 local CombatClient = {}
@@ -566,8 +567,11 @@ function CombatClient.attach(Tool, weaponConfig)
 
 	local function flip(side) return side == "Right" and "Left" or "Right" end
 
-	-- which side this press means (ClientSettings: SideMode / DefaultSide / SideFlip key)
+	-- which side this press means (ClientSettings: SideMode / DefaultSide / SideFlip key;
+	-- a touch screen's swing buttons say it outright)
+	local touchSide = nil
 	local function pickSide()
+		if touchSide then return touchSide end
 		local side
 		if ClientSettings.get("SideMode") == "Modifier" then
 			side = ClientSettings.get("DefaultSide")
@@ -682,6 +686,18 @@ function CombatClient.attach(Tool, weaponConfig)
 	table.insert(conns, UIS.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			remote:FireServer("BlockStop")
+		end
+	end))
+
+	-- a touch screen's buttons (TouchControls ▸ TouchInput): the same actions
+	table.insert(conns, TouchInput.changed:Connect(function(action, down, side)
+		if not equipped then return end
+		if action == "Block" then remote:FireServer(down and "BlockStart" or "BlockStop"); return end
+		if not down then return end
+		if action == "Swing" or action == "Stab" or action == "Overhead" or action == "Underhand" or action == "Kick" or action == "Feint" then
+			touchSide = side
+			handleAction(action)
+			touchSide = nil
 		end
 	end))
 

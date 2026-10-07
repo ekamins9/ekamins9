@@ -24,11 +24,17 @@
          pays D.gauntlet.perWave Marks.
        • THE PRACTICE GROUND (Practice): one to three bots of a chosen skill
          come at you together, as often as you like.
+       • BASIC TRAINING: a newcomer (profile tutorial 0) gets the short course
+         (Catalog ▸ Drills, basic = true) and is put right in front of each
+         step's dummy, facing it. Finished — or skipped — they're on their way
+         to their first battle (HubServer, _G.HubTravel).
      Players can't hurt each other here (the mode is peaceful).
      Remote: ReplicatedStorage ▸ TrainingRemote
        client → server  "Lesson", id · "Restart" · "Spar", skill · "Leave" ·
-                        "Practice", skill, count · "ClearPractice" · "Gauntlet"
+                        "Practice", skill, count · "ClearPractice" · "Gauntlet" ·
+                        "SkipTraining"
        server → client  "Menu", info · "Ring", records · "Progress" · "Done", id, line ·
+                        "Course" (basic training begins) · "Graduated", skipped ·
                         "Spar", what, … · "Gauntlet", what, … · "Practice", what, … ]]
 
 local Players = game:GetService("Players")
@@ -114,6 +120,32 @@ local function publish(plr)
 	for id in pairs(profileOf(plr).drills) do table.insert(done, id) end
 	table.sort(done)
 	plr:SetAttribute("DrillsDone", table.concat(done, ","))
+	-- basic training: which step of how many
+	local basic = L and L.course == "basic"
+	plr:SetAttribute("Course", basic and "basic" or nil)
+	if basic and l then
+		local n, at = 0, 0
+		for _, x in ipairs(D.lessons) do if x.basic then n += 1; if x.id == l.id then at = n end end end
+		plr:SetAttribute("CourseStep", at)
+		plr:SetAttribute("CourseSteps", n)
+	end
+end
+
+-- put a newcomer right in front of what their step needs, facing it (the
+-- camera turns with them: FaceYaw / FaceTick, CameraRig)
+local placeFor   -- (defined with the ring, which the last step needs)
+local function face(char, cf)
+	char:PivotTo(cf)
+	local look = cf.LookVector
+	char:SetAttribute("FaceYaw", math.atan2(-look.X, -look.Z))
+	char:SetAttribute("FaceTick", (char:GetAttribute("FaceTick") or 0) + 1)
+end
+local function standBefore(char, at, dist)
+	local look = at.CFrame.LookVector
+	look = Vector3.new(look.X, 0, look.Z)
+	if look.Magnitude < 0.1 then look = Vector3.new(0, 0, -1) end
+	local pos = at.Position + look.Unit * dist
+	face(char, CFrame.lookAt(pos, Vector3.new(at.Position.X, pos.Y, at.Position.Z)))
 end
 
 -- the drill dummies a lesson needs, where it needs them
@@ -125,6 +157,7 @@ local function ensureDrill(kind)
 	drill[kind] = Bots.spawn({at = at.CFrame, skill = kind == "attacker" and "Drill" or "Guard", weapon = "Longsword",
 		name = kind == "attacker" and "Drill Dummy" or "Guard Dummy", invulnerable = true, corpseTime = 1})
 	poof(drill[kind].model)
+	drill[kind].model:SetAttribute("Harmless", true)   -- (its blows teach, they don't hurt)
 	table.insert(stuff, drill[kind].model)
 	watchTarget(drill[kind].model)
 end
@@ -138,6 +171,31 @@ local function setLesson(plr, id)
 	if l.setup then ensureDrill(l.setup) end
 	publish(plr)
 	tell(plr, "Progress")
+	if L.course == "basic" then task.delay(0.6, function() if learners[plr] == L and L.id == id then placeFor(plr) end end) end
+end
+
+-- the steps of basic training, in order
+local function basicAfter(id)
+	local seen = id == nil
+	for _, l in ipairs(D.lessons) do
+		if l.basic then
+			if seen then return l end
+			if l.id == id then seen = true end
+		end
+	end
+	return nil
+end
+
+-- through basic training (or skipping it): to the first battle
+local function graduate(plr, skipped)
+	local L = learners[plr]
+	if L then L.course, L.id = nil, nil end
+	Profile.setTutorial(plr, 1)
+	publish(plr)
+	tell(plr, "Graduated", skipped == true)
+	task.delay(skipped and 1.2 or 3.5, function()
+		if plr.Parent and _G.HubTravel then _G.HubTravel(plr, "Warfront", {mode = "TDM", first = true}) end
+	end)
 end
 
 local function firstOpen(p)
@@ -162,6 +220,11 @@ local function complete(plr)
 	end
 	tell(plr, "Done", l.id, line)
 	toast(plr, line)
+	if L.course == "basic" then
+		local nb = basicAfter(l.id)
+		if nb then setLesson(plr, nb.id) else graduate(plr, false) end
+		return
+	end
 	-- on to the next lesson: a replay walks the course in order; otherwise the
 	-- next one not done yet. Past the end, the first one not done anywhere.
 	local nextL
@@ -396,6 +459,26 @@ local function startSpar(plr, skill)
 	tell(plr, "Spar", "start", skill, goAt)
 	-- you fall: a loss
 	hum.Died:Once(function() if ring == r then endSpar("lose") end end)
+end
+
+-- (basic training) in front of this step's dummy; the last step's Squire meets you in the ring
+placeFor = function(plr)
+	local L = learners[plr]
+	local l = L and LESSON[L.id or ""]
+	local char = alive(plr)
+	if not (l and char) then return end
+	if ring and ring.player == plr then return end
+	if l.event == "spar" then startSpar(plr, l.skill or "Squire"); return end
+	if l.setup then
+		local at = spot(l.setup == "attacker" and "LessonAttacker" or "LessonBlocker")
+		if at then standBefore(char, at, 5.5) end
+		return
+	end
+	-- a straw dummy of your own (newcomers spread over the six)
+	local k = 1
+	for i, p in ipairs(Players:GetPlayers()) do if p == plr then k = (i - 1) % 6 + 1 end end
+	local at = spot("Dummy" .. k) or spot("Dummy1")
+	if at then standBefore(char, at, 4.6) end
 end
 
 -- the Gauntlet: wave after wave until you fall
@@ -633,9 +716,19 @@ function Training.start(map)
 		local p = profileOf(plr)
 		local first = firstOpen(p)
 		learners[plr] = learners[plr] or {conns = {}}
-		if first then setLesson(plr, first.id) else publish(plr) end
+		local L = learners[plr]
+		if (p.tutorial or 2) < 1 then
+			-- a newcomer: basic training, from the first step
+			L.course = "basic"
+			tell(plr, "Course")
+			setLesson(plr, basicAfter(nil).id)
+		elseif first then setLesson(plr, first.id) else publish(plr) end
 		if plr.Character then watchCharacter(plr, plr.Character) end
-		table.insert(conns, plr.CharacterAdded:Connect(function(c) watchCharacter(plr, c) end))
+		table.insert(conns, plr.CharacterAdded:Connect(function(c)
+			watchCharacter(plr, c)
+			-- back on your feet in basic training: straight back to your step
+			if L.course == "basic" then task.delay(1, function() if plr.Character == c then placeFor(plr) end end) end
+		end))
 	end
 	for _, plr in ipairs(Players:GetPlayers()) do task.spawn(join, plr) end
 	table.insert(conns, Players.PlayerAdded:Connect(function(plr) task.spawn(join, plr) end))
@@ -662,7 +755,11 @@ function Training.start(map)
 		elseif what == "Gauntlet" then startGauntlet(plr)
 		elseif what == "Practice" and type(a) == "string" then startPractice(plr, a, b)
 		elseif what == "ClearPractice" then clearPractice(plr)
-		elseif what == "Leave" and ring and ring.player == plr then endRing("left") end
+		elseif what == "Leave" and ring and ring.player == plr then endRing("left")
+		elseif what == "SkipTraining" and (Profile.get(plr).tutorial or 2) < 2 then
+			if ring and ring.player == plr then endRing("left") end
+			graduate(plr, true)
+		end
 	end))
 	-- four times a second: where everyone should go; the ring's referee; the
 	-- last lesson's Squire meets you in the ring; drill dummies nobody needs leave

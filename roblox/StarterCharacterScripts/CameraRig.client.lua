@@ -38,6 +38,7 @@ local Modifiers      = require(ReplicatedStorage:WaitForChild("Modifiers"))
 local Sounds         = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local RigPose        = require(ReplicatedStorage:WaitForChild("RigPose"))
+local TouchInput = require(game:GetService("ReplicatedStorage"):WaitForChild("TouchInput"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
 ClientSettings.load()
@@ -259,6 +260,14 @@ character:GetAttributeChangedSignal("LocalDodgeAt"):Connect(function()
 end)
 
 local rot = Vector2.new(0, select(2, HRP.CFrame:ToOrientation()))
+-- the server put us somewhere, facing something (basic training: in front of
+-- the next dummy): the camera turns with us
+character:GetAttributeChangedSignal("FaceTick"):Connect(function()
+	local y = character:GetAttribute("FaceYaw")
+	if type(y) == "number" then rot = Vector2.new(0, y) end
+end)
+-- (placed before this script was up: take it now)
+if type(character:GetAttribute("FaceYaw")) == "number" then rot = Vector2.new(0, character:GetAttribute("FaceYaw")) end
 local camDist       = DEFAULT_DIST
 local camDistTarget = DEFAULT_DIST
 local bobAmt = 0
@@ -529,6 +538,9 @@ local function loopBody(dt)
 
 	local rawDX, rawDY = mouseDX, mouseDY
 	mouseDX, mouseDY = 0, 0
+	-- a drag on a touch screen turns the camera too (TouchControls)
+	local tdx, tdy = TouchInput.takeLook()
+	rawDX, rawDY = rawDX + tdx, rawDY + tdy
 	if loose then rawDX, rawDY = 0, 0 end
 	local sens   = SENSITIVITY * GameSettings.MouseSensitivity
 	local dYaw   = -rawDX * sens

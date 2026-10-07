@@ -48,21 +48,18 @@ function KOTH:stop()
 	for _, k in ipairs(ATTRS) do node:SetAttribute(k, nil) end
 end
 
--- living players of each team on the hill (a disc, flat distance; a little height either way)
+-- living fighters of each team on the hill, fill bots too (a disc, flat
+-- distance; a little height either way)
 local function insideHill(hill)
 	local a, b = 0, 0
 	local r, h, axis = shapeOf(hill)
-	for _, p in ipairs(Players:GetPlayers()) do
-		local char = p.Character
-		local hrp = char and char:FindFirstChild("HumanoidRootPart")
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if hrp and hum and hum.Health > 0 then
+	for key in pairs({A = true, B = true}) do
+		for _, hrp in pairs(Teams.fighters(key)) do
 			local l = hill.CFrame:PointToObjectSpace(hrp.Position)
 			local along = axis == "X" and l.X or l.Y
 			local across = axis == "X" and Vector2.new(l.Y, l.Z).Magnitude or Vector2.new(l.X, l.Z).Magnitude
 			if across <= r and math.abs(along) <= h / 2 + 4 then
-				local t = Teams.keyOf(p)
-				if t == "A" then a += 1 elseif t == "B" then b += 1 end
+				if key == "A" then a += 1 else b += 1 end
 			end
 		end
 	end

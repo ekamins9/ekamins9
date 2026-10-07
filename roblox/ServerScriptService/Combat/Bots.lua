@@ -11,6 +11,10 @@
            opts.name      shown over its head
            opts.loadout / appearance / weight / team   its look (Dresser)
            opts.target    the character to fight (default: the nearest player)
+           opts.fightBots also fights other bots not on its team (a match's
+                          bot fill: Game ▸ BotFill); default players only
+           opts.goal      fn() -> Vector3 | nil: where to head when no foe is
+                          near (an objective: the hill, the ram)
            opts.arena     {centre = Vector3, radius = n}: it keeps inside
            opts.onDeath   fn(bot, killerPlayer)
            opts.startDelay  seconds before it moves or strikes (a countdown)
@@ -36,6 +40,7 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local PathfindingService = game:GetService("PathfindingService")
 local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
@@ -220,6 +225,24 @@ local function nearestPlayer(pos, team)
 		end
 	end
 	return best
+end
+
+-- the nearest foe for a bot that also fights bots: players and living bots
+-- not on its team (no team: everyone but itself). Dummies and the
+-- invulnerable aren't foes.
+local function nearestFoe(self, pos, team)
+	local best, bestD = nearestPlayer(pos, team), math.huge
+	if best then bestD = (best.HumanoidRootPart.Position - pos).Magnitude end
+	for b in pairs(live) do
+		if b ~= self and b.alive and not b.invulnerable and not b.skill.dummy and b.model.Parent and b.hum.Health > 0 then
+			local t = b.model:GetAttribute("Team")
+			if team == nil or t ~= team then
+				local d = (b.hrp.Position - pos).Magnitude
+				if d < bestD then best, bestD = b.model, d end
+			end
+		end
+	end
+	return best, bestD
 end
 
 -- a swing may not turn into (or chain after) the mirror of itself, or an
@@ -582,14 +605,61 @@ function Bot:steer(want, now)
 	return -w * 0.6
 end
 
+-- THE LONG WAY ROUND: to somewhere far (an objective, a foe across the map) it
+-- follows a path (PathfindingService), worked out in the background and walked
+-- point by point, and worked out again when the place moves or every few
+-- seconds. Nil while there's none yet (then it just steers).
+function Bot:pathDir(dest, now)
+	local P = self.path
+	if (not P or (P.dest - dest).Magnitude > 10 or now - P.at > 4) and not self.pathing then
+		self.pathing = true
+		local from = self.hrp.Position
+		task.spawn(function()
+			local path = PathfindingService:CreatePath({AgentRadius = 2, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 6})
+			local ok = pcall(path.ComputeAsync, path, from, dest)
+			local points = (ok and path.Status == Enum.PathStatus.Success) and path:GetWaypoints() or nil
+			self.path = {dest = dest, at = os.clock(), points = points, i = 2}
+			self.pathing = false
+		end)
+	end
+	P = self.path
+	if not (P and P.points) then return nil end
+	while P.i <= #P.points do
+		local to = P.points[P.i].Position - self.hrp.Position
+		to = Vector3.new(to.X, 0, to.Z)
+		if to.Magnitude > 2.5 then return to.Unit end
+		P.i += 1
+	end
+	return nil
+end
+
 -- THE BRAIN, ten times a second: where to stand, when to swing
 function Bot:think()
 	local hum, hrp, sk, model = self.hum, self.hrp, self.skill, self.model
 	if not self.alive or hum.Health <= 0 or model:GetAttribute("Ragdolled") then hum:Move(Vector3.zero); return end
 	local target = self.target
-	if not (target and target.Parent) then target = nearestPlayer(hrp.Position, model:GetAttribute("Team")) end
+	local foeDist = 0
+	if not (target and target.Parent) then
+		if self.fightBots then target, foeDist = nearestFoe(self, hrp.Position, model:GetAttribute("Team"))
+		else target = nearestPlayer(hrp.Position, model:GetAttribute("Team")) end
+	end
 	local thrp = target and target:FindFirstChild("HumanoidRootPart")
 	local thum = target and target:FindFirstChildOfClass("Humanoid")
+	-- nobody near enough to bother with: head for the objective, if there is one
+	local goal = self.goal and (not thrp or (foeDist or 0) > 38) and self.goal()
+	if goal and os.clock() >= self.startAt then
+		local to = goal - hrp.Position
+		to = Vector3.new(to.X, 0, to.Z)
+		self.facing, self.foe, self.lookAt = nil, nil, to
+		if to.Magnitude > 4 then
+			local w = self:steer(self:pathDir(goal, os.clock()) or to.Unit, os.clock())
+			hum.WalkSpeed = self:speedFor(w, true, false)
+			hum:Move(w)
+		else
+			hum:Move(Vector3.zero)
+		end
+		return
+	end
 	if not (thrp and thum and thum.Health > 0) then hum:Move(Vector3.zero); self.facing, self.foe = nil, nil; return end
 	self.facing, self.foe = thrp, target
 	if self.invulnerable then hum.Health = hum.MaxHealth end
@@ -696,6 +766,11 @@ function Bot:think()
 		off = Vector3.new(off.X, 0, off.Z)
 		if off.Magnitude > self.arena.radius - 2.5 then want = -off.Unit end
 	end
+	-- a foe far off (across the map, round a wall): the path there
+	if dist > 22 and not self.arena and not waiting then
+		local pd = self:pathDir(thrp.Position, now)
+		if pd then want = pd end
+	end
 	if want.Magnitude > 0.3 and dist > hitDist + 3 then want = self:steer(want, now) end
 	if (sk.pace or 0) <= 0 then want = Vector3.zero end
 	-- a body carries its momentum: it eases from one heading into the next
@@ -774,6 +849,7 @@ function Bots.spawn(opts)
 
 	local startAt = os.clock() + (opts.startDelay or 0)
 	local bot = setmetatable({model = model, hum = hum, hrp = hrp, skill = skill, target = opts.target, arena = opts.arena,
+		fightBots = opts.fightBots == true, goal = opts.goal,
 		alive = true, conns = {}, nextAttack = startAt + 1.2, strafe = 1, strafeUntil = 0, learned = {},
 		startAt = startAt, invulnerable = opts.invulnerable == true, attacks = {}, reach = 5, cfg = {}}, Bot)
 	bot.temper = Bots.TEMPERS[opts.temper] or Bots.TEMPERS[TEMPER_NAMES[math.random(#TEMPER_NAMES)]]

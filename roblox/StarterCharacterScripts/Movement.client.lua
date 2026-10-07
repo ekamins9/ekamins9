@@ -27,6 +27,7 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local DebugFlags     = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds         = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local TouchInput     = require(ReplicatedStorage:WaitForChild("TouchInput"))
 
 local M = MovementConfig
 local player    = Players.LocalPlayer
@@ -244,10 +245,19 @@ end))
 table.insert(conns, UIS.InputEnded:Connect(function(input)
 	if ClientSettings.actionForInput(input) == "Sprint" then sprintHeld = false; sendSprint() end
 end))
+-- a touch screen's buttons (TouchControls ▸ TouchInput)
+local touchSprint = false
+table.insert(conns, TouchInput.changed:Connect(function(action, down)
+	if action == "Sprint" then touchSprint = down; sprintHeld = down; sendSprint()
+	elseif not down then return
+	elseif action == "Dodge" then tryDodge()
+	elseif action == "Jump" then tryJump()
+	elseif action == "Kick" then tryKick() end
+end))
 -- a rebind while the key is down, or losing window focus, must not leave sprint stuck on
 table.insert(conns, UIS.WindowFocusReleased:Connect(function() sprintHeld = false; sendSprint() end))
 table.insert(conns, RunService.Heartbeat:Connect(function()
-	if sprintHeld and not ClientSettings.isDown("Sprint") then sprintHeld = false; sendSprint() end
+	if sprintHeld and not touchSprint and not ClientSettings.isDown("Sprint") then sprintHeld = false; sendSprint() end
 end))
 
 --------------------------------------------------------------------

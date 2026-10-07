@@ -30,8 +30,10 @@ function LTS:noteSpawn(plr) if self.spawnedOnce then self.spawnedOnce[plr] = tru
 function LTS:objective() return string.format("LAST TEAM STANDING  ·  first to %d rounds", self.def.roundsToWin or 4) end
 function LTS:isOver()
 	if not self.startedAt or os.clock() - self.startedAt < 8 then return nil end
-	local a, b = Teams.aliveCount("A"), Teams.aliveCount("B")
-	local hasA, hasB = Teams.count("A") > 0, Teams.count("B") > 0
+	-- (fill bots fight and fall like anyone: Game ▸ BotFill)
+	local a, b = Teams.aliveCount("A") + Teams.botsAlive("A"), Teams.aliveCount("B") + Teams.botsAlive("B")
+	local hasA = Teams.count("A") > 0 or (Game.fielded.A or 0) > 0
+	local hasB = Teams.count("B") > 0 or (Game.fielded.B or 0) > 0
 	if not (hasA and hasB) then return nil end
 	local winner
 	if a == 0 and b > 0 then winner = "B" elseif b == 0 and a > 0 then winner = "A" elseif a == 0 and b == 0 then winner = false end
@@ -50,7 +52,7 @@ function LTS:isOver()
 	return "DRAW"
 end
 function LTS:result()
-	local a, b = Teams.aliveCount("A"), Teams.aliveCount("B")
+	local a, b = Teams.aliveCount("A") + Teams.botsAlive("A"), Teams.aliveCount("B") + Teams.botsAlive("B")
 	if a == b then return self:teamResult(nil) end
 	local winner = a > b and "A" or "B"
 	self.roundWins[winner] += 1

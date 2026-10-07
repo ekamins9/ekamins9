@@ -1023,6 +1023,11 @@ function CombatServer.attach(Tool, weaponConfig)
 		markCombat(target)
 		CombatServer.credit(target, character, weaponName, info.kind == "stab" and (region == "head" and "facestab" or "stab") or (region == "head" and "headslash" or "slash"))
 		target:SetAttribute("LastHitAttack", state.attackName or "")
+		-- a lesson's dummy (attribute Harmless): its blows land, flinch and reel, but don't hurt
+		if character:GetAttribute("Harmless") then
+			tell("HitConfirm", region)
+			return
+		end
 
 		-- damage: a number (× HEAD/LEG mult) or {head=, body=, legs=}
 		local dmg

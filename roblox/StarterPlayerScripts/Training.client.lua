@@ -11,7 +11,9 @@
          (which bots, how many)
        • his speech bubble, saying the lesson
        • banners: 3-2-1, VICTORY / DEFEATED / FORFEIT, LESSON DONE, gauntlet
-         waves ]]
+         waves
+       • BASIC TRAINING (a newcomer's first visit): the card up top with the
+         step (1 / 7 …), a SKIP TRAINING button, a welcome and a send-off ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -41,7 +43,11 @@ end
 -- a key bind's name, the way a player says it
 local NICE = {MouseButton1 = "LEFT MOUSE", MouseButton3 = "MIDDLE MOUSE", MouseWheelUp = "SCROLL UP", MouseWheelDown = "SCROLL DOWN",
 	LeftAlt = "LEFT ALT", RightAlt = "RIGHT ALT", LeftShift = "LEFT SHIFT", LeftControl = "LEFT CTRL", Space = "SPACE"}
+-- (on a touch screen the moves are buttons: TouchControls)
+local function touchOnly() return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled end
 local function keyName(action)
+	if touchOnly() then return "the " .. string.upper(action) .. " button" end
+	if action == "Block" then return "[RIGHT MOUSE]" end
 	local n = ClientSettings.get("Key_" .. action) or action
 	return "[" .. (NICE[n] or string.upper(n)) .. "]"
 end
@@ -199,6 +205,16 @@ local bar = Instance.new("Frame"); bar.BackgroundColor3 = Theme.GREEN; bar.Borde
 Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 8)
 local barText = text(barBack, "", 13); barText.Size = UDim2.fromScale(1, 1); barText.TextXAlignment = Enum.TextXAlignment.Center
 local menuB = button(card, "MENU", Theme.BLUE, UDim2.fromOffset(92, 30), UDim2.new(1, -104, 1, -46))
+-- basic training: skip it and go straight to battle
+local skipB = button(gui, "SKIP TRAINING  ›", Theme.GLASS2, UDim2.fromOffset(190, 40), UDim2.new(1, -206, 0, 64))
+skipB.Visible = false
+local skipping = false
+skipB.MouseButton1Click:Connect(function()
+	if skipping then return end
+	skipping = true
+	skipB.Text = "OFF TO BATTLE…"
+	remote:FireServer("SkipTraining")
+end)
 
 -- the Drill Master's bubble (local: he tells each of you your own lesson)
 local bubble = Instance.new("BillboardGui")
@@ -238,7 +254,16 @@ local function refreshCard()
 		return
 	end
 	local n, goal = player:GetAttribute("DrillProgress") or 0, player:GetAttribute("DrillGoal") or l.goal
-	cardHead.Text = string.format("DRILL MASTER  ·  LESSON %d / %d", l.index, #D.lessons)
+	local basic = player:GetAttribute("Course") == "basic"
+	skipB.Visible = yard and basic and not skipping
+	menuB.Visible = not basic
+	-- a newcomer's card sits up top, where they can't miss it
+	card.Position = basic and UDim2.new(0.5, -165, 0, 64) or UDim2.new(1, -346, 0.5, -96)
+	if basic then
+		cardHead.Text = string.format("BASIC TRAINING  ·  STEP %d / %d", player:GetAttribute("CourseStep") or 1, player:GetAttribute("CourseSteps") or 7)
+	else
+		cardHead.Text = string.format("DRILL MASTER  ·  LESSON %d / %d", l.index, #D.lessons)
+	end
 	cardTitle.Text = string.upper(l.title)
 	cardText.Text = say(l.text)
 	local where = player:GetAttribute("DrillTargetName") or ""
@@ -247,7 +272,7 @@ local function refreshCard()
 	barText.Text = string.format("%d / %d", n, goal)
 	bubbleText.Text = say(l.text)
 end
-for _, a in ipairs({"Drill", "DrillProgress", "DrillGoal", "DrillsDone", "DrillTargetName"}) do player:GetAttributeChangedSignal(a):Connect(refreshCard) end
+for _, a in ipairs({"Drill", "DrillProgress", "DrillGoal", "DrillsDone", "DrillTargetName", "Course", "CourseStep"}) do player:GetAttributeChangedSignal(a):Connect(refreshCard) end
 round:GetAttributeChangedSignal("Mode"):Connect(refreshCard)
 task.spawn(function() while true do task.wait(1); refreshCard() end end)
 
@@ -420,6 +445,17 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	elseif what == "Lessons" then lessonBoard()
 	elseif what == "Ring" then ringBoard(a)
 	elseif what == "Progress" then refreshCard()
+	elseif what == "Course" then
+		skipping = false
+		skipB.Text = "SKIP TRAINING  ›"
+		show("WELCOME, RECRUIT!", "A one-minute lesson, then your first battle. (Or skip it, top right.)", Theme.ACCENT, 4.5)
+	elseif what == "Graduated" then
+		skipB.Visible = false
+		if a then
+			show("TO BATTLE!", "your first battle is loading…", Theme.ACCENT, 6)
+		else
+			show("TRAINING COMPLETE!", "well fought, recruit  ·  your first battle is loading…", Theme.GOLD, 6)
+		end
 	elseif what == "Done" then
 		local l = LESSON[a]
 		show("LESSON DONE!", (l and l.title or "") .. ((b and b:find("Marks")) and ("  ·  " .. (b:match("%+%d+ Marks.*") or "")) or ""), Theme.GOOD, 3)

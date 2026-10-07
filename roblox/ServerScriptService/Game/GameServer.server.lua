@@ -14,6 +14,8 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Game       = require(script.Parent:WaitForChild("Game"))
 local MapLoader  = Game.MapLoader
+-- Warfront matches are filled up with bots while players are few (Game ▸ BotFill)
+require(script.Parent:WaitForChild("BotFill")).start()
 
 local node = Game.node
 local function log(...) DebugFlags.log("Game", ...) end
@@ -194,7 +196,9 @@ task.spawn(function()
 			while node:GetAttribute("MatchOver") == true do task.wait(1) end   -- Studio: HubServer clears it to go home
 		end
 		countdown(inter, nil, nil)
-		if cards and #cards > 0 then
+		-- (a mode asked for outright — Studio's switch — isn't voted away)
+		local asked = node:GetAttribute("NextMode")
+		if cards and #cards > 0 and (asked == nil or asked == "" or asked == modeId) then
 			-- the card with the most votes (a tie: one of the tied, at random)
 			local top, tied = -1, {}
 			for i = 1, #cards do

@@ -106,6 +106,11 @@ local function onDied(char)
 		if victimPlr then
 			bump(killerPlr, "kill")
 			if Stats then Stats.weaponKill(killerPlr, weapon) elseif Profile then Profile.addStat(killerPlr, "kill", 1) end
+		elseif char:GetAttribute("FillBot") and (char:GetAttribute("Team") == nil
+			or char:GetAttribute("Team") ~= (killerPlr.Character and killerPlr.Character:GetAttribute("Team"))) then
+			-- a match's fill bot (Game ▸ BotFill): it pays like a kill this round, but stays
+			-- off the lifetime kill count and the leaderboard
+			bump(killerPlr, "kill")
 		end
 		-- the killer's kill effect on the body (Hub ▸ Cosmetics)
 		if _G.KillFxHook then task.spawn(_G.KillFxHook, killerPlr, char) end
