@@ -67,6 +67,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Catalog/init.lua` | `ReplicatedStorage` → `Catalog` | ModuleScript |
 | `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts`, `Store`, `Pass`, `Login`, `KillFX`, `Emotes` (children of the Catalog ModuleScript) | ModuleScript each |
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
+| `ReplicatedStorage/PreviewRig.lua` | `ReplicatedStorage` → `PreviewRig` (a dressed mannequin for menus) | ModuleScript |
 | `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX` (a skin's trim parts; its trail and aura) | ModuleScript each |
 | `ReplicatedStorage/KillFX.lua`, `Emotes.lua` | `ReplicatedStorage` → `KillFX`, `Emotes` (the effects and motions) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
@@ -697,8 +698,19 @@ blades grow up through thin floor parts). Used by the Lists and the Duel Yard.
 
 See *Game modes, maps, places* above. The top-centre strip shows the mode, the map, the
 clock, the mode's objective line and (team modes) both scores. At the end everyone is pulled
-out, the board comes up with the result, your pay for the round and the vote, then the class
-screen returns.
+out, the board comes up wide with the result, your pay for the round and **the vote: three big
+cards, each with a picture of its map** (`ReplicatedStorage ▸ MapShots ▸ <map>`: a StringValue,
+Decal or ImageLabel holding the image — made in Studio from each map's menu view; a map without
+one gets a card in its mode's colour), the votes so far in a badge. The class screen keeps out
+of the way while the vote is up and comes back when the round starts.
+
+**The class screen** (`LoadoutMenu`): a card per class showing **your fighter in that class's
+loadout** — the armour, colours, hair and weapon you saved for it, dressed by the Dresser like a
+real spawn (`ReplicatedStorage ▸ PreviewRig`, shared with the Hub menu's stages) — the chosen
+one turning slowly, with the class's line and loadout underneath.
+
+**Water** (`DrownY` on a map, e.g. Highbridge's river): a fighter who stays below that height
+for 1.2 s drowns (`CharacterSystems`); a knock-off still credits the last one to hit them.
 
 ## Voice
 

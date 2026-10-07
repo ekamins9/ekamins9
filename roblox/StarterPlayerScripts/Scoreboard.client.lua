@@ -2,9 +2,11 @@
      round strip top-centre (mode · map · clock, the mode's objective line,
      team scores in team modes) and the leaderboard you see while HOLDING
      Tab: every player's kills, deaths and K/D, sorted by kills, team-coloured.
-     During the intermission the board stays up with the result banner and
-     the VOTE (three cards › VoteRemote: battles on the Warfront, maps elsewhere). Replaces Roblox's own player
-     list. Built from Instances. Lives in StarterPlayerScripts. ]]
+     During the intermission the board stays up, wide, with the result banner
+     and the VOTE: three big cards with a picture of each map (ReplicatedStorage ▸
+     MapShots ▸ <map>: a StringValue / Decal / ImageLabel with the image, made in
+     Studio) › VoteRemote: battles on the Warfront, maps elsewhere. Replaces
+     Roblox's own player list. Built from Instances. Lives in StarterPlayerScripts. ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -248,25 +250,27 @@ end
 -- the vote: three cards. On the Warfront each is a BATTLE (a mode on a map:
 -- VoteMode1..3 + Vote1..3); elsewhere the cards are maps for the same mode
 local CATEGORY_COL = {Objective = Color3.fromRGB(226, 172, 60), Battlefield = Color3.fromRGB(206, 70, 60), Arena = Color3.fromRGB(70, 140, 220), Horde = Color3.fromRGB(120, 180, 90)}
+local VOTE_H = 236          -- the vote row's height (a card: the map's picture, its name over it)
+local BOARD_W, BOARD_WIDE = 560, 1000   -- the board's width: held on Tab / in the intermission
 local voteBox = Instance.new("Frame")
 voteBox.BackgroundTransparency = 1
-voteBox.Size = UDim2.new(1, 0, 0, 116)
+voteBox.Size = UDim2.new(1, 0, 0, VOTE_H + 30)
 voteBox.LayoutOrder = -1
 voteBox.Visible = false
 voteBox.Parent = board
-local voteTitle = label(voteBox, "VOTE FOR THE NEXT MAP", 12, FONT, COL_DIM)
+local voteTitle = label(voteBox, "VOTE FOR THE NEXT MAP", 16, FONT_BLACK, COL_ACCENT)
 voteTitle.Name = "VoteTitle"
-voteTitle.Size = UDim2.new(1, 0, 0, 16)
+voteTitle.Size = UDim2.new(1, 0, 0, 22)
 voteTitle.TextXAlignment = Enum.TextXAlignment.Center
 local voteRow = Instance.new("Frame")
 voteRow.BackgroundTransparency = 1
-voteRow.Position = UDim2.new(0, 0, 0, 20)
-voteRow.Size = UDim2.new(1, 0, 0, 92)
+voteRow.Position = UDim2.new(0, 0, 0, 28)
+voteRow.Size = UDim2.new(1, 0, 0, VOTE_H)
 voteRow.Parent = voteBox
 local vrl = Instance.new("UIListLayout", voteRow)
 vrl.FillDirection = Enum.FillDirection.Horizontal
 vrl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-vrl.Padding = UDim.new(0, 8)
+vrl.Padding = UDim.new(0, 12)
 vrl.SortOrder = Enum.SortOrder.LayoutOrder
 local voteCards = {}
 local myVote = nil
@@ -278,41 +282,85 @@ for i = 1, 3 do
 	b.BorderSizePixel = 0
 	b.AutoButtonColor = true
 	b.Text = ""
+	b.ClipsDescendants = true
 	b.Parent = voteRow
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
 	local stroke = Instance.new("UIStroke", b)
 	stroke.Color = COL_ACCENT
-	stroke.Thickness = 2
+	stroke.Thickness = 3
 	stroke.Enabled = false
+	-- the map's picture fills the card
+	local shot = Instance.new("ImageLabel")
+	shot.Name = "Shot"
+	shot.Size = UDim2.fromScale(1, 1)
+	shot.BackgroundColor3 = COL_ROW
+	shot.BorderSizePixel = 0
+	shot.ScaleType = Enum.ScaleType.Crop
+	shot.Image = ""
+	shot.Parent = b
+	Instance.new("UICorner", shot).CornerRadius = UDim.new(0, 10)
+	-- a dark fade at the foot so the name reads over any picture
+	local fade = Instance.new("Frame")
+	fade.AnchorPoint = Vector2.new(0, 1)
+	fade.Position = UDim2.fromScale(0, 1)
+	fade.Size = UDim2.new(1, 0, 0.55, 0)
+	fade.BackgroundColor3 = Color3.new(0, 0, 0)
+	fade.BorderSizePixel = 0
+	fade.Parent = b
+	local fg = Instance.new("UIGradient", fade)
+	fg.Rotation = 90
+	fg.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.45, 0.35), NumberSequenceKeypoint.new(1, 0.1)})
+	Instance.new("UICorner", fade).CornerRadius = UDim.new(0, 10)
 	local band = Instance.new("Frame")
-	band.Size = UDim2.new(1, 0, 0, 5)
+	band.Size = UDim2.new(1, 0, 0, 6)
 	band.BorderSizePixel = 0
 	band.Parent = b
-	Instance.new("UICorner", band).CornerRadius = UDim.new(0, 8)
-	local big = label(b, "", 20, FONT_BLACK, COL_TEXT)
-	big.Position = UDim2.new(0, 10, 0, 12)
-	big.Size = UDim2.new(1, -20, 0, 24)
+	local big = label(b, "", 24, FONT_BLACK, COL_TEXT)
+	big.AnchorPoint = Vector2.new(0, 1)
+	big.Position = UDim2.new(0, 14, 1, -40)
+	big.Size = UDim2.new(1, -28, 0, 28)
 	big.TextTruncate = Enum.TextTruncate.AtEnd
-	local small = label(b, "", 14, FONT, COL_DIM)
-	small.Position = UDim2.new(0, 10, 0, 38)
-	small.Size = UDim2.new(1, -20, 0, 18)
+	big.TextStrokeTransparency = 0.6
+	local small = label(b, "", 15, FONT, Color3.fromRGB(225, 225, 225))
+	small.AnchorPoint = Vector2.new(0, 1)
+	small.Position = UDim2.new(0, 14, 1, -20)
+	small.Size = UDim2.new(1, -90, 0, 18)
 	small.TextTruncate = Enum.TextTruncate.AtEnd
-	local tag = label(b, "", 11, FONT_BODY, COL_DIM)
-	tag.Position = UDim2.new(0, 10, 0, 58)
-	tag.Size = UDim2.new(1, -60, 0, 14)
+	local tag = label(b, "", 11, FONT_BODY, Color3.fromRGB(200, 200, 200))
+	tag.AnchorPoint = Vector2.new(0, 1)
+	tag.Position = UDim2.new(0, 14, 1, -6)
+	tag.Size = UDim2.new(1, -90, 0, 14)
 	tag.TextTruncate = Enum.TextTruncate.AtEnd
-	local count = label(b, "0", 24, FONT_BLACK, COL_TEXT)
-	count.AnchorPoint = Vector2.new(1, 1)
-	count.Position = UDim2.new(1, -10, 1, -6)
-	count.Size = UDim2.fromOffset(60, 28)
-	count.TextXAlignment = Enum.TextXAlignment.Right
+	-- the votes so far, in a badge in the corner
+	local badge = Instance.new("Frame")
+	badge.AnchorPoint = Vector2.new(1, 0)
+	badge.Position = UDim2.new(1, -10, 0, 14)
+	badge.Size = UDim2.fromOffset(46, 46)
+	badge.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+	badge.BackgroundTransparency = 0.2
+	badge.Parent = b
+	Instance.new("UICorner", badge).CornerRadius = UDim.new(1, 0)
+	local count = label(badge, "0", 24, FONT_BLACK, COL_TEXT)
+	count.Size = UDim2.fromScale(1, 1)
+	count.TextXAlignment = Enum.TextXAlignment.Center
 	b.Activated:Connect(function()
 		if voteRemote and (roundNode:GetAttribute("Vote" .. i) or "") ~= "" then
 			myVote = i
 			voteRemote:FireServer("map", i)
 		end
 	end)
-	voteCards[i] = {button = b, stroke = stroke, band = band, big = big, small = small, tag = tag, count = count}
+	voteCards[i] = {button = b, stroke = stroke, band = band, big = big, small = small, tag = tag, count = count, shot = shot}
+end
+
+-- a map's picture (Studio puts them in ReplicatedStorage ▸ MapShots ▸ <map>)
+local function shotOf(map)
+	local f = ReplicatedStorage:FindFirstChild("MapShots")
+	local v = f and f:FindFirstChild(map)
+	if not v then return "" end
+	if v:IsA("StringValue") then return v.Value end
+	if v:IsA("Decal") then return v.Texture end
+	if v:IsA("ImageLabel") or v:IsA("ImageButton") then return v.Image end
+	return v:GetAttribute("Image") or ""
 end
 
 local COLS = {{"PLAYER", 0.52, Enum.TextXAlignment.Left}, {"KILLS", 0.16, Enum.TextXAlignment.Right},
@@ -437,6 +485,9 @@ local function refreshRound()
 				any = true
 				local md = GameConfig.MODES[modeId]
 				local title = GameConfig.mapTitle(map)
+				local img = shotOf(map)
+				c.shot.Image = img
+				c.shot.BackgroundColor3 = img ~= "" and COL_ROW or ((md and CATEGORY_COL[md.category] or COL_ACCENT):Lerp(Color3.new(0, 0, 0), 0.55))
 				if md then
 					battles = true
 					c.big.Text = string.upper(md.name)
@@ -452,6 +503,7 @@ local function refreshRound()
 				c.count.Text = tostring(n)
 				c.button.BackgroundColor3 = myVote == i and COL_ROW_ON or COL_ROW
 				c.stroke.Enabled = myVote == i
+				c.shot.ImageTransparency = (myVote and myVote ~= i) and 0.35 or 0
 			end
 		end
 		voteTitle.Text = battles and "VOTE FOR THE NEXT BATTLE" or "VOTE FOR THE NEXT MAP"
@@ -481,6 +533,13 @@ local function refreshRound()
 	end
 end
 
+-- wide for the vote, narrow when it's just the scores on Tab
+local function sizeBoard()
+	local cam = workspace.CurrentCamera
+	local w = intermission() and math.min(BOARD_WIDE, (cam and cam.ViewportSize.X or 1200) - 60) or BOARD_W
+	if board.Size.X.Offset ~= w then board.Size = UDim2.fromOffset(w, 60) end
+end
+
 local holding = false
 local function setBoard(on)
 	if holding == on then return end
@@ -502,6 +561,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if acc > 0.25 then
 		acc = 0
 		refreshRound()
+		sizeBoard()
 		local show = holding or (intermission() and not hubMenuUp())
 		if board.Visible ~= show then board.Visible = show end
 		-- the class screen (DisplayOrder 2000) is up during the intermission: sit above it

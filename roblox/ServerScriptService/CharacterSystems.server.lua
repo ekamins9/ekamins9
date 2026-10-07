@@ -30,6 +30,7 @@ local HOLD_DRAIN    = 3     -- stamina per second while the guard is held (weapo
 -- not blocking / attacking / sprinting, nothing happened for HEALTH_DELAY
 local HEALTH_REGEN  = 2.5   -- health per second
 local HEALTH_DELAY  = 5.0   -- seconds after the last combat event
+local DROWN_TIME    = 1.2   -- seconds under a map's DrownY before you're gone
 
 local function setup(char)
 	local hum = char:WaitForChild("Humanoid", 10)
@@ -59,6 +60,7 @@ local function setup(char)
 		end)
 	end)
 
+	local drowning = 0
 	local conn
 	conn = RunService.Heartbeat:Connect(function(dt)
 		if not (char.Parent and hum.Parent) then
@@ -66,6 +68,18 @@ local function setup(char)
 			return
 		end
 		Injury.tick(char, dt)
+		-- a map with water to fall into (attribute DrownY: Highbridge's river) takes
+		-- whoever is under that height for a moment; a knock-off still credits the
+		-- last one to hit them (LastHitBy)
+		local map = workspace:FindFirstChild("Map")
+		local drownY = map and map:GetAttribute("DrownY")
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if drownY and root and hum.Health > 0 and root.Position.Y < drownY then
+			drowning += dt
+			if drowning > DROWN_TIME then hum.Health = 0 end
+		else
+			drowning = 0
+		end
 		-- holding the guard costs stamina (a timed parry is free): the turtle tax
 		if hum.Health > 0 and char:GetAttribute("Blocking") then
 			local drain = char:GetAttribute("BlockHoldDrain") or HOLD_DRAIN

@@ -2,7 +2,9 @@
      spawn. Each class (GameConfig.CLASSES) carries the loadout you saved for
      it on the LOADOUT screen (Hub menu, M); the card shows that loadout. Lives in
      StarterPlayerScripts so it survives death and opens again when the
-     server says so.
+     server says so. Each card shows your fighter in that class's loadout
+     (PreviewRig in a ViewportFrame), the chosen one turning slowly. During
+     the intermission the vote has the screen (Scoreboard) and this waits.
 
        ReplicatedStorage.LoadoutRemote  "Catalog" -> {classes, order, active, …}
        ReplicatedStorage.LoadoutEvent   out: "Ready" · "Spawn", classId
@@ -21,6 +23,7 @@ local TweenService      = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
+local PreviewRig = require(ReplicatedStorage:WaitForChild("PreviewRig"))
 
 local player    = Players.LocalPlayer
 local remote    = ReplicatedStorage:WaitForChild("LoadoutRemote")
@@ -173,14 +176,57 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	p.PaddingLeft, p.PaddingRight, p.PaddingTop, p.PaddingBottom = UDim.new(0, 16), UDim.new(0, 16), UDim.new(0, 14), UDim.new(0, 14)
 	local n = label(b, string.upper(def.name), 24, FONT_BLACK, COL_TEXT); n.Size = UDim2.new(1, 0, 0, 30)
 	local tag = label(b, string.upper(def.armorType) .. " ARMOR", 12, FONT, TYPE_COL[def.armorType] or COL_DIM); tag.Position = UDim2.new(0, 0, 0, 32); tag.Size = UDim2.new(1, 0, 0, 16)
-	local d = label(b, def.description or "", 14, FONT_BODY, COL_DIM); d.Position = UDim2.new(0, 0, 0, 56); d.Size = UDim2.new(1, 0, 0, 80); d.TextYAlignment = Enum.TextYAlignment.Top
+	-- your fighter in this class's loadout
+	local vp = Instance.new("ViewportFrame")
+	vp.Name = "Preview"
+	vp.BackgroundTransparency = 1
+	vp.Position = UDim2.new(0, -8, 0, 50)
+	vp.Size = UDim2.new(1, 16, 1, -50 - 122)
+	vp.Ambient = Color3.fromRGB(150, 146, 140)
+	vp.LightColor = Color3.fromRGB(255, 244, 226)
+	vp.LightDirection = Vector3.new(-0.4, -1, 0.6)
+	vp.Parent = b
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 30
+	cam.Parent = vp
+	vp.CurrentCamera = cam
+	local d = label(b, def.description or "", 13, FONT_BODY, COL_DIM); d.AnchorPoint = Vector2.new(0, 1); d.Position = UDim2.new(0, 0, 1, -62); d.Size = UDim2.new(1, 0, 0, 54); d.TextYAlignment = Enum.TextYAlignment.Top
 	local lh = label(b, "LOADOUT", 11, FONT, COL_DIM); lh.AnchorPoint = Vector2.new(0, 1); lh.Position = UDim2.new(0, 0, 1, -44); lh.Size = UDim2.new(1, 0, 0, 14)
 	local sum = label(b, "…", 14, FONT, COL_TEXT); sum.AnchorPoint = Vector2.new(0, 1); sum.Position = UDim2.new(0, 0, 1, 0); sum.Size = UDim2.new(1, 0, 0, 44); sum.TextYAlignment = Enum.TextYAlignment.Top
 	b.MouseEnter:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD:Lerp(COL_CARD_ON, 0.35) end end)
 	b.MouseLeave:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD end end)
 	b.Activated:Connect(function() selected = id; paint() end)
-	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s}
+	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s, vp = vp, cam = cam}
 end
+
+-- each class's fighter: dressed by the same Dresser as a real spawn
+local SPIN = 20      -- degrees a second the chosen class's fighter turns
+local function buildPreviews()
+	for id, c in pairs(cards) do
+		if c.rig then c.rig:Destroy(); c.rig = nil end
+		local cls = catalog and catalog.classes and catalog.classes[id]
+		if cls and cls.loadout then
+			local ok, rig = pcall(PreviewRig.dressedRig, {loadout = cls.loadout, appearance = catalog.appearance,
+				weight = GameConfig.CLASSES[id] and GameConfig.CLASSES[id].weight, weapon = true,
+				pose = {rs = {12, 0, 0}, ls = {-6, 0, 0}}})
+			if ok and rig then
+				c.yaw = -25
+				rig:PivotTo(CFrame.Angles(0, math.rad(c.yaw), 0))
+				rig.Parent = c.vp
+				c.rig = rig
+				-- frame the whole body, boots to crest
+				c.cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.2, -12), Vector3.new(0, -0.35, 0))
+			end
+		end
+	end
+end
+RunService.RenderStepped:Connect(function(dt)
+	local c = cards[selected]
+	if not (c and c.rig and c.vp.Parent and c.vp:IsDescendantOf(game)) then return end
+	if not (c.vp:FindFirstAncestorOfClass("ScreenGui") and c.vp:FindFirstAncestorOfClass("ScreenGui").Enabled) then return end
+	c.yaw = (c.yaw or -25) + SPIN * dt
+	c.rig:PivotTo(CFrame.Angles(0, math.rad(c.yaw), 0))
+end)
 
 -- bottom: spawn + wait reason
 local spawnBtn = button(panel, "SPAWN", 24, COL_SPAWN_ON)
@@ -205,6 +251,7 @@ editHint.TextXAlignment = Enum.TextXAlignment.Center
 local function fetchCatalog()
 	local ok, data = pcall(remote.InvokeServer, remote, "Catalog")
 	if ok and type(data) == "table" then catalog = data else warn("[ClassScreen] could not fetch catalog:", data) end
+	buildPreviews()
 	for id, c in pairs(cards) do
 		local cls = catalog and catalog.classes and catalog.classes[id]
 		local sm = cls and cls.summary
@@ -260,8 +307,10 @@ local function inCourtyard()
 	return roundNode:GetAttribute("Mode") == "Hub"
 end
 
+local function voting() return roundNode:GetAttribute("State") == "Intermission" end
+
 local function present()
-	gui.Enabled = open and not hubOpen
+	gui.Enabled = open and not hubOpen and not voting()
 	if gui.Enabled then
 		panel.Position = UDim2.fromScale(0.5, 0.53)
 		TweenService:Create(panel, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromScale(0.5, 0.5)}):Play()
@@ -340,6 +389,14 @@ event.OnClientEvent:Connect(function(what, a, b)
 		hide()
 	elseif what == "Wave" then
 		waveAt = os.clock() + (tonumber(a) or 0)
+	end
+end)
+
+-- step aside while the round is being voted on; back when it starts
+roundNode:GetAttributeChangedSignal("State"):Connect(function()
+	if open then
+		if not voting() then fetchCatalog(); refreshModeLine() end
+		present()
 	end
 end)
 

@@ -375,6 +375,11 @@ accent, glow, style, fx, egg, pass, description}`.
   *on top* lifts the ground, and a thin one *inside* a full row doesn't change its material. For
   a hill use `T:Mound(centre, top, plateau, foot, material)` (exact top height), not stacked
   thin fills (they round each part-filled voxel up to full).
+- **Water you can fall into:** give the map an attribute `DrownY` (a height a little above the
+  water's surface, e.g. -13 over water at -16): anyone below it for 1.2 s drowns.
+- **Its picture on the vote:** put a StringValue (or Decal / ImageLabel) named after the map in
+  `ReplicatedStorage ▸ MapShots`, holding the image (`rbxassetid://…`): a screenshot of the map
+  from its menu view, uploaded as a Decal. Without one the vote card is plain, in its mode's colour.
 - **Seats:** a `Seat` faces its front (`LookVector`); the sitter's back is to the seat's back.
   The Jump key stands you up and steps you off the front.
 - **Footstep sounds:** `ReplicatedStorage ▸ Footsteps`: `SOUNDS[material name] = sound id`;

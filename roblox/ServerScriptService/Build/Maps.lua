@@ -5,8 +5,10 @@
 
      Sandpit    a sun-bleached desert arena: a sunken fighting pit, stands,
                 red and blue awnings on poles, a gatehouse. Lists / Duel / FFA.
-     Highbridge a long stone bridge in blue fog between two gatehouses, with
-                a wrecked cart and barrels for cover. TDM / LTS.
+     Highbridge a long stone bridge over a river in blue morning fog, between
+                two gatehouses on rock cliffs, with a wrecked cart and barrels
+                for cover; ruined towers stand in the water. Over the parapet
+                is a drowning (DrownY). TDM / LTS.
      Millfield  a village: windmill on the hill (the KOTH zone), farmhouses,
                 hay, fences, a stream with a plank bridge. KOTH / TDM / FFA.
      GameConfig.MODES names them in each mode's `maps`. ]]
@@ -131,6 +133,38 @@ end
 function Maps.Highbridge()
 	local ctx = K.new("Highbridge")
 	local L, W = 150, 16   -- bridge length (along Z) and width
+	-- the river under it: water 16 studs below the deck over a sandy, stony bed;
+	-- rock cliffs under both gatehouses, grass on top, hills fading into the fog
+	K.terrain(ctx, V3(-208, -60, -208), V3(416, 100, 416), function(T)
+		T:FillBlock(CFrame.new(0, -38, 0), V3(416, 16, 416), Enum.Material.Rock)       -- bedrock, -46 .. -30
+		T:FillBlock(CFrame.new(0, -29, 0), V3(416, 2, 150), Enum.Material.Sand)        -- the bed, -30 .. -28
+		T:FillBlock(CFrame.new(0, -22, 0), V3(416, 12, 136), Enum.Material.Water)      -- the river, surface at -16
+		for _, s in ipairs({-1, 1}) do
+			-- the bank: rock up to just under the gatehouse floor (its top at y = -2)…
+			T:FillBlock(CFrame.new(0, -17, s * 140), V3(416, 30, 136), Enum.Material.Rock)
+			-- …a cliff face down to the water…
+			-- (a wedge's slope runs down toward its front, -Z: the north bank as it is, the south turned round)
+			T:FillWedge(CFrame.new(0, -17, s * 67) * CFrame.Angles(0, s > 0 and 0 or math.pi, 0), V3(416, 30, 10), Enum.Material.Slate)
+			-- …grass on top past the gatehouse, and hills going off into the fog
+			T:FillBlock(CFrame.new(0, -3, s * 154), V3(416, 2, 108), Enum.Material.Grass)
+			for i, x in ipairs({-150, -80, 70, 140}) do
+				T:Mound(V3(x, -2, s * (150 + (i % 2) * 25)), 14 + (i % 3) * 6, 10, 40, Enum.Material.Grass)
+			end
+		end
+		-- rocks in the stream and boulders fallen at the foot of the cliffs
+		local rr = Random.new(11)
+		for _ = 1, 26 do
+			local z = rr:NextNumber(-64, 64)
+			local x = rr:NextNumber(-190, 190)
+			if math.abs(x) > 14 then T:FillBall(V3(x, -27 + rr:NextNumber(0, 6), z), rr:NextNumber(2.5, 6), Enum.Material.Rock) end
+		end
+		for _, s in ipairs({-1, 1}) do
+			for _ = 1, 10 do T:FillBall(V3(rr:NextNumber(-180, 180), -19, s * rr:NextNumber(58, 64)), rr:NextNumber(3, 6), Enum.Material.Slate) end
+		end
+	end)
+	K.terrainColors(ctx, {Grass = Color3.fromRGB(78, 108, 74), Rock = Color3.fromRGB(92, 100, 112), Slate = Color3.fromRGB(78, 86, 98), Sand = Color3.fromRGB(150, 140, 112)})
+	-- a fighter who goes over the parapet and into the river drowns (CharacterSystems)
+	ctx.model:SetAttribute("DrownY", -13)
 	-- the deck, with a low parapet and piers down into the fog
 	K.box(ctx, "Deck", V3(W, 2, L), V3(0, -1, 0), C.BLUESTONE, M.Slate)
 	K.box(ctx, "DeckTrim", V3(W + 1, 0.4, L), V3(0, 0.1, 0), C.STONE, M.Slate).CanCollide = false
