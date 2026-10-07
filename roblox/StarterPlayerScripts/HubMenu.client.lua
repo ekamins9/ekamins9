@@ -3235,7 +3235,7 @@ do
 		local left = clearFrame(body); left.Size = UDim2.new(0, 270, 1, 0)
 		local leftList = scroll(left, 6)
 		local right = clearFrame(body); right.Position = UDim2.new(0, 286, 0, 0); right.Size = UDim2.new(1, -286, 1, 0)
-		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}}
+		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}, {"Ranged", "RANGED  ·  ARCHER"}}
 		local function shown(w) return not ui.ownedOnly or owns("weapons", w.id) end
 		if not Catalog.WEAPON[ui.shopWeapon] or not shown(Catalog.WEAPON[ui.shopWeapon]) then
 			ui.shopWeapon = nil
@@ -3274,7 +3274,7 @@ do
 		local nm = title(stg, w.name, 34); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 38)
 		local sk = title(stg, sel.name == "Default" and "DEFAULT LOOK" or (string.upper(sel.name) .. "  SKIN"), 18, RARITY_COL[sel.rarity] or COL.DIM); sk.Position = UDim2.fromOffset(20, 50); sk.Size = UDim2.new(1, -40, 0, 22)
 		if sel.name ~= "Default" then local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16) end
-		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or "Polearm")
+		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or (w.family == "Ranged" and "Ranged (the Archer's)" or "Polearm"))
 		local fxText = Preview.fxText(sel)
 		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or "") .. (fxText and ("  ·  " .. fxText) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
 		local desc = (weaponStats(w.id) or {}).Description

@@ -202,9 +202,30 @@ back every 6 / 8 s, full every life. Kick works with a bow in hand.
 What everyone sees (`RangedFX`): arrows in flight (`ArrowFlight`; your own fly the moment you
 loose), every bow's **string drawn back to the hand with an arrow on it**, a crossbow's string at
 the nut while spanned and the bolt in its groove. The **stances** are `RigPose.ranged` (inputs
-`ranged`, `aim`, `draw`, `reload`, relayed like the rest of the pose): side-on with the bow arm at
-the target and the string hand at the jaw, the nock reaching back to the quiver, the crossbow
-shouldered or pointed down and cranked. The reticle shows the shake and closes as you draw; full
+`ranged`, `aim`, `draw`, `reload`, relayed like the rest of the pose). The bow is held out in the
+left hand with the torso turned side-on (`BOW_TWIST`), and drawing turns it further
+(`BOW_TWIST_DRAW`) while the right arm pulls back along the arrow, not up. The nock pose reaches
+back to the quiver. The crossbow is shouldered, or pointed down and cranked. **In first person,
+with a bow or crossbow up, your own arms are hidden** (`CameraRig`): only the bow, its string and
+the arrow show.
+
+**Sounds.**
+- The draw creaks as the bow bends.
+- The release is a low string thump plus a short whoosh, both louder the fuller the draw.
+- The crossbow gives a click plus a whoosh.
+- What an arrow lands in sounds like itself (`SoundBank.WALL` by material): stone and metal
+  ring, wood thunks, earth thuds; flesh gets a stab.
+- Someone else's arrow passing within 9 studs of your camera **whizzes by** (`ArrowFlight`;
+  louder the closer, once per arrow).
+
+**Skins and arrow effects.** Bows and crossbows have their own section in the Armory
+(**RANGED · ARCHER**) and skins like any weapon. The Epics and Legendaries change the arrows
+(`arrow = "<kind>"` → `ArrowFX`): fire, frost, shadow, holy, storm, venom, gilded, blood — a trail,
+a glowing head, particles, a light, a burst where it lands, a smoulder where it sticks. The Tool
+carries `Skin` and `ArrowFx` attributes (`LoadoutServer`); the server passes the kind with every
+"Shot" so everyone sees it. Most roll from the **Fletcher's Crate** (always in rotation); Venomstring,
+Heartseeker and Glacier are earned by kills; Stormcaller and Thunderbolt come from the Royal crate;
+the Gilded Longbow is on the shelf. The reticle shows the shake and closes as you draw; full
 draw zooms a little. On a touch screen, hold a SWING button to draw, BLOCK lets down. Bows hang
 across the back when not in hand (`Holsters`). Tuning: each Tool's `Config` over
 `RangedServer.DEFAULTS` / `RangedClient.DEFAULTS`.

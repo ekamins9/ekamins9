@@ -30,6 +30,8 @@ local Debris = game:GetService("Debris")
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
 local Injury = require(script.Parent:WaitForChild("Injury"))
 local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
+local SoundBank = require(ReplicatedStorage:WaitForChild("SoundBank"))
+local ArrowFX = require(ReplicatedStorage:WaitForChild("ArrowFX"))
 local Armor do
 	local loadout = script.Parent.Parent:FindFirstChild("Loadout")
 	local mod = loadout and loadout:FindFirstChild("Armor")
@@ -114,9 +116,11 @@ if not stuckFolder then stuckFolder = Instance.new("Folder"); stuckFolder.Name =
 
 -- leave an arrow standing in something: welded to a body part (it goes with
 -- the body), anchored in the world
-local function stick(kind, cf, part, life)
+local function stick(kind, cf, part, life, fx)
 	local m = arrowModel(kind)
 	m:PivotTo(cf)
+	-- a skin's arrows smoulder where they stand a moment (ArrowFX)
+	if fx then ArrowFX.decorate(m.PrimaryPart, m:FindFirstChild("Head"), fx, {stuck = true}) end
 	for _, p in ipairs(m:GetDescendants()) do
 		if p:IsA("BasePart") and p ~= m.PrimaryPart then
 			local w = Instance.new("WeldConstraint"); w.Part0, w.Part1 = m.PrimaryPart, p; w.Parent = p
@@ -148,9 +152,14 @@ local function regionOf(part, model)
 	return REGION[n] or "body", n
 end
 
+-- THE SOUNDS (Pro Sound Effects). A bow's release is two layered: the string
+-- slapping home (a low leather thump) and the arrow leaving (a short airy whoosh).
 local SND = {
-	release = "rbxassetid://9120726501", crossbow = "rbxassetid://9116669163", reload = "rbxassetid://9114424322",
-	ground = "rbxassetid://9120951616",
+	thump = "rbxassetid://9113506634", whoosh = "rbxassetid://9114159112",
+	crossbow = "rbxassetid://9116669163", reload = "rbxassetid://9114424322",
+	creak = "rbxassetid://9117979625",
+	-- an arrow going into…
+	flesh = "rbxassetid://9113502495", dirt = "rbxassetid://9118680937", wood = "rbxassetid://9120951616",
 }
 -- a sound from a point in the world (an invisible speck that goes after a moment)
 local function speck(pos)
@@ -189,7 +198,7 @@ function RangedServer.attach(Tool, cfgIn)
 			local b = Instance.new("Beam")
 			b.Name = "String" .. i
 			b.Attachment0, b.Attachment1 = pair[1], pair[2]
-			b.Width0, b.Width1 = 0.05, 0.05
+			b.Width0, b.Width1 = 0.025, 0.025   -- (thin: in first person it's right by your eye)
 			b.Color = ColorSequence.new(Color3.fromRGB(232, 226, 206))
 			b.FaceCamera = true
 			b.Segments = 1
@@ -216,7 +225,9 @@ function RangedServer.attach(Tool, cfgIn)
 		Tool:SetAttribute("Loaded", loaded)
 	end
 	local function stamina() return character and (character:GetAttribute("BlockMeter") or 100) or 0 end
+	local creak
 	local function cancelDraw()
+		if creak then creak:Destroy(); creak = nil end
 		drawStart, holdCostFrom = nil, nil
 		setAttr("Drawing", nil)
 		-- (a crossbow being wound stays slow till it's done)
@@ -254,7 +265,7 @@ function RangedServer.attach(Tool, cfgIn)
 	table.insert(conns, Tool.AncestryChanged:Connect(function() if not Tool:IsDescendantOf(workspace) then cancelDraw() end end))
 
 	-- what an arrow does to what it meets
-	local function onHit(shooter, shotWeapon, res, vel, power, shotKind)
+	local function onHit(shooter, shotWeapon, res, vel, power, shotKind, fx)
 		local part = res.Instance
 		local model = part and part:FindFirstAncestorOfClass("Model")
 		local hum = model and model:FindFirstChildOfClass("Humanoid")
@@ -265,9 +276,14 @@ function RangedServer.attach(Tool, cfgIn)
 		local dir = vel.Magnitude > 0 and vel.Unit or Vector3.new(0, 0, -1)
 		local at = CFrame.lookAt(res.Position - dir * 0.6, res.Position + dir)
 		if not (hum and hum.Health > 0) then
-			-- the world: it sticks (a thunk by what it is)
-			CombatServer.clang(res.Material and res.Material.Name or "", speck(res.Position), SND.ground)
-			stick(shotKind, at * CFrame.new(0, 0, 0.5), part, cfg.STICK_LIFE)
+			-- the world: it sticks, with the sound of what it went into (stone and metal
+			-- ring and it glances; wood thunks; earth, sand and grass take it with a thud)
+			local family = CombatServer.wallFamily(res.Material and res.Material.Name or "") or "Ground"
+			local at2 = speck(res.Position)
+			for _, pool in ipairs(SoundBank.WALL[family] or {"WallGround"}) do Sounds.bank(pool, at2, {Volume = 0.7}) end
+			if family == "Ground" then Sounds.play(SND.dirt, at2, {Volume = 0.8, MaxDistance = 70})
+			elseif family == "Wood" then Sounds.play(SND.wood, at2, {Volume = 0.8, Speed = 1.25, MaxDistance = 70}) end
+			stick(shotKind, at * CFrame.new(0, 0, 0.5), part, cfg.STICK_LIFE, fx)
 			return
 		end
 		local target = model
@@ -308,12 +324,13 @@ function RangedServer.attach(Tool, cfgIn)
 		CombatServer.flinch(target, dir)
 		CombatServer.interrupt(target, "hit")
 		Sounds.bank("HitStab", part)
+		Sounds.play(SND.flesh, part, {Volume = 0.6, Speed = 1.1, MaxDistance = 70})
 		if lethal then Sounds.bank("HitBone", part) else Sounds.voice("Hurt", target:FindFirstChild("Head") or part, {Who = target}) end
 		if region == "head" and shooter and shooter.Parent then
 			shooter:SetAttribute("GuardText", lethal and "HEADSHOT!" or "HEADSHOT")
 			shooter:SetAttribute("GuardTick", (shooter:GetAttribute("GuardTick") or 0) + 1)
 		end
-		stick(shotKind, at * CFrame.new(0, 0, 0.9), part, cfg.STICK_LIFE)
+		stick(shotKind, at * CFrame.new(0, 0, 0.9), part, cfg.STICK_LIFE, fx)
 		hum:TakeDamage(dmg)
 	end
 
@@ -338,10 +355,17 @@ function RangedServer.attach(Tool, cfgIn)
 		local vel = dir * speed
 		local g = cfg.GRAVITY * (isBow and (1.4 - 0.4 * power) or 1)
 		local shooter, shotWeapon, kind = character, weaponName, cfg.KIND
+		local fx = Tool:GetAttribute("ArrowFx")
 		shotSeq += 1
 		local id = (player and player.UserId or 0) .. ":" .. tostring(type(shotId) == "number" and shotId or shotSeq)
-		arrowEvent:FireAllClients("Shot", id, origin, vel, g, kind, player and player.UserId or 0)
-		Sounds.play(isBow and SND.release or SND.crossbow, head, {Volume = 0.7, Speed = isBow and 1.7 or 1.4, MaxDistance = 90})
+		arrowEvent:FireAllClients("Shot", id, origin, vel, g, kind, player and player.UserId or 0, fx)
+		if isBow then
+			Sounds.play(SND.thump, head, {Volume = 0.5 + 0.4 * power, Speed = 0.62, MaxDistance = 90, Ttl = 2})
+			Sounds.play(SND.whoosh, head, {Volume = 0.35 + 0.35 * power, Speed = 2.2, MaxDistance = 70, Ttl = 2})
+		else
+			Sounds.play(SND.crossbow, head, {Volume = 0.8, Speed = 1.45, MaxDistance = 100, Ttl = 2})
+			Sounds.play(SND.whoosh, head, {Volume = 0.5, Speed = 2.6, MaxDistance = 70, Ttl = 2})
+		end
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
 		params.FilterDescendantsInstances = {shooter, stuckFolder}
@@ -355,7 +379,7 @@ function RangedServer.attach(Tool, cfgIn)
 			if res then
 				conn:Disconnect()
 				arrowEvent:FireAllClients("Stop", id, res.Position)
-				local ok, err = pcall(onHit, shooter, shotWeapon, res, vel, power, kind)
+				local ok, err = pcall(onHit, shooter, shotWeapon, res, vel, power, kind, fx)
 				if not ok then warn("[Ranged]", err) end
 				return
 			end
@@ -380,6 +404,9 @@ function RangedServer.attach(Tool, cfgIn)
 			CombatServer.drainStamina(character, cfg.DRAW_COST, nil)
 			drawStart = now
 			setAttr("Drawing", 0.01)
+			-- the bow creaks as it bends (stopped when it's loosed or let down)
+			local head = character:FindFirstChild("Head")
+			if head then creak = Sounds.play(SND.creak, head, {Volume = 0.45, Speed = 3.2 / cfg.DRAW_TIME * 0.6, MaxDistance = 35, Ttl = cfg.DRAW_TIME + 3}) end
 			setAttr("SpeedMult_Draw", cfg.DRAW_SLOW)
 		elseif action == "Loose" then
 			if typeof(a) ~= "Vector3" or a.Magnitude < 0.5 or a ~= a then return end

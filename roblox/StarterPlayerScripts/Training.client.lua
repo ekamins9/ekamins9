@@ -26,7 +26,7 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 
 local player = Players.LocalPlayer
-local remote = ReplicatedStorage:WaitForChild("TrainingRemote")
+local remote = ReplicatedStorage:WaitForChild("TrainingRemote", math.huge)   -- only a training server makes it
 local round = ReplicatedStorage:WaitForChild("Round")
 local D = Catalog.DRILLS
 local LESSON = {}

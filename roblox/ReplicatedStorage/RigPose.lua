@@ -38,7 +38,8 @@ RigPose.CONFIG = {
 	HIT_JOLT        = 0.22,
 	HIT_JOLT_DIR    = 1,
 	-- ranged (bows, crossbows: the inputs ranged / aim / draw / reload)
-	BOW_TWIST       = 0.55,          -- the archer turns side-on to the target (radians)
+	BOW_TWIST       = 0.85,          -- the archer turns side-on to the target (radians)…
+	BOW_TWIST_DRAW  = 0.5,           -- …and further as the string comes back: the shoulders on the line
 	TWIST_DIR       = -1,            -- flip if the wrong shoulder comes forward (the bow's, the left, leads)
 	SWING_DIR       = 1,             -- flip if "across the chest" swings the arms outward
 }
@@ -118,15 +119,18 @@ function RigPose.ranged(out, i, o, crossbow)
 		out["Left Shoulder"] = arm(o, "Left Shoulder", 0.9 + 0.3 * (1 - reach), 0.25)
 		out["Right Shoulder"] = arm(o, "Right Shoulder", 0.4 + 2.2 * reach, -0.35 * reach + 0.3 * (1 - reach))
 	elseif not crossbow then
-		-- side-on, the bow arm straight out at the target, the string hand drawn back to the jaw
-		-- (the torso turns by `twist`; each arm turns back by as much, so both still point at the target)
-		local twist = C.BOW_TWIST * aim * C.TWIST_DIR
+		-- side-on: the shoulders turn onto the line to the target (the left, the bow's, in front,
+		-- the right behind the head), the bow arm straight out along it. Each arm turns back by the
+		-- torso's twist, so both point at the target. THE DRAW: the string hand starts across at the
+		-- bow and comes straight back along the line to the jaw, the shoulders turning further as
+		-- it comes; the arrow ends up running straight out under your eye.
+		local twist = (C.BOW_TWIST + C.BOW_TWIST_DRAW * draw) * aim * C.TWIST_DIR
 		out.RootJoint = out.RootJoint * CFrame.Angles(0, 0, twist)
 		out.Neck = out.Neck * CFrame.Angles(0, 0, -twist)
-		out["Left Shoulder"] = arm(o, "Left Shoulder", aim * (level + pitch) + (1 - aim) * 0.35, twist)
-		out["Right Shoulder"] = arm(o, "Right Shoulder",
-			aim * (level + pitch) * (1 - 0.1 * draw) + (1 - aim) * 0.1,
-			-twist + aim * (0.2 + 0.55 * draw))
+		local raise = aim * (level + pitch)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", raise + (1 - aim) * 0.35, twist)
+		out["Right Shoulder"] = arm(o, "Right Shoulder", raise * (1 - 0.05 * draw) + (1 - aim) * 0.1,
+			-twist + aim * 0.6 * (1 - draw))
 	elseif reload > 0 and aim < 0.5 then
 		-- the windlass: the crossbow points down, the left hand cranks
 		local crank = math.abs(math.sin(reload * math.pi * 4))

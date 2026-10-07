@@ -150,6 +150,12 @@ function SkinFX.describe(skin)
 	local bits = {}
 	if wantsTrail(skin, variant) then table.insert(bits, "Trail") end
 	if skin.fx and NAME[skin.fx] then table.insert(bits, NAME[skin.fx]) end
+	-- a bow's or a crossbow's arrows (ReplicatedStorage ▸ ArrowFX)
+	if skin.arrow then
+		local ok, ArrowFX = pcall(require, script.Parent:WaitForChild("ArrowFX", 2))
+		local k = ok and ArrowFX and ArrowFX.KINDS[skin.arrow]
+		if k then table.insert(bits, k.name) end
+	end
 	return #bits > 0 and table.concat(bits, " · ") or nil
 end
 

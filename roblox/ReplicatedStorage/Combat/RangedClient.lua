@@ -150,7 +150,7 @@ function RangedClient.attach(Tool, cfgIn)
 		if not dir then return end
 		shotN += 1
 		remote:FireServer("Loose", dir, shotN)
-		ArrowFlight.fly(player.UserId .. ":" .. shotN, head.Position + dir * 1.2 + Vector3.new(0, -0.2, 0), dir * speed, g, cfg.KIND)
+		ArrowFlight.fly(player.UserId .. ":" .. shotN, head.Position + dir * 1.2 + Vector3.new(0, -0.2, 0), dir * speed, g, cfg.KIND, true, Tool:GetAttribute("ArrowFx"))
 		lastShotAt = now
 	end
 	local function letDown()

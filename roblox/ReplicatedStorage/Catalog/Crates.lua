@@ -36,6 +36,11 @@ return {
 		cost = 80, odds = {Common = 40, Rare = 35, Epic = 19, Legendary = 6}, pity = 15,
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000}, accent = C(150, 120, 255),
 	},
+	Fletcher = {
+		name = "Fletcher's Crate", description = "Bow and crossbow skins. The Epics and Legendaries change the arrows: fire, frost, shadow, sunlight.",
+		cost = 70, odds = {Common = 50, Rare = 32, Epic = 14, Legendary = 4}, pity = 20,
+		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000}, accent = C(120, 170, 80),
+	},
 	Grim = {
 		name = "Grim Crate", description = "Kill effects only: a serpent from the ground, a hand from the sky, an anvil, a black hole.",
 		cost = 80, odds = {Common = 40, Rare = 35, Epic = 19, Legendary = 6}, pity = 15,

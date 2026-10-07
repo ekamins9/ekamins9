@@ -15,11 +15,11 @@ local ArrowFlight = require(ReplicatedStorage:WaitForChild("ArrowFlight"))
 local arrowEvent = ReplicatedStorage:WaitForChild("ArrowEvent", math.huge)   -- (made when the first bow comes out: wait quietly)
 local player = Players.LocalPlayer
 
-arrowEvent.OnClientEvent:Connect(function(what, id, a, b, c, kind, shooterId)
+arrowEvent.OnClientEvent:Connect(function(what, id, a, b, c, kind, shooterId, fx)
 	if what == "Shot" then
 		-- (our own shot flies already)
 		if ArrowFlight.has(id) then return end
-		ArrowFlight.fly(id, a, b, c, kind)
+		ArrowFlight.fly(id, a, b, c, kind, false, fx)
 	elseif what == "Stop" then
 		ArrowFlight.stop(id, a)
 	end

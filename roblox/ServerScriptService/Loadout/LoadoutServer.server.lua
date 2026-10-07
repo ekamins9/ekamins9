@@ -152,6 +152,10 @@ local function giveWeapon(plr, char, weaponId, skinId, equip)
 	local template = findWeapon(weaponId)
 	if not template then warn("[Loadout] no Tool named", weaponId, "in ServerStorage.Weapons"); return end
 	local tool = template:Clone()
+	-- which skin it wears, for whatever reads it (a bow's skin decides its arrows: Catalog ▸ Skins arrow)
+	tool:SetAttribute("Skin", skinId)
+	local skinDef = skinId and Catalog.SKIN[skinId]
+	tool:SetAttribute("ArrowFx", skinDef and skinDef.arrow or nil)
 	if skinId then
 		-- the finish this player's copy has (Masterwork, Radiant)
 		local best = Profile.bestCopy(Profile.get(plr), skinId)

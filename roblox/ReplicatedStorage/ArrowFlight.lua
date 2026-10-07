@@ -4,11 +4,34 @@
      server's stuck arrow takes over). Your own shot starts here the moment you
      loose it, before the server has heard.
 
-       ArrowFlight.fly(id, origin, velocity, gravity, kind)
+       ArrowFlight.fly(id, origin, velocity, gravity, kind, mine, fx)
+     fx: the skin's arrow effect (ArrowFX): it wears it in flight and bursts with it.
+     Someone else's arrow passing close by WHIZZES past your ears (louder the
+     closer it comes; once per arrow).
        ArrowFlight.stop(id, position?)
        ArrowFlight.has(id) ]]
 
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local ArrowFX = require(script.Parent:WaitForChild("ArrowFX"))
+
+local WHIZ = {"rbxassetid://9114156616", "rbxassetid://9114159112", "rbxassetid://9114159981"}   -- doppler whooshes (Pro Sound Effects)
+local WHIZ_RANGE = 9      -- studs from your camera an arrow must pass within
+local function whiz(closeness)
+	local s = Instance.new("Sound")
+	s.SoundId = WHIZ[math.random(#WHIZ)]
+	s.Volume = 0.25 + 0.55 * closeness
+	s.PlaybackSpeed = 1.5 + math.random() * 0.3
+	s.Parent = SoundService
+	s:Play()
+	task.delay(2, function() s:Destroy() end)
+end
+-- the nearest the stretch a → b comes to p
+local function nearest(p, a, b)
+	local ab = b - a
+	local t = ab.Magnitude > 1e-4 and math.clamp((p - a):Dot(ab) / ab:Dot(ab), 0, 1) or 0
+	return (a + ab * t - p).Magnitude
+end
 
 local ArrowFlight = {}
 local live = {}   -- [id] = {model, pos, vel, g, t}
@@ -66,11 +89,12 @@ local function place(e)
 	e.fl.CFrame = cf * CFrame.new(0, 0, e.len / 2 - 0.25)
 end
 
-function ArrowFlight.fly(id, origin, velocity, gravity, kind)
+function ArrowFlight.fly(id, origin, velocity, gravity, kind, mine, fx)
 	if live[id] then return end
 	local m, shaft, head, fl, len = model(kind)
 	m.Parent = holder()
-	local e = {model = m, shaft = shaft, head = head, fl = fl, len = len, pos = origin, vel = velocity, g = gravity or 30, t = 0}
+	if fx then ArrowFX.decorate(shaft, head, fx) end
+	local e = {model = m, shaft = shaft, head = head, fl = fl, len = len, pos = origin, vel = velocity, g = gravity or 30, t = 0, mine = mine == true, fx = fx}
 	live[id] = e
 	place(e)
 	-- (a lost arrow: gone after a while whatever happens)
@@ -84,6 +108,7 @@ function ArrowFlight.stop(id, at)
 	if at then
 		e.pos = at
 		place(e)
+		if e.fx then ArrowFX.burst(at, e.fx, holder()) end
 		-- the server's stuck arrow takes its place a moment later
 		task.delay(0.15, function() e.model:Destroy() end)
 	else
@@ -94,11 +119,18 @@ end
 function ArrowFlight.has(id) return live[id] ~= nil end
 
 RunService.RenderStepped:Connect(function(dt)
+	local cam = workspace.CurrentCamera
+	local ear = cam and cam.CFrame.Position
 	for _, e in pairs(live) do
 		local nextVel = e.vel - Vector3.new(0, e.g * dt, 0)
+		local from = e.pos
 		e.pos += (e.vel + nextVel) * 0.5 * dt
 		e.vel = nextVel
 		place(e)
+		if ear and not e.mine and not e.whizzed then
+			local d = nearest(ear, from, e.pos)
+			if d < WHIZ_RANGE then e.whizzed = true; whiz(1 - d / WHIZ_RANGE) end
+		end
 	end
 end)
 

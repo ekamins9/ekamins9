@@ -782,6 +782,13 @@ local function loopBody(dt)
 		local show = math.clamp((-rot.X - TORSO_SHOW_FROM) / (TORSO_SHOW_TO - TORSO_SHOW_FROM), 0, 1)
 		setTorsoAlpha(1 - show)
 		fadeArmPieces()
+		-- a bow or a crossbow up in first person: the arms (and their armor) would fill
+		-- the view, so only the weapon, its string and the arrow show (RangedClient)
+		if (character:GetAttribute("LocalRanged") or 0) > 0.5 then
+			LeftArm.LocalTransparencyModifier = 1
+			RightArm.LocalTransparencyModifier = 1
+			for part in pairs(armPieces) do if part.Parent then part.LocalTransparencyModifier = 1 end end
+		end
 	else
 		Head.LocalTransparencyModifier = 0
 		setTorsoAlpha(0)

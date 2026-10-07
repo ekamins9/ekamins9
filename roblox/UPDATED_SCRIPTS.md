@@ -1,4 +1,48 @@
-# Updated scripts: bows toned down
+# Updated scripts: bows in first person, sounds, ranged skins with arrow effects
+
+- **A new bow stance:**
+  - The bow is held out in the left hand, and the torso turns side-on.
+  - Drawing turns the torso further while the right arm pulls back along the arrow, not up.
+  - In first person your own arms are hidden while a bow or crossbow is up, so only the bow, the string and the arrow show. The string is thinner.
+- **Sounds:**
+  - The draw creaks.
+  - A new release: a low string thump plus a short whoosh, both louder the fuller the draw. The crossbow gets a click plus a whoosh.
+  - Arrows hitting things sound like what they hit: stone and metal ring, wood thunks, earth thuds, flesh gets a stab.
+  - **Arrows whiz by** you when someone else's shot passes within 9 studs of your head.
+- **The Armory has a RANGED · ARCHER section** with the bow and the crossbow.
+- **18 ranged skins** (12 bows, 6 crossbows). The Epics and Legendaries change the arrows: fire, frost, shadow, holy, storm, venom, gilded, blood. Each one gets:
+  - in flight: a trail, a glowing head, particles and a light
+  - where it lands: a burst
+  - stuck in something: a smoulder
+- **Where the skins come from:**
+  - A new **Fletcher's Crate**, always in rotation.
+  - Earned by kills: Venomstring, Heartseeker, Glacier.
+  - The Royal crate: Stormcaller, Thunderbolt.
+  - The shelf: the Gilded Longbow.
+- **Fixes:**
+  - A skinned arrow that stuck in something errored on the server.
+  - In the Hub, the training script's "infinite yield" warning is gone.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ArrowFX.lua](ReplicatedStorage/ArrowFX.lua) | ReplicatedStorage ▸ ArrowFX | ModuleScript | **new**: arrow effects by kind |
+| [ArrowFlight.lua](ReplicatedStorage/ArrowFlight.lua) | ReplicatedStorage ▸ ArrowFlight | ModuleScript | arrow effects in flight, whiz-by |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | release / creak / impact sounds, effect kind on every shot, smouldering stuck arrows, thinner string |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat ▸ RangedClient | ModuleScript | your own arrow wears the skin's effect |
+| [RangedFX.client.lua](StarterPlayerScripts/RangedFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ RangedFX | LocalScript | effects on everyone's arrows |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | the side-on bow stance, pulling back |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | arms hidden in first person with a bow up |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | `Skin` / `ArrowFx` on the Tool |
+| [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua), [scripts/skins_handmade.part](../scripts/skins_handmade.part), [scripts/gen_content.py](../scripts/gen_content.py) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | 18 ranged skins, the `arrow` field |
+| [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog ▸ Crates | ModuleScript | Fletcher's Crate |
+| [Catalog/Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua) | ReplicatedStorage ▸ Catalog ▸ Calendar | ModuleScript | Fletcher always in rotation |
+| [SkinFX.lua](ReplicatedStorage/SkinFX.lua) | ReplicatedStorage ▸ SkinFX | ModuleScript | describes the arrow effect |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | Armory RANGED section |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Training | LocalScript | quiet wait for its remote |
+
+---
+
+## Before that: bows toned down
 
 - **Longbow:**
   - Slower to draw: 1.6 s to full, walking at 20%.

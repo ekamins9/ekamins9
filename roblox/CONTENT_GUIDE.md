@@ -219,6 +219,11 @@ To make or change skins:
 Without its model in Studio a skin falls back to the old tints (`blade` / `grip`) and trim.
 **Effects (`SkinFX`):** Epic and up leave a swing trail; `fx` adds an aura
 (`embers frost holy shadow storm toxic petals gold blood`).
+**Arrows (`ArrowFX`):** on a Bow or Crossbow skin, `arrow = "<kind>"` dresses its arrows: a
+coloured trail, a glowing head, particles and a light in flight, a burst where they land, and a
+stuck arrow that smoulders for 3 s (`fire frost shadow holy storm toxic gold blood`). A new kind
+is one row in `ArrowFX.KINDS`. The ranged skins are hand-written lines in
+`scripts/skins_handmade.part`; most roll from the Fletcher crate.
 **Finishes:** every copy out of a crate rolls Masterwork (5%: a gold glint) or Radiant (1%: its
 glow, trail and aura cycle through colours) — `Catalog ▸ Economy ▸ variants`.
 

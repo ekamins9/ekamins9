@@ -365,7 +365,9 @@ SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERAT
                 bone serpent wave thunder
        accent / glow  the trim's metal and its Neon (defaults by rarity)
        fx       an aura (ReplicatedStorage ▸ SkinFX): embers frost holy shadow storm toxic
-                petals gold blood. Epic and Legendary skins also leave a swing trail
+                petals gold blood.
+       arrow    (bows, crossbows) what its arrows wear in flight and burst with where they
+                land (ReplicatedStorage ▸ ArrowFX): fire frost shadow holy storm toxic gold blood. Epic and Legendary skins also leave a swing trail
                 (trail = false to opt out, trail = true to opt in below Epic)
        look     the Forge theme (blender/themes.py): the skin's own mesh, built by
                 blender/forge.py and welded on from Cosmetics ▸ Skins ▸ <weapon> ▸ <name>
