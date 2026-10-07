@@ -50,7 +50,6 @@ Catalog.STORE     = child("Store")
 Catalog.PASS      = child("Pass")
 Catalog.LOGIN     = child("Login")
 Catalog.KILLFX    = child("KillFX")
-Catalog.EXECUTIONS = child("Executions")
 Catalog.EMOTES    = child("Emotes")
 Catalog.GIFTS     = child("Gifts")
 Catalog.EGGS      = child("Eggs")
@@ -178,7 +177,6 @@ for _, s in ipairs(Catalog.SKINS) do
 end
 Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name] = c end
 Catalog.KILLFX_BY = {}  for _, f in ipairs(Catalog.KILLFX) do Catalog.KILLFX_BY[f.id] = f end
-Catalog.EXECUTION_BY = {}  for _, x in ipairs(Catalog.EXECUTIONS) do Catalog.EXECUTION_BY[x.id] = x end
 Catalog.EMOTE = {}      for _, e in ipairs(Catalog.EMOTES) do Catalog.EMOTE[e.id] = e end
 Catalog.EGG = {}        for _, e in ipairs(Catalog.EGGS.eggs) do Catalog.EGG[e.id] = e end
 Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end
@@ -416,7 +414,7 @@ function Catalog.itemSource(it)
 	return "free"
 end
 
--- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote"), executions ("execution")
+-- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote")
 function Catalog.crateItems(crateId)
 	local out = {}
 	for _, s in ipairs(Catalog.crateSkins(crateId)) do
@@ -429,9 +427,6 @@ function Catalog.crateItems(crateId)
 	end
 	for _, e in ipairs(Catalog.EMOTES) do
 		if e.crate == crateId then table.insert(out, {kind = "emote", id = e.id, name = e.name, rarity = e.rarity, ref = e}) end
-	end
-	for _, x in ipairs(Catalog.EXECUTIONS) do
-		if x.crate == crateId then table.insert(out, {kind = "execution", id = x.id, name = x.name, rarity = x.rarity, ref = x}) end
 	end
 	return out
 end
@@ -504,7 +499,6 @@ if RunService:IsServer() then
 			if r and r.egg and not Catalog.EGG[r.egg] then warn("[Catalog]", where, "names unknown egg", r.egg) end
 			if r and r.companion and not Catalog.COMPANION[r.companion] then warn("[Catalog]", where, "names unknown companion", r.companion) end
 			if r and r.killfx and not Catalog.KILLFX_BY[r.killfx] then warn("[Catalog]", where, "names unknown kill effect", r.killfx) end
-			if r and r.execution and not Catalog.EXECUTION_BY[r.execution] then warn("[Catalog]", where, "names unknown execution", r.execution) end
 			if r and r.emote and not Catalog.EMOTE[r.emote] then warn("[Catalog]", where, "names unknown emote", r.emote) end
 		end
 		for i, t in ipairs(Catalog.PASS.tiers or {}) do checkReward("pass tier " .. i .. " free", t.free); checkReward("pass tier " .. i .. " premium", t.premium) end
@@ -531,7 +525,6 @@ if RunService:IsServer() then
 				local any = false
 				for _, s in ipairs(Catalog.SKINS) do if s.crate == id and s.rarity == r then any = true end end
 				for _, f in ipairs(Catalog.KILLFX) do if f.crate == id and f.rarity == r then any = true end end
-				for _, x in ipairs(Catalog.EXECUTIONS) do if x.crate == id and x.rarity == r then any = true end end
 				for _, e in ipairs(Catalog.EMOTES) do if e.crate == id and e.rarity == r then any = true end end
 				if n > 0 and not any then warn("[Catalog] crate", id, "can roll", r, "but has nothing of that rarity") end
 			end

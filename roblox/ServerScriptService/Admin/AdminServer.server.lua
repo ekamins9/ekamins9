@@ -134,7 +134,6 @@ local function everything(plr)
 	for _, s in ipairs(Catalog.SKINS) do Profile.grant(plr, "skins", s.id); n += 1 end
 	for _, w in ipairs(Catalog.WEAPONS) do Profile.grant(plr, "weapons", w.id); n += 1 end
 	for _, f in ipairs(Catalog.KILLFX) do Profile.grant(plr, "killfx", f.id); n += 1 end
-	for _, x in ipairs(Catalog.EXECUTIONS) do Profile.grant(plr, "executions", x.id); n += 1 end
 	for _, e in ipairs(Catalog.EMOTES) do Profile.grant(plr, "emotes", e.id); n += 1 end
 	for _, c in ipairs(Catalog.PALETTE) do Profile.grant(plr, "colors", c.name); n += 1 end
 	for _, h in ipairs(Catalog.BODY.hairColors or {}) do Profile.grant(plr, "hairColors", h.name); n += 1 end
@@ -144,7 +143,7 @@ local function everything(plr)
 	return n
 end
 
-local ITEM_KINDS = {piece = "pieces", skin = "skins", weapon = "weapons", emote = "emotes", killfx = "killfx", execution = "executions", companion = "companions", title = "titles", color = "colors"}
+local ITEM_KINDS = {piece = "pieces", skin = "skins", weapon = "weapons", emote = "emotes", killfx = "killfx", companion = "companions", title = "titles", color = "colors"}
 
 -- one change, on a player who is here; returns a line for the toast / log
 local function apply(plr, op)
@@ -423,7 +422,7 @@ local function act(plr, action, a)
 	elseif action == "item" then
 		local kind, id = tostring(a.kind or ""), tostring(a.id or "")
 		local valid = (kind == "piece" and Catalog.PIECE[id]) or (kind == "skin" and Catalog.SKIN[id]) or (kind == "weapon" and Catalog.WEAPON[id])
-			or (kind == "emote" and Catalog.EMOTE[id]) or (kind == "killfx" and Catalog.KILLFX_BY[id]) or (kind == "execution" and Catalog.EXECUTION_BY[id]) or (kind == "companion" and Catalog.COMPANION[id])
+			or (kind == "emote" and Catalog.EMOTE[id]) or (kind == "killfx" and Catalog.KILLFX_BY[id]) or (kind == "companion" and Catalog.COMPANION[id])
 			or (kind == "egg" and Catalog.EGG[id]) or (kind == "color" and Catalog.COLOR[id]) or (kind == "title" and id ~= "")
 		if kind == "crate" then for _, c in ipairs(Catalog.CRATES) do if c.id == id then valid = c end end end
 		if not valid then return false, "no such " .. kind end

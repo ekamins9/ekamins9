@@ -243,7 +243,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	local win = picks[math.random(#picks)]
 	cc.opens += 1
 	cc.sinceLegendary = (win.rarity == "Legendary" or win.rarity == "Mythic") and 0 or cc.sinceLegendary + 1
-	local ownKind = ({skin = "skins", killfx = "killfx", execution = "executions"})[win.kind] or "emotes"
+	local ownKind = win.kind == "skin" and "skins" or (win.kind == "killfx" and "killfx" or "emotes")
 	local dup = Profile.has(plr, ownKind, win.id)
 	local refund = 0
 	local variant, serial
@@ -261,7 +261,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	Economy.changed:Fire(plr)
 	log(plr.Name, "opened", crateId, "->", win.kind, win.id, win.rarity, dup and ("dup +" .. refund) or "")
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
-		or (({killfx = "Kill effect · ", execution = "Execution · "})[win.kind] or "Emote · ") .. win.name
+		or ((win.kind == "killfx" and "Kill effect · " or "Emote · ") .. win.name)
 	return {kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
 		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
 		copies = copies}
@@ -289,7 +289,6 @@ function Economy.grantReward(plr, r)
 	if r.piece and Catalog.PIECE[r.piece] then Profile.grant(plr, "pieces", r.piece); table.insert(bits, Catalog.PIECE[r.piece].name) end
 	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
 	if r.killfx and Catalog.KILLFX_BY[r.killfx] then Profile.grant(plr, "killfx", r.killfx); table.insert(bits, "the kill effect " .. Catalog.KILLFX_BY[r.killfx].name) end
-	if r.execution and Catalog.EXECUTION_BY[r.execution] then Profile.grant(plr, "executions", r.execution); table.insert(bits, "the execution " .. Catalog.EXECUTION_BY[r.execution].name) end
 	if r.emote and Catalog.EMOTE[r.emote] then Profile.grant(plr, "emotes", r.emote); table.insert(bits, "the emote " .. Catalog.EMOTE[r.emote].name) end
 	if r.egg and Catalog.EGG[r.egg] then
 		if r.paid and collection().restricted(plr) then

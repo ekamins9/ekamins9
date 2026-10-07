@@ -13,7 +13,8 @@
        Companions.BODIES                     the body names a companion may use
 
      Bodies: bird (flies; style walker walks), beast (four legs), hopper (hops),
-     wisp (floats, sparks circle it), drake (flies on bat wings). ]]
+     wisp (floats, sparks circle it), drake (flies on bat wings), snake
+     (slithers, flicks its tongue), turtle (a slow tortoise), crab (claws up). ]]
 
 local Catalog = require(script.Parent:WaitForChild("Catalog"))
 
@@ -163,6 +164,17 @@ BODY.beast = function(d)
 				S(L, "GlowEye", "ball", V(0.12, 0.12, 0.06), V(side * 0.21, hy + 0.1, hz - 0.47), d.glow, {neon = true, ch = "head", hinge = H.hinge})
 			end
 		end
+	elseif d.style == "spines" then
+		-- a hedgehog's coat of spines over the back
+		for i = 0, 11 do
+			local x, z = ((i % 4) - 1.5) * 0.2, -0.45 + math.floor(i / 4) * 0.42
+			S(L, "Spine", "wedge", V(0.1, 0.34, 0.16), CF(x, 0.42 - math.abs(x) * 0.4, z) * A(rad(-40), 0, rad(x * -40)), second)
+		end
+	elseif d.style == "horn" then
+		-- a unicorn: a spiral horn (glowing, given a glow) and a mane down the neck
+		S(L, "Horn", "wedge", V(0.1, 0.58, 0.12), CF(0, hy + 0.6, hz - 0.12) * A(rad(-18), 0, 0), d.glow or accent, {neon = d.glow ~= nil, ch = "head", hinge = H.hinge})
+		S(L, "Mane", "ball", V(0.18, 0.5, 0.7), V(0, hy + 0.12, hz + 0.45), second, H)
+		S(L, "Mane", "ball", V(0.16, 0.36, 0.5), V(0, 0.42, -0.25), second)
 	elseif d.style == "crown" then
 		S(L, "Collar", "ball", V(0.9, 0.16, 0.5), V(0, hy - 0.34, hz + 0.36), accent, H)
 		S(L, "CrownBand", "block", V(0.5, 0.12, 0.5), V(0, hy + 0.44, hz + 0.02), accent, H)
@@ -285,6 +297,98 @@ BODY.drake = function(d)
 	end
 	S(L, "TailTip", "wedge", V(0.34, 0.08, 0.3), CF(0, -0.08, 1.88), griffin and second or accent, {ch = "tail", hinge = V(0, 0.05, 0.6)})
 	return L, {flying = true, foot = 0.7, flap = 0.6}
+end
+
+-- a snake: its head held up a little, the body slithering behind it (style
+-- hood: a cobra)
+BODY.snake = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	local n = 9
+	for i = 1, n do
+		local u = (i - 1) / (n - 1)
+		local w = 0.48 - u * 0.32
+		local z = -0.35 + (i - 1) * 0.28
+		local o = {ch = "slither", hinge = V(0, 0, 0), phase = -u * 3.4}
+		S(L, "Body", "ball", V(w, w * 0.8, 0.5), V(0, -0.04, z), i % 2 == 0 and main or main:Lerp(second, 0.2), o)
+		if i % 2 == 1 and i < n then S(L, "Band", "ball", V(w * 0.72, w * 0.3, 0.22), V(0, w * 0.3, z), second, o) end
+	end
+	local H = {ch = "snakeHead", hinge = V(0, 0, -0.5)}
+	S(L, "Neck", "ball", V(0.42, 0.42, 0.44), V(0, 0.12, -0.62), main, H)
+	S(L, "Head", "ball", V(0.52, 0.36, 0.64), V(0, 0.3, -0.86), main, H)
+	S(L, "Jaw", "ball", V(0.44, 0.18, 0.5), V(0, 0.18, -0.9), second, H)
+	if d.style == "hood" then
+		S(L, "Hood", "ball", V(1.0, 0.8, 0.16), CF(0, 0.34, -0.6) * A(rad(-12), 0, 0), main, H)
+		S(L, "HoodMark", "ball", V(0.5, 0.42, 0.06), CF(0, 0.36, -0.69) * A(rad(-12), 0, 0), second, H)
+	end
+	for _, side in ipairs({-1, 1}) do
+		if d.glow then
+			S(L, "Eye", "ball", V(0.11, 0.11, 0.06), V(side * 0.17, 0.4, -1.04), d.glow, {neon = true, ch = H.ch, hinge = H.hinge})
+		else
+			eye(L, side * 0.17, 0.4, -1.03, 0.11, DARK, H)
+		end
+	end
+	S(L, "Tongue", "block", V(0.05, 0.02, 0.32), V(0, 0.22, -1.22), accent, {ch = "tongue", hinge = V(0, 0, -0.5)})
+	return L, {flying = false, foot = 0.26, flap = 0}
+end
+
+-- a tortoise: a domed shell, a head that looks about, stumpy legs (style grove:
+-- a little tree growing on its back)
+BODY.turtle = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	S(L, "Shell", "ball", V(1.2, 0.72, 1.4), V(0, 0.14, 0.05), main)
+	S(L, "Rim", "ball", V(1.32, 0.22, 1.52), V(0, -0.08, 0.05), main:Lerp(Color3.new(0, 0, 0), 0.2))
+	for _, at in ipairs({V(0, 0.5, -0.18), V(0, 0.5, 0.32), V(-0.33, 0.4, 0.06), V(0.33, 0.4, 0.06), V(-0.28, 0.34, -0.38), V(0.28, 0.34, 0.5)}) do
+		S(L, "Plate", "ball", V(0.36, 0.1, 0.38), at, accent)
+	end
+	local H = {ch = "head", hinge = V(0, -0.05, -0.62)}
+	S(L, "Neck", "ball", V(0.3, 0.28, 0.4), V(0, -0.02, -0.72), second, H)
+	S(L, "Head", "ball", V(0.42, 0.38, 0.5), V(0, 0.06, -0.94), second, H)
+	for _, side in ipairs({-1, 1}) do
+		eye(L, side * 0.14, 0.14, -1.14, 0.1, DARK, H)
+		for _, z in ipairs({-0.42, 0.5}) do
+			local ch = (z < 0 and "legF" or "legB") .. (side < 0 and "L" or "R")
+			S(L, "Leg", "ball", V(0.3, 0.34, 0.36), V(side * 0.5, -0.22, z), second, {ch = ch, hinge = V(side * 0.5, -0.1, z)})
+		end
+	end
+	S(L, "Tail", "wedge", V(0.14, 0.1, 0.24), CF(0, -0.12, 0.84) * A(0, math.pi, 0), second, {ch = "tail", hinge = V(0, -0.1, 0.72)})
+	if d.style == "grove" then
+		local leaf = d.glow or Color3.fromRGB(90, 160, 70)
+		S(L, "Trunk", "block", V(0.12, 0.5, 0.12), V(0, 0.72, 0.06), Color3.fromRGB(110, 80, 50))
+		S(L, "Leaves", "ball", V(0.62, 0.5, 0.62), V(0, 1.06, 0.06), leaf, {neon = d.glow ~= nil})
+		S(L, "Leaves", "ball", V(0.4, 0.34, 0.4), V(-0.24, 0.92, 0.18), leaf:Lerp(Color3.new(0, 0, 0), 0.15))
+		S(L, "Leaves", "ball", V(0.4, 0.34, 0.4), V(0.22, 0.94, -0.08), leaf:Lerp(Color3.new(0, 0, 0), 0.1))
+		S(L, "Bloom", "ball", V(0.12, 0.12, 0.12), V(0.12, 1.28, 0.0), Color3.fromRGB(255, 160, 200))
+	end
+	return L, {flying = false, foot = 0.4, flap = 0}
+end
+
+-- a crab: eyes on stalks, claws held up, six legs
+BODY.crab = function(d)
+	local L = {}
+	local main, second, accent = d.main, d.second, d.accent
+	S(L, "Body", "ball", V(1.15, 0.5, 0.85), V(0, 0, 0), main)
+	S(L, "Belly", "ball", V(0.95, 0.3, 0.7), V(0, -0.14, 0), second)
+	local H = {ch = "head", hinge = V(0, 0.1, -0.3)}
+	for _, side in ipairs({-1, 1}) do
+		S(L, "Stalk", "block", V(0.06, 0.3, 0.06), V(side * 0.2, 0.32, -0.3), main, H)
+		if d.glow then
+			S(L, "Eye", "ball", V(0.16, 0.16, 0.16), V(side * 0.2, 0.5, -0.3), d.glow, {neon = true, ch = H.ch, hinge = H.hinge})
+		else
+			S(L, "Eye", "ball", V(0.16, 0.16, 0.16), V(side * 0.2, 0.5, -0.3), DARK, H)
+			S(L, "Shine", "ball", V(0.05, 0.05, 0.04), V(side * 0.2 + 0.03, 0.54, -0.37), SHINE, H)
+		end
+		local C = {ch = side < 0 and "clawL" or "clawR", hinge = V(side * 0.45, 0, -0.35)}
+		S(L, "Arm", "block", V(0.14, 0.14, 0.42), CF(side * 0.58, 0.02, -0.5) * A(0, rad(side * 30), 0), main, C)
+		S(L, "Claw", "ball", V(0.44, 0.3, 0.5), V(side * 0.72, 0.06, -0.8), accent, C)
+		S(L, "Pincer", "ball", V(0.18, 0.12, 0.34), V(side * 0.66, 0.22, -0.98), accent, C)
+		for i, z in ipairs({-0.18, 0.08, 0.34}) do
+			local ch = ((i % 2 == 1) == (side < 0)) and "legFL" or "legFR"
+			S(L, "Leg", "block", V(0.55, 0.08, 0.08), CF(side * 0.74, -0.18, z) * A(0, 0, rad(side * -35)), main, {ch = ch, hinge = V(side * 0.5, -0.05, z)})
+		end
+	end
+	return L, {flying = false, foot = 0.42, flap = 0}
 end
 
 Companions.BODIES = {}
@@ -438,6 +542,19 @@ local function channel(rig, ch, t, moving, phase)
 	elseif ch == "hopLeg" then
 		local k = rig.hopK or 0
 		return A(rad(-50) * k, 0, 0)
+	elseif ch == "slither" then
+		-- each part of a snake sways side to side, a wave running down it
+		local speed, amp = 2 + 6 * moving, 0.12 + 0.1 * moving
+		return CF(sin(t * speed + phase) * amp * rig.scale, 0, 0)
+	elseif ch == "snakeHead" or ch == "tongue" then
+		local sway = CF(sin(t * (2 + 6 * moving)) * 0.05 * rig.scale, 0, 0) * A(0, sin(t * 1.3) * rad(14), 0)
+		if ch == "snakeHead" then return sway end
+		-- a flick now and then (the tongue sits inside the head between)
+		local k = math.max(0, sin(t * 2.6)) ^ 10
+		return sway * CF(0, 0, (1 - k) * 0.3 * rig.scale)
+	elseif ch == "clawL" or ch == "clawR" then
+		local s = ch == "clawL" and 0 or 1.7
+		return A(rad(-14) * (0.5 + 0.5 * sin(t * 2.2 + s)) - rad(10) * moving, 0, 0)
 	elseif ch == "orbit" then
 		return A(0, t * 2.4 + phase, 0) * A(0, 0, sin(t * 1.3 + phase) * 0.35)
 	end

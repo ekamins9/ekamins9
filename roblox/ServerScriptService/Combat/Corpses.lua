@@ -10,8 +10,13 @@
      feathers about) · ash (a charred skeleton in a heap of ash, smoking) ·
      charred (the body blackened, smoking) · gold (a golden statue with a crown)
      · rubble (blocks of the body's colours) · coins · confetti · shards (ice)
-     · rift (a scorched ring) · light (a few glowing feathers) — and with
-     anything but a body or a statue, the limbs it lost go with it.
+     · rift (a scorched ring) · light (a few glowing feathers) · none (nothing)
+     · grave (a headstone over a fresh mound) · flat (squashed flat into a dent)
+     · stone (a stone statue) · mound (a heap of sand) · puddle (dark water, a
+     tentacle tip) · garden (a mossy mound in flower) · crater (charred in a
+     crater) · bones (a picked pile with the skull on top) — and with anything
+     but a body or a statue, the limbs it lost go with it. Remains that don't
+     need the body itself keep their time even if a player respawns first.
 
        Corpses.died(char)            CharacterSystems, on death (lays a body after SETTLE)
        Corpses.lay(char, kind)       lay it out now (idempotent)
@@ -293,15 +298,131 @@ KIND.light = function(model, b)
 	return false
 end
 
+-- the floor at the body, turned the way its torso faces: the same turn the
+-- kill effect was built in (Hub > Cosmetics), so its headstone or squashed
+-- body is where the effect left it
+local function groundFrame(b)
+	local look = b.torso and b.torso.CFrame.LookVector or Vector3.new(0, 0, -1)
+	return CFrame.new(b.centre.X, b.floor, b.centre.Z) * CFrame.Angles(0, math.atan2(-look.X, -look.Z), 0)
+end
+-- (a Ball part is always round: any other proportions are a block with a sphere mesh)
+local function blob(model, size, cf, color, mat, transp)
+	local p = piece(model, nil, size, cf, color, mat, transp)
+	local mesh = Instance.new("SpecialMesh"); mesh.MeshType = Enum.MeshType.Sphere; mesh.Parent = p
+	return p
+end
+local function rigColor(b, name, fallback)
+	local p = b.rig[name]
+	return p and p.Color or fallback
+end
+local SKIN = Color3.fromRGB(204, 170, 136)
+
+KIND.none = function() return false end
+KIND.grave = function(model, b)
+	local g = groundFrame(b)
+	local stone, cut = Color3.fromRGB(122, 124, 130), Color3.fromRGB(52, 52, 58)
+	piece(model, nil, Vector3.new(2, 2.4, 0.4), g * CFrame.new(0, 1.2, -1.6), stone, M.Slate)
+	piece(model, Enum.PartType.Cylinder, Vector3.new(0.4, 2, 2), g * CFrame.new(0, 2.4, -1.6) * CFrame.Angles(0, math.pi / 2, 0), stone, M.Slate)
+	piece(model, nil, Vector3.new(0.18, 1.1, 0.05), g * CFrame.new(0, 1.85, -1.38), cut)
+	piece(model, nil, Vector3.new(0.7, 0.18, 0.05), g * CFrame.new(0, 2.1, -1.38), cut)
+	blob(model, Vector3.new(2.2, 0.7, 3.4), g * CFrame.new(0, 0.05, 0.4), Color3.fromRGB(92, 70, 50), M.Ground)
+	return false
+end
+-- squashed flat: the body's colours spread out like a star in a dent in the ground
+KIND.flat = function(model, b)
+	local g = groundFrame(b)
+	local function slab(size, x, z, yaw, c)
+		piece(model, nil, size, g * CFrame.new(x, size.Y / 2 + 0.02, z) * CFrame.Angles(0, yaw, 0), c)
+	end
+	local torso, head = rigColor(b, "Torso", SKIN), rigColor(b, "Head", SKIN)
+	local arm, leg = rigColor(b, "Right Arm", SKIN), rigColor(b, "Left Leg", SKIN)
+	slab(Vector3.new(2.2, 0.12, 2.2), 0, 0, 0, torso)
+	slab(Vector3.new(1.4, 0.1, 1.4), 0, -1.85, 0, head)
+	slab(Vector3.new(1.1, 0.1, 2.2), -1.8, -0.4, -0.5, arm)
+	slab(Vector3.new(1.1, 0.1, 2.2), 1.8, -0.4, 0.5, arm)
+	slab(Vector3.new(1.1, 0.1, 2.3), -0.7, 2.15, 0.2, leg)
+	slab(Vector3.new(1.1, 0.1, 2.3), 0.7, 2.15, -0.2, leg)
+	piece(model, Enum.PartType.Cylinder, Vector3.new(0.04, 7, 7), g * CFrame.new(0, 0.01, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(64, 58, 52), M.Ground, 0.35)
+	return false
+end
+KIND.stone = function(model, b)
+	local cs = copies(model, b.parts)
+	local ls = copies(model, b.limbs)
+	local grey = Color3.fromRGB(132, 130, 126)
+	recolor(cs, grey, M.Slate); recolor(ls, grey, M.Slate)
+	for _ = 1, 6 do
+		local s = rng:NextNumber(0.2, 0.45)
+		piece(model, nil, Vector3.one * s, onFloor(b.centre, 2, b.floor, s / 2) * CFrame.Angles(rng:NextNumber(0, 1), 0, rng:NextNumber(0, 1)), grey, M.Slate)
+	end
+	return true
+end
+KIND.mound = function(model, b)
+	local sand = Color3.fromRGB(214, 186, 130)
+	local g = groundFrame(b)
+	blob(model, Vector3.new(3.8, 0.9, 3.8), g * CFrame.new(0, 0.05, 0), sand, M.Sand)
+	for _ = 1, 4 do blob(model, Vector3.new(1.4, 0.4, 1.4), onFloor(b.centre, 2.2, b.floor, 0.02), sand:Lerp(Color3.new(0, 0, 0), 0.1), M.Sand) end
+	return false
+end
+KIND.puddle = function(model, b)
+	local g = groundFrame(b)
+	piece(model, Enum.PartType.Cylinder, Vector3.new(0.06, 5, 5), g * CFrame.new(0, 0.03, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(16, 34, 50), M.Glass, 0.15)
+	-- one arm still curled out of it
+	local tip = g * CFrame.new(1, 0, 0.6)
+	for i = 0, 4 do
+		local a = i / 4
+		ball(model, 0.55 - a * 0.35, tip * CFrame.new(math.sin(a * 2.4) * 0.6, 0.2 + a * 1.1, -math.cos(a * 2.4) * 0.3 + 0.3), i % 2 == 0 and Color3.fromRGB(110, 60, 140) or Color3.fromRGB(150, 96, 176))
+	end
+	return false
+end
+KIND.garden = function(model, b)
+	local g = groundFrame(b)
+	blob(model, Vector3.new(3.2, 1, 4.2), g * CFrame.new(0, 0.1, 0), Color3.fromRGB(70, 110, 52), M.Grass)
+	blob(model, Vector3.new(1.2, 0.8, 1.2), g * CFrame.new(0, 0.3, -1.7), Color3.fromRGB(80, 120, 60), M.Grass)
+	local petals = {Color3.fromRGB(255, 140, 180), Color3.fromRGB(255, 230, 100), Color3.fromRGB(250, 250, 250), Color3.fromRGB(190, 140, 255)}
+	for i = 1, 9 do
+		local at = onFloor(b.centre, 1.6, b.floor, 0)
+		local h = rng:NextNumber(0.5, 0.9)
+		piece(model, nil, Vector3.new(0.06, h, 0.06), at * CFrame.new(0, h / 2 + 0.3, 0), Color3.fromRGB(60, 120, 50))
+		ball(model, 0.34, at * CFrame.new(0, h + 0.32, 0), petals[(i - 1) % #petals + 1])
+		ball(model, 0.14, at * CFrame.new(0, h + 0.42, 0), Color3.fromRGB(255, 200, 60))
+	end
+	return false
+end
+KIND.crater = function(model, b)
+	local keeps = KIND.charred(model, b)
+	local g = groundFrame(b)
+	piece(model, Enum.PartType.Cylinder, Vector3.new(0.05, 6, 6), g * CFrame.new(0, 0.02, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(34, 26, 22), M.Slate, 0.1)
+	for i = 1, 10 do
+		local a = i / 10 * math.pi * 2
+		local s = rng:NextNumber(0.5, 1)
+		piece(model, nil, Vector3.new(s, s * 0.7, s), g * CFrame.new(math.cos(a) * 3.1, s * 0.25, math.sin(a) * 3.1) * CFrame.Angles(rng:NextNumber(0, 1), a, rng:NextNumber(0, 1)), Color3.fromRGB(70, 56, 46), M.Slate)
+	end
+	for _ = 1, 5 do ball(model, 0.16, onFloor(b.centre, 2.4, b.floor, 0.1), Color3.fromRGB(255, 120, 40), M.Neon) end
+	return keeps
+end
+-- picked clean and spat out: a heap of bones, the skull on top
+KIND.bones = function(model, b)
+	local g = groundFrame(b)
+	for _ = 1, 16 do
+		local at = onFloor(b.centre, 1.5, b.floor, rng:NextNumber(0.1, 0.45))
+		bone(model, at * CFrame.Angles(math.pi / 2 + rng:NextNumber(-0.4, 0.4), 0, 0), rng:NextNumber(0.6, 1.2), rng:NextNumber(0.07, 0.13), C.BONE)
+	end
+	SKEL.Torso(model, g * CFrame.new(0.4, 0.45, 0.5) * CFrame.Angles(-math.pi / 2, 0, 0.3), C.BONE)
+	SKEL.Head(model, g * CFrame.new(-0.2, 0.95, -0.2) * CFrame.Angles(0.2, 0.5, 0.15), C.BONE)
+	-- still wet
+	piece(model, Enum.PartType.Cylinder, Vector3.new(0.04, 3.6, 3.6), g * CFrame.new(0, 0.02, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(70, 90, 50), M.Glass, 0.4)
+	return false
+end
+-- these leave nothing of the body itself, so they can be laid after it's gone
+local AFTER_BODY = {none = true, grave = true, flat = true, mound = true, puddle = true, garden = true, bones = true, rift = true, light = true}
+
 --------------------------------------------------------------------
 --  LAYING OUT
 --------------------------------------------------------------------
 local RIG = {Head = true, Torso = true, ["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true}
 
-function Corpses.lay(char, kind)
-	if not char or char:GetAttribute("Laid") then return end
-	char:SetAttribute("Laid", true)
-	kind = KIND[kind or ""] and kind or "body"
+-- everything about the body the remains are built from
+local function gather(char)
 	local id = Corpses.idOf(char)
 	local remains = Janitor.folder()
 	-- what can be seen of it, and the limbs it lost (lying in Remains, tagged CorpseOf)
@@ -320,29 +441,55 @@ function Corpses.lay(char, kind)
 	end
 	b.torso = b.rig.Torso
 	local at = (b.torso or b.rig.Head or b.parts[1])
-	if not at then return end
+	if not at then return nil end
 	b.centre = at.Position
 	b.floor = floorUnder(b.centre, {char, remains})
+	b.id, b.remains = id, remains
+	return b
+end
 
+local function build(b, kind)
+	local id, remains = b.id, b.remains
 	local model = Instance.new("Model")
 	model.Name = "Corpse"
 	model:SetAttribute("CorpseOf", id)
 	model:SetAttribute("Kind", kind)
 	local keepsLimbs = KIND[kind](model, b)
 	model.Parent = remains
+	-- its lost limbs: copied into the corpse (or turned to bones, or gone with it)
+	for _, l in ipairs(b.limbs) do
+		if l.Parent then
+			Janitor.forget(l)
+			if keepsLimbs then l:Destroy() else Janitor.add(l, "Limb", {life = 0.05, parent = false}) end
+		end
+	end
+	Janitor.add(model, "Corpse")
+	return model
+end
 
+local function hideBody(char)
 	-- the real body goes from sight (it stays for the death camera until the respawn)
 	for _, d in ipairs(char:GetDescendants()) do
 		if d:IsA("BasePart") then d.Transparency = 1
 		elseif d:IsA("Decal") or d:IsA("Texture") then d.Transparency = 1
 		elseif d:IsA("ParticleEmitter") then d.Enabled = false end
 	end
-	-- its lost limbs: copied into the corpse above (or turned to bones, or gone with it)
-	for _, l in ipairs(b.limbs) do
-		Janitor.forget(l)
-		if keepsLimbs then l:Destroy() else Janitor.add(l, "Limb", {life = 0.05, parent = false}) end
+end
+
+-- delay (optional): build the remains that much later, from what the body is
+-- now (only for kinds that don't copy the body: AFTER_BODY)
+function Corpses.lay(char, kind, delay)
+	if not char or char:GetAttribute("Laid") then return end
+	char:SetAttribute("Laid", true)
+	kind = KIND[kind or ""] and kind or "body"
+	local b = gather(char)
+	if not b then return end
+	if delay and delay > 0 and AFTER_BODY[kind] then
+		task.delay(delay, function() build(b, kind) end)
+		return nil
 	end
-	Janitor.add(model, "Corpse")
+	local model = build(b, kind)
+	hideBody(char)
 	return model
 end
 
@@ -350,6 +497,7 @@ end
 function Corpses.pending(char, kind, inSeconds)
 	if not char then return end
 	char:SetAttribute("RemainsPending", kind)
+	char:SetAttribute("RemainsDue", os.clock() + math.clamp(inSeconds or 1.5, 0, C.HOLD))
 	task.delay(math.clamp(inSeconds or 1.5, 0, C.HOLD), function()
 		if char.Parent then Corpses.lay(char, kind) end
 	end)
@@ -367,7 +515,9 @@ local function watch(plr)
 	plr.CharacterRemoving:Connect(function(char)
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if (hum and hum.Health <= 0) or char:GetAttribute("CorpseId") then
-			Corpses.lay(char, char:GetAttribute("RemainsPending") or "body")
+			-- (a kill effect still playing: its remains come when it says)
+			local due = (char:GetAttribute("RemainsDue") or 0) - os.clock()
+			Corpses.lay(char, char:GetAttribute("RemainsPending") or "body", due)
 		end
 	end)
 end

@@ -267,25 +267,6 @@ Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2
 are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
 never return: their items become RELICS, which is what makes them worth something.
 
-## 6c. Executions
-
-**Executions** (`Catalog ▸ Executions`): your finisher (README ▸ *Executions*). One is equipped at a
-time (ARMORY ▸ EXECUTIONS); everyone owns `Finisher`. A line:
-
-```lua
-{id = "Skewer", name = "Skewer", rarity = "Rare", crate = "Relic", finish = "stab", description = "..."},
-```
-
-`finish` is how the blow kills: `behead` (the default) or `stab`. Where it comes from works like a
-kill effect: `free = true`, `crate = "Relic"`, a pass tier (`execution = "<id>"`), or `unlock`.
-
-The clip: add a recipe to `EA.CLIPS` in `ServerScriptService ▸ Build ▸ ExecutionAnims` (steps of
-`{t, from = "<source clip>:<keyframe>", lean, twist}`, and `impact` = the second the blow lands),
-run `require(ServerScriptService.Build.ExecutionAnims).build()` in Studio, upload the
-KeyframeSequence it leaves in `ServerStorage ▸ ExecutionAnims`, and put an `Animation` named after
-the id, with that id and an `Impact` attribute, in `ReplicatedStorage ▸ ExecutionAnims`. Without
-it the server falls back to `Finisher`.
-
 ## 6b. Kill effects and emotes
 
 **Kill effects** (`Catalog ▸ KillFX`): what the body does when *you* land the killing blow,
@@ -298,15 +279,21 @@ seen by everyone. One is equipped at a time (ARMORY ▸ KILL FX). A line:
 
 `remains` is what the effect leaves on the field (`Combat ▸ Corpses`): `body` (the default),
 `skeleton`, `ash` (a charred skeleton in ash), `charred`, `gold` (a statue with a crown), `rubble`,
-`coins`, `confetti`, `shards`, `rift` or `light`; `remainsAt` is how many seconds into the effect
-they take the body's place — when the effect has hidden the body. A new kind of remains is a
-builder in `Corpses` (`KIND.<name> = function(model, body) … end`).
+`coins`, `confetti`, `shards`, `rift`, `light`, `none`, `grave` (a headstone over a mound), `flat`
+(squashed into a dent), `stone` (a statue), `mound` (sand), `puddle` (dark water and a tentacle
+tip), `garden` (a mossy mound in flower), `crater` (charred in a crater) or `bones` (a picked
+pile, the skull on top); `remainsAt` is how many seconds into the effect they take the body's
+place — when the effect has hidden the body. A new kind of remains is a builder in `Corpses`
+(`KIND.<name> = function(model, body) … end`); one that doesn't copy the body itself also goes in
+`AFTER_BODY`, so it still comes on time when a player respawns before it is due.
 
-The `id` must match a builder in `ReplicatedStorage ▸ KillFX` (the ten there: `Shatter Confetti
-GoldRush CrowSwarm Inferno Frozen ShadowRift Thunderstrike Ascension RoyalDecree`). A builder
-makes parts that fly, spin, grow and fade around the body (so the same effect plays in the world
-and in the menu preview) and can hide or tint the body locally. Particles and lights are
-world-only extras.
+The `id` must match a builder in `ReplicatedStorage ▸ KillFX` (`Shatter Confetti GoldRush
+CrowSwarm Inferno Frozen ShadowRift Thunderstrike Ascension RoyalDecree`, and the Grim Crate's
+`Poof Tombstone Anvil Petrify Quicksand Kraken Overgrown Meteor SerpentsMaw HeavensHand
+BlackHole`). A builder makes parts that fly, spin, grow and fade around the body (so the same
+effect plays in the world and in the menu preview) and can hide or tint the body locally. To
+move the body itself, take its puppet (`puppet(folder, origin, opts)`) and pose, squash or fade
+that. Particles and lights are world-only extras.
 
 **Emotes** (`Catalog ▸ Emotes`): played from the emote wheel (hold **B**, point, let go;
 rebindable), up to six on the wheel (ARMORY ▸ EMOTES). The `id` must match a motion in
@@ -412,8 +399,10 @@ fountain's daily wish: `{weight, reward}` entries, drawn by weight.
 **Companions:** `Catalog ▸ Companions`: `{id, name, rarity, body, size, main, second,
 accent, glow, style, fx, egg, pass, description}`.
 - `body` is a builder in `ReplicatedStorage ▸ Companions`: `bird` (flies; `style = "walker"`
-  walks), `beast` (four legs; styles `mane`, `antlers`, `crown`), `hopper` (`longears`),
-  `wisp`, or `drake` (`style = "beak"` makes a griffin).
+  walks), `beast` (four legs; styles `mane`, `antlers`, `crown`, `spines` (a hedgehog), `horn` (a
+  unicorn)), `hopper` (`longears`), `wisp`, `drake` (`style = "beak"` makes a griffin), `snake`
+  (slithers and flicks its tongue; `hood` makes a cobra), `turtle` (`grove` grows a tree on its
+  shell) or `crab`.
 - `fx`: `embers`, `frost`, `spirit` or `sparkle` (world-only particles).
 - `egg = "Royal"` means only that egg hatches it; `pass = true` means only a reward gives it.
 - Each egg must have a companion of every rarity it can roll (the catalog warns when one is

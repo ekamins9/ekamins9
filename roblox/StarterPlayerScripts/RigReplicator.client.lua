@@ -43,7 +43,7 @@ RunService.RenderStepped:Connect(function(dt)
 			local hum = char:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 and not hum.PlatformStand then
 				e.current = e.current and RigPose.lerpInputs(e.current, e.target, alpha) or e.target
-				RigPose.apply(e.joints, RigPose.compute(RigPose.still(char, e.current), e.origins), 1)
+				RigPose.apply(e.joints, RigPose.compute(e.current, e.origins), 1)
 			end
 		end
 	end

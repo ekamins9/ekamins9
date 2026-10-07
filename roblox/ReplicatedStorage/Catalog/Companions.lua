@@ -3,7 +3,7 @@
      (HATCHERY ▸ COMPANIONS). Looks only, never stats.
        id, name, rarity, description
        body     the shape, built from parts by ReplicatedStorage ▸ Companions:
-                bird · beast · hopper · wisp · drake
+                bird · beast · hopper · wisp · drake · snake · turtle · crab
        size     scale (1 = about knee high)
        main / second / accent   colours (body; belly, wings, mane; eyes, beak, horns)
        glow     a Neon colour for glowing bits (optional)
@@ -14,7 +14,9 @@
        pass     a season-pass reward (never hatched)
        drop     hidden until that drop of Catalog ▸ Calendar is out
        style    (more) bat (a drake as a bat) · pumpkin (a wisp) · bones (a skeleton
-                beast) · tusks · reindeer · round (round ears) · kraken (a wisp with arms)
+                beast) · tusks · reindeer · round (round ears) · kraken (a wisp with arms) ·
+                spines (a hedgehog beast) · horn (a unicorn beast) · hood (a cobra snake) ·
+                grove (a tree on a turtle's shell)
      Every hatch also rolls a VARIANT (Catalog ▸ Eggs ▸ variants): Golden or Spectral.
      Duplicates add a star (up to Catalog ▸ Eggs ▸ stars); five stars sparkle. ]]
 local C = Color3.fromRGB
@@ -63,6 +65,39 @@ return {
 		main = C(232, 240, 255), second = C(196, 214, 240), accent = C(60, 90, 140), glow = C(140, 220, 255), description = "Walks without a sound. Glows a little."},
 	{id = "Griffin", name = "Griffin", rarity = "Legendary", body = "drake", size = 1.05, style = "beak", egg = "Royal",
 		main = C(196, 142, 78), second = C(244, 240, 228), accent = C(250, 196, 60), description = "Half eagle, half lion, all attitude."},
+	-- MORE: snakes, tortoises, crabs and friends (any of the Hatchery's own eggs)
+	{id = "Duckling", name = "Duckling", rarity = "Common", body = "bird", style = "walker", size = 0.7,
+		main = C(255, 214, 70), second = C(255, 236, 140), accent = C(255, 140, 40), description = "Follows the first knight it saw. That's you."},
+	{id = "Tortoise", name = "Tortoise", rarity = "Common", body = "turtle", size = 0.9,
+		main = C(112, 92, 60), second = C(150, 160, 100), accent = C(140, 116, 74), description = "In no hurry. Gets there anyway."},
+	{id = "ShoreCrab", name = "Shore Crab", rarity = "Common", body = "crab", size = 0.75,
+		main = C(210, 90, 60), second = C(240, 170, 130), accent = C(230, 80, 50), description = "Walks sideways into every fight."},
+	{id = "GrassSnake", name = "Grass Snake", rarity = "Common", body = "snake", size = 0.9,
+		main = C(100, 140, 70), second = C(220, 210, 120), accent = C(220, 60, 60), description = "Harmless. Mostly."},
+	{id = "Hedgehog", name = "Hedgehog", rarity = "Common", body = "beast", style = "spines", size = 0.6,
+		main = C(176, 140, 104), second = C(96, 74, 58), accent = C(30, 24, 20), description = "Prickly on the outside. Also on the inside."},
+	{id = "Corgi", name = "Corgi", rarity = "Rare", body = "beast", size = 0.75,
+		main = C(226, 150, 70), second = C(250, 244, 236), accent = C(30, 24, 20), description = "Short legs, long loyalty."},
+	{id = "Adder", name = "Adder", rarity = "Rare", body = "snake", size = 1,
+		main = C(110, 96, 80), second = C(40, 34, 30), accent = C(200, 40, 40), description = "Zig-zag back, bad temper."},
+	{id = "SnapTurtle", name = "Snapping Turtle", rarity = "Rare", body = "turtle", size = 1,
+		main = C(70, 80, 60), second = C(120, 124, 92), accent = C(56, 64, 48), description = "Bites first. Asks never."},
+	{id = "RedPanda", name = "Red Panda", rarity = "Rare", body = "beast", style = "round", size = 0.75,
+		main = C(200, 90, 40), second = C(250, 240, 230), accent = C(40, 26, 20), description = "Rings on its tail, mischief in its eyes."},
+	{id = "Cobra", name = "Royal Cobra", rarity = "Epic", body = "snake", style = "hood", size = 1.05,
+		main = C(180, 150, 70), second = C(236, 214, 150), accent = C(230, 60, 40), description = "Spreads its hood at anyone who blocks."},
+	{id = "EmberToad", name = "Ember Toad", rarity = "Epic", body = "hopper", size = 0.85, fx = "embers",
+		main = C(120, 40, 30), second = C(240, 140, 60), accent = C(255, 200, 80), glow = C(255, 120, 40), description = "Warm to the touch. Very warm."},
+	{id = "CoralCrab", name = "Coral Crab", rarity = "Epic", body = "crab", size = 0.9, fx = "sparkle",
+		main = C(240, 110, 150), second = C(255, 200, 210), accent = C(255, 170, 90), glow = C(120, 255, 230), description = "Wears a reef on its back and glows in the dark."},
+	{id = "JadeSerpent", name = "Jade Serpent", rarity = "Legendary", body = "snake", size = 1.3, fx = "spirit",
+		main = C(60, 170, 120), second = C(200, 240, 210), accent = C(240, 210, 90), glow = C(110, 255, 190), description = "Coiled round the old shrines for a thousand years. Now round you."},
+	{id = "GroveTortoise", name = "Grove Tortoise", rarity = "Legendary", body = "turtle", style = "grove", size = 1.1, fx = "spirit",
+		main = C(90, 110, 70), second = C(160, 170, 110), accent = C(100, 140, 70), glow = C(150, 255, 130), description = "Carries a whole little forest. Never hurries it."},
+	{id = "UnicornFoal", name = "Unicorn Foal", rarity = "Legendary", body = "beast", style = "horn", size = 1, fx = "sparkle",
+		main = C(250, 250, 255), second = C(200, 170, 255), accent = C(60, 60, 80), glow = C(255, 220, 120), description = "Wobbly, sparkly, unstoppable."},
+	{id = "Basilisk", name = "Basilisk", rarity = "Legendary", body = "snake", style = "hood", size = 1.2, fx = "embers", egg = "Royal",
+		main = C(40, 44, 40), second = C(110, 30, 30), accent = C(255, 210, 60), glow = C(255, 80, 40), description = "Don't meet its eyes. It's fine. It likes you."},
 	-- the season pass
 	{id = "IronHound", name = "Iron Hound", rarity = "Legendary", body = "beast", size = 1, style = "crown", pass = true,
 		main = C(112, 114, 122), second = C(70, 72, 80), accent = C(230, 182, 60), description = "The Iron Crown's own hound. Season 1."},

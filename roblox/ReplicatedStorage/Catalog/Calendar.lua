@@ -110,6 +110,7 @@ return {
 		Bladesmith = {always = true},
 		Hafted     = {always = true},
 		Relic      = {always = true},
+		Grim       = {always = true},
 		Royal      = {windows = {{from = "Founders", to = "HollowNight"}, {from = "SeaWolves", to = "Frostfall"}}},
 		Ossuary    = {windows = {{from = "Bonewright", to = "Ironclad"}}},
 		Hollow     = {event = "Hollow2026", retire = true},

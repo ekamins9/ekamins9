@@ -188,12 +188,12 @@ and a UIScale fits it to any screen.
   (trail, aura), plus EQUIP / AS SECONDARY. **ARMOR** shows every set worn by you, piece by
   piece. You can toggle pieces, see the stats of its weight, and BUY (on the days its pack is in
   the shop) or EQUIP on a class of that weight. **KILL FX** plays each kill effect on you, over
-  and over, with EQUIP. **EXECUTIONS** plays each finisher, you on a mannequin, with EQUIP.
-  **EMOTES** loops each emote on you and edits the six-slot wheel.
+  and over, with EQUIP. **EMOTES** loops each emote on you and edits the six-slot wheel.
 - **SHOP**: **DAILY** has the packs plus the **WEAPONS shelf** (single skins, a headliner and
   three more, new every day; `Catalog ▸ Store`). **CRATES** has the chosen item on a big stage
   (a skin turning on its weapon, a kill effect or emote played on you), the strip, odds, pity
-  and the spinning drum. The **Relic Crate** holds kill effects, emotes and executions. **CROWNS** has the Robux bundles and Crowns →
+  and the spinning drum. The **Relic Crate** holds kill effects and emotes; the **Grim Crate** only kill effects (a
+  serpent from the ground, a hand from the sky, an anvil, a black hole and more). **CROWNS** has the Robux bundles and Crowns →
   Marks. **COLORS** has the premium colours.
 - **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
   tasks), and **mastery** (kill-count skins, earned armor, earned titles) with progress bars.
@@ -317,32 +317,6 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   wing claws and back spines, and every eye has a white glint. SETTINGS ▸ Companions: All / Mine / None.
 - Testing in Studio: `/egg Royal 2`, `/ripen` (every nest ready), `/playtime 30`.
 
-## Executions
-
-A finisher on an enemy who's done for. With a weapon in hand, an enemy who is **bleeding out**,
-or at **20 % health or less with no guard up and no swing going**, close (6.5 studs) and in
-front of you, gets an **R  EXECUTE** tag over their head (`Executions.client`; the key is
-Settings ▸ Controls ▸ Execute). Pressing it sends `CombatRemote "Execute"` with the target. The
-weapon's server checks the same rule again (`ReplicatedStorage ▸ ExecuteRule`, shared by both),
-then:
-- holds both fighters: roots anchored, the victim 3.4 studs in front facing you, their swing or
-  guard cancelled, their bleeding paused, attributes `Executing` / `BeingExecuted` (the camera
-  rig and the procedural pose step aside for the clip);
-- plays your equipped clip (player attribute `Execution`, from the profile; `Finisher` for
-  everyone) on your character at Action4;
-- at the clip's `Impact` attribute, kills: a beheading, or for a `finish = "stab"` execution, run
-  through. Credit kind `execution` (the kill feed says "executed"); the usual kill stamina refund.
-- **Getting hit or kicked before the blow lands calls it off**, so a teammate can still save the
-  victim. Bosses can't be executed; teammates can't be either; and in a peaceful place players
-  can't execute players.
-
-Tuning: `ExecuteRule.CONFIG` (`RANGE`, `FACING`, `LOW_HP`, `DIST`, `AFTER`).
-
-The clips are built from the game's own hand-made clips (the Longsword's idle, overhead, stab and
-swing keyframes, re-timed and leaned) by `ServerScriptService ▸ Build ▸ ExecutionAnims`, uploaded,
-and kept in Studio as `ReplicatedStorage ▸ ExecutionAnims ▸ <id>` (Animation, attribute `Impact`).
-Content: `CONTENT_GUIDE.md` § 6c.
-
 ## Skin effects, kill effects, emotes (looks only)
 
 - **Skin effects** (`SkinFX`, applied by the `Dresser` after the tint and trim): Epic and
@@ -357,15 +331,21 @@ Content: `CONTENT_GUIDE.md` § 6c.
 - **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): `Scoreboard` (and the training dummies) call
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
   effect and fires `FxEvent "Kill"` to everyone **1.2 s after the death** (`KILL_FX_DELAY`), so the
-  body falls first and a head that came off rolls away; each client (`Cosmetics.client`) builds it
-  upright over the body, at a standing torso's height above the floor under it, in
-  `workspace.LocalFX`, and hides the body locally. **Every effect has its sounds**, timed to it
+  body falls first and a head that came off rolls away. **Everyone sees everyone's effect**: the
+  event carries the body's `CorpseId`, where the effect stands and the body's colours, never the
+  body itself (with streaming on, a client that hasn't streamed the body in would get nil and
+  drop the effect). Each client (`Cosmetics.client`) finds the body by its id and builds the effect
+  upright over it, at a standing torso's height above the floor under it, in `workspace.LocalFX`,
+  and hides the body locally; without the body it plays at the server's spot in its colours.
+  Effects that **move the body** (dragged under by the kraken or the rift, sunk in sand or a grave,
+  swallowed by the serpent, sucked into the black hole, squashed by the anvil or the hand, lifted
+  by Ascension) hide the real body and move a *puppet*: anchored local copies of what can be seen
+  of it (`puppet`, `posePuppet`, `squashPuppet`, `fadePuppet` in `KillFX`), so the server's ragdoll
+  is never touched. **Every effect has its sounds**, timed to it
   (ice that creaks then shatters, a zap and a thunderclap, a choir, a fanfare, a raven and wing
   bursts…), from Roblox's licensed libraries (Pro Sound Effects, APM Music) so they play in any
   game; the menu's preview plays them once, flat, on its first loop. Bots and dummies get their
   kill effect from `Scoreboard` (which watches `workspace.NPCs`) and nothing else, so it plays once.
-- **Executions** (`Catalog ▸ Executions`, clips in `ReplicatedStorage ▸ ExecutionAnims`): see
-  *Executions* below.
 - **Emotes** (`Emotes` + `Catalog ▸ Emotes`): hold **B**, point the mouse at an emote and let go
   (or tap B and click one). There are no number keys, because 1–9 are the backpack's weapon slots.
   The client starts the emote at once and asks `EmoteRemote "Play"`. The server checks ownership,
@@ -1053,7 +1033,6 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
   staves are **blunt**, axes and polearm heads **chop**, and swords **cut**. Cuts glance off plate
   (Heavy ×1.35, with sparks), pierce finds the gaps (×0.85–0.9), blunt hits go through plate
   (Heavy ×0.55) and chops sit in between. Light armor takes every type about the same.
-- **Executions**: see *Executions* below.
 - **Head**: `HEAD_DAMAGE_MULT` × damage (2× by default) — no automatic kill.
 - **Kills**: a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
   with `BLEED_OUT_CHANCE` an arm/leg victim survives on `BLEED_HP` and bleeds out instead,

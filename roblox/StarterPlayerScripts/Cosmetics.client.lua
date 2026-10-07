@@ -54,13 +54,27 @@ local function originOver(char, torso)
 	return CFrame.new(pos.X, floorY + 3, pos.Z) * CFrame.Angles(0, math.atan2(-look.X, -look.Z), 0)
 end
 
-fx.OnClientEvent:Connect(function(what, a, b, c)
+-- a body by its CorpseId (players' characters in workspace, bots and dummies in NPCs)
+local function bodyById(id)
+	if type(id) ~= "number" or id == 0 then return nil end
+	for _, holder in ipairs({workspace, workspace:FindFirstChild("NPCs")}) do
+		for _, m in ipairs(holder and holder:GetChildren() or {}) do
+			if m:IsA("Model") and m:GetAttribute("CorpseId") == id then return m end
+		end
+	end
+	return nil
+end
+
+fx.OnClientEvent:Connect(function(what, a, b, c, d)
 	if what == "Kill" then
-		local char = b
-		if typeof(char) ~= "Instance" or not char.Parent then return end
-		local torso = char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
-		if not torso then return end
-		KillFX.play(a, fxFolder, originOver(char, torso), {body = bodyParts(char), world = true})
+		-- a = effect id, b = the body's CorpseId, c = where (server), d = its colours.
+		-- Everyone sees it: with the body streamed in it plays on it (and hides
+		-- it); without, it plays where the server says, in the body's colours.
+		local char = bodyById(b)
+		local torso = char and (char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart"))
+		local origin = torso and originOver(char, torso) or (typeof(c) == "CFrame" and c or nil)
+		if not origin then return end
+		KillFX.play(a, fxFolder, origin, {body = torso and bodyParts(char) or nil, colors = type(d) == "table" and d or nil, world = true})
 	elseif what == "Emote" then
 		local plr, id, startedAt = a, b, c
 		if typeof(plr) ~= "Instance" or not plr.Character then return end

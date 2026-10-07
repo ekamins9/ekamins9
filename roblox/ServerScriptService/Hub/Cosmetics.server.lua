@@ -1,6 +1,8 @@
 --[[ COSMETICS SERVER — the server side of kill effects and emotes.
        ReplicatedStorage.FxEvent      (RemoteEvent, server → every client)
-           "Kill", fxId, victimCharacter          the killer's equipped kill effect
+           "Kill", fxId, corpseId, origin, colours  the killer's equipped kill effect:
+                 the body by its CorpseId attribute (a client that hasn't streamed it
+                 in still plays the effect at `origin` in the body's `colours`)
            "Emote", player, emoteId, startedAt    a player started an emote
            "EmoteStop", player
        ReplicatedStorage.EmoteRemote  (RemoteEvent, client → server)
@@ -28,6 +30,31 @@ local emote = remote("RemoteEvent", "EmoteRemote")
 -- the body falls first (and a head that came off rolls away); the effect plays on it a moment later
 local KILL_FX_DELAY = 1.2
 
+-- where the effect stands (upright over the fallen body, a standing torso's
+-- height above the floor under it) and the body's colours
+local floorRay = RaycastParams.new()
+floorRay.FilterType = Enum.RaycastFilterType.Exclude
+local function originOf(char)
+	local torso = char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart") or char:FindFirstChildWhichIsA("BasePart", true)
+	if not torso then return nil end
+	local pos = torso.Position
+	floorRay.FilterDescendantsInstances = {char}
+	local hit = workspace:Raycast(pos + Vector3.new(0, 1, 0), Vector3.new(0, -12, 0), floorRay)
+	local look = torso.CFrame.LookVector
+	return CFrame.new(pos.X, (hit and hit.Position.Y or pos.Y - 3) + 3, pos.Z) * CFrame.Angles(0, math.atan2(-look.X, -look.Z), 0)
+end
+local function coloursOf(char)
+	local out, seen = {}, {}
+	for _, d in ipairs(char:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 1 and d.Name ~= "HumanoidRootPart" then
+			local key = d.Color:ToHex()
+			if not seen[key] then seen[key] = true; table.insert(out, d.Color) end
+			if #out >= 6 then break end
+		end
+	end
+	return out
+end
+
 -- the killer's kill effect on the victim's body, for everyone
 _G.KillFxHook = function(killer, victimChar)
 	if not (killer and victimChar and victimChar.Parent) then return end
@@ -39,7 +66,10 @@ _G.KillFxHook = function(killer, victimChar)
 	if Corpses then Corpses.pending(victimChar, def.remains or "body", KILL_FX_DELAY + (def.remainsAt or 1.5)) end
 	task.wait(KILL_FX_DELAY)
 	if not victimChar.Parent then return end
-	fx:FireAllClients("Kill", id, victimChar)
+	local origin = originOf(victimChar)
+	if not origin then return end
+	-- (not the body itself: a client that hasn't streamed it in would get nil)
+	fx:FireAllClients("Kill", id, Corpses and Corpses.idOf(victimChar) or victimChar:GetAttribute("CorpseId") or 0, origin, coloursOf(victimChar))
 end
 
 local last = {}
@@ -68,8 +98,6 @@ task.spawn(function()
 				local list = table.concat(type(p.emotes) == "table" and p.emotes or {}, ",")
 				if plr:GetAttribute("Emotes") ~= list then plr:SetAttribute("Emotes", list) end
 				if plr:GetAttribute("KillFx") ~= p.killfx then plr:SetAttribute("KillFx", p.killfx) end
-				local ex = (type(p.execution) == "string" and Catalog.EXECUTION_BY[p.execution] and Profile.has(plr, "executions", p.execution)) and p.execution or "Finisher"
-				if plr:GetAttribute("Execution") ~= ex then plr:SetAttribute("Execution", ex) end
 			end
 		end
 		task.wait(1.5)
