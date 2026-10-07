@@ -1,4 +1,29 @@
-# Updated scripts: objective rings, training ring deaths, combat animations
+# Updated scripts: back to the original animations; real sword clangs
+
+- **Your original animations and combat code are back:**
+  - The combat client and server, RigPose, CameraRig, NpcAnimator and Bots are restored from the backup (`combat-backup-2026-10-07`).
+  - The new animations, arm aiming, hip counter-turn and the AnimSets / BladeSamples modules are gone. (`Build ▸ AnimForge` stays as an unused tool; the Studio folder `ReplicatedStorage ▸ Animations` is no longer read and can be deleted.)
+- **Kept, because you asked for them:**
+  - First hit wins: a clean hit interrupts the windup or the strike, but not the recovery.
+  - Bosses don't flinch.
+  - The zero-stamina error fix.
+  - The KOTH / Siege rings and the training-ring fix.
+- **Better clangs:** parries, blocks and chambers now use real sword-on-sword recordings (two sabres clashing, sword impacts) from the licensed library, instead of crowbar, railroad-hammer and skillet recordings.
+  - Parry: bright and sharp.
+  - Block: lower and heavier.
+  - Chamber: a clash with the blades scraping along.
+- **Two-handed swords swing like big blades:** Longsword, Greatsword, Zweihander, Estoc and Executioner use the sword swish (the rapier's family), deeper and fuller, instead of the generic heavy whoosh. Axes, mauls and polearms keep the whoosh.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua), [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua), [RigPose.lua](ReplicatedStorage/RigPose.lua), [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [NpcAnimator.client.lua](StarterPlayerScripts/NpcAnimator.client.lua), [Bots.lua](ServerScriptService/Combat/Bots.lua) | Combat / StarterCharacterScripts / StarterPlayerScripts | Module / LocalScript | restored; first-hit / boss rules re-applied |
+| AnimSets.lua, BladeSamples.lua | ReplicatedStorage ▸ Combat | ModuleScript | **removed** |
+| [SoundBank.lua](ReplicatedStorage/SoundBank.lua) | ReplicatedStorage ▸ SoundBank | ModuleScript | sword clangs; `SwingGreat` for two-handed swords |
+| [README.md](README.md) | — | docs | animation sections removed |
+
+---
+
+## Before that (partly undone above)
 
 **Arms stay on, swings across, smooth finish (newest; all 66 clips rebuilt):**
 - **Arms never detach:**

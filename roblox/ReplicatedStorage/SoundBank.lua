@@ -26,6 +26,10 @@ SoundBank.POOLS = {
 		9120728815, 9120728883, 9120729007, 9120729005, 9120729337,
 		9120729339, 9120729412, 9120729568, 9120729647,
 	}},
+	SwingGreat = {volume = 0.72, speed = {0.78, 0.9}, takes = {    -- big blades: the sword swishes, deeper and fuller
+		9119750447, 9119749812, 9119749641,
+		9126014020, 9126013811, 9126013477, 9126013644, 9126013302, 9126014082,
+	}},
 	SwingKick = {volume = 0.45, speed = {1.0, 1.15}, takes = {9120728815, 9120729007, 9120729339, 9120729568}},
 
 	-- A BLOW THAT LANDS --------------------------------------------------
@@ -51,19 +55,20 @@ SoundBank.POOLS = {
 	}},
 
 	-- STEEL ON STEEL -----------------------------------------------------
-	Parry = {volume = 0.75, speed = {0.95, 1.08}, takes = {         -- a bright ringing clash
-		{9125669515, cut = 1.1}, {9125669267, cut = 1.1}, {9125669278, cut = 1.1},
-		{9125669419, cut = 1.1}, {9125669412, cut = 1.1}, {9125669566, cut = 1.1},
-		{9125594716, vol = 0.8, cut = 0.9}, {9125594712, vol = 0.8, cut = 0.9},
-		{5763723309, vol = 1.05},
+	-- real blade-on-blade recordings (Pro Sound Effects, Weapons - Knives & Swords:
+	-- two sabres fighting, sharp metallic clinks), not hammers on pipes
+	Parry = {volume = 0.85, speed = {0.97, 1.1}, takes = {          -- a bright, sharp clash: the blade turned aside
+		9119742980, 9119743250, 9119743392, 9119744251, 9119744452,
+		9119744642, 9119744718, {9119742967, cut = 0.5}, {9119743888, cut = 0.5},
+		{5763723309, vol = 0.9},
 	}},
-	Block = {volume = 0.75, speed = {0.85, 1.0}, takes = {          -- a duller clang: the guard soaks it
-		9119072660, {9119072674, cut = 0.8},
-		{9116668848, vol = 0.8, cut = 0.7}, {9116669675, vol = 0.8, cut = 0.7},
-		{9116670099, vol = 0.8, cut = 0.7}, {9116669163, vol = 0.8, cut = 0.7},
+	Block = {volume = 0.8, speed = {0.82, 0.94}, takes = {          -- heavier and duller: the guard soaks the blow
+		{9119747120, cut = 0.55}, {9119747138, cut = 0.6},          -- sword impacts
+		{9119743802, vol = 0.9}, {9119742967, vol = 0.9, cut = 0.45}, {9119743888, vol = 0.9, cut = 0.45},
+		{9119743392, speed = 0.85}, {9119744718, speed = 0.85},
 	}},
-	Clash = {volume = 0.5, speed = {0.95, 1.1}, cut = 0.7, takes = { -- blades scraping (a chamber)
-		9116706585, 9116709512,
+	Clash = {volume = 0.6, speed = {0.95, 1.08}, cut = 0.9, takes = { -- blades meeting and scraping along (a chamber)
+		9119743464, 9119743648, 9119742690, 9119744031,
 	}},
 
 	-- THE BLADE MEETS THE WORLD (two layers: the edge striking it, the surface giving)
@@ -127,6 +132,8 @@ SoundBank.WALL = {Stone = {"WallStone", "WallGrit"}, Wood = {"WallWood", "WallWo
 
 -- weapons whose head lands blunt (thud and crack instead of a cut)
 SoundBank.BLUNT = {Hammer = true, Mace = true, MorningStar = true, Maul = true, Quarterstaff = true}
+-- two-handed SWORDS cut the air like a blade (the sword swish, deeper), not a haft's whoosh
+SoundBank.GREATSWORD = {Longsword = true, Greatsword = true, Zweihander = true, Estoc = true, Executioner = true}
 -- weapons that swing heavy: Catalog ▸ Weapons families TwoHanded and Polearm
 local HEAVY_FAMILY = {TwoHanded = true, Polearm = true}
 
@@ -137,7 +144,8 @@ function SoundBank.classOf(weaponId)
 	local w = ok and Catalog.WEAPON and Catalog.WEAPON[weaponId]
 	if w then heavy = HEAVY_FAMILY[w.family] == true end
 	local blunt = SoundBank.BLUNT[weaponId] == true
-	return {swing = heavy and "SwingHeavy" or "SwingLight", hit = blunt and "HitBlunt" or "HitCut", blunt = blunt, heavy = heavy}
+	local swing = SoundBank.GREATSWORD[weaponId] and "SwingGreat" or (heavy and "SwingHeavy" or "SwingLight")
+	return {swing = swing, hit = blunt and "HitBlunt" or "HitCut", blunt = blunt, heavy = heavy}
 end
 
 return SoundBank

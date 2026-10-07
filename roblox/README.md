@@ -720,25 +720,6 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - **Animations fit the rules** (`FIT_ANIMS`): each attack's optional `windupAnim` is stretched to
   its windup, the release anim to active+recovery — so a morph, riposte or chamber re-times what
   you see. Attack names are `<Side><Type>` (see a weapon Config).
-- **Forged animations** (`Build ▸ AnimForge`, `Combat ▸ AnimSets`): every weapon class (Blade1H,
-  Blunt1H, Dagger, Blade2H, Heavy2H, Polearm) has its own idle, block, hit flinch and eight attacks
-  (left/right swing, overhead, underhand, stab), written as data and solved into R6 clips: the
-  blade travels a real arc round the body (sampled 30×/s with easing), the edge leads the strike
-  (wound up edge-first), the left hand rides the grip of two-handers and polearms, one-handers
-  swing the free arm for balance, the head stays on the target while the torso turns, and the
-  legs stay planted (the hips counter the torso's animated turn — `AnimSets.counterHips`, in
-  RigPose for players and NpcAnimator for bots). Each attack clip carries timing marks: the
-  windup segment plays over the real windup (no frozen first frame), **Load → Through** over the
-  active phase (0.3 s at speed 1 — the old clips' length, so the balance is unchanged), and the
-  follow-through to **Settle** (back at guard) over the recovery, so nothing snaps or lerps.
-  Underhands now exist for every weapon. The ids live only in Studio
-  (`ReplicatedStorage ▸ Animations ▸ <Class> ▸ <Clip>`); **its `Style` attribute switches between
-  `"Forged"` and `"Classic"`** (each Config's own clips) — the next weapon equipped uses it.
-  Rebuild: edit `AnimForge`, `require(...AnimForge).build()` in Studio, preview with
-  `.preview("Blade2H", "RightSwing")`, export + `scripts/upload_anims.py` (see its header).
-- **Hit sampling** (`Combat ▸ BladeSamples`): the sweep traces the Hitbox's spine every ~0.45
-  studs and, on wide heads (axes, halberds, mauls), its outer faces too — the hit lands when the
-  steel that leads the swing arrives, not when the haft's centre line does.
 - A whiffed kick recovers `KICK_MISS_EXTRA` longer. Spawn protection: a `ForceField` for
   `SPAWN_PROTECT` s (LoadoutServer); attacking, kicking or blocking ends it early.
 
