@@ -215,7 +215,7 @@ local function buildPreviews()
 				rig.Parent = c.vp
 				c.rig = rig
 				-- frame the whole body, boots to crest
-				c.cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.2, -12), Vector3.new(0, -0.35, 0))
+				c.cam.CFrame = CFrame.lookAt(Vector3.new(0, 0.1, -10.4), Vector3.new(0, -0.4, 0))
 			end
 		end
 	end
