@@ -408,13 +408,20 @@ local function refreshBoard()
 		local ls = p:FindFirstChild("leaderstats")
 		local k = ls and ls:FindFirstChild("Kills");  k = k and k.Value or 0
 		local d = ls and ls:FindFirstChild("Deaths"); d = d and d.Value or 0
-		table.insert(list, {p = p, k = k, d = d, team = p.Team and p.Team.Name or ""})
+		table.insert(list, {p = p, name = p.Name, k = k, d = d, team = p.Team and p.Team.Name or ""})
+	end
+	-- a match's fill bots, until a player takes their place (Game ▸ BotFill)
+	local seats = ReplicatedStorage:FindFirstChild("BotScores")
+	for _, s in ipairs(seats and seats:GetChildren() or {}) do
+		local def = GameConfig.TEAMS[s:GetAttribute("Team") or ""]
+		table.insert(list, {bot = s, name = s:GetAttribute("Name") or "Bot", k = s:GetAttribute("Kills") or 0,
+			d = s:GetAttribute("Deaths") or 0, team = def and def.name or "", tc = def and def.rgb or nil})
 	end
 	table.sort(list, function(a, b)
 		if teamMode and a.team ~= b.team then return a.team < b.team end
 		if a.k ~= b.k then return a.k > b.k end
 		if a.d ~= b.d then return a.d < b.d end
-		return a.p.Name < b.p.Name
+		return a.name < b.name
 	end)
 	for i, e in ipairs(list) do
 		local r = rows[i]
@@ -424,15 +431,22 @@ local function refreshBoard()
 			rows[i] = r
 		end
 		r.row.Visible = true
-		local mine = e.p == player
-		local tc = teamMode and teamColorOf(e.p) or nil
-		-- the name, a crown for the pass, the title they wear (not the free Recruit)
-		local title = e.p:GetAttribute("Title") or ""
-		local pass = e.p:GetAttribute("PassHolder") == true
+		local mine = e.p ~= nil and e.p == player
 		r.cells[1].RichText = true
-		r.cells[1].Text = (pass and string.format('<font color="#%s">♛</font> ', COL_GOLD:ToHex()) or "") .. e.p.DisplayName .. (mine and "  (you)" or "")
-			.. ((title ~= "" and title ~= "Recruit") and string.format('  <font color="#%s" size="12"><i>%s</i></font>', COL_TITLE:ToHex(), title) or "")
-		r.cells[1].TextColor3 = mine and COL_ME or (tc or (pass and COL_GOLD) or COL_TEXT)
+		local tc
+		if e.bot then
+			tc = teamMode and e.tc or nil
+			r.cells[1].Text = e.name .. string.format('  <font color="#%s" size="12">BOT</font>', COL_DIM:ToHex())
+			r.cells[1].TextColor3 = tc or COL_TEXT
+		else
+			tc = teamMode and teamColorOf(e.p) or nil
+			-- the name, a crown for the pass, the title they wear (not the free Recruit)
+			local title = e.p:GetAttribute("Title") or ""
+			local pass = e.p:GetAttribute("PassHolder") == true
+			r.cells[1].Text = (pass and string.format('<font color="#%s">♛</font> ', COL_GOLD:ToHex()) or "") .. e.p.DisplayName .. (mine and "  (you)" or "")
+				.. ((title ~= "" and title ~= "Recruit") and string.format('  <font color="#%s" size="12"><i>%s</i></font>', COL_TITLE:ToHex(), title) or "")
+			r.cells[1].TextColor3 = mine and COL_ME or (tc or (pass and COL_GOLD) or COL_TEXT)
+		end
 		r.cells[1].Font = mine and FONT or FONT_BODY
 		r.cells[2].Text = tostring(e.k)
 		r.cells[3].Text = tostring(e.d)

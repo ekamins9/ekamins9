@@ -245,6 +245,27 @@ local function nearestFoe(self, pos, team)
 	return best, bestD
 end
 
+-- a teammate PLAYER standing in its swing (in front, inside the arc, nearer than
+-- the foe): it doesn't swing through them. (Its blade passes through the bots on
+-- its side: CombatServer.botFriends.)
+local function friendInTheWay(self, dir, dist, reach)
+	local team = self.model:GetAttribute("Team")
+	if team == nil then return false end
+	local pos = self.hrp.Position
+	local function inTheWay(c)
+		if not c or c == self.model or c:GetAttribute("Team") ~= team then return false end
+		local hrp = c:FindFirstChild("HumanoidRootPart")
+		local hum = c:FindFirstChildOfClass("Humanoid")
+		if not (hrp and hum and hum.Health > 0) then return false end
+		local off = hrp.Position - pos
+		off = Vector3.new(off.X, 0, off.Z)
+		local d = off.Magnitude
+		return d < math.min(reach, dist + 0.5) and (d < 1.5 or off.Unit:Dot(dir) > 0.35)
+	end
+	for _, p in ipairs(Players:GetPlayers()) do if inTheWay(p.Character) then return true end end
+	return false
+end
+
 -- a swing may not turn into (or chain after) the mirror of itself, or an
 -- overhead into an underhand (CombatServer's morph rules)
 local FORBID = {Overhead = "Underhand", Underhand = "Overhead"}
@@ -808,6 +829,11 @@ function Bot:think()
 		punish = math.random() < sk.punish
 	end
 	if not (punish or (foeWeak and now >= self.nextAttack - 0.5) or now >= self.nextAttack) then return end
+	if friendInTheWay(self, dir, dist, self.reach + 1) then
+		-- a friend in the way: step round them for a better angle instead
+		if now > self.strafeUntil then self.strafe, self.strafeUntil = -self.strafe, now + 0.8 end
+		return
+	end
 	local name = pickAttack(self)
 	if not name then return end
 	local need = costOf(self, name) + ((punish or foeWeak) and 0 or (self.recovering and 1e3 or sk.reserve * 0.5))

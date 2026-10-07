@@ -1,4 +1,37 @@
-# Updated scripts: bows in first person, sounds, ranged skins with arrow effects
+# Updated scripts: bots on the board, bots that fight, an easier Siege, the result screen
+
+- **Bots are on the scoreboard** (Tab, and during the intermission):
+  - Each bot shows its kills and deaths, tagged BOT, sorted and team-coloured with the players.
+  - A fallen bot comes back under the same name with the same score.
+  - A bot's row goes when a player takes its place.
+- **Bots fight the other side now:**
+  - A crowd of bots used to cut its own side down and almost never kill an enemy.
+  - A bot's swing now passes through bots on its own side.
+  - It won't swing while a player on its side stands in the way.
+- **A wrong-map bug is fixed:** a round could start on a map from the last vote that its mode doesn't use (Team Deathmatch behind Frostgate's shut gate). Now a round only loads a map its mode lists.
+- **Siege is easier to attack:**
+  - 5 minutes to start (was 4), and taking a stage adds 30% more time.
+  - The ram is 30% faster, and creeps forward on a tie.
+  - The gate takes 20% fewer blows.
+  - Zones fill 25% faster, and outnumbering the defenders still fills them.
+  - The final champion has 25% less health.
+- **A big VICTORY / DEFEAT / DRAW screen** when a round ends, in the winning side's colour, with who won and why.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game ▸ BotFill | ModuleScript | bot seats (ReplicatedStorage ▸ BotScores) |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService ▸ Scoreboard | Script | counts bots' kills and deaths |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Scoreboard | LocalScript | bot rows |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | `LastHitBySeat`; `botFriends`: bot blades pass through their own side |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | no swinging through a teammate player |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game ▸ GameServer | Script | a round only loads a map its mode lists |
+| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Siege | ModuleScript | attacker easing, numbers win ground |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | Siege 5 min, `attack` table |
+| [RoundResult.client.lua](StarterPlayerScripts/RoundResult.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ RoundResult | LocalScript | **new**: the result screen |
+
+---
+
+## Before that: bows in first person, sounds, ranged skins with arrow effects
 
 - **A new bow stance:**
   - The bow is held out in the left hand, and the torso turns side-on.

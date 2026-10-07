@@ -170,6 +170,7 @@ function CombatServer.credit(target, attacker, weaponName, kind)
 	local plr = attacker and Players:GetPlayerFromCharacter(attacker)
 	target:SetAttribute("LastHitBy", plr and plr.UserId or 0)
 	target:SetAttribute("LastHitByName", attacker and attacker.Name or "")
+	target:SetAttribute("LastHitBySeat", attacker and attacker:GetAttribute("BotSeat") or "")   -- a fill bot's place on the board
 	target:SetAttribute("LastHitWith", weaponName or "")
 	target:SetAttribute("LastHitKind", kind or "")
 	target:SetAttribute("LastHitAt", os.clock())
@@ -181,6 +182,13 @@ function CombatServer.peaceful(attacker, target)
 	local node = ReplicatedStorage:FindFirstChild("Round")
 	if not (node and node:GetAttribute("Peaceful")) then return false end
 	return Players:GetPlayerFromCharacter(attacker) ~= nil and Players:GetPlayerFromCharacter(target) ~= nil
+end
+-- a bot's blade passes through the bots on its own side (a match's fill bots
+-- fight in a crowd: they'd only cut each other down). Players keep friendly fire.
+function CombatServer.botFriends(attacker, target)
+	if not (attacker:GetAttribute("Bot") and target:GetAttribute("Bot")) then return false end
+	local t = attacker:GetAttribute("Team")
+	return t ~= nil and t ~= "" and t == target:GetAttribute("Team")
 end
 function CombatServer.eachTarget(character, fn)
 	for _, p in ipairs(Players:GetPlayers()) do
@@ -349,7 +357,7 @@ function CombatServer.resolveKick(character, cfg, hooks)
 	CombatServer.dropProtection(character)
 	CombatServer.eachTarget(character, function(m)
 		local hum, thrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
-		if not (hum and thrp and hum.Health > 0) or CombatServer.isProtected(m) then return end
+		if not (hum and thrp and hum.Health > 0) or CombatServer.isProtected(m) or CombatServer.botFriends(character, m) then return end
 		local to = thrp.Position - hrp.Position
 		to = Vector3.new(to.X, 0, to.Z)
 		nearest = math.min(nearest, to.Magnitude)
@@ -1119,6 +1127,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if typeof(part) ~= "Instance" or not part:IsA("BasePart") or not part:IsDescendantOf(model) then return end
 		if typeof(hitPos) ~= "Vector3" then return end
 		if CombatServer.peaceful(character, model) then dprint("hit rejected: no fighting here"); return end
+		if CombatServer.botFriends(character, model) then return end   -- (the blade goes on through)
 		local hum = model:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health <= 0 or state.alreadyHit[hum] then return end
 		local hrp = character:FindFirstChild("HumanoidRootPart")

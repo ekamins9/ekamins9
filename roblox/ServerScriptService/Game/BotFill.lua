@@ -11,6 +11,11 @@
      and give their killer the kill (Game.onBotDeath). A server with a
      newcomer in it (their first match) fields only Squires.
 
+     THE BOARD: every bot holds a SEAT (ReplicatedStorage ▸ BotScores ▸ <id>, a
+     Configuration: Name, Team, Kills, Deaths; Scoreboard counts them). A fallen
+     bot comes back in its own seat (same name, same score); the seat goes when a
+     player takes it. Seats last through the intermission and clear at the next round.
+
      Not on custom servers, ranked ones (The Lists), Horde or the hubs. ]]
 
 local Players = game:GetService("Players")
@@ -43,8 +48,34 @@ end
 
 local active = false
 local roundId = 0
-local fill = {}          -- list of {bot, team, diedAt}
+local fill = {}          -- list of {bot, team, diedAt, seat}
+local vacant = {}        -- seats whose bot fell and hasn't come back yet
 local startedAt = 0
+
+-- the seats on the board
+local seatFolder = ReplicatedStorage:FindFirstChild("BotScores")
+if not seatFolder then
+	seatFolder = Instance.new("Folder")
+	seatFolder.Name = "BotScores"
+	seatFolder.Parent = ReplicatedStorage
+end
+local seatId = 0
+local function dropSeat(seat) if seat then seat:Destroy() end end
+-- a vacant seat of this side, or a new one
+local function takeSeat(team, name)
+	for i, seat in ipairs(vacant) do
+		if seat:GetAttribute("Team") == (team or "") then table.remove(vacant, i); return seat end
+	end
+	seatId += 1
+	local seat = Instance.new("Configuration")
+	seat.Name = tostring(seatId)
+	seat:SetAttribute("Name", name)
+	seat:SetAttribute("Team", team or "")
+	seat:SetAttribute("Kills", 0)
+	seat:SetAttribute("Deaths", 0)
+	seat.Parent = seatFolder
+	return seat
+end
 
 -- is this server one that gets bots?
 local function wanted()
@@ -97,10 +128,11 @@ local function spawnOne(team)
 	if not cf then return end
 	local at = CFrame.new(cf.Position + Vector3.new(math.random(-3, 3), 3, math.random(-3, 3))) * (cf - cf.Position)
 	local myRound = roundId
-	local entry = {team = team}
+	local seat = takeSeat(team, nextName())
+	local entry = {team = team, seat = seat}
 	local ok, bot = pcall(bots().spawn, {
 		at = at, skill = skill, weapon = list[math.random(#list)], team = team,
-		name = nextName(), fightBots = true, goal = objective, corpseTime = 6,
+		name = seat:GetAttribute("Name"), fightBots = true, goal = objective, corpseTime = 6,
 		startDelay = 0.5,
 		onDeath = function(_, killer)
 			entry.diedAt = os.clock()
@@ -111,9 +143,10 @@ local function spawnOne(team)
 			Game.onBotDeath(entry.bot.model, killer)
 		end,
 	})
-	if not ok or not bot then warn("[BotFill] spawn failed:", bot); return end
+	if not ok or not bot then warn("[BotFill] spawn failed:", bot); table.insert(vacant, seat); return end
 	entry.bot = bot
 	bot.model:SetAttribute("FillBot", true)
+	bot.model:SetAttribute("BotSeat", seat.Name)
 	if team then Teams.mark(bot.model, team) end
 	table.insert(fill, entry)
 	if team then Game.fielded[team] = (Game.fielded[team] or 0) + 1 end
@@ -134,11 +167,12 @@ local function retireOne(team)
 	end
 	if not best then
 		-- a place being held for a fallen one: just let it go
-		for i, e in ipairs(fill) do if e.team == team and e.diedAt then table.remove(fill, i); return true end end
+		for i, e in ipairs(fill) do if e.team == team and e.diedAt then table.remove(fill, i); dropSeat(e.seat); return true end end
 		return false
 	end
 	for i, e in ipairs(fill) do if e == best then table.remove(fill, i) break end end
 	pcall(function() best.bot:destroy() end)
+	dropSeat(best.seat)
 	return true
 end
 
@@ -151,8 +185,10 @@ local function tick()
 	local respawns = not (def.respawnDelay == 0 or def.roundsToWin ~= nil)
 	for i = #fill, 1, -1 do
 		local e = fill[i]
-		if e.diedAt and respawns and now - e.diedAt >= C.RESPAWN then table.remove(fill, i) end
-		if not e.diedAt and not e.bot.model.Parent then table.remove(fill, i) end
+		if (e.diedAt and respawns and now - e.diedAt >= C.RESPAWN) or (not e.diedAt and not e.bot.model.Parent) then
+			table.remove(fill, i)
+			table.insert(vacant, e.seat)   -- its next bot sits here (same name, same score)
+		end
 	end
 	-- (one life a round: bots come in at the start only)
 	if not respawns and now - startedAt > 15 then return end
@@ -178,15 +214,26 @@ local function tick()
 				spawned += 1
 			end
 		end
+		-- seats nobody will come back to (a player took the place meanwhile)
+		held = 0
+		for _, e in ipairs(fill) do if e.team == key then held += 1 end end
+		for i = #vacant, 1, -1 do
+			if vacant[i]:GetAttribute("Team") == (key or "") then
+				if held >= want then dropSeat(table.remove(vacant, i)) else held += 1 end
+			end
+		end
 	end
 end
 
-local function clear()
+-- the bots go; their seats stay on the board (the round's result) unless `seats`
+local function clear(seats)
 	for _, e in ipairs(fill) do
 		if e.bot and e.bot.alive then pcall(function() e.bot:destroy() end) end
 	end
 	fill = {}
+	vacant = {}
 	Game.fielded = {A = 0, B = 0}
+	if seats then seatFolder:ClearAllChildren() end
 end
 
 function BotFill.start()
@@ -194,7 +241,7 @@ function BotFill.start()
 	active = true
 	Game.roundStarted.Event:Connect(function()
 		roundId += 1
-		clear()
+		clear(true)
 		startedAt = os.clock()
 	end)
 	Game.roundEnded.Event:Connect(function()

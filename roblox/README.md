@@ -157,7 +157,16 @@ newcomer on the server). Bots carry a team (`Team`, tabard, team colours) and th
   (`Game.onBotDeath`); they stand on KOTH's hill and push or block Siege's ram
   (`Teams.fighters`); Last Team Standing counts them alive (`Teams.botsAlive`, `Game.fielded`).
 - A kill on a bot pays like a kill for the round, but stays off the lifetime kill count and the
-  leaderboard. Not on custom servers, ranked (The Lists), Horde or the hubs.
+  season leaderboard. Not on custom servers, ranked (The Lists), Horde or the hubs.
+- **On the board (Tab):** every bot holds a **seat** (`ReplicatedStorage ▸ BotScores ▸ <id>`, a
+  Configuration: `Name`, `Team`, `Kills`, `Deaths`), listed with the players, tagged BOT, sorted
+  and team-coloured like them. A fallen bot comes back in its own seat (same name, same score);
+  the seat goes when a player takes the place. Seats stay through the intermission and clear at
+  the next round. Scoreboard counts them: bots carry `BotSeat`, a hit stamps `LastHitBySeat`.
+- **A bot's blade passes through the bots on its own side** (`CombatServer.botFriends`: swings
+  and kicks), so a crowd of them fights the other side instead of cutting each other down.
+  Players keep friendly fire, and a bot won't swing while a player on its side stands in the
+  arc (`friendInTheWay`).
 
 ## Touch screens (phones, tablets)
 
@@ -854,15 +863,19 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 
 ## Siege (Team Objective, after Chivalry 2)
 
-The attackers take a castle stage by stage; the defenders hold until the clock runs out. Every
+The attackers take a castle stage by stage; the defenders hold until the clock runs out
+(5 minutes to start). The mode's `attack` table (`GameConfig.MODES.Siege`) eases the map's stage
+numbers for the attackers: `addTime` ×1.3, `ramSpeed` ×1.3, `gateHits` ×0.8, `captureTime`
+×0.75, `champion` health ×0.75. Every
 stage taken adds time (`AddTime`), sides swap each round, and the scores count rounds won. A map
 lists its stages in `Map ▸ Objectives` (MapKit `K.objective`), each with a `Label` for the HUD:
 - **Ram:** push the ram (`K.ram`) along its `Path` (`K.path`). It rolls while more attackers than
-  defenders stand within `Radius` (13) of it, faster with more (up to 1.75×), and stops when
-  they're even. At the gate it swings its log every `Interval` s while the attackers hold it,
+  defenders stand within `Radius` (13) of it, faster with more (up to 1.75×), and creeps (35%)
+  when they're even. At the gate it swings its log every `Interval` s while the attackers hold it,
   `Hits` blows break the `Gate` (`K.gate`) and the doors burst inward.
 - **Capture:** stand in the `Zone` (`K.zone`): attackers with no defender in it fill it in
-  `Time` s (faster with more), defenders alone push it back, both = contested. The disc turns
+  `Time` s (faster with more); attackers OUTNUMBERING the defenders in it still fill it, at the
+  share they hold; a tie stops it; defenders alone push it back. The disc turns
   from the defenders' colour to the attackers'.
 - **Slay:** the defenders' champion, a Champion bot in heavy armour (`Name`, `Weapon`, `Health`
   + `PerAttacker` × attackers), rises at `At` and fights inside `ArenaRadius`; kill him.
@@ -1007,6 +1020,14 @@ A **lethal** face stab (no more auto-execute — `STAB_HEAD_EXECUTE` is off) han
 head on your blade, sitting exactly on its axis. It stays there until your next swing, then flies
 off forward at `HEAD_THROW_SPEED`: `HEAD_THROW_DAMAGE` and a `HEAD_THROW_STUN` on whoever it
 hits (it can finish someone low). Unequipping just drops it.
+
+## The result screen (`RoundResult`)
+
+The moment a round ends: **VICTORY** (gold), **DEFEAT** (red) or **DRAW** big across the middle,
+on a band in the winning side's colour, then who won ("IRON WINS", or the FFA winner and their
+kills) and why (the mode's result line: "FROSTGATE HAS FALLEN"; "THE MATCH IS YOURS" when a
+match is over). Five seconds, then the board and the vote. It remembers the side you fought on
+(teams can clear as the round ends). Not in the Courtyard, the Tiltyard or Horde.
 
 ## Kill feed + leaderboard
 

@@ -13,6 +13,11 @@
        Slay     the defenders' champion (a bot: Name, Weapon, Health +
                 PerAttacker per attacker) rises at At: kill him
        every stage: Label (the HUD's line), AddTime (seconds added when it's done)
+     The mode's `attack` table (GameConfig.MODES.Siege) scales those for the
+     attackers: addTime, ramSpeed, gateHits, captureTime, champion.
+     Numbers win ground: the ram creeps on a tie and rolls when the attackers
+     outnumber the defenders; a zone fills (slower) while the attackers
+     outnumber the defenders in it, and stops on a tie.
      Spawns (Map ▸ Spawns) carry Side = "Attack" | "Defend" and Stage = n: a side
      spawns at its highest Stage that isn't past the current one.
 
@@ -56,6 +61,8 @@ function Siege.new(def, id)
 end
 
 local function other(t) return t == "A" and "B" or "A" end
+-- the attackers' easing (GameConfig.MODES.Siege.attack), 1 when unset
+local function ease(self, key) local a = self.def and self.def.attack; return (a and a[key]) or 1 end
 
 -- living fighters of each side within r of pos (flat distance; |dy| ≤ h),
 -- fill bots too; `who` is the attacking players (they get the pay)
@@ -150,7 +157,7 @@ end
 function Siege:complete(text)
 	local c = self.cur
 	local last = self.stage >= #self.stages
-	local add = (c and c:GetAttribute("AddTime")) or 0
+	local add = math.floor(((c and c:GetAttribute("AddTime")) or 0) * ease(self, "addTime") + 0.5)
 	if not last and add > 0 then self.bonusTime = (self.bonusTime or 0) + add end
 	for _, p in ipairs(self.near.who or {}) do if _G.RoundBump then _G.RoundBump(p, "objective") end end
 	if text ~= "" then event:FireAllClients("Stage", {text = text, add = last and 0 or add, team = self.attack, final = last}) end
@@ -175,8 +182,8 @@ function Siege:setupRam(c)
 	for i = 1, #pts - 1 do len += (pts[i + 1] - pts[i]).Magnitude end
 	local gate = c:FindFirstChild("Gate")
 	local r = {model = model, pts = pts, len = len, dist = 0, gate = gate,
-		speed = c:GetAttribute("Speed") or 2.6, radius = c:GetAttribute("Radius") or 13, interval = c:GetAttribute("Interval") or 2.4,
-		hits = (gate and gate:GetAttribute("Hits")) or 10, dealt = 0, nextHit = 0, swinging = false, atGate = false, swing = {}}
+		speed = (c:GetAttribute("Speed") or 2.6) * ease(self, "ramSpeed"), radius = c:GetAttribute("Radius") or 13, interval = c:GetAttribute("Interval") or 2.4,
+		hits = math.max(1, math.floor(((gate and gate:GetAttribute("Hits")) or 10) * ease(self, "gateHits") + 0.5)), dealt = 0, nextHit = 0, swinging = false, atGate = false, swing = {}}
 	local body = model.PrimaryPart
 	for _, p in ipairs(model:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("Swing") then table.insert(r.swing, {part = p, off = body.CFrame:ToObjectSpace(p.CFrame)}) end
@@ -274,7 +281,7 @@ function Siege:setupCapture(c)
 	if not z then warn("[Siege] a capture stage needs a Zone"); self:complete(""); return end
 	z.Transparency = 0.72
 	z.Color = Teams.def(self.defend).rgb
-	self.cap = {zone = z, time = c:GetAttribute("Time") or 22, r = z:GetAttribute("Radius") or 10, h = z:GetAttribute("Height") or 10}
+	self.cap = {zone = z, time = (c:GetAttribute("Time") or 22) * ease(self, "captureTime"), r = z:GetAttribute("Radius") or 10, h = z:GetAttribute("Height") or 10}
 	z.Transparency = 1   -- the glowing ring on the ground shows it (ObjectiveFX)
 end
 
@@ -285,7 +292,7 @@ function Siege:setupSlay(c)
 	local at = c:FindFirstChild("At")
 	if not at then warn("[Siege] a slay stage needs an At part"); self:complete(""); return end
 	local Bots = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Bots"))
-	local hp = (c:GetAttribute("Health") or 220) + (c:GetAttribute("PerAttacker") or 70) * math.max(1, Teams.count(self.attack))
+	local hp = ((c:GetAttribute("Health") or 220) + (c:GetAttribute("PerAttacker") or 70) * math.max(1, Teams.count(self.attack))) * ease(self, "champion")
 	local bot = Bots.spawn({
 		at = at.CFrame, skill = "Champion", weapon = c:GetAttribute("Weapon") or "Greatsword", name = c:GetAttribute("Name") or "The Lord",
 		weight = "Heavy", team = self.defend, startDelay = 1.2, corpseTime = 10,
@@ -314,10 +321,12 @@ function Siege:step(dt)
 		local a, d, who = countNear(body.Position, r.radius, 14, self.attack)
 		self.near = {a = a, d = d, who = who, pos = body.Position}
 		if not r.atGate then
-			if a > d then
-				r.dist = math.min(r.len, r.dist + r.speed * math.clamp(1 + 0.25 * (a - d - 1), 1, 1.75) * dt)
+			if a > 0 and a >= d then
+				-- outnumbering them it rolls (faster with more); level with them it creeps
+				local pace = a > d and math.clamp(1 + 0.25 * (a - d - 1), 1, 1.75) or 0.35
+				r.dist = math.min(r.len, r.dist + r.speed * pace * dt)
 				self:placeRam(r.dist)
-				self.state = "moving"
+				self.state = a > d and "moving" or "contested"
 				if r.dist >= r.len - 0.01 then r.atGate = true end
 			else
 				self.state = a > 0 and "contested" or "idle"
@@ -339,9 +348,12 @@ function Siege:step(dt)
 		local pos = cap.zone.Position
 		local a, d, who = countNear(pos, cap.r, cap.h, self.attack)
 		self.near = {a = a, d = d, who = who, pos = pos}
-		if a > 0 and d == 0 then
-			self.progress = math.min(1, self.progress + dt / cap.time * math.min(1 + 0.4 * (a - 1), 2.2))
-			self.state = "capturing"
+		if a > 0 and a > d then
+			-- uncontested at full pace (faster with more); outnumbering the defenders
+			-- in it, at the share of the zone they hold
+			local share = d == 0 and 1 or (a - d) / a
+			self.progress = math.min(1, self.progress + dt / cap.time * math.min(1 + 0.4 * (a - d - 1), 2.2) * share)
+			self.state = d == 0 and "capturing" or "contested"
 		elseif a > 0 then
 			self.state = "contested"
 		elseif d > 0 and self.progress > 0 then

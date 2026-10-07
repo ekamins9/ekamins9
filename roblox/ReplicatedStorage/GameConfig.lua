@@ -101,9 +101,12 @@ GameConfig.MODES = {
 	Siege = {
 		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Attackers push the ram, break the gate and take the castle stage by stage. Defenders hold until the clock runs out. Every stage taken adds time; sides swap each round.",
-		maps = {"Frostgate"}, roundLength = 4 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"Frostgate"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
 		waveSpawn = 10,   -- reinforcements come in waves (after the first moments of a round)
 		botFill = 12,
+		-- the attackers' side of it, over the map's own stage numbers (Map ▸ Objectives):
+		-- time a stage adds ×, ram speed ×, gate blows ×, capture time ×, champion health ×
+		attack = {addTime = 1.3, ramSpeed = 1.3, gateHits = 0.8, captureTime = 0.75, champion = 0.75},
 	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,

@@ -135,7 +135,10 @@ task.spawn(function()
 				if n > bestN then best, bestN = i, n end
 			end
 			map = pendingMaps[best]
-		else
+		end
+		-- (only a map this mode plays on: a vote for another battle, overridden by an
+		-- asked-for mode, must not put Team Deathmatch behind Frostgate's shut gate)
+		if not (map and table.find(def.maps or {}, map)) then
 			map = candidates(def)[1]
 		end
 		-- staff picked the next map (Admin)

@@ -13,7 +13,9 @@
          server -> all: "Kill", {killer=, victim=, weapon=, kind=, killerId=, victimId=, teamkill=}
        ReplicatedStorage.HubEvent "Rewards", {marks, xp, level, levels, firstWin, blocked, won, kills, parries, result, rating, delta}
 
-     Test dummies appear in the feed but never on the board, never pay. ]]
+     Test dummies appear in the feed but never on the board, never pay. A match's
+     fill bots (Game ▸ BotFill) are on the board with their own kills and deaths,
+     counted here, until a player takes their place. ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -114,6 +116,17 @@ local function onDied(char)
 		end
 		-- the killer's kill effect on the body (Hub ▸ Cosmetics)
 		if _G.KillFxHook then task.spawn(_G.KillFxHook, killerPlr, char) end
+	end
+	-- a match's fill bots keep a score on the board too (Game ▸ BotFill: ReplicatedStorage ▸ BotScores)
+	local seats = ReplicatedStorage:FindFirstChild("BotScores")
+	if seats then
+		local mine = seats:FindFirstChild(char:GetAttribute("BotSeat") or "")
+		if mine then mine:SetAttribute("Deaths", (mine:GetAttribute("Deaths") or 0) + 1) end
+		local by = not killerPlr and recent and seats:FindFirstChild(char:GetAttribute("LastHitBySeat") or "") or nil
+		local team = char:GetAttribute("Team")
+		if by and by ~= mine and not (team ~= nil and by:GetAttribute("Team") == team) then
+			by:SetAttribute("Kills", (by:GetAttribute("Kills") or 0) + 1)
+		end
 	end
 	if Game and victimPlr then
 		Game.onDeath(victimPlr, (not teamkill) and killerPlr or nil, char)
