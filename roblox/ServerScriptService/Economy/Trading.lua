@@ -110,6 +110,13 @@ function Trading.request(plr, userId)
 	if not ok then return false, why end
 	local target = Players:GetPlayerByUserId(tonumber(userId) or 0)
 	if not target or target == plr then return false, "they aren't in this server" end
+	-- their privacy (Settings ▸ Trade requests from)
+	local priv = target:GetAttribute("Priv_TradeRequests") or "Everyone"
+	if priv == "Nobody" then return false, target.DisplayName .. " isn't taking trade requests" end
+	if priv == "Friends" then
+		local okF, isFriend = pcall(plr.IsFriendsWith, plr, target.UserId)
+		if not (okF and isFriend) then return false, target.DisplayName .. " only trades with friends" end
+	end
 	local ok2, why2 = Trading.allowed(target)
 	if not ok2 then return false, target.DisplayName .. " can't trade (" .. why2 .. ")" end
 	if byPlayer[plr] then return false, "finish your current trade first" end

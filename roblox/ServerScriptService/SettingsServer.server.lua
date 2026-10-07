@@ -36,6 +36,15 @@ local function getStore()
 	return store
 end
 
+-- privacy is the server's business: each choice goes on the player as Priv_<key>
+-- (HubServer's party invites and Trading check it)
+local function applyPrivacy(plr, t)
+	for _, k in ipairs(ClientSettings.PRIVACY or {}) do
+		local v = t and t[k]
+		plr:SetAttribute("Priv_" .. k, ClientSettings.valid(k, v) and v or ClientSettings.DEFAULTS[k])
+	end
+end
+
 local cache    = {}   -- [player] = last known good table
 local lastSave = {}   -- [player] = os.clock()
 local dirty    = {}   -- [player] = table waiting to be written
@@ -68,6 +77,7 @@ remote.OnServerInvoke = function(plr, what)
 	local ok, data = pcall(s.GetAsync, s, "u" .. plr.UserId)
 	if ok then
 		cache[plr] = clean(data)
+		applyPrivacy(plr, cache[plr])
 		return cache[plr]
 	end
 	if not warned then warned = true; warn("[Settings] load failed:", data) end
@@ -79,6 +89,7 @@ event.OnServerEvent:Connect(function(plr, what, data)
 	local t = clean(data)
 	if not t then return end
 	cache[plr] = t
+	applyPrivacy(plr, t)
 	local now = os.clock()
 	if now - (lastSave[plr] or -1e9) >= SAVE_MIN_INTERVAL then
 		lastSave[plr] = now

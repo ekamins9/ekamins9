@@ -28,7 +28,7 @@ local CREDIT_WINDOW = 15   -- seconds after the last hit a death still counts fo
 local K_FACTOR = 32        -- ranked rating swing per match (Elo)
 
 -- the game framework, profiles, economy (any missing → plain leaderstats)
-local Game, Profile, Economy, Stats, Catalog
+local Game, Profile, Economy, Stats, Catalog, Leaderboards
 do
 	local function try(folder, name)
 		local f = folder and folder:FindFirstChild(name)
@@ -42,6 +42,7 @@ do
 	local ef = ServerScriptService:FindFirstChild("Economy")
 	Economy = try(ef, "Economy")
 	Stats = try(ef, "Stats")
+	Leaderboards = try(ServerScriptService:FindFirstChild("Hub"), "Leaderboards")
 	local c = ReplicatedStorage:FindFirstChild("Catalog")
 	if c then local ok, m = pcall(require, c); if ok then Catalog = m end end
 end
@@ -207,7 +208,7 @@ local function rankedResult(winner)
 	if not winKey then return {} end
 	local dA = ratingDelta(sumA / nA, sumB / nB, winKey == "A")
 	local out = {}
-	local ds = board("LB_" .. bracket)
+	local ds = board(Leaderboards and Leaderboards.key(bracket) or ("LB_" .. bracket))
 	for p, key in pairs(sideOf) do
 		local d = key == "A" and dA or -dA
 		local r = math.max(0, Profile.rating(p, bracket) + d)
@@ -234,7 +235,7 @@ if Game then
 		local winner = Game.node:GetAttribute("Winner") or ""
 		local matchOver = Game.node:GetAttribute("MatchOver") == true or (Game.server.door ~= "Lists")
 		local ranked = (Game.server.door == "Lists" and matchOver) and rankedResult(winner) or {}
-		local kills = board("LB_Warfront")
+		local kills = board(Leaderboards and Leaderboards.key("Warfront") or "LB_Warfront")
 		local ev = hubEvent()
 		for _, p in ipairs(Players:GetPlayers()) do
 			local c = roundCount[p] or {}
@@ -251,7 +252,8 @@ if Game then
 				Profile.addStat(p, "round", 1); if won then Profile.addStat(p, "win", 1) end
 			end
 			if kills and Profile and Game.server.door == "Warfront" and not Game.server.custom then
-				local total = Profile.get(p).stats.kill or 0
+				local pr = Profile.get(p)
+				local total = Leaderboards and Leaderboards.seasonKills(pr) or (pr.stats.kill or 0)
 				task.spawn(function() pcall(kills.SetAsync, kills, tostring(p.UserId), total) end)
 			end
 			if ev then

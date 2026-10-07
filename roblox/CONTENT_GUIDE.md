@@ -272,6 +272,13 @@ Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2
 are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
 never return: their items become RELICS, which is what makes them worth something.
 
+## 6f. Season rewards
+
+`Catalog ▸ Economy ▸ seasonRewards`: `Warfront` and `Lists` are lists of `{top = n, reward = …}`
+(best line reached is paid; a reward is like a pass reward: marks, crowns, keys, title, skin…),
+`tiers` pays by the ranked tier finished in. The season's end is `Catalog ▸ Pass` `ends`; a new
+season (a new `season` id) gets fresh boards automatically.
+
 ## 6e. Ranged weapons
 
 A bow or crossbow is a Tool under `Tools/<Name>` with `Config.lua` (ranged keys: `KIND` "bow" |

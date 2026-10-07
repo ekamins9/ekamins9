@@ -258,6 +258,13 @@ local function invite(plr, targetId, targetName)
 	if party.leader ~= plr then return false, "only the leader invites" end
 	if #party.members >= PARTY_MAX then return false, "party is full (" .. PARTY_MAX .. ")" end
 	if target then
+		-- their privacy (Settings ▸ Party invites from)
+		local priv = target:GetAttribute("Priv_PartyInvites") or "Everyone"
+		if priv == "Nobody" then return false, target.DisplayName .. " isn't taking party invites" end
+		if priv == "Friends" then
+			local okF, isFriend = pcall(plr.IsFriendsWith, plr, target.UserId)
+			if not (okF and isFriend) then return false, target.DisplayName .. " only takes party invites from friends" end
+		end
 		invites[target] = plr.UserId
 		event:FireClient(target, "Invite", plr.DisplayName, plr.UserId)
 		return true, "invited " .. target.DisplayName
@@ -284,6 +291,8 @@ pcall(function()
 		if type(d) ~= "table" or d.jobId == game.JobId then return end
 		local target = Players:GetPlayerByUserId(d.to)
 		if not target then return end
+		-- (from another server it's always a friend; "Nobody" still means nobody)
+		if target:GetAttribute("Priv_PartyInvites") == "Nobody" then return end
 		remoteInvites[target] = {leader = d.from, name = d.name, jobId = d.jobId, code = d.code, placeId = d.placeId, at = os.time()}
 		invites[target] = nil
 		event:FireClient(target, "Invite", d.name, d.from, {remote = true})
@@ -675,6 +684,51 @@ local Leaderboards = require(script.Parent:WaitForChild("Leaderboards"))
 local function nameOf(userId) return Leaderboards.nameOf(userId) end
 local function leaderboard(plr, which) return Leaderboards.top(which, 10) end
 
+-- THE LEADERBOARDS screen: a board's top 100, where you stand, the season
+local function boardFor(plr, which)
+	local brackets = GameConfig.DOORS.Lists.brackets or {"1v1", "2v2", "3v3"}
+	if which ~= "Warfront" and not table.find(brackets, which) then which = "Warfront" end
+	local rows = Leaderboards.top(which, 100)
+	local p = Profile.get(plr)
+	local mine = which == "Warfront" and Leaderboards.seasonKills(p) or ((p.rating or {})[which] or Catalog.ECONOMY.ratingStart)
+	local place
+	for _, r in ipairs(rows) do if r.id == plr.UserId then place = r.rank end end
+	return {ok = true, which = which, rows = rows,
+		me = {place = place, value = mine, placements = (p.placements or {})[which] or 0},
+		season = {id = Catalog.PASS.season, name = Catalog.PASS.name, ends = Catalog.PASS.ends}}
+end
+
+-- a player's PROFILE (here or not): who they are, how they fight, what they wear and own
+local RARITY_RANK = {Mythic = 5, Legendary = 4, Epic = 3, Rare = 2, Common = 1}
+local function profileFor(plr, userId)
+	userId = tonumber(userId)
+	if not userId or userId <= 0 then return {ok = false, msg = "no such player"} end
+	local p, here = Leaderboards.profileOf(userId)
+	if not p then return {ok = false, msg = "no record of that player yet"} end
+	local owned = type(p.owned) == "table" and p.owned or {}
+	local function count(t) local n = 0; for _ in pairs(type(t) == "table" and t or {}) do n += 1 end; return n end
+	local skins = {}
+	for id in pairs(type(owned.skins) == "table" and owned.skins or {}) do
+		local s = Catalog.SKIN[id]
+		if s and not s.default then table.insert(skins, {id = id, r = RARITY_RANK[s.rarity] or 0}) end
+	end
+	table.sort(skins, function(a, b) if a.r ~= b.r then return a.r > b.r end; return a.id < b.id end)
+	local best = {}
+	for i = 1, math.min(8, #skins) do best[i] = skins[i].id end
+	local st = type(p.stats) == "table" and p.stats or {}
+	local name = here and here.Name or Leaderboards.nameOf(userId)
+	return {ok = true, id = userId, name = name, display = here and here.DisplayName or name, here = here ~= nil,
+		level = p.level or 1, title = type(p.appearance) == "table" and p.appearance.title or nil,
+		stats = {kill = st.kill or 0, deaths = st.deaths or 0, round = st.round or 0, win = st.win or 0,
+			parry = st.parry or 0, chamber = st.chamber or 0, headshot = st.headshot or 0},
+		seasonKills = Leaderboards.seasonKills(p), place = Leaderboards.place("Warfront", userId),
+		rating = p.rating or {}, placements = p.placements or {},
+		classes = p.classes or {}, active = p.active, appearance = p.appearance or {},
+		collection = {skins = #skins, pieces = count(owned.pieces), killfx = count(owned.killfx), emotes = count(owned.emotes),
+			companions = count(owned.companions), titles = count(owned.titles)},
+		bestSkins = best, party = here and partyOf(here) ~= nil and partyOf(here) == partyOf(plr) or false}
+end
+
 --------------------------------------------------------------------
 --  SHOP
 --------------------------------------------------------------------
@@ -730,6 +784,8 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	elseif op == "Servers" then return {ok = true, servers = listForClient()}
 	elseif op == "Friends" then return {ok = true, friends = friendsOnline(plr)}
 	elseif op == "Leaderboard" then return {ok = true, rows = leaderboard(plr, a)}
+	elseif op == "Board" then return boardFor(plr, a)
+	elseif op == "PlayerProfile" then return profileFor(plr, a)
 	elseif op == "Play" then local ok, msg = play(plr, a, b); return {ok = ok, msg = msg}
 	elseif op == "Hub" then local ok, msg = goHub(plr); return {ok = ok, msg = msg}
 	elseif op == "Custom" then local ok, msg = custom(plr, a); return {ok = ok, msg = msg}

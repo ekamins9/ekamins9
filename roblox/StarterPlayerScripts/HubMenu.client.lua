@@ -1626,10 +1626,12 @@ local SCREEN_DEF = {
 	PASS       = {title = "SEASON PASS", icon = "Pass"},
 	HATCHERY   = {title = "HATCHERY", icon = "Hatchery"},
 	TRADE      = {title = "TRADE",    icon = "Shop"},
+	RANKS      = {title = "LEADERBOARDS", icon = "Tasks"},
+	PROFILE    = {title = "PROFILE",  icon = "Loadout"},
 }
 -- old tab names and the names other scripts send over the bus
 local ALIAS = {LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
-	EGGS = "HATCHERY", PETS = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE"}
+	EGGS = "HATCHERY", PETS = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
 	local f = clearFrame(content)
@@ -1654,19 +1656,23 @@ local function doorCounts()
 end
 
 local function inviteModal()
-	modal("INVITE TO YOUR PARTY", string.format("People in this server. A party is at most %d. Friends in other servers can be invited too: they travel here when they accept.", state.partyMax), nil, function(box)
+	modal("PLAYERS HERE", string.format("People in this server: invite them to your party, or see their profile. A party is at most %d. Friends in other servers can be invited too: they travel here when they accept.", state.partyMax), nil, function(box)
 		local n = 0
 		for _, other in ipairs(Players:GetPlayers()) do
 			if other ~= player then
 				n += 1
 				local inParty = false
 				if state.party then for _, m in ipairs(state.party.members) do if m.id == other.UserId then inParty = true end end end
-				row(box, other.DisplayName, inParty and "in your party" or "INVITE", false, (not inParty) and function()
+				local rb = row(box, other.DisplayName, inParty and "in your party" or "INVITE", false, (not inParty) and function()
 					local r = call("PartyInvite", other.UserId, other.DisplayName)
 					toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 					if r.party then state.party = r.party end
 					closeModal(); rerender()
 				end or nil, inParty and COL.DIM or COL.GOOD)
+				local pb = button(rb, "PROFILE", 12, COL.BLUE)
+				pb.AnchorPoint = Vector2.new(1, 0.5); pb.Position = UDim2.new(1, -110, 0.5, 0); pb.Size = UDim2.fromOffset(84, 26)
+				local uid = other.UserId
+				pb.Activated:Connect(function() closeModal(); HX.openProfile(uid) end)
 			end
 		end
 		if n == 0 then dim(box, "Nobody else is in this server yet.") end
@@ -2156,7 +2162,7 @@ do
 			if i > 5 then break end
 			local mine = rw.id == player.UserId
 			if mine then meIn = true end
-			local r = row(p, string.format("%d    %s", rw.rank, mine and "You" or rw.name), fmt(rw.value), mine, nil, COL.TEXT)
+			local r = row(p, string.format("%d    %s", rw.rank, mine and "You" or rw.name), fmt(rw.value), mine, function() HX.openProfile(rw.id) end, COL.TEXT)
 			if MEDAL[rw.rank] then
 				local m = frame(r, MEDAL[rw.rank], 4); m.Size = UDim2.fromOffset(6, 22); m.Position = UDim2.new(0, -8, 0.5, -11)
 			end
@@ -2167,6 +2173,8 @@ do
 			row(p, "You", fmt(mine), true, nil, COL.TEXT)
 		end
 		dim(p, which == "Warfront" and "Kills this season." or (string.upper(rankOf(rating(which))) .. "  ·  rating this season."), 12)
+		local all = bigBtn(p, "TOP 100  ·  SEASON REWARDS  ›", COL.BLUE, function() ui.rankBoard = which; selectTab("RANKS") end)
+		all.Size = UDim2.new(1, 0, 0, 34)
 	end
 
 	local function renderShopCard(parent)
@@ -5358,6 +5366,303 @@ do
 		end
 	end)
 end
+
+--------------------------------------------------------------------
+--  LEADERBOARDS (RANKS) + PLAYER PROFILES (PROFILE)
+--  (built in a function on HX: the main chunk is at Luau's local limit)
+--------------------------------------------------------------------
+HX.screens = function()
+	local MEDAL = {Color3.fromRGB(255, 196, 40), Color3.fromRGB(200, 210, 224), Color3.fromRGB(214, 140, 80)}
+	local REWARDS = ECON.seasonRewards or {}
+
+	-- a reward line in words: "the title Warlord · 500 Crowns · 20,000 Marks"
+	local function rewardText(r)
+		local bits = {}
+		if r.title then table.insert(bits, "the title “" .. r.title .. "”") end
+		if r.crowns then table.insert(bits, fmt(r.crowns) .. " Crowns") end
+		if r.marks then table.insert(bits, fmt(r.marks) .. " Marks") end
+		if r.keys then table.insert(bits, r.keys .. (r.keys == 1 and " Key" or " Keys")) end
+		return table.concat(bits, "  ·  ")
+	end
+	local function seasonLeft()
+		local y, m, d = tostring(Catalog.PASS.ends or ""):match("^(%d+)-(%d+)-(%d+)$")
+		if not y then return "" end
+		local t = DateTime.fromUniversalTime(tonumber(y), tonumber(m), tonumber(d)).UnixTimestamp - os.time()
+		return t > 0 and HX.span(t) or "ended"
+	end
+
+	-- every way into a profile ends here
+	HX.openProfile = function(userId)
+		ui.profileId = tonumber(userId)
+		if not open then show("PROFILE") else selectTab("PROFILE") end
+	end
+
+	------------------------------------------------------------------
+	--  LEADERBOARDS
+	------------------------------------------------------------------
+	do
+		local f = tabFrame.RANKS
+		local left = frame(f, COL.GLASS, 14); left.BackgroundTransparency = 0.12; left.Size = UDim2.new(0.6, -8, 1, 0); padding(left, 14, 14, 12, 12)
+		local right = frame(f, COL.GLASS, 14); right.BackgroundTransparency = 0.12
+		right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0.4, -8, 1, 0); padding(right, 14, 14, 12, 12)
+		local leftList, rightList = scroll(left, 6), scroll(right, 8)
+		local cache = {}
+		local function fetch(which)
+			local c = cache[which]
+			if c and os.clock() - c.at < 60 then return c.r end
+			local r = call("Board", which)
+			if r.ok then cache[which] = {at = os.clock(), r = r} end
+			return r
+		end
+		local function valueText(which, v)
+			v = v or 0
+			if which == "Warfront" then return fmt(v) .. (v == 1 and " kill" or " kills") end
+			return fmt(v) .. "  ·  " .. string.upper((rankOf(v)))
+		end
+		ui.rankBoard = ui.rankBoard or "Warfront"
+		ui.rankSearch = ui.rankSearch or ""
+
+		render.RANKS = function()
+			clear(leftList); clear(rightList)
+			local which = ui.rankBoard
+			local tabs = {{text = "Warfront"}}
+			for _, b in ipairs(GameConfig.DOORS.Lists.brackets or {"1v1", "2v2", "3v3"}) do table.insert(tabs, {text = b}) end
+			chips(leftList, tabs, function(it) return it.text == which end, function(it) ui.rankBoard = it.text; render.RANKS() end, 32)
+			local r = fetch(which)
+			local me = r.me or {}
+
+			-- where you stand
+			local you = frame(leftList, COL.BLUE, 10); you.Size = UDim2.new(1, 0, 0, 54); you.LayoutOrder = nextOrder(); padding(you, 16, 16, 0, 0)
+			local yt = title(you, me.place and ("YOU ARE  #" .. me.place) or "YOU  ·  NOT IN THE TOP 100 YET", 20); yt.Size = UDim2.new(0.58, 0, 1, 0); yt.TextTruncate = Enum.TextTruncate.AtEnd
+			local yv = title(you, valueText(which, me.value), 16); yv.AnchorPoint = Vector2.new(1, 0); yv.Position = UDim2.new(1, 0, 0, 0)
+			yv.Size = UDim2.new(0.42, 0, 1, 0); yv.TextXAlignment = Enum.TextXAlignment.Right
+			if which ~= "Warfront" and (me.placements or 0) < (ECON.placementMatches or 10) then
+				dim(leftList, string.format("Placements: %d of %d ranked matches played. You show on the board once they're done.", me.placements or 0, ECON.placementMatches or 10), 12)
+			end
+
+			-- search
+			local box = Instance.new("TextBox")
+			box.PlaceholderText = "Search the top 100 by name…"; box.Text = ui.rankSearch; box.ClearTextOnFocus = false
+			box.Font = FONT_BODY; box.TextSize = 14; box.TextColor3 = COL.TEXT; box.PlaceholderColor3 = COL.DIM
+			box.BackgroundColor3 = COL.PANEL; box.BorderSizePixel = 0; box.Size = UDim2.new(1, 0, 0, 34); box.LayoutOrder = nextOrder()
+			box.TextXAlignment = Enum.TextXAlignment.Left
+			box.Parent = leftList
+			Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+			padding(box, 12, 12, 0, 0)
+
+			-- the rows (redrawn as you type)
+			local holder = clearFrame(leftList); holder.AutomaticSize = Enum.AutomaticSize.Y; holder.Size = UDim2.new(1, 0, 0, 0); holder.LayoutOrder = nextOrder()
+			vlist(holder, 4)
+			local function drawRows()
+				clear(holder)
+				local q = string.lower(ui.rankSearch or "")
+				local shown = 0
+				for _, rw in ipairs(r.rows or {}) do
+					if q == "" or string.find(string.lower(tostring(rw.name)), q, 1, true) then
+						shown += 1
+						local mine = rw.id == player.UserId
+						local b = row(holder, string.format("#%d      %s%s", rw.rank, tostring(rw.name), mine and "  (you)" or ""), valueText(which, rw.value), mine,
+							function() HX.openProfile(rw.id) end, COL.TEXT)
+						if MEDAL[rw.rank] then
+							local m = frame(b, MEDAL[rw.rank], 4); m.Size = UDim2.fromOffset(6, 22); m.Position = UDim2.new(0, -8, 0.5, -11)
+						end
+					end
+				end
+				if shown == 0 then
+					dim(holder, #(r.rows or {}) == 0 and "Nobody on this board yet this season. Be the first." or "Nobody in the top 100 by that name.", 13)
+				end
+			end
+			drawRows()
+			box:GetPropertyChangedSignal("Text"):Connect(function() ui.rankSearch = box.Text; drawRows() end)
+			dim(leftList, "Click anyone to see their profile.", 12)
+
+			-- the season and its rewards
+			local P = Catalog.PASS
+			local h = title(rightList, string.upper(P.name or "THE SEASON"), 18, COL.ACCENT); h.Size = UDim2.new(1, 0, 0, 24); h.LayoutOrder = nextOrder(); h.TextTruncate = Enum.TextTruncate.AtEnd
+			dim(rightList, string.format("Ends %s  ·  %s left. When it ends, everyone on a line below is paid the best line they reached on each board.", tostring(P.ends), seasonLeft()), 13)
+			heading(rightList, which == "Warfront" and "Warfront  ·  most kills this season" or (which .. " Lists  ·  highest rating"))
+			local lines = which == "Warfront" and REWARDS.Warfront or REWARDS.Lists
+			local prevTop = 0
+			for _, line in ipairs(lines or {}) do
+				local reached = me.place ~= nil and me.place <= line.top and me.place > prevTop
+				local c = frame(rightList, reached and COL.BLUE or COL.GLASS2, 10); c.LayoutOrder = nextOrder(); c.BackgroundTransparency = reached and 0 or 0.1
+				c.AutomaticSize = Enum.AutomaticSize.Y; c.Size = UDim2.new(1, 0, 0, 0); padding(c, 12, 12, 8, 8); vlist(c, 2)
+				local t = title(c, line.top == 1 and "#1" or ("TOP " .. fmt(line.top)), 16, line.top <= 3 and MEDAL[1] or COL.TEXT); t.Size = UDim2.new(1, 0, 0, 20)
+				local d = label(c, rewardText(line.reward), 13, FONT_BODY, COL.TEXT); d.AutomaticSize = Enum.AutomaticSize.Y; d.Size = UDim2.new(1, 0, 0, 0)
+				if reached then local y = label(c, "YOU'RE HERE NOW", 11, FONT, COL.ACCENT); y.Size = UDim2.new(1, 0, 0, 14) end
+				prevTop = line.top
+			end
+			if REWARDS.tiers then
+				heading(rightList, "Ranked  ·  the tier you finish in")
+				for _, tier in ipairs(ECON.rankTiers or {}) do
+					local rw = REWARDS.tiers[tier]
+					if rw then
+						local c = frame(rightList, COL.GLASS2, 10); c.LayoutOrder = nextOrder(); c.BackgroundTransparency = 0.1
+						c.AutomaticSize = Enum.AutomaticSize.Y; c.Size = UDim2.new(1, 0, 0, 0); padding(c, 12, 12, 8, 8); vlist(c, 2)
+						local t = title(c, string.upper(tier), 15, COL.PURPLE); t.Size = UDim2.new(1, 0, 0, 20)
+						local d = label(c, rewardText(rw), 13, FONT_BODY, COL.TEXT); d.AutomaticSize = Enum.AutomaticSize.Y; d.Size = UDim2.new(1, 0, 0, 0)
+					end
+				end
+				dim(rightList, "Your best bracket counts, once your placements are done.", 12)
+			end
+		end
+	end
+
+	------------------------------------------------------------------
+	--  PROFILE
+	------------------------------------------------------------------
+	do
+		local f = tabFrame.PROFILE
+		local list = scroll(f, 10)
+		local function tile(parent, big, small, color)
+			local t = frame(parent, COL.GLASS2, 10); t.BackgroundTransparency = 0.1
+			local v = title(t, big, 26, color or COL.TEXT); v.Position = UDim2.fromOffset(12, 8); v.Size = UDim2.new(1, -24, 0, 30); v.TextTruncate = Enum.TextTruncate.AtEnd
+			local l = label(t, small, 12, FONT, COL.DIM); l.Position = UDim2.fromOffset(12, 40); l.Size = UDim2.new(1, -24, 0, 16)
+			return t
+		end
+		local function grid(parent, cellW, cellH)
+			local g = clearFrame(parent); g.AutomaticSize = Enum.AutomaticSize.Y; g.Size = UDim2.new(1, 0, 0, 0); g.LayoutOrder = nextOrder()
+			local gl = Instance.new("UIGridLayout", g); gl.CellSize = UDim2.fromOffset(cellW, cellH); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
+			return g
+		end
+
+		render.PROFILE = function()
+			clear(list)
+			local id = ui.profileId or player.UserId
+			local d = call("PlayerProfile", id)
+			if not d.ok then dim(list, d.msg or "That profile couldn't be loaded.", 15); return end
+			local mine = id == player.UserId
+
+			-- WHO
+			local head = panel(list, nil)
+			local top = clearFrame(head); top.Size = UDim2.new(1, 0, 0, 108); top.LayoutOrder = nextOrder()
+			local img = Instance.new("ImageLabel")
+			img.BackgroundColor3 = COL.GLASS2; img.Size = UDim2.fromOffset(104, 104); img.Image = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", id)
+			img.Parent = top
+			Instance.new("UICorner", img).CornerRadius = UDim.new(0, 14)
+			local nm = title(top, d.display or "?", 34); nm.Position = UDim2.fromOffset(120, 2); nm.Size = UDim2.new(1, -120, 0, 40); nm.TextTruncate = Enum.TextTruncate.AtEnd
+			local sub = label(top, string.format("@%s   ·   LEVEL %d%s", tostring(d.name), d.level or 1, (d.title and d.title ~= "") and ("   ·   " .. d.title) or ""), 15, FONT, COL.DIM)
+			sub.Position = UDim2.fromOffset(120, 44); sub.Size = UDim2.new(1, -120, 0, 20); sub.TextWrapped = false; sub.TextTruncate = Enum.TextTruncate.AtEnd
+			local st = label(top, mine and "THIS IS YOU" or (d.here and "●  IN THIS SERVER" or "○  NOT IN THIS SERVER"), 13, FONT, d.here and COL.GOOD or COL.DIM)
+			st.Position = UDim2.fromOffset(120, 70); st.Size = UDim2.new(1, -120, 0, 18)
+
+			-- WHAT YOU CAN DO WITH THEM
+			if not mine then
+				local acts = clearFrame(head); acts.Size = UDim2.new(1, 0, 0, 44); acts.LayoutOrder = nextOrder()
+				hlist(acts, 8)
+				local function act(text, color, fn)
+					local b = button(acts, text, 15, color); b.Size = UDim2.fromOffset(190, 42); b.LayoutOrder = nextOrder()
+					b.Activated:Connect(fn)
+					return b
+				end
+				if d.here then
+					act("TRADE", COL.GOLD, function()
+						local r = call("TradeRequest", id); toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+					end)
+				end
+				if not d.party then
+					act("INVITE TO PARTY", COL.GREEN, function()
+						local r = call("PartyInvite", id, d.display); toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+						if r.party then state.party = r.party end
+					end)
+				end
+				local fb = act("ADD FRIEND", COL.BLUE, function()
+					local target = Players:GetPlayerByUserId(id)
+					if not target then toast("Add them from their Roblox profile: they aren't in this server.", COL.DIM); return end
+					local ok = pcall(function() game:GetService("StarterGui"):SetCore("PromptSendFriendRequest", target) end)
+					if not ok then toast("Roblox couldn't open the friend request just now.", COL.BAD) end
+				end)
+				task.spawn(function()
+					local ok, isFriend = pcall(player.IsFriendsWith, player, id)
+					if ok and isFriend and fb.Parent then fb.Text = "FRIENDS ✓"; fb.AutoButtonColor = false; fb.BackgroundColor3 = COL.GLASS2 end
+				end)
+			end
+
+			-- THE RECORD
+			local s = d.stats or {}
+			local rec = panel(list, "Battle record")
+			local g = grid(rec, 160, 64)
+			local kd = (s.deaths or 0) > 0 and string.format("%.2f", (s.kill or 0) / s.deaths) or ((s.kill or 0) > 0 and "∞" or "–")
+			local wr = (s.round or 0) > 0 and string.format("%d%%", math.floor(100 * (s.win or 0) / s.round + 0.5)) or "–"
+			for i, t in ipairs({
+				{fmt(s.kill or 0), "KILLS"}, {fmt(s.deaths or 0), "DEATHS"}, {kd, "K / D"},
+				{fmt(s.round or 0), "ROUNDS"}, {fmt(s.win or 0), "WINS"}, {wr, "WIN RATE"},
+				{fmt(s.parry or 0), "PARRIES"}, {fmt(d.seasonKills or 0), d.place and ("SEASON KILLS  ·  #" .. d.place) or "SEASON KILLS"},
+			}) do tile(g, t[1], t[2], i == 8 and COL.ACCENT or nil).LayoutOrder = i end
+
+			-- RANKED
+			local rk = panel(list, "The Lists  ·  ranked")
+			local g2 = grid(rk, 220, 64)
+			for i, b in ipairs(GameConfig.DOORS.Lists.brackets or {"1v1", "2v2", "3v3"}) do
+				local played = (d.placements or {})[b] or 0
+				local r = (d.rating or {})[b]
+				if r and played >= (ECON.placementMatches or 10) then
+					tile(g2, string.upper((rankOf(r))), string.format("%s  ·  %s RATING", b, fmt(r)), COL.PURPLE).LayoutOrder = i
+				else
+					tile(g2, "UNRANKED", string.format("%s  ·  %d / %d PLACEMENTS", b, played, ECON.placementMatches or 10), COL.DIM).LayoutOrder = i
+				end
+			end
+
+			-- THEIR CLASSES, as they wear them
+			local cl = panel(list, mine and "Your classes" or "Their classes")
+			local g3 = grid(cl, 150, 236)
+			for i, cid in ipairs(GameConfig.CLASS_ORDER) do
+				local def = GameConfig.CLASSES[cid]
+				local cell = clearFrame(g3); cell.LayoutOrder = i
+				local lo = (d.classes or {})[cid] or {}
+				pcall(function()
+					local th = mannequinThumb(cell, lo, def and def.weight or "Medium", UDim2.new(1, 0, 0, 206), nil, {appearance = d.appearance, weapon = true})
+					th.LayoutOrder = 1
+				end)
+				local n = title(cell, string.upper(def and def.name or cid) .. (d.active == cid and "  ★" or ""), 14, d.active == cid and COL.ACCENT or COL.TEXT)
+				n.Position = UDim2.new(0, 0, 0, 210); n.Size = UDim2.new(1, 0, 0, 22); n.TextXAlignment = Enum.TextXAlignment.Center
+			end
+
+			-- THE COLLECTION
+			local c = d.collection or {}
+			local co = panel(list, "Collection")
+			local g4 = grid(co, 130, 64)
+			for i, t in ipairs({{c.skins, "SKINS"}, {c.pieces, "ARMOR PIECES"}, {c.killfx, "KILL EFFECTS"}, {c.emotes, "EMOTES"}, {c.companions, "COMPANIONS"}, {c.titles, "TITLES"}}) do
+				tile(g4, fmt(t[1] or 0), t[2]).LayoutOrder = i
+			end
+			if d.bestSkins and #d.bestSkins > 0 then
+				heading(co, mine and "Your finest skins" or "Their finest skins")
+				for _, sid in ipairs(d.bestSkins) do
+					local sk = Catalog.SKIN[sid]
+					if sk then
+						local w = Catalog.WEAPON[sk.weapon]
+						row(co, (w and w.name or sk.weapon) .. "  ·  " .. sk.name, string.upper(sk.rarity or ""), false, nil, RARITY_COL[sk.rarity] or COL.DIM)
+					end
+				end
+			end
+			if not mine then
+				local back = bigBtn(list, "‹  BACK TO THE LEADERBOARDS", COL.GLASS2, function() selectTab("RANKS") end)
+				back.Size = UDim2.new(1, 0, 0, 40)
+			end
+		end
+	end
+end
+HX.screens()
+
+-- the Profile key: the player you're looking at (the middle of the screen), their profile
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp or UserInputService:GetFocusedTextBox() or open then return end
+	if ClientSettings.actionForInput(input) ~= "Profile" then return end
+	local cam = workspace.CurrentCamera
+	if not cam then return end
+	local ray = cam:ViewportPointToRay(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = {player.Character}
+	local res = workspace:Raycast(ray.Origin, ray.Direction * 120, params)
+	local model = res and res.Instance:FindFirstAncestorOfClass("Model")
+	local who
+	while model and not who do
+		who = Players:GetPlayerFromCharacter(model)
+		model = model:FindFirstAncestorOfClass("Model")
+	end
+	if who and who ~= player then HX.openProfile(who.UserId) end
+end)
 
 --------------------------------------------------------------------
 --  SETTINGS TAB (camera feel · attack side · keybinds)

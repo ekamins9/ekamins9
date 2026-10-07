@@ -57,6 +57,7 @@ ClientSettings.KEYS = {
 	{key = "Pickup",     label = "Pick up weapon",   default = "V"},
 	{key = "Emote",      label = "Emote wheel",      default = "B"},
 	{key = "Cursor",     label = "Free the mouse (toggle)", default = "T"},
+	{key = "Profile",    label = "Profile of who you look at", default = "P"},
 }
 ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}
 
@@ -70,11 +71,19 @@ ClientSettings.CHOICES = {
 		hint = "Whose companions you see following them around: everyone's, only yours, or none."},
 	{key = "DodgeTap",   label = "Double-tap dodge", options = {"On", "Off"},
 		hint = "Double-tap A, D or S to dodge that way (the Dodge key works either way)."},
+	-- PRIVACY: the server checks these (SettingsServer puts them on the player as Priv_<key>)
+	{key = "PartyInvites", label = "Party invites from", options = {"Everyone", "Friends", "Nobody"},
+		hint = "Who can invite you to their party: anyone, only your Roblox friends, or nobody."},
+	{key = "TradeRequests", label = "Trade requests from", options = {"Everyone", "Friends", "Nobody"},
+		hint = "Who can ask you to trade: anyone, only your Roblox friends, or nobody."},
 }
+-- the settings the server enforces (who may invite you, trade with you)
+ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1,
 	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On",
+	PartyInvites = "Everyone", TradeRequests = "Everyone",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 

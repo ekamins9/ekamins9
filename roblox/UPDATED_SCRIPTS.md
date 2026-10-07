@@ -1,4 +1,37 @@
-# Updated scripts: custom server bots and the host's server panel
+# Updated scripts: leaderboards, season rewards, player profiles, privacy
+
+- **A LEADERBOARDS screen** (open it from the lobby board's "TOP 100 · SEASON REWARDS"):
+  - The Warfront and each ranked bracket, top 100 each.
+  - Where you stand, and a search by name.
+  - The season's rewards and how long is left, with your current line lit up.
+- **Season rewards are real now:**
+  - When the season ends, the top of each board is paid (titles, Crowns, Marks, Keys), and so is the ranked tier you finished in.
+  - You're paid the next time you join.
+  - A new season gets fresh boards.
+- **Player profiles:** click anyone on a leaderboard, use PROFILE in the players-here list, or look at someone in the world and press P. A profile shows:
+  - their record (kills, deaths, K/D, rounds, wins, win rate, parries, season kills)
+  - their ranked tiers
+  - every class dressed as they wear it
+  - their collection and finest skins
+  - buttons to trade, invite to your party, or send a Roblox friend request
+- **Privacy settings:** who can send you party invites and trade requests (everyone, friends, nobody). The server enforces both.
+- **Fix:** a cached board could be stuck at 10 rows.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | LEADERBOARDS and PROFILE screens, ways in, the P key |
+| [Season.server.lua](ServerScriptService/Economy/Season.server.lua) | ServerScriptService ▸ Economy ▸ Season | Script | **new**: the season's end and its payout |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | "Board", "PlayerProfile"; party invite privacy |
+| [Leaderboards.lua](ServerScriptService/Hub/Leaderboards.lua) | ServerScriptService ▸ Hub ▸ Leaderboards | ModuleScript | season boards, places, saved profiles, cache fix |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService ▸ Scoreboard | Script | writes the season's boards |
+| [SettingsServer.server.lua](ServerScriptService/SettingsServer.server.lua) | ServerScriptService ▸ SettingsServer | Script | privacy onto the player |
+| [Trading.lua](ServerScriptService/Economy/Trading.lua) | ServerScriptService ▸ Economy ▸ Trading | ModuleScript | trade request privacy |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | privacy choices, the Profile bind |
+| [Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage ▸ Catalog ▸ Economy | ModuleScript | `seasonRewards` |
+
+---
+
+## Before that: custom server bots and the host's server panel
 
 - **Custom servers have bots:**
   - Set them when you make the server: on or off, how many fighters in all (players plus bots), and their skill (Mixed, Squire, Knight or Champion).

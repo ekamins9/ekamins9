@@ -140,6 +140,36 @@ secondary): **Knight** Greatsword + War Hammer, **Footman** Spear + Shortsword, 
 Arming Sword + Shortsword. Older saves whose class still had the lone default Shortsword get the
 pair (profile `loadoutV`).
 
+## Leaderboards, the season, profiles, privacy
+
+**LEADERBOARDS** (menu: the lobby board's "TOP 100 · SEASON REWARDS", or the screen `RANKS`):
+the Warfront (kills this season) and the three ranked brackets (rating), top 100 each
+(`HubRemote "Board"` → `Leaderboards.top(which, 100)`). It shows where you stand (or "not in the
+top 100 yet", with your value), a search over the top 100 by name, and the season: its name, the
+time left, and every reward line (yours lit up). Click anyone for their profile.
+
+**Season rewards** (`Catalog ▸ Economy ▸ seasonRewards`; `Economy ▸ Season`): when the season ends
+(00:00 UTC on `Catalog ▸ Pass` `ends`), one server takes the payout job (a lease in `Season_v1`),
+reads the boards (Warfront to 1000, each bracket to 100) and writes each rewarded player's line
+into `SeasonGrants_v1`; the player is paid (`Economy.grantReward`) and told the next time they
+join. The ranked tier you finished in (best bracket, placements done) pays once on your first
+join after the end. Boards are per season: `Leaderboards.key(which)` is `LB_<which>` in Season 1,
+`LB_<season>_<which>` after; the Warfront value is `Leaderboards.seasonKills` (kills since the
+season began).
+
+**PROFILE** (`HubRemote "PlayerProfile"`, here or offline from their saved profile): headshot,
+name, level, title, whether they're here; their record (kills, deaths, K/D, rounds, wins, win
+rate, parries, season kills and place); their ranked tiers; **each class dressed as they wear
+it**; their collection (counts and finest skins). Buttons: **TRADE** (here), **INVITE TO PARTY**,
+**ADD FRIEND** (Roblox's friend request; FRIENDS ✓ when you are). Ways in: any leaderboard row,
+PLAYERS HERE (the lobby's invite list: PROFILE on each), and in the world, **look at someone and
+press P** (`Profile` bind).
+
+**Privacy** (SETTINGS): *Party invites from* and *Trade requests from*: Everyone, Friends,
+Nobody (`ClientSettings.PRIVACY`). SettingsServer puts them on the player (`Priv_PartyInvites`,
+`Priv_TradeRequests`); HubServer's invites (here and from other servers) and `Trading.request`
+refuse what they don't allow.
+
 ## Custom servers: bots and the host's panel (`Hub ▸ HostServer`)
 
 Making a custom server (SERVERS → CREATE) also sets its **bots**: on/off, how many fighters in all
