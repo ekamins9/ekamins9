@@ -23,7 +23,8 @@ local DEATH_SHOVE = 10   -- studs/s the corpse falls away from the last hit
 -- BlockMax / StaminaRegen / StaminaRegenDelay attributes it publishes on equip
 local STAMINA_MAX   = 100
 local STAMINA_REGEN = 17    -- per second…
-local STAMINA_DELAY = 1.3   -- …starting this long after the last combat event
+local STAMINA_DELAY = 1.3   -- …at full rate this long after the last combat event
+local COMBAT_REGEN  = 0.35  -- …and this share of it before that (weapons publish CombatRegenMult)
 local HOLD_DRAIN    = 3     -- stamina per second while the guard is held (weapon overrides via BlockHoldDrain)
 -- health regen: slow, and only when you are truly out of the fight — full stamina,
 -- not blocking / attacking / sprinting, nothing happened for HEALTH_DELAY
@@ -48,7 +49,14 @@ local function setup(char)
 		Pickup.dropAll(char)   -- weapons hit the floor next to the body, for anyone to take
 		Ragdoll.enable(char, typeof(dir) == "Vector3" and dir or nil, DEATH_SHOVE)
 		Sounds.play(SoundConfig.Death, char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
-		Sounds.voice("Death", char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
+		-- a last cry (not from a body that has lost its head), then the body hits the ground
+		if char:GetAttribute("LimbLost_Head") ~= true then
+			Sounds.voice("Death", char:FindFirstChild("Head") or char:FindFirstChild("Torso"), {Who = char})
+		end
+		task.delay(0.55, function()
+			local torso = char.Parent and char:FindFirstChild("Torso")
+			if torso then Sounds.bank(char:GetAttribute("ArmorType") == "Heavy" and "BodyFallArmor" or "BodyFall", torso) end
+		end)
 	end)
 
 	local conn
@@ -74,16 +82,18 @@ local function setup(char)
 			and os.clock() - (char:GetAttribute("LastCombatAt") or -1e9) >= HEALTH_DELAY then
 			hum.Health = math.min(hum.MaxHealth, hum.Health + HEALTH_REGEN * dt)
 		end
-		-- stamina regen: not while blocking, mid-action, stunned, dead, or
-		-- within the delay of any combat event (attack, dodge, hit taken…)
+		-- stamina regen: not while blocking, mid-action, stunned or dead; within
+		-- the delay of a combat event (attack, dodge, hit taken…) only a trickle
+		-- (CombatRegenMult), so a long fight you're winning doesn't run you dry
 		if hum.Health > 0
 			and not char:GetAttribute("Blocking") and not char:GetAttribute("Acting")
-			and (char:GetAttribute("StunnedUntil") or 0) <= os.clock()
-			and os.clock() - (char:GetAttribute("LastCombatAt") or -1e9) >= (char:GetAttribute("StaminaRegenDelay") or STAMINA_DELAY) then
+			and (char:GetAttribute("StunnedUntil") or 0) <= os.clock() then
+			local calm = os.clock() - (char:GetAttribute("LastCombatAt") or -1e9) >= (char:GetAttribute("StaminaRegenDelay") or STAMINA_DELAY)
+			local rate = (char:GetAttribute("StaminaRegen") or STAMINA_REGEN) * (calm and 1 or (char:GetAttribute("CombatRegenMult") or COMBAT_REGEN))
 			local max = char:GetAttribute("BlockMax") or STAMINA_MAX
 			local m = char:GetAttribute("BlockMeter") or max
-			if m < max then
-				char:SetAttribute("BlockMeter", math.min(max, m + (char:GetAttribute("StaminaRegen") or STAMINA_REGEN) * dt))
+			if m < max and rate > 0 then
+				char:SetAttribute("BlockMeter", math.min(max, m + rate * dt))
 			end
 		end
 	end)

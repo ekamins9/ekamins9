@@ -22,6 +22,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local KillFX = {}
+KillFX.VOLUME = 0.55   -- every kill effect's sounds together: they sit under the fight, not on top of it
 local M = Enum.Material
 local rng = Random.new()
 
@@ -186,10 +187,10 @@ local function sfx(folder, opts, at, id, o)
 	end
 	local s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://" .. tostring(id)
-	s.Volume = (o.volume or 0.8) * (opts.world and 1 or 0.6)
+	s.Volume = (o.volume or 0.8) * (opts.world and 1 or 0.6) * KillFX.VOLUME
 	s.PlaybackSpeed = (o.speed or 1) * rng:NextNumber(0.97, 1.03)
 	s.RollOffMode = Enum.RollOffMode.InverseTapered
-	s.RollOffMinDistance = o.near or 12
+	s.RollOffMinDistance = o.near or 8
 	s.RollOffMaxDistance = o.far or 160
 	s.TimePosition = o.from or 0
 	s.Parent = holder

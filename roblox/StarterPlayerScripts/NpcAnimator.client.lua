@@ -21,13 +21,22 @@ RunService.RenderStepped:Connect(function(dt)
 			local hum = m:FindFirstChildOfClass("Humanoid")
 			if hrp and torso and hum and hum.Health > 0 and not m:GetAttribute("Ragdolled") then
 				local s = state[m]
-				local pos = hrp.Position
-				if not s then s = {pos = pos, speed = 0, phase = 0, amp = 0}; state[m] = s end
-				local d = pos - s.pos
-				s.pos = pos
-				local raw = Vector3.new(d.X, 0, d.Z).Magnitude / math.max(dt, 1e-3)
-				if raw > 60 then raw = 0 end
-				s.speed += (raw - s.speed) * math.clamp(dt * 8, 0, 1)
+				local pos, now = hrp.Position, os.clock()
+				if not s then s = {pos = pos, at = now, raw = 0, speed = 0, phase = 0, amp = 0}; state[m] = s end
+				-- how fast it walks: the replicated velocity when there is one; else the
+				-- distance covered over at least 0.15 s. (Frame by frame, a server-moved
+				-- body arrives in jumps between network updates — most frames show no
+				-- move and the rest a "teleport" — so a sprinting bot read as standing.)
+				local v = hrp.AssemblyLinearVelocity
+				local raw = Vector3.new(v.X, 0, v.Z).Magnitude
+				if now - s.at >= 0.15 then
+					local d = pos - s.pos
+					local windowed = Vector3.new(d.X, 0, d.Z).Magnitude / (now - s.at)
+					s.raw = windowed < 80 and windowed or 0   -- (a real teleport is not a walk)
+					s.pos, s.at = pos, now
+				end
+				if raw < 0.05 then raw = s.raw end
+				s.speed += (math.min(raw, 40) - s.speed) * math.clamp(dt * 8, 0, 1)
 				local moving = s.speed > 0.6
 				-- the stride eases in and out instead of snapping
 				s.amp += ((moving and math.clamp(s.speed / 12, 0.4, 1) or 0) - s.amp) * math.clamp(dt * 8, 0, 1)

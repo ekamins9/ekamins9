@@ -158,6 +158,14 @@ default entry, so you can skip this step for free sets.
    who may carry it.
 3. For the menu mannequin put a **display copy** in `Cosmetics ▸ Weapons ▸ Falchion`: a
    Model with a part named `Handle` (the Tool's visible parts, copied, work).
+4. **Its sounds** come from `ReplicatedStorage ▸ SoundBank` by itself: a heavy whoosh if its
+   family is `TwoHanded` or `Polearm`, sword swishes otherwise; a cut, or a thud and crack if
+   its id is in `SoundBank.BLUNT` (add a mace-like weapon there). To give it a sound of its
+   own, name the slot in its `Config.SOUNDS` (`Swing`, `Hit`, `Block`, `Parry`, `Wall`…).
+
+**Sounds in general** (`SoundBank.POOLS`): each pool is a list of takes — add an id (or
+`{id, vol = 0.8, speed = 1.1, cut = 0.6}`) and it joins the rotation. Use sounds the game may
+play: Roblox's licensed library (Pro Sound Effects, APM) or your own uploads.
 
 ## 5. A weapon skin
 

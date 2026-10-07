@@ -61,14 +61,21 @@ local Bots = {}
 -- reserve   stamina it keeps back; below it, it backs off and gets its wind back
 -- interval  seconds between its own swings when nothing better comes up
 -- pace      its speed against a player's in the same armor (1 = the same)
+-- step      chance it steps back and aside from a swing it doesn't parry (else it stands its
+--           ground: it trades, or eats the blow) — a short step, after its reaction time
+-- aggression  how often its footwork presses in (else it circles, watches, or gives ground)
+-- hesitate  how often it just stands and watches for a moment
 -- spare     chance it carries a secondary to draw when disarmed
 Bots.SKILLS = {
 	Squire   = {react = 0.30, parry = 0.35, read = false, bait = 1,    jitter = 0.10,  riposte = 0.2,  punish = 0.25, chamber = 0,    feint = 0,    morph = 0,    combo = 0,
-		kick = 0.10, reserve = 0,  interval = {1.7, 2.7}, pace = 0.95, spare = 0.3, label = "Squire",   weight = "Light"},
+		kick = 0.10, reserve = 0,  interval = {1.7, 2.7}, pace = 0.95, spare = 0.3, label = "Squire",   weight = "Light",
+		step = 0.3, aggression = 0.35, hesitate = 0.25},
 	Knight   = {react = 0.20, parry = 0.65, read = true,  bait = 0.35, jitter = 0.07,  riposte = 0.55, punish = 0.6,  chamber = 0.05, feint = 0.12, morph = 0.12, combo = 0.15,
-		kick = 0.35, reserve = 22, interval = {1.1, 1.9}, pace = 1,    spare = 0.8, label = "Knight",   weight = "Medium"},
+		kick = 0.35, reserve = 22, interval = {1.1, 1.9}, pace = 1,    spare = 0.8, label = "Knight",   weight = "Medium",
+		step = 0.35, aggression = 0.45, hesitate = 0.15},
 	Champion = {react = 0.13, parry = 0.85, read = true,  bait = 0.2,  jitter = 0.035, riposte = 0.85, punish = 0.9,  chamber = 0.15, feint = 0.28, morph = 0.22, combo = 0.35,
-		kick = 0.6,  reserve = 35, interval = {0.8, 1.4}, pace = 1,    spare = 1,   label = "Champion", weight = "Heavy"},
+		kick = 0.6,  reserve = 35, interval = {0.8, 1.4}, pace = 1,    spare = 1,   label = "Champion", weight = "Heavy",
+		step = 0.3, aggression = 0.55, hesitate = 0.1},
 	-- the training yard's drill dummies: one throws slow, readable swings and
 	-- overheads from where it stands; the other only ever holds its guard
 	Drill    = {react = 9, parry = 0, read = false, bait = 0, jitter = 0, riposte = 0, punish = 0, chamber = 0, feint = 0, morph = 0, combo = 0,
@@ -323,7 +330,25 @@ function Bot:choosePlan(f, me)
 	end
 	if sk.chamber > 0 and math.random() < sk.chamber and st >= sk.reserve * 0.5 + 8 and mirrorOf(self, f.name, f.kind) then return "chamber" end
 	if math.random() < sk.parry then return "parry" end
-	return "step"
+	if math.random() < (sk.step or 0.3) then return "step" end
+	return "none"
+end
+
+-- FOOTWORK MOODS: for a second or two at a time it presses in, circles at the
+-- edge of reach, stands and watches, or gives ground — not a perfect spacing
+-- held ten times a second
+local MOODS = {press = {1.0, 2.2}, circle = {1.0, 2.4}, wait = {0.4, 1.1}, back = {0.6, 1.2}}
+function Bot:pickMood(soon)
+	local sk = self.skill
+	local mood
+	if soon then mood = "press"
+	elseif self.recovering then mood = math.random() < 0.6 and "back" or "circle"
+	else
+		local agg, hes = sk.aggression or 0.45, sk.hesitate or 0.15
+		local r = math.random()
+		mood = r < agg and "press" or (r < agg + 0.3 and "circle") or (r < agg + 0.3 + hes and "wait") or "back"
+	end
+	self.mood, self.moodUntil = mood, os.clock() + rand(MOODS[mood])
 end
 
 -- after starting a swing: feint or morph it if the foe guards early, chain it if it lands
@@ -389,6 +414,12 @@ function Bot:reflex()
 			self.plan = self:choosePlan(f, me)
 			self.jit = (math.random() * 2 - 1) * sk.jitter
 			self.early = not sk.read or math.random() < sk.bait
+			if self.plan == "step" then
+				-- it has to see the swing coming first, and then it's a step, not a retreat
+				self.stepAt = f.windupStart + sk.react + math.abs(self.jit) + math.random() * 0.12
+				self.stepUntil = self.stepAt + 0.35 + math.random() * 0.25
+				self.stepSide = math.random() < 0.5 and -1 or 1
+			end
 		end
 		if self.plan == "parry" and not blocking then
 			-- a reader puts the blade's arrival in the middle of the parry window (a learned
@@ -517,28 +548,34 @@ function Bot:think()
 	local hold = math.max(hitDist, foeReach * 0.72) + 2            -- just out of reach while it waits
 	if self.recovering and not foeOpen then hold += 3 end
 	local soon = (now >= self.nextAttack - 0.4 and not self.recovering) or foeOpen or foeWeak
+	if now >= (self.moodUntil or 0) or (soon and self.mood ~= "press") then self:pickMood(soon) end
+	local side = Vector3.new(-dir.Z, 0, dir.X)
 	if not ctrl then
 		-- nothing in hand: go and get something (or draw the spare), else keep away
 		want = self:rearm(now) or -dir
-	elseif threat and self.plan == "step" then
-		want = -dir                                              -- out of the swing's way
+	elseif self.stepUntil and now >= self.stepAt and now < self.stepUntil then
+		want = -dir * 0.75 + side * self.stepSide * 0.65         -- a step back and aside from their swing
 	elseif me.phase == "windup" or me.phase == "release" then
 		want = dist > hitDist and dir or Vector3.zero            -- step into our swing
 	elseif me.phase == "recovery" then
-		want = -dir * 0.6
+		want = -dir * 0.4
 	else
-		local goal = soon and strike or hold
-		if dist > goal + 1.2 then
+		local mood = self.mood or "circle"
+		local goal = mood == "press" and strike or (mood == "back" and hold + 3) or hold
+		if now > self.strafeUntil then
+			self.strafe = math.random() < 0.5 and -1 or 1
+			self.strafeUntil = now + 0.6 + math.random() * 1.4
+		end
+		if mood == "wait" then
+			-- stands and watches, shifting its feet; only someone walking right up moves it
+			want = dist < hitDist - 0.5 and -dir * 0.6 or side * self.strafe * 0.25
+		elseif dist > goal + 1.5 then
 			want = dir
-		elseif dist < goal - 1.2 then
-			want = -dir
+		elseif dist < goal - 1.5 then
+			want = -dir * 0.8
 		else
 			-- circle at that distance, changing direction now and then
-			if now > self.strafeUntil then
-				self.strafe = math.random() < 0.5 and -1 or 1
-				self.strafeUntil = now + 0.6 + math.random() * 1.4
-			end
-			want = Vector3.new(-dir.Z, 0, dir.X) * self.strafe + dir * math.clamp(dist - goal, -1, 1) * 0.5
+			want = side * self.strafe * (mood == "press" and 0.5 or 1) + dir * math.clamp(dist - goal, -1, 1) * 0.5
 		end
 	end
 	if self.arena then
@@ -547,8 +584,23 @@ function Bot:think()
 		if off.Magnitude > self.arena.radius - 2.5 then want = -off.Unit end
 	end
 	if (sk.pace or 0) <= 0 then want = Vector3.zero end
-	local mv = want.Magnitude > 0.01 and want.Unit or Vector3.zero
-	hum.WalkSpeed = self:speedFor(mv, dist > math.max(self.reach, foeReach) + 6 or self.lookAt ~= nil, busy or blocking)
+	-- a body carries its momentum: it eases from one heading into the next
+	local w = want.Magnitude > 1 and want.Unit or want
+	self.mv = self.mv and self.mv:Lerp(w, 0.4) or w
+	local mag = math.min(self.mv.Magnitude, 1)
+	local mv = mag > 0.05 and self.mv.Unit or Vector3.zero
+	-- it doesn't break into a run the moment you step away: a beat of walking,
+	-- then a burst of sprint, a breather, another burst — and not when winded
+	local far = dist > math.max(self.reach, foeReach) + 6
+	if far then
+		self.farSince = self.farSince or now
+		local t = now - self.farSince - (self.chaseBeat or 0.9)
+		far = t > 0 and (t % 4) < 2.6 and st > 30
+	else
+		self.farSince = nil
+		self.chaseBeat = 0.6 + math.random() * 0.8
+	end
+	hum.WalkSpeed = self:speedFor(mv, far or self.lookAt ~= nil, busy or blocking) * math.max(mag, 0.35)
 	hum:Move(mv)
 
 	-- offence

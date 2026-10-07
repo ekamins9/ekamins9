@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Pickup      = require(script.Parent:WaitForChild("Pickup"))
+local Janitor     = require(script.Parent:WaitForChild("Janitor"))
 
 local Injury = {}
 
@@ -25,7 +26,7 @@ Injury.CONFIG = {
 	LEG_SPEED        = 0.45,  -- WalkSpeed factor per lost leg
 	LEG_CLUNK        = 1.5,   -- footstep clunk factor per lost leg
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at (it lands as a pickup)
-	LIMB_DEBRIS_TIME = 25,
+	LIMB_DEBRIS_TIME = 20,    -- seconds a severed limb lies around (Janitor: then it fades; at most 14 at once)
 	SKEWER_DURATION  = 0,     -- seconds the head stays on the blade; 0 = until the attacker's next swing launches it
 	SKEWER_OFFSET    = 0.6,   -- how far past the hit point, along the blade, the head sits
 	HEAD_THROW_LIFE  = 20,    -- seconds a thrown head lies around
@@ -169,6 +170,7 @@ function Injury.startBleed(char)
 	char:SetAttribute("Bleeding", true)
 	char:SetAttribute("BleedDPS", C.BLEED_HP / C.BLEED_TIME)
 	Sounds.play(SoundConfig.Bleed, char:FindFirstChild("Torso") or char.PrimaryPart)
+	Sounds.voice("Hurt", char:FindFirstChild("Head") or char.PrimaryPart, {Who = char, Chance = 1})
 end
 
 function Injury.stopBleed(char)
@@ -210,6 +212,7 @@ function Injury.disarm(char, dir)
 	-- body doesn't go with it)
 	if not Pickup.drop(tool, char, dir, C.DISARM_FLING) then return false end
 	Sounds.play(SoundConfig.Disarm, hrp)
+	Sounds.bank("Disarm", tool:FindFirstChild("Handle") or hrp)
 	return true
 end
 
@@ -322,6 +325,7 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 	bloodEmitter(headClone, 25, 2)
 	bloodEmitter(head, 12, 4)
 	Sounds.play(SoundConfig.Impale, headClone)
+	Sounds.bank("Impale", headClone)
 
 	local dropped = false
 	local function release()
@@ -332,7 +336,7 @@ function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
 		for _, p in ipairs(trophy:GetDescendants()) do
 			if p:IsA("BasePart") then p.Massless = false end
 		end
-		Debris:AddItem(trophy, C.HEAD_THROW_LIFE)
+		Janitor.add(trophy, "Head", {life = C.HEAD_THROW_LIFE})
 		return true
 	end
 	local function drop()
@@ -364,6 +368,7 @@ function Injury.launchSkewer(hitbox, dir, speed, thrower, onHit)
 	head.AssemblyAngularVelocity = Vector3.new(math.random() * 20, math.random() * 20, math.random() * 20)
 	e.trophy:SetAttribute("Thrown", true)
 	Sounds.play(SoundConfig.HeadThrow, head)
+	Sounds.bank("SwingKick", head)
 	local struck = false
 	local t0 = os.clock()
 	head.Touched:Connect(function(part)
@@ -414,11 +419,11 @@ function Injury.dismember(char, partName, dir, fatal)
 		clone.CanCollide, clone.CanQuery, clone.CanTouch, clone.Anchored = true, false, false, false
 		clone.CFrame = part.CFrame
 		carryClothing(char, partName, part, clone, clone)   -- armor goes with the limb
-		clone.Parent = workspace
+		clone.Parent = Janitor.folder()
 		clone.AssemblyLinearVelocity  = dir * 15 + Vector3.new(0, 8, 0)
 		clone.AssemblyAngularVelocity = Vector3.new(6, 6, 6)
 		bloodEmitter(clone, 15, 3)
-		Debris:AddItem(clone, C.LIMB_DEBRIS_TIME)
+		Janitor.add(clone, "Limb", {life = C.LIMB_DEBRIS_TIME})
 		-- the real limb stays so the rig keeps animating, just no longer seen or hit
 		part.Transparency, part.CanCollide, part.CanQuery, part.CanTouch = 1, false, false, false
 	end
@@ -439,6 +444,8 @@ function Injury.dismember(char, partName, dir, fatal)
 	char:SetAttribute("Blocking", false)
 	Injury.recomputeMobility(char)
 	Sounds.play(SoundConfig.Dismember, torso)
+	Sounds.bank("Dismember", torso)
+	Sounds.bank("HitBone", torso)
 	if partName ~= "Head" then
 		if fatal then hum.Health = 0 else Injury.startBleed(char) end
 	end

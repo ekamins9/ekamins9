@@ -56,6 +56,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
+local SoundBank   = require(ReplicatedStorage:WaitForChild("SoundBank"))
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
 -- GameConfig (friendly-fire multiplier); optional so the combat still runs without it
@@ -248,9 +249,13 @@ function CombatServer.clang(materialName, at, fallbackId)
 		game:GetService("Debris"):AddItem(s, 6)
 		return
 	end
-	local feel = WALL_FEEL[family]
-	if not feel then return end
-	Sounds.play(fallbackId, at, {Volume = feel.Volume, Speed = feel.Speed})
+	-- the sound bank's take for the family (stone rings, wood knocks, dirt thuds);
+	-- a weapon's own Wall slot (fallbackId), re-pitched per family, when it has one
+	if type(fallbackId) == "string" and fallbackId ~= "" and fallbackId ~= "rbxassetid://0" and WALL_FEEL[family] then
+		Sounds.play(fallbackId, at, {Volume = WALL_FEEL[family].Volume, Speed = WALL_FEEL[family].Speed})
+		return
+	end
+	if family then Sounds.bank("Wall" .. family, at) end
 end
 
 local wallParams = RaycastParams.new()
@@ -333,7 +338,7 @@ function CombatServer.resolveKick(character, cfg, hooks)
 		landed = true
 		character:SetAttribute("KickTick", (character:GetAttribute("KickTick") or 0) + 1)
 		if hooks.sfx then hooks.sfx("KickHit", thrp) end
-		Sounds.voice("Hurt", m:FindFirstChild("Head") or thrp)
+		Sounds.voice("Hurt", m:FindFirstChild("Head") or thrp, {Who = m})
 		CombatServer.flinch(m, to.Unit)
 		local wasBlocking = m:GetAttribute("Blocking") == true
 		CombatServer.interrupt(m, "kicked")   -- stops their swing and drops their guard, animation included
@@ -421,14 +426,18 @@ CombatServer.DEFAULTS = {
 	                          --    a slow weapon re-times the picture with the rules)
 	FLINCH_ONLY_WINDUP = true,-- a clean hit only interrupts a target still in WINDUP; a swing
 	                          --    already in release finishes (trades are a real choice)
-	-- STAMINA LEDGER (Mordhau-style): the windup always costs staminaCost; every
-	-- enemy the swing cuts cleanly gives it back (the swing's whole staminaCost, at
-	-- least HIT_REFUND; cut through three = three refunds) — a blocked or parried
-	-- swing gives nothing back; a swing that touches nothing costs MISS_COST_MULT ×
-	-- staminaCost extra; a swing that hits a wall / the floor stops there with no
-	-- penalty and no refund.
+	-- STAMINA LEDGER: fighting well pays, flailing and turtling cost. The windup
+	-- always costs staminaCost; every enemy the swing cuts cleanly gives it back
+	-- (the swing's whole staminaCost, at least HIT_REFUND) PLUS HIT_BONUS — so
+	-- landing blows refills you; cut through three = three refunds. A kill pays
+	-- KILL_REFUND × your max on top. A blocked or parried swing gives nothing back;
+	-- a swing that touches nothing costs MISS_COST_MULT × staminaCost extra; a swing
+	-- that hits a wall / the floor stops there with no penalty and no refund.
+	-- A timed parry is free and pays (PARRY_REFUND); a held block pays blockCost.
 	MISS_COST_MULT   = 0.5,
 	HIT_REFUND       = 6,
+	HIT_BONUS        = 8,     -- on top of the refund: a landed blow leaves you better off than before it
+	KILL_REFUND      = 0.35,  -- a kill gives back this share of your max stamina
 	WALL_CHECK       = true,  -- reject hits whose line from you to the hit point passes through geometry,
 	WALL_RECOVERY    = 0.35,  --    and a blade that hits a wall stops (this long before you can act)
 	KICK_REFUND      = 8,     -- a kick that lands gives this back; one that misses costs KICK_MISS_COST;
@@ -455,7 +464,7 @@ CombatServer.DEFAULTS = {
 	CHAMBER_STUN     = 0,     --    the attacker is stunned this long (0: they can answer the chamber —
 	CHAMBER_PARRY_WINDOW = 0.8, --  for this long after being chambered a block comes up at once, no
 	                          --    cooldown, with a fresh parry window; so a chamber can be parried, or chambered back)
-	CHAMBER_COST_MULT= 0.15,  --    you pay this × the attack's blockCost
+	CHAMBER_COST_MULT= 0,     --    you pay this × the attack's blockCost (0: a chamber, like a parry, is free)
 	CHAMBER_RELEASE  = 0.2,   --    your windup is cut to this — long enough to morph out of it
 	CHAMBER_MORPH_FREE = true,--    a chamber resets your morph count: you can morph the chamber
 	FEINT_ANYTIME    = true,  -- the feint key cancels a windup (no block needed)
@@ -478,8 +487,9 @@ CombatServer.DEFAULTS = {
 	EXHAUSTED_MIN     = 1,     -- you need at least the attack's staminaCost (and this) to start a swing;
 	                           --    at 0 stamina you cannot attack or kick — only guard and walk
 	BLOCK_REGEN       = 17,    -- per second (× the armor weight's regen)…
-	STAMINA_REGEN_DELAY = 1.3, -- …but only this long after the last combat event (attack, feint,
-	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing
+	STAMINA_REGEN_DELAY = 1.3, -- …at full rate only this long after the last combat event (attack, feint,
+	                           --    kick, block, parry, taking a hit), never while blocking or mid-swing;
+	COMBAT_REGEN      = 0.35,  --    inside that delay it still trickles back at this share of the rate
 	BLOCK_COST_MULT   = 0.8,   -- a held guard pays this × the attack's blockCost (a timed parry pays nothing)
 	BLOCK_BREAK_STUN  = 2.50,
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
@@ -490,7 +500,7 @@ CombatServer.DEFAULTS = {
 	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
 	PARRY_COST_MULT   = 0,     -- a timed parry costs this fraction of the attack's blockCost (0: parries are free;
 	                           --    holding block still pays the full blockCost — the turtle tax)
-	PARRY_REFUND      = 6,     -- …and REFUNDS the attacker's swing cost (PARRY_REFUND if the attack has
+	PARRY_REFUND      = 10,    -- …and REFUNDS the attacker's swing cost (PARRY_REFUND if the attack has
 	                           --    less) × (1 + PARRY_STREAK_STEP × (streak − 1)): parries within PARRY_STREAK_WINDOW of
 	PARRY_STREAK_STEP = 0.5,   --    each other grow the payout (1vX: 10, 15, 20, 25, 30)
 	PARRY_STREAK_WINDOW = 2.0,
@@ -544,6 +554,11 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local TAG = Tool.Name .. "/Server"
 	local weaponName = cfg.Name or Tool.Name   -- kill feed
+	-- SOUNDS: what the weapon's Config names itself, else the sound bank by its
+	-- class (edged or blunt; light or heavy swing — SoundBank.classOf)
+	local ownSounds = (weaponConfig and weaponConfig.SOUNDS) or {}
+	local soundClass = SoundBank.classOf(Tool.Name)
+	local BANK_SLOT = {Swing = soundClass.swing, Hit = soundClass.hit, Block = "Block", Parry = "Parry", Kick = "SwingKick", KickHit = "KickHit"}
 	local function dprint(...) DebugFlags.log(TAG, ...) end
 
 	if not cfg.ATTACKS then
@@ -697,7 +712,25 @@ function CombatServer.attach(Tool, weaponConfig)
 		setAttr("Acting", on or nil)
 	end
 	local function handle()     return Tool:FindFirstChild("Handle") end
-	local function sfx(slot, at, opts) Sounds.play(cfg.SOUNDS[slot], at or handle(), opts) end
+	local function sfx(slot, at, opts)
+		at = at or handle()
+		if ownSounds[slot] or not BANK_SLOT[slot] then Sounds.play(cfg.SOUNDS[slot], at, opts)
+		else Sounds.bank(BANK_SLOT[slot], at, opts) end
+	end
+	-- a blow that lands: the cut / stab / thud, what the limb wears ringing under
+	-- it, bones on a heavy or killing blow, and the victim's grunt (a killing
+	-- blow leaves the cry to the death)
+	local function hitSounds(part, target, kind, limbName, lethal)
+		if ownSounds.Hit then sfx("Hit", part)
+		elseif kind == "stab" then Sounds.bank("HitStab", part)
+		else Sounds.bank(soundClass.hit, part) end
+		if soundClass.blunt or lethal then Sounds.bank("HitBone", part, {Chance = lethal and 1 or 0.5}) end
+		local covered = Armor and limbName and Armor.protectionAt(target, limbName) > 0
+		local weight = target:GetAttribute("ArmorType")
+		if covered and weight == "Heavy" then Sounds.bank("HitPlate", part, {Volume = soundClass.blunt and 1.2 or 1})
+		elseif covered and weight == "Medium" then Sounds.bank("HitMail", part) end
+		if not lethal then Sounds.voice("Hurt", target:FindFirstChild("Head") or part, {Who = target}) end
+	end
 
 	-- stunned, ragdolled, or dead: no actions
 	local function isIncapacitated()
@@ -874,7 +907,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				Injury.sparks(hitPos, 2 + 0.5 * (streak - 1))   -- big, white, and bigger with every parry in a row
 				cancelSwing("parried")
 				sfx("Parry", part)
-				Sounds.voice("Parry", target:FindFirstChild("Head"))
+				Sounds.voice("Parry", target:FindFirstChild("Head"), {Who = target})
 				tell("Parried")
 				dprint("PARRIED by", target.Name)
 			else
@@ -926,7 +959,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				cancelSwing("chambered")
 				Injury.sparks(hitPos, 2)
 				sfx("Parry", part)
-				Sounds.voice("Parry", target:FindFirstChild("Head"))
+				Sounds.bank("Clash", part)
+				Sounds.voice("Parry", target:FindFirstChild("Head"), {Who = target})
 				tell("Chambered")
 				tctrl.chambered()
 				dprint("CHAMBERED by", target.Name, "(" .. tostring(snap.name) .. ")")
@@ -937,7 +971,6 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- CLEAN HIT: a lowered guard, a raised guard the blade got past, or from behind
 		local region = claimedGuard and "body" or regionOf(part, target)
 		if claimedGuard then dprint("guard touched but invalid (up:", guardUp, "facing:", facing, ") -> body hit") end
-		sfx("Hit", part)
 		Injury.bloodBurst(part)
 		flinch(target, dir)
 		-- a clean hit breaks whatever they were doing, so trades are rarer
@@ -954,8 +987,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		else
 			dmg = (info.damage or 0) * (region == "head" and cfg.HEAD_DAMAGE_MULT or (region == "legs" and cfg.LEG_DAMAGE_MULT or 1))
 		end
-		CombatServer.refundStamina(character, math.max(cfg.HIT_REFUND, info.staminaCost or 0))
-		Sounds.voice("Hurt", target:FindFirstChild("Head") or part)
+		CombatServer.refundStamina(character, math.max(cfg.HIT_REFUND, info.staminaCost or 0) + cfg.HIT_BONUS)
 		-- armor: the set's Protection applies only on limbs it actually covers.
 		-- Hits on accessories/clothing count as the limb they're on.
 		if Armor then
@@ -980,10 +1012,17 @@ function CombatServer.attach(Tool, weaponConfig)
 		end
 		local lethal = hum.Health - dmg <= 0
 		CombatServer.showDamage(character, target, dmg, region, lethal, friendly < 1)
+		hitSounds(part, target, info.kind, (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name
+			or (region == "head" and "Head") or "Torso", lethal)
 		-- the limb we actually struck (only real rig parts, not accessories)
 		local limb = (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name or nil
 
 		if lethal then
+			local kmax = character:GetAttribute("BlockMax") or cfg.BLOCK_MAX
+			local kgain = math.floor(kmax * cfg.KILL_REFUND + 0.5)
+			CombatServer.refundStamina(character, kgain)
+			character:SetAttribute("GuardText", "KILL  +" .. kgain)
+			character:SetAttribute("GuardTick", (character:GetAttribute("GuardTick") or 0) + 1)
 			if isStab and region == "head" and cfg.IMPALE then
 				-- kill first so the ragdoll captures a complete rig, then hide the
 				-- real head and hang a clone off the blade (nothing of theirs welds
@@ -1045,7 +1084,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- the clang depends on what we hit: sparks off stone and metal, a dull knock off wood / ground
 		local family = CombatServer.wallFamily(material)
 		if family == "Stone" or family == "Metal" then Injury.sparks(pos) end
-		CombatServer.clang(material, handle(), cfg.SOUNDS.Wall or cfg.SOUNDS.Block)
+		CombatServer.clang(material, handle(), ownSounds.Wall)
 		cancelSwing("wall")
 		state.nextActionTime = os.clock() + cfg.WALL_RECOVERY
 		dprint("blade hit the world:", material, "(" .. tostring(family or "unknown, silent") .. ")")
@@ -1363,7 +1402,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		setSwinging(true)
 		setAttr("TurnCapUntil", state.releaseEnd + cfg.TURN_CAP_EXTRA)
 		sfx("Swing", nil, {Speed = math.clamp(speed, 0.7, 1.4)})
-		Sounds.voice("Swing", headPart())
+		Sounds.voice("Swing", headPart(), {Who = character, Chance = SoundBank.VOICE_CHANCE[soundClass.heavy and "SwingHeavy" or "Swing"]})
 
 		at(token, function() return state.windupEnd end, function()
 			if isStunned() then cancelSwing("stunned"); return end
@@ -1378,7 +1417,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				Injury.launchSkewer(box, throwDir, cfg.HEAD_THROW_SPEED, thrower, function(victim, part)
 					local vh = victim:FindFirstChildOfClass("Humanoid")
 					if not vh or CombatServer.isProtected(victim) then return end
-					sfx("Hit", part)
+					Sounds.bank("KickHit", part)
 					Injury.bloodBurst(part)
 					flinch(victim, (part.Position - hrp.Position).Unit)
 					interrupt(victim, "hit")
@@ -1628,7 +1667,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		spend(cfg.KICK_COST)
 		setSwinging(true)
 		sfx("Kick")
-		Sounds.voice("Kick", headPart())
+		Sounds.voice("Kick", headPart(), {Who = character})
 		setAttr("TurnCapUntil", now + cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA)
 		tell("PlayKick", cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA, cfg.KICK_WINDUP)
 		task.delay(cfg.KICK_WINDUP, function()
@@ -1704,6 +1743,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		end
 		windOf(character)
 		character:SetAttribute("StaminaRegenDelay", cfg.STAMINA_REGEN_DELAY)
+		character:SetAttribute("CombatRegenMult", cfg.COMBAT_REGEN)
 		character:SetAttribute("BlockHoldDrain", cfg.BLOCK_HOLD_DRAIN)
 		character:SetAttribute("Blocking", false)
 		setGuard(false)

@@ -11,6 +11,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Modifiers.lua` | `ReplicatedStorage` → `Modifiers` | ModuleScript |
 | `ReplicatedStorage/Sounds.lua` | `ReplicatedStorage` → `Sounds` | ModuleScript |
 | `ReplicatedStorage/SoundConfig.lua` | `ReplicatedStorage` → `SoundConfig` | ModuleScript |
+| `ReplicatedStorage/SoundBank.lua` | `ReplicatedStorage` → `SoundBank` (the fight's sound pools and voices) | ModuleScript |
 | `ReplicatedStorage/RigPose.lua` | `ReplicatedStorage` → `RigPose` | ModuleScript |
 | `ReplicatedStorage/Combat/CombatClient.lua` | `ReplicatedStorage` → `Combat` (Folder) → `CombatClient` | ModuleScript |
 | `ServerScriptService/WalkSpeedGovernor.server.lua` | `ServerScriptService` → `WalkSpeedGovernor` | Script |
@@ -22,6 +23,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
 | `ServerScriptService/Combat/Pickup.lua` | `ServerScriptService` → `Combat` → `Pickup` | ModuleScript |
 | `ServerScriptService/Combat/Bots.lua`, `R6.lua` | `ServerScriptService` → `Combat` → `Bots`, `R6` (AI fighters; a plain R6 rig) | ModuleScript each |
+| `ServerScriptService/Combat/Janitor.lua` | `ServerScriptService` → `Combat` → `Janitor` (clears severed limbs, heads, dropped weapons) | ModuleScript |
 | `ServerScriptService/Game/Training.lua` | `ServerScriptService` → `Game` → `Training` (the training yard's dummies, Drill Master, lessons, ring) | ModuleScript |
 | `ServerScriptService/Build/MapTraining.lua` | `ServerScriptService` → `Build` → `MapTraining` (the training yard map) | ModuleScript |
 | `StarterPlayerScripts/Training.client.lua`, `NpcAnimator.client.lua`, `Footsteps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Training`, `NpcAnimator`, `Footsteps` | LocalScript each |
@@ -601,14 +603,17 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   + the white edge flash mean you got it.
 - **Flinch only in windup** (`FLINCH_ONLY_WINDUP`): a hit stops a swing that hasn't committed;
   one already in release finishes. Trading is a choice now. Kicks still stop anything.
-- **Stamina ledger** (Mordhau-style): the windup always costs `staminaCost`; **every enemy a
-  swing hits refunds** `HIT_REFUND` (cut through three = three refunds); a whiff costs
-  `MISS_COST_MULT` × the cost extra; a blade that hits a **wall / floor** stops there (clang,
-  `WALL_RECOVERY`) with no penalty and no refund. Kick: land = `KICK_REFUND` back, whiff =
-  `KICK_MISS_COST` + longer recovery, kick a wall = neither. A dodge that makes a swing miss you
-  refunds `DODGE_REFUND`.
+- **Stamina ledger: fighting well pays, flailing and turtling cost.** The windup always costs
+  `staminaCost`; **every enemy a swing hits refunds the cost plus `HIT_BONUS` (8)** — landing blows
+  refills you (cut through three = three refunds); **a kill gives back `KILL_REFUND` (35 %) of your
+  max** (the HUD says KILL +N); a whiff costs `MISS_COST_MULT` × the cost extra; a blade that hits
+  a **wall / floor** stops there (clang, `WALL_RECOVERY`) with no penalty and no refund. Kick: land =
+  `KICK_REFUND` back, whiff = `KICK_MISS_COST` + longer recovery, kick a wall = neither. A dodge
+  that makes a swing miss you refunds `DODGE_REFUND`. Regen runs at full rate 1.3 s after the
+  last combat event and at `COMBAT_REGEN` (35 %) inside that, so a long fight you're winning
+  doesn't run you dry; misses, held blocks and feints are what drain you.
 - **Parries are free and pay out** (`PARRY_COST_MULT` 0): each parry refunds the attacker's swing
-  cost (at least `PARRY_REFUND`), growing by `PARRY_STREAK_STEP` (50 %) per parry within
+  cost (at least `PARRY_REFUND`, 10), growing by `PARRY_STREAK_STEP` (50 %) per parry within
   `PARRY_STREAK_WINDOW` (2 s) up to `PARRY_STREAK_MAX` — 1vX parry-parry-parry is 10, 15, 20…; the
   HUD word and the sparks grow with it. Holding block pays the full `blockCost` every hit **and**
   `BLOCK_HOLD_DRAIN` (3/s) while it is up (the turtle tax), and can't attack while up.
@@ -697,9 +702,13 @@ screen returns.
 
 ## Voice
 
-Put a folder `Voice` in `SoundService` with subfolders `Swing`, `Hurt`, `Death`, `Kick`, `Parry`,
-each holding any number of `Sound`s — one is picked at random (its own Volume/PlaybackSpeed are
-the baseline). Missing folders are silent.
+Fighters grunt as they swing (40 % of light swings, 60 % of heavy ones), cry out when cut (90 %),
+grunt as they kick or parry now and then, and give a last cry when they die (not without a head),
+then their body thuds down (plate clanks). Each fighter keeps one voice (a pitch from their name,
+`SoundBank.VOICE_PITCH`) and never grunts twice inside `VOICE_GAP` (0.45 s). The takes are the
+`Voice…` pools in `ReplicatedStorage ▸ SoundBank`. To use your own: a folder `Voice` in
+`SoundService` with subfolders `Swing`, `Hurt`, `Death`, `Kick`, `Parry` of `Sound`s overrides
+that kind (one picked at random; its own Volume / PlaybackSpeed are the baseline).
 
 ## Movement (MovementServer + Movement)
 
@@ -715,7 +724,13 @@ dodge, kick or swing until it runs out.
 ## Weapons on the floor (Pickup)
 
 A weapon that leaves a hand — disarm, death, or a swap — lands as a pickup with a prompt (hold
-V) in `workspace.DroppedWeapons`, for `DESPAWN` seconds. Slots: **one primary + one secondary**
+V) in `workspace.DroppedWeapons`, for `DESPAWN` (60) seconds.
+
+**Clean-up (`Combat ▸ Janitor`).** What a fight leaves behind lies around a while and then fades
+out: severed limbs (20 s, at most 14), thrown heads (22 s, at most 8), dropped weapons (60 s, at
+most 12 — one somebody picks up is theirs). Past the cap the oldest fade first, and the field is
+swept clean when a round ends and when the next begins. Limbs and heads lie in
+`workspace ▸ Remains`. Slots: **one primary + one secondary**
 (a weapon whose `Config` has `SECONDARY = true`), `MAX_WEAPONS` total; taking a weapon for a full
 slot drops what was in it right there. The loadout menu offers a secondary list from the same
 flag. Switch weapons with the Roblox backpack (1 / 2).
@@ -796,9 +811,16 @@ controller runs in NPC mode.
 - **The players' rules:** the same walk speed (`MovementConfig` × the armor's and weapon's
   `SpeedMult` × 0.8 sideways / 0.65 backwards, a sprint to close distance), the players' 400°/s
   turn cap while swinging (720°/s otherwise), the same stamina.
-- **Brain** (10 Hz): hold just out of the foe's reach, step in to swing (the blade lands at
-  about 0.72 × `REACH`), punish whiffs and parried swings, press a foe low on stamina or stunned,
-  kick a guard held up too long; keep `reserve` stamina and back off to get it back.
+- **Brain** (10 Hz): footwork in moods that last a second or two — press in, circle at the
+  edge of reach, stand and watch (`hesitate`), or give ground — weighted by `aggression` and its
+  stamina, instead of one perfect spacing; it eases from one heading into the next (momentum),
+  walks a beat before it chases (0.6–1.4 s) and then sprints only in bursts (2.6 s of every 4,
+  not when winded). It steps in to swing (the blade lands at about 0.72 × `REACH`), punishes
+  whiffs and parried swings, presses a foe low on stamina or stunned, kicks a guard held up too
+  long; keeps `reserve` stamina and backs off to get it back.
+- **A swing it doesn't parry**: `step` is the chance it steps back and aside — after its
+  reaction time, for half a second, not a retreat — else it stands its ground and trades or eats
+  the blow.
 - **Reflexes** (every frame, from the foe's controller `snapshot`): a parry timed so the blade
   arrives mid-window, learning how long each of your attacks takes to land (`learned`); `bait` is
   the chance it guards early, which a late feint catches; a riposte after its own parry; feints
@@ -808,8 +830,9 @@ controller runs in NPC mode.
 - **Skill presets** (`Bots.SKILLS`): Squire / Knight / Champion. Drill and Guard are the training dummies.
 - **Look:** each rank has its own sets and colours (`LOOKS`): levy cloth in umber and moss for
   Squires, mail and surcoats in navy and white for Knights, full plate in black and blood for
-  Champions. Clients draw their walk (`NpcAnimator`: hips swing from how far the root moved each
-  frame) and play their footsteps.
+  Champions. Clients draw their walk (`NpcAnimator`: the hips swing with the root's replicated
+  velocity, or the distance it covered over 0.15 s — frame-to-frame jumps made a sprinting bot
+  read as standing still) and play their footsteps.
 - `Combat ▸ R6` builds a plain R6 rig from parts for bots, dummies and NPCs.
 - Studio: `/bot Knight Longsword`, `/bot clear`.
 
@@ -839,10 +862,11 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
   players see it, so ducking under a high swing or leaning back from a stab is a real dodge.
 - **Stamina** (`BlockMeter`): attacks, feints, kicks, blocks drain it. Hits 0 from a
   block → guard break stun. Guard hit while already at 0 → **weapon flies out of your hand**.
-  A swing that cuts someone cleanly gives its whole cost back (at least `HIT_REFUND`); a
-  blocked or parried one gives nothing; a whiff costs half again (`MISS_COST_MULT` 0.5). A held
-  guard pays `BLOCK_COST_MULT` (0.8) × the attack's blockCost; a timed parry pays nothing.
-  Regen: 17/s (× the weight's `RegenMult`) from 1.3 s after the last combat event.
+  A swing that cuts someone cleanly gives its whole cost back plus `HIT_BONUS` (8); a kill
+  gives 35 % of your max; a blocked or parried one gives nothing; a whiff costs half again
+  (`MISS_COST_MULT` 0.5). A held guard pays `BLOCK_COST_MULT` (0.8) × the attack's blockCost; a
+  timed parry or a chamber pays nothing and a parry refunds. Regen: 17/s (× the weight's
+  `RegenMult`) from 1.3 s after the last combat event, 35 % of that before it.
 - **Armor**: protection on a covered limb × (1 − the weapon's `ARMOR_PEN`).
 - **Head**: `HEAD_DAMAGE_MULT` × damage (2× by default) — no automatic kill.
 - **Kills**: a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
@@ -884,20 +908,34 @@ game.ReplicatedStorage.Debug:SetAttribute("Rays", true)
 
 ## Sound slots
 
-Per weapon, in `Config.SOUNDS`: `Equip`, `Swing`, `Hit`, `Block`, `Parry`, `Kick`, `KickHit`, `Wall` —
-these default to shared ids in `CombatServer.DEFAULTS.SOUNDS` so combat is audible immediately.
-**Clangs by material:** when the blade hits the world, CombatServer looks in a `ClangSounds`
-folder (`SoundService` or `ReplicatedStorage`) for a `Sound` named after the `Enum.Material`
-hit (`Slate`, `Wood`, `Metal`…) or its family — `Stone`, `Metal`, `Wood`, `Ground`, `Glass` —
-with no folder the `Wall` slot is re-pitched per family (`WALL_FEEL`), so stone rings, metal
-rings higher, wood knocks, dirt thuds — but `Wall` ships as `rbxassetid://0`, i.e. wall hits are
-silent until you either give `Wall` an id or fill the folder. A material in no family (`WALL_FAMILY` in CombatServer —
-`Plastic` and `SmoothPlastic` are deliberately not in it) is **silent**, no sparks, unless the
-folder has a Sound with that exact material name. Stone and metal spark; nothing pops up on the
-HUD for a wall hit.
-Only list slots you've filled: an `rbxassetid://0` entry overrides the default with silence.
-Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`, `Impale`,
-`Bleed`, `Disarm`, `Pickup`, `Dodge`, `HeadThrow`, `BodyFall` (these are still mostly `rbxassetid://0`, i.e. silent).
+**The fight's sounds come from `ReplicatedStorage ▸ SoundBank`**: pools of takes from Roblox's
+licensed library (Pro Sound Effects — free in any experience). `Sounds.bank(pool, part)` plays a
+random take (never the same one twice running), pitch-spread so repeats don't sound canned; a
+take may be `cut` (faded out at a mark: the first hit of a file with several, a long ring
+trimmed). What plays when:
+- **Swing**: `SwingLight` (sword swishes) for one-handed weapons, `SwingHeavy` (deep whooshes,
+  pitched down) for two-handers and polearms (`Catalog ▸ Weapons` family); `SwingKick` for kicks.
+- **A blow that lands** (layered): `HitCut` (an edge through flesh: a sword-slice body chop and
+  wet slices) or `HitBlunt` (a heavy thud, for `SoundBank.BLUNT`: Hammer, Mace, Morning Star,
+  Maul, Quarterstaff) or `HitStab` (a point going in) by the attack's kind; `HitBone` (bones
+  giving way) on half of blunt blows and every killing blow; `HitPlate` when the limb struck is
+  covered by heavy armor, `HitMail` (mail jingling) under medium; then the victim's grunt.
+- **Steel on steel**: `Parry` (a bright, ringing clash), `Block` (a duller clang: the guard soaks
+  it), a chamber is the clash plus `Clash` (blades scraping).
+- **The blade meets the world**: `WallStone` / `WallWood` / `WallMetal` / `WallGround` /
+  `WallGlass` by the material's family (`WALL_FAMILY` in CombatServer; stone and metal spark). A
+  material in no family (`Plastic`, `SmoothPlastic`) is silent.
+- **Bodies**: `KickHit`, `BodyFall` / `BodyFallArmor` (a corpse hitting the ground, plate
+  clanking), `Dismember`, `Impale`, `Disarm` (the weapon clattering away); dodges whoosh.
+- **Voices**: see *Voice*.
+
+A weapon's `Config.SOUNDS` may still name its own `Equip`, `Swing`, `Hit`, `Block`, `Parry`, `Kick`,
+`KickHit` or `Wall` — a slot it names is used instead of the bank (a `Wall` it names is re-pitched
+per family, `WALL_FEEL`). A `ClangSounds` folder (`SoundService` or `ReplicatedStorage`) with a
+`Sound` named after a material or family overrides the wall sound too. Kill effects' sounds play
+at `KillFX.VOLUME` (55 %). Global, in `SoundConfig`: `Footstep`, `Heartbeat`, `Death`, `Dismember`,
+`Impale`, `Bleed`, `Disarm`, `Pickup`, `Dodge`, `HeadThrow`, `BodyFall`, `Breathing` — single ids
+that play alongside the bank (`rbxassetid://0` = silent).
 
 **Footsteps by material** (`ReplicatedStorage ▸ Footsteps`): one sound per step, picked by
 what's underfoot. `SOUNDS` holds Grass, Metal/DiamondPlate, Pebble, Wood/WoodPlanks,

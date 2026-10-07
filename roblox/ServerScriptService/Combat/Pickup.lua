@@ -18,12 +18,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local Janitor     = require(script.Parent:WaitForChild("Janitor"))
 
 local Pickup = {}
 
 Pickup.CONFIG = {
 	MAX_WEAPONS  = 2,     -- primary + secondary
-	DESPAWN      = 90,    -- seconds a dropped weapon lies around
+	DESPAWN      = 60,    -- seconds a dropped weapon lies around (Janitor: at most 12 at once, oldest first)
 	PROMPT_RANGE = 7,     -- studs
 	PROMPT_HOLD  = 0.3,   -- seconds the key is held
 	DROP_SPEED   = 6,     -- gentle toss on death / swap (a disarm passes its own)
@@ -138,12 +139,12 @@ function Pickup.drop(tool, char, dir, speed)
 		prompt.Triggered:Connect(function(plr) Pickup.take(plr, tool) end)
 	end
 
-	-- despawn only if it's STILL lying here (Debris can't be cancelled by a pickup)
+	-- the janitor fades it out after DESPAWN (or sooner, when too many lie around),
+	-- but only if it's STILL lying here: one someone picked up is theirs
 	local stamp = os.clock()
 	tool:SetAttribute("DropStamp", stamp)
-	task.delay(C.DESPAWN, function()
-		if tool.Parent and Pickup.isDropped(tool) and tool:GetAttribute("DropStamp") == stamp then tool:Destroy() end
-	end)
+	Janitor.add(tool, "Weapon", {life = C.DESPAWN,
+		still = function() return tool.Parent ~= nil and Pickup.isDropped(tool) and tool:GetAttribute("DropStamp") == stamp end})
 	log("dropped", tool.Name, char and ("by " .. char.Name) or "")
 	return true
 end
