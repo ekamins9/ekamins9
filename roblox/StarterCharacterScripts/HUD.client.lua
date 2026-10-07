@@ -223,3 +223,48 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 end)
 
 script.Destroying:Connect(function() conn:Disconnect() end)
+
+--------------------------------------------------------------------
+--  WHERE THE HIT CAME FROM: a red arc at the edge of the screen, toward
+--  the blow, fading out (several at once if you're being swarmed)
+--------------------------------------------------------------------
+do
+	local arcGui = Instance.new("ScreenGui")
+	arcGui.Name = "HitArcs"
+	arcGui.IgnoreGuiInset = true
+	arcGui.ResetOnSpawn = true
+	arcGui.DisplayOrder = 4
+	arcGui.Parent = player:WaitForChild("PlayerGui")
+	local TweenService = game:GetService("TweenService")
+	character:GetAttributeChangedSignal("HitTick"):Connect(function()
+		local dir = character:GetAttribute("HitDir")
+		local cam = workspace.CurrentCamera
+		if typeof(dir) ~= "Vector3" or not cam then return end
+		-- the blow travels along dir: it came FROM the other way
+		local from = -dir
+		local look = cam.CFrame.LookVector
+		local right = cam.CFrame.RightVector
+		local ang = math.atan2(from:Dot(right), from:Dot(Vector3.new(look.X, 0, look.Z).Unit))   -- 0 = in front, + = to the right
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Position = UDim2.fromScale(0.5, 0.5)
+		holder.Size = UDim2.fromScale(0.62, 0.62)
+		holder.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		holder.Rotation = math.deg(ang)
+		holder.Parent = arcGui
+		local arc = Instance.new("Frame")
+		arc.AnchorPoint = Vector2.new(0.5, 0)
+		arc.Position = UDim2.fromScale(0.5, 0)
+		arc.Size = UDim2.new(0.34, 0, 0, 10)
+		arc.BackgroundColor3 = Color3.fromRGB(220, 30, 40)
+		arc.BackgroundTransparency = 0.15
+		arc.BorderSizePixel = 0
+		Instance.new("UICorner", arc).CornerRadius = UDim.new(1, 0)
+		local g = Instance.new("UIGradient", arc)
+		g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 1)})
+		arc.Parent = holder
+		TweenService:Create(arc, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+		task.delay(1, function() holder:Destroy() end)
+	end)
+end

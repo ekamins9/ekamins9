@@ -40,6 +40,8 @@ CombatClient.DEFAULTS = {
 	HITSTOP_HIT   = 0.06,   -- animation freeze on a clean hit
 	HITSTOP_BLOCK = 0.18,   -- hard freeze then cancel when blocked — weapon bounces off, doesn't swing through
 	HITSTOP_PARRY = 0.22,   -- same, held a touch longer — a parry is the bigger punish
+	HITSTOP_KILL  = 0.14,   -- the killing blow hangs longest
+	HEAVY_HITSTOP = 1.6,    -- two-handers and polearms hold their hits this much longer: weight you feel
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
 	TRAIL_COLOR    = Color3.new(1, 1, 1),
@@ -488,8 +490,12 @@ function CombatClient.attach(Tool, weaponConfig)
 			end
 
 		elseif what == "HitConfirm" then
-			hitstop(cfg.HITSTOP_HIT)
-			impact("hit")
+			hitstop(cfg.HITSTOP_HIT * (cfg.TWO_HANDED and cfg.HEAVY_HITSTOP or 1))
+			impact(cfg.TWO_HANDED and "heavy" or "hit")
+
+		elseif what == "KillConfirm" then
+			hitstop(cfg.HITSTOP_KILL * (cfg.TWO_HANDED and 1.25 or 1))
+			impact("kill")
 
 		elseif what == "Blocked" then
 			clangStop(cfg.HITSTOP_BLOCK)

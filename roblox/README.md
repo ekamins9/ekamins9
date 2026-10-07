@@ -689,6 +689,14 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   window, cooldown or not — so the riposte can be parried or chambered right back. The riposte is
   the parrier's edge: for `RIPOSTE_DURATION` (1.2 s, i.e. the next swing) windups are `RIPOSTE_SPEED`
   (1.6×) quicker; a parry is a `PARRY_WINDOW` (0.4 s) guard.
+- **Perfect parry**: a guard raised within `PERFECT_PARRY` (0.12 s) of the blade landing pays
+  `PERFECT_BONUS` (6) more stamina, throws bigger sparks, reads PERFECT PARRY, punches the parrier's
+  camera (`PerfectParryAt`), and takes away the attacker's instant re-guard (no
+  `PARRIED_GUARD_WINDOW`): the riposte bites. Reading the swing late beats guessing early.
+- **Contact feel** (client, `CombatClient` + `CameraRig`): every hit holds the swing for a beat
+  (`HITSTOP_HIT`), two-handers and polearms `HEAVY_HITSTOP` (1.6×) longer; the killing blow
+  (`KillConfirm`) holds longest (`HITSTOP_KILL`) and snaps the view in (`FOV_PUNCH`, scaled by the
+  Shake setting). The victim's HUD flashes a red arc toward where the blow came from (`HitArcs`).
 - **Parry chain**: after a *successful* parry you can re-guard instantly with a fresh parry window
   for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A guard that comes
   down without having parried **breaks the chain** (and the streak): back to the normal cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing

@@ -498,6 +498,9 @@ CombatServer.DEFAULTS = {
 	BLOCK_CONE_DEG    = 60,    -- must face the attacker within this half-angle to block (flank them!)
 	BLOCK_GRACE       = 0.15,  -- a just-released block still counts for this long (lag)
 	PARRY_WINDOW      = 0.40,  -- a guard raised within this of the hit is a parry
+	PERFECT_PARRY     = 0.12,  -- …and within THIS of the hit, a PERFECT parry: bigger sparks, +PERFECT_BONUS
+	PERFECT_BONUS     = 6,     --    stamina, and the attacker doesn't get the instant re-guard a normal
+	                           --    parry allows (PARRIED_GUARD_WINDOW), so the riposte bites
 	BLOCK_COOLDOWN    = 0.50,  -- after lowering your guard, how long before you can raise it again
 	PARRY_RETRY       = 0.90,  -- …and how long it must have been DOWN to earn a fresh parry window.
 	                           --    Keep this above BLOCK_COOLDOWN or every re-guard is a free parry.
@@ -894,7 +897,10 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- PARRY: the swing dies, the defender gets a riposte; costs a fraction of a block.
 				-- No stun by default (PARRY_PUNISH_STUN 0): the attacker may guard at once
 				if cfg.PARRY_PUNISH_STUN > 0 then setAttr("StunnedUntil", now + cfg.PARRY_PUNISH_STUN) end
-				setAttr("ParriedAt", now)   -- doBlockStart lets us guard at once against the riposte
+				-- a perfect parry: the guard came up in the last moment before the blade
+				local raisedAgo = cfg.PARRY_WINDOW - ((target:GetAttribute("ParryUntil") or now) - now)
+				local perfect = raisedAgo <= cfg.PERFECT_PARRY
+				if not perfect then setAttr("ParriedAt", now) end   -- doBlockStart lets us guard at once against the riposte
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
 				statHook(target, "parry")
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
@@ -905,10 +911,12 @@ function CombatServer.attach(Tool, weaponConfig)
 				target:SetAttribute("LastParryAt", now)
 				drainStamina(target, (info.blockCost or 0) * cfg.PARRY_COST_MULT)
 				local refund = math.floor(math.max(info.staminaCost or 0, cfg.PARRY_REFUND) * (1 + cfg.PARRY_STREAK_STEP * (streak - 1)) + 0.5)
+				if perfect then refund += cfg.PERFECT_BONUS end
 				CombatServer.refundStamina(target, refund)
-				dprint("parry streak", streak, "+" .. refund, "stamina to", target.Name)
-				guardText(string.format("PARRY%s  +%d", streak > 1 and ("  ×" .. streak) or "", refund))
-				Injury.sparks(hitPos, 2 + 0.5 * (streak - 1))   -- big, white, and bigger with every parry in a row
+				dprint(perfect and "PERFECT parry" or "parry", "streak", streak, "+" .. refund, "stamina to", target.Name)
+				guardText(string.format("%s%s  +%d", perfect and "PERFECT PARRY" or "PARRY", streak > 1 and ("  ×" .. streak) or "", refund))
+				Injury.sparks(hitPos, 2 + 0.5 * (streak - 1) + (perfect and 1.2 or 0))   -- big, white, bigger with every parry in a row
+				if perfect then target:SetAttribute("PerfectParryAt", now) end   -- (the parrier's camera punches)
 				cancelSwing("parried")
 				sfx("Parry", part)
 				Sounds.voice("Parry", target:FindFirstChild("Head"), {Who = target})
@@ -1048,7 +1056,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				hum:TakeDamage(dmg)
 				dprint("KILLED", target.Name, region)
 			end
-			tell("HitConfirm", region)
+			tell("KillConfirm", region)   -- the killing blow: the biggest hitstop and camera punch
 			return
 		end
 

@@ -202,7 +202,8 @@ end)
 -- hit feedback (both views)
 local HIT_FLINCH  = 0.07   -- pitch kick when we take a hit
 local HIT_ROLL    = 0.5    -- roll impulse away from the side we were hit on
-local IMPACT_KICK = {hit = 0.025, block = 0.05, wall = 0.05, parry = 0.06, chamber = 0.06, feint = 0.015}   -- our own swing landing / being stopped / pulled
+local IMPACT_KICK = {hit = 0.025, heavy = 0.045, kill = 0.075, block = 0.05, wall = 0.05, parry = 0.06, chamber = 0.06, feint = 0.015, perfect = 0.07}   -- our own swing landing / being stopped / pulled
+local FOV_PUNCH = {kill = -7, perfect = -5, chamber = -3, heavy = -1.5}   -- degrees the view snaps in for a big moment (then eases back)
 
 -- death: ride the head as it falls, then fade
 local DEATH_HOLD = 2.2
@@ -219,6 +220,7 @@ local function spring(s, target, dt) return springC(s, target, dt, SPRING_STIFF,
 
 local sRoll, sLand, sSwayX, sSwayY, sLean, sStepY, sStepX, sKick, sHit =
 	newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring(), newSpring()
+local sFov = newSpring()   -- the FOV punch
 
 -- taking a hit: flinch down and roll away from the blow
 -- body jolt away from the blow (relayed, so everyone sees the reaction)
@@ -235,8 +237,15 @@ character:GetAttributeChangedSignal("HitTick"):Connect(function()
 end)
 -- our own swing landing, or clanging off a guard
 character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
-	local k = IMPACT_KICK[character:GetAttribute("LocalImpactKind")] or IMPACT_KICK.hit
+	local kind = character:GetAttribute("LocalImpactKind")
+	local k = IMPACT_KICK[kind] or IMPACT_KICK.hit
 	sHit.v = sHit.v - k * 26 * S("Shake")
+	if FOV_PUNCH[kind] then sFov.v = sFov.v + FOV_PUNCH[kind] * 22 * S("Shake") end
+end)
+-- our perfect parry (the server stamps it): a sharp punch, the moment reads
+character:GetAttributeChangedSignal("PerfectParryAt"):Connect(function()
+	sHit.v = sHit.v - IMPACT_KICK.perfect * 26 * S("Shake")
+	sFov.v = sFov.v + FOV_PUNCH.perfect * 22 * S("Shake")
 end)
 -- a dodge (Movement.client): lean the body into it, roll the camera
 local sDodgeX, sDodgeZ = newSpring(), newSpring()
@@ -709,7 +718,8 @@ local function loopBody(dt)
 		and (FP_FOV_MIN + (FP_FOV_MAX - FP_FOV_MIN) * dial + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD or 0))
 		or  (TP_FOV + dial * 12 + FOV_BOOST*walkFrac + (sprinting and SPRINT_FOV_ADD * 0.6 or 0))
 	fovNow = fovNow + (fovTarget - fovNow) * math.clamp(dt * FOV_SMOOTH, 0, 1)
-	Camera.FieldOfView = math.clamp(fovNow, 40, 120)
+	local punch = springC(sFov, 0, dtc, 220, 22)   -- snaps in, eases back in about a quarter second
+	Camera.FieldOfView = math.clamp(fovNow + punch, 40, 120)
 	if inFP then
 		-- forward-kinematics the head's world position from the C0s we just
 		-- set this frame — same "follows the head" feel as reading
