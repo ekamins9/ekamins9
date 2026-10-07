@@ -16,6 +16,7 @@
        GuardHull  show the block hull around weapons
        Hitbox     show weapon Hitbox parts
        TurnCap    print when the camera turn cap engages
+       Spectate   (client tab, when dead in a match) start / stop spectating
 
      The instance is created with defaults the first time a SERVER script
      requires this module (WalkSpeedGovernor does, at startup). Missing

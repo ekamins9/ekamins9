@@ -13,7 +13,11 @@
 
      In the courtyard (Hub mode) this screen steps aside and opens the Hub
      menu instead — there you ENTER COURTYARD. The two talk over _G.MenuBus:
-       "OpenHub", tab   (we ask)      "HubOpened" / "HubClosed"   (it tells us) ]]
+       "OpenHub", tab   (we ask)      "HubOpened" / "HubClosed"   (it tells us)
+     SPECTATE hands the screen to the Spectate script (watch the fight until
+     you spawn) over the same bus:
+       "Spectate", true (we ask)      "SpectateEnd" · "SpawnNow"   (it asks us)
+     and _G.ClassScreen lets it read the spawn button's state. ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -234,6 +238,10 @@ spawnBtn.AnchorPoint = Vector2.new(0.5, 1)
 spawnBtn.Position = UDim2.new(0.5, 0, 1, -30)
 spawnBtn.Size = UDim2.new(0.5, 0, 0, 54)
 spawnBtn.AutoButtonColor = false
+local spectateBtn = button(panel, "SPECTATE", 16, COL_CARD)
+spectateBtn.AnchorPoint = Vector2.new(1, 1)
+spectateBtn.Position = UDim2.new(1, 0, 1, -30)
+spectateBtn.Size = UDim2.new(0, 170, 0, 54)
 local waitLine = label(panel, "", 14, FONT, COL_ACCENT)
 waitLine.AnchorPoint = Vector2.new(0.5, 1)
 waitLine.Position = UDim2.new(0.5, 0, 1, 0)
@@ -309,8 +317,10 @@ end
 
 local function voting() return roundNode:GetAttribute("State") == "Intermission" end
 
+local spectating = false   -- the Spectate script has the screen
+
 local function present()
-	gui.Enabled = open and not hubOpen and not voting()
+	gui.Enabled = open and not hubOpen and not voting() and not spectating
 	if gui.Enabled then
 		panel.Position = UDim2.fromScale(0.5, 0.53)
 		TweenService:Create(panel, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromScale(0.5, 0.5)}):Play()
@@ -372,13 +382,27 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
-spawnBtn.Activated:Connect(function()
+local function trySpawn()
 	if not open or roundNode:GetAttribute("State") == "Intermission" then return end
 	if waveAt and os.clock() < waveAt then return end   -- already waiting for the wave
 	if not GameConfig.CLASSES[selected] then return end
 	spawnBtn.Text = "SPAWNING…"
 	event:FireServer("Spawn", selected)
+end
+spawnBtn.Activated:Connect(trySpawn)
+
+spectateBtn.Activated:Connect(function()
+	if not open then return end
+	spectating = true
+	present()
+	bus:Fire("Spectate", true)
 end)
+
+-- what the spectate bar shows on its SPAWN button, and as which class
+_G.ClassScreen = {
+	spawnText = function() return spawnBtn.Text end,
+	className = function() local d = GameConfig.CLASSES[selected]; return d and d.name or "" end,
+}
 
 event.OnClientEvent:Connect(function(what, a, b)
 	if what == "Show" then
@@ -386,6 +410,7 @@ event.OnClientEvent:Connect(function(what, a, b)
 		show(a, b)
 	elseif what == "Spawned" then
 		waveAt = nil
+		spectating = false
 		hide()
 	elseif what == "Wave" then
 		waveAt = os.clock() + (tonumber(a) or 0)
@@ -401,7 +426,16 @@ roundNode:GetAttributeChangedSignal("State"):Connect(function()
 end)
 
 bus.Event:Connect(function(what)
-	if what == "HubOpened" then
+	if what == "SpectateStarted" then
+		spectating = true
+		present()
+	elseif what == "SpectateEnd" then
+		spectating = false
+		if open then fetchCatalog(); refreshModeLine() end
+		present()
+	elseif what == "SpawnNow" then
+		trySpawn()
+	elseif what == "HubOpened" then
 		hubOpen = true; present()
 	elseif what == "HubClosed" then
 		hubOpen = false

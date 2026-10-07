@@ -82,6 +82,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
 | `ServerStorage/Armor/<Set>/Config.lua` | `ServerStorage` → `Armor` (Folder) → each set → `Config` | ModuleScript |
 | `StarterPlayerScripts/LoadoutMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript |
+| `StarterPlayerScripts/Spectate.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Spectate` (watch the fight while dead) | LocalScript |
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -710,6 +711,16 @@ loadout** — the armour, colours, hair and weapon you saved for it, dressed by 
 real spawn (`ReplicatedStorage ▸ PreviewRig`, shared with the Hub menu's stages) — the chosen
 one turning slowly, with the class's line and loadout underneath.
 
+**Spectating** (`StarterPlayerScripts ▸ Spectate`): dead in a match, SPECTATE on the class
+screen hands the screen over to watching the fight. The camera follows a fighter still standing —
+your killer first, then teammates, then everyone else, bots last — from behind and above, easing
+after them and stopping short of walls; when they fall it watches a moment, then moves on. The bar
+at the bottom shows who it is (name in their team's colour, class · weapon · kills, health), with
+◀ ▶ (or Q / E) to switch, scroll to zoom and the right mouse to look round them; SPAWN puts you
+straight back in as your chosen class (it reads like the class screen's button: the next wave, the
+next round) and CLASS brings the class screen back. The dead body's HUD is put away and the Hub
+menu's cinematic camera holds off while it's up; it ends when you spawn or the round ends.
+
 **Water** (`DrownY` on a map, e.g. Highbridge's river): a fighter who stays below that height
 for 1.2 s drowns (`CharacterSystems`); a knock-off still credits the last one to hit them.
 
@@ -929,6 +940,7 @@ game.ReplicatedStorage.Debug:SetAttribute("Rays", true)
 | `GuardHull` | true | show the block hull around weapons (brighter while blocking) |
 | `Hitbox` | false | show weapon `Hitbox` parts |
 | `TurnCap` | false | print when the camera turn cap engages |
+| `Spectate` | — | client tab, dead in a match: true starts spectating, false stops it |
 
 ## Sound slots
 
