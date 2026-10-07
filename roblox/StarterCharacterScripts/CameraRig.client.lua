@@ -356,6 +356,16 @@ local function boxGap(part, eye)
 	local h = part.Size / 2
 	return Vector3.new(math.max(math.abs(p.X) - h.X, 0), math.max(math.abs(p.Y) - h.Y, 0), math.max(math.abs(p.Z) - h.Z, 0)).Magnitude
 end
+-- the limb an armor piece is on (its model carries Limb)
+local function limbOf(part)
+	local p = part
+	while p and p ~= character do
+		local l = p:GetAttribute("Limb")
+		if l then return l end
+		p = p.Parent
+	end
+	return nil
+end
 local function fadeArmPieces()
 	local eye = Camera.CFrame.Position
 	for part in pairs(armPieces) do
@@ -782,12 +792,17 @@ local function loopBody(dt)
 		local show = math.clamp((-rot.X - TORSO_SHOW_FROM) / (TORSO_SHOW_TO - TORSO_SHOW_FROM), 0, 1)
 		setTorsoAlpha(1 - show)
 		fadeArmPieces()
-		-- a bow or a crossbow up in first person: the arms (and their armor) would fill
-		-- the view, so only the weapon, its string and the arrow show (RangedClient)
-		if (character:GetAttribute("LocalRanged") or 0) > 0.5 then
+		-- a bow or a crossbow up in first person: an arm by the face would fill the view.
+		-- A bow: the string hand (the left, at the jaw) goes; the bow arm stays, out in
+		-- front holding the bow. A crossbow: both (only the weapon shows). (RangedClient)
+		local ranged = character:GetAttribute("LocalRanged") or 0
+		if ranged > 0.5 then
+			local bow = ranged < 1.5
 			LeftArm.LocalTransparencyModifier = 1
-			RightArm.LocalTransparencyModifier = 1
-			for part in pairs(armPieces) do if part.Parent then part.LocalTransparencyModifier = 1 end end
+			if not bow then RightArm.LocalTransparencyModifier = 1 end
+			for part in pairs(armPieces) do
+				if part.Parent and (not bow or limbOf(part) == "Left Arm") then part.LocalTransparencyModifier = 1 end
+			end
 		end
 	else
 		Head.LocalTransparencyModifier = 0

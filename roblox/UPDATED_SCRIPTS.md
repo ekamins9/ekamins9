@@ -1,4 +1,28 @@
-# Updated scripts: bots on the board, bots that fight, an easier Siege, the result screen
+# Updated scripts: the bow flipped, a ready stance, no arm jolt; a warning before leaving a battle
+
+- **The bow is in the right hand and the left draws.** With the camera over your right shoulder, the body now turns away from the view instead of across it, and the bow stands next to the crosshair.
+- **A ready stance** when not drawing: the bow held low across the body, the string hand by it. It blends into the full draw.
+- **No zombie arm, no jolt:**
+  - Roblox's "holding a tool" arm (stuck straight out) is gone with a bow or crossbow in hand.
+  - The walk animation's arm swing is gone too: the arms no longer jump up as you start walking and drop as you stop.
+  - Everyone sees it the same way.
+- **First person:** the bow arm stays visible, out in front; the string arm is hidden. With a crossbow, both arms are hidden.
+- **Leaving a battle mid-round asks first:**
+  - It says what you'd give up: the pay for finishing (win or lose), the win bonus, and your kills so far.
+  - Losers still get paid for finishing a round; winners get double.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | bow mirrored to the right hand; `BOW_READY` stance |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | the bow stays in the right hand |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat ▸ RangedClient | ModuleScript | rest pose is the ready stance |
+| [RangedFX.client.lua](StarterPlayerScripts/RangedFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ RangedFX | LocalScript | string to the left hand; Roblox arm animations off the shoulders |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | first person: the bow arm shows |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | leave-battle warning |
+
+---
+
+## Before that: bots on the board, bots that fight, an easier Siege, the result screen
 
 - **Bots are on the scoreboard** (Tab, and during the intermission):
   - Each bot shows its kills and deaths, tagged BOT, sorted and team-coloured with the players.

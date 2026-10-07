@@ -234,22 +234,13 @@ function RangedServer.attach(Tool, cfgIn)
 		if os.clock() >= reloadUntil then setAttr("SpeedMult_Draw", nil) end
 	end
 
-	-- the bow sits in the LEFT hand (the grip weld moved over); a crossbow stays in the right
-	local function gripLeft(char)
-		if not isBow then return end
-		local arm = char:FindFirstChild("Right Arm")
-		local grip = arm and arm:WaitForChild("RightGrip", 2)
-		local left = char:FindFirstChild("Left Arm")
-		if grip and left then grip.Part0 = left end
-	end
-
+	-- (the bow sits in the RIGHT hand like any weapon; the left draws the string: RigPose.ranged)
 	local function onEquipped()
 		character = Tool.Parent
 		if not (character and character:IsA("Model")) then character = nil; return end
 		player = Players:GetPlayerFromCharacter(character)
 		humanoid = character:FindFirstChildOfClass("Humanoid")
 		publish()
-		task.spawn(gripLeft, character)
 	end
 	local function onUnequipped()
 		cancelDraw()

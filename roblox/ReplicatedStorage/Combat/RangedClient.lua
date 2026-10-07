@@ -214,7 +214,7 @@ function RangedClient.attach(Tool, cfgIn)
 		if reloading and not reloadFrom then reloadFrom, reloadFor = now, tonumber(reloading) or cfg.RELOAD
 		elseif not reloading then reloadFrom = nil end
 		local aimWant
-		if isBow then aimWant = (drawing or now - lastShotAt < 0.5) and 1 or 0.2
+		if isBow then aimWant = (drawing or now - lastShotAt < 0.5) and 1 or 0
 		else aimWant = reloadFrom and 0 or 1 end
 		aim += (aimWant - aim) * math.clamp(dt * 12, 0, 1)
 		c:SetAttribute("LocalRanged", isBow and 1 or 2)

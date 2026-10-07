@@ -1763,6 +1763,16 @@ local function leaveMatch()
 	if state.ranked and state.door == "Lists" then
 		modal("LEAVE A RANKED MATCH?", "Leaving before the end counts as a loss and locks the queue for " .. tostring(ECON.queueLockMinutes or 10) .. " minutes.",
 			{{"LEAVE", COL.RED, function() closeModal(); goDoor("Courtyard") end}})
+	elseif roundState() == "Round" and not inHub() and roundNode:GetAttribute("Mode") ~= "Tiltyard"
+		and roundNode:GetAttribute("NoRewards") ~= true then
+		-- a battle in progress: the round's pay is only for those still in it at the end
+		local e = ECON.earn
+		local ls = player:FindFirstChild("leaderstats")
+		local kills = ls and ls:FindFirstChild("Kills") and ls.Kills.Value or 0
+		modal("LEAVE THE BATTLE?", string.format(
+			"The round's pay goes to those who see it out: %d Marks for finishing it (win or lose), %d more if your side wins%s. Leave now and you get none of it.",
+			e.round.marks, e.win.marks, kills > 0 and string.format(", and %d for your %d kill%s so far", e.kill.marks * kills, kills, kills == 1 and "" or "s") or ""),
+			{{"LEAVE ANYWAY", COL.RED, function() closeModal(); goDoor("Courtyard") end}})
 	else
 		goDoor("Courtyard")
 	end

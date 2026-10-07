@@ -40,8 +40,11 @@ RigPose.CONFIG = {
 	-- ranged (bows, crossbows: the inputs ranged / aim / draw / reload)
 	BOW_TWIST       = 0.85,          -- the archer turns side-on to the target (radians)…
 	BOW_TWIST_DRAW  = 0.5,           -- …and further as the string comes back: the shoulders on the line
-	TWIST_DIR       = -1,            -- flip if the wrong shoulder comes forward (the bow's, the left, leads)
+	TWIST_DIR       = 1,             -- flip if the wrong shoulder comes forward (the bow's, the right, leads:
+	                                 --   the body turns off the over-the-shoulder camera's line)
 	SWING_DIR       = 1,             -- flip if "across the chest" swings the arms outward
+	-- a bow at the ready (not drawing): raise / across (radians) for each arm, a little turn
+	BOW_READY       = {bowRaise = 0.6, bowAcross = 0.35, stringRaise = 0.85, stringAcross = 1.0, twist = 0.2},
 }
 local C = RigPose.CONFIG
 
@@ -114,23 +117,30 @@ function RigPose.ranged(out, i, o, crossbow)
 	local level = math.pi / 2
 	local pitch = i.arm or 0
 	if not crossbow and reload > 0 and draw <= 0 then
-		-- nocking: the string hand goes back over the shoulder to the quiver and down to the string
+		-- nocking: the string hand (the left) goes back over the shoulder to the quiver and down to the string
 		local reach = math.sin(math.min(reload, 1) * math.pi)
-		out["Left Shoulder"] = arm(o, "Left Shoulder", 0.9 + 0.3 * (1 - reach), 0.25)
-		out["Right Shoulder"] = arm(o, "Right Shoulder", 0.4 + 2.2 * reach, -0.35 * reach + 0.3 * (1 - reach))
+		out["Right Shoulder"] = arm(o, "Right Shoulder", 0.9 + 0.3 * (1 - reach), 0.25)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", 0.4 + 2.2 * reach, -0.35 * reach + 0.3 * (1 - reach))
 	elseif not crossbow then
-		-- side-on: the shoulders turn onto the line to the target (the left, the bow's, in front,
-		-- the right behind the head), the bow arm straight out along it. Each arm turns back by the
+		-- side-on: the shoulders turn onto the line to the target (the right, the bow's, in front,
+		-- the left behind the head), the bow arm straight out along it. (The bow is in the RIGHT
+		-- hand and the left draws: the camera sits over the right shoulder, so the body turns
+		-- away from its line instead of across it, and the bow stands where you aim.) Each arm turns back by the
 		-- torso's twist, so both point at the target. THE DRAW: the string hand starts across at the
 		-- bow and comes straight back along the line to the jaw, the shoulders turning further as
 		-- it comes; the arrow ends up running straight out under your eye.
-		local twist = (C.BOW_TWIST + C.BOW_TWIST_DRAW * draw) * aim * C.TWIST_DIR
+		-- AT THE READY (aim 0): the bow low and forward in the right hand, slanted across
+		-- the body, the left hand across on the string by the nock; it blends into the
+		-- aim as the draw starts.
+		local R = C.BOW_READY
+		local twist = (R.twist + (C.BOW_TWIST - R.twist + C.BOW_TWIST_DRAW * draw) * aim) * C.TWIST_DIR
 		out.RootJoint = out.RootJoint * CFrame.Angles(0, 0, twist)
 		out.Neck = out.Neck * CFrame.Angles(0, 0, -twist)
-		local raise = aim * (level + pitch)
-		out["Left Shoulder"] = arm(o, "Left Shoulder", raise + (1 - aim) * 0.35, twist)
-		out["Right Shoulder"] = arm(o, "Right Shoulder", raise * (1 - 0.05 * draw) + (1 - aim) * 0.1,
-			-twist + aim * 0.6 * (1 - draw))
+		local up = level + pitch
+		local function mix(a, b) return a + (b - a) * aim end
+		out["Right Shoulder"] = arm(o, "Right Shoulder", mix(R.bowRaise, up), mix(R.bowAcross, -twist))
+		out["Left Shoulder"] = arm(o, "Left Shoulder", mix(R.stringRaise, up * (1 - 0.05 * draw)),
+			mix(R.stringAcross, twist + 0.6 * (1 - draw)))
 	elseif reload > 0 and aim < 0.5 then
 		-- the windlass: the crossbow points down, the left hand cranks
 		local crank = math.abs(math.sin(reload * math.pi * 4))

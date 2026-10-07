@@ -187,7 +187,7 @@ decides every slot, for every class, in the menu and on the server). The lightes
 pieces, then **85 health, no armor protection, 4% faster** (`health` / `prot` / `speed` on the
 class, applied by `LoadoutServer`).
 
-**The longbow** (free) is held in the left hand. **Hold** the Swing bind (left mouse) to draw: 1.6 s
+**The longbow** (free) is held in the right hand; the left draws the string. **Hold** the Swing bind (left mouse) to draw: 1.6 s
 to full, walking at 20% and no sprinting. **Let go** to loose; let go before 40% of the draw and
 the string is let down, no shot. The power is the draw the **server** timed: a part draw is weak
 and drops hard; a full draw flies at 120 studs/s and still drops. The aim always wanders a little,
@@ -211,12 +211,20 @@ back every 6 / 8 s, full every life. Kick works with a bow in hand.
 What everyone sees (`RangedFX`): arrows in flight (`ArrowFlight`; your own fly the moment you
 loose), every bow's **string drawn back to the hand with an arrow on it**, a crossbow's string at
 the nut while spanned and the bolt in its groove. The **stances** are `RigPose.ranged` (inputs
-`ranged`, `aim`, `draw`, `reload`, relayed like the rest of the pose). The bow is held out in the
-left hand with the torso turned side-on (`BOW_TWIST`), and drawing turns it further
-(`BOW_TWIST_DRAW`) while the right arm pulls back along the arrow, not up. The nock pose reaches
-back to the quiver. The crossbow is shouldered, or pointed down and cranked. **In first person,
-with a bow or crossbow up, your own arms are hidden** (`CameraRig`): only the bow, its string and
-the arrow show.
+`ranged`, `aim`, `draw`, `reload`, relayed like the rest of the pose).
+- **At the ready** (not drawing, `BOW_READY`): the bow low and slanted across the body in the
+  right hand, the left hand across on the string.
+- **Drawing:** the body turns side-on (`BOW_TWIST`, further as it comes back: `BOW_TWIST_DRAW`),
+  the bow arm straight out at the target, the left hand pulling back along the arrow. With the
+  bow in the right hand the body turns *off* the over-the-shoulder camera's line, so nothing
+  crosses the view.
+- **Nocking:** the left hand reaches back to the quiver.
+- **Crossbow:** shouldered, or pointed down and cranked.
+- **Roblox's own arm animations are taken off the shoulders** while a bow or crossbow is in hand
+  (`RangedFX`, every client): no "holding a tool" arm stuck straight out, and no jolt as the walk
+  animation starts and stops.
+- **In first person** with a bow up, the string arm is hidden and the bow arm stays out in front;
+  with a crossbow, both arms are hidden (`CameraRig`).
 
 **Sounds.**
 - The draw creaks as the bow bends.
