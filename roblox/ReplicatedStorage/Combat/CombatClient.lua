@@ -339,12 +339,14 @@ function CombatClient.attach(Tool, weaponConfig)
 		beginSweep(token, active)
 		task.delay(active, function()
 			if currentTrack ~= t or armToken ~= arm then return end
+			-- the follow-through runs at about its natural pace (the recovery only
+			-- decides when you may act again; a new action cross-fades out of it)
 			local rec = math.max(recovery or 0, 0.15)
-			local sp2 = (mk.Settle - mk.Through) / rec
+			local sp2 = math.clamp((mk.Settle - mk.Through) / math.max(rec, 0.35), 0.8, 1.25)
 			t:AdjustSpeed(sp2)
 			currentSpeed = sp2
-			task.delay(rec * 0.85, function()
-				if currentTrack == t and armToken == arm then t:Stop(math.max(rec * 0.45, 0.12)); currentTrack = nil end
+			task.delay((mk.Settle - mk.Through) / sp2 * 0.94, function()
+				if currentTrack == t and armToken == arm then t:Stop(0.15); currentTrack = nil end
 			end)
 		end)
 	end

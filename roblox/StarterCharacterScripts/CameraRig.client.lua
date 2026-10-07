@@ -688,7 +688,8 @@ local function loopBody(dt)
 		-- a forged weapon in hand: arms and weapon aim with the camera about the eyes
 		aim    = (character:FindFirstChildOfClass("Tool") and AnimSetsMod and AnimSetsMod.forged()) and 1 or 0,
 	}
-	inputs.aimP, inputs.aimY = RigPose.aimAngles(HRP.CFrame, Camera.CFrame)
+	-- the arms follow the camera's look up and down (about the shoulders)
+	inputs.aimP, inputs.aimY = rot.X, 0
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
 	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
 	-- heartbeat: proves THIS loop is the one drawing the body

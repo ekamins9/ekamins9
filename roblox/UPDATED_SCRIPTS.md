@@ -1,5 +1,14 @@
 # Updated scripts: objective rings, training ring deaths, combat animations
 
+**Arms stay on, swings across, smooth finish (newest; all 66 clips rebuilt):**
+- **Arms never detach:**
+  - They turn with your view about their own shoulders, not your eyes.
+  - Their reach is held to a few hundredths of a stud. Measured in play: at most 0.07 from the socket.
+  - Two-handers nudge both hands (up to 0.45 studs) so the left hand stays on the grip without stretching an arm.
+- **Arms follow the camera** up and down. There's no exact crosshair convergence any more; it's close and natural.
+- **Horizontal swings** run at shoulder height, arms straight across the body, perfectly level.
+- **No drop at the end of a swing:** the follow-through stays nearly level and plays at its natural pace, then settles exactly into the idle pose.
+
 **Attacks go where you aim (newest; all 66 clips rebuilt at 40 fps):**
 - **Swings are level:** the blade cuts a flat plane at crosshair height, with the hands at 1.15.
 - **Thrusts drive at the crosshair**, and **overheads chop straight down the middle**.

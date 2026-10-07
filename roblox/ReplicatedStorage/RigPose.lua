@@ -119,18 +119,18 @@ local function animSets()
 end
 
 -- AIM: the shoulders' C0s that turn the arms (and the weapon in the hand) by
--- `pitch` about the eyes, whatever the torso's own bend and animated turn —
--- so the weapon's path crosses the line of sight exactly as the clip has it
--- crossing straight ahead. rootC0 / rs / ls are the rest C0s (origins).
+-- `pitch` / `yaw` toward where you look, whatever the torso's own bend and
+-- animated turn. Each arm turns about its own shoulder joint, so the arms never
+-- leave the torso; the weapon's path follows the view. rootC0 / rs / ls are the rest C0s (origins).
 function RigPose.aimArms(j, rootC0, rs, ls, pitch, yaw)
 	local rj = j.RootJoint
 	if not (rj and j["Right Shoulder"] and j["Left Shoulder"]) then return end
 	local c1r, ttor = rj.C1, rj.Transform
-	local E = C.AIM_EYE
-	local turn = CFrame.new(E) * CFrame.Angles(0, yaw or 0, 0) * CFrame.Angles(pitch, 0, 0) * CFrame.new(-E)
+	local turn = CFrame.Angles(0, yaw or 0, 0) * CFrame.Angles(pitch, 0, 0)
 	local k = (c1r * ttor:Inverse() * rj.C0:Inverse()) * turn * (rootC0 * ttor * c1r:Inverse())
-	j["Right Shoulder"].C0 = k * rs
-	j["Left Shoulder"].C0 = k * ls
+	k = k - k.Position   -- the turn only: each arm turns about its OWN shoulder, so it stays on the torso
+	j["Right Shoulder"].C0 = CFrame.new(rs.Position) * k * (rs - rs.Position)
+	j["Left Shoulder"].C0 = CFrame.new(ls.Position) * k * (ls - ls.Position)
 end
 
 -- where an attack should meet the crosshair: the pitch and yaw (root space,

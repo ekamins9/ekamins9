@@ -48,7 +48,7 @@ AF.FOLLOW = 0.45    -- Through → Settle (rescaled to the recovery)
 -- pitch about the eyes (RigPose.aimArms), so an attack aimed at this line in the
 -- clip lands on the crosshair wherever it points.
 AF.EYE_Y      = 1.5
-AF.SWING_Y    = 1.15                    -- a level swing's hands: the blade sweeps just under the crosshair
+AF.SWING_Y    = 0.6                     -- a level swing's hands: at the shoulders, arms straight out across the body
 AF.AIM_POINT  = V3(0, 1.5, -5.5)        -- a thrust drives its point here (on the line of sight)
 
 --------------------------------------------------------------------
@@ -193,8 +193,8 @@ local MOVES = {
 			{u = 1.0,  az = -78, el = 0, ln = 5, ease = "quadOut"},            -- carries through to the left, still level
 		},
 		follow = {
-			{u = 0.45, az = -105, el = -28, ln = 4, ease = "cubicOut"},       -- the weight pulls the blade down and round
-			{u = 1.0,  guard = true, ease = "sine"},                           -- back to guard
+			{u = 0.4, az = -100, el = -6, ln = 3, ease = "cubicOut"},         -- the momentum runs out, still nearly level
+			{u = 1.0, guard = true, ease = "sine"},                            -- and it eases back up to guard
 		},
 	},
 	Overhead = {   -- the hands go up ABOVE and in front of the head (never through it); the blade hangs back over it
@@ -250,6 +250,7 @@ AF.MOVES = MOVES
 --------------------------------------------------------------------
 -- p: {az, el, tw, ln, tl, stab (Vector3), hand (Vector3 offset), edge (Vector3), left (Vector3 target)}
 -- side: 1 = right attack, -1 = left (mirrored); returns world CFrames
+AF.GRIP_NUDGE = 0.45   -- how far two-handed hands may shift to keep both on the grip
 AF.FLOOR = -2.75   -- the tip never goes below this (feet are at -3): the blade stops at the ground
 
 local solveRaw
@@ -299,12 +300,46 @@ solveRaw = function(cls, p, side, edgeHint, legs, prev)
 		target = V3(-(tr.X - cls.pivot.X * (1 - (cls.backhand or 1))), tr.Y, tr.Z)
 	end
 	local rShoulder = torso:PointToWorldSpace(J.RS.C0.Position)
+	local lShoulder0 = torso:PointToWorldSpace(J.LS.C0.Position)
+	-- TWO HANDS, arms in their sockets: nudge the hands (within GRIP_NUDGE) to where
+	-- BOTH can hold the grip — the right hand on its arm's reach, the left on the
+	-- grip below it within the left arm's reach — preferring last frame's nudge
+	local nudge = Vector3.zero
+	if cls.twoHanded then
+		local slack = cls.slack or 0.15
+		local function leftErr(t)
+			local h = rShoulder + (t - rShoulder).Unit * ARM_LEN
+			local c = h - lShoulder0
+			local bc = blade:Dot(c)
+			local g = clamp(bc, cls.gap - slack, cls.gap + slack)
+			local disc = bc * bc - c:Dot(c) + ARM_LEN * ARM_LEN
+			if disc >= 0 then
+				local r1, r2 = bc + math.sqrt(disc), bc - math.sqrt(disc)
+				g = clamp(math.abs(r1 - cls.gap) < math.abs(r2 - cls.gap) and r1 or r2, cls.gap - slack, cls.gap + slack)
+			end
+			return math.abs(((h - blade * g) - lShoulder0).Magnitude - ARM_LEN)
+		end
+		local prevN = prev and prev.nudge or Vector3.zero
+		local best, bestCost = Vector3.zero, math.huge
+		local R, step = AF.GRIP_NUDGE, AF.GRIP_NUDGE / 3
+		for dx = -R, R + 1e-6, step do
+			for dy = -R, R + 1e-6, step do
+				for dz = -R, R + 1e-6, step do
+					local n = V3(dx, dy, dz)
+					local cost = leftErr(target + n) * 6 + n.Magnitude * 0.3 + (n - prevN).Magnitude * 1.5
+					if cost < bestCost then best, bestCost = n, cost end
+				end
+			end
+		end
+		nudge = best
+		target += nudge
+	end
 	local rAim = (target - rShoulder)
 	local rDist = rAim.Magnitude
 	rAim = rAim.Unit
 	if prev then rAim = capTurn(prev.rAim, rAim, AF.ARM_CAP.right) end
 	local rFront = prev and transport(prev.rFront, prev.rAim, rAim) or naturalFront(torso, rAim)
-	local rArm, rHand = limb(rShoulder, rAim, rFront, J.RS.C1.Position, HAND, clamp(rDist - ARM_LEN, -0.42, 0.45))   -- (the shoulder reaches / draws in to hold the line)
+	local rArm, rHand = limb(rShoulder, rAim, rFront, J.RS.C1.Position, HAND, clamp(rDist - ARM_LEN, -0.05, 0.07))   -- (a touch of reach; more would pull the arm off the shoulder)
 
 	-- the weapon: blade where the pose says, edge leading
 	-- (held poses: the edge toward the enemy)
@@ -347,10 +382,10 @@ solveRaw = function(cls, p, side, edgeHint, legs, prev)
 	local lDist = lAim.Magnitude
 	if prev then lAim = capTurn(prev.lAim, lAim.Unit, AF.ARM_CAP.left) end
 	local lFront2 = prev and transport(prev.lFront, prev.lAim, lAim.Unit) or naturalFront(torso, lAim.Unit)
-	local lArm, lHand = limb(lShoulder, lAim.Unit, lFront2, J.LS.C1.Position, HAND, clamp(lDist - ARM_LEN, -0.35, 0.55))
+	local lArm, lHand = limb(lShoulder, lAim.Unit, lFront2, J.LS.C1.Position, HAND, clamp(lDist - ARM_LEN, -0.05, 0.08))
 
 	local out = {Torso = torso, Head = head, ["Right Arm"] = rArm, ["Left Arm"] = lArm, Handle = handle, rHand = rHand, lHand = lHand, lErr = (lHand - lTarget).Magnitude, blade = blade,
-		state = {rAim = rAim, rFront = orth(rFront, rAim) or rFront, lAim = lAim.Unit, lFront = orth(lFront2, lAim.Unit) or lFront2, g = gripG}}
+		state = {rAim = rAim, rFront = orth(rFront, rAim) or rFront, lAim = lAim.Unit, lFront = orth(lFront2, lAim.Unit) or lFront2, g = gripG, nudge = nudge}}
 	if legs then
 		-- feet planted in the stance (idle / block only). Solved against the
 		-- UNTURNED torso: in game the hips counter the torso's animated turn
