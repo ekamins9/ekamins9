@@ -311,7 +311,12 @@ local function records(plr)
 end
 
 local function clearRingBots(r)
-	for _, b in ipairs(r.bots or {}) do if b.model.Parent then poof(b.model); b:destroy() end end
+	for _, b in ipairs(r.bots or {}) do
+		-- the living vanish in a puff; the fallen are left to fall: their own death
+		-- (Bots) ragdolls them, plays the kill effect and lays the corpse, then tidies up
+		local dead = not b.alive or (b.hum and b.hum.Health <= 0)
+		if b.model.Parent and not dead then poof(b.model); b:destroy() end
+	end
 	r.bots = {}
 end
 

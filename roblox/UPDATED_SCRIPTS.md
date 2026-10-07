@@ -1,4 +1,26 @@
-# Updated scripts: forged combat animations, first hit wins, sharper hit sampling
+# Updated scripts: objective rings, training ring deaths, combat animations
+
+**Objective indicators and Training (newest):**
+- **KOTH, Siege ram and capture zones:** a glowing ring on the ground that you can see from inside it.
+  - The rim is the holder's colour and flashes when contested.
+  - Segments show who's holding it, split by team; a capture fills as it's taken.
+  - Dashes spin faster while it's moving or being taken.
+  - A light pillar marks it from across the map (hidden while you're in it). The ring rolls with the ram.
+  - The KOTH capture area is now the hill's real disc (it was a square box), and the marker reads TAKE / HOLD THE HILL or CONTESTED.
+- **Training ring:** a bot you beat now ragdolls with its kill effect, instead of freezing (it was cleared away the moment it died).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ObjectiveFX.client.lua](StarterPlayerScripts/ObjectiveFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ ObjectiveFX | LocalScript | **new**: the ground rings |
+| [KOTH.lua](ServerScriptService/Game/Modes/KOTH.lua) | ServerScriptService ▸ Game ▸ Modes ▸ KOTH | ModuleScript | disc capture, publishes the hill's state |
+| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Siege | ModuleScript | publishes the objective's radius; capture box hidden |
+| [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Objectives | LocalScript | KOTH marker |
+| [Training.lua](ServerScriptService/Game/Training.lua) | ServerScriptService ▸ Game ▸ Training | ModuleScript | fallen ring bots die normally |
+| [README.md](README.md) | — | docs | objective indicators |
+
+---
+
+## Before that: forged combat animations, first hit wins, sharper hit sampling
 
 **Follow-up fixes (all 66 clips rebuilt and re-uploaded):**
 - **Guard:** blades held upright (swords ~75°, polearms ~62°, daggers ~55°) and the hands low, at chest or belly, instead of a sword levelled at the enemy with the arms raised.

@@ -210,6 +210,25 @@ RunService.RenderStepped:Connect(function()
 	panel.Visible = live and not hubMenuUp()
 	bb.Enabled = live and kind ~= "Horde"
 	if not live then return end
+	if kind == "Hill" then
+		-- KOTH: the scoreboard has the points; here, just the marker over the hill
+		panel.Visible = false
+		local pos = round:GetAttribute("ObjPos")
+		if typeof(pos) == "Vector3" then
+			anchor.Position = pos + Vector3.new(0, 12, 0)
+			if anchor.Parent ~= workspace then anchor.Parent = workspace end
+			local cam = workspace.CurrentCamera
+			local far = cam and (cam.CFrame.Position - pos).Magnitude or 0
+			dist.Text = string.format("%dm", math.floor(far / 3.6 + 0.5))
+			local owner, st, me = round:GetAttribute("ObjOwner") or "", round:GetAttribute("ObjState"), myKey()
+			verb.Text = st == "contested" and "CONTESTED" or ((owner ~= "" and owner == me) and "HOLD THE HILL" or "TAKE THE HILL")
+			local col = owner ~= "" and teamOf(owner) and teamOf(owner).rgb or Color3.fromRGB(240, 226, 190)
+			if st == "contested" then col = Color3.fromRGB(255, 120, 90) end
+			verb.TextColor3 = col:Lerp(Color3.new(1, 1, 1), 0.25)
+			diamond.BackgroundColor3 = col
+		end
+		return
+	end
 	if kind == "Horde" then
 		role.Text = "HORDE"
 		role.BackgroundColor3 = Color3.fromRGB(150, 110, 60)

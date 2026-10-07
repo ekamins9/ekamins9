@@ -43,7 +43,7 @@ if not event then
 end
 
 local node = Game.node
-local ATTRS = {"Attackers", "ObjKind", "ObjStage", "ObjStages", "ObjLabel", "ObjProgress", "ObjState", "ObjPos", "ObjAttack", "ObjDefend", "ObjNote"}
+local ATTRS = {"Attackers", "ObjKind", "ObjStage", "ObjStages", "ObjLabel", "ObjProgress", "ObjState", "ObjPos", "ObjAttack", "ObjDefend", "ObjNote", "ObjRadius"}
 
 local Siege = setmetatable({}, {__index = Game.Mode})
 Siege.__index = Siege
@@ -272,6 +272,7 @@ function Siege:setupCapture(c)
 	z.Transparency = 0.72
 	z.Color = Teams.def(self.defend).rgb
 	self.cap = {zone = z, time = c:GetAttribute("Time") or 22, r = z:GetAttribute("Radius") or 10, h = z:GetAttribute("Height") or 10}
+	z.Transparency = 1   -- the glowing ring on the ground shows it (ObjectiveFX)
 end
 
 --------------------------------------------------------------------
@@ -374,9 +375,12 @@ function Siege:tick(dt)
 	node:SetAttribute("ObjDefend", self.near and self.near.d or 0)
 	node:SetAttribute("ObjNote", self.note or "")
 	if self.near and self.near.pos then node:SetAttribute("ObjPos", self.near.pos) end
+	-- the ring each client draws round the objective (none for the champion: he moves)
+	node:SetAttribute("ObjRadius", (self.ram and self.ram.radius) or (self.cap and self.cap.r) or nil)
 	-- a capture zone takes the attackers' colour as it fills
 	if self.cap then
 		self.cap.zone.Color = Teams.def(self.defend).rgb:Lerp(Teams.def(self.attack).rgb, self.progress or 0)
+		self.cap.zone.Transparency = 1
 	end
 	node:SetAttribute("Objective", self:objective())
 end

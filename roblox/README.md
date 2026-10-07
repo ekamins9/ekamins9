@@ -433,7 +433,15 @@ A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
 names them. Inside a map: `Spawns` (Folder of parts; attribute `Team = "A"` / `"B"` on team
 spawns, none = anyone; made invisible on load), optional `Zones` → `Hill` (a Part; KOTH capture
-volume), and the geometry. Nothing to author for the menu camera: it measures the map's bounding
+volume: a Cylinder's disc, or the circle inside a block's footprint — hidden in play), and the geometry.
+**Objective indicators** (`StarterPlayerScripts ▸ ObjectiveFX`): the KOTH hill, the Siege ram and a
+Siege capture zone are drawn on the ground as a glowing ring every client sees, visible from inside
+it: a soft floor glow, a rim in the holder's colour (flashing between the two sides when contested),
+48 segments split by how many of each side stand on it (a capture: filled as it's taken), spinning
+dashes (faster while it's moving or being taken), a light pillar to find it from across the map
+(hidden while you stand in it), and a ground light. It rolls with the ram. Data: Round attributes
+`ObjKind` (`Hill` / `Ram` / `Capture`), `ObjPos`, `ObjRadius`, `ObjState`, plus `ObjOwner` /
+`ObjCountA` / `ObjCountB` (KOTH) or `Attackers` / `ObjAttack` / `ObjDefend` / `ObjProgress` (Siege). Nothing to author for the menu camera: it measures the map's bounding
 box and circles above its edge, looking down and wandering its gaze across the ground. A public
 server is the Hub and loads its map the moment it starts, so there is a courtyard to look at
 before anyone has spawned. `MapLoader` clones one into `workspace.Map` per round
