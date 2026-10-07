@@ -1,20 +1,34 @@
-# Updated scripts: spectate while you're dead
+# Updated scripts: three Horde maps the horde walks into
 
-- **Spectate.** Dead in a match, press SPECTATE on the class screen to watch the fight until you
-  spawn. The camera follows a fighter still standing — your killer first, then teammates, then
-  everyone else, bots last — from behind and above, easing after them and never through a wall;
-  when they fall it watches a moment and moves on to the next.
-- **The bar** at the bottom shows who you're watching (name in their team's colour, class ·
-  weapon · kills, a health bar). ◀ ▶ or Q / E switch, scroll zooms, the right mouse looks round
-  them. SPAWN gets you straight back in as your chosen class (it counts down a reinforcement wave
-  or the next round, like the class screen) and CLASS brings the class screen back.
-- While spectating, the dead body's HUD is put away and the Hub menu's cinematic camera holds
-  off. Spectating ends when you spawn or the round ends.
+- **The Wildwood**: a dusk forest clearing, a muddy road, an ambushed merchant caravan (a wagon
+  on its side, one sagging on a broken wheel, cargo and arrows everywhere, a campfire, lanterns,
+  fireflies). The horde comes out of the trees down six trails and along the road (8 gates).
+- **Ravenhold**: a ruined keep at night. Smashed main gate under a jammed portcullis, three
+  breaches and a fallen corner (5 gates, mist outside each); a roofless chapel, a well, a gibbet,
+  graves, a broken colonnade, braziers.
+- **Stormbreak**: a palisade camp above a stormy beach, three longships run up on the sand,
+  raiders in at the sea gate, two beach gaps and the land gate (4 gates); tents, a smithy, a
+  command tent, a bonfire, rain.
+- **Horde** now plays the Wildwood, the Colosseum, Ravenhold and Stormbreak. The Sandpit stays
+  in the other modes.
+- **Bots walk round things**: a tree, a wagon or a wall in the way turns a bot to the open side
+  (all maps).
+- **Each map's own haze**: maps can set the Atmosphere (`K.atmosphere`); every map starts from
+  the place's lighting, so one map's dusk no longer carries into the next.
+- **Spawns** that a build put inside a prop are moved out until a body fits (5 on the
+  Wildwood, 3 on Stormbreak).
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Spectate.client.lua](StarterPlayerScripts/Spectate.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Spectate | LocalScript | **new**: the spectator camera and bar |
-| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ LoadoutMenu | LocalScript | SPECTATE button; steps aside while spectating; spawns for the bar's SPAWN |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | the cinematic camera holds off while spectating |
-| [DebugFlags.lua](ReplicatedStorage/DebugFlags.lua) | ReplicatedStorage ▸ DebugFlags | ModuleScript | documents the `Spectate` flag |
-| [README.md](README.md) | — | docs | spectating |
+| [MapWildwood.lua](ServerScriptService/Build/MapWildwood.lua) | ServerScriptService ▸ Build ▸ MapWildwood | ModuleScript | **new** |
+| [MapRavenhold.lua](ServerScriptService/Build/MapRavenhold.lua) | ServerScriptService ▸ Build ▸ MapRavenhold | ModuleScript | **new** |
+| [MapStormbreak.lua](ServerScriptService/Build/MapStormbreak.lua) | ServerScriptService ▸ Build ▸ MapStormbreak | ModuleScript | **new** |
+| [MapProps.lua](ServerScriptService/Build/MapProps.lua) | ServerScriptService ▸ Build ▸ MapProps | ModuleScript | **new**: wagons, wheels, trees, campfire, lantern, brazier, grave, arrow, sack, longship |
+| [Maps.lua](ServerScriptService/Build/Maps.lua) | ServerScriptService ▸ Build ▸ Maps | ModuleScript | registers the three maps |
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build ▸ MapKit | ModuleScript | `K.atmosphere`; `K.clearSpawns` (run by `K.finish`) |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game ▸ MapLoader | ModuleScript | Atmo_* attributes; lighting reset per map |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | `Bot:steer` round obstacles |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | Horde's maps; map titles |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | the maps; painting ground, haze, Horde gates |
+
+The built maps live in `ServerStorage ▸ Maps` in Studio: **save the place** to keep them.

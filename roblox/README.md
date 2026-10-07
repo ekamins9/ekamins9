@@ -56,6 +56,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Build/MapFrostgate.lua` | `ServerScriptService` → `Build` → `MapFrostgate` | ModuleScript |
 | `ServerScriptService/Build/MapColosseum.lua` | `ServerScriptService` → `Build` → `MapColosseum` | ModuleScript |
 | `ServerScriptService/Build/MapRoseCourt.lua` | `ServerScriptService` → `Build` → `MapRoseCourt` | ModuleScript |
+| `ServerScriptService/Build/MapProps.lua` | `ServerScriptService` → `Build` → `MapProps` (wagons, trees, campfires, braziers, graves, longships…) | ModuleScript |
+| `ServerScriptService/Build/MapWildwood.lua`, `MapRavenhold.lua`, `MapStormbreak.lua` | `ServerScriptService` → `Build` → `MapWildwood` / `MapRavenhold` / `MapStormbreak` | ModuleScript |
 | `ServerScriptService/Game/Modes/Horde.lua` | `ServerScriptService` → `Game` → `Modes` → `Horde` | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
 | `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
@@ -682,6 +684,26 @@ of their health back; when everyone is down at once the horde wins and the round
 can't hurt each other and bots don't hurt each other. Each wave beaten pays
 everyone `wave` (15 Marks, 30 XP), each bot killed pays `kill`, and your best wave is kept
 (`stats.hordeBest`). The HUD shows the wave, the foes left and the countdown between waves.
+
+Horde's maps are built for it: each has several ways in, and the horde walks in from a
+little way outside (no one appears in the middle of the fight). Bots steer round trees, wagons
+and walls in their way (`Bots ▸ Bot:steer`: a short look ahead at knee height, then the open side).
+
+**The Wildwood** (`Build ▸ MapWildwood`, Horde): a clearing in a dark forest at dusk, a muddy
+road through it and a merchant caravan that didn't make it: one wagon on its side, one on a
+broken wheel, cargo and arrows everywhere, a campfire still going, fireflies over the grass. The
+horde comes out of the trees down six trails and along the road both ways (8 gates).
+
+**Ravenhold** (`Build ▸ MapRavenhold`, Horde): a ruined keep under the moon. The main gate's
+doors lie smashed under a jammed portcullis, three breaches are knocked through the curtain wall
+and the south-west corner has fallen in (5 gates, mist outside each). Inside: a roofless chapel
+with its altar candles lit, a well, a gibbet on a dead oak, a little graveyard, a broken
+colonnade and braziers.
+
+**Stormbreak** (`Build ▸ MapStormbreak`, Horde): a palisade camp above a beach in a storm.
+Three longships are run up on the sand and their crews come in at the sea gate between two
+watchtowers, through the two beach-side gaps and round to the land gate (4 gates). Tents, a
+smithy, a command tent and a bonfire inside; rain over everything.
 
 **The Colosseum** (`Build ▸ MapColosseum`): a round sand arena behind a podium wall, four tiers of
 stands, a two-storey arcade of arches with red and white awnings, and four gates where the horde

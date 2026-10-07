@@ -75,17 +75,29 @@ local function applyTerrainColors(m)
 		end
 	end
 end
+local ATMO = {"Density", "Offset", "Color", "Decay", "Glare", "Haze"}
+local atmoBefore = nil
+-- every map starts from the place's own lighting, so one map's dusk tint never
+-- carries into the next; Atmo_* attributes set the Atmosphere (with one in
+-- Lighting, Roblox ignores FogEnd, so a map that wants close fog says so here)
 local function applyLighting(m)
 	if not lightingBefore then
 		lightingBefore = {}
 		for _, k in ipairs({"ClockTime", "FogEnd", "FogStart", "FogColor", "Ambient", "OutdoorAmbient", "Brightness", "ColorShift_Top", "ColorShift_Bottom", "ExposureCompensation"}) do lightingBefore[k] = Lighting[k] end
 	end
-	local any = false
+	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+	if atmo and not atmoBefore then
+		atmoBefore = {}
+		for _, k in ipairs(ATMO) do atmoBefore[k] = atmo[k] end
+	end
+	for k, v in pairs(lightingBefore) do pcall(function() Lighting[k] = v end) end
+	if atmo and atmoBefore then for k, v in pairs(atmoBefore) do pcall(function() atmo[k] = v end) end end
 	for k, v in pairs(m:GetAttributes()) do
 		local prop = k:match("^Light_(.+)$")
-		if prop then any = true; pcall(function() Lighting[prop] = v end) end
+		if prop then pcall(function() Lighting[prop] = v end) end
+		local ap = k:match("^Atmo_(.+)$")
+		if ap and atmo then pcall(function() atmo[ap] = v end) end
 	end
-	if not any then for k, v in pairs(lightingBefore) do pcall(function() Lighting[k] = v end) end end
 end
 
 function MapLoader.unload()

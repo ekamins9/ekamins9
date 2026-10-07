@@ -491,6 +491,37 @@ function Bot:reflex()
 	end
 end
 
+-- feet that find a way round: a tree, a wagon or a wall across its path turns
+-- it aside, to whichever side is open, and it keeps to that side a moment so it
+-- doesn't dither; boxed in, it backs out. Characters don't count (that's the fight)
+local STEER_ANGLES = {35, 70, 105}
+local steerParams = RaycastParams.new()
+steerParams.FilterType = Enum.RaycastFilterType.Exclude
+steerParams.RespectCanCollide = true
+function Bot:steer(want, now)
+	local flat = Vector3.new(want.X, 0, want.Z)
+	if flat.Magnitude < 0.05 then return want end
+	local mag, w = math.min(flat.Magnitude, 1), flat.Unit
+	local ignore = {self.model}
+	if folder then table.insert(ignore, folder) end
+	for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(ignore, p.Character) end end
+	steerParams.FilterDescendantsInstances = ignore
+	local origin = self.hrp.Position - Vector3.new(0, 1.2, 0)   -- knee height: crates and logs count too
+	local function open(d) return workspace:Spherecast(origin, 1.1, d * 4.5, steerParams) == nil end
+	if open(w) then return want end
+	local first = (self.steerUntil and now < self.steerUntil) and self.steerSide or (math.random() < 0.5 and 1 or -1)
+	for _, a in ipairs(STEER_ANGLES) do
+		for _, sgn in ipairs({first, -first}) do
+			local d = CFrame.Angles(0, math.rad(a * sgn), 0):VectorToWorldSpace(w)
+			if open(d) then
+				self.steerSide, self.steerUntil = sgn, now + 0.8
+				return d * mag
+			end
+		end
+	end
+	return -w * 0.6
+end
+
 -- THE BRAIN, ten times a second: where to stand, when to swing
 function Bot:think()
 	local hum, hrp, sk, model = self.hum, self.hrp, self.skill, self.model
@@ -585,6 +616,7 @@ function Bot:think()
 		off = Vector3.new(off.X, 0, off.Z)
 		if off.Magnitude > self.arena.radius - 2.5 then want = -off.Unit end
 	end
+	if want.Magnitude > 0.3 and dist > hitDist + 3 then want = self:steer(want, now) end
 	if (sk.pace or 0) <= 0 then want = Vector3.zero end
 	-- a body carries its momentum: it eases from one heading into the next
 	local w = want.Magnitude > 1 and want.Unit or want

@@ -93,7 +93,7 @@ GameConfig.MODES = {
 	Horde = {
 		name = "Horde", category = "Horde", teams = 0, maxPlayers = 6, minPlayers = 1,
 		description = "You and your party against waves of bots, bigger and better trained each time; every fifth wave brings a Warlord. The fallen come back between waves.",
-		maps = {"Colosseum", "Sandpit"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
+		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,   -- the party can't hurt each other; the bots can hurt you
 	},
 	Siege = {
@@ -111,7 +111,8 @@ GameConfig.MODES = {
 }
 -- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
 GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Frostgate = "Frostgate",
-	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum", RoseCourt = "The Rose Court"}
+	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum", RoseCourt = "The Rose Court",
+	Wildwood = "The Wildwood", Ravenhold = "Ravenhold", Stormbreak = "Stormbreak"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- order on the Play tab

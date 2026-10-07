@@ -547,6 +547,11 @@ end
 function K.lighting(ctx, t)
 	for k, v in pairs(t) do ctx.model:SetAttribute("Light_" .. k, v) end
 end
+-- the Atmosphere while the map is up (Density, Offset, Color, Decay, Glare,
+-- Haze): with an Atmosphere in Lighting this, not FogEnd, is the map's haze
+function K.atmosphere(ctx, t)
+	for k, v in pairs(t) do ctx.model:SetAttribute("Atmo_" .. k, v) end
+end
 
 --------------------------------------------------------------------
 --  TERRAIN — paint into workspace.Terrain inside `region`, then copy the
@@ -616,6 +621,41 @@ function K.terrain(ctx, corner, size, paint)
 	Terrain:WriteVoxels(outer, 4, keepM, keepO)
 end
 
+-- a spawn that ended up inside something solid (a wagon, a tent, a barrel) is
+-- walked out along its line from the map's middle (or to either side) until a
+-- body fits there
+function K.clearSpawns(ctx)
+	local was = ctx.model.Parent
+	ctx.model.Parent = workspace            -- (bounds queries only see the workspace)
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = {ctx.Geometry, ctx.Props}
+	local function blocked(pos)
+		for _, h in ipairs(workspace:GetPartBoundsInBox(CFrame.new(pos + Vector3.new(0, 2.6, 0)), Vector3.new(3, 4.6, 3), params)) do
+			if h.CanCollide then return true end
+		end
+		return false
+	end
+	local moved = 0
+	for _, sp in ipairs(ctx.Spawns:GetChildren()) do
+		local p = sp.Position
+		if blocked(p) then
+			local out = Vector3.new(p.X, 0, p.Z)
+			out = out.Magnitude > 0.1 and out.Unit or Vector3.new(1, 0, 0)
+			local side = Vector3.new(-out.Z, 0, out.X)
+			for step = 1, 24 do
+				local q
+				for _, d in ipairs({out * step, side * step, -side * step}) do
+					if not blocked(p + d) then q = p + d; break end
+				end
+				if q then sp.CFrame = sp.CFrame + (q - p); moved += 1; break end
+			end
+		end
+	end
+	ctx.model.Parent = was
+	return moved
+end
+
 function K.finish(ctx)
 	local maps = ServerStorage:FindFirstChild("Maps") or Instance.new("Folder")
 	maps.Name = "Maps"; maps.Parent = ServerStorage
@@ -624,9 +664,10 @@ function K.finish(ctx)
 	-- faces laid flush on faces (a path over a path, a trim on a wall) flicker: nudge them apart
 	-- (a Defight beside this module wins: a fresh copy for a build run from the command bar)
 	local fixed = require(script.Parent:FindFirstChild("Defight") or game:GetService("ReplicatedStorage"):WaitForChild("Defight")).run(ctx.model)
+	local moved = K.clearSpawns(ctx)
 	ctx.model:SetAttribute("Built", true)
 	ctx.model.Parent = maps
-	print(string.format("[MapKit] %s: %d parts, %d flush faces nudged apart", ctx.name, ctx.n, fixed))
+	print(string.format("[MapKit] %s: %d parts, %d flush faces nudged apart, %d spawns moved clear of props", ctx.name, ctx.n, fixed, moved))
 	return ctx.model
 end
 
