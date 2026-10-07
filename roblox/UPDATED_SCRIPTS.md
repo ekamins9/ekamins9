@@ -1,4 +1,21 @@
-# Updated scripts: smaller themed crates, egg previews, "what's coming" timers
+# Updated scripts: holstered weapons
+
+- **The weapons you carry are worn on you**, so everyone sees your kit:
+  - two-handed swords across the back, hilt over the right shoulder
+  - polearms head-up behind the left shoulder
+  - one-handers at the left hip, hilt forward
+  - a dagger at the right hip
+- Each one is a look-only copy, skin included, with no scripts or hitbox.
+- Drawing a weapon takes it off the body with a sword-draw sound; putting it away hangs it back on, with a softer sheathe.
+- Positions: `SPOTS` in the script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Holsters.server.lua](ServerScriptService/Loadout/Holsters.server.lua) | ServerScriptService ▸ Loadout ▸ Holsters | Script | **new** |
+
+---
+
+## Before that: smaller themed crates, egg previews, "what's coming" timers
 
 - **Crates are small and themed again.**
   - The permanent crates were finish × every-weapon grids: Hafted had 65 items with 12 legendaries, Bladesmith 46, Royal 24 with 14 legendaries.
