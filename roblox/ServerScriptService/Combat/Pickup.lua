@@ -24,7 +24,7 @@ local Pickup = {}
 
 Pickup.CONFIG = {
 	MAX_WEAPONS  = 2,     -- primary + secondary
-	DESPAWN      = 60,    -- seconds a dropped weapon lies around (Janitor: at most 12 at once, oldest first)
+	DESPAWN      = 25,    -- seconds a dropped weapon lies around (Janitor: at most 8 at once, oldest first)
 	PROMPT_RANGE = 7,     -- studs
 	PROMPT_HOLD  = 0.3,   -- seconds the key is held
 	DROP_SPEED   = 6,     -- gentle toss on death / swap (a disarm passes its own)

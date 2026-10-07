@@ -255,7 +255,8 @@ function CombatServer.clang(materialName, at, fallbackId)
 		Sounds.play(fallbackId, at, {Volume = WALL_FEEL[family].Volume, Speed = WALL_FEEL[family].Speed})
 		return
 	end
-	if family then Sounds.bank("Wall" .. family, at) end
+	-- layered: the edge striking it, then the surface giving (SoundBank.WALL)
+	for _, pool in ipairs(family and SoundBank.WALL[family] or {}) do Sounds.bank(pool, at) end
 end
 
 local wallParams = RaycastParams.new()

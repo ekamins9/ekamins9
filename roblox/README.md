@@ -23,7 +23,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/Ragdoll.lua` | `ServerScriptService` → `Combat` → `Ragdoll` | ModuleScript |
 | `ServerScriptService/Combat/Pickup.lua` | `ServerScriptService` → `Combat` → `Pickup` | ModuleScript |
 | `ServerScriptService/Combat/Bots.lua`, `R6.lua` | `ServerScriptService` → `Combat` → `Bots`, `R6` (AI fighters; a plain R6 rig) | ModuleScript each |
-| `ServerScriptService/Combat/Janitor.lua` | `ServerScriptService` → `Combat` → `Janitor` (clears severed limbs, heads, dropped weapons) | ModuleScript |
+| `ServerScriptService/Combat/Janitor.lua` | `ServerScriptService` → `Combat` → `Janitor` (clears corpses, severed limbs, heads, dropped weapons) | ModuleScript |
+| `ServerScriptService/Combat/Corpses.lua` | `ServerScriptService` → `Combat` → `Corpses` (lays out the dead; a kill effect's remains) | ModuleScript |
 | `ServerScriptService/Game/Training.lua` | `ServerScriptService` → `Game` → `Training` (the training yard's dummies, Drill Master, lessons, ring) | ModuleScript |
 | `ServerScriptService/Build/MapTraining.lua` | `ServerScriptService` → `Build` → `MapTraining` (the training yard map) | ModuleScript |
 | `StarterPlayerScripts/Training.client.lua`, `NpcAnimator.client.lua`, `Footsteps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Training`, `NpcAnimator`, `Footsteps` | LocalScript each |
@@ -738,11 +739,22 @@ dodge, kick or swing until it runs out.
 A weapon that leaves a hand — disarm, death, or a swap — lands as a pickup with a prompt (hold
 V) in `workspace.DroppedWeapons`, for `DESPAWN` (60) seconds.
 
+**Corpses (`Combat ▸ Corpses`).** The dead stay on the field: 2.8 s after a death the body is
+laid out where it fell — a still copy of everything you could see of it (armor, hair, face), the
+limbs it lost joining it — and the real body is hidden (kept for the death camera until the
+respawn). A kill effect decides what is left instead (`Catalog ▸ KillFX` `remains`, laid
+`remainsAt` seconds in, as the effect hides the body): Crow Swarm a **skeleton** picked clean among
+black feathers, Inferno a **charred skeleton** in a smoking heap of ash, Thunderstrike a
+**blackened, smoking body**, Royal Decree a **golden statue** with a crown, Shatter **rubble** in the
+body's colours, Gold Rush a **heap of coins**, Confetti Pop **confetti**, Frozen **ice shards**, Shadow
+Rift a **scorched ring**, Ascension **a few glowing feathers**. With anything but a body or a statue
+the severed limbs go with it (bones for a skeleton). A body and its limbs fade together.
+
 **Clean-up (`Combat ▸ Janitor`).** What a fight leaves behind lies around a while and then fades
-out: severed limbs (20 s, at most 14), thrown heads (22 s, at most 8), dropped weapons (60 s, at
-most 12 — one somebody picks up is theirs). Past the cap the oldest fade first, and the field is
-swept clean when a round ends and when the next begins. Limbs and heads lie in
-`workspace ▸ Remains`. Slots: **one primary + one secondary**
+out: corpses (30 s, at most 8), severed limbs on their own (15 s, at most 10), thrown heads (18 s,
+at most 6), dropped weapons (25 s, at most 8 — one somebody picks up is theirs). Past the cap the
+oldest fade first, and the field is swept clean when a round ends and when the next begins.
+Corpses, limbs and heads lie in `workspace ▸ Remains`. Slots: **one primary + one secondary**
 (a weapon whose `Config` has `SECONDARY = true`), `MAX_WEAPONS` total; taking a weapon for a full
 slot drops what was in it right there. The loadout menu offers a secondary list from the same
 flag. Switch weapons with the Roblox backpack (1 / 2).
@@ -934,9 +946,12 @@ trimmed). What plays when:
   covered by heavy armor, `HitMail` (mail jingling) under medium; then the victim's grunt.
 - **Steel on steel**: `Parry` (a bright, ringing clash), `Block` (a duller clang: the guard soaks
   it), a chamber is the clash plus `Clash` (blades scraping).
-- **The blade meets the world**: `WallStone` / `WallWood` / `WallMetal` / `WallGround` /
-  `WallGlass` by the material's family (`WALL_FAMILY` in CombatServer; stone and metal spark). A
-  material in no family (`Plastic`, `SmoothPlastic`) is silent.
+- **The blade meets the world**, in two layers by the material's family (`SoundBank.WALL`,
+  `WALL_FAMILY` in CombatServer): stone is steel striking stone (`WallStone`, a hard strike and a
+  short ring) over a knock of grit (`WallGrit`); wood is iron biting oak (`WallWood`, solid thunks)
+  and a chop (`WallWoodChip`); ground is a hard chop into earth (`WallGround`); metal clangs
+  (`WallMetal`); glass rings high. Stone and metal spark. A material in no family (`Plastic`,
+  `SmoothPlastic`) is silent.
 - **Bodies**: `KickHit`, `BodyFall` / `BodyFallArmor` (a corpse hitting the ground, plate
   clanking), `Dismember`, `Impale`, `Disarm` (the weapon clattering away); dodges whoosh.
 - **Voices**: see *Voice*.

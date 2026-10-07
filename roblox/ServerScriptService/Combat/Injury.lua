@@ -17,6 +17,7 @@ local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Pickup      = require(script.Parent:WaitForChild("Pickup"))
 local Janitor     = require(script.Parent:WaitForChild("Janitor"))
+local Corpses     = require(script.Parent:WaitForChild("Corpses"))
 
 local Injury = {}
 
@@ -26,7 +27,8 @@ Injury.CONFIG = {
 	LEG_SPEED        = 0.45,  -- WalkSpeed factor per lost leg
 	LEG_CLUNK        = 1.5,   -- footstep clunk factor per lost leg
 	DISARM_FLING     = 30,    -- studs/s the weapon leaves the hand at (it lands as a pickup)
-	LIMB_DEBRIS_TIME = 20,    -- seconds a severed limb lies around (Janitor: then it fades; at most 14 at once)
+	LIMB_DEBRIS_TIME = 15,    -- seconds a severed limb lies around on its own (Janitor; at most 10 at once) —
+	                          --    when its owner dies it joins their corpse and fades with it
 	SKEWER_DURATION  = 0,     -- seconds the head stays on the blade; 0 = until the attacker's next swing launches it
 	SKEWER_OFFSET    = 0.6,   -- how far past the hit point, along the blade, the head sits
 	HEAD_THROW_LIFE  = 20,    -- seconds a thrown head lies around
@@ -419,6 +421,7 @@ function Injury.dismember(char, partName, dir, fatal)
 		clone.CanCollide, clone.CanQuery, clone.CanTouch, clone.Anchored = true, false, false, false
 		clone.CFrame = part.CFrame
 		carryClothing(char, partName, part, clone, clone)   -- armor goes with the limb
+		clone:SetAttribute("CorpseOf", Corpses.idOf(char))   -- it goes with its owner's body (Corpses)
 		clone.Parent = Janitor.folder()
 		clone.AssemblyLinearVelocity  = dir * 15 + Vector3.new(0, 8, 0)
 		clone.AssemblyAngularVelocity = Vector3.new(6, 6, 6)

@@ -14,6 +14,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
+local Corpses = ServerScriptService:FindFirstChild("Combat") and ServerScriptService.Combat:FindFirstChild("Corpses")
+Corpses = Corpses and require(Corpses)
 
 local function remote(class, name)
 	local r = ReplicatedStorage:FindFirstChild(name)
@@ -32,6 +34,9 @@ _G.KillFxHook = function(killer, victimChar)
 	local p = Profile.get(killer)
 	local id = p and p.killfx
 	if type(id) ~= "string" or not Catalog.KILLFX_BY[id] or not Profile.has(killer, "killfx", id) then return end
+	-- what it leaves (Combat ▸ Corpses): booked now, laid when the effect hides the body
+	local def = Catalog.KILLFX_BY[id]
+	if Corpses then Corpses.pending(victimChar, def.remains or "body", KILL_FX_DELAY + (def.remainsAt or 1.5)) end
 	task.wait(KILL_FX_DELAY)
 	if not victimChar.Parent then return end
 	fx:FireAllClients("Kill", id, victimChar)

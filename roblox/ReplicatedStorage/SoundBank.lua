@@ -66,14 +66,23 @@ SoundBank.POOLS = {
 		9116706585, 9116709512,
 	}},
 
-	-- THE BLADE MEETS THE WORLD -----------------------------------------
-	WallStone = {volume = 0.7, speed = {0.92, 1.08}, cut = 0.6, takes = {
-		9116616591, 9116616748, 9116616884, 9116617487, 9116618040, {9118617342, vol = 0.8},
+	-- THE BLADE MEETS THE WORLD (two layers: the edge striking it, the surface giving)
+	WallStone = {volume = 0.75, speed = {0.9, 1.08}, cut = 0.55, takes = {   -- steel on stone: a hard strike, a short ring
+		9118604471, 9118604463, 9118603081, 9118604769, 9118599252, 9118600998,
 	}},
-	WallWood = {volume = 0.75, speed = {0.9, 1.05}, takes = {9119746598, 9119746592, 9119746759, 9119746751}},
-	WallMetal = {volume = 0.7, speed = {0.95, 1.1}, takes = {9119072660, {9119072674, cut = 0.8}, {9116651688, cut = 0.5}}},
-	WallGround = {volume = 0.8, speed = {0.9, 1.05}, takes = {9118598279, 9118598469, 9118598470, 9118598729, 9118688006}},
-	WallGlass = {volume = 0.6, speed = {1.25, 1.4}, cut = 0.5, takes = {9116616591, 9116616748, 9116616884}},
+	WallGrit = {volume = 0.45, speed = {0.85, 1.05}, takes = {                -- the stone: a knock and grit
+		9118629282, 9118629789, 9118629291, 9118629156,
+	}},
+	WallWood = {volume = 0.85, speed = {0.85, 1.0}, takes = {                 -- iron biting oak: solid thunks, a slight ring
+		9126266458, 9126265255, 9126267209, 9126267366, 9126266882,
+	}},
+	WallWoodChip = {volume = 0.4, speed = {0.95, 1.1}, cut = 0.32, takes = {9116333353, 9116333375, 9116333519}},   -- the chop
+	WallMetal = {volume = 0.7, speed = {0.95, 1.1}, takes = {{9116750726}, {9116751108}, {9119072660, vol = 0.8}}},
+	WallGround = {volume = 0.9, speed = {0.9, 1.05}, takes = {               -- hard chops into earth, gritty scatter
+		9118688006, 9118686408, 9118686201, 9118684997, 9118687440,
+		9118687051, 9118688017, 9118688358, 9118686853, 9118685591,
+	}},
+	WallGlass = {volume = 0.6, speed = {1.25, 1.4}, cut = 0.45, takes = {9118604471, 9118604463, 9118603081}},
 
 	-- BODIES -------------------------------------------------------------
 	KickHit = {volume = 0.9, speed = {0.85, 1.0}, takes = {9113568548, 9113571074, 9113570867}},
@@ -105,6 +114,10 @@ SoundBank.POOLS.VoiceParry = SoundBank.POOLS.VoiceSwing
 SoundBank.VOICE_CHANCE = {Swing = 0.4, SwingHeavy = 0.6, Kick = 0.7, Parry = 0.3, Hurt = 0.9, Death = 1}
 SoundBank.VOICE_GAP = 0.45     -- seconds: one fighter never grunts twice inside this
 SoundBank.VOICE_PITCH = {0.88, 1.06}   -- the spread of fighters' voices
+
+-- what a blade striking the world plays, by the material's family (CombatServer.clang)
+SoundBank.WALL = {Stone = {"WallStone", "WallGrit"}, Wood = {"WallWood", "WallWoodChip"}, Metal = {"WallMetal"},
+	Ground = {"WallGround"}, Glass = {"WallGlass"}}
 
 -- weapons whose head lands blunt (thud and crack instead of a cut)
 SoundBank.BLUNT = {Hammer = true, Mace = true, MorningStar = true, Maul = true, Quarterstaff = true}

@@ -236,8 +236,15 @@ the prize pop-up show each kind its own way (a skin on its weapon, an effect or 
 seen by everyone. One is equipped at a time (ARMORY ▸ KILL FX). A line:
 
 ```lua
-{id = "Inferno", name = "Inferno", rarity = "Epic", crate = "Relic", description = "A column of fire..."},
+{id = "Inferno", name = "Inferno", rarity = "Epic", crate = "Relic", description = "A column of fire...",
+ remains = "ash", remainsAt = 1.9},
 ```
+
+`remains` is what the effect leaves on the field (`Combat ▸ Corpses`): `body` (the default),
+`skeleton`, `ash` (a charred skeleton in ash), `charred`, `gold` (a statue with a crown), `rubble`,
+`coins`, `confetti`, `shards`, `rift` or `light`; `remainsAt` is how many seconds into the effect
+they take the body's place — when the effect has hidden the body. A new kind of remains is a
+builder in `Corpses` (`KIND.<name> = function(model, body) … end`).
 
 The `id` must match a builder in `ReplicatedStorage ▸ KillFX` (the ten there: `Shatter Confetti
 GoldRush CrowSwarm Inferno Frozen ShadowRift Thunderstrike Ascension RoyalDecree`). A builder

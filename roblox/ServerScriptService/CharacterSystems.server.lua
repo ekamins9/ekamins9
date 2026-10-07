@@ -13,6 +13,7 @@ local ReplicatedStorage   = game:GetService("ReplicatedStorage")
 local Ragdoll     = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Ragdoll"))
 local Injury      = require(ServerScriptService.Combat:WaitForChild("Injury"))
 local Pickup      = require(ServerScriptService.Combat:WaitForChild("Pickup"))
+local Corpses     = require(ServerScriptService.Combat:WaitForChild("Corpses"))
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
@@ -49,6 +50,7 @@ local function setup(char)
 		local dir = char:GetAttribute("HitDir")
 		Pickup.dropAll(char)   -- weapons hit the floor next to the body, for anyone to take
 		Ragdoll.enable(char, typeof(dir) == "Vector3" and dir or nil, DEATH_SHOVE)
+		Corpses.died(char)   -- laid out where it falls (or as its killer's kill effect leaves it)
 		Sounds.play(SoundConfig.Death, char:FindFirstChild("Head") or char:FindFirstChild("Torso"))
 		-- a last cry (not from a body that has lost its head), then the body hits the ground
 		if char:GetAttribute("LimbLost_Head") ~= true then

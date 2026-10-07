@@ -40,6 +40,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
 local Pickup = require(script.Parent:WaitForChild("Pickup"))
+local Corpses = require(script.Parent:WaitForChild("Corpses"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local MC = require(ReplicatedStorage:WaitForChild("MovementConfig"))
@@ -249,6 +250,7 @@ Bot.__index = Bot
 
 function Bot:destroy()
 	self.alive = false
+	if self.hum and self.hum.Health <= 0 then Corpses.lay(self.model, self.model:GetAttribute("RemainsPending") or "body") end
 	for _, c in ipairs(self.conns) do c:Disconnect() end
 	live[self] = nil
 	if self.model.Parent then self.model:Destroy() end
@@ -711,7 +713,8 @@ function Bots.spawn(opts)
 		-- (the killer's kill effect comes from Scoreboard, which watches workspace.NPCs)
 		local killer = Players:GetPlayerByUserId(model:GetAttribute("LastHitBy") or 0)
 		if opts.onDeath then task.spawn(opts.onDeath, bot, killer) end
-		task.delay(opts.corpseTime or 6, function() bot:destroy() end)
+		-- (the corpse is a copy, laid out by Corpses: the bot itself goes once that's done)
+		task.delay(math.max(opts.corpseTime or 6, Corpses.CONFIG.HOLD), function() bot:destroy() end)
 	end)
 	return bot
 end
