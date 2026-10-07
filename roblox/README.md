@@ -291,7 +291,10 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   built by `Hub ▸ Pastimes`. Set an egg in a nest and it incubates in real time, even while you
   are away or in a match. Standing within 20 studs makes your eggs incubate twice as fast, and
   a line at the top says so. Your own eggs sit in the nests, wobbling when ready, with timers;
-  press E to hatch or to open the menu. Nests keep real time (`started` = `os.time()` in the
+  press E to hatch or to open the menu. Each egg is egg-shaped (a round lower half, a taller
+  narrower top) and drawn in its `look`: speckled; mossy (moss and a sprout); ember (glowing
+  cracks, smouldering in the world); royal (gold bands, gems, a little crown, sparkling).
+  Nests keep real time (`started` = `os.time()` in the
   profile), so eggs ripen while you're offline too (Studio can't save, so there they last a session).
   In the menu: **SET AN EGG** opens your egg inventory as cards (count, hatch time; a missing one
   can be bought right there if the shelf sells it), and **YOUR EGGS** shows every kind with how
@@ -311,7 +314,10 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   trails shimmer). Skins with `fx` wear an aura: three layers of particles off the blade, a light
   on it, sparks thrown off the tip and a sound for the swing (`SkinFX.SWING`). The client's
   `SkinFX` driver brings them to life: while a blade moves the aura flares up to four times its
-  rate, the sparks fly, the light swells (a storm flickers) and the swing makes its sound.
+  rate, the sparks fly, the light swells (a storm flickers) and the swing makes its sound —
+  once per swing: it starts as the tip passes 26 studs/s and can't start again until the tip
+  has stayed under 12 studs/s for 0.3 s (a windup turning into its release is one swing), and a
+  sound with a `cut` fades out over 0.18 s instead of snapping off.
 - **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): `Scoreboard` (and the training dummies) call
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
   effect and fires `FxEvent "Kill"` to everyone **1.2 s after the death** (`KILL_FX_DELAY`), so the
@@ -420,6 +426,15 @@ per-limb protection check finds it. Rules the pieces play by:
 - A face-stab execute still kills through any helmet.
 - Severed limbs take their armor with them; a skewered head takes its helmet onto the blade.
 - Helmets (`HeadClothing`) are hidden in first person like hats.
+- **No skin through the gaps.** R6 limbs are boxes and the armor is rounded, so the box's
+  corners and edges peek out between plates. A limb under a garment is painted a shade (60%)
+  of the garment instead of skin: the model's `Under` attribute (a `ColorSlot` name, or a
+  colour; `scripts/build_armor.py` sets it to the colour of the model's biggest part, the base
+  garment), else its biggest painted part. Where a garment stops short of the limb's end (a
+  bare hand under a cuff, a forearm under a rolled sleeve) the Dresser adds a skin-coloured
+  sleeve (`Skin`, inside the garment's model) over that stretch, so bare stays bare.
+- In first person your arm pieces show; one hides only while the camera is inside (or within
+  0.1 studs of) its own box, and shows again once 0.3 studs clear.
 - Test dummies still wear whole sets: `/spawn attack Pitchfork PeasantSkin`.
 
 ### What each set looks like

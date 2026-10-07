@@ -9,6 +9,7 @@
                Fixed  = {id = 0, center = {0, 0.6, 0}, material = "SmoothPlastic"},
                Accent = {id = 0, center = {…}},     -- ColorSlot regions carry the attribute
            },
+           under = "Primary",                      -- or {r, g, b}: the Under attribute (see Dresser ▸ GAPS)
        })
 
      A region named after a ColorSlot (Primary / Secondary / Accent / Metal)
@@ -96,6 +97,9 @@ function MeshArmor.build(spec)
 		mp.Parent = m
 	end
 	m:SetAttribute("Mesh", true)
+	local u = spec.under
+	if type(u) == "table" then u = Color3.new(u[1], u[2], u[3]) end
+	if u ~= nil then m:SetAttribute("Under", u) end
 	m.Parent = parent
 	return m
 end

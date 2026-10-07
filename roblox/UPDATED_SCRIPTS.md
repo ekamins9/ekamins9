@@ -1,44 +1,35 @@
-# Updated scripts: every armor set, weapon, hairstyle and companion redesigned
+# Updated scripts: no skin through armor, steady arm armor in first person, one whoosh per swing, real eggs
 
-- **Armor:** all 15 sets and 9 earned pieces rebuilt with real shapes (rounded and tapered
-  plates, drums, cones, eggs, rings, trim laid along curves). No two helms share a shape: the
-  Tourney Knight's frog-mouth helm and the Champion's crowned sugarloaf, the Blackguard's horns,
-  the Iron Crow's beaked hounskull, the Sun Knights' crown of rays, the starter close helm, a
-  barbute, an aventail bascinet, a burgonet, a steel wolf's head, coifs, a hood, a sea-cap, a
-  head-wrap with a half-mask, a straw hat, a wolf pelt, a bloodied kettle, a long-tailed sallet.
-  Legs differ per set too (waders, cavalier boots, striped stockings, cross-gartering, pointed,
-  bear-paw and talon sabatons, spiked knees…). Shoulders sit over the arm; closed helms wrap
-  the whole round head.
-- **Weapons:** all 26 rebuilt in Blender: beveled blades with bright edges and dark fullers,
-  shaped guards and pommels, a flamberge Zweihander, a swept-hilt Rapier, a rondel dagger, a
-  Kriegsmesser with a nagel, axes cut from real outlines and ground to an edge, langets,
-  rondels, crowned hammers and beaks, tassels. Sizes and hitboxes unchanged.
-- **Hair and beards:** a bowl spun to the round head's profile with locks, fringes, tails, buns,
-  braids and curls; beards with moustaches, braids and beads, forks.
-- **Companions:** beasts and drakes rounded out, glints in every eye.
-- **Helmet covers:** a helmet can now hide only the beard (`Covers = {"Hair", "Beard"}`) so the
-  eyes still show over a mask or out of a coif. Set names and descriptions match the new looks.
+- **No skin through the gaps.** R6 limbs are boxes and the new armor is rounded, so a box's
+  corners and edges showed skin between plates (torso corners, the sides, upper arms, legs).
+  The Dresser now paints a limb under a garment a shade of that garment (the model's `Under`:
+  the colour of its base garment, set on every armor model), so a gap reads as cloth in shadow.
+  Where a garment leaves the hand or forearm bare on purpose (rolled sleeves, bare hands) a
+  skin-coloured sleeve keeps that stretch skin. Works everywhere the Dresser dresses: spawns,
+  bots, menu mannequins and shop cards.
+- **Arm armor no longer blinks out when you attack** in first person. A sleeve is now one mesh
+  as long as the arm, and the old "hide when near the camera" check used a sphere around it,
+  which hid the whole sleeve on every swing. It now measures to the piece's own box, with a
+  gap between hiding and showing again so it can't flicker.
+- **Skin swing sounds play once per swing.** The aura sound restarted every 0.45 s while the
+  blade moved, so a long Zweihander swing stuttered and played twice. It now starts once as
+  the swing gets going and can't restart until the blade has come to rest; long sounds fade
+  instead of snapping off.
+- **Hatchery eggs** are egg-shaped and each egg has its own look: speckled, mossy with a sprout,
+  ember with glowing cracks (smoulders in the world), royal with gold bands, gems and a crown
+  (sparkles). Eggs pick a look with `look` in `Catalog ▸ Eggs`.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Build/Armor.lua](ServerScriptService/Build/Armor.lua) | ServerScriptService ▸ Build ▸ Armor | ModuleScript | every set and piece redesigned; surface helpers (lay trim / slits / studs along curves) |
-| [Build/Body.lua](ServerScriptService/Build/Body.lua) | ServerScriptService ▸ Build ▸ Body | ModuleScript | every hairstyle and beard redesigned |
-| [Build/Builder.lua](ServerScriptService/Build/Builder.lua) | ServerScriptService ▸ Build ▸ Builder | ModuleScript | new shapes: egg, cone, torus, lathe; rounded and tapered boxes |
-| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | helmet cover "Beard" |
-| [Companions.lua](ReplicatedStorage/Companions.lua) | ReplicatedStorage ▸ Companions | ModuleScript | rounded beasts and drakes, eye glints |
-| [Catalog/Pieces.lua](ReplicatedStorage/Catalog/Pieces.lua) | ReplicatedStorage ▸ Catalog ▸ Pieces | ModuleScript | two descriptions; the covers note |
-| `ServerStorage/Armor/<Set>/Config.lua` (Blackguard, CoastHarriers, GambesonSkin, GildedCourt, IronCrow, KnightSkin, NightHunters, RiverGuard, RoadLevy, Sellswords, TourneyKnight) | ServerStorage ▸ Armor ▸ <Set> ▸ Config | ModuleScript | names, descriptions, covers |
-| [scripts/export_blueprints.lua](../scripts/export_blueprints.lua) | — (run through the Studio MCP) | tool | **new**: the blueprints as JSON, fetched in slices |
-| [scripts/join_blueprints.py](../scripts/join_blueprints.py) | — | tool | **new**: joins the slices into blender/out/blueprints.json |
-| [blender/preview_armor.py](../blender/preview_armor.py) | — | tool | **new**: renders sets, heads, torsos, legs, hair on an R6 mannequin |
-| [blender/preview_weapons.py](../blender/preview_weapons.py) | — | tool | **new**: renders every weapon in a row |
-| [blender/weapons.py](../blender/weapons.py) | — | tool | every weapon redesigned |
-| [blender/parts2mesh.py](../blender/parts2mesh.py) | — | tool | cone, torus, lathe, rounded / tapered boxes, fewer facets on small parts |
-| [scripts/build_armor.py](../scripts/build_armor.py) | — | tool | `--upload-only` (resume), `--reverse` |
-| [scripts/build_weapons.py](../scripts/build_weapons.py) | — | tool | `--upload-only`; only weapon blueprints count as weapons |
-| [scripts/upload_asset.py](../scripts/upload_asset.py) | — | tool | waits out rate limits and retries |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | GAPS: limbs under garments take the garment's shade; skin sleeves over bare ends; undress restores skin |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | first-person arm pieces hide by their box, with hysteresis |
+| [SkinFX.client.lua](StarterPlayerScripts/SkinFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ SkinFX | LocalScript | one swing sound per swing; fade-out for cut sounds |
+| [Companions.lua](ReplicatedStorage/Companions.lua) | ReplicatedStorage ▸ Companions | ModuleScript | egg shape and the four egg looks |
+| [Catalog/Eggs.lua](ReplicatedStorage/Catalog/Eggs.lua) | ReplicatedStorage ▸ Catalog ▸ Eggs | ModuleScript | `look` per egg |
+| [Build/MeshArmor.lua](ServerScriptService/Build/MeshArmor.lua) | ServerScriptService ▸ Build ▸ MeshArmor | ModuleScript | `under` in a build spec sets the model's `Under` |
+| [scripts/build_armor.py](../scripts/build_armor.py) | — | tool | computes each model's `Under` from its blueprint; `--under` writes `under_armor.lua` for models already built |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | docs | gaps, eggs, swing sound |
 
-**Studio-only changes (save the place):** `ServerStorage ▸ Armor ▸ <Set>` clothing models,
-`ReplicatedStorage ▸ Cosmetics ▸ Pieces`, `Cosmetics ▸ Body ▸ Hair / Beard` and every Tool in
-`ServerStorage ▸ Weapons` (with its display copy in `Cosmetics ▸ Weapons`) rebuilt as MeshParts
-from the new meshes (`blender/out/armor/assemble_armor.lua`, `blender/out/assemble.lua`).
+**Studio-only changes (save the place):** every torso / arm / leg armor model in
+`ServerStorage ▸ Armor ▸ <Set>` and `ReplicatedStorage ▸ Cosmetics ▸ Pieces` got its `Under`
+attribute (`blender/out/armor/under_armor.lua`).

@@ -13,7 +13,8 @@
                   that a duplicate pays `refund` Marks for its rarity
        eggs       id, name, rarity, minutes to hatch, marks / crowns (the
                   Hatchery's shelf; no price = not sold: gifts, the pass, login),
-                  odds {Rarity = %} (sum 100), shell / spots colours, glow
+                  odds {Rarity = %} (sum 100), shell / spots colours, glow,
+                  look (speckled · mossy · ember · royal: how the shell is drawn)
      Looks only: a companion never touches combat. ]]
 return {
 	nests = 3,
@@ -25,16 +26,16 @@ return {
 	stars = 5,
 	refund = {Common = 150, Rare = 400, Epic = 1000, Legendary = 2500},
 	eggs = {
-		{id = "Speckled", name = "Speckled Egg", rarity = "Common", minutes = 30, marks = 400,
+		{id = "Speckled", name = "Speckled Egg", look = "speckled", rarity = "Common", minutes = 30, marks = 400,
 			odds = {Common = 64, Rare = 28, Epic = 7, Legendary = 1},
 			shell = Color3.fromRGB(238, 228, 206), spots = Color3.fromRGB(150, 118, 86)},
-		{id = "Mossy", name = "Mossy Egg", rarity = "Rare", minutes = 120, marks = 1200,
+		{id = "Mossy", name = "Mossy Egg", look = "mossy", rarity = "Rare", minutes = 120, marks = 1200,
 			odds = {Common = 30, Rare = 46, Epic = 19, Legendary = 5},
 			shell = Color3.fromRGB(128, 166, 100), spots = Color3.fromRGB(66, 98, 54)},
-		{id = "Ember", name = "Ember Egg", rarity = "Epic", minutes = 360, crowns = 60,
+		{id = "Ember", name = "Ember Egg", look = "ember", rarity = "Epic", minutes = 360, crowns = 60,
 			odds = {Rare = 38, Epic = 46, Legendary = 16},
 			shell = Color3.fromRGB(190, 70, 40), spots = Color3.fromRGB(255, 186, 70), glow = true},
-		{id = "Royal", name = "Royal Egg", rarity = "Legendary", minutes = 720,
+		{id = "Royal", name = "Royal Egg", look = "royal", rarity = "Legendary", minutes = 720,
 			odds = {Epic = 55, Legendary = 45},
 			shell = Color3.fromRGB(72, 62, 150), spots = Color3.fromRGB(255, 204, 80), glow = true},
 	},

@@ -102,6 +102,13 @@ in speed, stamina and footwork (see the README's *Classes* section for the curre
 parts without the attribute keep their own color. In team modes `Primary` becomes the
 team color and `Secondary` a darker shade of it, and the tabard is not added.
 
+**What shows through the gaps.** The limb under a torso / arm / leg model is painted a shade
+of the garment, so no skin peeks between plates. It takes the model's `Under` attribute if
+it has one (a `ColorSlot` name such as `"Secondary"` for the cloth under the plates, or a
+Color3), else the colour of its biggest painted part. A garment that leaves the hand (or any
+end of the limb) bare gets a skin-coloured sleeve there automatically — nothing to set.
+Meshes built by `scripts/build_armor.py` get `Under` from their blueprint.
+
 ## 2. A single piece that is not a whole set
 
 Make a folder `Cosmetics ▸ Pieces ▸ <id>` holding only the models that slot wears
@@ -325,7 +332,11 @@ fountain's daily wish: `{weight, reward}` entries, drawn by weight.
 - `skipCrowns` / `skipMin` set the HATCH NOW price. `stars` caps a duplicate's stars, and
   `refund` is the Marks paid once a companion has all its stars.
 - An egg: `{id, name, rarity, minutes, marks | crowns (on the shelf; neither = gifts / pass /
-  login only), odds = {Common = 64, ...} (sum 100), shell, spots, glow}`.
+  login only), odds = {Common = 64, ...} (sum 100), shell, spots, glow, look}`.
+- `look` is how the shell is drawn (`ReplicatedStorage ▸ Companions`, in the `spots` colour):
+  `speckled` (the default), `mossy` (moss and a sprout), `ember` (glowing cracks; with
+  `glow` it smoulders) or `royal` (gold bands, gems and a little crown; with `glow` it
+  sparkles).
 
 **Companions:** `Catalog ▸ Companions`: `{id, name, rarity, body, size, main, second,
 accent, glow, style, fx, egg, pass, description}`.

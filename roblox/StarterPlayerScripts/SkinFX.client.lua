@@ -14,7 +14,11 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SkinFX = require(ReplicatedStorage:WaitForChild("SkinFX"))
 
-local SWING_SPEED = 26     -- studs/s at the tip that count as a swing (for the sound)
+local SWING_SPEED = 26     -- studs/s at the tip that start a swing (and its sound)…
+local SWING_END = 12       -- …which is over once the tip has stayed under this speed
+local SWING_REST = 0.3     -- for this long (a windup's turn into the release is one swing)
+local SWING_GAP = 0.6      -- seconds at least between two swing sounds
+local FADE = 0.18          -- seconds a cut swing sound takes to fade out
 local FLARE_FROM = 10      -- the aura starts to flare from this tip speed…
 local FLARE_FULL = 40      -- …and is at its fullest here
 local NEAR = 150           -- studs: farther weapons are left alone
@@ -54,7 +58,7 @@ local function track(h)
 			s.RollOffMinDistance = 6
 			s.RollOffMaxDistance = 70
 			s.Parent = h
-			st.sound, st.pitch, st.cut = s, swing.pitch or 1, swing.cut
+			st.sound, st.pitch, st.cut, st.volume = s, swing.pitch or 1, swing.cut, s.Volume
 		end
 		tracked[h] = st
 	end)
@@ -90,15 +94,30 @@ RunService.Heartbeat:Connect(function(dt)
 					local wave = st.flicker and (rng:NextNumber() < 0.15 and rng:NextNumber(0.2, 1.6) or 1) or (1 + 0.2 * math.sin(now * 3 + st.seed))
 					st.light.Brightness = st.lightBase * wave * (1 + 1.6 * st.boost)
 				end
-				if st.sound and speed > SWING_SPEED and now - st.soundAt > 0.45 then
-					st.soundAt = now
-					st.sound.PlaybackSpeed = st.pitch * rng:NextNumber(0.93, 1.07)
-					st.sound.TimePosition = 0
-					st.sound.Volume = (SkinFX.SWING[h:GetAttribute("SkinAura") or ""] or {}).volume or 0.25
-					st.sound:Play()
-					if st.cut then
-						local s, mark = st.sound, now
-						task.delay(st.cut, function() if s.Parent and st.soundAt == mark then s:Stop() end end)
+				-- one sound per swing: it starts as the tip gets going and isn't
+				-- started again until the tip has come to rest, so a long swing
+				-- plays its whoosh once, through, instead of restarting it
+				if speed > SWING_SPEED then
+					st.slowFor = 0
+					if not st.swinging then
+						st.swinging = true
+						if st.sound and now - st.soundAt > SWING_GAP then
+							st.soundAt = now
+							st.sound.PlaybackSpeed = st.pitch * rng:NextNumber(0.95, 1.05)
+							st.sound.TimePosition = 0
+							st.sound.Volume = st.volume
+							st.sound:Play()
+						end
+					end
+				elseif speed < SWING_END then
+					st.slowFor = (st.slowFor or 0) + dt
+					if st.swinging and st.slowFor > SWING_REST then st.swinging = false end
+				end
+				-- a skin whose sound runs long (cut) fades it out instead of snapping it off
+				if st.sound and st.cut and st.sound.IsPlaying then
+					local t = now - st.soundAt - st.cut
+					if t > 0 then
+						if t >= FADE then st.sound:Stop() else st.sound.Volume = st.volume * (1 - t / FADE) end
 					end
 				end
 			end

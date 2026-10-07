@@ -111,16 +111,96 @@ function Dresser.paint(container, colors, teamKey)
 end
 
 --------------------------------------------------------------------
+--  GAPS: what shows between the plates
+--------------------------------------------------------------------
+-- R6 limbs are boxes and armor is rounded, so a garment leaves a box's corners
+-- and edges bare here and there. A limb under a garment is painted a shade of
+-- the garment instead of skin, so a gap reads as cloth in shadow: the model's
+-- Under attribute (a ColorSlot name, or a colour; scripts/build_armor.py), else
+-- its biggest painted part. Where the garment stops short of the limb's end (a
+-- hand under a cuff, a forearm under a rolled sleeve) a skin-coloured sleeve
+-- keeps that stretch bare.
+local UNDER_SHADE = 0.6
+local UNDER_DEFAULT = Color3.fromRGB(46, 40, 36)
+local BARE_MIN = 0.12     -- studs: a bare end shorter than this is left to the garment
+local BODY_COLOR = {Torso = "TorsoColor3", ["Left Arm"] = "LeftArmColor3", ["Right Arm"] = "RightArmColor3", ["Left Leg"] = "LeftLegColor3", ["Right Leg"] = "RightLegColor3"}
+
+-- a box's half-size along one axis of the frame it is given in
+local function halfAlong(cf, half, axis)
+	return math.abs(cf.RightVector[axis]) * half.X + math.abs(cf.UpVector[axis]) * half.Y + math.abs(cf.LookVector[axis]) * half.Z
+end
+
+-- {model, color, lo, hi}: the garment's shade and the stretch of the limb it wraps (limb space, Y)
+local function underOf(model, limb)
+	local middle = model:FindFirstChild("Middle")
+	if not middle then return nil end
+	local want = model:GetAttribute("Under")
+	local lh = limb.Size / 2
+	local lo, hi = math.huge, -math.huge
+	local best, bestVol
+	for _, p in ipairs(model:GetDescendants()) do
+		if p:IsA("BasePart") and p ~= middle and p.Transparency < 0.9 then
+			local cf = middle.CFrame:ToObjectSpace(p.CFrame)
+			local h = p.Size / 2
+			local ex, ey, ez = halfAlong(cf, h, "X"), halfAlong(cf, h, "Y"), halfAlong(cf, h, "Z")
+			-- only what goes round the limb says how far along it the garment reaches
+			if cf.X - ex <= -0.6 * lh.X and cf.X + ex >= 0.6 * lh.X and cf.Z - ez <= -0.6 * lh.Z and cf.Z + ez >= 0.6 * lh.Z then
+				lo, hi = math.min(lo, cf.Y - ey), math.max(hi, cf.Y + ey)
+			end
+			local slot = p:GetAttribute("ColorSlot")
+			if slot and (type(want) ~= "string" or want == slot) then
+				local v = p.Size.X * p.Size.Y * p.Size.Z
+				if not bestVol or v > bestVol then best, bestVol = p.Color, v end
+			end
+		end
+	end
+	if lo == math.huge then return nil end
+	local c = typeof(want) == "Color3" and want or best or UNDER_DEFAULT
+	return {model = model, color = Color3.new(c.R * UNDER_SHADE, c.G * UNDER_SHADE, c.B * UNDER_SHADE), lo = lo, hi = hi}
+end
+
+-- a skin-coloured sleeve over the stretch y0..y1 of a limb, worn with its garment
+local function bareStretch(limb, u, y0, y1, tone)
+	if y1 - y0 < BARE_MIN then return end
+	local s = Instance.new("Part")
+	s.Name = "Skin"
+	s.Size = Vector3.new(limb.Size.X + 0.03, y1 - y0, limb.Size.Z + 0.03)
+	s.Color, s.Material = tone, limb.Material
+	s.TopSurface, s.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	s.CanCollide, s.CanQuery, s.CanTouch, s.Massless, s.Anchored = false, false, false, true, false
+	local off = CFrame.new(0, (y0 + y1) / 2, 0)
+	s.CFrame = limb.CFrame * off
+	local w = Instance.new("Weld"); w.Name, w.Part0, w.Part1, w.C0 = "ArmorWeld", limb, s, off; w.Parent = s
+	s.Parent = u.model
+end
+
+--------------------------------------------------------------------
 --  BODY
 --------------------------------------------------------------------
-local function applyBody(char, app, coversHair, coversFace, coversBeard)
+local function applyBody(char, app, coversHair, coversFace, coversBeard, under)
 	app = app or {}
+	under = under or {}
 	local body = Instance.new("Folder"); body.Name = "Body"
-	-- skin tone
+	-- skin tone (a limb under a garment takes the garment's shade, see GAPS)
 	local tone = Catalog.BODY.skins[app.skin or Catalog.BODY.defaults.skin] or Catalog.BODY.skins[1]
-	for _, n in ipairs(BODY_PARTS) do local p = char:FindFirstChild(n); if p and p:IsA("BasePart") then p.Color = tone end end
+	char:SetAttribute("SkinTone", tone)
+	for _, n in ipairs(BODY_PARTS) do
+		local p = char:FindFirstChild(n)
+		if p and p:IsA("BasePart") then
+			local u = under[n]
+			p.Color = u and u.color or tone
+			if u then
+				local half = p.Size.Y / 2
+				bareStretch(p, u, -half, math.max(-half, u.lo + 0.04), tone)   -- tucked a hair under the garment's edge
+				bareStretch(p, u, math.min(half, u.hi - 0.04), half, tone)
+			end
+		end
+	end
 	local bc = char:FindFirstChildOfClass("BodyColors")
-	if bc then local b = BrickColor.new(tone); bc.HeadColor3, bc.TorsoColor3, bc.LeftArmColor3, bc.RightArmColor3, bc.LeftLegColor3, bc.RightLegColor3 = tone, tone, tone, tone, tone, tone end
+	if bc then
+		bc.HeadColor3 = tone
+		for n, prop in pairs(BODY_COLOR) do bc[prop] = under[n] and under[n].color or tone end
+	end
 	local head = char:FindFirstChild("Head")
 	local hairColor = Catalog.BODY.hairColors[1].color
 	for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == app.hairColor then hairColor = h.color end end
@@ -167,6 +247,11 @@ function Dresser.undress(char)
 	for _, a in ipairs({"SpeedMult_Armor", "ClunkMult_Armor", "ArmorId", "ArmorType", "ArmorProtection", "TeamPainted", "Pieces",
 		"StaminaMult", "RegenMult", "SprintMult", "DodgeCost", "DodgeReach"}) do char:SetAttribute(a, nil) end
 	local head = char:FindFirstChild("Head"); local decal = head and head:FindFirstChildOfClass("Decal"); if decal then decal.Transparency = 0 end
+	-- the limbs a garment had painted go back to skin
+	local tone = char:GetAttribute("SkinTone")
+	if typeof(tone) == "Color3" then
+		for _, n in ipairs(BODY_PARTS) do local p = char:FindFirstChild(n); if p and p:IsA("BasePart") then p.Color = tone end end
+	end
 end
 
 function Dresser.dress(char, opts)
@@ -202,7 +287,14 @@ function Dresser.dress(char, opts)
 	-- layers that sit flush (a glove as wide as its sleeve) would flicker: nudge them apart
 	Defight.run(container)
 	local painted = Dresser.paint(container, lo.colors, opts.team)
-	applyBody(char, opts.appearance, coversHair, coversFace, coversBeard)
+	-- what each covered limb shows through the gaps (GAPS; the head keeps its skin)
+	local under = {}
+	for _, m in ipairs(container:GetChildren()) do
+		local limbName = m:GetAttribute("Limb")
+		local limb = limbName and limbName ~= "Head" and char:FindFirstChild(limbName)
+		if limb and limb:IsA("BasePart") then under[limbName] = underOf(m, limb) end
+	end
+	applyBody(char, opts.appearance, coversHair, coversFace, coversBeard, under)
 
 	-- stats (real characters; harmless on a preview rig)
 	local hum = char:FindFirstChildOfClass("Humanoid")

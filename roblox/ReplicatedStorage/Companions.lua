@@ -7,7 +7,8 @@
        Companions.pose(rig, cf, t, moving)   place the rig with its root at cf;
                                              moving 0..1 drives the walk / hop / flap
        rig.model  rig.flying  rig.foot (studs from the root down to the ground)
-       Companions.egg(eggId, opts)           -> egg rig (a shell with spots)
+       Companions.egg(eggId, opts)           -> egg rig (an egg-shaped shell drawn in its look:
+                                             speckled · mossy · ember · royal)
        Companions.poseEgg(egg, cf, t, wobble)  cf = the egg's bottom; wobble 0..1
        Companions.BODIES                     the body names a companion may use
 
@@ -398,6 +399,125 @@ end
 --------------------------------------------------------------------
 --  EGGS
 --------------------------------------------------------------------
+-- the shell: a round lower half and a narrower, taller upper half, bottom at
+-- y = 0, 1.7 tall, widest (1.2) a little below the middle, like a real egg; the
+-- two meet at a shallow angle so the join doesn't show
+local EGG_HALVES = {{a = 0.6, b = 0.8, c = 0.8}, {a = 0.55, b = 0.84, c = 0.86}}   -- semi-axes across / up, centre height
+local EGG_TOP = 1.7
+local function eggHalf(y)
+	local best, r = EGG_HALVES[1], 0
+	for _, h in ipairs(EGG_HALVES) do
+		local t = (y - h.c) / h.b
+		if abs(t) < 1 and h.a * math.sqrt(1 - t * t) > r then best, r = h, h.a * math.sqrt(1 - t * t) end
+	end
+	return best, r
+end
+local function eggRadius(y) local _, r = eggHalf(y); return r end
+-- a point on the shell (height y, round by yaw), lifted along the outward normal
+local function onEgg(y, yaw, lift)
+	local h, r = eggHalf(y)
+	local dir = V(cos(yaw), 0, sin(yaw))
+	local n = V(dir.X * r / (h.a * h.a), (y - h.c) / (h.b * h.b), dir.Z * r / (h.a * h.a)).Unit
+	return dir * r + V(0, y, 0) + n * (lift or 0), n
+end
+-- a frame on the shell: -Z out along the normal, X round the egg, Y up the egg
+local function face(pos, n)
+	return CFrame.lookAt(pos, pos + n, abs(n.Y) > 0.95 and Vector3.zAxis or Vector3.yAxis)
+end
+-- a thin strip from a to b lying on the shell (a crack, a seam)
+local function strip(add, a, b, w, color, neon)
+	local mid = (a + b) / 2
+	local _, n = onEgg(mid.Y, math.atan2(mid.Z, mid.X))
+	add("block", V(w, w * 0.6, (b - a).Magnitude + w * 0.5), CFrame.lookAt(mid, b, n), color, neon)
+end
+-- a band of segments round the shell at height y
+local function band(add, y, height, count, color, mat, lift)
+	local arc = 2 * math.pi * eggRadius(y) / count
+	for i = 0, count - 1 do
+		local pos, n = onEgg(y, i / count * math.pi * 2, lift or 0)
+		add("block", V(arc * 1.08, height, 0.05), face(pos, n), color, false, mat)
+	end
+end
+
+-- what is drawn on each egg (Catalog ▸ Eggs `look`; default speckled).
+-- Every look is seeded by the egg's id, so an egg looks the same every time.
+local EGG_LOOKS = {}
+EGG_LOOKS.speckled = function(add, e, rng)
+	local dark = e.spots:Lerp(Color3.new(0, 0, 0), 0.35)
+	for i = 1, 18 do
+		local pos, n = onEgg(rng:NextNumber(0.22, 1.5), rng:NextNumber(0, math.pi * 2))
+		local s = i <= 6 and rng:NextNumber(0.2, 0.3) or rng:NextNumber(0.07, 0.15)
+		add("ball", V(s, s * rng:NextNumber(0.65, 1), 0.06), face(pos, n) * A(0, 0, rng:NextNumber(0, math.pi)), i % 3 == 0 and dark or e.spots, e.glow)
+	end
+end
+EGG_LOOKS.mossy = function(add, e, rng)
+	-- lumps of moss, thickest low down
+	local pale = e.shell:Lerp(e.spots, 0.5)
+	for i = 1, 15 do
+		local y = rng:NextNumber(0.1, 1.2)
+		local pos, n = onEgg(y, rng:NextNumber(0, math.pi * 2))
+		local s = rng:NextNumber(0.22, 0.42) * (1.25 - y * 0.45)
+		add("ball", V(s, s * 0.7, s * 0.45), face(pos, n) * A(0, 0, rng:NextNumber(0, math.pi)), i % 4 == 0 and pale or e.spots)
+	end
+	-- a sprout on the top: a stem and two leaves
+	local leaf = e.shell:Lerp(Color3.fromRGB(150, 225, 95), 0.6)
+	add("ball", V(0.07, 0.34, 0.07), CF(0.02, EGG_TOP + 0.1, 0) * A(0, 0, rad(-12)), e.spots)
+	add("ball", V(0.32, 0.05, 0.15), CF(0.16, EGG_TOP + 0.25, 0) * A(0, 0, rad(28)), leaf)
+	add("ball", V(0.26, 0.05, 0.13), CF(-0.1, EGG_TOP + 0.2, 0.03) * A(0, rad(25), rad(-34)), leaf)
+end
+EGG_LOOKS.ember = function(add, e, rng)
+	-- the cooled crust: dark blotches
+	local crust = e.shell:Lerp(Color3.fromRGB(20, 10, 8), 0.6)
+	for _ = 1, 9 do
+		local pos, n = onEgg(rng:NextNumber(0.2, 1.45), rng:NextNumber(0, math.pi * 2))
+		local s = rng:NextNumber(0.3, 0.5)
+		add("ball", V(s, s * 0.8, 0.05), face(pos, n) * A(0, 0, rng:NextNumber(0, math.pi)), crust)
+	end
+	-- glowing cracks running down from the top, with a fork here and there
+	for c = 1, 4 do
+		local yaw, y = c * math.pi / 2 + rng:NextNumber(-0.4, 0.4), EGG_TOP - 0.1
+		local prev = onEgg(y, yaw, 0.012)
+		while y > 0.4 do
+			y -= rng:NextNumber(0.15, 0.25)
+			yaw += rng:NextNumber(-0.32, 0.32)
+			local p = onEgg(y, yaw, 0.012)
+			strip(add, prev, p, 0.07, e.spots, true)
+			if rng:NextNumber() < 0.3 then
+				local fy, fyaw = y - rng:NextNumber(0.1, 0.18), yaw + (rng:NextNumber() < 0.5 and -1 or 1) * rng:NextNumber(0.25, 0.4)
+				strip(add, p, onEgg(fy, fyaw, 0.012), 0.05, e.spots, true)
+			end
+			prev = p
+		end
+	end
+end
+EGG_LOOKS.royal = function(add, e, rng)
+	local gold, metal = e.spots, Enum.Material.Metal
+	-- a gold band round the waist, set with gems
+	band(add, 0.74, 0.15, 18, gold, metal)
+	for i = 0, 3 do
+		local pos, n = onEgg(0.74, i * math.pi / 2 + math.pi / 4, 0.04)
+		add("ball", V(0.15, 0.15, 0.09), face(pos, n), i % 2 == 0 and Color3.fromRGB(205, 30, 55) or Color3.fromRGB(235, 235, 250), true)
+	end
+	-- a thin band above, and gold flecks between
+	band(add, 1.22, 0.06, 14, gold, metal)
+	for _ = 1, 10 do
+		local pos, n = onEgg(rng:NextNumber(0.25, 1.4), rng:NextNumber(0, math.pi * 2))
+		local s = rng:NextNumber(0.07, 0.12)
+		add("block", V(s, s, 0.03), face(pos, n) * A(0, 0, math.pi / 4), gold, true)
+	end
+	-- a little crown on the top: a circlet and six points, each with a pearl
+	local cy = 1.48
+	band(add, cy, 0.1, 12, gold, metal, 0.01)
+	local cr = eggRadius(cy) + 0.02
+	for i = 0, 5 do
+		local yaw = i / 6 * math.pi * 2
+		local d = V(cos(yaw), 0, sin(yaw))
+		local base = d * cr + V(0, cy + 0.12, 0)
+		add("block", V(0.06, 0.2, 0.06), CFrame.lookAt(base, base + d) * A(rad(-12), 0, 0), gold, false, metal)
+		add("ball", V(0.08, 0.08, 0.08), CF(base + d * 0.03 + V(0, 0.12, 0)), Color3.fromRGB(245, 240, 225))
+	end
+end
+
 function Companions.egg(eggId, opts)
 	opts = opts or {}
 	local e = Catalog.EGG and Catalog.EGG[eggId]
@@ -406,27 +526,20 @@ function Companions.egg(eggId, opts)
 	local model = Instance.new("Model")
 	model.Name = "Egg_" .. eggId
 	local list, rests = {}, {}
-	local function add(size, rel, color, neon)
-		local p = makePart({name = "Shell", shape = "ball", size = size, color = color, neon = neon}, k, model)
-		p.CastShadow = true
+	local function add(shape, size, rel, color, neon, mat)
+		local p = makePart({name = "Shell", shape = shape, size = size, color = color, neon = neon}, k, model)
+		if mat and not neon then p.Material = mat end
+		p.CastShadow = not neon
 		table.insert(list, p)
 		table.insert(rests, scaled(rel, k))
 		return p
 	end
-	-- the shell: bottom at y = 0, 1.7 tall
-	add(Vector3.new(1.24, 1.7, 1.24), CF(0, 0.85, 0), e.shell)
-	-- spots on the surface, the same every time
-	local rng = Random.new(#eggId * 7919)
-	for i = 1, 9 do
-		local yaw = rng:NextNumber(0, math.pi * 2)
-		local y = rng:NextNumber(0.35, 1.4)
-		local r = 0.62 * math.sqrt(math.max(0.05, 1 - ((y - 0.85) / 0.85) ^ 2))
-		local s = rng:NextNumber(0.16, 0.3)
-		local pos = Vector3.new(cos(yaw) * r, y, sin(yaw) * r)
-		add(Vector3.new(s, s, 0.08), CFrame.lookAt(pos, pos * Vector3.new(2, 1, 2)), e.spots, e.glow)
-	end
+	for _, h in ipairs(EGG_HALVES) do add("ball", V(h.a * 2, h.b * 2, h.a * 2), CF(0, h.c, 0), e.shell) end
+	local look = EGG_LOOKS[e.look or ""] or EGG_LOOKS[eggId:lower()] or EGG_LOOKS.speckled
+	look(add, e, Random.new(#eggId * 7919))
 	if e.glow and opts.world then
 		local l = Instance.new("PointLight"); l.Color = e.spots; l.Range = 6; l.Brightness = 0.7; l.Parent = list[1]
+		addFx(list[1], (e.look or eggId:lower()) == "ember" and "embers" or "sparkle", k * 0.6)
 	end
 	return {model = model, list = list, rests = rests, def = e, scale = k}
 end

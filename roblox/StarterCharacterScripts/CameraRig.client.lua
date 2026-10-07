@@ -288,7 +288,8 @@ player.CameraMode = Enum.CameraMode.Classic
 local torsoPieces = {}   -- torso armor parts, faded with the torso in first person
 local armPieces = {}     -- arm armor parts: shown in first person (your sleeves and gauntlets on the
                          -- weapon), hidden only while one is right up against the camera
-local ARM_NEAR = 0.35    -- studs between the camera and a part's bounds before it hides
+local ARM_HIDE = 0.1     -- studs between the camera and a piece's box before it hides…
+local ARM_SHOW = 0.3     -- …and how far it must be again before it shows (no flicker at the edge)
 local setTorsoAlpha
 local function applyVisibility(d, inFP)
 	if d:IsA("BasePart") then
@@ -329,13 +330,24 @@ local function setBodyForFP(inFP)
 	armPieces = {}
 	for _, d in ipairs(character:GetDescendants()) do applyVisibility(d, inFP) end
 end
--- first person: an arm piece swung up into the camera hides until it's clear again
+-- first person: an arm piece swung up into the camera hides until it's clear again.
+-- The gap is to the piece's own box, not a sphere round it: a sleeve is one
+-- mesh as long as the arm, and a sphere that big hid the whole sleeve on every swing.
+local function boxGap(part, eye)
+	local p = part.CFrame:PointToObjectSpace(eye)
+	local h = part.Size / 2
+	return Vector3.new(math.max(math.abs(p.X) - h.X, 0), math.max(math.abs(p.Y) - h.Y, 0), math.max(math.abs(p.Z) - h.Z, 0)).Magnitude
+end
 local function fadeArmPieces()
 	local eye = Camera.CFrame.Position
 	for part in pairs(armPieces) do
 		if part.Parent then
-			local gap = (part.Position - eye).Magnitude - part.Size.Magnitude / 2
-			part.LocalTransparencyModifier = gap < ARM_NEAR and 1 or 0
+			local gap = boxGap(part, eye)
+			if part.LocalTransparencyModifier > 0.5 then
+				if gap > ARM_SHOW then part.LocalTransparencyModifier = 0 end
+			elseif gap < ARM_HIDE then
+				part.LocalTransparencyModifier = 1
+			end
 		else
 			armPieces[part] = nil
 		end

@@ -4,12 +4,19 @@
     python scripts/build_armor.py RoadLevy Hair   # only these sets / piece ids / body kinds
     python scripts/build_armor.py --no-upload     # Blender only
     python scripts/build_armor.py --upload-only   # no Blender: upload what the last bake left without ids
+    python scripts/build_armor.py --under         # only under_armor.lua: each model's Under (see below)
 
 blender/out/blueprints.json comes from Studio (the Build ▸ Armor / Body specs;
 see blender/parts2mesh.py). Outputs land in blender/out/armor/: one FBX per
 region, <Model>.json with centres + asset ids, and assemble_armor.lua (run it
 in Studio edit mode through the command bar or the Studio MCP). Asset ids
 never leave blender/out (gitignored).
+
+Each torso / arm / leg model also gets an Under: what the Dresser paints the
+limb beneath it (a shade of it), so a gap between plates shows cloth, not
+skin. It is the colour of the model's biggest part, the base garment: a
+ColorSlot name, or the part's own colour when it is vertex-coloured (Fixed).
+--under writes under_armor.lua, which sets just that on models already built.
 """
 import json, os, subprocess, sys
 
@@ -21,10 +28,80 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 from upload_asset import upload  # noqa: E402
 
 
+UNDER_SLOTS = ("TorsoClothing", "LeftArmClothing", "RightArmClothing", "LeftLegClothing", "RightLegClothing")
+
+
+def blueprint_models():
+    """{"<Set>/<Slot>" or "Pieces/<id>/<Slot>": [spec, ...]} from blueprints.json"""
+    data = json.load(open(SRC, encoding="utf-8"))
+    out = {}
+    for s, slots in data.get("sets", {}).items():
+        for slot, specs in slots.items():
+            out[f"{s}/{slot}"] = specs
+    for pid, slots in data.get("pieces", {}).items():
+        for slot, specs in slots.items():
+            out[f"Pieces/{pid}/{slot}"] = specs
+    return out
+
+
+def under_of(specs):
+    """the base garment: the biggest part (by its box) — its ColorSlot name, or
+    for a Fixed part its colour (r, g, b). Trim, studs and stitching are many
+    but small; the shell round the limb is the one big piece."""
+    best, vol = None, 0
+    for sp in specs:
+        if sp.get("t", 0) > 0.9:
+            continue
+        x, y, z = sp["s"]
+        if x * y * z > vol:
+            best, vol = sp, x * y * z
+    if best is None:
+        return None
+    slot = (best.get("a") or {}).get("ColorSlot")
+    return slot or tuple(round(v, 3) for v in best["c"])
+
+
+def under_lua(u):
+    return f'"{u}"' if isinstance(u, str) else "{%.3f, %.3f, %.3f}" % u
+
+
+def write_under():
+    lua = ["-- each model's Under (scripts/build_armor.py --under); run in Studio edit mode",
+           "local ServerStorage, ReplicatedStorage = game:GetService(\"ServerStorage\"), game:GetService(\"ReplicatedStorage\")",
+           "local n = 0",
+           "local function set(path, u)",
+           "\tlocal a, b, c = path:match(\"^([^/]+)/([^/]+)/?([^/]*)$\")",
+           "\tlocal m",
+           "\tif a == \"Pieces\" then",
+           "\t\tlocal f = ReplicatedStorage:FindFirstChild(\"Cosmetics\") and ReplicatedStorage.Cosmetics:FindFirstChild(\"Pieces\")",
+           "\t\tm = f and f:FindFirstChild(b) and f[b]:FindFirstChild(c)",
+           "\telse",
+           "\t\tlocal f = ServerStorage:FindFirstChild(\"Armor\")",
+           "\t\tm = f and f:FindFirstChild(a) and f[a]:FindFirstChild(b)",
+           "\tend",
+           "\tif not m then return end",
+           "\tm:SetAttribute(\"Under\", type(u) == \"table\" and Color3.new(u[1], u[2], u[3]) or u)",
+           "\tn += 1",
+           "end"]
+    for name, specs in sorted(blueprint_models().items()):
+        if name.split("/")[-1] in UNDER_SLOTS:
+            u = under_of(specs)
+            if u is not None:
+                lua.append(f'set("{name}", {under_lua(u)})')
+    lua.append('return "under set on " .. n .. " models"')
+    path = os.path.join(OUT, "under_armor.lua")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lua) + "\n")
+    print("wrote", path)
+
+
 def main():
     argv = sys.argv[1:]
+    if "--under" in argv:
+        return write_under()
     do_upload = "--no-upload" not in argv
     only = [a for a in argv if not a.startswith("--")]
+    specs_of = blueprint_models() if os.path.exists(SRC) else {}
     if "--upload-only" in argv:
         # resume: every model the last bake wrote (that `only` names), uploading regions still without an id
         names = []
@@ -61,7 +138,9 @@ def main():
         regions = ", ".join(
             f'{reg} = {{id = {rg.get("id", 0)}, material = "{rg.get("material", "SmoothPlastic")}", center = {{{rg["center"][0]:.4f}, {rg["center"][1]:.4f}, {rg["center"][2]:.4f}}}}}'
             for reg, rg in meta["regions"].items())
-        lua.append(f'MeshArmor.build({{path = "{name}", regions = {{{regions}}}}}); n += 1')
+        u = under_of(specs_of[name]) if name.split("/")[-1] in UNDER_SLOTS and name in specs_of else None
+        under = f", under = {under_lua(u)}" if u is not None else ""
+        lua.append(f'MeshArmor.build({{path = "{name}"{under}, regions = {{{regions}}}}}); n += 1')
     lua.append('print("[MeshArmor] built", n, "models")')
     with open(os.path.join(OUT, "assemble_armor.lua"), "w", encoding="utf-8") as f:
         f.write("\n".join(lua) + "\n")
