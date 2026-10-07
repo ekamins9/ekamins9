@@ -344,7 +344,7 @@ function CombatClient.attach(Tool, weaponConfig)
 			t:AdjustSpeed(sp2)
 			currentSpeed = sp2
 			task.delay(rec * 0.85, function()
-				if currentTrack == t and armToken == arm then t:Stop(rec * 0.3); currentTrack = nil end
+				if currentTrack == t and armToken == arm then t:Stop(math.max(rec * 0.45, 0.12)); currentTrack = nil end
 			end)
 		end)
 	end
@@ -362,7 +362,7 @@ function CombatClient.attach(Tool, weaponConfig)
 		local mk = AnimSets.marks(releaseId)
 		if mk then
 			-- the clip winds itself up: only a short blend in from wherever we are
-			fadeIn = math.min(windup > 0 and windup * 0.4 or fadeA, 0.12)
+			fadeIn = windup > 0 and math.clamp(windup * 0.55, 0.08, 0.24) or math.max(fadeA, 0.1)   -- a soft cross-fade from wherever we were
 			if currentTrack and currentTrack ~= t then currentTrack:Stop(fadeIn) end
 			currentTrack = nil
 			swingToken = token

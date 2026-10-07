@@ -1,5 +1,16 @@
 # Updated scripts: objective rings, training ring deaths, combat animations
 
+**Animation pass 3 (newest; all 66 clips rebuilt):**
+- **Overhead:** the hands go up above the head (y 2.1), in front of it, never through it; the blade lies back over the top and chops down.
+- **Stab:** the whole body coils to the right with the head on the target, then unwinds as the arms drive the point out.
+  - The hips and legs now follow 30% of every torso turn (`AnimSets.HIP_FOLLOW`); feet stay planted.
+  - Measured in play: swing torso −49°…+38°, legs ±15°, head ±7°.
+- **Block:** a diagonal guard across the body, hands low to the right and the tip up to the left. It covers you without filling your own view.
+- **No spin when going back to idle:** every attack starts and ends exactly on the idle pose.
+- **Smoother:**
+  - All hand motion interpolates through one continuous path. Thrusts used to jump between two hand rules.
+  - The fades into, between and out of attacks are longer again: 0.08–0.24 s in, about 0.12 s or more out.
+
 **Objective indicators and Training (newest):**
 - **KOTH, Siege ram and capture zones:** a glowing ring on the ground that you can see from inside it.
   - The rim is the holder's colour and flashes when contested.
@@ -11,6 +22,7 @@
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
+| [AnimForge.lua](ServerScriptService/Build/AnimForge.lua), [AnimSets.lua](ReplicatedStorage/Combat/AnimSets.lua), [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua), [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | Build / Combat | ModuleScript | animation pass 3 (above) |
 | [ObjectiveFX.client.lua](StarterPlayerScripts/ObjectiveFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ ObjectiveFX | LocalScript | **new**: the ground rings |
 | [KOTH.lua](ServerScriptService/Game/Modes/KOTH.lua) | ServerScriptService ▸ Game ▸ Modes ▸ KOTH | ModuleScript | disc capture, publishes the hill's state |
 | [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Siege | ModuleScript | publishes the objective's radius; capture box hidden |

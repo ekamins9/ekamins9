@@ -187,18 +187,18 @@ local MOVES = {
 			{u = 1.0,  guard = true, ease = "sine"},                           -- back to guard
 		},
 	},
-	Overhead = {
+	Overhead = {   -- the hands go up ABOVE and in front of the head (never through it); the blade hangs back over it
 		windup = {
-			{u = 0.5, az = 30, el = 95, ln = -3, ease = "sine"},
-			{u = 1.0, az = 24, el = 145, ln = -9, tw = 22, ease = "sineOut"},   -- loaded: raised high, the tip behind the head
+			{u = 0.5, az = 22, el = 100, at = V3(0.85, 1.45, -0.8), tw = 12, ln = -2, ease = "sine"},
+			{u = 1.0, az = 18, el = 152, at = V3(0.75, 2.2, -0.5), tw = 22, ln = -8, ease = "sineOut"},   -- loaded: hands high, the tip behind the head
 		},
 		strike = {
-			{u = 0.32, az = 18, el = 100, ln = -2, tw = 14, ease = "quadIn"},
-			{u = 0.6,  az = 4,  el = 22,  ln = 12, tw = -4, ease = "linear"},  -- chops down through head height
-			{u = 1.0,  az = -10, el = -38, ln = 16, tw = -14, ease = "quadOut"},
+			{u = 0.32, az = 14, el = 108, at = V3(0.62, 2.1, -0.9), tw = 12, ln = -2, ease = "quadIn"},
+			{u = 0.6,  az = 4,  el = 22,  at = V3(0.35, 0.8, -1.65), tw = -4, ln = 12, ease = "linear"},  -- chops down through head height
+			{u = 1.0,  az = -8, el = -36, at = V3(0.25, -0.3, -1.35), tw = -12, ln = 16, ease = "quadOut"},
 		},
 		follow = {
-			{u = 0.45, az = -18, el = -62, ln = 12, tw = -16, ease = "cubicOut"},
+			{u = 0.45, az = -14, el = -58, at = V3(0.2, -0.55, -1.05), tw = -14, ln = 12, ease = "cubicOut"},
 			{u = 1.0,  guard = true, ease = "sine"},
 		},
 	},
@@ -217,18 +217,18 @@ local MOVES = {
 			{u = 1.0,  guard = true, ease = "sine"},
 		},
 	},
-	Stab = {   -- the hand travels, the blade stays aimed
+	Stab = {   -- the whole body coils to the right (the head stays on the target), then unwinds as the arms drive the point out
 		windup = {
-			{u = 0.5, az = 6, el = 14, stab = V3(0.95, -0.05, -0.2), tw = 26, ease = "sine"},
-			{u = 1.0, az = 4, el = 8,  stab = V3(1.05, -0.1, 0.45), tw = 40, ln = -4, ease = "sineOut"},   -- drawn back to the hip
+			{u = 0.5, az = 6, el = 12, at = V3(0.95, -0.05, -0.3), tw = 30, ln = -2, ease = "sine"},
+			{u = 1.0, az = 4, el = 6,  at = V3(1.0, -0.1, 0.35), tw = 48, ln = -5, ease = "sineOut"},   -- coiled: drawn back past the hip
 		},
 		strike = {
-			{u = 0.32, az = 3, el = 6, stab = V3(0.75, 0.0, -0.55), tw = 14, ln = 4, ease = "quadIn"},
-			{u = 0.6,  az = 1, el = 4, stab = V3(0.3, 0.1, -1.6),  tw = -18, ln = 12, ease = "linear"},   -- the lunge
-			{u = 1.0,  az = 0, el = 3, stab = V3(0.18, 0.1, -1.85), tw = -24, ln = 14, ease = "expoOut"},
+			{u = 0.32, az = 3, el = 5, at = V3(0.8, 0.0, -0.5), tw = 22, ln = 4, ease = "quadIn"},
+			{u = 0.6,  az = 1, el = 4, at = V3(0.35, 0.1, -1.6), tw = -14, ln = 12, ease = "linear"},   -- the drive
+			{u = 1.0,  az = 0, el = 3, at = V3(0.2, 0.1, -1.9), tw = -22, ln = 15, ease = "expoOut"},
 		},
 		follow = {
-			{u = 0.4, az = 2, el = 8, stab = V3(0.3, 0.05, -1.5), tw = -16, ln = 10, ease = "sine"},
+			{u = 0.4, az = 2, el = 10, at = V3(0.35, 0.0, -1.5), tw = -14, ln = 10, ease = "sine"},
 			{u = 1.0, guard = true, ease = "sine"},
 		},
 	},
@@ -259,7 +259,7 @@ solveRaw = function(cls, p, side, edgeHint, legs, prev)
 	local az, el = p.az * side, p.el
 	-- (a thrust is a right-handed move either way: the left one comes from just left of
 	-- centre with less turn, not from a mirrored body)
-	local sideK = (p.stab and side < 0) and (cls.twoHanded and 0.4 or -0.45) or side
+	local sideK = (p.stabbing and side < 0) and (cls.twoHanded and 0.4 or -0.45) or side
 	local twist = p.tw and p.tw * sideK or clamp(p.az * cls.twistK, -cls.twistMax, cls.twistMax) * side
 	local lean, tilt = p.ln or 0, (p.tl or 0) * side
 	local blade = dir(az, el)
@@ -273,24 +273,21 @@ solveRaw = function(cls, p, side, edgeHint, legs, prev)
 	local headR = ANG(0, -rad(twist * 0.15), 0) * ANG(-rad(lean * 0.2), 0, 0)
 	local head = CF(neckPt + headR:VectorToWorldSpace(V3(0, 0.5, 0))) * headR
 
-	-- the right hand: aim the arm at a point along the blade from the pivot
-	-- (backhands come across the body, a little less far)
-	local pivot = cls.pivot
-	if side < 0 then pivot = V3(-pivot.X * (cls.backhand or 1), pivot.Y, pivot.Z) end
+	-- the right hand: one rule for every frame — a point along the blade from the
+	-- class's pivot, plus the pose's hand offset (absolute hand spots are turned
+	-- into offsets when the timeline is built, so they interpolate seamlessly)
+	local tr = cls.pivot + dir(p.az, p.el) * cls.reach + (p.hand or Vector3.zero)
 	local target
-	if p.stab then
-		local s = p.stab
-		if side > 0 then
-			target = V3(s.X, s.Y, s.Z)
-		elseif cls.twoHanded then
-			target = V3(s.X * 0.6, s.Y, s.Z)          -- two hands drive from the same side either way
-		else
-			target = V3(0.15 - s.X * 0.25, s.Y, s.Z)  -- one hand: from just left of centre
-		end
+	if side > 0 then
+		target = tr
+	elseif p.stabbing then
+		-- a thrust is a right-handed move either way: the left one drives from just
+		-- left of centre (two hands: from the same side), not from a mirrored body
+		target = V3(tr.X * (cls.twoHanded and 0.6 or -0.25), tr.Y, tr.Z)
 	else
-		target = pivot + blade * cls.reach
+		-- backhands come across the body, a little less far
+		target = V3(-(tr.X - cls.pivot.X * (1 - (cls.backhand or 1))), tr.Y, tr.Z)
 	end
-	if p.hand then target += V3(p.hand.X * side, p.hand.Y, p.hand.Z) end
 	local rShoulder = torso:PointToWorldSpace(J.RS.C0.Position)
 	local rAim = (target - rShoulder)
 	local rDist = rAim.Magnitude
@@ -380,12 +377,17 @@ end
 --------------------------------------------------------------------
 --  TIMELINES
 --------------------------------------------------------------------
+-- an absolute hand spot (right side) → the offset from where the blade alone would put the hand
+local function offsetFor(cls, az, el, at)
+	return at - (cls.pivot + dir(az, el) * cls.reach)
+end
+AF.offsetFor = offsetFor
+
 local function guardPose(cls)
 	local g = cls.guard
 	-- the hands sit low (chest / belly), the blade stands up out of them
 	local want = cls.guardAt or V3(0.5, -0.15, -1.1)
-	local natural = cls.pivot + dir(g.az, g.el) * cls.reach
-	return {az = g.az, el = g.el, tw = g.twist, ln = g.lean, hand = want - natural}
+	return {az = g.az, el = g.el, tw = g.twist, ln = g.lean, hand = offsetFor(cls, g.az, g.el, want)}
 end
 
 local function lerpPose(a, b, x)
@@ -393,11 +395,7 @@ local function lerpPose(a, b, x)
 	local p = {az = L("az", 0), el = L("el", 0), ln = L("ln", 0), tl = L("tl", 0)}
 	if a.tw or b.tw then p.tw = L("tw", nil) end
 	if a.hand or b.hand then p.hand = (a.hand or Vector3.zero):Lerp(b.hand or Vector3.zero, x) end
-	if a.stab or b.stab then
-		local sa = a.stab or (b.stab and nil)
-		local sb = b.stab
-		if sa and sb then p.stab = sa:Lerp(sb, x) end
-	end
+	p.stabbing = a.stabbing or b.stabbing
 	return p
 end
 
@@ -414,21 +412,27 @@ function AF.timeline(cls, kind)
 	local keys = {{t = 0, p = g, ease = "linear"}}
 	local function add(phase, t0, dur)
 		for _, k in ipairs(mv[phase]) do
-			local p = k.guard and table.clone(g) or {az = k.az, el = k.el, tw = k.tw, ln = k.ln, tl = k.tl, stab = k.stab, hand = k.hand}
+			local p = k.guard and table.clone(g) or {az = k.az, el = k.el, tw = k.tw, ln = k.ln, tl = k.tl, at = k.at, hand = k.hand}
 			-- the heavy classes chop: overheads come further over, underhands lower
 			if cls.chop and kind == "Overhead" and not k.guard then p.el = p.el + (p.el > 60 and 6 or -4) * cls.chop end
 			-- polearms carry the head lower (the weight is at the far end)
 			if cls.low and not k.guard and kind ~= "Overhead" then p.el = p.el - 8 end
-			-- daggers stab short and fast
-			if cls.quick and p.stab then p.stab = p.stab * V3(0.9, 1, 0.85) end
-			-- two-handed stabs drive from the centre line
-			if cls.twoHanded and p.stab then p.stab = V3(p.stab.X * 0.55, p.stab.Y, p.stab.Z) end
+			if p.at then
+				local at = p.at
+				-- daggers stab short and fast; two hands work from the centre line
+				if cls.quick and kind == "Stab" then at = at * V3(0.9, 1, 0.85) end
+				if cls.twoHanded then at = V3(at.X * 0.55, at.Y, at.Z) end
+				p.hand = offsetFor(cls, p.az, p.el, at)
+				p.at = nil
+			end
 			table.insert(keys, {t = t0 + k.u * dur, p = withTwist(cls, p), ease = k.ease or "linear"})
 		end
 	end
 	add("windup", 0, AF.WINDUP)
 	add("strike", AF.WINDUP, AF.STRIKE)
 	add("follow", AF.WINDUP + AF.STRIKE, AF.FOLLOW)
+	-- the whole clip knows it's a thrust (left thrusts stay right-handed, start to finish)
+	if kind == "Stab" then for _, k in ipairs(keys) do k.p.stabbing = true end end
 	return keys, {Load = AF.WINDUP, Through = AF.WINDUP + AF.STRIKE, Settle = AF.WINDUP + AF.STRIKE + AF.FOLLOW}
 end
 
@@ -523,15 +527,19 @@ local HELD = {
 	end,
 	Block = function(cls)
 		-- 1H / 2H: the blade across the face, edge out; polearms: the haft across
+		-- the blade laid across the body on a diagonal, hands low to the right,
+		-- the tip up to the left: it covers the body without filling your view
 		local p
 		if cls.twoHanded and cls.low then
-			p = {az = -70, el = 18, tw = 8, ln = 2, hand = V3(-0.1, 0.55, 0)}
+			p = {az = -78, el = 22, tw = 10, ln = 3, at = V3(0.6, -0.1, -1.0)}
 		elseif cls.twoHanded then
-			p = {az = -62, el = 30, tw = 6, ln = 2, hand = V3(-0.05, 0.6, 0.1)}
+			p = {az = -70, el = 32, tw = 8, ln = 3, at = V3(0.45, 0.22, -1.2)}
 		else
-			p = {az = -55, el = 38, tw = 12, ln = 3, hand = V3(0, 0.55, 0.1)}
+			p = {az = -62, el = 36, tw = 14, ln = 4, at = V3(0.75, 0.28, -1.3)}
 		end
-		return {{t = 0, p = p}, {t = 0.6, p = table.clone(p)}}, true, false
+		p.hand = offsetFor(cls, p.az, p.el, p.at); p.at = nil
+		local q = table.clone(p); q.el += 2; q.ln -= 1
+		return {{t = 0, p = p}, {t = 1.2, p = q, ease = "sine"}, {t = 2.4, p = table.clone(p), ease = "sine"}}, true, false
 	end,
 	Hit = function(cls)
 		local g = withTwist(cls, guardPose(cls))
@@ -562,11 +570,10 @@ end
 --------------------------------------------------------------------
 local ORDER = {"Head", "Right Arm", "Left Arm", "Right Leg", "Left Leg"}
 
-local function kfFrom(t, w, name)
+local function kfFrom(t, tr, name)
 	local kf = Instance.new("Keyframe")
 	kf.Time = t
 	if name then kf.Name = name end
-	local tr = AF.transforms(w)
 	local root = Instance.new("Pose"); root.Name = "HumanoidRootPart"; root.Weight = 0; root.Parent = kf
 	local torso = Instance.new("Pose"); torso.Name = "Torso"; torso.CFrame = tr.Torso; torso.Parent = root
 	for _, n in ipairs(ORDER) do
@@ -593,12 +600,22 @@ function AF.sequence(className, clip)
 		ks.Loop = false
 		ks.Priority = Enum.AnimationPriority.Action
 	end
+	-- an attack starts and ends EXACTLY on the idle's pose (blended over the
+	-- first and last moments), so handing back to idle never spins the weapon
+	local guardT = marks and AF.transforms(AF.heldFrames(className, "Idle")[1].w) or nil
+	local last = frames[#frames].t
 	for _, f in ipairs(frames) do
 		local name
 		if marks then
 			for mk, mt in pairs(marks) do if math.abs(f.t - mt) < 0.5 / AF.FPS then name = mk end end
 		end
-		kfFrom(f.t, f.w, name).Parent = ks
+		local tr = AF.transforms(f.w)
+		if guardT then
+			local function sm(a, b, x) local k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k) end
+			local w = math.max(1 - sm(0, 0.08, f.t), sm(last - 0.22, last, f.t))
+			if w > 0 then for j, cf in pairs(tr) do if guardT[j] then tr[j] = cf:Lerp(guardT[j], w) end end end
+		end
+		kfFrom(f.t, tr, name).Parent = ks
 	end
 	if marks then for k, v in pairs(marks) do ks:SetAttribute(k, v) end end
 	ks:SetAttribute("Class", className)

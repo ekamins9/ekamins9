@@ -1256,7 +1256,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			local rec = math.max(recovery or 0, 0.15)
 			t:AdjustSpeed((mk.Settle - mk.Through) / rec)
 			task.delay(rec * 0.85, function()
-				if npc.current == t and npcArm == arm then t:Stop(rec * 0.3); npc.current = nil end
+				if npc.current == t and npcArm == arm then t:Stop(math.max(rec * 0.45, 0.12)); npc.current = nil end
 			end)
 		end)
 	end
@@ -1268,7 +1268,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		local t = npcCached(releaseId)
 		local mk = AnimSets.marks(releaseId)
 		if mk then
-			fadeIn = math.min(windup > 0 and windup * 0.4 or fadeA, 0.12)
+			fadeIn = windup > 0 and math.clamp(windup * 0.55, 0.08, 0.24) or math.max(fadeA, 0.1)   -- a soft cross-fade from wherever we were
 			if npc.current and npc.current ~= t then npc.current:Stop(fadeIn) end
 			npc.current = nil
 			if not t then return end

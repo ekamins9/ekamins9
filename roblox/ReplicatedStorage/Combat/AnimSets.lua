@@ -111,10 +111,13 @@ end
 -- the hips' counter-turn for a torso the animation has twisted: multiply a
 -- hip's C0 by this and the leg hangs as if the torso had not turned
 -- (root = the RootJoint Motor6D)
+-- (HIP_FOLLOW of the turn is let through: the hips and legs turn a little with
+-- the body, so a stab or a big swing moves the whole body, feet still planted)
+AnimSets.HIP_FOLLOW = 0.3
 function AnimSets.counterHips(rootJoint)
 	local c1 = rootJoint.C1
 	local t = rootJoint.Transform
-	return c1 * t:Inverse() * c1:Inverse()
+	return CFrame.identity:Lerp(c1 * t:Inverse() * c1:Inverse(), 1 - AnimSets.HIP_FOLLOW)
 end
 
 return AnimSets
