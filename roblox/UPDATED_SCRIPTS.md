@@ -1,4 +1,18 @@
-# Updated scripts: back to the original animations; real sword clangs
+# Updated scripts: reeling after a clean hit
+
+- **Reeling:** after a clean hit the victim can't attack or kick for 0.5 s (`HIT_STUN`), the same for every weapon.
+  - They can still block and parry.
+  - Example: you land a Zweihander stab, and they can't counter-swing while your sword is still coming back round. Your guard is up before their swing can reach you.
+  - Bosses ignore it.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | `HIT_STUN`, `ReelUntil` gate on attacks and kicks |
+| [README.md](README.md) | — | docs | reeling |
+
+---
+
+## Before that: back to the original animations; real sword clangs
 
 - **Your original animations and combat code are back:**
   - The combat client and server, RigPose, CameraRig, NpcAnimator and Bots are restored from the backup (`combat-backup-2026-10-07`).

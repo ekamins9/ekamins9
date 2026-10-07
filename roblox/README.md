@@ -675,6 +675,9 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
   back sooner). Kicks stop anything. **Bosses** (attribute `Boss`: Horde / Siege warlords) shrug
   off hits and kicks and swing straight through: read them and parry. Set `FLINCH_ONLY_WINDUP`
   true for the old rule (committed swings trade).
+- **Reeling** (`HIT_STUN`, 0.5 s, the same for every weapon): after a clean hit the victim can't
+  attack or kick for that long (they can still block and parry). A slow weapon that lands is back
+  on guard before a counter-swing can reach it; a quick one can't lock anyone down. Bosses ignore it.
 - **Stamina ledger: fighting well pays, flailing and turtling cost — and a long fight wears
   everyone down.** The windup always costs `staminaCost` (× the armor's `StaminaCostMult`);
   **every enemy a swing hits refunds the cost plus `HIT_BONUS` (2)** — a landed blow about breaks

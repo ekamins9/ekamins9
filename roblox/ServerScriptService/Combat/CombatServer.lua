@@ -425,6 +425,10 @@ CombatServer.DEFAULTS = {
 	                          --    damage = {head=, body=, legs=} for exact per-region numbers.
 	FIT_ANIMS        = true,  -- the swing clip is stretched to the active phase (so a riposte or
 	                          --    a slow weapon re-times the picture with the rules)
+	HIT_STUN      = 0.5,     -- REELING: a clean hit keeps the victim from ATTACKING (or kicking) for this
+	                         --    long, the same for every weapon — they may still block / parry. Long
+	                         --    enough that a slow weapon that lands is back on guard before a counter
+	                         --    can reach it; short enough that a quick one can't lock anyone down.
 	FLINCH_ONLY_WINDUP = false,-- false: a clean hit interrupts the target's swing in ANY phase —
 	                          --    windup or release — so whoever lands first wins the exchange
 	                          --    (their swing's token dies: its hit is thrown away).
@@ -989,6 +993,11 @@ function CombatServer.attach(Tool, weaponConfig)
 		flinch(target, dir)
 		-- a clean hit breaks whatever they were doing, so trades are rarer
 		interrupt(target, "hit")
+		-- reeling: no swinging back for HIT_STUN (bosses shrug it off)
+		if not target:GetAttribute("Boss") then
+			local reel = os.clock() + cfg.HIT_STUN
+			if reel > (target:GetAttribute("ReelUntil") or 0) then target:SetAttribute("ReelUntil", reel) end
+		end
 		markCombat(character)
 		markCombat(target)
 		CombatServer.credit(target, character, weaponName, info.kind == "stab" and (region == "head" and "facestab" or "stab") or (region == "head" and "headslash" or "slash"))
@@ -1543,6 +1552,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if not character or not usable(name) then dprint("attack denied: no such attack / no clip:", tostring(name)); return end
 		if isIncapacitated() then dprint("attack denied: incapacitated"); return end
 		if attr("Blocking")   then dprint("attack denied: blocking");      return end
+		if (attr("ReelUntil") or 0) > os.clock() then dprint("attack denied: reeling from a hit"); return end
 		if not inWindup() and not canAfford(name) then return end
 		if inWindup() then morph(name); return end
 		if state.phase == "release" or state.phase == "recovery" then
@@ -1671,6 +1681,7 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	local function doKick()
 		if not character or isIncapacitated() or attr("Blocking") then return end
+		if (attr("ReelUntil") or 0) > os.clock() then dprint("kick denied: reeling from a hit"); return end
 		if not Injury.hasLimb(character, "Right Leg") then dprint("kick denied: no right leg"); return end
 		local now = os.clock()
 		if state.phase ~= "idle" or now < state.nextActionTime then dprint("kick denied: busy"); return end
