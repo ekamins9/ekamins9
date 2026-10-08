@@ -1408,6 +1408,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function attackTimes(info, name)
 		local _, atype = CombatServer.sideType(name)
 		local speed = (info.speed or 1) * ((cfg.TYPE_SPEED or {})[atype or ""] or 1) * cfg.SPEED_MULT
+			* ((GameConfig.TEMPO or {}).swing or 1)   -- (the whole game's tempo)
 		local wl = info.windup or cfg.WINDUP
 		if (attr("FastUntil") or 0) > os.clock() then wl = wl / cfg.RIPOSTE_SPEED end   -- riposte: quicker windup only
 		local al = CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE

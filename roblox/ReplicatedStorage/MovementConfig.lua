@@ -3,7 +3,7 @@
 -- (WalkSpeedGovernor, MovementServer) and the client (CameraRig, Movement)
 -- so they can never drift out of sync with each other.
 return {
-	BASE_SPEED = 10,     -- full-health, no-armor, no-modifiers WalkSpeed
+	BASE_SPEED = 11,     -- full-health, no-armor, no-modifiers WalkSpeed (was 10: the game's tempo, a touch quicker)
 
 	-- sprint: forward / forward-diagonal only (published as SpeedMult_Sprint).
 	-- Blocking, crouching, attacking, a stun or a ragdoll all end it.

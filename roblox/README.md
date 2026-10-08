@@ -845,7 +845,7 @@ windup on a morph — and that fade *is* the wind-up motion. No windup clips to 
 clip runs: the active phase is its length (the server reads it with
 `KeyframeSequenceProvider`, so a client can't lie). Windup, active and `RECOVERY` all divide by
 
-    speed  ×  TYPE_SPEED[type]  ×  SPEED_MULT      (× RIPOSTE_SPEED after a parry)
+    speed  ×  TYPE_SPEED[type]  ×  SPEED_MULT  ×  GameConfig.TEMPO.swing (1.12)      (× RIPOSTE_SPEED after a parry)
 
 so morph / feint / chamber windows are the **real** windup at that weapon's tempo. `INPUT_GRACE`
 (0.08 s) lets a morph/feint that arrives just after the windup ended still count if the blade
@@ -1216,7 +1216,8 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
 
 ## Combat rules (Mordhau-ish)
 
-- **Phases**: windup → release (blade live) → recovery. All scale with `SPEED_MULT`.
+- **Phases**: windup → release (blade live) → recovery. All scale with `SPEED_MULT` and the
+  game's tempo (`GameConfig.TEMPO.swing`, 1.12). The base walk speed is `MovementConfig.BASE_SPEED` (11).
 - **Physical blocking**: while holding RMB your weapon's `GuardHull` is raycast-visible.
   The incoming blade must touch it *before* a body part (a body hit whose point lies inside
   the hull also counts), and you must face the attacker within `BLOCK_CONE_DEG`.

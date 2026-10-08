@@ -1,4 +1,19 @@
-# Updated scripts: maps verified, ready to publish
+# Updated scripts: the whole game a touch quicker
+
+- **Swings are 12% quicker:** every weapon's windup, swing and recovery (`GameConfig.TEMPO.swing` = 1.12, on top of each weapon's own speed). Bots, feints, morphs and parry windows follow, since they're all timed from the same numbers. The menu's windup figures match.
+- **Movement is 10% quicker:** base walk speed 11 (was 10). Sprint, armor and weapon weight, the slow-downs while swinging and blocking, bots and footstep cadence all scale from it.
+- Bows and crossbows are unchanged (they stay slow on purpose).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | `TEMPO.swing` |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat ▸ CombatServer | ModuleScript | attack times × the tempo |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | menu windups × the tempo |
+| [MovementConfig.lua](ReplicatedStorage/MovementConfig.lua) | ReplicatedStorage ▸ MovementConfig | ModuleScript | BASE_SPEED 11 |
+
+---
+
+## Before that: maps verified, ready to publish
 
 - **Every map checked:**
   - All 36 maps exist, and every mode has 10 or more.

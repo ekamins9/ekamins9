@@ -159,6 +159,10 @@ GameConfig.STUDIO_NEWCOMER = false
 
 -- friendly fire: damage dealt to a teammate is multiplied by this (0 = none);
 -- a custom server's settings may override it (Round attribute FriendlyFire)
+-- THE GAME'S TEMPO: every melee attack's windup, swing and recovery run this much faster
+-- (on top of each weapon's SPEED_MULT; CombatServer.attackTimes). Movement's is in
+-- MovementConfig.BASE_SPEED.
+GameConfig.TEMPO = {swing = 1.12}
 GameConfig.FRIENDLY_FIRE = 0.5
 
 -- custom server settings a host may choose (defaults; limits enforced server-side)

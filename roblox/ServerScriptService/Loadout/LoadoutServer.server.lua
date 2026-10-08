@@ -68,7 +68,8 @@ do
 				local info = A["Right" .. kind] or A["Left" .. kind] or A[kind]
 				if info then
 					local d = type(info.damage) == "table" and (info.damage.body or info.damage.torso or 0) or (info.damage or 0)
-					local speed = (info.speed or 1) * (ts[kind] or 1) * (get("SPEED_MULT") or 1)
+					local tempo = (require(ReplicatedStorage:WaitForChild("GameConfig")).TEMPO or {}).swing or 1
+					local speed = (info.speed or 1) * (ts[kind] or 1) * (get("SPEED_MULT") or 1) * tempo
 					c:SetAttribute(kind .. "Damage", d)
 					c:SetAttribute(kind .. "Windup", (info.windup or get("WINDUP") or 0.15) / math.max(speed, 0.01))
 					c:SetAttribute(kind .. "Cost", info.staminaCost or 0)
