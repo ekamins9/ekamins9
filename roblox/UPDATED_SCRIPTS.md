@@ -10,6 +10,7 @@
   - Mage: in robes for its rank, it casts what fits, holds a spell charged until it has you, wards, and meditates when safe.
   - Where they appear: fill bots in matches (about 15% Archers, 10% Mages) and Horde (archers from wave 3, mages from wave 5).
   - In Studio, spawn them with `/bot Knight Archer` or `/bot Champion Mage`.
+- **Fix (menu-wide overlap check):** the locked-class veil on the class cards is nearly opaque, so the stats no longer show through the lock ([HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua)). Every other menu screen came back clean.
 - **Studio:** the robe meshes are baked; run `blender/out/armor/assemble_armor.lua` in Studio (edit mode), then save. Until then the robes build from parts.
 
 | File | Studio location | Type | Change |
