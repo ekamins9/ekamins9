@@ -28,7 +28,7 @@ InputHints.PAD = {
 	Swing = K.ButtonR2, Stab = K.ButtonR1, Overhead = K.ButtonL1, Block = K.ButtonL2,
 	Jump = K.ButtonA, Dodge = K.ButtonB, Kick = K.ButtonX, Feint = K.ButtonY,
 	Sprint = K.ButtonL3, View = K.ButtonR3, Emote = K.DPadUp, Crouch = K.DPadDown,
-	Menu = K.ButtonSelect, Board = K.ButtonSelect, Pickup = K.ButtonX, Reload = K.ButtonR2,
+	Menu = K.ButtonSelect, Board = K.ButtonSelect, Pickup = K.ButtonX, Reload = K.ButtonR2, Stance = K.DPadLeft,
 }
 -- what the button is called (Xbox / PlayStation)
 local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", ButtonL1 = "LB", ButtonR1 = "RB", ButtonL2 = "LT", ButtonR2 = "RT",

@@ -107,14 +107,19 @@ emote (a weapon drawn or swapped, a jump, a hit, an attack, walking off a whole-
 one plays the look's bend lets go of the body (`RigPose.calm`), so poses are the same wherever you
 look.
 
-**A spell** (`ReplicatedStorage ▸ MagicSpells`): `S.MySpell = {name, glyph, kind, mana, cast,
-cooldown, color, glow, desc, …its numbers}` with `kind` one of `bolt` (speed, range, radius, damage,
-headMult, burn = {dps, time}, splash, splashDamage), `chain` (range, width, damage, chain,
-chainRange, chainDamage), `nova` (radius, damage, slow, slowTime) or `heal` (range, width, heal,
-healTime). A staff casts the ones its Config lists (`SPELLS`, in the spell bar's order); a new
-`kind` needs a resolver in `Combat ▸ MagicServer` (`RESOLVE.<kind>`) and a look in `MagicFX`.
-A new staff: a Tool folder like `Tools/Staff` (its Config: `SPELLS`, `ORB`, `GRIP`), a blueprint in
-`Build ▸ Weapons` and a `magic = true` line in `Catalog ▸ Weapons`.
+**A spell** (`ReplicatedStorage ▸ MagicSpells`): `S.MySpell = {name, glyph, kind, target, unlock,
+mana, cast, cooldown, color, glow, desc, …its numbers}` and its id in `S.ORDER` (the loadout's
+list). `kind`: `bolt` (speed, range, radius, damage, headMult, burn, chill, splash, count, spread,
+seek, shape), `chain`, `nova`, `heal`, `meteor` (range, radius, delay, damage, edgeDamage),
+`cloud` (range, radius, time, dps, slow), `buff` (buff = "haste" | "barrier", amount, time),
+`hex` (time, weaken, expose), `blink` (distance). `target` (aim · ground · ally · self) is what
+the crosshair says; `unlock` is `{free = true}` or `{level = N}`. A Mage carries it once it's
+unlocked (LOADOUT ▸ SPELLS). A new `kind` needs a resolver in `Combat ▸ MagicServer`
+(`RESOLVE.<kind>`) and a look in `MagicFX` (`EVENTS`).
+
+**A magic weapon**: a Tool folder like `Tools/Staff` (Config: `SLOTS`, `POWER`, `CAST_MULT`,
+`MANA_MULT`, `WALK`, `WARD`, `STANCE`, `ORB`, `CAST_FROM`, `TWIN`, or `FIXED` for a wand), a
+blueprint in `Build ▸ Weapons`, and a `magic = true, slots = N` line in `Catalog ▸ Weapons`.
 
 **An armor finish** (`Catalog ▸ ArmorFX`): `{id, name, rarity, crate, description, look = {metal,
 metalMaterial, accent, glow, tint, body, aura, light, pulse | flicker | radiant}}`: the plates

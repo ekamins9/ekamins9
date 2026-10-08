@@ -2668,9 +2668,11 @@ do
 	local right = clearFrame(lobby)
 	right.AnchorPoint = Vector2.new(1, 0)
 	right.Position = UDim2.new(1, -24, 0, 104)
-	right.Size = UDim2.new(0, 340, 1, -104 - 232)
+	-- (it stops clear of the PLAY area under it: the status pill sits 220 above its foot when the
+	-- second button shows, the area 22 off the bottom: 254 keeps a 12 gap; a phone's is 208 + 12)
+	right.Size = UDim2.new(0, 340, 1, -104 - 254)
 	right.Name = "LobbyRight"
-	if LAYOUT.compact then right.Position = UDim2.new(1, -16, 0, 90); right.Size = UDim2.new(0, 300, 1, -90 - 240) end
+	if LAYOUT.compact then right.Position = UDim2.new(1, -16, 0, 90); right.Size = UDim2.new(0, 300, 1, -90 - 220) end
 	local rightList = scroll(right, 12)
 
 	local MEDAL = {Color3.fromRGB(255, 196, 40), Color3.fromRGB(200, 210, 224), Color3.fromRGB(214, 140, 80)}
@@ -3685,7 +3687,7 @@ do
 			if allowed(w) then
 				n += 1
 				local have = owns("weapons", w.id)
-				itemCard(g, n, w.name, have and (w.family == "OneHanded" and "one-handed" or (w.family == "TwoHanded" and "two-handed" or (w.family == "Ranged" and "ranged" or "polearm"))) or unlockText(w), lo.weapon == w.id and not (t and (t.slot == "weapon" or t.slot == "weaponSkin")), have, nil, function()
+				itemCard(g, n, w.name, have and (w.family == "OneHanded" and "one-handed" or (w.family == "TwoHanded" and "two-handed" or (w.family == "Ranged" and "ranged" or (w.family == "Magic" and (w.slots and w.slots > 0 and (w.slots .. " spells") or "magic") or "polearm")))) or unlockText(w), lo.weapon == w.id and not (t and (t.slot == "weapon" or t.slot == "weaponSkin")), have, nil, function()
 					if have then choose("weapon", w.id) else tryOn("weapon", w.id) end
 				end, t and t.slot == "weapon" and t.id == w.id)
 			end
@@ -3708,6 +3710,7 @@ do
 				end, t and t.slot == "weaponSkin" and t.id == s.id)
 			end
 		end
+		if cls.magic then HX.spellsPanel(list, lo, id, cardGrid, itemCard) end
 		local sp = panel(list, "SECONDARY")
 		local sg2 = cardGrid(sp, 40)
 		itemCard(sg2, 0, "None", "", lo.secondary == nil, true, nil, function() choose("secondary", nil) end)
@@ -3716,7 +3719,7 @@ do
 			if w.id ~= lo.weapon and allowed(w, "secondary") then
 				n += 1
 				local have = owns("weapons", w.id)
-				itemCard(sg2, n, w.name, have and "one-handed" or unlockText(w), lo.secondary == w.id, have, nil, function()
+				itemCard(sg2, n, w.name, have and (w.magic and "magic · no mana" or "one-handed") or unlockText(w), lo.secondary == w.id, have, nil, function()
 					if have then choose("secondary", w.id) else tryOn("weapon", w.id) end
 				end)
 			end
@@ -5063,6 +5066,64 @@ do
 		renderRight()
 		renderSide()
 	end
+end
+
+--------------------------------------------------------------------
+--  SPELLS — a Mage's arsenal (LOADOUT, magic classes): as many spells as the weapon
+--  carries, picked from every spell they have (MagicSpells: free ones, and more as they
+--  level). Click one to put it in or take it out; the server checks it
+--  (Profile.validateLoadout).
+--------------------------------------------------------------------
+function HX.spellsPanel(list, lo, classId, cardGrid, itemCard)
+	local Spells = Catalog.SPELLS
+	local w = lo.weapon and Catalog.WEAPON[lo.weapon]
+	local slots = (w and w.slots) or 4
+	local cur = {}
+	for _, x in ipairs(type(lo.spells) == "table" and lo.spells or Spells.DEFAULT) do if Spells[x] and #cur < slots then table.insert(cur, x) end end
+	local function set(newList)
+		lo.spells = newList
+		ui.dirty[classId] = true
+		render.CLASSES()
+	end
+	local mp = panel(list, string.format("SPELLS  ·  %d / %d", #cur, slots))
+	-- what you carry, in the spell bar's order (click to take one out)
+	local eq = cardGrid(mp, 40)
+	for i = 1, slots do
+		local x = cur[i]
+		local spx = x and Spells[x]
+		itemCard(eq, i, spx and ((spx.glyph or "") .. "  " .. spx.name) or "— empty —", spx and ("slot " .. i .. "  ·  click to take out") or "pick one below", spx ~= nil, true, spx and spx.color or nil, function()
+			if not x then return end
+			local nl = {}
+			for _, y in ipairs(cur) do if y ~= x then table.insert(nl, y) end end
+			set(nl)
+		end)
+	end
+	heading(mp, "EVERY SPELL")
+	local g = cardGrid(mp, 40)
+	local inSet = {}
+	for _, x in ipairs(cur) do inSet[x] = true end
+	for i, x in ipairs(Spells.ORDER) do
+		local spx = Spells[x]
+		local have = Catalog.unlocked(spx.unlock or {free = true}, state.profile)
+		local sub = have and string.format("%d mana  ·  %.1fs  ·  %s", spx.mana, spx.cast, spx.target == "ground" and "on the ground" or (spx.target == "ally" and "ally / you" or (spx.target == "self" and "round you" or "aimed"))) or unlockText(spx)
+		itemCard(g, i, (spx.glyph or "") .. "  " .. spx.name, sub, inSet[x] == true, have, spx.color, function()
+			ui.spellInfo = x
+			if not have then render.CLASSES(); return end
+			if inSet[x] then
+				local nl = {}
+				for _, y in ipairs(cur) do if y ~= x then table.insert(nl, y) end end
+				set(nl)
+			elseif #cur < slots then
+				local nl = table.clone(cur); table.insert(nl, x); set(nl)
+			else
+				toast("Your " .. ((w and w.name) or "weapon") .. " carries " .. slots .. ": take one out first", COL.BAD)
+				render.CLASSES()
+			end
+		end)
+	end
+	local info = ui.spellInfo and Spells[ui.spellInfo]
+	dim(mp, info and (string.upper(info.name) .. ":  " .. info.desc .. string.format("  (cooldown %ds)", info.cooldown or 0))
+		or "Mana comes back only when you meditate: hold " .. HX.Hints.name("Reload") .. " standing still. Mages don't hold the line.", 12)
 end
 
 --------------------------------------------------------------------

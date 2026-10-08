@@ -50,13 +50,16 @@ RigPose.CONFIG = {
 	                   twist = -0.3, aimRightAcross = 0.1, aimLeftAcross = 1.6, aimLeftRaise = 0.05,
 	                   bend = 0.85, bendPull = 0.3, strokes = 3,
 	                   spanRight = 0.65, spanRightAcross = 0.25, spanLeft = 0.75, spanLeftPull = 0.35, spanLeftAcross = 1.6},
-	-- the staff (RigPose.staff; its Tool.Grip turns it 35° in the fist: the staff stands upright
-	-- when the arm is that far forward, staff angle = arm raise + 180° - grip): at ease the hand
-	-- low and out to the side, the staff planted beside you; casting the arm drops (the staff
-	-- tips forward, the orb leading) and the left hand goes out at the target; the cast's charge
-	-- lifts the staff back and up (drawLift), and it snaps forward as the spell goes
-	STAFF           = {easeRaise = 0.6, easeAcross = -0.22, easeLeftRaise = 0.12, easeLeftAcross = 0.05,
-	                   castRaise = 0.15, castAcross = 0.1, drawLift = 0.6, castLeftAcross = 0.45, twist = 0.25},
+	-- magic weapons (RigPose.staff): each arm's raise forward / swing across (radians) at ease and
+	-- lifted (aim = 1), the free hand at rest and thrust out to cast
+	STAFF           = {
+		staff = {easeRaise = 0.5, easeAcross = -0.22, liftRaise = 1.25, liftAcross = -0.08,
+		         easeLeftRaise = 0.12, easeLeftAcross = 0.05, restLeftRaise = 0.85, restLeftAcross = 1.15, castLeftAcross = 0.45, twist = 0.22},
+		tome  = {easeRaise = 0.75, easeAcross = 0.5, liftRaise = 1.15, liftAcross = 0.45, pitchFollow = 0.3,
+		         easeLeftRaise = 0.15, easeLeftAcross = 0.05, restLeftRaise = 0.35, restLeftAcross = 0.3, castLeftAcross = 0.4, twist = 0.2},
+		wand  = {easeRaise = 0.3, easeAcross = 0.08, liftRaise = math.pi / 2, liftAcross = 0.05, pitchFollow = 1,
+		         easeLeftRaise = 0.12, easeLeftAcross = 0.05, restLeftRaise = 0.2, restLeftAcross = 0.1, castLeftAcross = 0.35, twist = 0.15},
+	},
 }
 local C = RigPose.CONFIG
 
@@ -109,7 +112,7 @@ function RigPose.compute(i, o)
 		["Left Shoulder"]  = swayCF * o["Left Shoulder"]  * CFrame.Angles(0, 0, i.arm * C.LEFT_ARM_DIR),
 	}
 	local rk = i.ranged or 0
-	if rk > 2.5 then RigPose.staff(out, i, o)
+	if rk > 2.5 then RigPose.staff(out, i, o, rk > 4.5 and "wand" or (rk > 3.5 and "tome" or "staff"))
 	elseif rk > 0.5 then RigPose.ranged(out, i, o, rk > 1.5) end
 	return out
 end
@@ -201,22 +204,31 @@ function RigPose.ranged(out, i, o, crossbow)
 	end
 end
 
--- THE STAFF (ranged = 3: MagicClient). The staff rides in the right fist like any weapon, so an
--- arm held out level stands it upright. AT EASE (aim 0): out in front, upright, the left hand
--- loose. CASTING / WARDING (aim 1): the left hand thrust out at the target (it follows the
--- camera's pitch), the staff tipped forward over it, the orb leading; the cast (draw 0..1)
--- draws the staff back and up, and it snaps forward as the spell goes.
-function RigPose.staff(out, i, o)
-	local S = C.STAFF
+-- MAGIC WEAPONS (ranged = 3 staff, 4 tome, 5 wand: MagicClient). The inputs: aim = the lift
+-- (it rises slowly while casting, warding or meditating and sinks when you stop: MagicClient),
+-- draw = how far a cast has come (the left hand reaches out at the target while > 0).
+--   STAFF: at ease the hand low and out to the side, the staff planted on the ground; the
+--          lift brings the hand up to the chest and the staff with it, upright (MagicFX holds
+--          a staff upright in the hand whatever the arm does), the orb high.
+--   TOME:  held open before the chest (MagicFX holds the book open towards your face); the
+--          lift raises it to read from, the free hand out at the target as you cast.
+--   WAND:  low at your side; the lift points it at the target (it runs along the arm).
+function RigPose.staff(out, i, o, kind)
+	local S = C.STAFF[kind] or C.STAFF.staff
 	local aim, draw = math.clamp(i.aim or 0, 0, 1), math.clamp(i.draw or 0, 0, 1)
 	local level = math.pi / 2
 	local pitch = i.arm or 0
-	local function mix(a, b) return a + (b - a) * aim end
-	local rR = mix(S.easeRaise, S.castRaise + S.drawLift * draw + pitch * 0.5)
-	local rA = mix(S.easeAcross, S.castAcross)
-	local lR = mix(S.easeLeftRaise, level + pitch)
-	local lA = mix(S.easeLeftAcross, S.castLeftAcross)
-	local tw = S.twist * aim * C.TWIST_DIR
+	local function mix(a, b, t) return a + (b - a) * t end
+	local castK = math.min(aim, draw > 0 and 1 or 0)
+	local rR = mix(S.easeRaise, S.liftRaise + (S.pitchFollow or 0) * pitch, aim)
+	local rA = mix(S.easeAcross, S.liftAcross, aim)
+	-- the free hand: at your side, on your chest while the staff's up (a ward, a meditation),
+	-- thrust out at the target while a spell's coming
+	local lR = mix(S.easeLeftRaise, S.restLeftRaise, aim)
+	local lA = mix(S.easeLeftAcross, S.restLeftAcross, aim)
+	lR = mix(lR, level + pitch, castK)
+	lA = mix(lA, S.castLeftAcross, castK)
+	local tw = S.twist * castK * C.TWIST_DIR
 	if tw ~= 0 then
 		out.RootJoint = out.RootJoint * CFrame.Angles(0, 0, tw)
 		out.Neck = out.Neck * CFrame.Angles(0, 0, -tw)

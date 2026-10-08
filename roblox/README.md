@@ -373,42 +373,64 @@ draw zooms a little. On a touch screen, hold a SWING button to draw, BLOCK lets 
 across the back when not in hand (`Holsters`). Tuning: each Tool's `Config` over
 `RangedServer.DEFAULTS` / `RangedClient.DEFAULTS`.
 
-## The Mage, staffs and spells (`Combat ▸ MagicServer`, `Combat ▸ MagicClient`, `MagicSpells`)
+## The Mage: staffs, grimoires, wands, an arsenal of spells (`Combat ▸ MagicServer`, `Combat ▸ MagicClient`, `MagicSpells`)
 
-The **Mage** (`GameConfig.CLASSES.Mage`, `magic = true`) carries the **Arcane Staff** (a magic
-weapon: only a magic class carries one, and a magic class carries one: `Catalog.weaponFits`) and a
-one-handed sidearm. Robes, not armor: **80 health, no protection**, Light pieces, starting in the
-free **Apprentice Robes** (a class's `starter` set: `Catalog.defaultPiece`; `ClassStarter` in the
-set's Config keeps it from being anyone else's default). A **mana bar** (100) sits over the spell
-bar beside the stamina; it comes back 11 a second once 1.1 s have passed since the last cast,
-never while warding (`MaxMana` / `Mana` on the character, set by `LoadoutServer.classStats`).
+The **Mage** (`GameConfig.CLASSES.Mage`, `magic = true`): 80 health, no protection, robes
+(the free **Apprentice Robes**: the class's `starter` set). A **mana bar** (100) sits over the
+spell bar, and **mana comes back only by meditating**: hold **R** (a controller's **Y**, the
+touch FEINT) standing still; after 0.7 s it returns 16 a second; moving, casting, warding or a
+hit ends it (`Meditating`, `MagicSpells.MEDITATE`). A Mage fights from behind the line, then has
+to stop.
 
-**The spells** (`ReplicatedStorage ▸ MagicSpells`, the staff's Config lists which it casts):
+**The weapons** (Tools ▸ <id> ▸ Config; a magic weapon only for a magic class, and a magic
+class carries one: `Catalog.weaponFits`):
 
-| Spell | Mana | Cast | Cooldown | What it does |
-|---|---|---|---|---|
-| Firebolt | 16 | 0.42 s | 0.55 s | a bolt at 120 studs/s: 18 (head ×1.5), burns 3/s for 3 s, splashes 6 round it |
-| Chain Lightning | 28 | 0.6 s | 3 s | 14 to whoever's under the crosshair (48 studs), leaps to one more within 14 for 9 |
-| Frost Nova | 34 | 0.3 s | 7 s | 8 to everyone within 12, slowed 45% for 2.5 s |
-| Mend | 38 | 0.85 s | 9 s | heals 32 over 2 s: the ally under the crosshair, else you |
+| Weapon | Slot | Spells | Power | Casts | Mana | While casting | Also |
+|---|---|---|---|---|---|---|---|
+| Arcane Staff (free) | primary | 4 | 100% | normal | normal | 20% walk | the **Ward** (right mouse), a **melee self** (H) |
+| Grimoire (level 6) | primary | 5 | 85% | 25% faster | 20% cheaper | 35% walk | nothing between you and a sword |
+| Wand (free) | sidearm | Spark only | | instant-ish | free | 70% walk | for when you're dry |
 
-**Casting** (the Swing bind; scroll / RB-LB picks the spell; Q feints a cast; on a phone the
-SWING / STAB / OVERHEAD buttons): the server times it (`Casting`, `CastStart`, `CastTime` on the
-character), you walk at 65%, and **a hit while casting breaks it** (nothing paid). The aim is the
-crosshair at the end of the cast. **The Ward** (Block, held): frontal blows within 70° lose 70% of
-their damage, paid from your mana point for point; out of mana it breaks. Blades
-(`CombatServer`), arrows (`RangedServer`) and spells all ask `Combat ▸ Ward`. Kick works too.
-Spells respect friendly fire, peaceful places and spawn protection; armor turns half of what it
-would turn from a blade.
+**The staff's melee self** (`Tools ▸ StaffMelee`, the Tool's `Twin`): the Stance bind (**H**,
+D-pad ←) swaps it in (`LoadoutServer`: StanceSwap) and it fights with every quarterstaff swing,
+its clips and rules (CombatClient / CombatServer), lighter. Only the one in your hand is on the
+weapon bar (`TwinHidden`).
 
-**What everyone sees** (`ReplicatedStorage ▸ MagicFX`, `StarterPlayerScripts ▸ MagicFX`): a magic
-circle of runes turning at the staff's orb as the cast fills; bolts with a trail, fire and sparks,
-bursting where they land; jagged lightning leaping between them; a ring of ice racing out and
-shards bursting up; rising light round whoever's healed; a ring of light for the ward that ripples
-when struck and shatters when it breaks; flames on the burning, frost on the slowed. Each screen
-starts a spell at the orb it sees. **The stance** is `RigPose.staff` (`ranged = 3`): the staff
-upright in front at ease, tipped forward with the left hand thrust at the target while casting or
-warding (`STAFF`); Roblox's own arm animations are taken off (`RangedFX`). Bots never play Mage.
+**The arsenal** (LOADOUT ▸ SPELLS: the Tool's `Spells` attribute, `Profile.validateLoadout`):
+as many spells as the weapon carries, from every spell you have.
+
+| Spell | Unlock | Mana | Cast | Cooldown | What it does |
+|---|---|---|---|---|---|
+| Firebolt | free | 20 | 0.7 | 1.1 | a dodgeable bolt: 15, burns 2/s for 3 s, splashes 4 |
+| Ice Lance | level 2 | 16 | 0.5 | 1.3 | a fast shard: 10, slows 30% for 1.5 s |
+| Chain Lightning | free | 30 | 0.85 | 5 | 12 to the aimed, leaps for 7 |
+| Arcane Missiles | level 4 | 24 | 0.8 | 3.5 | three curving bolts of 6 |
+| Meteor | level 8 | 45 | 1.5 | 16 | lands where you aim after 1.1 s: 30 in the middle, 12 at the edge, a shove |
+| Miasma | level 6 | 32 | 0.9 | 11 | a cloud where you aim: 3/s and a slow for 5 s |
+| Frost Nova | free | 35 | 0.4 | 10 | 6 round you and a heavy slow |
+| Mend | free | 40 | 1.1 | 12 | 25 over 2 s, you or the ally aimed at |
+| Haste | level 3 | 20 | 0.5 | 14 | a quarter faster for 6 s, you or an ally |
+| Barrier | level 7 | 30 | 0.6 | 16 | a shell that soaks 25 for 6 s, you or an ally |
+| Hex | level 9 | 26 | 0.75 | 13 | the cursed deal a quarter less and take 15% more for 5 s |
+| Blink | level 10 | 25 | 0.2 | 10 | 18 studs where you look, stopping short of walls |
+
+**Casting** (Swing; scroll / RB-LB picks; Q / Y cancels): the server times it (`Casting`,
+`CastStart`, `CastTime`), you walk at a crawl and can't sprint, and **a hit breaks it**. The aim
+is the crosshair at the end of the cast; the crosshair says what the spell wants (someone, the
+ground, an ally, nothing) and turns red past its reach. **The Ward** (a staff, right mouse):
+frontal blows within 70° lose 60% of their damage, paid 1.3 mana a point; out of mana it breaks.
+Every blow — blades, arrows, spells — asks `Combat ▸ Ward` (wards, **barriers** soak first,
+**hexes** weaken the attacker and open the target).
+
+**What everyone sees** (`ReplicatedStorage ▸ MagicFX`): the magic circle at the orb, bolts
+(an orb, a lance of ice, wisps, a spark), lightning, a nova's ice, a heal's light, a meteor's
+warning ring and its fall, a choking cloud, a barrier's shell, a hex's mark over the head, wind
+at a hasted runner's heels, a blink's streak, a meditation's turning circle. **The stance**
+(`RigPose.staff`, `ranged` 3 / 4 / 5): the staff planted on the ground, rising slowly as you
+cast, ward or meditate and sinking when you stop; the grimoire open at your waist, lifted to
+read from; the wand at your side, pointed to cast. Each screen holds a staff upright and a book
+open in the hand (MagicFX: the grip's C0), and Roblox's own "holding a tool" arm is stopped
+(MagicClient). Bots never play Mage.
 
 ## Classes, pieces, the Dresser
 

@@ -174,6 +174,8 @@ end
 Catalog.rebuild()
 
 Catalog.WEAPON = {} for _, w in ipairs(Catalog.WEAPONS) do Catalog.WEAPON[w.id] = w end
+-- a Mage's spells (ReplicatedStorage ▸ MagicSpells: the numbers, the unlocks) and their skins
+Catalog.SPELLS = require(ReplicatedStorage:WaitForChild("MagicSpells"))
 Catalog.SKIN = {}
 for _, s in ipairs(Catalog.SKINS) do
 	s.id = s.weapon .. ":" .. s.name
@@ -196,7 +198,7 @@ function Catalog.weaponFits(cls, w, slot)
 	if not (cls and w) then return false end
 	if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
 	if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == w.id then ok = true end end; if not ok then return false end end
-	if slot == "secondary" then return w.secondary == true and not w.ranged and not w.magic end
+	if slot == "secondary" then return w.secondary == true and not w.ranged and (not w.magic or cls.magic == true) end
 	return (w.ranged == true) == (cls.ranged == true) and (w.magic == true) == (cls.magic == true)
 end
 Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end

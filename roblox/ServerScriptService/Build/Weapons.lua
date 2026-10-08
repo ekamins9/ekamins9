@@ -372,6 +372,47 @@ W.Staff = function()
 	out[#out + 1] = B.ball("Orb", 0.56, cf(0, 3.55, 0), Color3.fromRGB(140, 200, 255), M.NEON, {SkinPart = "Blade"})
 	return out
 end
+-- the staff swung (Tools ▸ StaffMelee, its melee self): the same body, a hitbox along the top
+W.StaffMelee = function()
+	local out = W.Staff()
+	out[#out + 1] = hitbox(0.6, 3.9, 0.55)
+	return out
+end
+
+-- THE GRIMOIRE: a spellbook held open, its near edge in the fist. In the Handle's frame the
+-- book runs out along +Y and its pages face +Z (MagicFX holds it so they face you); a rune of
+-- light hangs over the pages (the "Blade": a skin recolours it; spells leave from it)
+W.Tome = function()
+	local cover, page, brass = Color3.fromRGB(92, 30, 36), C.LINEN, C.BRASS
+	local out = {B.box("Handle", v(0.3, 0.2, 0.2), cf(0, 0, -0.05), C.DARKLEATHER, M.LEATHER, {SkinPart = "Grip"})}
+	for _, s in ipairs({-1, 1}) do
+		out[#out + 1] = B.box("Cover", v(0.64, 1.34, 0.06), cf(s * 0.34, 0.66, -0.07, 0, s * -8, 0), cover, M.LEATHER, {SkinPart = "Grip"})
+		out[#out + 1] = B.box("Pages", v(0.58, 1.24, 0.1), cf(s * 0.31, 0.66, 0.0, 0, s * -8, 0), page, M.FABRIC)
+		for _, y in ipairs({0.06, 1.26}) do   -- brass corners
+			out[#out + 1] = B.box("Corner", v(0.14, 0.14, 0.08), cf(s * 0.6, y, -0.07, 0, s * -8, 0), brass, M.METAL, {SkinPart = "Grip"})
+		end
+		for i = 1, 4 do   -- lines of script across the pages
+			out[#out + 1] = B.box("Script", v(0.4, 0.035, 0.012), cf(s * 0.31, 0.3 + i * 0.2, 0.056, 0, s * -8, 0), Color3.fromRGB(60, 40, 30), M.PLASTIC)
+		end
+	end
+	out[#out + 1] = B.cyl("Spine", 0.12, 1.34, cf(0, 0.66, -0.09), cover, M.LEATHER, {SkinPart = "Grip"})
+	out[#out + 1] = B.box("Ribbon", v(0.05, 0.6, 0.02), cf(0.04, -0.2, 0.04, 0, 0, 8), Color3.fromRGB(180, 40, 40), M.FABRIC)
+	-- the rune over the pages
+	out[#out + 1] = B.box("Rune", v(0.32, 0.32, 0.03), cf(0, 0.7, 0.5, 0, 0, 45), Color3.fromRGB(170, 120, 255), M.NEON, {SkinPart = "Blade"})
+	out[#out + 1] = B.box("Rune", v(0.18, 0.18, 0.03), cf(0, 0.7, 0.5), Color3.fromRGB(230, 210, 255), M.NEON, {SkinPart = "Blade"})
+	return out
+end
+
+-- THE WAND: a rod of pale ash, a silver collar, a crystal at the tip (the "Blade")
+W.Wand = function()
+	local out = {grip(0.42, 0.14, C.DARKLEATHER, M.LEATHER)}
+	out[#out + 1] = B.cyl("Rod", 0.1, 0.8, cf(0, 0.6, 0), Color3.fromRGB(214, 196, 160), M.WOOD, {SkinPart = "Grip"})
+	out[#out + 1] = B.cyl("Collar", 0.16, 0.08, cf(0, 0.22, 0), C.STEEL, M.METAL, {SkinPart = "Grip"})
+	out[#out + 1] = B.ball("Pommel", 0.16, cf(0, -0.24, 0), C.STEEL, M.METAL, {SkinPart = "Grip"})
+	out[#out + 1] = B.box("Crystal", v(0.12, 0.26, 0.12), cf(0, 1.06, 0, 0, 45, 0), Color3.fromRGB(255, 230, 150), M.NEON, {SkinPart = "Blade"})
+	return out
+end
+
 W.Greatsword = function() return sword{grip = 1.2, gripD = 0.28, blade = 4.0, w = 0.36, th = 0.12, guard = 1.6, guardT = 0.16, pommel = 0.34} end
 W.Shortsword = function() return sword{grip = 0.55, blade = 2.2, w = 0.28, guard = 0.9, pommel = 0.26, wraps = 2} end
 

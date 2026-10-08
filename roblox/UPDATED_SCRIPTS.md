@@ -1,4 +1,33 @@
-# Updated scripts: you under the armor, emotes that behave, a helmet you can pick back up
+# Updated scripts: the Mage, done properly — an arsenal, meditation, the grimoire and the wand, a staff that fights
+
+- **Mana comes back only by meditating:** hold R (controller Y) standing still. Casting slows you to a crawl (20%) with no sprint. Mages stand behind the line, then have to stop.
+- **Pick your arsenal** in the loadout (LOADOUT ▸ SPELLS). Twelve spells, more unlocking as you level: Firebolt, Ice Lance, Chain Lightning, Arcane Missiles, Meteor, Miasma, Frost Nova, Mend, Haste, Barrier, Hex, Blink.
+- **Three weapons with real tradeoffs:**
+  - **Arcane Staff:** four spells, full power, a Ward. Press H for its melee self, which fights with every quarterstaff swing.
+  - **Grimoire:** five spells; casts faster and cheaper; no ward, no melee, softer hits.
+  - **Wand:** a sidearm that sparks for free.
+- **The staff stays planted** on the ground and rises slowly as you cast, ward or meditate, then sinks back. The grimoire is held open at your waist. Roblox's default stiff tool arm is gone.
+- **A crosshair that knows each spell:** someone to hit, the ground, an ally, or nothing. It turns red out of reach.
+- **New looks for everything:** meteor warning rings and falls, a green miasma, barrier shells, hex marks over the head, haste wind, a blink streak, a meditation circle.
+- **Fix:** the lobby's right column no longer runs under the PLAY area.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MagicSpells.lua](ReplicatedStorage/MagicSpells.lua) | ReplicatedStorage ▸ MagicSpells | ModuleScript | twelve spells, meditation, unlocks |
+| [Combat/MagicServer.lua](ServerScriptService/Combat/MagicServer.lua), [Combat/Ward.lua](ServerScriptService/Combat/Ward.lua) | ServerScriptService ▸ Combat | ModuleScript | every spell kind, meditation, weapon tradeoffs; barriers and hexes |
+| [Combat/MagicClient.lua](ReplicatedStorage/Combat/MagicClient.lua), [MagicFX.lua](ReplicatedStorage/MagicFX.lua) | ReplicatedStorage | ModuleScript | the arsenal bar, meditation, the lift, the crosshair; every look; holding a staff upright |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | staff, tome and wand stances |
+| [Tools/Staff](Tools/Staff), [Tools/Tome](Tools/Tome), [Tools/Wand](Tools/Wand), [Tools/StaffMelee](Tools/StaffMelee) | ServerStorage ▸ Weapons | Tool | the weapons (Tome, Wand, StaffMelee new) |
+| [Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | ServerScriptService ▸ Build ▸ Weapons | ModuleScript | the grimoire, the wand, the staff's melee body |
+| [Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua), [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the weapons; `Catalog.SPELLS`; a magic sidearm; the Mage's wand |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua), [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | ModuleScript · Script | the arsenal checked and given; the twin; StanceSwap |
+| [StanceSwap.client.lua](StarterPlayerScripts/StanceSwap.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ StanceSwap | LocalScript | magic / melee (new) |
+| [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua), [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua), [InputHints.lua](ReplicatedStorage/InputHints.lua) | StarterPlayerScripts · ReplicatedStorage | LocalScript · ModuleScript | twins on the bar; the Stance bind |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | LOADOUT ▸ SPELLS; the lobby's right column |
+
+---
+
+## Before that: you under the armor, emotes that behave, a helmet you can pick back up
 
 - **You are your own avatar under the armor.** Your real Roblox hair, face and skin colour show wherever your helmet doesn't cover, in battle and on every menu mannequin. Face accessories (beards, glasses) come along; hats and body accessories stay off, since armor goes there. Bots and NPCs keep the made-up looks.
 - **The Wardrobe is gone.** Tap your player card (top left) to pick a title.

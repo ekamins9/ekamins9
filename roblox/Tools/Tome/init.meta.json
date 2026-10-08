@@ -1,0 +1,8 @@
+{
+  "className": "Tool",
+  "ignoreUnknownInstances": true,
+  "properties": {
+    "ToolTip": "Grimoire",
+    "CanBeDropped": false
+  }
+}

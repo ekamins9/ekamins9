@@ -1,0 +1,39 @@
+--[[ THE ARCANE STAFF, IN MELEE (ModuleScript inside the Tool): the Staff's other self.
+     The Stance bind (H / D-pad ←) swaps it in for the Staff and back (LoadoutServer),
+     so the Mage fights with every swing a quarterstaff has (its clips, its rules:
+     CombatServer / CombatClient), only lighter: a staff that's mostly for casting.
+     Never on the weapon bar by itself (Twin; Hotbar shows the one in your hand).
+     The Tool's body is built from Build ▸ Weapons.StaffMelee if it has no Handle. ]]
+
+return {
+	Name        = "Arcane Staff",
+	Description = "The staff, swung. Lighter blows than a fighter's quarterstaff, but they keep a blade off you.",
+	TWIN        = "Staff",
+
+	HIT_ID   = "rbxassetid://0",
+	IDLE_ID  = "rbxassetid://132465214430348",
+	BLOCK_ID = "rbxassetid://72812411957933",
+
+	SPEED_MULT = 0.62,
+	TYPE_SPEED = {Swing = 1.0, Stab = 1.0, Overhead = 1.0, Underhand = 1.0},
+	WINDUP     = 0.15,
+	RECOVERY   = 0.15,
+	REACH      = 8.0,
+	TWO_HANDED = true,
+	SECONDARY  = false,
+
+	SpeedMult = 1.0,
+	ClunkMult = 0.9,
+	ARMOR_PEN = 0.3,   -- the share of a target's armor protection it ignores
+
+	ATTACKS = {
+		LeftSwing      = {anim="rbxassetid://133334061889126", kind="slash", damage=10, blockCost=10, staminaCost=4},
+		RightSwing     = {anim="rbxassetid://73820534240915", kind="slash", damage=10, blockCost=10, staminaCost=4},
+		LeftStab       = {anim="rbxassetid://94684673453479", kind="stab", damage=10, blockCost=10, staminaCost=4},
+		RightStab      = {anim="rbxassetid://108978202248647", kind="stab", damage=10, blockCost=10, staminaCost=4},
+		LeftOverhead   = {anim="rbxassetid://127511139053596", kind="slash", damage=10, blockCost=10, staminaCost=4},
+		RightOverhead  = {anim="rbxassetid://81289899270401", kind="slash", damage=10, blockCost=10, staminaCost=4},
+		LeftUnderhand  = {anim="rbxassetid://0", kind="slash", damage=10, blockCost=10, staminaCost=4},
+		RightUnderhand = {anim="rbxassetid://0", kind="slash", damage=10, blockCost=10, staminaCost=4},
+	},
+}

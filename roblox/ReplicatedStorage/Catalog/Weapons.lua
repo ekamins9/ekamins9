@@ -40,5 +40,8 @@ return {
 	{id = "Bow", name = "Longbow", family = "Ranged", secondary = false, ranged = true, unlock = {free = true}},
 	{id = "Crossbow", name = "Crossbow", family = "Ranged", secondary = false, ranged = true, unlock = {level = 3}, marks = 600},
 	-- the Mage's (GameConfig.CLASSES.Mage): only a magic class carries one, and a magic class carries one
-	{id = "Staff", name = "Arcane Staff", family = "Magic", secondary = false, magic = true, unlock = {free = true}},
+	-- slots = how many spells it carries (LOADOUT ▸ SPELLS); Tools ▸ <id> ▸ Config says the rest
+	{id = "Staff", name = "Arcane Staff", family = "Magic", secondary = false, magic = true, slots = 4, unlock = {free = true}},
+	{id = "Tome", name = "Grimoire", family = "Magic", secondary = false, magic = true, slots = 5, unlock = {level = 6}, marks = 1200},
+	{id = "Wand", name = "Wand", family = "Magic", secondary = true, magic = true, slots = 0, unlock = {free = true}},
 }

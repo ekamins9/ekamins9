@@ -181,7 +181,7 @@ GameConfig.CLASSES = {
 	-- the Mage: a staff (MagicSpells: fire, lightning, frost, mending; a ward of mana) and a
 	-- sidearm. Robes, not armor: even less than the Archer (80 health, nothing to stop a blade),
 	-- and a mana bar beside the stamina. Starts in the Apprentice's robes (starter = a set).
-	Mage     = {name = "Mage",     weight = "Light",  armorType = "Light",  weapons = "any", primary = "Staff", secondary = "Shortsword",
+	Mage     = {name = "Mage",     weight = "Light",  armorType = "Light",  weapons = "any", primary = "Staff", secondary = "Wand",
 		magic = true, health = -20, prot = 0, speed = 1.0, starter = "ApprenticeRobes",
 		description = "A staff of fire, lightning, frost and mending, and a ward that turns blows into lost mana. The least health of anyone (80, no armor): keep your distance, cast, and never stand still."},
 }

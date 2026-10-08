@@ -149,10 +149,20 @@ local function isAlive(plr)
 	return hum ~= nil and hum.Health > 0 and char.Parent ~= nil
 end
 
-local function giveWeapon(plr, char, weaponId, skinId, equip, slot)
+local giveWeapon
+-- a magic weapon carries the class's arsenal and its looks (Combat ▸ MagicServer reads them)
+local function arm(tool, lo)
+	if not (lo and Catalog.WEAPON[tool.Name] and Catalog.WEAPON[tool.Name].magic) then return end
+	tool:SetAttribute("Spells", table.concat(lo.spells or {}, ","))
+	local parts = {}
+	for spellId, skinId in pairs(lo.spellSkins or {}) do table.insert(parts, spellId .. "=" .. skinId) end
+	tool:SetAttribute("SpellSkins", table.concat(parts, ","))
+end
+giveWeapon = function(plr, char, weaponId, skinId, equip, slot, lo)
 	local template = findWeapon(weaponId)
 	if not template then warn("[Loadout] no Tool named", weaponId, "in ServerStorage.Weapons"); return end
 	local tool = template:Clone()
+	arm(tool, lo)
 	-- which skin it wears, for whatever reads it (a bow's skin decides its arrows: Catalog ▸ Skins arrow)
 	tool:SetAttribute("Skin", skinId)
 	tool:SetAttribute("SkinId", skinId)
@@ -166,10 +176,47 @@ local function giveWeapon(plr, char, weaponId, skinId, equip, slot)
 		Dresser.applySkin(tool, skinId, best and best.v or nil)
 	end
 	tool.Parent = plr:WaitForChild("Backpack")
+	-- its twin (a Staff's melee self: Tools ▸ StaffMelee), swapped in on the Stance bind; only the
+	-- one in your hand is on the weapon bar (Hotbar: TwinHidden)
+	local cfgMod = tool:FindFirstChild("Config")
+	local okc, cfg = pcall(function() return cfgMod and require(cfgMod) end)
+	local twinName = okc and type(cfg) == "table" and cfg.TWIN
+	local twinT = twinName and findWeapon(twinName)
+	if twinT then
+		local twin = twinT:Clone()
+		twin:SetAttribute("Skin", skinId); twin:SetAttribute("SkinId", skinId); twin:SetAttribute("Slot", slot)
+		twin:SetAttribute("Twin", tool.Name); twin:SetAttribute("TwinHidden", true)
+		tool:SetAttribute("Twin", twin.Name)
+		if skinId then Dresser.applySkin(twin, skinId, nil) end
+		twin.Parent = tool.Parent
+	end
 	if equip then
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then task.defer(function() if tool.Parent and hum.Health > 0 then hum:EquipTool(tool) end end) end
 	end
+end
+
+-- THE STANCE BIND (H / D-pad ←: StarterPlayerScripts ▸ StanceSwap): the weapon in your hand
+-- swaps for its twin (a Staff and its melee self)
+do
+	local swap = ReplicatedStorage:FindFirstChild("StanceSwap") or Instance.new("RemoteEvent")
+	swap.Name = "StanceSwap"; swap.Parent = ReplicatedStorage
+	local last = {}
+	swap.OnServerEvent:Connect(function(plr)
+		local now = os.clock()
+		if now - (last[plr] or 0) < 0.4 then return end
+		last[plr] = now
+		local char = plr.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local held = char and char:FindFirstChildOfClass("Tool")
+		local twinName = held and held:GetAttribute("Twin")
+		if not (hum and hum.Health > 0 and twinName) then return end
+		if held:GetAttribute("Casting") or char:GetAttribute("Acting") or char:GetAttribute("Casting") then return end
+		local bp = plr:FindFirstChildOfClass("Backpack")
+		local twin = bp and bp:FindFirstChild(twinName)
+		if twin and twin:IsA("Tool") then hum:EquipTool(twin) end
+	end)
+	Players.PlayerRemoving:Connect(function(plr) last[plr] = nil end)
 end
 
 local spawnAs   -- (below)
@@ -246,8 +293,8 @@ spawnAs = function(plr, classId)
 	Dresser.dress(char, {loadout = lo, appearance = Avatars.appearanceOf(plr), weight = GameConfig.CLASSES[classId].weight, team = team})
 	Game.Teams.mark(char, team)
 	classStats(char, hum, classId)
-	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
-	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP, 1) end
+	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2, lo) end
+	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP, 1, lo) end
 	if SPAWN_PROTECT > 0 and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then
 		local ff = Instance.new("ForceField"); ff.Visible = true; ff.Parent = char
 		Debris:AddItem(ff, SPAWN_PROTECT)
@@ -293,8 +340,8 @@ _G.CourtyardRedress = function(plr)
 	char:SetAttribute("Title", p.appearance.title or "")
 	Dresser.dress(char, {loadout = lo, appearance = Avatars.appearanceOf(plr), weight = GameConfig.CLASSES[classId].weight, team = Game.teamOf(plr)})
 	classStats(char, hum, classId)
-	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
-	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut, 1) end
+	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2, lo) end
+	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut, 1, lo) end
 	log(plr.Name, "re-dressed in the Courtyard as", classId)
 end
 Players.PlayerRemoving:Connect(function(plr) redressAt[plr] = nil end)

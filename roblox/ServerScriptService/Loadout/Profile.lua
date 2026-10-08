@@ -214,6 +214,8 @@ function Profile.has(plr, kind, id)
 	if kind == "pieces" and Profile.copyCount(p, "armor:" .. tostring(id)) > 0 then return true end
 	if kind == "armorfx" and Profile.copyCount(p, "finish:" .. tostring(id)) > 0 then return true end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
+	if kind == "spells" then local sp = Catalog.SPELLS[id]; if sp and sp.kind and Catalog.unlocked(sp.unlock or {free = true}, p) then return true end end
+	if kind == "spellfx" and Profile.copyCount(p, "spell:" .. tostring(id)) > 0 then return true end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
 	if kind == "beards" then for _, b in ipairs(Catalog.BODY.beards) do if b.id == id and not b.crowns then return true end end end
@@ -317,6 +319,28 @@ function Profile.validateLoadout(plr, classId, lo)
 		out.secondary = lo.secondary
 		out.secondarySkin = (lo.secondarySkin and Catalog.SKIN[lo.secondarySkin] and Catalog.SKIN[lo.secondarySkin].weapon == out.secondary and Profile.has(plr, "skins", lo.secondarySkin)) and lo.secondarySkin or (out.secondary .. ":Default")
 	else out.secondary, out.secondarySkin = nil, nil end
+	-- A MAGE'S ARSENAL (ReplicatedStorage ▸ MagicSpells): spells they have (free, or their level
+	-- reached), no two the same, as many as the weapon carries; and a look for each (a spell
+	-- skin they own a copy of: Catalog ▸ SpellSkins)
+	if cls.magic then
+		local Spells = Catalog.SPELLS
+		local slots = (out.weapon and Catalog.WEAPON[out.weapon] and Catalog.WEAPON[out.weapon].slots) or 4
+		local list, seen = {}, {}
+		local function add(id)
+			local sp = type(id) == "string" and Spells[id]
+			if sp and sp.kind and not sp.fixed and not seen[id] and #list < slots and Profile.has(plr, "spells", id) then seen[id] = true; table.insert(list, id) end
+		end
+		for _, id in ipairs(type(lo.spells) == "table" and lo.spells or {}) do add(id) end
+		if #list == 0 then for _, id in ipairs(Spells.DEFAULT) do add(id) end end
+		out.spells = list
+		out.spellSkins = {}
+		if type(lo.spellSkins) == "table" then
+			for spellId, skinId in pairs(lo.spellSkins) do
+				local sk = Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[skinId]
+				if sk and sk.spell == spellId and seen[spellId] and Profile.has(plr, "spellfx", skinId) then out.spellSkins[spellId] = skinId end
+			end
+		end
+	end
 	return out
 end
 

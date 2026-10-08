@@ -224,6 +224,18 @@ local function collect()
 			end
 		end
 	end
+	-- twins (a Staff and its melee self) share a place on the bar: the one in your hand, else
+	-- the main one (TwinHidden is the other self)
+	local inHand = c and c:FindFirstChildOfClass("Tool")
+	for i = #list, 1, -1 do
+		local t = list[i]
+		local twin = t:GetAttribute("Twin")
+		if twin then
+			local hidden = t:GetAttribute("TwinHidden") == true
+			local otherInHand = inHand and inHand ~= t and inHand.Name == twin
+			if (hidden and t ~= inHand) or (not hidden and otherInHand) then table.remove(list, i) end
+		end
+	end
 	table.sort(list, function(a, b)
 		local sa, sb = a:GetAttribute("Slot") or 100, b:GetAttribute("Slot") or 100
 		if sa ~= sb then return sa < sb end
@@ -279,6 +291,9 @@ UserInputService.InputBegan:Connect(function(input, gp)
 			return
 		end
 	end
+	-- (with a staff in hand, D-pad ← is its stance: StanceSwap)
+	local inHand = character() and character():FindFirstChildOfClass("Tool")
+	if input.KeyCode == Enum.KeyCode.DPadLeft and inHand and inHand:GetAttribute("Twin") then return end
 	if input.KeyCode == Enum.KeyCode.DPadRight or input.KeyCode == Enum.KeyCode.DPadLeft then
 		if #order == 0 then return end
 		local c = character()
