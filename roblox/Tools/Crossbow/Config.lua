@@ -5,7 +5,7 @@
 
 return {
 	Name        = "Crossbow",
-	Description = "A steel prod and a windlass. Point, click, and the bolt goes exactly where you meant; then a long, slow reload.",
+	Description = "A steel prod and a stirrup. Hold right mouse to raise it, click to loose: the bolt goes exactly where you meant. Then R, and a long, slow haul to span it again.",
 	KIND        = "crossbow",
 
 	SPEED_MIN   = 160,

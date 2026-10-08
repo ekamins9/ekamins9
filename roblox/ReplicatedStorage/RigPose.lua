@@ -45,6 +45,11 @@ RigPose.CONFIG = {
 	SWING_DIR       = 1,             -- flip if "across the chest" swings the arms outward
 	-- a bow at the ready (not drawing): raise / across (radians) for each arm, a little turn
 	BOW_READY       = {bowRaise = 0.6, bowAcross = 0.35, stringRaise = 0.85, stringAcross = 1.0, twist = 0.2},
+	-- the crossbow (RigPose.ranged): at ease, raised (twist: the left shoulder a little forward), spanning
+	XBOW            = {easeRightRaise = 0.6, easeRightAcross = 1.2, easeLeftRaise = 0.65, easeLeftAcross = 0.8,
+	                   twist = -0.3, aimRightAcross = 0.1, aimLeftAcross = 1.6, aimLeftRaise = 0.05,
+	                   bend = 0.85, bendPull = 0.3, strokes = 3,
+	                   spanRight = 0.65, spanRightAcross = 0.25, spanLeft = 0.75, spanLeftPull = 0.35, spanLeftAcross = 1.6},
 }
 local C = RigPose.CONFIG
 
@@ -141,15 +146,50 @@ function RigPose.ranged(out, i, o, crossbow)
 		out["Right Shoulder"] = arm(o, "Right Shoulder", mix(R.bowRaise, up), mix(R.bowAcross, -twist))
 		out["Left Shoulder"] = arm(o, "Left Shoulder", mix(R.stringRaise, up * (1 - 0.05 * draw)),
 			mix(R.stringAcross, twist + 0.6 * (1 - draw)))
-	elseif reload > 0 and aim < 0.5 then
-		-- the windlass: the crossbow points down, the left hand cranks
-		local crank = math.abs(math.sin(reload * math.pi * 4))
-		out["Right Shoulder"] = arm(o, "Right Shoulder", 0.45, 0.15)
-		out["Left Shoulder"] = arm(o, "Left Shoulder", 0.35 + 0.7 * crank, 0.55)
 	else
-		-- shouldered: the trigger hand and the hand under the tiller
-		out["Right Shoulder"] = arm(o, "Right Shoulder", aim * (level + pitch) + (1 - aim) * 0.4, aim * 0.12)
-		out["Left Shoulder"] = arm(o, "Left Shoulder", aim * (level + pitch) * 0.97 + (1 - aim) * 0.3, aim * 0.62)
+		-- THE CROSSBOW, always in both hands. AT EASE (aim 0): low across the body, the
+		-- stock at the right hip, the left hand under the front. RAISED (aim 1, right mouse
+		-- held): shouldered, a little side-on, the tiller along the line of sight (the
+		-- right arm's raise follows the camera's pitch, so it points where you look), the
+		-- left hand under it. SPANNING (reload 0..1): nose down at the right foot in the
+		-- stirrup, bent over the stock, hauling the string up in strokes; the back
+		-- straightens with each pull. The tiller runs along the right arm, so an arm
+		-- hanging down points it at the ground.
+		local X = C.XBOW
+		local up = level + pitch
+		local function mix(a, b, t) return a + (b - a) * t end
+		local tw = X.twist * aim * C.TWIST_DIR
+		local rR = mix(X.easeRightRaise, up, aim)
+		local rA = mix(X.easeRightAcross, -tw + X.aimRightAcross, aim)
+		local lR = mix(X.easeLeftRaise, up + X.aimLeftRaise, aim)
+		local lA = mix(X.easeLeftAcross, tw + X.aimLeftAcross, aim)
+		local bend = 0
+		if reload > 0 then
+			local function smooth(t) t = math.clamp(t, 0, 1); return t * t * (3 - 2 * t) end
+			local env = smooth(reload / 0.14) * (1 - smooth((reload - 0.86) / 0.14))
+			local stroke = math.clamp((reload - 0.14) / 0.72, 0, 1)
+			local pull = math.abs(math.sin(math.pi * X.strokes * stroke))
+			bend = env * (X.bend - X.bendPull * pull)          -- deepest as a stroke starts, straighter as it hauls
+			rR, rA = mix(rR, bend + X.spanRight, env), mix(rA, X.spanRightAcross, env)
+			lR, lA = mix(lR, bend + X.spanLeft + X.spanLeftPull * pull, env), mix(lA, X.spanLeftAcross, env)
+			tw = tw * (1 - env)
+			out["Right Hip"] = out["Right Hip"] * CFrame.Angles(0, 0, C.KICK_DIR * 0.3 * env)   -- the foot forward, in the stirrup
+		end
+		if tw ~= 0 then
+			out.RootJoint = out.RootJoint * CFrame.Angles(0, 0, tw)
+			out.Neck = out.Neck * CFrame.Angles(0, 0, -tw)
+		end
+		if bend > 0 then
+			-- bent over at the waist; the legs stay planted under it
+			local S = CFrame.Angles(bend * C.CROUCH_LEAN_DIR, 0, 0)
+			out.RootJoint = out.RootJoint * S
+			local keep = o.RootJoint * S:Inverse() * o.RootJoint:Inverse()
+			out["Left Hip"] = keep * out["Left Hip"]
+			out["Right Hip"] = keep * out["Right Hip"]
+			out.Neck = out.Neck * CFrame.Angles(-bend * 0.4 * C.CROUCH_LEAN_DIR, 0, 0)   -- (eyes on the work)
+		end
+		out["Right Shoulder"] = arm(o, "Right Shoulder", rR, rA)
+		out["Left Shoulder"] = arm(o, "Left Shoulder", lR, lA)
 	end
 end
 

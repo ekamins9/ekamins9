@@ -244,9 +244,12 @@ more while you're pulling; held at full draw past 0.6 s it costs stamina and sha
 After a shot the archer **nocks the next arrow** (1.5 s: the hand goes back to the quiver). Right
 mouse lets a draw down. A shot every ~3.5 s at best.
 
-**The crossbow** (level 3) is shouldered like any weapon: **click** to loose (steady aim, 160
-studs/s, harder hit, more armor pierce), then a **5 s windlass reload** at 8% walking speed.
-Right mouse zooms down the tiller. A shot every ~5.5 s.
+**The crossbow** (level 3) is carried at ease in both hands, low across the body. **Hold right mouse**
+to raise it to the shoulder (it follows where you look, and the view zooms down the tiller);
+**click** looses it, only while raised (steady aim, 160 studs/s, a hard hit, more armor pierce).
+Then it stays **empty until you span it**: the **Reload** bind (R), or a click while empty, starts
+a **5 s haul** at 8% walking speed: bent over, the nose down in the stirrup at your right foot,
+pulling the string up in three strokes (everyone sees the string follow: Round `ReloadAt`).
 
 **Arrows are the server's**: stepped raycasts with gravity decide what they hit. Damage × power ×
 region (a full-draw bow 30 to the body, **head ×2**: 60, never a one-shot; a bolt 42, 84 to the head;
@@ -268,7 +271,8 @@ the nut while spanned and the bolt in its groove. The **stances** are `RigPose.r
   bow in the right hand the body turns *off* the over-the-shoulder camera's line, so nothing
   crosses the view.
 - **Nocking:** the left hand reaches back to the quiver.
-- **Crossbow:** shouldered, or pointed down and cranked.
+- **Crossbow** (`XBOW`): at ease low across the body; raised to the shoulder, a little side-on, the
+  left hand under the stock; spanning bent over the stirrup, the back straightening with each pull.
 - **Roblox's own arm animations are taken off the shoulders** while a bow or crossbow is in hand
   (`RangedFX`, every client): no "holding a tool" arm stuck straight out, and no jolt as the walk
   animation starts and stops.

@@ -6,8 +6,10 @@
      is weak and drops fast, a full draw flies flat and hits hard. Held at full
      draw it costs stamina (HOLD_DRAIN) and the aim starts to shake (the client
      draws the shake; the server only checks the aim is roughly where you face).
-     THE CROSSBOW: loaded, a click looses it at full power with a steady aim;
-     then a slow RELOAD (you walk at half speed, no shooting).
+     THE CROSSBOW: loaded, a click looses it at full power with a steady aim
+     (the client only looses it raised: right mouse held). It stays empty
+     until you span it again ("Reload": R, or a click while empty): a slow
+     RELOAD, barely moving, bent over the stirrup hauling the string up.
 
      THE ARROW is the server's: it flies with gravity (stepped raycasts each
      frame) and decides what it hits. Clients only draw it (ReplicatedStorage ▸
@@ -245,6 +247,9 @@ function RangedServer.attach(Tool, cfgIn)
 	local function onUnequipped()
 		cancelDraw()
 		setAttr("Reloading", nil)
+		setAttr("ReloadAt", nil)
+		reloadUntil = 0   -- (a reload broken off by putting it away: still empty)
+		setAttr("SpeedMult_Draw", nil)
 		setAttr("Ammo", nil)
 		setAttr("Loaded", nil)
 		character = nil
@@ -421,23 +426,28 @@ function RangedServer.attach(Tool, cfgIn)
 				ammo -= 1
 				loaded = false
 				loose(a, b)
-				-- and straight into the reload
-				reloadUntil = now + cfg.RELOAD
-				setAttr("Reloading", cfg.RELOAD)
-				setAttr("SpeedMult_Draw", cfg.RELOAD_SLOW)
-				local head = character:FindFirstChild("Head")
-				if head then Sounds.play(SND.reload, head, {Volume = 0.4, MaxDistance = 40}) end
-				local mine = character
-				task.delay(cfg.RELOAD, function()
-					if character ~= mine or now + cfg.RELOAD < reloadUntil - 0.01 then return end
-					loaded = ammo > 0
-					setAttr("Reloading", nil)
-					setAttr("SpeedMult_Draw", nil)
-					publish()
-				end)
+				-- (empty now, until it's spanned again: "Reload")
 			end
 			lastShot = now
 			publish()
+		elseif action == "Reload" and not isBow then
+			-- span it: bent over the stirrup, hauling the string back to the nut
+			if loaded or stunned or now < reloadUntil or ammo <= 0 then return end
+			reloadUntil = now + cfg.RELOAD
+			setAttr("Reloading", cfg.RELOAD)
+			setAttr("ReloadAt", workspace:GetServerTimeNow())   -- (everyone's string follows the haul)
+			setAttr("SpeedMult_Draw", cfg.RELOAD_SLOW)
+			local head = character:FindFirstChild("Head")
+			if head then Sounds.play(SND.reload, head, {Volume = 0.4, MaxDistance = 40}) end
+			local mine, began = character, reloadUntil
+			task.delay(cfg.RELOAD, function()
+				if character ~= mine or reloadUntil ~= began then return end
+				loaded = ammo > 0
+				setAttr("Reloading", nil)
+				setAttr("ReloadAt", nil)
+				setAttr("SpeedMult_Draw", nil)
+				publish()
+			end)
 		elseif action == "Cancel" then
 			cancelDraw()
 		elseif action == "Kick" then
@@ -465,7 +475,6 @@ function RangedServer.attach(Tool, cfgIn)
 			regenAt = now + cfg.REGEN
 			if ammo < cfg.QUIVER then
 				ammo += 1
-				if not isBow and not loaded and now >= reloadUntil then loaded = true end
 				if character then publish() end
 			end
 		end

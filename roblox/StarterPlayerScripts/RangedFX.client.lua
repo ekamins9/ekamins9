@@ -81,7 +81,13 @@ local function update(char)
 		-- crossbow: spanned at the nut while loaded, sliding back from the front as it reloads
 		local spanned = nock:GetAttribute("Spanned")
 		if typeof(spanned) ~= "Vector3" then return end
-		local reload = char == player.Character and (char:GetAttribute("LocalReload") or 0) or 0
+		-- how far through the haul: yours from your client, others' from when the server says it began
+		local reload = 0
+		if char == player.Character then reload = char:GetAttribute("LocalReload") or 0
+		else
+			local at, dur = char:GetAttribute("ReloadAt"), tonumber(char:GetAttribute("Reloading"))
+			if at and dur and dur > 0 then reload = math.clamp((workspace:GetServerTimeNow() - at) / dur, 0, 1) end
+		end
 		if char:GetAttribute("Loaded") or tool:GetAttribute("Loaded") then
 			nock.Position = spanned
 		elseif reload > 0 then

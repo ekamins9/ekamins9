@@ -58,6 +58,7 @@ ClientSettings.KEYS = {
 	{key = "Emote",      label = "Emote wheel",      default = "B"},
 	{key = "Cursor",     label = "Free the mouse (toggle)", default = "T"},
 	{key = "Profile",    label = "Profile of who you look at", default = "P"},
+	{key = "Reload",     label = "Reload the crossbow", default = "R"},
 }
 ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}
 

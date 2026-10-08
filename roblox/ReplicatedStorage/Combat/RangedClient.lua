@@ -2,10 +2,12 @@
      Tool's LocalScript calls RangedClient.attach(Tool, Config)). The server
      (Combat ▸ RangedServer) times the draw and flies the real arrow; here:
 
-       • INPUT: the Swing bind (left mouse) — bow: hold to draw, let go to
-         loose; crossbow: click to loose. Right mouse — bow: let the draw down;
-         crossbow: hold to aim down the tiller (zoom). Kick works too. On a touch
-         screen: hold a SWING button to draw, BLOCK to let down (TouchInput).
+       • INPUT: bow — hold the Swing bind (left mouse) to draw, let go to loose;
+         right mouse lets the draw down. Crossbow — HOLD RIGHT MOUSE to raise it
+         to the shoulder and aim (zoom); click looses it, only while raised. Empty,
+         it stays empty: the Reload bind (R), or a click, spans it again. Kick works
+         too. On a touch screen: hold a SWING button to draw (bow) or fire / reload
+         (crossbow); hold BLOCK to let down (bow) or to aim (crossbow).
        • THE AIM: the middle of the screen, through what's there, shaking a
          little (more held at full draw, on the move, or out of breath: the
          Config's SWAY_*). The reticle shows the shake and how far you've drawn.
@@ -95,6 +97,7 @@ function RangedClient.attach(Tool, cfgIn)
 	local zoom, zoomWant = 0, 0
 	local aim = 0
 	local reloadFrom, reloadFor = nil, cfg.RELOAD
+	local aiming = false        -- crossbow: right mouse held
 	local shotN = 0
 	local sx, sy = 0, 0
 	local conns = {}
@@ -156,6 +159,24 @@ function RangedClient.attach(Tool, cfgIn)
 	local function letDown()
 		if drawing then drawing = false; remote:FireServer("Cancel") end
 	end
+	-- crossbow: span it again (only when it's empty and there's a bolt)
+	local hintUntil, hintText = 0, ""
+	local function hint(text) hintText, hintUntil = text, os.clock() + 1.6 end
+	local function reload()
+		if isBow or not equipped or held() then return end
+		local c = char()
+		if not c or c:GetAttribute("Loaded") or c:GetAttribute("Reloading") then return end
+		if (c:GetAttribute("Ammo") or 0) <= 0 then hint("NO BOLTS"); return end
+		remote:FireServer("Reload")
+	end
+	-- crossbow: a click looses it raised, reloads it empty, and asks you to raise it otherwise
+	local function crossbowClick()
+		local c = char()
+		if not c or c:GetAttribute("Reloading") then return end
+		if not c:GetAttribute("Loaded") then reload(); return end
+		if not aiming or aim < 0.8 then hint("HOLD RIGHT MOUSE TO AIM"); return end
+		loose()
+	end
 
 	local function swingInput(input)
 		local a = ClientSettings.actionForInput(input)
@@ -164,9 +185,11 @@ function RangedClient.attach(Tool, cfgIn)
 	table.insert(conns, UIS.InputBegan:Connect(function(input, gp)
 		if gp or not equipped or UIS:GetFocusedTextBox() then return end
 		if swingInput(input) then
-			if isBow then startDraw() else loose() end
+			if isBow then startDraw() else crossbowClick() end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-			if isBow then letDown() else zoomWant = 1 end
+			if isBow then letDown() else aiming = true end
+		elseif ClientSettings.actionForInput(input) == "Reload" then
+			reload()
 		elseif ClientSettings.actionForInput(input) == "Kick" then
 			remote:FireServer("Kick")
 		end
@@ -176,16 +199,16 @@ function RangedClient.attach(Tool, cfgIn)
 		if swingInput(input) then
 			if isBow then loose() end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-			zoomWant = 0
+			aiming = false
 		end
 	end))
 	table.insert(conns, TouchInput.changed:Connect(function(action, down)
 		if not equipped then return end
 		if action == "Swing" then
 			if isBow then if down then startDraw() else loose() end
-			elseif down then loose() end
+			elseif down then crossbowClick() end
 		elseif action == "Block" then
-			if isBow then if down then letDown() end else zoomWant = down and 1 or 0 end
+			if isBow then if down then letDown() end else aiming = down end
 		elseif action == "Kick" and down then
 			remote:FireServer("Kick")
 		end
@@ -215,14 +238,14 @@ function RangedClient.attach(Tool, cfgIn)
 		elseif not reloading then reloadFrom = nil end
 		local aimWant
 		if isBow then aimWant = (drawing or now - lastShotAt < 0.5) and 1 or 0
-		else aimWant = reloadFrom and 0 or 1 end
+		else aimWant = (aiming and not reloadFrom) and 1 or 0 end   -- crossbow: raised while right mouse is held
 		aim += (aimWant - aim) * math.clamp(dt * 12, 0, 1)
 		c:SetAttribute("LocalRanged", isBow and 1 or 2)
 		c:SetAttribute("LocalAim", aim)
 		c:SetAttribute("LocalDraw", draw)
 		c:SetAttribute("LocalReload", reloadFrom and math.clamp((now - reloadFrom) / reloadFor, 0, 1) or 0)
 		-- the zoom: full draw (bow), the right mouse (crossbow)
-		local zw = isBow and (draw >= 1 and 0.7 or draw * 0.35) or zoomWant
+		local zw = isBow and (draw >= 1 and 0.7 or draw * 0.35) or aim
 		zoom += (zw - zoom) * math.clamp(dt * 8, 0, 1)
 		c:SetAttribute("LocalZoom", zoom)
 		-- the reticle: where the shaking aim points, a ring that closes as you draw
@@ -237,8 +260,20 @@ function RangedClient.attach(Tool, cfgIn)
 		r.ring.Size = UDim2.fromOffset(ringD, ringD)
 		r.stroke.Color = (isBow and draw >= 1) and Color3.fromRGB(255, 214, 90) or Color3.new(1, 1, 1)
 		local ammo = c:GetAttribute("Ammo") or 0
-		r.ammo.Text = reloadFrom and (isBow and "NOCKING…" or "RELOADING…") or (ammo <= 0 and "NO ARROWS" or string.format("%d %s", ammo, isBow and "arrows" or "bolts"))
-		r.ammo.TextColor3 = (ammo <= 0) and Color3.fromRGB(255, 90, 90) or Color3.new(1, 1, 1)
+		local text, warn = nil, ammo <= 0
+		if reloadFrom then text = isBow and "NOCKING…" or "RELOADING…"
+		elseif now < hintUntil then text, warn = hintText, true
+		elseif not isBow and not c:GetAttribute("Loaded") then
+			text = ammo <= 0 and "NO BOLTS" or "EMPTY  ·  R TO RELOAD"; warn = true
+		elseif ammo <= 0 then text = isBow and "NO ARROWS" or "NO BOLTS"
+		else text = string.format("%d %s", ammo, isBow and "arrows" or "bolts") end
+		r.ammo.Text = text
+		r.ammo.TextColor3 = warn and Color3.fromRGB(255, 90, 90) or Color3.new(1, 1, 1)
+		-- a crossbow not raised: a wide, dim ring (it's not pointing where you look yet)
+		if not isBow then
+			r.ring.Size = UDim2.fromOffset(22 + 30 * (1 - aim), 22 + 30 * (1 - aim))
+			r.stroke.Transparency = 0.35 + 0.4 * (1 - aim)
+		end
 	end))
 
 	local function clear()
@@ -253,6 +288,7 @@ function RangedClient.attach(Tool, cfgIn)
 		equipped = false
 		letDown()
 		zoomWant = 0
+		aiming = false
 		clear()
 	end))
 	if Tool.Parent == player.Character then equipped = true end

@@ -1,4 +1,28 @@
-# Updated scripts: the longbow shoots 1.5× farther
+# Updated scripts: the crossbow — aim to shoot, reload yourself, new poses
+
+- **Controls:**
+  - Hold right mouse to raise the crossbow and aim; it zooms down the tiller. Click fires, but only while it's raised; otherwise a hint says to hold right mouse.
+  - After a shot it **stays empty**. Press **R** (rebindable) or click to reload. The reticle says "EMPTY · R TO RELOAD".
+  - Phones: hold BLOCK to aim, SWING fires or reloads.
+- **Poses** (both hands, always):
+  - **At ease:** carried low and diagonal across the body.
+  - **Aimed:** shouldered, a little side-on, pointing where you look, the left hand under the stock.
+  - **Reloading:** bent over, the nose down at the right foot in the stirrup, hauling the string up in three strokes.
+  - Everyone sees the string follow the haul.
+- **Fixes:** putting the crossbow away mid-reload no longer leaves you stuck at reload walking speed. A refilled bolt no longer loads it by itself.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | "Reload" action; no auto reload; `ReloadAt` |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat ▸ RangedClient | ModuleScript | hold to aim, click to fire / reload, R, hints |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage ▸ RigPose | ModuleScript | crossbow at ease / aimed / spanning (`XBOW`) |
+| [RangedFX.client.lua](StarterPlayerScripts/RangedFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ RangedFX | LocalScript | others' string follows the haul |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | Reload bind (R) |
+| [Tools/Crossbow/Config.lua](Tools/Crossbow/Config.lua) | ServerStorage ▸ Weapons ▸ Crossbow ▸ Config | ModuleScript | description |
+
+---
+
+## Before that: the longbow shoots 1.5× farther
 
 - **Longbow arrows fly faster:** a full draw goes from 120 to 147 studs/s, and a snap shot from 45 to 55. Gravity is the same, and range goes with speed squared, so every shot carries about 1.5× as far and hits a bit sooner.
 - **Arrows may fly for up to 6 s** (was 4), so long lobs aren't dropped mid-air. The arrow everyone sees lasts 7 s.
