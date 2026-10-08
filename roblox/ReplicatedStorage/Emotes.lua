@@ -323,6 +323,20 @@ DEF.Ascension = {d = 5.0, pose = with(track({
 	p.lh[1] += 8 * math.sin(t * 2.6) * window(t, 2.0, 3.8, 0.4)
 end)}
 
+-- HELMET TOSS: both hands up, the helmet lifted off, a wind-up and a throw with the
+-- left arm (the server lifts a copy into that hand at 0.5 s and throws it at 1.12 s:
+-- Hub ▸ Cosmetics), then a shrug at the spare that turns up on your head
+DEF.HelmetToss = {d = 2.6, pose = track({
+	{0, REST},
+	{0.3, {rs = {150, 0, -36}, ls = {150, 0, 36}, neck = {-6, 0, 0}, blade = {0.2, 1, 0}}},
+	{0.55, {rs = {172, 0, -18}, ls = {172, 0, 18}, neck = {10, 0, 0}, blade = {0.2, 1, 0}}},
+	{0.86, {rs = {20, 0, 26}, ls = {-50, 0, -40}, waist = {0, -32, 0}, neck = {0, -10, 0}, blade = {0, 0, -1}}},
+	{1.12, {rs = {10, 0, 20}, ls = {140, 0, 10}, waist = {6, 28, 0}, neck = {4, 14, 0}, blade = {0, 0, -1}}},
+	{1.45, {rs = {10, 0, 20}, ls = {60, 0, 0}, waist = {8, 18, 0}, neck = {6, 6, 0}, blade = {0, 0, -1}}},
+	{2.0, {rs = {34, 0, 34}, ls = {34, 0, -34}, neck = {4, 0, 14}, blade = {0, 0, -1}}},
+	{2.6, REST},
+})}
+
 Emotes.DURATION = {}
 for id, d in pairs(DEF) do Emotes.DURATION[id] = d.d end
 function Emotes.has(id) return DEF[id] ~= nil end

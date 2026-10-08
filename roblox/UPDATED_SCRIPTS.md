@@ -1,4 +1,33 @@
-# Updated scripts: armor is collectable — the Forge Crate, finishes, four crate-only sets
+# Updated scripts: build your own face, eleven new hairstyles, no helmet, the Helmet Toss
+
+- **Faces, redrawn and built in layers:**
+  - eyes: 11 shapes, coloured irises with highlights, 10 eye colours
+  - brows in your hair colour, 12 mouths
+  - scars and marks: freckles, blush, stitches, a bandage, an eyepatch
+  - war paint in seven colours
+  - The old faces became presets, plus new ones: Happy, Cheeky, Warpaint. Every card in the wardrobe shows your face with that option.
+- **Eleven new hairstyles** with real shape: spiky, swoop, curtains, ponytail, twin tails, man bun, afro and mohawk. Long & flowing, viking braids and dreadlocks are premium. Premium hairstyles, eye colours and face parts are bought once with Crowns.
+- **No helmet** (LOADOUT ▸ HELMET): your face and hair on show in battle. A bare head has no armor, so it takes full damage.
+- **The Helmet Toss** (an Epic emote, Relic Crate): pull it off, wind up and throw it. It flies for real, clangs off walls and stings whoever it hits, then a spare appears on your head.
+- The four Forge Crate sets now have proper meshes, like every other set.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Body.lua](ReplicatedStorage/Catalog/Body.lua), [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | face parts, colours, presets, `Catalog.faceLayers`; the new hair |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | the face as stacked decals; `noHelm` |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua), [Economy.lua](ServerScriptService/Economy/Economy.lua), [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService | ModuleScript · Script | face / hair validation and buys; `noHelm`; armor rewards and gifts |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | the face builder (`HX.faceDisc`), premium hair, "No helmet" |
+| [Build/Body.lua](ServerScriptService/Build/Body.lua) | ServerScriptService ▸ Build ▸ Body | ModuleScript | the new hair blueprints |
+| [Emotes.lua](ReplicatedStorage/Emotes.lua), [EmoteFX.lua](ReplicatedStorage/EmoteFX.lua), [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua), [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ReplicatedStorage · ServerScriptService ▸ Hub | ModuleScript · Script | the Helmet Toss |
+| [blender/face_parts.py](../blender/face_parts.py), [blender/face_preview.py](../blender/face_preview.py) | (repo) | Python | the face layers' art and a preview |
+
+**Studio-only (save the place):**
+- 67 Decals in `ReplicatedStorage ▸ Cosmetics ▸ Body ▸ FaceParts`
+- the meshes of the new hair and the four Forge sets (`assemble_armor.lua`)
+
+---
+
+## Before that: armor is collectable — the Forge Crate, finishes, four crate-only sets
 
 - **Armor finishes** (13, Rare to Mythic): they recolour your plates, light your trims (breathing, crackling or walking the rainbow) and wrap you in an aura: embers, frost, leaves, petals, storm, smoke, holy light, stars, fire. They go on any set, one per class (LOADOUT › FINISH).
 - **The Forge Crate** (always in rotation) drops finishes and **four sets you can only find there**, one piece at a time, each with its own finish:

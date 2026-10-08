@@ -116,6 +116,12 @@ EmoteFX.DEF = {
 		end
 		return cues
 	end)(),
+	HelmetToss = {
+		{"glint", t = 0.5, d = 0.3, at = "head", color = WHITE, size = 1.4},
+		{"sound", t = 0.5, id = SHING, vol = 0.22, speed = 0.8, cut = 0.6},
+		{"sound", t = 1.1, id = WHOOSH, vol = 0.4, speed = 0.85},
+		{"burst", t = 2.05, d = 0.6, at = "head", color = WHITE, n = 8, speed = 5, size = 0.18, grav = 8},
+	},
 	WarCry = {
 		{"ring", t = 0.5, d = 0.7, at = "feet", color = EMBER, r0 = 0.8, r1 = 9, thick = 0.25, alpha = 0.1},
 		{"ring", t = 0.64, d = 0.6, at = "feet", color = BLOOD, r0 = 0.6, r1 = 6, thick = 0.18, alpha = 0.2},

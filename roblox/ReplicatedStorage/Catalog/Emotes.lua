@@ -18,6 +18,7 @@ return {
 	{id = "BladeToss", name = "Blade Toss",  rarity = "Epic",      crate = "Relic", description = "Toss the blade, let it spin, catch it."},
 	{id = "Windmill",  name = "Windmill",    rarity = "Legendary", pass = true,     description = "The blade whirls overhead in a whirlwind, faster and faster, until you lift off."},
 	{id = "Champion",  name = "Champion",    rarity = "Legendary", crate = "Relic", description = "Raise the blade, drive it into the ground, and stand in a pillar of light."},
+	{id = "HelmetToss", name = "Helmet Toss", rarity = "Epic",    crate = "Relic", description = "Pull your helmet off and throw it at someone. It clangs. It stings. You've a spare."},
 	{id = "Thunderlord", name = "Thunderlord", rarity = "Mythic", crate = "Relic", description = "Hold the blade up to the storm. The storm answers, three times, then you bring it down."},
 	{id = "Ascension", name = "Ascension",   rarity = "Mythic",    crate = "Relic", description = "Kneel, then rise into the air on wings of light."},
 }

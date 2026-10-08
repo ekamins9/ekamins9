@@ -2214,6 +2214,34 @@ function HX.armorStage(parent, kind, id, size)
 	return holder
 end
 
+-- A FACE ON A DISC (the wardrobe's cards): the face builder's layers stacked over a skin-coloured
+-- circle, tinted like the head's decals (Catalog.faceLayers)
+function HX.faceDisc(parent, app, px)
+	local tone = Catalog.BODY.skins[app.skin or Catalog.BODY.defaults.skin] or Catalog.BODY.skins[1]
+	local disc = frame(parent, tone)
+	disc.Size = UDim2.fromOffset(px, px)
+	disc.ClipsDescendants = true
+	Instance.new("UICorner", disc).CornerRadius = UDim.new(1, 0)
+	local hair = Catalog.BODY.hairColors[1].color
+	for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == app.hairColor then hair = h.color end end
+	local any = false
+	for _, L in ipairs(Catalog.faceLayers(app, hair)) do
+		local src = Catalog.bodyModel("FaceParts", L.part)
+		if src and src:IsA("Decal") then
+			local img = Instance.new("ImageLabel")
+			-- (the features sit in the middle of the texture: zoomed so they fill the disc)
+			img.BackgroundTransparency = 1; img.Size = UDim2.fromScale(1.75, 1.75); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.56)
+			img.Image = src.Texture; img.ImageColor3 = L.tint or Color3.new(1, 1, 1); img.ZIndex = L.z + 1
+			img.Parent = disc
+			any = true
+		end
+	end
+	if not any then   -- (no FaceParts in this place: the old single texture)
+		local img = Instance.new("ImageLabel"); img.BackgroundTransparency = 1; img.Size = UDim2.fromScale(1, 1); img.Image = faceTexture(app.face or "Smile"); img.Parent = disc
+	end
+	return disc
+end
+
 -- a phone: a screen that scrolls inside itself (a grid, a row of cards) fits the
 -- visible height instead of scrolling twice; the rest keep their full height
 function HX.fitScreen(on)
@@ -3591,9 +3619,15 @@ do
 				local pk = Catalog.PACKS[pc.pack]
 				local sub = have and ((slot == "helmet" and #(pc.covers or {}) > 0) and ("covers " .. string.lower(table.concat(pc.covers, " + "))) or (pk and pk.name or ""))
 					or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
-				itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t, have, RARITY_COL[pc.rarity], function()
-					if have then choose(slot, pc.id) else tryOn(slot, pc.id) end
+				itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t and not (slot == "helmet" and lo.noHelm), have, RARITY_COL[pc.rarity], function()
+					if have then if slot == "helmet" then lo.noHelm = nil end; choose(slot, pc.id) else tryOn(slot, pc.id) end
 				end, t and t.slot == slot and t.id == pc.id)
+			end
+			if slot == "helmet" then
+				-- bareheaded: your face and hair on show, your head unprotected
+				itemCard(g, 0, "No helmet", "show your face · the head takes full damage", lo.noHelm == true and not t, true, COL.BAD, function()
+					lo.noHelm = not lo.noHelm or nil; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
+				end)
 			end
 			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet.") end
 		end
@@ -5045,7 +5079,8 @@ do
 		local a = draft()
 		if buyKind and not owns(buyKind, v) then
 			modal("PREMIUM", string.format("%s costs %d Crowns, once, forever.", tostring(v), price or 0), {{"BUY  ·  " .. tostring(price) .. " CROWNS", COL.GOLD, function()
-				local r = call("Buy", buyKind == "hairColors" and "hairColor" or "beard", v, "crowns")
+				local BUY = {hairColors = "hairColor", eyeColors = "eyeColor", hairs = "hair", beards = "beard"}
+				local r = call("Buy", BUY[buyKind] or "beard", v, "crowns")
 				toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 				if r.profile then state.profile = r.profile; refreshWallet() end
 				closeModal()
@@ -5084,31 +5119,84 @@ do
 	render.APPEARANCE = function()
 		local a = draft()
 		clear(list)
+		-- THE FACE: a preset in one click, or build your own, part by part (each card shows your
+		-- face with that part in it)
 		local fp = panel(list, "FACE")
 		do
-			local g = clearFrame(fp)
-			g.AutomaticSize = Enum.AutomaticSize.Y
-			g.Size = UDim2.new(1, 0, 0, 0)
-			g.LayoutOrder = nextOrder()
-			local gl = Instance.new("UIGridLayout", g)
-			gl.CellSize = UDim2.fromOffset(74, 92)
-			gl.CellPadding = UDim2.fromOffset(8, 8)
-			gl.SortOrder = Enum.SortOrder.LayoutOrder
-			local tone = Catalog.BODY.skins[a.skin or Catalog.BODY.defaults.skin] or Catalog.BODY.skins[1]
-			for i, fc in ipairs(Catalog.BODY.faces) do
-				local on = a.face == fc.id
+			local cur = Catalog.faceParts(a)
+			local function grid(parent)
+				local g = clearFrame(parent)
+				g.AutomaticSize = Enum.AutomaticSize.Y
+				g.Size = UDim2.new(1, 0, 0, 0)
+				g.LayoutOrder = nextOrder()
+				local gl = Instance.new("UIGridLayout", g)
+				gl.CellSize = UDim2.fromOffset(74, 92)
+				gl.CellPadding = UDim2.fromOffset(8, 8)
+				gl.SortOrder = Enum.SortOrder.LayoutOrder
+				return g
+			end
+			local function card(g, i, name, look, on, locked, onClick)
 				local b = button(g, "", 12, on and COL.BLUE or COL.GLASS2)
 				b.LayoutOrder = i
 				border(b, on and WHITE or COL.GLASS2, on and 3 or 1, on and 0 or 0.6)
-				local disc = frame(b, tone, 30); disc.AnchorPoint = Vector2.new(0.5, 0); disc.Position = UDim2.new(0.5, 0, 0, 6); disc.Size = UDim2.fromOffset(60, 60)
-				disc:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(1, 0)
-				local img = Instance.new("ImageLabel"); img.BackgroundTransparency = 1; img.Size = UDim2.fromScale(1, 1); img.Image = faceTexture(fc.id); img.ScaleType = Enum.ScaleType.Fit; img.Parent = disc
-				local n = title(b, fc.name, 11); n.AnchorPoint = Vector2.new(0.5, 1); n.Position = UDim2.new(0.5, 0, 1, -4); n.Size = UDim2.new(1, -6, 0, 14); n.TextXAlignment = Enum.TextXAlignment.Center; n.TextTruncate = Enum.TextTruncate.AtEnd
-				b.Activated:Connect(function() set("face", fc.id) end)
+				local d = HX.faceDisc(b, look, 60); d.AnchorPoint = Vector2.new(0.5, 0); d.Position = UDim2.new(0.5, 0, 0, 6)
+				local n = title(b, (locked and "🔒 " or "") .. name, 11, locked and COL.GOLD or COL.TEXT)
+				n.AnchorPoint = Vector2.new(0.5, 1); n.Position = UDim2.new(0.5, 0, 1, -4); n.Size = UDim2.new(1, -6, 0, 14); n.TextXAlignment = Enum.TextXAlignment.Center; n.TextTruncate = Enum.TextTruncate.AtEnd
+				b.Activated:Connect(onClick)
+			end
+			local function with(k, v)
+				local t = {}
+				for kk, vv in pairs(a) do t[kk] = vv end
+				for kk, vv in pairs(cur) do t[kk] = vv end
+				t[k] = v
+				return t
+			end
+			heading(fp, "PRESETS")
+			local pg = grid(fp)
+			for i, fc in ipairs(Catalog.BODY.faces) do
+				local look = {skin = a.skin, hairColor = a.hairColor, face = fc.id}
+				card(pg, i, fc.name, look, false, false, function()
+					local d = draft()
+					d.face = fc.id
+					for _, k in ipairs({"eyes", "brows", "mouth", "mark", "paint"}) do d[k] = nil end
+					local f = Catalog.faceParts(d)
+					for _, k in ipairs({"eyes", "brows", "mouth", "mark", "paint"}) do d[k] = f[k] end
+					ui.appDirty = true
+					render.APPEARANCE()
+				end)
+			end
+			local SECTIONS = {{"eyes", "EYES"}, {"brows", "BROWS  ·  YOUR HAIR COLOUR"}, {"mouth", "MOUTH"}, {"mark", "SCARS & MARKS"}, {"paint", "WAR PAINT"}}
+			for _, sec in ipairs(SECTIONS) do
+				local layer = sec[1]
+				heading(fp, sec[2])
+				local g = grid(fp)
+				for i, it in ipairs(Catalog.BODY.faceParts[layer] or {}) do
+					local locked = it.crowns ~= nil and not owns("faceParts", layer .. "_" .. it.id)
+					card(g, i, it.name, with(layer, it.id), cur[layer] == it.id, locked, function()
+						if locked then
+							modal("PREMIUM", string.format("%s costs %d Crowns, once, forever.", it.name, it.crowns), {{"BUY  ·  " .. it.crowns .. " CROWNS", COL.GOLD, function()
+								local r = call("Buy", "facePart", layer .. "_" .. it.id, "crowns")
+								toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+								if r.profile then state.profile = r.profile; refreshWallet() end
+								closeModal()
+								if r.ok then set(layer, it.id) end
+							end}})
+						else set(layer, it.id) end
+					end)
+				end
+				if layer == "eyes" then
+					heading(fp, "EYE COLOUR")
+					swatches(fp, Catalog.BODY.eyeColors, function(c) return cur.eyeColor == c.name end, function(c) return c.crowns and not owns("eyeColors", c.name) end,
+						function(c) set("eyeColor", c.name, c.crowns and "eyeColors" or nil, c.crowns) end, 34)
+				elseif layer == "paint" then
+					heading(fp, "PAINT COLOUR")
+					swatches(fp, Catalog.BODY.paintColors, function(c) return cur.paintColor == c.name end, function() return false end, function(c) set("paintColor", c.name) end, 34)
+				end
 			end
 		end
 		local hp = panel(list, "HAIR")
-		wordGrid(hp, Catalog.BODY.hair, function(it) return a.hair == it.id end, function(it) set("hair", it.id) end)
+		wordGrid(hp, Catalog.BODY.hair, function(it) return a.hair == it.id end, function(it) set("hair", it.id, it.crowns and "hairs" or nil, it.crowns) end,
+			function(it) return (it.crowns and not owns("hairs", it.id)) and (tostring(it.crowns) .. " CROWNS") or nil end)
 		heading(hp, "HAIR COLOUR")
 		swatches(hp, Catalog.BODY.hairColors, function(it) return a.hairColor == it.name end, function(it) return it.crowns and not owns("hairColors", it.name) end,
 			function(it) set("hairColor", it.name, it.crowns and "hairColors" or nil, it.crowns) end, 34)
@@ -5138,7 +5226,7 @@ do
 			heading(tp, "EARN MORE")
 			for _, et in ipairs(locked) do row(tp, "🔒 " .. et.title, Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock), false, nil, COL.DIM) end
 		end
-		dim(list, "Locked colours and beards are premium: bought once with Crowns.", 12)
+		dim(list, "Locked colours, beards and face parts are premium: bought once with Crowns, yours forever.", 12)
 		renderStage()
 		renderSide()
 	end

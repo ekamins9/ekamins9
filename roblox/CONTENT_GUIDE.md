@@ -400,9 +400,21 @@ an Accessory-style Model with a `Handle` and a `HairAttachment` / `FaceFrontAtta
 Hair parts are recolored with the hair color unless a part has attribute `KeepColor = true`.
 An id with no model still lists (nothing shows) so you can set up the catalog first.
 `earnedTitles` are `{title, unlock}` with the same `unlock` forms as pieces; a title shows
-locked with its requirement until it is met. Faces are `{id, name, texture}` with a decal id (`"rbxassetid://…"`) or `""` to keep the
-rig's face. `skins` are skin-tone Color3s. Helmets hide hair when their `covers` has `"Hair"`,
-beard and face when it has `"Face"`.
+locked with its requirement until it is met. `skins` are skin-tone Color3s. Helmets hide hair
+when their `covers` has `"Hair"`, beard and face when it has `"Face"`.
+
+**Faces are built from layers** (`faceParts`): `eyes` (each with its iris, tinted with the eye
+colour, and its pupil; `noIris = true` for closed shapes), `brows` (tinted with the hair colour),
+`mouth`, `mark` (scars, freckles, an eyepatch…) and `paint` (war paint, tinted with the paint
+colour), plus `eyeColors` and `paintColors` (`crowns` = premium). Each layer is a Decal in
+`Cosmetics ▸ Body ▸ FaceParts ▸ <layer>_<id>` (iris / pupil: `iris_<eyes>`, `pupil_<eyes>`), drawn
+by `blender/face_parts.py` (tinted layers drawn white) and previewed with `blender/face_preview.py`.
+A new part: draw it there, render, upload as a Decal, put it in FaceParts, list it here. `faces`
+are now **presets** (`parts = {eyes, brows, mouth, mark, paint}`); the old single-texture faces in
+`Cosmetics ▸ Body ▸ Face` are only a fallback.
+
+New hair from a blueprint: `Build ▸ Body` (`Body.Hair.<id>` specs), then `scripts/build_armor.py
+Body/Hair/<id>` (Blender → meshes → upload → `assemble_armor.lua`, run in Studio).
 
 ## 8. Colors
 

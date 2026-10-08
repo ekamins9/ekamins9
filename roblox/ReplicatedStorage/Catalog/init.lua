@@ -301,6 +301,45 @@ function Catalog.bodyModel(kind, id)   -- kind: "Hair" | "Beard"
 	return kf and kf:FindFirstChild(id) or nil
 end
 
+-- THE FACE BUILDER: an appearance's face as layers, bottom to top:
+-- {{part = "<layer>_<id>", tint = Color3 | nil, z = n}}. A face with no builder fields
+-- (an old profile) takes its preset's parts; any missing part takes the default's.
+local FACE_ORDER = {"paint", "mark", "mouth", "brows", "eyes", "iris", "pupil"}
+function Catalog.faceParts(app)
+	app = app or {}
+	local D = Catalog.BODY.defaults
+	local preset
+	for _, f in ipairs(Catalog.BODY.faces) do if f.id == app.face then preset = f end end
+	local pp = (preset and preset.parts) or {}
+	local function pick(k) return app[k] or pp[k] or D[k] end
+	return {eyes = pick("eyes"), brows = pick("brows"), mouth = pick("mouth"), mark = app.mark or pp.mark or "None",
+		paint = app.paint or pp.paint or "None", eyeColor = pick("eyeColor"), paintColor = pick("paintColor")}
+end
+function Catalog.faceLayers(app, hairColor)
+	local f = Catalog.faceParts(app)
+	local function colorOf(list, name)
+		for _, c in ipairs(list or {}) do if c.name == name then return c.color end end
+		return list and list[1] and list[1].color
+	end
+	local eyeDef
+	for _, e in ipairs(Catalog.BODY.faceParts.eyes) do if e.id == f.eyes then eyeDef = e end end
+	local want = {
+		paint = f.paint ~= "None" and {f.paint, colorOf(Catalog.BODY.paintColors, f.paintColor)} or nil,
+		mark = f.mark ~= "None" and {f.mark} or nil,
+		mouth = {f.mouth},
+		brows = f.brows ~= "None" and {f.brows, hairColor} or nil,
+		eyes = {f.eyes},
+		iris = not (eyeDef and eyeDef.noIris) and {f.eyes, colorOf(Catalog.BODY.eyeColors, f.eyeColor)} or nil,
+		pupil = not (eyeDef and eyeDef.noIris) and {f.eyes} or nil,
+	}
+	local out = {}
+	for z, layer in ipairs(FACE_ORDER) do
+		local w = want[layer]
+		if w then table.insert(out, {part = layer .. "_" .. w[1], tint = w[2], z = z}) end
+	end
+	return out
+end
+
 function Catalog.skinsFor(weaponId)
 	local out = {}
 	for _, s in ipairs(Catalog.SKINS) do if s.weapon == weaponId and Catalog.released(s) then table.insert(out, s) end end

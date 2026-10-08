@@ -491,7 +491,13 @@ and a UIScale fits it to any screen.
   title or your look in the menu and the body you're standing in changes at once, no respawn
   (`_G.CourtyardRedress`, LoadoutServer; a match waits for your next spawn).
 - **Playtime gifts** in the lobby's left column: the next gift, a live countdown and CLAIM.
-- **WARDROBE**: faces as a picture grid, hair, hair colour, beard, skin, title.
+- **WARDROBE**: you in your armor with the helmet off. **Build your own face**: presets in one click,
+  then eyes (11 shapes, 10 colours), brows (in your hair colour), mouth (12), scars & marks, war paint
+  (in a paint colour); every card shows your face with that part in it. Hair (20 styles, the new
+  wave: spiky, swoop, curtains, ponytail, twin tails, man bun, afro, mohawk; long & flowing, viking
+  braids, dreadlocks premium), hair colour, beard, skin, title.
+- **Bareheaded**: LOADOUT ▸ HELMET ▸ "No helmet" shows your face and hair in battle; your head has
+  no armor then (a helmet's protection only covers the head when you wear one).
 - **SERVERS**: the browser with filters and **CREATE CUSTOM**: door, mode, map, player limit,
   round length, who may join, friendly fire, respawns, ground weapons, and cheats. A cheat
   server gives the host `/god /heal /speed /tp /bring /give /kick` and pays nobody.

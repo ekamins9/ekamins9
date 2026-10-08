@@ -72,6 +72,107 @@ _G.KillFxHook = function(killer, victimChar)
 	fx:FireAllClients("Kill", id, Corpses and Corpses.idOf(victimChar) or victimChar:GetAttribute("CorpseId") or 0, origin, coloursOf(victimChar))
 end
 
+--------------------------------------------------------------------
+--  THE HELMET TOSS (the emote HelmetToss): at 0.5 s a copy of your helmet comes off
+--  your head into your left hand (a weld: every client sees it follow the posed arm),
+--  at 1.12 s it's thrown — a real tumbling object — and a spare turns up on your
+--  head at 2 s. It clangs off the world; it stings whoever it hits (HELM_DAMAGE,
+--  friendly fire and peaceful places respected) and knocks them a little. A step,
+--  an attack or a block before it's thrown puts it back.
+--------------------------------------------------------------------
+local HELM_LIFT, HELM_THROW, HELM_SPARE = 0.5, 1.12, 2.0
+local HELM_DAMAGE = 8
+local CLANG = {9116750726, 9116751108, 9119072660}
+local thrownFolder
+local CombatServer
+local function clangAt(part, vol)
+	local s = Instance.new("Sound")
+	s.SoundId = "rbxassetid://" .. CLANG[math.random(#CLANG)]
+	s.Volume = vol or 0.7
+	s.PlaybackSpeed = 0.9 + math.random() * 0.25
+	s.RollOffMinDistance = 8; s.RollOffMaxDistance = 90
+	s.Parent = part
+	s:Play()
+	game:GetService("Debris"):AddItem(s, 3)
+end
+local function helmetToss(plr, char)
+	local root = char:FindFirstChild("HumanoidRootPart")
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local armor = char:FindFirstChild("Armor")
+	local helm = armor and armor:FindFirstChild("HeadClothing")
+	local arm = char:FindFirstChild("Left Arm")
+	if not (root and hum and helm and arm) then return end   -- (bareheaded: just the moves)
+	local start = root.Position
+	local function stillOn()
+		return char.Parent ~= nil and hum.Health > 0 and not char:GetAttribute("Acting") and not char:GetAttribute("Blocking")
+			and (root.Position - start).Magnitude < 2.5
+	end
+	task.wait(HELM_LIFT)
+	if not stillOn() then return end
+	-- the copy: one assembly round a hit box, in the left hand
+	local copy = helm:Clone()
+	for _, d in ipairs(copy:GetDescendants()) do
+		if d:IsA("JointInstance") or d:IsA("Constraint") or d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Attachment") then d:Destroy() end
+	end
+	local box = Instance.new("Part")
+	box.Name = "Hit"; box.Size = Vector3.new(1.5, 1.5, 1.5); box.Transparency = 1; box.CanCollide = true; box.Massless = true   -- (weightless in the hand)
+	box.CFrame = arm.CFrame * CFrame.new(0, -1.5, 0)
+	box.Parent = copy
+	local offset = helm:FindFirstChild("Middle") and helm.Middle.CFrame or box.CFrame
+	for _, p in ipairs(copy:GetDescendants()) do
+		if p:IsA("BasePart") and p ~= box then
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
+			local w = Instance.new("Weld"); w.Part0, w.Part1 = box, p
+			w.C0 = CFrame.new(0, 0.2, 0) * offset:ToObjectSpace(p.CFrame); w.Parent = p
+		end
+	end
+	copy.PrimaryPart = box
+	thrownFolder = thrownFolder and thrownFolder.Parent and thrownFolder or Instance.new("Folder")
+	thrownFolder.Name = "ThrownHelmets"; thrownFolder.Parent = workspace
+	copy.Parent = thrownFolder
+	local hold = Instance.new("Weld"); hold.Part0, hold.Part1 = arm, box; hold.C0 = CFrame.new(0, -1.5, 0); hold.Parent = box
+	box.CanCollide = false
+	-- your own helmet: off your head while it's in your hand and in the air
+	local was = {}
+	for _, p in ipairs(helm:GetDescendants()) do if p:IsA("BasePart") then was[p] = p.Transparency; p.Transparency = 1 end end
+	local function spare()
+		for p, t in pairs(was) do if p.Parent then p.Transparency = t end end
+	end
+	task.wait(HELM_THROW - HELM_LIFT)
+	if not stillOn() then copy:Destroy(); spare(); return end
+	-- the throw
+	hold:Destroy()
+	box.CanCollide = true
+	box.Massless = false
+	pcall(function() box:SetNetworkOwner(nil) end)
+	local dir = root.CFrame.LookVector
+	box.AssemblyLinearVelocity = dir * 58 + Vector3.new(0, 16, 0)
+	box.AssemblyAngularVelocity = root.CFrame.RightVector * -16
+	CombatServer = CombatServer or require(ServerScriptService:WaitForChild("Combat"):WaitForChild("CombatServer"))
+	local hit, clangs, lastClang = false, 0, 0
+	box.Touched:Connect(function(other)
+		if other:IsDescendantOf(copy) or other:IsDescendantOf(char) then return end
+		local model = other:FindFirstAncestorOfClass("Model")
+		local th = model and model:FindFirstChildOfClass("Humanoid")
+		if th and th.Health > 0 and not hit then
+			hit = true
+			local mult = CombatServer.peaceful(char, model) and 0 or CombatServer.friendlyMult(char, model)
+			if mult > 0 then
+				CombatServer.credit(model, char, "Helmet", "Thrown")
+				th:TakeDamage(HELM_DAMAGE * mult)
+				local r = model:FindFirstChild("HumanoidRootPart")
+				if r then r.AssemblyLinearVelocity += dir * 14 + Vector3.new(0, 8, 0) end
+			end
+			clangAt(box, 0.9)
+		elseif not th and os.clock() - lastClang > 0.15 and clangs < 4 and other.CanCollide then
+			clangs += 1; lastClang = os.clock()
+			clangAt(box, 0.75 - clangs * 0.12)
+		end
+	end)
+	game:GetService("Debris"):AddItem(copy, 5)
+	task.delay(HELM_SPARE - HELM_THROW, spare)
+end
+
 local last = {}
 emote.OnServerEvent:Connect(function(plr, what, id)
 	local now = os.clock()
@@ -86,6 +187,7 @@ emote.OnServerEvent:Connect(function(plr, what, id)
 	-- not mid-swing, mid-kick, mid-dodge or behind a block
 	if char:GetAttribute("Acting") or char:GetAttribute("Blocking") then fx:FireAllClients("EmoteStop", plr, id); return end
 	fx:FireAllClients("Emote", plr, id, workspace:GetServerTimeNow())
+	if id == "HelmetToss" then task.spawn(helmetToss, plr, char) end
 end)
 Players.PlayerRemoving:Connect(function(plr) last[plr] = nil end)
 

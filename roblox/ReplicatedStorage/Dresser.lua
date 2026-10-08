@@ -223,8 +223,33 @@ local function applyBody(char, app, coversHair, coversFace, coversBeard, under)
 	-- face: a texture on the head's own face Decal. The textures are Decals in
 	-- Cosmetics ▸ Body ▸ Face ▸ <id> (made in Studio, see blender/faces.py), or a
 	-- `texture` id in Catalog ▸ Body. A helmet that covers the face hides it.
+	-- the face builder (Catalog.faceLayers): one Decal per layer, stacked by ZIndex, the iris,
+	-- brows and paint tinted; the head's own face decal steps aside. Without the FaceParts
+	-- (an old place) the single-texture face below is used.
+	local layered = false
 	if head then
-		local decal = head:FindFirstChild("face") or head:FindFirstChildOfClass("Decal")
+		for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and d:GetAttribute("FaceLayer") then d:Destroy() end end
+		for _, L in ipairs(Catalog.faceLayers(app, hairColor)) do
+			local src = Catalog.bodyModel("FaceParts", L.part)
+			if src and src:IsA("Decal") then
+				local d = Instance.new("Decal")
+				d.Name = "FaceLayer_" .. L.part
+				d.Texture = src.Texture
+				d.Face = Enum.NormalId.Front
+				d.ZIndex = L.z
+				if L.tint then d.Color3 = L.tint end
+				d.Transparency = coversFace and 1 or 0
+				d:SetAttribute("FaceLayer", true)
+				d.Parent = head
+				layered = true
+			end
+		end
+	end
+	if head then
+		local decal = head:FindFirstChild("face")
+		if not decal then
+			for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and not d:GetAttribute("FaceLayer") then decal = d end end
+		end
 		if not decal then
 			decal = Instance.new("Decal"); decal.Name = "face"; decal.Face = Enum.NormalId.Front; decal.Parent = head
 		end
@@ -234,7 +259,7 @@ local function applyBody(char, app, coversHair, coversFace, coversBeard, under)
 		local src = face and Catalog.bodyModel("Face", face.id)
 		if src and src:IsA("Decal") then decal.Texture = src.Texture
 		elseif face and face.texture and face.texture ~= "" then decal.Texture = face.texture end
-		decal.Transparency = coversFace and 1 or 0
+		decal.Transparency = (coversFace or layered) and 1 or 0
 	end
 	body.Parent = char
 end
@@ -249,7 +274,9 @@ function Dresser.undress(char)
 	if hum and base then local frac = hum.MaxHealth > 0 and hum.Health / hum.MaxHealth or 1; hum.MaxHealth = base; hum.Health = base * frac end
 	for _, a in ipairs({"SpeedMult_Armor", "ClunkMult_Armor", "ArmorId", "ArmorType", "ArmorProtection", "TeamPainted", "Pieces",
 		"StaminaMult", "RegenMult", "StaminaCostMult", "SprintMult", "DodgeCost", "DodgeReach"}) do char:SetAttribute(a, nil) end
-	local head = char:FindFirstChild("Head"); local decal = head and head:FindFirstChildOfClass("Decal"); if decal then decal.Transparency = 0 end
+	local head = char:FindFirstChild("Head")
+	if head then for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and d:GetAttribute("FaceLayer") then d:Destroy() end end end
+	local decal = head and (head:FindFirstChild("face") or head:FindFirstChildOfClass("Decal")); if decal then decal.Transparency = 0 end
 	-- the limbs a garment had painted go back to skin
 	local tone = char:GetAttribute("SkinTone")
 	if typeof(tone) == "Color3" then
@@ -269,6 +296,7 @@ function Dresser.dress(char, opts)
 	local worn = {}
 	for _, slot in ipairs(Catalog.SLOTS) do
 		local id = lo[slot]
+		if slot == "helmet" and lo.noHelm then id = nil end   -- (bareheaded: the face shows, the head is unprotected)
 		local piece = id and Catalog.PIECE[id]
 		if piece then
 			table.insert(worn, id)

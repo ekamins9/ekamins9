@@ -151,6 +151,26 @@ function Economy.buy(plr, kind, id, currency)
 		if Profile.has(plr, "hairColors", id) then return false, "already owned" end
 		local ok, msg = Economy.spend(plr, 0, hc.crowns or 0); if not ok then return false, msg end
 		Profile.grant(plr, "hairColors", id); Economy.changed:Fire(plr); return true, id .. " hair is yours"
+	elseif kind == "hair" then
+		local hd; for _, h in ipairs(Catalog.BODY.hair) do if h.id == id then hd = h end end
+		if not hd or not hd.crowns then return false, "no such hairstyle" end
+		if Profile.has(plr, "hairs", id) then return false, "already owned" end
+		local ok, msg = Economy.spend(plr, 0, hd.crowns); if not ok then return false, msg end
+		Profile.grant(plr, "hairs", id); Economy.changed:Fire(plr); return true, hd.name .. " is yours"
+	elseif kind == "eyeColor" then
+		local ec; for _, c in ipairs(Catalog.BODY.eyeColors or {}) do if c.name == id then ec = c end end
+		if not ec or not ec.crowns then return false, "no such eye colour" end
+		if Profile.has(plr, "eyeColors", id) then return false, "already owned" end
+		local ok, msg = Economy.spend(plr, 0, ec.crowns); if not ok then return false, msg end
+		Profile.grant(plr, "eyeColors", id); Economy.changed:Fire(plr); return true, id .. " eyes are yours"
+	elseif kind == "facePart" then
+		-- id = "<layer>_<part>" (Catalog ▸ Body ▸ faceParts)
+		local layer, pid = tostring(id):match("^(%a+)_(%w+)$")
+		local it; for _, x in ipairs((Catalog.BODY.faceParts or {})[layer or ""] or {}) do if x.id == pid then it = x end end
+		if not it or not it.crowns then return false, "no such face part" end
+		if Profile.has(plr, "faceParts", id) then return false, "already owned" end
+		local ok, msg = Economy.spend(plr, 0, it.crowns); if not ok then return false, msg end
+		Profile.grant(plr, "faceParts", id); Economy.changed:Fire(plr); return true, it.name .. " is yours"
 	elseif kind == "beard" then
 		local bd; for _, b in ipairs(Catalog.BODY.beards) do if b.id == id then bd = b end end
 		if not bd then return false, "no such beard" end
@@ -309,7 +329,16 @@ function Economy.grantReward(plr, r)
 		end
 	end
 	if r.title then Profile.grant(plr, "titles", r.title); table.insert(bits, "the title " .. r.title) end
-	if r.piece and Catalog.PIECE[r.piece] then Profile.grant(plr, "pieces", r.piece); table.insert(bits, Catalog.PIECE[r.piece].name) end
+	if r.piece and Catalog.PIECE[r.piece] then
+		-- (a crate set's piece is a copy of its own, tradable like one out of the crate)
+		if Catalog.PIECE[r.piece].crate then Profile.addCopy(plr, "armor:" .. r.piece, {from = r.from or "a reward", bound = r.bound == true})
+		else Profile.grant(plr, "pieces", r.piece) end
+		table.insert(bits, Catalog.PIECE[r.piece].name)
+	end
+	if r.armorfx and Catalog.ARMORFX_BY[r.armorfx] then
+		Profile.addCopy(plr, "finish:" .. r.armorfx, {from = r.from or "a reward", bound = r.bound == true})
+		table.insert(bits, "the armor finish " .. Catalog.ARMORFX_BY[r.armorfx].name)
+	end
 	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
 	if r.killfx and Catalog.KILLFX_BY[r.killfx] then Profile.grant(plr, "killfx", r.killfx); table.insert(bits, "the kill effect " .. Catalog.KILLFX_BY[r.killfx].name) end
 	if r.emote and Catalog.EMOTE[r.emote] then Profile.grant(plr, "emotes", r.emote); table.insert(bits, "the emote " .. Catalog.EMOTE[r.emote].name) end

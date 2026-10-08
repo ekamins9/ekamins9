@@ -297,6 +297,8 @@ function Profile.validateLoadout(plr, classId, lo)
 		local piece = id and Catalog.PIECE[id]
 		if piece and piece.slot == slot and piece.weight == cls.weight and Profile.has(plr, "pieces", id) then out[slot] = id end
 	end
+	-- bareheaded: no helmet worn (your face shows; the head has no armor's protection)
+	if lo.noHelm == true then out.noHelm = true end
 	-- the armor's finish (Catalog ▸ ArmorFX): one you own, or none ("")
 	out.armorFx = (type(lo.armorFx) == "string" and Catalog.ARMORFX_BY[lo.armorFx] and Profile.has(plr, "armorfx", lo.armorFx)) and lo.armorFx or ""
 	out.colors = {}
@@ -324,11 +326,20 @@ function Profile.validateAppearance(plr, app)
 	for k, v in pairs(p.appearance) do out[k] = v end
 	app = type(app) == "table" and app or {}
 	if type(app.skin) == "number" and Catalog.BODY.skins[app.skin] then out.skin = app.skin end
-	for _, h in ipairs(Catalog.BODY.hair) do if h.id == app.hair then out.hair = app.hair end end
+	for _, h in ipairs(Catalog.BODY.hair) do if h.id == app.hair and (not h.crowns or Profile.has(plr, "hairs", h.id)) then out.hair = app.hair end end
 	for _, f in ipairs(Catalog.BODY.faces) do if f.id == app.face then out.face = app.face end end
 	for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == app.hairColor and Profile.has(plr, "hairColors", app.hairColor) then out.hairColor = app.hairColor end end
 	for _, b in ipairs(Catalog.BODY.beards) do if b.id == app.beard and Profile.has(plr, "beards", app.beard) then out.beard = app.beard end end
 	if type(app.title) == "string" and Profile.has(plr, "titles", app.title) then out.title = app.title end
+	-- the face builder: every part a real one (a premium one owned), the colours from their lists
+	local FP = Catalog.BODY.faceParts or {}
+	for _, layer in ipairs({"eyes", "brows", "mouth", "mark", "paint"}) do
+		for _, it in ipairs(FP[layer] or {}) do
+			if it.id == app[layer] and (not it.crowns or Profile.has(plr, "faceParts", layer .. "_" .. it.id)) then out[layer] = app[layer] end
+		end
+	end
+	for _, c in ipairs(Catalog.BODY.eyeColors or {}) do if c.name == app.eyeColor and (not c.crowns or Profile.has(plr, "eyeColors", c.name)) then out.eyeColor = c.name end end
+	for _, c in ipairs(Catalog.BODY.paintColors or {}) do if c.name == app.paintColor then out.paintColor = c.name end end
 	return out
 end
 

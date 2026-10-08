@@ -427,6 +427,7 @@ local function act(plr, action, a)
 		local valid = (kind == "piece" and Catalog.PIECE[id]) or (kind == "skin" and Catalog.SKIN[id]) or (kind == "weapon" and Catalog.WEAPON[id])
 			or (kind == "emote" and Catalog.EMOTE[id]) or (kind == "killfx" and Catalog.KILLFX_BY[id]) or (kind == "companion" and Catalog.COMPANION[id])
 			or (kind == "egg" and Catalog.EGG[id]) or (kind == "color" and Catalog.COLOR[id]) or (kind == "title" and id ~= "")
+			or (kind == "armorfx" and Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[id])
 		if kind == "crate" then for _, c in ipairs(Catalog.CRATES) do if c.id == id then valid = c end end end
 		if not valid then return false, "no such " .. kind end
 		if a.take and (kind == "egg" or kind == "crate") then return false, "eggs and crates can't be taken back" end
