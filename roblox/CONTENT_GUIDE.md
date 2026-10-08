@@ -117,6 +117,12 @@ the crosshair says; `unlock` is `{free = true}` or `{level = N}`. A Mage carries
 unlocked (LOADOUT ▸ SPELLS). A new `kind` needs a resolver in `Combat ▸ MagicServer`
 (`RESOLVE.<kind>`) and a look in `MagicFX` (`EVENTS`).
 
+**A spell skin** (`Catalog ▸ SpellSkins`): `{id, spell, name, rarity, crate = "Arcana", description,
+look = {color, glow, shape, …}}`. `shape` gives a bolt or a meteor a body (orb lance wisp spark comet
+star crescent skull phoenix dragon wyrm: `MagicFX ▸ SHAPES`); `forks`/`thick`/`pillar` (lightning),
+`petals`/`shard` (a nova), `halo` (a heal), `smoke` (a blink). A new shape is a function in SHAPES
+returning its parts. The crate needs one of each rarity it rolls (the Catalog warns otherwise).
+
 **A magic weapon**: a Tool folder like `Tools/Staff` (Config: `SLOTS`, `POWER`, `CAST_MULT`,
 `MANA_MULT`, `WALK`, `WARD`, `STANCE`, `ORB`, `CAST_FROM`, `TWIN`, or `FIXED` for a wand), a
 blueprint in `Build ▸ Weapons`, and a `magic = true, slots = N` line in `Catalog ▸ Weapons`.

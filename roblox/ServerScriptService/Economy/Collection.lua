@@ -25,7 +25,8 @@
      companion.
      Copies are kept for kill effects and emotes out of crates too ("fx:" .. id,
      "emote:" .. id), and for armor out of the Forge Crate ("armor:" .. pieceId,
-     "finish:" .. finishId), so a duplicate is never wasted: trade it, or scrap it. ]]
+     "finish:" .. finishId, a spell skin "spell:" .. skinId), so a duplicate is never wasted:
+     trade it, or scrap it. ]]
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -154,6 +155,7 @@ function Collection.itemOf(key)
 	if key:sub(1, 6) == "emote:" then return Catalog.EMOTE[key:sub(7)], "emotes" end
 	if key:sub(1, 6) == "armor:" then return Catalog.PIECE[key:sub(7)], "pieces" end
 	if key:sub(1, 7) == "finish:" then return Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[key:sub(8)], "armorfx" end
+	if key:sub(1, 6) == "spell:" then return Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[key:sub(7)], "spellfx" end
 	return nil
 end
 -- may a copy of it change hands? Crate and shop skins, hatched companions: yes.

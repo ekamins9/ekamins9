@@ -31,6 +31,7 @@ CrateModels.LOOKS = {
 	Royal      = {wood = C(90, 20, 30), metal = GOLD, emblem = "crown", glow = C(255, 220, 120)},
 	Forge      = {wood = C(40, 36, 34), metal = C(200, 90, 40), emblem = "hammer", glow = C(255, 130, 50)},
 	WarChest   = {wood = C(34, 30, 32), metal = C(190, 196, 206), emblem = "helm", glow = C(255, 80, 60)},
+	Arcana     = {wood = C(40, 26, 66), metal = C(196, 160, 255), emblem = "staff", glow = C(190, 110, 255)},
 	Ossuary    = {wood = C(150, 140, 118), metal = C(222, 210, 182), emblem = "skull", glow = C(255, 240, 200)},
 	Hollow     = {wood = C(40, 26, 20), metal = C(255, 140, 40), emblem = "flame", glow = C(255, 150, 40)},
 	Foundry    = {wood = C(54, 50, 50), metal = C(255, 150, 70), emblem = "hammer", glow = C(255, 130, 50)},
@@ -105,6 +106,10 @@ local function emblem(model, kind, at, s, color)
 	elseif kind == "flame" then
 		b(0.44, 0.44, 0, -0.18, 45); b(0.3, 0.3, 0, 0.08, 45); b(0.18, 0.18, 0.02, 0.3, 45)
 		b(0.2, 0.2, 0, -0.16, 45, NEON, color:Lerp(Color3.new(1, 1, 0.6), 0.6))
+	elseif kind == "staff" then   -- a mage's staff: the shaft, its claws and the orb they hold
+		b(0.1, 1.0, 0, -0.12, 0, M, C(110, 80, 50))
+		b(0.08, 0.3, -0.13, 0.42, 25, M, C(200, 170, 90)); b(0.08, 0.3, 0.13, 0.42, -25, M, C(200, 170, 90))
+		local orb = ball(model, 0.36 * s, at * CFrame.new(0, 0.48 * s, 0), color:Lerp(Color3.new(1, 1, 1), 0.35), NEON); orb.Name = "Emblem"
 	else   -- star
 		b(0.18, 0.8, 0, 0); b(0.18, 0.8, 0, 0, 60); b(0.18, 0.8, 0, 0, -60); b(0.22, 0.22, 0, 0, 45, NEON, Color3.new(1, 1, 1))
 	end

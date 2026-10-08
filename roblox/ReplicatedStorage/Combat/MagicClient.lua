@@ -30,6 +30,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
 local Spells = require(ReplicatedStorage:WaitForChild("MagicSpells"))
+local MagicFX = require(ReplicatedStorage:WaitForChild("MagicFX"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
@@ -167,6 +168,15 @@ function MagicClient.attach(Tool, cfg)
 	end
 	local book = bookNow()
 	Tool:GetAttributeChangedSignal("Spells"):Connect(function() book = bookNow() end)
+	-- your spell skins' colours on the bar and the crosshair (the Tool's SpellSkins)
+	local function looksNow()
+		local t = {}
+		local list = Tool:GetAttribute("SpellSkins")
+		if type(list) == "string" then for sp, sk in list:gmatch("([%w_]+)=([%w_]+)") do t[sp] = MagicFX.lookOf(sp, sk) end end
+		return t
+	end
+	local looks = looksNow()
+	Tool:GetAttributeChangedSignal("SpellSkins"):Connect(function() looks = looksNow() end)
 	local chosen = 1
 	local equipped = false
 	local castUntil, castFrom, castId = 0, 0, nil
@@ -345,7 +355,7 @@ function MagicClient.attach(Tool, cfg)
 				sl.glyph.Text = s.glyph or "?"
 				sl.cost.Text = costOf(s) > 0 and tostring(math.floor(costOf(s) + 0.5)) or "FREE"
 				local on = i == chosen
-				sl.stroke.Color = on and (s.color or Color3.new(1, 1, 1)) or Color3.new(1, 1, 1)
+				sl.stroke.Color = on and ((looks[id] and looks[id].color) or s.color or Color3.new(1, 1, 1)) or Color3.new(1, 1, 1)
 				sl.stroke.Transparency = on and 0 or 0.7
 				sl.frame.BackgroundColor3 = on and Color3.fromRGB(34, 40, 70) or Color3.fromRGB(16, 20, 36)
 				local left = math.max(0, (readyAt[id] or 0) - now)
@@ -356,7 +366,7 @@ function MagicClient.attach(Tool, cfg)
 		if chosen > #book then chosen = math.max(1, #book) end
 		local cur = Spells[book[chosen] or ""]
 		b.name.Text = cur and (string.upper(cur.name) .. (casting and "  ·  CASTING…" or "")) or ""
-		b.name.TextColor3 = cur and (cur.glow or Color3.new(1, 1, 1)) or Color3.new(1, 1, 1)
+		b.name.TextColor3 = cur and ((looks[cur.id] and looks[cur.id].glow) or cur.glow or Color3.new(1, 1, 1)) or Color3.new(1, 1, 1)
 		-- the crosshair
 		local s = (casting and sp) or cur
 		if s then
@@ -370,7 +380,7 @@ function MagicClient.attach(Tool, cfg)
 			local dist = hitAt and root and (hitAt - root.Position).Magnitude or 0
 			local tooFar = s.kind ~= "nova" and s.kind ~= "bolt" and s.kind ~= "blink" and dist > reach
 			local ready = now >= (readyAt[(casting and castId) or book[chosen]] or 0) and mana >= costOf(s)
-			local col = tooFar and Color3.fromRGB(255, 90, 90) or (s.color or Color3.new(1, 1, 1))
+			local col = tooFar and Color3.fromRGB(255, 90, 90) or ((looks[s.id] and looks[s.id].color) or s.color or Color3.new(1, 1, 1))
 			if casting then col = col:Lerp(Color3.new(1, 1, 1), 0.35 * k) end
 			b.retStroke.Color = col
 			b.retStroke.Transparency = (ready or casting) and 0.15 or 0.65

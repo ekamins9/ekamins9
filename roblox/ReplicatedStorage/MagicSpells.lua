@@ -62,14 +62,14 @@ S.ArcaneMissiles = {
 	desc = "Three bolts of raw magic that curve after whoever's under your crosshair.",
 }
 S.Meteor = {
-	name = "Meteor", glyph = "☄", kind = "meteor", target = "ground", unlock = {level = 8},
+	name = "Meteor", glyph = "🌠", kind = "meteor", target = "ground", unlock = {level = 8},
 	mana = 45, cast = 1.5, cooldown = 16,
 	range = 70, radius = 9, delay = 1.1, damage = 30, edgeDamage = 12, burn = {dps = 2, time = 2},
 	color = C(255, 110, 30), glow = C(255, 220, 140),
 	desc = "Call a burning rock down where you aim. It takes its time, so does everyone's running.",
 }
 S.Miasma = {
-	name = "Miasma", glyph = "🌫", kind = "cloud", target = "ground", unlock = {level = 6},
+	name = "Miasma", glyph = "🦠", kind = "cloud", target = "ground", unlock = {level = 6},
 	mana = 32, cast = 0.9, cooldown = 11,
 	range = 55, radius = 7, time = 5, dps = 3, slow = 0.15,
 	color = C(130, 230, 90), glow = C(210, 255, 160),

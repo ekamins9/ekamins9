@@ -2,8 +2,8 @@
      ▸ MagicFX runs it). It draws from what the server publishes:
 
        ReplicatedStorage.MagicFXRemote (Combat ▸ MagicServer): bolts flying and bursting
-         (an orb, a lance of ice, a wisp, a spark; a skin's dragon, phoenix, skull or
-         comet), lightning leaping, a nova's ring of ice, a heal's rising light, a meteor's
+         (an orb, a lance of ice, a wisp, a spark; a skin's dragon, phoenix, skull, star,
+         crescent or comet), lightning leaping, a nova's ring of ice, a heal's rising light, a meteor's
          warning ring and its fall, a choking cloud, a haste or a barrier on someone, a hex,
          a blink, a fizzle
        character attributes: Casting (+ CastStart, CastTime) → a magic circle of runes at
@@ -14,7 +14,8 @@
          Burning → flames · Frosted → frost
 
      A SPELL SKIN (Catalog ▸ SpellSkins, the caster's choice per spell, passed with every
-     event) changes the colours and the shape: MagicFX.lookOf(spellId, skinId).
+     event) changes the colours and the shape: MagicFX.lookOf(spellId, skinId). The menus
+     show one with MagicFX.preview (a still model of it).
 
      THE HOLD: a staff stays upright in the hand whatever the arm does (it's lifted off
      the ground, not tipped), a tome stays open towards your face: each screen turns the
@@ -210,8 +211,11 @@ function SHAPES.phoenix(L)
 	return {
 		{size = Vector3.new(0.7, 0.6, 1.4), color = L.glow, shape = Enum.PartType.Ball, cf = CFrame.new()},
 		{size = Vector3.new(0.5, 0.5, 0.6), color = L.glow, shape = Enum.PartType.Ball, cf = CFrame.new(0, 0.2, -0.8)},
-		{size = Vector3.new(2.2, 0.1, 0.8), color = L.color, cf = CFrame.new(-1.2, 0.1, 0.1), wing = -1},
-		{size = Vector3.new(2.2, 0.1, 0.8), color = L.color, cf = CFrame.new(1.2, 0.1, 0.1), wing = 1},
+		-- (the wings swept up in a V, beating)
+		{size = Vector3.new(2.2, 0.12, 0.9), color = L.color, cf = CFrame.new(-1.1, 0.5, 0.1) * CFrame.Angles(0, math.rad(-12), math.rad(-28)), wing = -1},
+		{size = Vector3.new(2.2, 0.12, 0.9), color = L.color, cf = CFrame.new(1.1, 0.5, 0.1) * CFrame.Angles(0, math.rad(12), math.rad(28)), wing = 1},
+		{size = Vector3.new(1.4, 0.1, 0.5), color = L.glow, cf = CFrame.new(-1.0, 0.56, -0.2) * CFrame.Angles(0, math.rad(-12), math.rad(-28)), wing = -1},
+		{size = Vector3.new(1.4, 0.1, 0.5), color = L.glow, cf = CFrame.new(1.0, 0.56, -0.2) * CFrame.Angles(0, math.rad(12), math.rad(28)), wing = 1},
 		{size = Vector3.new(0.5, 0.1, 1.6), color = L.color, cf = CFrame.new(0, 0, 1.3)},
 	}, 2.4
 end
@@ -224,6 +228,153 @@ function SHAPES.skull(L)
 		{size = Vector3.new(0.25, 0.25, 0.1), color = L.glow, cf = CFrame.new(0.22, 0.05, -0.52)},
 		{size = Vector3.one * 1.5, color = L.color, shape = Enum.PartType.Ball, cf = CFrame.new(0, 0.2, 0.3), transp = 0.55},
 	}, 1.5
+end
+
+-- a star: five points round a bright heart, turning as it flies (spin: radians a second
+-- round the line of flight)
+function SHAPES.star(L)
+	local out = {{size = Vector3.one * 0.7, color = WHITE, shape = Enum.PartType.Ball, cf = CFrame.new(), spin = 9}}
+	for i = 0, 4 do
+		local a = i * math.pi * 2 / 5
+		table.insert(out, {size = Vector3.new(0.26, 0.9, 0.26), color = i % 2 == 0 and L.glow or L.color,
+			cf = CFrame.Angles(0, 0, a) * CFrame.new(0, 0.55, 0), spin = 9})
+	end
+	return out, 1.2
+end
+-- a crescent of moonlight, spinning edge-first
+function SHAPES.crescent(L)
+	local out = {}
+	for i = -3, 3 do
+		local a = math.rad(i * 24)
+		local thick = 0.34 - math.abs(i) * 0.07
+		table.insert(out, {size = Vector3.new(0.5, thick, 0.16), color = math.abs(i) <= 1 and L.glow or L.color,
+			cf = CFrame.Angles(0, 0, a) * CFrame.new(0, 0.9, 0), spin = -14})
+	end
+	table.insert(out, {size = Vector3.one * 0.35, color = WHITE, shape = Enum.PartType.Ball, cf = CFrame.new()})
+	return out, 1.3
+end
+-- a wyrm: the dragon's head, a neck behind it and two great wings beating (a meteor's)
+function SHAPES.wyrm(L)
+	local out = SHAPES.dragon(L)
+	local dark = (L.color):Lerp(Color3.new(0, 0, 0), 0.35)
+	for i = 1, 3 do
+		table.insert(out, {size = Vector3.one * (1.05 - i * 0.18), color = i % 2 == 1 and L.color or dark, shape = Enum.PartType.Ball, cf = CFrame.new(0, 0.1, 0.9 + i * 0.75)})
+	end
+	for _, side in ipairs({-1, 1}) do
+		table.insert(out, {size = Vector3.new(2.6, 0.12, 1.5), color = L.color, cf = CFrame.new(side * 1.9, 0.5, 1.6), wing = side, transp = 0.15})
+		table.insert(out, {size = Vector3.new(2.2, 0.16, 0.16), color = L.glow, cf = CFrame.new(side * 1.8, 0.56, 1.0), wing = side})
+	end
+	return out, 2.6
+end
+
+-- A STILL MODEL OF A SPELL'S LOOK (the menus: a card, the inspect stage): its bolt's body
+-- for a bolt or a meteor, else a rune circle in its colours with its orb
+function MagicFX.preview(spellId, skinId)
+	local L = MagicFX.lookOf(spellId, skinId)
+	local sp = Spells[spellId] or {}
+	local m = Instance.new("Model")
+	m.Name = "SpellPreview"
+	-- (the glowing bits glow; a bolt's body is lit, so a dragon's head has a shape to it)
+	local glowAll = false
+	local function add(size, color, shape, cframe, mat, transp)
+		local p = Instance.new("Part")
+		p.Anchored = true; p.CanCollide = false; p.CastShadow = false
+		p.Size = size; p.Color = color
+		p.Material = mat or ((glowAll or color == L.glow or color == WHITE) and Enum.Material.Neon or Enum.Material.SmoothPlastic)
+		if shape then p.Shape = shape end
+		p.Transparency = transp or 0
+		p.CFrame = cframe
+		p.Parent = m
+		return p
+	end
+	local shape = L.shape
+	if not shape and sp.kind == "meteor" then shape = "rock" end
+	if (sp.kind == "bolt" or sp.kind == "meteor") and shape ~= "rock" then
+		local spec, scale = (SHAPES[shape or "orb"] or SHAPES.orb)(L)
+		-- (coming at you three-quarters on, from the right)
+		local face = CFrame.lookAt(Vector3.zero, Vector3.new(-1, 0.15, 1.05))
+		for _, s in ipairs(spec) do add(s.size, s.color, s.shape, face * s.cf, s.mat, s.transp) end
+		-- its trail (a small one's: a big body fills the picture by itself)
+		if scale < 1.5 then
+			for i = 1, 4 do add(Vector3.one * (0.7 - i * 0.12), i % 2 == 1 and L.color or L.glow, Enum.PartType.Ball, CFrame.new(i * 0.85, 0, -i * 0.3), Enum.Material.Neon, 0.25 + i * 0.15) end
+		end
+	elseif shape == "rock" then
+		add(Vector3.one * 2.4, Color3.fromRGB(60, 40, 30), Enum.PartType.Ball, CFrame.new(), Enum.Material.Basalt)
+		add(Vector3.one * 3, L.color, Enum.PartType.Ball, CFrame.new(), nil, 0.55)
+		for i = 1, 4 do add(Vector3.one * (1.6 - i * 0.25), i % 2 == 1 and L.color or L.glow, Enum.PartType.Ball, CFrame.new(i * 0.9, i * 0.9, 0), nil, 0.2 + i * 0.15) end
+	else
+		-- a circle of runes behind, faint, and the spell's own mark in front of it (all light)
+		glowAll = true
+		local tilt = CFrame.Angles(math.rad(70), 0, 0)
+		for i = 0, 11 do
+			local a = i * math.pi * 2 / 12
+			add(Vector3.new(0.5, 0.12, 0.2), i % 3 == 0 and L.glow or L.color, nil, CFrame.new(0, 0, -0.6) * tilt * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -1.9), nil, 0.35)
+		end
+		add(Vector3.new(0.08, 4.2, 4.2), L.color, Enum.PartType.Cylinder, CFrame.new(0, 0, -0.6) * tilt * CFrame.Angles(0, 0, math.pi / 2), nil, 0.82)
+		local k = sp.kind
+		if k == "chain" then
+			-- a bolt of lightning, zig-zagging down (forked; and the sky's own, for a pillar)
+			local pts = {Vector3.new(-1.3, 1.5, 0.3), Vector3.new(0.3, 0.6, 0.3), Vector3.new(-0.4, 0.1, 0.3), Vector3.new(1.0, -0.8, 0.3), Vector3.new(0.2, -1.5, 0.3)}
+			local w = 0.22 * (L.thick or 1)
+			for i = 1, #pts - 1 do
+				local a, b = pts[i], pts[i + 1]
+				add(Vector3.new(w, w, (b - a).Magnitude), L.glow, nil, CFrame.lookAt((a + b) / 2, b))
+				add(Vector3.new(w * 2.2, w * 2.2, (b - a).Magnitude), L.color, nil, CFrame.lookAt((a + b) / 2, b), nil, 0.6)
+			end
+			if L.forks then
+				add(Vector3.new(w * 0.7, w * 0.7, 1.1), L.color, nil, CFrame.lookAt(Vector3.new(0.6, 0.25, 0.3), Vector3.new(1.3, 0.4, 0.3)))
+				add(Vector3.new(w * 0.7, w * 0.7, 0.9), L.color, nil, CFrame.lookAt(Vector3.new(-0.9, -0.2, 0.3), Vector3.new(-1.5, -0.6, 0.3)))
+			end
+			if L.pillar then add(Vector3.new(w * 1.4, 4, w * 1.4), L.glow, nil, CFrame.new(1.5, 0.4, 0.2), nil, 0.2) end
+		elseif k == "nova" then
+			-- shards bursting out of the ground in a ring
+			local mat = (L.shard and Enum.Material[L.shard]) or (L.petals and Enum.Material.Neon or Enum.Material.Ice)
+			for i = 0, 7 do
+				local a = i * math.pi * 2 / 8
+				add(Vector3.new(0.4, 1.3, 0.4), i % 2 == 0 and L.color or L.glow, nil, CFrame.Angles(0, 0, a) * CFrame.new(0, 1.15, 0.2), mat, 0.1)
+			end
+			add(Vector3.one * 0.9, L.glow, Enum.PartType.Ball, CFrame.new(0, 0, 0.2))
+		elseif k == "heal" then
+			-- a cross of light (crowned, for a halo)
+			add(Vector3.new(0.6, 2.2, 0.4), L.glow, nil, CFrame.new(0, 0, 0.3))
+			add(Vector3.new(2.2, 0.6, 0.4), L.glow, nil, CFrame.new(0, 0, 0.3))
+			add(Vector3.new(1.0, 2.6, 0.3), L.color, nil, CFrame.new(0, 0, 0.1), nil, 0.55)
+			add(Vector3.new(2.6, 1.0, 0.3), L.color, nil, CFrame.new(0, 0, 0.1), nil, 0.55)
+			if L.halo then add(Vector3.new(0.14, 1.8, 1.8), L.glow, Enum.PartType.Cylinder, CFrame.new(0, 1.75, 0.3) * CFrame.Angles(0, 0, math.pi / 2) * CFrame.Angles(math.rad(-20), 0, 0)) end
+		elseif k == "buff" and sp.buff == "barrier" then
+			-- a shell of light
+			add(Vector3.one * 2.6, L.color, Enum.PartType.Ball, CFrame.new(0, 0, 0.3), Enum.Material.ForceField, 0)
+			add(Vector3.one * 2.4, L.glow, Enum.PartType.Ball, CFrame.new(0, 0, 0.3), nil, 0.85)
+			add(Vector3.one * 0.7, L.glow, Enum.PartType.Ball, CFrame.new(0, 0, 0.3))
+		elseif k == "buff" then
+			-- wind: three chevrons, running
+			for i = -1, 1 do
+				for _, sgn in ipairs({1, -1}) do
+					add(Vector3.new(1.1, 0.26, 0.26), i == 1 and L.glow or L.color, nil, CFrame.new(i * 0.75, 0, 0.3) * CFrame.Angles(0, 0, sgn * math.rad(40)) * CFrame.new(-0.42, 0, 0), nil, (1 - i) * 0.2)
+				end
+			end
+		elseif k == "cloud" then
+			-- a choking cloud
+			for i, o in ipairs({Vector3.new(0, 0, 0.3), Vector3.new(-0.9, -0.3, 0.2), Vector3.new(0.9, -0.2, 0.2), Vector3.new(-0.4, 0.6, 0.1), Vector3.new(0.5, 0.55, 0.1), Vector3.new(0, -0.6, 0.4)}) do
+				add(Vector3.one * (1.5 - i * 0.1), i % 2 == 0 and L.glow or L.color, Enum.PartType.Ball, CFrame.new(o), Enum.Material.SmoothPlastic, 0.25)
+			end
+		elseif k == "hex" then
+			-- a curse's skull
+			for _, s in ipairs((SHAPES.skull)(L)) do add(s.size * 1.4, s.color, s.shape, CFrame.Angles(0, math.pi, 0) * CFrame.new(s.cf.Position * 1.4) * s.cf.Rotation, s.mat, s.transp) end
+		elseif k == "blink" then
+			-- a spiral of light, stepping out of the air (and smoke, for a shadowstep)
+			for i = 0, 13 do
+				local a = i * 0.62
+				local r = 0.25 + i * 0.1
+				add(Vector3.one * (0.18 + i * 0.03), i % 2 == 0 and L.glow or L.color, Enum.PartType.Ball, CFrame.new(math.cos(a) * r, math.sin(a) * r, 0.3))
+			end
+			if L.smoke then add(Vector3.one * 2.4, Color3.fromRGB(24, 16, 34), Enum.PartType.Ball, CFrame.new(0.3, -0.5, -0.2), Enum.Material.SmoothPlastic, 0.35) end
+		else
+			add(Vector3.one * 1.1, L.glow, Enum.PartType.Ball, CFrame.new(0, 0, 0.2))
+			add(Vector3.one * 1.6, L.color, Enum.PartType.Ball, CFrame.new(0, 0, 0.2), nil, 0.6)
+		end
+	end
+	return m
 end
 
 --------------------------------------------------------------------
@@ -244,14 +395,14 @@ function EVENTS.Bolt(id, origin, dir, speed, spellId, range, caster, skin, seekT
 	for _, s in ipairs(spec) do
 		local p = part(s.size, s.color, s.shape, s.mat)
 		p.Transparency = s.transp or 0
-		table.insert(pieces, {part = p, cf = s.cf, wing = s.wing})
+		table.insert(pieces, {part = p, cf = s.cf, wing = s.wing, spin = s.spin})
 	end
 	local l = Instance.new("PointLight"); l.Color = L.color; l.Range = 10 + scale * 3; l.Brightness = 3; l.Parent = core
 	local a0 = Instance.new("Attachment"); a0.Position = Vector3.new(0, 0.3 * scale, 0); a0.Parent = core
 	local a1 = Instance.new("Attachment"); a1.Position = Vector3.new(0, -0.3 * scale, 0); a1.Parent = core
 	local tr = Instance.new("Trail"); tr.Attachment0, tr.Attachment1 = a0, a1; tr.Color = ColorSequence.new(L.glow, L.color); tr.LightEmission = 1
-	tr.Transparency = NumberSequence.new(0.1, 1); tr.Lifetime = (L.shape == "wisp" or L.shape == "phoenix" or L.shape == "dragon") and 0.5 or 0.25; tr.FaceCamera = true; tr.Parent = core
-	if L.shape ~= "lance" and L.shape ~= "spark" then
+	tr.Transparency = NumberSequence.new(0.1, 1); tr.Lifetime = (L.shape == "wisp" or L.shape == "phoenix" or L.shape == "dragon" or L.shape == "star") and 0.5 or 0.25; tr.FaceCamera = true; tr.Parent = core
+	if L.shape ~= "lance" and L.shape ~= "spark" and L.shape ~= "crescent" then
 		emitter(core, TEX.fire, L.color, L.glow, 0.9 * scale, 50, {0.15, 0.35}, {0.5, 2}, Vector3.zero, 180, 1)
 	end
 	emitter(core, TEX.spark, L.glow, L.color, 0.3 * math.max(scale, 0.6), 25, {0.2, 0.5}, {1, 3}, Vector3.new(0, -4, 0), 180, 1)
@@ -272,17 +423,25 @@ function EVENTS.Impact(id, pos, spellId, fizzled, skin)
 	flash(pos, L.color, 0.6, big and 7 or 4.5, 0.5)
 	burstAt(pos, L.glow, L.color, big and 40 or 22, big and 24 or 16)
 	if big then groundRing(pos - Vector3.new(0, 1.5, 0), 7, 0.5, L.color, 0.25) end
-	if L.shape == "lance" then sound(SND.ice, pos, 0.55, 1.3, 1) else sound(SND.boom, pos, (Spells[spellId] and Spells[spellId].mana or 0) > 0 and 0.42 or 0.15, big and 0.9 or 1.25, 1.6) end
+	if L.shape == "lance" or L.shape == "crescent" then sound(SND.ice, pos, 0.55, 1.3, 1) else sound(SND.boom, pos, (Spells[spellId] and Spells[spellId].mana or 0) > 0 and 0.42 or 0.15, big and 0.9 or 1.25, 1.6) end
 end
 function EVENTS.Chain(spellId, points, caster, skin)
 	local L = MagicFX.lookOf(spellId, skin)
 	local tip = tipOf(caster)
 	if tip and points[1] and (tip - points[1]).Magnitude < 8 then points[1] = tip end
+	local k = L.thick or 1
 	for i = 1, #points - 1 do
-		jag(points[i], points[i + 1], L.glow, 0.32, 0.28)
-		jag(points[i], points[i + 1], L.color, 0.18, 0.4)
-		if L.forks then jag(points[i], points[i + 1] + Vector3.new(math.random() * 4 - 2, math.random() * 3, math.random() * 4 - 2), L.color, 0.12, 0.3) end
-		flash(points[i + 1], L.color, 0.5, 4, 0.3)
+		jag(points[i], points[i + 1], L.glow, 0.32 * k, 0.28)
+		jag(points[i], points[i + 1], L.color, 0.18 * k, 0.4)
+		if L.forks then jag(points[i], points[i + 1] + Vector3.new(math.random() * 4 - 2, math.random() * 3, math.random() * 4 - 2), L.color, 0.12 * k, 0.3) end
+		flash(points[i + 1], L.color, 0.5, 4 * k, 0.3)
+		-- (the sky answers: a bolt straight down on whoever it struck)
+		if L.pillar then
+			local at = points[i + 1]
+			jag(at + Vector3.new(math.random() * 6 - 3, 60, math.random() * 6 - 3), at, L.glow, 0.5 * k, 0.35)
+			jag(at + Vector3.new(math.random() * 6 - 3, 60, math.random() * 6 - 3), at, L.color, 0.28 * k, 0.45)
+			groundRing(at - Vector3.new(0, 2.8, 0), 4, 0.4, L.glow, 0.2)
+		end
 	end
 	sound(SND.zap, points[1], 0.6, 1)
 	sound(SND.boom, points[#points], 0.4, 0.62, 2)
@@ -295,7 +454,7 @@ function EVENTS.Nova(spellId, pos, radius, skin)
 		local a = math.random() * math.pi * 2
 		local d = 2 + math.random() * (radius - 3)
 		local h = 1.2 + math.random() * 2.2
-		local s = part(Vector3.new(0.6, h, 0.6), L.color, nil, L.petals and Enum.Material.Neon or Enum.Material.Ice)
+		local s = part(Vector3.new(0.6, h, 0.6), L.color, nil, (L.shard and Enum.Material[L.shard]) or (L.petals and Enum.Material.Neon or Enum.Material.Ice))
 		s.Transparency = 0.2
 		local at = pos + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
 		s.CFrame = CFrame.new(at - Vector3.new(0, h, 0)) * CFrame.Angles(math.rad(math.random(-20, 20)), a, math.rad(math.random(-20, 20)))
@@ -318,6 +477,20 @@ function EVENTS.Heal(spellId, char, time, skin)
 	local l = Instance.new("PointLight"); l.Color = L.color; l.Range = 10; l.Brightness = 2; l.Parent = torso
 	task.delay(time or 2, function() pe.Enabled = false; TweenService:Create(l, TweenInfo.new(0.4), {Brightness = 0}):Play() end)
 	Debris:AddItem(a, (time or 2) + 1.5); Debris:AddItem(l, (time or 2) + 0.5)
+	if L.halo then
+		-- a ring of light over the head for as long as it heals
+		local head = char:FindFirstChild("Head")
+		local ring = part(Vector3.new(0.12, 1.7, 1.7), L.glow, Enum.PartType.Cylinder)
+		ring.Transparency = 0.15
+		local t0, conn = os.clock(), nil
+		conn = RunService.RenderStepped:Connect(function()
+			if not (ring.Parent and head and head.Parent) then if conn then conn:Disconnect() end; return end
+			local t = os.clock() - t0
+			ring.CFrame = CFrame.new(head.Position + Vector3.new(0, 1.15 + math.sin(t * 3) * 0.08, 0)) * CFrame.Angles(0, t * 1.5, math.pi / 2)
+		end)
+		task.delay(time or 2, function() if ring.Parent then TweenService:Create(ring, TweenInfo.new(0.5), {Transparency = 1}):Play() end end)
+		Debris:AddItem(ring, (time or 2) + 0.6)
+	end
 	sound(SND.cast, torso, 0.35, 1.8, 2)
 	sound(SND.shing, torso, 0.25, 1.6, 1)
 end
@@ -331,10 +504,12 @@ function EVENTS.Meteor(spellId, pos, radius, delay, skin)
 	Debris:AddItem(disc, delay + 0.1)
 	local from = pos + Vector3.new(-18, 70, -10)
 	local rock
-	if L.shape == "dragon" then
-		local spec = SHAPES.dragon(L)
+	if L.shape and SHAPES[L.shape] and L.shape ~= "orb" then
+		local spec = SHAPES[L.shape](L)
+		local k = (L.shape == "wyrm" or L.shape == "dragon") and 2.6 or 2.2
 		rock = {}
-		for _, s in ipairs(spec) do local p = part(s.size * 2.2, s.color, s.shape, s.mat); p.Transparency = s.transp or 0; table.insert(rock, {part = p, cf = CFrame.new(s.cf.Position * 2.2) * s.cf.Rotation}) end
+		for _, s in ipairs(spec) do local p = part(s.size * k, s.color, s.shape, s.mat); p.Transparency = s.transp or 0; table.insert(rock, {part = p, cf = CFrame.new(s.cf.Position * k) * s.cf.Rotation, wing = s.wing}) end
+		if L.shape == "wyrm" then sound(SND.boom, pos, 0.5, 0.45, 2) end
 	else
 		rock = {{part = part(Vector3.one * 4.5, Color3.fromRGB(60, 40, 30), Enum.PartType.Ball, Enum.Material.Basalt), cf = CFrame.new()},
 			{part = part(Vector3.one * 5.5, L.color, Enum.PartType.Ball), cf = CFrame.new()}}
@@ -351,7 +526,9 @@ function EVENTS.Meteor(spellId, pos, radius, delay, skin)
 		local p = from:Lerp(pos, k * k)
 		local face = CFrame.lookAt(p, pos)
 		holder.Position = p
-		for _, r in ipairs(rock) do r.part.CFrame = face * r.cf end
+		for _, r in ipairs(rock) do
+			r.part.CFrame = r.wing and (face * CFrame.Angles(0, 0, r.wing * math.sin(os.clock() * 9) * 0.5) * r.cf) or (face * r.cf)
+		end
 		if k >= 1 then
 			conn:Disconnect()
 			for _, r in ipairs(rock) do r.part:Destroy() end
@@ -412,6 +589,13 @@ function EVENTS.Blink(spellId, from, to, skin)
 	s.CFrame = CFrame.lookAt((from + to) / 2, to)
 	TweenService:Create(s, TweenInfo.new(0.35), {Transparency = 1, Size = Vector3.new(0.05, 0.05, s.Size.Z)}):Play()
 	Debris:AddItem(s, 0.4)
+	if L.smoke then
+		for _, at in ipairs({from, to}) do
+			local h = part(Vector3.one * 0.2, L.color); h.Transparency = 1; h.Position = at
+			emitter(h, TEX.smoke, Color3.fromRGB(20, 14, 28), L.color, 3, 0, {0.8, 1.4}, {1, 4}, Vector3.new(0, 1.5, 0), 180, 0):Emit(26)
+			Debris:AddItem(h, 1.6)
+		end
+	end
 	sound(SND.whoosh, to, 0.5, 1.6, 1)
 end
 function EVENTS.Fizzle(char)
@@ -435,8 +619,16 @@ local function staffTip(char)
 	local head = char:FindFirstChild("Head")
 	return head and head.Position or nil
 end
+-- the skin a caster wears on a spell (their weapon's SpellSkins: "Firebolt=Dragonfire,…")
+local function skinOf(char, spellId)
+	local tool = char:FindFirstChildOfClass("Tool")
+	local list = tool and tool:GetAttribute("SpellSkins")
+	if type(list) ~= "string" then return nil end
+	for sp, sk in list:gmatch("([%w_]+)=([%w_]+)") do if sp == spellId then return sk end end
+	return nil
+end
 local function makeCircle(char, spellId)
-	local L = MagicFX.lookOf(spellId, nil)
+	local L = MagicFX.lookOf(spellId, skinOf(char, spellId))
 	local m = {segs = {}, runes = {}, spell = spellId, t0 = os.clock()}
 	for i = 1, 20 do m.segs[i] = part(Vector3.new(0.4, 0.08, 0.08), L.glow) end
 	for i = 1, 6 do m.runes[i] = part(Vector3.new(0.18, 0.5, 0.06), L.color) end
@@ -618,6 +810,7 @@ function MagicFX.start()
 				for _, p in ipairs(b.pieces) do
 					local c = cf * p.cf
 					if p.wing then c = cf * CFrame.Angles(0, 0, p.wing * math.sin(now * 14) * 0.6) * p.cf end
+					if p.spin then c = cf * CFrame.Angles(0, 0, now * p.spin) * p.cf end
 					p.part.CFrame = c
 				end
 			end

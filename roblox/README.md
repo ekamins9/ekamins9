@@ -432,6 +432,17 @@ read from; the wand at your side, pointed to cast. Each screen holds a staff upr
 open in the hand (MagicFX: the grip's C0), and Roblox's own "holding a tool" arm is stopped
 (MagicClient). Bots never play Mage.
 
+**Spell skins** (`Catalog ▸ SpellSkins`, the **Arcana Crate**: always in the shop): a look for one
+spell, never its numbers. One Mage's Firebolt is a ball of fire, another's a **dragon's head**
+roaring across the field (Dragonfire), a phoenix, a burning skull, blue fire; lightning red and
+forked, or golden with the sky striking whoever it touches (Godstrike); stars, moon-crescents,
+crystal novas, halos, shadowsteps, a falling moon; the Mythic, **Wyrmfall**, dives a dragon of
+violet fire out of the sky. Each is a copy of its own (`"spell:" .. id`: trade it, scrap it), worn
+per spell in LOADOUT ▸ SPELLS ▸ LOOKS (the class's `spellSkins`, kept for a spell out of the
+arsenal too), carried on the weapon (`SpellSkins` attribute) and passed with every spell's event,
+so everyone sees it; the spell bar and crosshair take its colours. Menus show a still model of it
+(`MagicFX.preview`) on cards, the crate page, inspect, inventory and trades.
+
 ## Classes, pieces, the Dresser
 
 `LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they pick a

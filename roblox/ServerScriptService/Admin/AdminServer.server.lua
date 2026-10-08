@@ -144,6 +144,7 @@ local function everything(plr)
 	for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do Profile.grant(plr, "titles", t.title); n += 1 end
 	for _, c in ipairs(Catalog.COMPANIONS) do if not Profile.has(plr, "companions", c.id) then Profile.grant(plr, "companions", c.id); n += 1 end end
 	for _, f in ipairs(Catalog.ARMORFX or {}) do Profile.grant(plr, "armorfx", f.id); n += 1 end
+	for _, s in ipairs(Catalog.SPELLSKINS or {}) do Profile.grant(plr, "spellfx", s.id); n += 1 end
 	for _, h in ipairs(Catalog.BODY.hair or {}) do if h.crowns then Profile.grant(plr, "hairs", h.id); n += 1 end end
 	for _, c in ipairs(Catalog.BODY.eyeColors or {}) do if c.crowns then Profile.grant(plr, "eyeColors", c.name); n += 1 end end
 	for layer, list in pairs(Catalog.BODY.faceParts or {}) do
@@ -152,7 +153,7 @@ local function everything(plr)
 	return n
 end
 
-local ITEM_KINDS = {piece = "pieces", skin = "skins", weapon = "weapons", emote = "emotes", killfx = "killfx", companion = "companions", title = "titles", color = "colors"}
+local ITEM_KINDS = {piece = "pieces", skin = "skins", weapon = "weapons", emote = "emotes", killfx = "killfx", companion = "companions", title = "titles", color = "colors", armorfx = "armorfx", spellfx = "spellfx"}
 
 -- one change, on a player who is here; returns a line for the toast / log
 local function apply(plr, op)
@@ -434,6 +435,7 @@ local function act(plr, action, a)
 			or (kind == "emote" and Catalog.EMOTE[id]) or (kind == "killfx" and Catalog.KILLFX_BY[id]) or (kind == "companion" and Catalog.COMPANION[id])
 			or (kind == "egg" and Catalog.EGG[id]) or (kind == "color" and Catalog.COLOR[id]) or (kind == "title" and id ~= "")
 			or (kind == "armorfx" and Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[id])
+			or (kind == "spellfx" and Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[id])
 		if kind == "crate" then for _, c in ipairs(Catalog.CRATES) do if c.id == id then valid = c end end end
 		if not valid then return false, "no such " .. kind end
 		if a.take and (kind == "egg" or kind == "crate") then return false, "eggs and crates can't be taken back" end

@@ -989,6 +989,7 @@ local function owns(kind, id)
 	if kind == "emotes" and #HX.copies("emote:" .. tostring(id)) > 0 then return true end
 	if kind == "pieces" and #HX.copies("armor:" .. tostring(id)) > 0 then return true end
 	if kind == "armorfx" and #HX.copies("finish:" .. tostring(id)) > 0 then return true end
+	if kind == "spellfx" and #HX.copies("spell:" .. tostring(id)) > 0 then return true end
 	return p ~= nil and p.owned ~= nil and p.owned[kind] ~= nil and p.owned[kind][id] == true
 end
 local function unlockText(w) return Catalog.unlockText(w.unlock) end
@@ -1709,6 +1710,7 @@ function Preview.thumb(parent, it, size, zoom)
 	if it.kind == "skin" then return weaponThumb(parent, it.weapon, it.id, size, zoom) end
 	if it.kind == "killfx" then return Preview.killFx(parent, it.id, size, 0.3, true) end
 	if it.kind == "piece" or it.kind == "armorfx" then return HX.armorThumb(parent, it.kind, it.id, size) end
+	if it.kind == "spellfx" then return HX.spellThumb(parent, it.id, size) end
 	return Preview.emote(parent, it.id, size, 0.45, true)
 end
 
@@ -2232,6 +2234,77 @@ function HX.armorStage(parent, kind, id, size)
 	return holder
 end
 
+-- SPELL SKINS on show (Catalog ▸ SpellSkins): the spell's look as a still model (MagicFX.preview)
+-- on a glow of its colours; on a stage it turns
+HX.MagicFX = require(ReplicatedStorage:WaitForChild("MagicFX"))
+function HX.spellView(parent, spellId, skinId, size, spin)
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = size or UDim2.fromScale(1, 1)
+	vp.Ambient = Color3.fromRGB(210, 205, 220)
+	vp.LightColor = Color3.new(1, 1, 1)
+	vp.LightDirection = Vector3.new(-0.4, -1, -0.6)
+	vp.Parent = parent
+	local cam = Instance.new("Camera"); cam.FieldOfView = 34; cam.Parent = vp
+	vp.CurrentCamera = cam
+	local m = HX.MagicFX.preview(spellId, skinId)
+	m.Parent = vp
+	local cf, ext = m:GetBoundingBox()
+	local dist = (ext.Magnitude / 2) / math.tan(math.rad(17)) * 1.02
+	local function place(a) cam.CFrame = CFrame.lookAt(cf.Position + Vector3.new(math.sin(a) * dist, dist * 0.2, math.cos(a) * dist), cf.Position) end
+	place(0)
+	if spin then
+		task.spawn(function()
+			local t0 = os.clock()
+			while vp.Parent do place(math.sin((os.clock() - t0) * 0.7) * 0.9); RunService.RenderStepped:Wait() end
+		end)
+	end
+	return vp
+end
+function HX.spellThumb(parent, id, size, spin)
+	local sk = Catalog.SPELLSKIN_BY[id]
+	local holder = clearFrame(parent); holder.Size = size or UDim2.fromScale(1, 1); holder.ClipsDescendants = true
+	if not sk then return holder end
+	local L = HX.MagicFX.lookOf(sk.spell, id)
+	local bg = frame(holder, Color3.new(1, 1, 1), 10); bg.Size = UDim2.fromScale(1, 1)
+	local g = Instance.new("UIGradient", bg); g.Rotation = 90
+	g.Color = ColorSequence.new(L.color:Lerp(Color3.new(0, 0, 0), 0.35), Color3.fromRGB(10, 10, 20))
+	HX.spellView(bg, sk.spell, id, UDim2.fromScale(1, 1), spin)
+	local sp = Catalog.SPELLS[sk.spell]
+	local gl = label(bg, sp and sp.glyph or "", 16, FONT, COL.TEXT); gl.Position = UDim2.fromOffset(6, 4); gl.Size = UDim2.fromOffset(24, 20)
+	return holder
+end
+function HX.spellStage(parent, id, size)
+	local st = HX.spellThumb(parent, id, size, true)
+	local sk = Catalog.SPELLSKIN_BY[id]
+	local sp = sk and Catalog.SPELLS[sk.spell]
+	if sp then
+		local l = title(st, string.upper((sp.glyph or "") .. "  " .. sp.name) .. "  ·  LOOKS ONLY", 14, COL.DIM)
+		l.AnchorPoint = Vector2.new(0, 1); l.Position = UDim2.new(0, 20, 1, -40); l.Size = UDim2.new(1, -40, 0, 18)
+	end
+	return st
+end
+-- wear one on your Mage (its spell's look; it shows whenever that spell is in your arsenal)
+function HX.wearSpellSkin(id)
+	local sk = Catalog.SPELLSKIN_BY[id or ""]
+	if not sk then return end
+	local mage
+	for _, cid in ipairs(GameConfig.CLASS_ORDER) do if GameConfig.CLASSES[cid].magic then mage = cid; break end end
+	if not mage then return end
+	local lo = {}
+	for k, v in pairs(classLoadout(mage)) do lo[k] = v end
+	lo.spellSkins = table.clone(type(lo.spellSkins) == "table" and lo.spellSkins or {})
+	lo.spellSkins[sk.spell] = id
+	local r = call("SaveClass", mage, lo)
+	local sp = Catalog.SPELLS[sk.spell]
+	if r.ok then
+		if r.profile then state.profile = r.profile end
+		local carried = false
+		for _, x in ipairs(type(lo.spells) == "table" and lo.spells or Catalog.SPELLS.DEFAULT) do if x == sk.spell then carried = true end end
+		toast(sk.name .. " on your " .. (sp and sp.name or "spell") .. (carried and "" or "  ·  put it in your arsenal to cast it"), COL.GOOD)
+	else toast(r.msg or "", COL.BAD) end
+end
+
 -- a phone: a screen that scrolls inside itself (a grid, a row of cards) fits the
 -- visible height instead of scrolling twice; the rest keep their full height
 function HX.fitScreen(on)
@@ -2328,7 +2401,7 @@ function HX.crateGallery(host, liveCrates)
 			local has = {}
 			for _, it in ipairs(items) do has[it.kind] = true end
 			local tags = {}
-			for _, k in ipairs({{"piece", "ARMOR"}, {"skin", "SKINS"}, {"armorfx", "FINISHES"}, {"killfx", "KILL FX"}, {"emote", "EMOTES"}}) do
+			for _, k in ipairs({{"piece", "ARMOR"}, {"spellfx", "SPELL SKINS"}, {"skin", "SKINS"}, {"armorfx", "FINISHES"}, {"killfx", "KILL FX"}, {"emote", "EMOTES"}}) do
 				if has[k[1]] then table.insert(tags, k[2]) end
 			end
 			local chip = title(card, table.concat(tags, " · "), 11, Color3.new(1, 1, 1))
@@ -3824,6 +3897,7 @@ function Preview.strip(parent, pool, selectedKey, onPick, height)
 		local th = Preview.thumb(c, it, UDim2.new(1, -12, 0, 76), 1.45); th.Position = UDim2.new(0, 6, 0, 6); th.BackgroundTransparency = 1
 		local t = title(c, it.name, 13); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
 		local subText = it.kind == "skin" and string.upper(Catalog.WEAPON[it.weapon] and Catalog.WEAPON[it.weapon].name or it.weapon)
+			or (it.kind == "spellfx" and string.upper((Catalog.SPELLS[it.spell] or {}).name or "SPELL"))
 			or ({killfx = "KILL FX", piece = "ARMOR", armorfx = "ARMOR FINISH"})[it.kind] or "EMOTE"
 		local sub = title(c, subText .. (have and "  ✔" or ""), 11, have and COL.GOOD or COL.DIM); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
 		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
@@ -4669,9 +4743,11 @@ do
 			if sel.kind == "skin" then stg = weaponStage(stageH, sel.weapon, sel.id)
 			elseif sel.kind == "killfx" then stg = Preview.killFx(stageH, sel.id, UDim2.fromScale(1, 1))
 			elseif sel.kind == "piece" or sel.kind == "armorfx" then stg = HX.armorStage(stageH, sel.kind, sel.id, UDim2.fromScale(1, 1))
+			elseif sel.kind == "spellfx" then stg = HX.spellStage(stageH, sel.id, UDim2.fromScale(1, 1))
 			else stg = Preview.emote(stageH, sel.id, UDim2.fromScale(1, 1)) end
 			local nm = title(stg, sel.name, 32); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 36)
 			local kindText = sel.kind == "skin" and string.upper(Catalog.WEAPON[sel.weapon] and Catalog.WEAPON[sel.weapon].name or sel.weapon)
+				or (sel.kind == "spellfx" and (string.upper((Catalog.SPELLS[sel.spell] or {}).name or "") .. "  ·  SPELL SKIN"))
 				or (sel.kind == "piece" and ((sel.ref and sel.ref.weight or "") .. " ARMOR  ·  " .. string.upper((sel.ref and sel.ref.slot == "bottom") and "LEGS" or (sel.ref and sel.ref.slot or ""))):upper())
 				or (HX.KIND_NAME[sel.kind] or "EMOTE")
 			local fxText = sel.kind == "skin" and Preview.fxText(sel.ref) or nil
@@ -4759,7 +4835,8 @@ do
 			ui.crateItem = kind .. "|" .. (res.itemId or res.skinId)
 			local won = res.skinId and Catalog.SKIN[res.skinId]
 			local LINES = {skin = "New skin! Equip it from the ARMORY or your LOADOUT.", killfx = "New kill effect! Equip it in the ARMORY.",
-				piece = "New armor! Wear it in your LOADOUT (collect the whole set: it wears its own finish).", armorfx = "New finish! Put it on in your LOADOUT › FINISH, on any set."}
+				piece = "New armor! Wear it in your LOADOUT (collect the whole set: it wears its own finish).", armorfx = "New finish! Put it on in your LOADOUT › FINISH, on any set.",
+				spellfx = "New spell skin! Wear it on your Mage (LOADOUT › SPELLS › LOOKS)."}
 			local line = LINES[kind] or "New emote! Put it on your wheel in the ARMORY."
 			if res.variant then line = string.upper(res.variant) .. " FINISH!  " .. line end
 			local dupLine = string.format("Another copy: you have %d. Trade it, scrap it%s.", res.copies or 2, kind == "skin" and ", or forge three into a better finish" or "")
@@ -4768,6 +4845,7 @@ do
 				{{"EQUIP IT", COL.GREEN, function()
 					closeModal()
 					if kind == "armorfx" then HX.wearFinish(state.activeClass, res.itemId); return end
+					if kind == "spellfx" then HX.wearSpellSkin(res.itemId); return end
 					if kind == "piece" then
 						local pc = Catalog.PIECE[res.itemId]
 						for cid, c in pairs(GameConfig.CLASSES) do if pc and c.weight == pc.weight then ui.editing = cid; if cid == state.activeClass then break end end end
@@ -4782,6 +4860,7 @@ do
 					if kind == "skin" then th = weaponStage(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 240))
 					elseif kind == "killfx" then th = Preview.killFx(box, res.itemId, UDim2.new(1, 0, 0, 260))
 					elseif kind == "piece" or kind == "armorfx" then th = HX.armorStage(box, kind, res.itemId, UDim2.new(1, 0, 0, 280))
+					elseif kind == "spellfx" then th = HX.spellStage(box, res.itemId, UDim2.new(1, 0, 0, 260))
 					else th = Preview.emote(box, res.itemId, UDim2.new(1, 0, 0, 260)) end
 					th.LayoutOrder = 5
 					border(th, RARITY_COL[res.rarity] or COL.DIM, 3, 0)
@@ -5124,6 +5203,35 @@ function HX.spellsPanel(list, lo, classId, cardGrid, itemCard)
 	local info = ui.spellInfo and Spells[ui.spellInfo]
 	dim(mp, info and (string.upper(info.name) .. ":  " .. info.desc .. string.format("  (cooldown %ds)", info.cooldown or 0))
 		or "Mana comes back only when you meditate: hold " .. HX.Hints.name("Reload") .. " standing still. Mages don't hold the line.", 12)
+	-- LOOKS: a skin for each spell you carry (Catalog ▸ SpellSkins, out of the Arcana Crate)
+	local looks = type(lo.spellSkins) == "table" and lo.spellSkins or {}
+	local any = false
+	for _, x in ipairs(cur) do if #Catalog.spellSkinsFor(x) > 0 then any = true end end
+	if any then
+		heading(mp, "LOOKS  ·  SPELL SKINS")
+		for _, x in ipairs(cur) do
+			local skins = Catalog.spellSkinsFor(x)
+			if #skins > 0 then
+				local spx = Spells[x]
+				local h = title(mp, (spx.glyph or "") .. "  " .. string.upper(spx.name), 14, spx.color); h.Size = UDim2.new(1, 0, 0, 18); h.LayoutOrder = nextOrder()
+				local lg = cardGrid(mp, 40)
+				local function wear(skinId)
+					local t = table.clone(looks); t[x] = skinId
+					lo.spellSkins = t
+					ui.dirty[classId] = true
+					render.CLASSES()
+				end
+				itemCard(lg, 0, "Default", "", looks[x] == nil, true, nil, function() wear(nil) end)
+				table.sort(skins, function(a, b) return (RARITY_ORDER[a.rarity] or 0) < (RARITY_ORDER[b.rarity] or 0) end)
+				for i, sk in ipairs(skins) do
+					local have = owns("spellfx", sk.id)
+					itemCard(lg, i, sk.name, have and sk.rarity or ((Catalog.CRATES[sk.crate or ""] or {}).name or "a crate"), looks[x] == sk.id, have, RARITY_COL[sk.rarity], function()
+						if have then wear(sk.id) else HX.inspect("spellfx", sk.id) end
+					end)
+				end
+			end
+		end
+	end
 end
 
 --------------------------------------------------------------------
@@ -6697,8 +6805,8 @@ end
 --  the creature walking), what it is, where it comes from, YOUR COPIES of it
 --  (number, finish, story, kills) and what you can do with it
 --------------------------------------------------------------------
-HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", armorfx = "ARMOR FINISH", title = "TITLE"}
-HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", armorfx = "armorfx", title = "titles"}
+HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", armorfx = "ARMOR FINISH", spellfx = "SPELL SKIN", title = "TITLE"}
+HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", armorfx = "armorfx", spellfx = "spellfx", title = "titles"}
 function HX.defOf(kind, id)
 	if kind == "skin" then return Catalog.SKIN[id] end
 	if kind == "killfx" then return Catalog.KILLFX_BY[id] end
@@ -6706,17 +6814,19 @@ function HX.defOf(kind, id)
 	if kind == "companion" then return Catalog.COMPANION[id] end
 	if kind == "piece" then return Catalog.PIECE[id] end
 	if kind == "armorfx" then return Catalog.ARMORFX_BY[id] end
+	if kind == "spellfx" then return Catalog.SPELLSKIN_BY[id] end
 	if kind == "title" then return {id = id, name = id, rarity = "Rare"} end
 	return nil
 end
 -- a copy's key and back ("fx:Meteor", "emote:Jig", "pet:Raven", "Longsword:Gilded")
-HX.KEY_PREFIX = {killfx = "fx:", emote = "emote:", companion = "pet:", piece = "armor:", armorfx = "finish:"}
+HX.KEY_PREFIX = {killfx = "fx:", emote = "emote:", companion = "pet:", piece = "armor:", armorfx = "finish:", spellfx = "spell:"}
 function HX.copyKey(kind, id)
 	return (HX.KEY_PREFIX[kind] or "") .. tostring(id)
 end
 function HX.fromKey(key)
 	if key:sub(1, 6) == "armor:" then return "piece", key:sub(7) end
 	if key:sub(1, 7) == "finish:" then return "armorfx", key:sub(8) end
+	if key:sub(1, 6) == "spell:" then return "spellfx", key:sub(7) end
 	if key:sub(1, 3) == "fx:" then return "killfx", key:sub(4) end
 	if key:sub(1, 6) == "emote:" then return "emote", key:sub(7) end
 	if key:sub(1, 4) == "pet:" then return "companion", key:sub(5) end
@@ -6729,6 +6839,7 @@ function HX.thumb(parent, kind, d, size)
 	if kind == "emote" then return Preview.emote(parent, d.id, size, 0.45, true) end
 	if kind == "companion" then return Preview.companion(parent, d.id, size, true) end
 	if kind == "piece" or kind == "armorfx" then return HX.armorThumb(parent, kind, d.id, size) end
+	if kind == "spellfx" then return HX.spellThumb(parent, d.id, size) end
 	local holder = clearFrame(parent); holder.Size = size
 	local img = iconImage(holder, "Wardrobe", 72); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
 	return holder
@@ -6740,6 +6851,7 @@ function HX.inspectReward(r)
 	if r.killfx then return HX.inspect("killfx", r.killfx) end
 	if r.emote then return HX.inspect("emote", r.emote) end
 	if r.companion then return HX.inspect("companion", r.companion) end
+	if r.spellfx then return HX.inspect("spellfx", r.spellfx) end
 	if r.crate and Catalog.CRATES[r.crate] then
 		local c = Catalog.CRATES[r.crate]
 		return modal(string.upper(c.name), (c.description or "") .. "  ·  A free open: it spins on the crate screen the moment it's yours.",
@@ -6797,6 +6909,7 @@ function HX.inspect(kind, id, copy, theirs)
 	elseif kind == "emote" then stg = Preview.emote(stageH, d.id, UDim2.fromScale(1, 1))
 	elseif kind == "companion" then stg = Preview.companion(stageH, d.id, UDim2.fromScale(1, 1), false, P.stars and P.stars[d.id])
 	elseif kind == "piece" or kind == "armorfx" then stg = HX.armorStage(stageH, kind, d.id, UDim2.fromScale(1, 1))
+	elseif kind == "spellfx" then stg = HX.spellStage(stageH, d.id, UDim2.fromScale(1, 1))
 	else
 		stg = frame(stageH, COL.GLASS2, 14); stg.Size = UDim2.fromScale(1, 1)
 		local img = iconImage(stg, "Wardrobe", 220); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
@@ -6822,6 +6935,7 @@ function HX.inspect(kind, id, copy, theirs)
 	rarityTag(tags, d.rarity)
 	local sub
 	if kind == "skin" then sub = string.upper(Catalog.WEAPON[d.weapon] and Catalog.WEAPON[d.weapon].name or d.weapon or "")
+	elseif kind == "spellfx" then sub = string.upper((Catalog.SPELLS[d.spell] or {}).name or "") .. "  ·  SPELL SKIN"
 	else sub = HX.KIND_NAME[kind] or "" end
 	local sl = title(tags, sub, 14, COL.DIM); sl.AutomaticSize = Enum.AutomaticSize.X; sl.Size = UDim2.fromOffset(0, 22); sl.LayoutOrder = 5
 	if d.rarity == "Unique" then local u = title(head, "ONE OF ONE: there is only this one, ever", 15, RARITY_COL.Unique); u.Size = UDim2.new(1, 0, 0, 20); u.LayoutOrder = nextOrder() end
@@ -6842,6 +6956,10 @@ function HX.inspect(kind, id, copy, theirs)
 	elseif kind == "armorfx" then
 		dim(head, "Looks only: it goes on any set, of any weight (LOADOUT › FINISH). The world shows its aura and glow.", 13)
 		local wl = title(head, "OUT OF THE " .. string.upper((Catalog.CRATES[d.crate or ""] or {}).name or "FORGE CRATE"), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 18); wl.LayoutOrder = nextOrder()
+	elseif kind == "spellfx" then
+		local sp = Catalog.SPELLS[d.spell] or {}
+		dim(head, "Looks only: your " .. (sp.name or "spell") .. " flies, hits and costs the same, and everyone sees it. Wear it on your Mage (LOADOUT › SPELLS › LOOKS).", 13)
+		local wl = title(head, "OUT OF THE " .. string.upper((Catalog.CRATES[d.crate or ""] or {}).name or "ARCANA CRATE"), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 18); wl.LayoutOrder = nextOrder()
 	end
 	-- THE COPY you came from (a trade), then YOURS
 	local function copyLine(parent, c, mineToo)
@@ -6897,6 +7015,8 @@ function HX.inspect(kind, id, copy, theirs)
 		end)
 	elseif have and kind == "armorfx" then
 		act("WEAR IT ON YOUR " .. string.upper(className(state.activeClass)), COL.GREEN, function() HX.wearFinish(state.activeClass, id) end)
+	elseif have and kind == "spellfx" then
+		act("WEAR IT ON YOUR MAGE", COL.GREEN, function() HX.wearSpellSkin(id) end)
 	elseif not have and d.crate and Catalog.CRATES[d.crate] then
 		act("OPEN THE " .. string.upper(Catalog.CRATES[d.crate].name), COL.GOLD, function()
 			ui.shopTab, ui.crate = "crates", d.crate
@@ -6944,6 +7064,7 @@ function HX.inventory()
 		if not Catalog.isFree(pc) and owns("pieces", pc.id) then add("piece", pc, "Armor") end
 	end
 	for _, f in ipairs(Catalog.ARMORFX or {}) do if owns("armorfx", f.id) then add("armorfx", f, "Armor finish") end end
+	for _, s in ipairs(Catalog.SPELLSKINS or {}) do if owns("spellfx", s.id) then add("spellfx", s, ((Catalog.SPELLS[s.spell] or {}).name or "Spell") .. " skin") end end
 	for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do
 		if owns("titles", t.title) then add("title", {id = t.title, name = t.title, rarity = "Rare"}, "Title") end
 	end
@@ -6951,7 +7072,7 @@ function HX.inventory()
 end
 
 HX.INV_KINDS = {{text = "ALL", k = nil}, {text = "SKINS", k = "skin"}, {text = "KILL FX", k = "killfx"}, {text = "EMOTES", k = "emote"},
-	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "piece"}, {text = "FINISHES", k = "armorfx"}, {text = "TITLES", k = "title"}}
+	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "piece"}, {text = "FINISHES", k = "armorfx"}, {text = "SPELLS", k = "spellfx"}, {text = "TITLES", k = "title"}}
 HX.INV_SORTS = {"RARITY", "NEWEST", "NAME", "MOST COPIES"}
 HX.INV_PAGE = 40
 
@@ -7144,6 +7265,7 @@ do
 		if key:sub(1, 6) == "emote:" then return Catalog.EMOTE[key:sub(7)], "emote" end
 		if key:sub(1, 6) == "armor:" then return Catalog.PIECE[key:sub(7)], "armor" end
 		if key:sub(1, 7) == "finish:" then return Catalog.ARMORFX_BY[key:sub(8)], "finish" end
+		if key:sub(1, 6) == "spell:" then return Catalog.SPELLSKIN_BY[key:sub(7)], "spell" end
 		return Catalog.SKIN[key], false
 	end
 	local function worth(c)
@@ -7160,6 +7282,8 @@ do
 			local th
 			if pet == "armor" or pet == "finish" then
 				th = HX.armorThumb(b, pet == "armor" and "piece" or "armorfx", d.id, UDim2.new(1, -8, 0, 88))
+			elseif pet == "spell" then
+				th = HX.spellThumb(b, d.id, UDim2.new(1, -8, 0, 88))
 			elseif pet == "fx" or pet == "emote" then
 				-- a kill effect / an emote: its kind, big, in its rarity's colour
 				th = title(b, pet == "fx" and "KILL\nEFFECT" or "EMOTE", 20, RARITY_COL[d.rarity] or COL.DIM)

@@ -264,7 +264,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	local win = picks[math.random(#picks)]
 	cc.opens += 1
 	cc.sinceLegendary = (win.rarity == "Legendary" or win.rarity == "Mythic") and 0 or cc.sinceLegendary + 1
-	local OWN = {skin = "skins", killfx = "killfx", emote = "emotes", piece = "pieces", armorfx = "armorfx"}
+	local OWN = {skin = "skins", killfx = "killfx", emote = "emotes", piece = "pieces", armorfx = "armorfx", spellfx = "spellfx"}
 	local ownKind = OWN[win.kind] or "emotes"
 	local dup = Profile.has(plr, ownKind, win.id)
 	local refund = 0
@@ -279,7 +279,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	else
 		-- a kill effect, an emote, an armor piece or a finish too: kept as a copy of
 		-- its own, never paid back (a Mythic one numbered); trade the spare, or scrap it
-		local PREFIX = {killfx = "fx:", emote = "emote:", piece = "armor:", armorfx = "finish:"}
+		local PREFIX = {killfx = "fx:", emote = "emote:", piece = "armor:", armorfx = "finish:", spellfx = "spell:"}
 		local key = (PREFIX[win.kind] or "emote:") .. win.id
 		if win.rarity == "Mythic" then serial = collection().serial(key) end
 		Profile.addCopy(plr, key, {n = serial, from = from, bound = not collection().tradable(key)})
@@ -290,6 +290,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	log(plr.Name, "opened", crateId, "->", win.kind, win.id, win.rarity, dup and ("dup +" .. refund) or "")
 	local KIND_LABEL = {killfx = "Kill effect · ", emote = "Emote · ", piece = "Armor · ", armorfx = "Armor finish · "}
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
+		or (win.kind == "spellfx" and (((Catalog.SPELLS[win.spell] or {}).name or "Spell") .. " · " .. win.name))
 		or ((KIND_LABEL[win.kind] or "") .. win.name)
 	return {crate = crateId, kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
 		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
@@ -338,6 +339,11 @@ function Economy.grantReward(plr, r)
 	if r.armorfx and Catalog.ARMORFX_BY[r.armorfx] then
 		Profile.addCopy(plr, "finish:" .. r.armorfx, {from = r.from or "a reward", bound = r.bound == true})
 		table.insert(bits, "the armor finish " .. Catalog.ARMORFX_BY[r.armorfx].name)
+	end
+	if r.spellfx and Catalog.SPELLSKIN_BY[r.spellfx] then
+		local sk = Catalog.SPELLSKIN_BY[r.spellfx]
+		Profile.addCopy(plr, "spell:" .. r.spellfx, {from = r.from or "a reward", bound = r.bound == true})
+		table.insert(bits, ((Catalog.SPELLS[sk.spell] or {}).name or "") .. " · " .. sk.name)
 	end
 	if r.color and Catalog.COLOR[r.color] then Profile.grant(plr, "colors", r.color); table.insert(bits, r.color) end
 	if r.killfx and Catalog.KILLFX_BY[r.killfx] then Profile.grant(plr, "killfx", r.killfx); table.insert(bits, "the kill effect " .. Catalog.KILLFX_BY[r.killfx].name) end

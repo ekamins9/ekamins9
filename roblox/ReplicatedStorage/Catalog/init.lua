@@ -52,6 +52,7 @@ Catalog.LOGIN     = child("Login")
 Catalog.KILLFX    = child("KillFX")
 Catalog.EMOTES    = child("Emotes")
 Catalog.ARMORFX   = child("ArmorFX")   -- armor finishes (the Forge Crate)
+Catalog.SPELLSKINS = child("SpellSkins")   -- spell skins (the Arcana Crate)
 Catalog.GIFTS     = child("Gifts")
 Catalog.EGGS      = child("Eggs")
 Catalog.COMPANIONS = child("Companions")
@@ -187,6 +188,13 @@ Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name]
 Catalog.KILLFX_BY = {}  for _, f in ipairs(Catalog.KILLFX) do Catalog.KILLFX_BY[f.id] = f end
 Catalog.EMOTE = {}      for _, e in ipairs(Catalog.EMOTES) do Catalog.EMOTE[e.id] = e end
 Catalog.ARMORFX_BY = {} for _, f in ipairs(Catalog.ARMORFX) do Catalog.ARMORFX_BY[f.id] = f end
+Catalog.SPELLSKIN_BY = {} for _, s in ipairs(Catalog.SPELLSKINS) do Catalog.SPELLSKIN_BY[s.id] = s end
+-- every spell skin of one spell
+function Catalog.spellSkinsFor(spellId)
+	local out = {}
+	for _, s in ipairs(Catalog.SPELLSKINS) do if s.spell == spellId then table.insert(out, s) end end
+	return out
+end
 Catalog.EGG = {}        for _, e in ipairs(Catalog.EGGS.eggs) do Catalog.EGG[e.id] = e end
 
 -- may this weapon go in this slot for this class? A ranged class's primary is a
@@ -493,9 +501,12 @@ function Catalog.itemSource(it)
 end
 
 -- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote"),
--- armor pieces of a crate-only set ("piece") and armor finishes ("armorfx")
+-- armor pieces of a crate-only set ("piece"), armor finishes ("armorfx") and spell skins ("spellfx")
 function Catalog.crateItems(crateId)
 	local out = {}
+	for _, s in ipairs(Catalog.SPELLSKINS or {}) do
+		if s.crate == crateId then table.insert(out, {kind = "spellfx", id = s.id, name = s.name, rarity = s.rarity, spell = s.spell, ref = s}) end
+	end
 	for _, pc in ipairs(Catalog.PIECES or {}) do
 		if pc.crate == crateId then table.insert(out, {kind = "piece", id = pc.id, name = pc.name, rarity = pc.rarity, ref = pc}) end
 	end
@@ -628,6 +639,7 @@ if RunService:IsServer() then
 				for _, f in ipairs(Catalog.KILLFX) do if f.crate == id and f.rarity == r then any = true end end
 				for _, e in ipairs(Catalog.EMOTES) do if e.crate == id and e.rarity == r then any = true end end
 				for _, f in ipairs(Catalog.ARMORFX or {}) do if f.crate == id and f.rarity == r then any = true end end
+				for _, s in ipairs(Catalog.SPELLSKINS or {}) do if s.crate == id and s.rarity == r then any = true end end
 				for _, pc in ipairs(Catalog.PIECES or {}) do if pc.crate == id and pc.rarity == r then any = true end end
 				-- (a crate's armor sets arrive with the Armor folder: where it isn't here yet, they can't be counted)
 				if not any and (Catalog.PACKS[id] and Catalog.PACKS[id].crate) and #(Catalog.PIECES or {}) == 0 then any = true end

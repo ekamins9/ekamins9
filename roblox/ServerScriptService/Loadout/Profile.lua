@@ -337,7 +337,8 @@ function Profile.validateLoadout(plr, classId, lo)
 		if type(lo.spellSkins) == "table" then
 			for spellId, skinId in pairs(lo.spellSkins) do
 				local sk = Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[skinId]
-				if sk and sk.spell == spellId and seen[spellId] and Profile.has(plr, "spellfx", skinId) then out.spellSkins[spellId] = skinId end
+				-- (kept for a spell out of the arsenal too: it's there when the spell comes back)
+				if sk and sk.spell == spellId and Catalog.SPELLS[spellId] and Profile.has(plr, "spellfx", skinId) then out.spellSkins[spellId] = skinId end
 			end
 		end
 	end

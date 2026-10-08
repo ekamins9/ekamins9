@@ -1,4 +1,29 @@
-# Updated scripts: Horde never leaves you behind, the break makes you whole, no bodies left standing
+# Updated scripts: spell skins and the Arcana Crate — one Mage's Firebolt is a fireball, another's is a dragon
+
+- **Twenty spell skins** in a new **Arcana Crate**, always in the shop. Looks only; every spell flies, hits and costs the same.
+- **The skins, by rarity:**
+  - **Rare** (recolours): Bluefire, Bloodlance, Red Storm (forked), Moonmotes, Golden Grace, Plague Fog, Quicksilver, Thornwall.
+  - **Epic** (new shapes): Hellfire (a burning green skull), Starfall (spinning stars), Moonblade (a spinning crescent), Crystal Bloom (pink crystal novas), Shadowstep (a blink in black smoke), Witchmark.
+  - **Legendary:** Dragonfire (a dragon's head of fire, roaring), Phoenix, Godstrike (golden lightning, and the sky strikes whoever it hits), Moonfall, Seraph's Kiss (a halo for whoever it heals).
+  - **Mythic:** Wyrmfall, a winged dragon of violet fire diving out of the sky as your Meteor.
+- **Wear them** per spell in LOADOUT ▸ SPELLS ▸ LOOKS, or straight from the crate or inspect screen. Everyone sees them, and your casting circle, spell bar and crosshair take their colours.
+- **Copies of their own:** trade them, scrap them, see them in the INVENTORY (a SPELLS filter), with pictures on every card. The admin panel can give them, and "unlock everything" includes them (it also gains a FINISH kind).
+- **Spell bar glyphs:** Meteor's and Miasma's now render (they showed as a droplet and a grey box).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/SpellSkins.lua](ReplicatedStorage/Catalog/SpellSkins.lua) | ReplicatedStorage ▸ Catalog ▸ SpellSkins | ModuleScript | the skins (new) |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua), [Catalog/Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua), [CrateModels.lua](ReplicatedStorage/CrateModels.lua) | ReplicatedStorage | ModuleScript | `SPELLSKINS`, `spellSkinsFor`, crate items; the Arcana Crate, always on; its look (a staff emblem) |
+| [MagicFX.lua](ReplicatedStorage/MagicFX.lua) | ReplicatedStorage ▸ MagicFX | ModuleScript | star, crescent, wyrm shapes; spinning; any shape falls as a meteor; thick, forked, sky-struck lightning; halos, smoke, crystal; the caster's skin on the casting circle; `MagicFX.preview` |
+| [MagicSpells.lua](ReplicatedStorage/MagicSpells.lua), [Combat/MagicClient.lua](ReplicatedStorage/Combat/MagicClient.lua) | ReplicatedStorage | ModuleScript | glyphs; your skins' colours on the bar and crosshair |
+| [Economy.lua](ServerScriptService/Economy/Economy.lua), [Collection.lua](ServerScriptService/Economy/Collection.lua), [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService | ModuleScript | rolled and given as copies ("spell:"); tradable; kept per spell |
+| [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua), [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | ServerScriptService · StarterPlayerScripts | Script · LocalScript | give / unlock spell skins (and finishes) |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | pictures, crate page, reveal, inspect, inventory, trade, LOADOUT ▸ SPELLS ▸ LOOKS |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | spell skins |
+
+---
+
+## Before that: Horde never leaves you behind, the break makes you whole, no bodies left standing
 
 - **Horde auto-spawn:** when the break between waves runs out, anyone still on the class screen goes in automatically as the class they picked. Nobody gets locked out of a wave for not pressing SPAWN, and the class screen says so during the break.
 - **Whole again between waves:** everyone standing gets full health, stamina and mana; burns and frost are cleared. If you lost a limb, are bleeding or had your weapon knocked away, you're rebuilt where you stand with every limb, your armor and your weapons.
