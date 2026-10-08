@@ -62,9 +62,27 @@ do
 end
 
 --------------------------------------------------------------------
-local MENU_KEY        = Enum.KeyCode.M
 local ECON            = Catalog.ECONOMY
 local CANVAS          = Vector2.new(1600, 900)   -- the layout's design size; UIScale fits it to the screen
+-- PHONES: a short screen (a phone on its side) is COMPACT: the design canvas is
+-- smaller (so everything is drawn bigger), small text gets bigger still, the
+-- lobby rearranges (the dock in two columns on the left, no side panel), screens
+-- scroll, pop-ups shrink to fit. ReplicatedStorage's PhoneSim attribute fakes a
+-- phone's shape in Studio (letterboxed) to look at it.
+local LAYOUT = {menuKey = Enum.KeyCode.M, canvas = Vector2.new(1300, 600), screenH = 690}
+do
+	local cam = workspace.CurrentCamera
+	for _ = 1, 40 do
+		if cam and cam.ViewportSize.Y > 2 then break end
+		task.wait(0.05); cam = workspace.CurrentCamera
+	end
+	local vs = cam and cam.ViewportSize or Vector2.new(1600, 900)
+	LAYOUT.sim = ReplicatedStorage:GetAttribute("PhoneSim") == true
+	LAYOUT.compact = LAYOUT.sim or vs.Y < 560
+	LAYOUT.boost = LAYOUT.compact and 1.22 or 1     -- × small text (16 and under)
+	LAYOUT.head = LAYOUT.compact and 70 or 108       -- a screen's header
+	LAYOUT.side = LAYOUT.compact and 16 or 28        -- a screen's side margin
+end
 --------------------------------------------------------------------
 
 _G.MenuBus = _G.MenuBus or Instance.new("BindableEvent")
@@ -168,7 +186,8 @@ local function label(parent, text, size, font, color)
 	local t = Instance.new("TextLabel")
 	t.BackgroundTransparency = 1
 	t.Font = font or FONT_BODY
-	t.TextSize = size or 15
+	size = size or 15
+	t.TextSize = size <= 16 and math.floor(size * LAYOUT.boost + 0.5) or size
 	t.TextColor3 = color or COL.TEXT
 	t.TextXAlignment = Enum.TextXAlignment.Left
 	t.TextWrapped = true
@@ -206,7 +225,7 @@ local function button(parent, text, size, color)
 	b.BorderSizePixel = 0
 	b.AutoButtonColor = true
 	b.Font = FONT_BLACK
-	b.TextSize = size or 15
+	b.TextSize = math.floor((size or 15) * ((size or 15) <= 16 and LAYOUT.boost or 1) + 0.5)
 	b.TextColor3 = COL.TEXT
 	b.Text = text
 	b.Parent = parent
@@ -645,7 +664,10 @@ do
 	fitRoot = function()
 		local abs = gui.AbsoluteSize
 		if abs.X < 2 or abs.Y < 2 then return end
-		local s = math.clamp(math.min(abs.X / CANVAS.X, abs.Y / CANVAS.Y), 0.45, 2.2)
+		-- (Studio's PhoneSim: a phone's shape, 19.5:9, letterboxed on this screen)
+		if LAYOUT.sim then local w = math.min(abs.X, abs.Y * 2.165); abs = Vector2.new(w, w / 2.165) end
+		local canvas = LAYOUT.compact and LAYOUT.canvas or CANVAS
+		local s = math.clamp(math.min(abs.X / canvas.X, abs.Y / canvas.Y), 0.3, 2.2)
 		rootScale.Scale = s
 		root.Size = UDim2.fromOffset(abs.X / s, abs.Y / s)
 		if applyInset then applyInset(s) end
@@ -684,21 +706,44 @@ do
 	local sHeader = clearFrame(screenLayer)
 	sHeader.Position = UDim2.fromOffset(28, 16)
 	sHeader.Size = UDim2.new(1, -56, 0, 76)
-	sIcon = iconImage(sHeader, "Shop", 78)
-	sIcon.Position = UDim2.fromOffset(-8, -6)
-	sTitle = title(sHeader, "", 42)
-	sTitle.Position = UDim2.fromOffset(78, 2)
-	sTitle.Size = UDim2.new(0.38, 0, 0, 46)
-	sSub = title(sHeader, "", 15, COL.DIM)
-	sSub.Position = UDim2.fromOffset(80, 48)
-	sSub.Size = UDim2.new(0.38, 0, 0, 20)
+	local C = LAYOUT.compact
+	sIcon = iconImage(sHeader, "Shop", C and 56 or 78)
+	sIcon.Position = UDim2.fromOffset(-8, C and -4 or -6)
+	sTitle = title(sHeader, "", C and 32 or 42)
+	sTitle.Position = UDim2.fromOffset(C and 56 or 78, 2)
+	sTitle.Size = UDim2.new(0.38, 0, 0, C and 34 or 46)
+	sSub = title(sHeader, "", C and 12 or 15, COL.DIM)
+	sSub.Position = UDim2.fromOffset(C and 58 or 80, C and 36 or 48)
+	sSub.Size = C and UDim2.new(0.5, -260, 0, 20) or UDim2.new(0.38, 0, 0, 20)
 	sSub.TextTruncate = Enum.TextTruncate.AtEnd
 	local sCloseHolder; sCloseHolder, sClose = closeX(sHeader)
 	sCloseHolder.AnchorPoint = Vector2.new(1, 0)
 	sCloseHolder.Position = UDim2.new(1, 0, 0, 4)
-	content = clearFrame(screenLayer)
-	content.Position = UDim2.fromOffset(28, 108)
-	content.Size = UDim2.new(1, -56, 1, -130)
+	if LAYOUT.compact then
+		-- (a phone: the screens keep their height and scroll; drag anywhere that isn't a list)
+		content = Instance.new("ScrollingFrame")
+		content.BackgroundTransparency = 1
+		content.BorderSizePixel = 0
+		content.ScrollingDirection = Enum.ScrollingDirection.Y
+		content.ScrollBarThickness = 8
+		content.ScrollBarImageColor3 = COL.DIM
+		content.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+		content.CanvasSize = UDim2.new(0, 0, 0, LAYOUT.screenH)
+		content.Parent = screenLayer
+	else
+		content = clearFrame(screenLayer)
+	end
+	content.Position = UDim2.fromOffset(LAYOUT.side, LAYOUT.head)
+	content.Size = UDim2.new(1, -2 * LAYOUT.side, 1, -LAYOUT.head - 22)
+	-- (a phone: a chip says there's more below until you scroll; a tap scrolls)
+	if LAYOUT.compact then (function()
+		local more = button(screenLayer, "▼  MORE BELOW", 14, COL.BLUE)
+		more.AnchorPoint = Vector2.new(0.5, 1); more.Position = UDim2.new(0.5, 0, 1, -10); more.Size = UDim2.fromOffset(170, 32); more.ZIndex = 8
+		more.Activated:Connect(function() TweenService:Create(content, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {CanvasPosition = Vector2.new(0, LAYOUT.screenH)}):Play() end)
+		RunService.Heartbeat:Connect(function()
+			more.Visible = screenLayer.Visible and not modalBack.Visible and content.CanvasPosition.Y < 12 and content.AbsoluteCanvasSize.Y > content.AbsoluteWindowSize.Y + 40
+		end)
+	end)() end
 
 	-- the top bar, over both layers: you (lobby only) · the wallet · close
 	local topBar = clearFrame(root)
@@ -797,7 +842,15 @@ do
 		local c = bigBtn(modalBox, "CLOSE", COL.GLASS2, closeModal); c.LayoutOrder = 200
 		modalBack.Visible = true
 		modalScale.Scale = 0.9
-		TweenService:Create(modalScale, TweenInfo.new(0.16, Enum.EasingStyle.Back), {Scale = 1}):Play()
+		-- (taller than the screen: it shrinks until it fits)
+		task.spawn(function()
+			RunService.Heartbeat:Wait()
+			local rs = math.max(rootScale.Scale, 0.01)
+			local boxH = modalBox.AbsoluteSize.Y / rs / math.max(modalScale.Scale, 0.01)
+			local roomH = root.AbsoluteSize.Y / rs - 24
+			local fit = math.clamp(roomH / math.max(boxH, 1), 0.5, 1)
+			TweenService:Create(modalScale, TweenInfo.new(0.16, Enum.EasingStyle.Back), {Scale = fit}):Play()
+		end)
 	end
 
 	-- Roblox draws its own buttons (menu, chat) across the top of the screen: the
@@ -806,10 +859,10 @@ do
 		local ok, inset = pcall(function() return game:GetService("GuiService"):GetGuiInset() end)
 		local y = (ok and inset and inset.Y or 0) / math.max(sc or rootScale.Scale, 0.01)
 		topBar.Position = UDim2.fromOffset(0, y)
-		sHeader.Position = UDim2.fromOffset(28, 16 + y)
-		content.Position = UDim2.fromOffset(28, 108 + y)
-		content:SetAttribute("HomeY", 108 + y)
-		content.Size = UDim2.new(1, -56, 1, -130 - y)
+		sHeader.Position = UDim2.fromOffset(LAYOUT.side, (LAYOUT.compact and 8 or 16) + y)
+		content.Position = UDim2.fromOffset(LAYOUT.side, LAYOUT.head + y)
+		content:SetAttribute("HomeY", LAYOUT.head + y)
+		content.Size = UDim2.new(1, -2 * LAYOUT.side, 1, -LAYOUT.head - (LAYOUT.compact and 8 or 22) - y)
 		lobby.Position = UDim2.fromOffset(0, y)
 		lobby.Size = UDim2.new(1, 0, 1, -y)
 	end
@@ -842,7 +895,6 @@ local ui = {bracket = "1v1", ranked = false, lbTab = "Warfront", editing = GameC
 	ownedOnly = true,   -- the Armory shows what you have; the filter off shows everything you can get
 	filters = {hideEmpty = true, hideFull = false, customOnly = false, door = nil},
 	customOpen = false, custom = nil, facing = 0, zoom = 1, shopSeen = nil}
-do for k in pairs(Catalog.CRATES) do if not ui.crate or k < ui.crate then ui.crate = k end end end
 ui.custom = {}
 for k, v in pairs(GameConfig.CUSTOM_DEFAULTS) do ui.custom[k] = v end
 ui.custom.name = ""
@@ -1632,15 +1684,15 @@ local SCREEN_DEF = {
 	SERVERS    = {title = "SERVERS",  icon = "Tasks"},
 	SETTINGS   = {title = "SETTINGS", icon = "Settings"},
 	PASS       = {title = "SEASON PASS", icon = "Pass"},
-	HATCHERY   = {title = "HATCHERY", icon = "Hatchery"},
-	TRADE      = {title = "TRADE",    icon = "Shop"},
+	HATCHERY   = {title = "PETS",     icon = "Hatchery"},
+	TRADE      = {title = "TRADE",    icon = "Trade"},
 	RANKS      = {title = "LEADERBOARDS", icon = "Tasks"},
 	PROFILE    = {title = "PROFILE",  icon = "Loadout"},
-	INVENTORY  = {title = "INVENTORY", icon = "Armory"},
+	INVENTORY  = {title = "INVENTORY", icon = "Inventory"},
 }
 -- old tab names and the names other scripts send over the bus
 local ALIAS = {INV = "INVENTORY", COLLECTION = "INVENTORY", LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
-	EGGS = "HATCHERY", PETS = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS"}
+	EGGS = "HATCHERY", PETS = "HATCHERY", EGGSHOP = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
 	local f = clearFrame(content)
@@ -2093,6 +2145,187 @@ function HX.spinCrate(res)
 end
 _G.HubCrateSpin = function(res) return HX.spinCrate(res) end
 
+--------------------------------------------------------------------
+--  3D CRATES (ReplicatedStorage ▸ CrateModels): the gallery the CRATES page
+--  opens on, the crate in the corner of a crate's page, and the burst open
+--------------------------------------------------------------------
+HX.CrateModels = require(ReplicatedStorage:WaitForChild("CrateModels"))
+HX.Hints = require(ReplicatedStorage:WaitForChild("InputHints"))   -- (control names for keys / a controller / touch)
+-- a phone: a screen that scrolls inside itself (a grid, a row of cards) fits the
+-- visible height instead of scrolling twice; the rest keep their full height
+function HX.fitScreen(on)
+	if content:IsA("ScrollingFrame") then
+		-- (CanvasSize's scale is the PARENT's: the visible height in the root's units instead)
+		local visible = root.Size.Y.Offset * content.Size.Y.Scale + content.Size.Y.Offset
+		content.CanvasSize = UDim2.new(0, 0, 0, on and visible or math.max(LAYOUT.screenH, visible))
+	end
+end
+
+-- a crate turning in a ViewportFrame (the camera orbits: cheap enough for a
+-- whole gallery). Returns the frame and a table: .hover = true lifts the lid a
+-- little and lets a glow out.
+function HX.crateView(parent, crateId, size, opts)
+	opts = opts or {}
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = size or UDim2.fromScale(1, 1)
+	vp.Ambient = Color3.fromRGB(150, 146, 140)
+	vp.LightColor = Color3.fromRGB(255, 244, 228)
+	vp.LightDirection = Vector3.new(-0.55, -1, 0.35)
+	vp.Parent = parent
+	local cam = Instance.new("Camera"); cam.FieldOfView = 30; cam.Parent = vp
+	vp.CurrentCamera = cam
+	local model, rig = HX.CrateModels.build(crateId, Catalog.CRATES[crateId])
+	model.Parent = vp
+	local st = {hover = false, lid = 0, glow = 0}
+	local t0 = os.clock() + math.random() * 6
+	local dist = opts.dist or 13
+	task.spawn(function()
+		while vp.Parent do
+			if gui.Enabled then
+				local t = os.clock() - t0
+				local yaw = (opts.yaw or -0.55) + 0.4 * math.sin(t * 0.6)
+				local bob = 0.12 * math.sin(t * 1.9)
+				local look = Vector3.new(0, 1.55 + bob, 0)
+				cam.CFrame = CFrame.lookAt(look + Vector3.new(math.sin(yaw) * dist, dist * 0.34, -math.cos(yaw) * dist), look)
+				-- (the lid and glow ease towards the hover state)
+				local wantLid, wantGlow = st.hover and 0.42 or 0, st.hover and 0.45 or 0
+				if math.abs(st.lid - wantLid) > 0.002 or math.abs(st.glow - wantGlow) > 0.002 or st.glow > 0 then
+					st.lid += (wantLid - st.lid) * 0.25
+					st.glow += (wantGlow - st.glow) * 0.25
+					rig.setLid(st.lid); rig.glow(st.glow, t)
+				end
+			end
+			task.wait(1 / 30)
+		end
+	end)
+	return vp, st
+end
+
+-- THE GALLERY: every crate in rotation as a card: the chest turning, its name,
+-- how long it's around, its Mythic, and what an open costs. Click: its page.
+function HX.crateGallery(host, liveCrates)
+	local P = state.profile or {}
+	local keys = P.wallet and P.wallet.keys or 0
+	local head = clearFrame(host); head.Size = UDim2.new(1, 0, 0, 40)
+	local ht = title(head, "PICK A CRATE", 28); ht.Size = UDim2.new(0.5, 0, 1, 0)
+	local kt = title(head, string.format("🔑 YOUR KEYS: %d", keys), 18, keys > 0 and COL.GOOD or COL.DIM)
+	kt.AnchorPoint = Vector2.new(1, 0); kt.Position = UDim2.new(1, 0, 0, 0); kt.Size = UDim2.fromOffset(300, 40); kt.TextXAlignment = Enum.TextXAlignment.Right
+	local nd, nt = HX.Drops.nextWith("crate")
+	local nc = nd and Catalog.CRATES[nd.crate]
+	local sub = dim(host, "Tap a crate to see everything inside and open it. Every crate can drop a Mythic."
+		.. ((nc and nt) and string.format("  ·  NEW CRATE IN %s: %s", HX.span(nt - HX.Drops.now()), string.upper(nc.name)) or ""), 14)
+	sub.Position = UDim2.fromOffset(0, 42); sub.Size = UDim2.new(1, 0, 0, 20)
+	local sf = Instance.new("ScrollingFrame")
+	sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0; sf.Position = UDim2.fromOffset(0, 74); sf.Size = UDim2.new(1, 0, 1, -74)
+	sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.Y; sf.ScrollBarThickness = 6; sf.ScrollBarImageColor3 = COL.DIM
+	sf.Parent = host
+	padding(sf, 4, 10, 4, 10)
+	local gl = Instance.new("UIGridLayout", sf)
+	-- (a phone: shorter cards, the whole card on screen)
+	local VH = LAYOUT.compact and 168 or 290
+	gl.CellSize = UDim2.fromOffset(292, VH + 178); gl.CellPadding = UDim2.fromOffset(14, 14); gl.SortOrder = Enum.SortOrder.LayoutOrder
+	gl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	for i, lc in ipairs(liveCrates) do
+		local c = lc.c
+		local col = c.accent or COL.PURPLE
+		local card = button(sf, "", 12, COL.GLASS)
+		card.AutoButtonColor = false; card.LayoutOrder = i
+		local stroke = border(card, col, 2.5, 0.25)
+		do local g = card:FindFirstChildOfClass("UIGradient") or Instance.new("UIGradient", card); g.Rotation = 90; g.Color = ColorSequence.new(col:Lerp(Color3.new(0, 0, 0), 0.5), Color3.fromRGB(10, 12, 22)) end
+		local view, vs = HX.crateView(card, lc.id, UDim2.new(1, 0, 0, VH), {dist = LAYOUT.compact and 9.5 or 10.5})
+		view.Position = UDim2.fromOffset(0, 26)
+		local when = lc.event and "EVENT" or (lc.featured and "FEATURED" or "ALWAYS HERE")
+		if lc.leaves then when ..= "  ·  " .. HX.span(lc.leaves - HX.Drops.now()) .. " LEFT" end
+		local wt = title(card, when, 12, lc.event and RARITY_COL.Mythic or (lc.featured and COL.ACCENT or COL.DIM))
+		wt.Position = UDim2.fromOffset(14, 10); wt.Size = UDim2.new(1, -28, 0, 16)
+		local nm = title(card, c.name, 22); nm.Position = UDim2.fromOffset(14, VH + 28); nm.Size = UDim2.new(1, -28, 0, 28); nm.TextTruncate = Enum.TextTruncate.AtEnd
+		local top
+		for _, it in ipairs(Catalog.crateItems(lc.id)) do if it.rarity == "Mythic" then top = it end end
+		local mt = title(card, top and ("MYTHIC INSIDE: " .. string.upper(top.name)) or (c.description or ""), 12, top and RARITY_COL.Mythic or COL.DIM)
+		mt.Position = UDim2.fromOffset(14, VH + 58); mt.Size = UDim2.new(1, -28, 0, 16); mt.TextTruncate = Enum.TextTruncate.AtEnd
+		local price = P.restricted and string.format("%d KEY%s", c.keys or 1, (c.keys or 1) > 1 and "S" or "")
+			or string.format("%d CROWNS  ·  OR %d KEY%s", c.cost or 0, c.keys or 1, (c.keys or 1) > 1 and "S" or "")
+		local pt = title(card, price, 14, COL.GOLD); pt.Position = UDim2.fromOffset(14, VH + 78); pt.Size = UDim2.new(1, -28, 0, 18)
+		local go = frame(card, col, 12); go.AnchorPoint = Vector2.new(0, 1); go.Position = UDim2.new(0, 10, 1, -10); go.Size = UDim2.new(1, -20, 0, 52)
+		gloss(go, 0.3)
+		local gt = title(go, "SEE INSIDE  ›", 20); gt.Size = UDim2.fromScale(1, 1); gt.TextXAlignment = Enum.TextXAlignment.Center
+		card.MouseEnter:Connect(function() vs.hover = true; stroke.Transparency = 0; HX.FX.play("Hover") end)
+		card.MouseLeave:Connect(function() vs.hover = false; stroke.Transparency = 0.25 end)
+		card.Activated:Connect(function()
+			HX.FX.play("Click")
+			ui.crate = lc.id; ui.crateItem = nil
+			render.SHOP()
+		end)
+	end
+	if #liveCrates == 0 then dim(sf, "No crates in rotation right now.", 15) end
+end
+
+-- THE BURST: the chosen crate thumps down, shakes three times (light leaking
+-- out of the seams), and the lid is flung back in a blaze. Yields ~1.7 s; the
+-- reel follows.
+function HX.crateBurst(host, crateId)
+	local o = frame(host, Color3.fromRGB(6, 8, 16), 14)
+	o.Name = "Burst"; o.Size = UDim2.fromScale(1, 1); o.ZIndex = 19; o.Active = true; o.BackgroundTransparency = 0.04
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1; vp.Size = UDim2.fromScale(1, 1); vp.ZIndex = 19
+	vp.Ambient = Color3.fromRGB(150, 146, 140); vp.LightColor = Color3.fromRGB(255, 244, 228); vp.LightDirection = Vector3.new(-0.55, -1, 0.35)
+	vp.Parent = o
+	local cam = Instance.new("Camera"); cam.FieldOfView = 34; cam.Parent = vp; vp.CurrentCamera = cam
+	local model, rig = HX.CrateModels.build(crateId, Catalog.CRATES[crateId])
+	model.Parent = vp
+	cam.CFrame = CFrame.lookAt(Vector3.new(6.2, 7.4, -16), Vector3.new(0, 2.9, 0))
+	local flash = frame(o, rig.look.glow, 14); flash.Size = UDim2.fromScale(1, 1); flash.BackgroundTransparency = 1; flash.ZIndex = 21
+	local function place(y, rz, rx) model:PivotTo(CFrame.new(0, y, 0) * CFrame.Angles(rx or 0, 0, rz or 0)) end
+	local slow = math.max(gui:GetAttribute("BurstSlow") or 1, 0.1)
+	local function run(dur, fn)
+		dur *= slow
+		local t0 = os.clock()
+		while true do
+			local k = math.clamp((os.clock() - t0) / dur, 0, 1)
+			fn(k)
+			if k >= 1 then break end
+			task.wait()
+		end
+	end
+	-- 1. it drops in and lands with a thump
+	HX.FX.play("Whoosh")
+	run(0.28, function(k) place(7 * (1 - k * k), 0) end)
+	HX.FX.play("Thud")
+	run(0.16, function(k) place(0.35 * math.sin(k * math.pi), 0) end)
+	place(0, 0)
+	-- 2. three shakes, each harder, the seams glowing brighter
+	for n = 1, 3 do
+		task.wait(n == 1 and 0.12 or 0.08)
+		HX.FX.play("EggCrack", {Speed = 0.7 + n * 0.08})
+		local amp = math.rad(3 + n * 3)
+		run(0.22, function(k)
+			local w = math.sin(k * math.pi * 4) * (1 - k)
+			place(0.14 * n * math.sin(k * math.pi), amp * w, amp * 0.4 * w)
+			rig.setLid(0.06 * n * math.sin(k * math.pi))
+			rig.glow(0.12 * n * math.sin(k * math.pi), os.clock())
+		end)
+		place(0, 0); rig.setLid(0)
+	end
+	-- 3. the lid flies back, the light pours out
+	task.wait(0.1)
+	HX.FX.play("Boom")
+	flash.BackgroundTransparency = 0.25
+	TweenService:Create(flash, TweenInfo.new(0.45), {BackgroundTransparency = 1}):Play()
+	run(0.24, function(k)
+		local e = 1 - (1 - k) ^ 3
+		rig.setLid(math.rad(118) * e)
+		rig.glow(e, os.clock())
+	end)
+	run(0.45, function(k) rig.glow(1, os.clock() * (1 + k)) end)
+	-- (the reel takes over: fade this away underneath it)
+	task.delay(0.15, function()
+		TweenService:Create(o, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(vp, TweenInfo.new(0.3), {ImageTransparency = 1}):Play()
+		task.delay(0.35, function() o:Destroy() end)
+	end)
+end
+
 local function afterBuy(r, rerenderFn)
 	if not r.ok and HX.shortOf(r.msg) then return end
 	toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
@@ -2120,6 +2353,7 @@ do
 	local stageArea = clearFrame(lobby)
 	stageArea.Position = UDim2.fromOffset(372, 96)
 	stageArea.Size = UDim2.new(1, -372 - 384, 1, -96 - 176)
+	if LAYOUT.compact then stageArea.Position = UDim2.fromOffset(196, 84); stageArea.Size = UDim2.new(1, -196 - 316, 1, -84 - 24) end
 	local stage = Stage.new(stageArea, {transparent = true, dist = 10.5, fov = 40, platform = COL.BLUE,
 		sway = function() return currentTab == "PLAY" and not modalBack.Visible end})
 	local stageHint = title(lobby, "", 13, COL.DIM)
@@ -2127,6 +2361,7 @@ do
 	stageHint.Position = UDim2.new(0.5, -4, 1, -176)
 	stageHint.Size = UDim2.fromOffset(560, 18)
 	stageHint.TextXAlignment = Enum.TextXAlignment.Center
+	stageHint.Visible = not LAYOUT.compact
 
 	local function partyMembers()
 		local list = {}
@@ -2196,6 +2431,7 @@ do
 	left.Position = UDim2.fromOffset(24, 104)
 	left.Size = UDim2.new(0, 330, 1, -104 - 196)
 	left.Name = "LobbyLeft"
+	left.Visible = not LAYOUT.compact   -- (a phone: tasks live behind the TASKS tile)
 	local leftList = scroll(left, 12)
 
 	local function taskRow(parent, ct, big)
@@ -2337,6 +2573,7 @@ do
 	right.Position = UDim2.new(1, -24, 0, 104)
 	right.Size = UDim2.new(0, 340, 1, -104 - 232)
 	right.Name = "LobbyRight"
+	if LAYOUT.compact then right.Position = UDim2.new(1, -16, 0, 90); right.Size = UDim2.new(0, 300, 1, -90 - 240) end
 	local rightList = scroll(right, 12)
 
 	local MEDAL = {Color3.fromRGB(255, 196, 40), Color3.fromRGB(200, 210, 224), Color3.fromRGB(214, 140, 80)}
@@ -2558,14 +2795,24 @@ do
 	dock.AnchorPoint = Vector2.new(0, 1)
 	dock.Position = UDim2.new(0, 24, 1, -22)
 	dock.Size = UDim2.fromOffset(10 * 100 + 9 * 12, 100)
-	hlist(dock, 12)
-	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"INVENTORY", "Hatchery", "INVENTORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
-		{"HATCHERY", "Hatchery", "HATCHERY"}, {"TRADE", "Shop", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
+	if LAYOUT.compact then
+		-- (a phone: two columns of five down the left)
+		dock.AnchorPoint = Vector2.new(0, 0); dock.Position = UDim2.fromOffset(14, 98); dock.Size = UDim2.fromOffset(2 * 80 + 8, 5 * 80 + 4 * 8)
+		local g = Instance.new("UIGridLayout", dock)
+		g.CellSize = UDim2.fromOffset(80, 80); g.CellPadding = UDim2.fromOffset(8, 8); g.FillDirectionMaxCells = 2; g.SortOrder = Enum.SortOrder.LayoutOrder
+	else
+		hlist(dock, 12)
+	end
+	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"INVENTORY", "Inventory", "INVENTORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
+		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
 		b.Size = UDim2.fromOffset(100, 100)
 		for _, ch in ipairs(b:GetChildren()) do
-			if ch:IsA("ImageLabel") then ch.Size = UDim2.fromOffset(86, 86) elseif ch:IsA("TextLabel") and ch.Name ~= "Badge" then ch.TextSize = 15 end
+			if ch:IsA("ImageLabel") then
+				ch.Size = LAYOUT.compact and UDim2.fromOffset(66, 66) or UDim2.fromOffset(86, 86)
+				if LAYOUT.compact then ch.Position = UDim2.new(0.5, 0, 0, -16) end
+			elseif ch:IsA("TextLabel") and ch.Name ~= "Badge" then ch.TextSize = LAYOUT.compact and 15 or 15 end
 		end
 		b.Name = "Dock_" .. d[1]
 		b.LayoutOrder = i
@@ -2581,21 +2828,23 @@ do
 	playArea.Position = UDim2.new(1, -24, 1, -22)
 	playArea.Size = UDim2.fromOffset(384, 220)
 	playArea.Name = "PlayArea"
+	local PW = LAYOUT.compact and 300 or 384   -- (a phone: PLAY a little smaller)
+	if LAYOUT.compact then playArea.Position = UDim2.new(1, -16, 1, -14); playArea.Size = UDim2.fromOffset(PW, 200) end
 	local playHolder, playFace = fatButton(playArea, "PLAY", COL.GREEN, 56)
 	playHolder.Name = "Play"
 	playHolder.AnchorPoint = Vector2.new(1, 1)
 	playHolder.Position = UDim2.new(1, 0, 1, 0)
-	playHolder.Size = UDim2.fromOffset(384, 114)
+	playHolder.Size = UDim2.fromOffset(PW, LAYOUT.compact and 96 or 114)
 	local secHolder, secFace = fatButton(playArea, "", COL.BLUE, 22)
 	secHolder.Name = "Secondary"
 	secHolder.AnchorPoint = Vector2.new(1, 1)
-	secHolder.Position = UDim2.new(1, 0, 1, -124)
-	secHolder.Size = UDim2.fromOffset(384, 56)
+	secHolder.Position = UDim2.new(1, 0, 1, LAYOUT.compact and -104 or -124)
+	secHolder.Size = UDim2.fromOffset(PW, LAYOUT.compact and 50 or 56)
 	local statusPill = frame(playArea, COL.GLASS, 14)
 	statusPill.BackgroundTransparency = 0.15
 	statusPill.AnchorPoint = Vector2.new(1, 1)
 	statusPill.Position = UDim2.new(1, 0, 1, -124)
-	statusPill.Size = UDim2.fromOffset(384, 32)
+	statusPill.Size = UDim2.fromOffset(PW, 32)
 	local statusText = title(statusPill, "", 14)
 	statusText.Size = UDim2.fromScale(1, 1)
 	statusText.TextXAlignment = Enum.TextXAlignment.Center
@@ -2657,7 +2906,8 @@ do
 		end
 		secHolder.Visible = secText ~= nil
 		if secText then paintFat(secHolder, secFace, secText, secColor) end
-		statusPill.Position = secText and UDim2.new(1, 0, 1, -188) or UDim2.new(1, 0, 1, -124)
+		local lift = LAYOUT.compact and {-162, -104} or {-188, -124}
+		statusPill.Position = UDim2.new(1, 0, 1, secText and lift[1] or lift[2])
 		statusText.Text = status or ""
 		-- the top bar's close: when there is somewhere to go back to
 		topCloseHolder.Visible = currentTab == "PLAY" and (alive() or inMatch)
@@ -3206,7 +3456,7 @@ do
 			end
 			if state.activeClass == id then
 				local chipA = title(b, "★ ACTIVE", 12); chipA.BackgroundTransparency = 0; chipA.BackgroundColor3 = COL.GREEN
-				chipA.AnchorPoint = Vector2.new(1, 0); chipA.Position = UDim2.new(1, -8, 0, 8); chipA.Size = UDim2.fromOffset(74, 20); chipA.TextXAlignment = Enum.TextXAlignment.Center
+				chipA.AnchorPoint = Vector2.new(0, 1); chipA.Position = UDim2.new(0, 10, 1, -8); chipA.Size = UDim2.fromOffset(78, 20); chipA.TextXAlignment = Enum.TextXAlignment.Center
 				Instance.new("UICorner", chipA).CornerRadius = UDim.new(0, 6)
 			end
 			b.Activated:Connect(function() ui.editing = id; render.CLASSES() end)
@@ -4047,7 +4297,7 @@ do
 			local h, b = fatButton(tabs, t[2], on and t[3] or COL.GLASS2, 20)
 			h.Size = UDim2.fromOffset(170, 46); h.LayoutOrder = i
 			if not on then b.TextColor3 = COL.DIM end
-			b.Activated:Connect(function() ui.shopTab = t[1]; render.SHOP() end)
+			b.Activated:Connect(function() if t[1] == "crates" and not ui.rolling then ui.crate = nil; ui.crateItem = nil end; ui.shopTab = t[1]; render.SHOP() end)
 		end
 	end
 
@@ -4229,9 +4479,6 @@ do
 	--  CRATES: the chosen item on a stage, the strip, the drum
 	----------------------------------------------------------------
 	local function crates()
-		local left = clearFrame(body); left.Size = UDim2.new(1, -372, 1, 0)
-		local right = clearFrame(body); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 360, 1, 0)
-		local rightList = scroll(right, 10)
 		-- only the crates in rotation now: events first, then the featured ones, then the always-there
 		local liveCrates = {}
 		for k, c in pairs(Catalog.CRATES) do
@@ -4250,9 +4497,12 @@ do
 		if not liveOf[ui.crate] and HX.pendingSpin and HX.pendingSpin.crate == ui.crate and Catalog.CRATES[ui.crate] then
 			liveOf[ui.crate] = {id = ui.crate, c = Catalog.CRATES[ui.crate]}
 		end
-		if not liveOf[ui.crate] then ui.crate = liveCrates[1] and liveCrates[1].id; ui.crateItem = nil end
+		-- no crate chosen (or it left the rotation): the gallery
+		if not (ui.crate and liveOf[ui.crate]) then ui.crate = nil; ui.crateItem = nil; HX.crateGallery(body, liveCrates); return end
 		local crate = Catalog.CRATES[ui.crate]
-		if not crate then dim(left, "No crates in rotation right now."); return end
+		local left = clearFrame(body); left.Size = UDim2.new(1, -372, 1, 0)
+		local right = clearFrame(body); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 360, 1, 0)
+		local rightList = scroll(right, 10)
 		local pool = Catalog.crateItems(ui.crate)
 		table.sort(pool, function(a, b)
 			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
@@ -4288,19 +4538,15 @@ do
 		-- strip
 		local stripH = clearFrame(left); stripH.AnchorPoint = Vector2.new(0, 1); stripH.Position = UDim2.new(0, 0, 1, 0); stripH.Size = UDim2.new(1, 0, 0, 184)
 		local _, sf = Preview.strip(stripH, pool, sel and keyOf(sel), function(it) ui.crateItem = keyOf(it); render.SHOP() end, 184)
-		-- right: the crates, open, odds, pulls
-		local names = {}
-		for _, lc in ipairs(liveCrates) do
-			table.insert(names, {text = (lc.event and "★ " or (lc.featured and "◆ " or "")) .. lc.c.name, id = lc.id})
-		end
-		chips(rightList, names, function(it) return it.id == ui.crate end, function(it) ui.crate = it.id; ui.crateItem = nil; render.SHOP() end, 34)
-		do   -- what's coming: the next drop that brings a crate
-			local nd, nt = HX.Drops.nextWith("crate")
-			local nc = nd and Catalog.CRATES[nd.crate]
-			if nc and nt then
-				local up = title(rightList, string.format("NEW CRATE IN %s  ·  %s", HX.span(nt - HX.Drops.now()), string.upper(nc.name)), 13, COL.ACCENT)
-				up.Size = UDim2.new(1, 0, 0, 18); up.LayoutOrder = nextOrder()
-			end
+		-- right: back to every crate, this one turning, open, odds, pulls
+		do
+			local bh, bb = fatButton(rightList, "‹  ALL CRATES", COL.GLASS2, 18); bh.Size = UDim2.new(1, 0, 0, 46); bh.LayoutOrder = nextOrder()
+			bb.Activated:Connect(function() if ui.rolling then return end; ui.crate = nil; ui.crateItem = nil; render.SHOP() end)
+			local cv = frame(rightList, COL.GLASS2, 14); cv.Size = UDim2.new(1, 0, 0, 170); cv.LayoutOrder = nextOrder(); cv.ClipsDescendants = true
+			do local g = Instance.new("UIGradient", cv); g.Rotation = 90; g.Color = ColorSequence.new((crate.accent or COL.PURPLE):Lerp(Color3.new(0, 0, 0), 0.45), Color3.fromRGB(10, 12, 22)) end
+			border(cv, crate.accent or COL.PURPLE, 2, 0.3)
+			local _, vs = HX.crateView(cv, ui.crate, UDim2.fromScale(1, 1), {dist = 11.5})
+			cv.MouseEnter:Connect(function() vs.hover = true end); cv.MouseLeave:Connect(function() vs.hover = false end)
 		end
 		local lc = liveOf[ui.crate]
 		local c1 = panel(rightList, crate.name)
@@ -4350,7 +4596,9 @@ do
 		local function spin(res)
 			ui.rolling = true
 			rollNote.Text = "rolling…"
-			-- the reel: the stage greyed, a strip of cards under a marker, a slow creep, BOOM
+			-- the chest bursts open, then the reel: the stage greyed, a strip of cards
+			-- under a marker, a slow creep, BOOM
+			HX.crateBurst(left, ui.crate)
 			HX.crateReel(left, pool, res, crate)
 			ui.rolling = false
 			table.insert(ui.pulls, 1, res)
@@ -4495,6 +4743,7 @@ do
 		ui.shopTab = ALIASES[ui.shopTab] or ui.shopTab
 		renderTabs()
 		clear(body)
+		HX.fitScreen(ui.shopTab == "crates" and not ui.crate)
 		if ui.shopTab == "crates" then crates() elseif ui.shopTab == "crowns" then crowns() elseif ui.shopTab == "colors" then colors() else ui.shopTab = "daily"; daily() end
 		renderSide()
 	end
@@ -5036,7 +5285,10 @@ do
 end
 
 --------------------------------------------------------------------
---  HATCHERY — your nests, your eggs, the egg shelf and your companions
+--  PETS (the HATCHERY screen) — three tabs, nothing below the fold:
+--    EGG SHOP   every egg on sale as a big card: buy it, see what's inside
+--    MY NESTS   your nests warming eggs, and the eggs you hold
+--    MY PETS    everyone there is to find; take one along
 --  (Economy ▸ Pastimes on the server; the Hatchery itself stands in the
 --  Courtyard, where your eggs hatch faster while you stay)
 --------------------------------------------------------------------
@@ -5045,8 +5297,7 @@ do
 	local tabs = clearFrame(f); tabs.Size = UDim2.new(1, 0, 0, 46)
 	hlist(tabs, 10)
 	local body = clearFrame(f); body.Position = UDim2.new(0, 0, 0, 58); body.Size = UDim2.new(1, 0, 1, -58)
-	local TABS = {{"nests", "NESTS"}, {"companions", "COMPANIONS"}}
-	ui.hatchTab = ui.hatchTab or "nests"
+	local TABS = {{"shop", "EGG SHOP"}, {"nests", "MY NESTS"}, {"companions", "MY PETS"}}
 	local E = Catalog.EGGS
 	local busy = false
 
@@ -5078,6 +5329,8 @@ do
 				toast(r2.msg or "", r2.ok and COL.GOOD or COL.BAD)
 				ui.hatchTab = "companions"; ui.compSel = res.id; render.HATCHERY()
 			end})
+		else
+			table.insert(buttons, {"SEE MY PETS", COL.BLUE, function() closeModal(); ui.hatchTab = "companions"; ui.compSel = res.id; render.HATCHERY() end})
 		end
 		modal(string.upper(res.rarity) .. "!  " .. res.name, line, buttons, function(box)
 			local v = Preview.companion(box, res.id, UDim2.new(1, 0, 0, 260), false, res.stars); v.LayoutOrder = 5
@@ -5128,7 +5381,7 @@ do
 		for _, e in ipairs(E.eggs) do total += mine[e.id] or 0 end
 		modal("SET AN EGG IN NEST " .. nest,
 			total > 0 and string.format("Your eggs (%d). Pick one to set it warming: it keeps warming while you're away, even offline.", total)
-				or "You have no eggs yet. Buy one below, or earn them from playtime gifts, login days and the season pass.",
+				or "You have no eggs yet. Buy one right here, or earn them from playtime gifts, login days and the season pass.",
 			nil, function(box)
 				local grid = clearFrame(box)
 				grid.Size = UDim2.new(1, 0, 0, 0); grid.AutomaticSize = Enum.AutomaticSize.Y; grid.LayoutOrder = 3
@@ -5233,74 +5486,139 @@ do
 			end)
 		end
 		if total == 0 then dim(inv, "None waiting. Buy one below, or earn them: playtime gifts, login days, the season pass.", 13) end
-		local shelf = panel(list, "THE SHELF")
-		local P = state.profile or {}
+		local more = panel(list, nil, true)
+		dim(more, "Want more pets? Every egg hatches its own set.", 13)
+		local mh, mb = fatButton(more, "GET MORE EGGS  ›  EGG SHOP", COL.GREEN, 18); mh.Size = UDim2.new(1, 0, 0, 54); mh.LayoutOrder = nextOrder()
+		mb.Activated:Connect(function() ui.hatchTab = "shop"; render.HATCHERY() end)
+	end
+
+	-- WHAT'S INSIDE: everyone an egg can hatch, each one's own chance, which you have
+	function HX.whatsInside(eg)
 		local V = E.variants or {}
-		dim(shelf, string.format("Every hatch also rolls a finish: Golden %s · Spectral %s (otherwise ordinary).", HX.pct(V.Golden or 0), HX.pct(V.Spectral or 0)), 12)
-		if P.restricted then dim(shelf, "In your region eggs aren't sold: they come as gifts (playtime, login days, the pass, events).", 12) end
+		local pool = Catalog.eggPool(eg.id)
+		local per = {}
+		for _, comp in ipairs(pool) do per[comp.rarity] = (per[comp.rarity] or 0) + 1 end
+		table.sort(pool, function(a, b)
+			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
+			return a.name < b.name
+		end)
+		local mineP = state.profile or {}
+		modal(string.upper(eg.name) .. "  ·  WHAT'S INSIDE", string.format("%d pets. Every hatch also rolls a finish: Golden %s · Spectral %s. Tap one to inspect it.", #pool, HX.pct(V.Golden or 0), HX.pct(V.Spectral or 0)), nil, function(box)
+			-- (a scrolling grid: a big egg's list never runs off the screen)
+			local g = Instance.new("ScrollingFrame"); g.BackgroundTransparency = 1; g.BorderSizePixel = 0; g.LayoutOrder = 5; g.Parent = box
+			g.Size = UDim2.new(1, 0, 0, math.min(math.ceil(#pool / 4) * 166, 360)); g.CanvasSize = UDim2.new(); g.AutomaticCanvasSize = Enum.AutomaticSize.Y
+			g.ScrollBarThickness = 6; g.ScrollBarImageColor3 = COL.DIM
+			local gl = Instance.new("UIGridLayout", g); gl.CellSize = UDim2.fromOffset(128, 158); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
+			for k, comp in ipairs(pool) do
+				local cell = button(g, "", 12, COL.GLASS2); cell.AutoButtonColor = false; cell.LayoutOrder = k
+				cell.Activated:Connect(function() HX.inspect("companion", comp.id) end)
+				border(cell, RARITY_COL[comp.rarity] or COL.DIM, 2, 0.3)
+				local have = (mineP.owned and mineP.owned.companions and mineP.owned.companions[comp.id]) or (mineP.copies and mineP.copies["pet:" .. comp.id])
+				local pv = Preview.companion(cell, comp.id, UDim2.new(1, -8, 0, 96), true); pv.Position = UDim2.fromOffset(4, 4); pv.BackgroundTransparency = 1
+				local nmL = title(cell, comp.name, 12, RARITY_COL[comp.rarity]); nmL.Position = UDim2.fromOffset(6, 102); nmL.Size = UDim2.new(1, -12, 0, 16); nmL.TextTruncate = Enum.TextTruncate.AtEnd
+				local chance = (eg.odds[comp.rarity] or 0) / math.max(per[comp.rarity] or 1, 1)
+				local ch = title(cell, HX.pct(chance) .. (have and "  ·  OWNED" or ""), 11, have and COL.GOOD or COL.DIM); ch.Position = UDim2.fromOffset(6, 120); ch.Size = UDim2.new(1, -12, 0, 14)
+				local rl = title(cell, string.upper(comp.rarity), 10, RARITY_COL[comp.rarity]); rl.Position = UDim2.fromOffset(6, 136); rl.Size = UDim2.new(1, -12, 0, 14)
+			end
+		end, 600)
+	end
+
+	-- THE EGG SHOP: how it works in three steps, then every egg on sale as a big
+	-- card (it turns, its odds as a bar, what's inside, BUY). A bought egg asks to
+	-- go straight into a free nest.
+	function HX.eggShop()
+		local h = state.hatchery or {nests = {}, eggs = {}, count = E.nests}
+		local P = state.profile or {}
+		local steps = clearFrame(body); steps.Size = UDim2.new(1, 0, 0, 50)
+		steps.Visible = not LAYOUT.compact   -- (a phone: the header says it; the eggs get the room)
+		local TOP = LAYOUT.compact and 0 or 62
+		hlist(steps, 10).VerticalAlignment = Enum.VerticalAlignment.Center
+		for i, st in ipairs({{"BUY AN EGG", COL.GREEN}, {"SET IT IN A NEST", COL.BLUE}, {"HATCH A PET!", COL.GOLD}}) do
+			local pill = frame(steps, COL.GLASS2, 14); pill.BackgroundTransparency = 0.1; pill.Size = UDim2.fromOffset(250, 46); pill.LayoutOrder = i * 2
+			border(pill, st[2], 2, 0.3)
+			local n = title(pill, tostring(i), 22); n.BackgroundTransparency = 0; n.BackgroundColor3 = st[2]
+			n.Position = UDim2.fromOffset(6, 6); n.Size = UDim2.fromOffset(34, 34); n.TextXAlignment = Enum.TextXAlignment.Center
+			Instance.new("UICorner", n).CornerRadius = UDim.new(1, 0)
+			local tl = title(pill, st[1], 17); tl.Position = UDim2.fromOffset(50, 0); tl.Size = UDim2.new(1, -56, 1, 0)
+			if i < 3 then local ar = title(steps, "›", 30, COL.DIM); ar.Size = UDim2.fromOffset(20, 46); ar.LayoutOrder = i * 2 + 1; ar.TextXAlignment = Enum.TextXAlignment.Center end
+		end
+		local note = dim(steps, P.restricted and "In your region eggs aren't sold: they come as gifts." or "Pets are looks only, never stats.", 13)
+		note.AutomaticSize = Enum.AutomaticSize.None; note.Size = UDim2.fromOffset(300, 46); note.LayoutOrder = 9; note.TextYAlignment = Enum.TextYAlignment.Center
+		note.Visible = not LAYOUT.compact or P.restricted == true
 		do   -- what's coming: the next drop that brings an egg
 			local nd, nt = HX.Drops.nextWith("egg")
 			local ne = nd and Catalog.EGG[nd.egg]
 			if ne and nt then
-				local up = title(shelf, string.format("NEW EGG IN %s  ·  %s", HX.span(nt - HX.Drops.now()), string.upper(ne.name)), 13, COL.ACCENT)
-				up.Size = UDim2.new(1, 0, 0, 18); up.LayoutOrder = nextOrder()
+				local up = title(body, string.format("NEW EGG IN %s  ·  %s", HX.span(nt - HX.Drops.now()), string.upper(ne.name)), 14, COL.ACCENT)
+				up.AnchorPoint = Vector2.new(1, 0); up.Position = UDim2.new(1, 0, 0, 14); up.Size = UDim2.fromOffset(420, 20); up.TextXAlignment = Enum.TextXAlignment.Right
+				up.Visible = not LAYOUT.compact
 			end
 		end
-		for _, eg in ipairs(E.eggs) do
+		local row = Instance.new("ScrollingFrame")
+		row.BackgroundTransparency = 1; row.BorderSizePixel = 0; row.Position = UDim2.fromOffset(0, TOP); row.Size = UDim2.new(1, 0, 1, -TOP)
+		row.ScrollingDirection = Enum.ScrollingDirection.X; row.CanvasSize = UDim2.new(); row.AutomaticCanvasSize = Enum.AutomaticSize.X
+		row.ScrollBarThickness = 6; row.ScrollBarImageColor3 = COL.DIM; row.Parent = body
+		hlist(row, 14).HorizontalAlignment = Enum.HorizontalAlignment.Center
+		for i, eg in ipairs(E.eggs) do
 			local live, leaves = HX.Drops.eggLive(eg.id)
 			if not (live and Catalog.released(eg)) then continue end
-			local c = frame(shelf, COL.GLASS2, 12); c.BackgroundTransparency = 0.1; c.Size = UDim2.new(1, 0, 0, 96); c.LayoutOrder = nextOrder()
-			border(c, RARITY_COL[eg.rarity] or WHITE, 1.5, 0.5)
-			local th = Preview.egg(c, eg.id, UDim2.fromOffset(84, 84), nil, true); th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
-			local nm = title(c, eg.name, 17, RARITY_COL[eg.rarity]); nm.Position = UDim2.fromOffset(98, 8); nm.Size = UDim2.new(1, -230, 0, 20); nm.TextTruncate = Enum.TextTruncate.AtEnd
-			local mins = eg.minutes >= 60 and (math.floor(eg.minutes / 60 * 10) / 10 .. " h") or (eg.minutes .. " min")
-			local odds = {}
-			for _, r in ipairs(Catalog.RARITIES) do if eg.odds[r] then table.insert(odds, eg.odds[r] .. "% " .. r) end end
-			local d1 = label(c, "hatches in " .. mins .. "  ·  " .. table.concat(odds, " · ") .. (leaves and ("  ·  LEAVES IN " .. HX.span(leaves - HX.Drops.now())) or ""), 11, FONT_BODY, leaves and COL.ACCENT or COL.DIM)
-			d1.Position = UDim2.fromOffset(98, 30); d1.Size = UDim2.new(1, -258, 0, 56); d1.TextYAlignment = Enum.TextYAlignment.Top
-			-- WHAT'S INSIDE: everyone it can hatch, each one's own chance, which you have
-			local peek = button(c, "WHAT'S INSIDE", 11, COL.GLASS)
-			peek.AnchorPoint = Vector2.new(1, 1); peek.Position = UDim2.new(1, -136, 1, -8); peek.Size = UDim2.fromOffset(112, 26)
-			peek.Activated:Connect(function()
-				local pool = Catalog.eggPool(eg.id)
-				local per = {}
-				for _, comp in ipairs(pool) do per[comp.rarity] = (per[comp.rarity] or 0) + 1 end
-				table.sort(pool, function(a, b)
-					if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
-					return a.name < b.name
-				end)
-				local mineP = state.profile or {}
-				modal(string.upper(eg.name) .. "  ·  WHAT'S INSIDE", string.format("%d companions. Every hatch also rolls a finish: Golden %s · Spectral %s.", #pool, HX.pct(V.Golden or 0), HX.pct(V.Spectral or 0)), nil, function(box)
-					-- (a scrolling grid: a big egg's list never runs off the screen)
-					local g = Instance.new("ScrollingFrame"); g.BackgroundTransparency = 1; g.BorderSizePixel = 0; g.LayoutOrder = 5; g.Parent = box
-					g.Size = UDim2.new(1, 0, 0, math.min(math.ceil(#pool / 4) * 166, 360)); g.CanvasSize = UDim2.new(); g.AutomaticCanvasSize = Enum.AutomaticSize.Y
-					g.ScrollBarThickness = 6; g.ScrollBarImageColor3 = COL.DIM
-					local gl = Instance.new("UIGridLayout", g); gl.CellSize = UDim2.fromOffset(128, 158); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
-					for k, comp in ipairs(pool) do
-						local cell = button(g, "", 12, COL.GLASS2); cell.AutoButtonColor = false; cell.LayoutOrder = k
-						cell.Activated:Connect(function() HX.inspect("companion", comp.id) end)
-						border(cell, RARITY_COL[comp.rarity] or COL.DIM, 2, 0.3)
-						local have = (mineP.owned and mineP.owned.companions and mineP.owned.companions[comp.id]) or (mineP.copies and mineP.copies["pet:" .. comp.id])
-						local pv = Preview.companion(cell, comp.id, UDim2.new(1, -8, 0, 96), true); pv.Position = UDim2.fromOffset(4, 4); pv.BackgroundTransparency = 1
-						local nmL = title(cell, comp.name, 12, RARITY_COL[comp.rarity]); nmL.Position = UDim2.fromOffset(6, 102); nmL.Size = UDim2.new(1, -12, 0, 16); nmL.TextTruncate = Enum.TextTruncate.AtEnd
-						local chance = (eg.odds[comp.rarity] or 0) / math.max(per[comp.rarity] or 1, 1)
-						local ch = title(cell, HX.pct(chance) .. (have and "  ·  OWNED" or ""), 11, have and COL.GOOD or COL.DIM); ch.Position = UDim2.fromOffset(6, 120); ch.Size = UDim2.new(1, -12, 0, 14)
-						local rl = title(cell, string.upper(comp.rarity), 10, RARITY_COL[comp.rarity]); rl.Position = UDim2.fromOffset(6, 136); rl.Size = UDim2.new(1, -12, 0, 14)
-					end
-				end, 600)
-			end)
-			local price = eg.marks and (fmt(eg.marks) .. " MARKS") or (eg.crowns and (fmt(eg.crowns) .. " CROWNS"))
+			local col = RARITY_COL[eg.rarity] or WHITE
+			local n = (h.eggs and h.eggs[eg.id]) or 0
+			local c = frame(row, COL.GLASS, 18); c.BackgroundTransparency = 0.06; c.Size = UDim2.new(0, 290, 1, -10); c.LayoutOrder = i
+			border(c, col, 2.5, 0.15)
+			do local g = Instance.new("UIGradient", c); g.Rotation = 90; g.Color = ColorSequence.new(col:Lerp(Color3.new(0, 0, 0), 0.55), Color3.fromRGB(12, 14, 24)) end
+			local nm = title(c, eg.name, 24, WHITE); nm.Position = UDim2.fromOffset(14, 10); nm.Size = UDim2.new(1, -28, 0, 30); nm.TextTruncate = Enum.TextTruncate.AtEnd
+			local tag = rarityTag(c, eg.rarity); tag.Position = UDim2.fromOffset(14, 44)
+			if n > 0 then
+				local have = title(c, "YOU HAVE ×" .. n, 13, COL.GOOD); have.AnchorPoint = Vector2.new(1, 0); have.Position = UDim2.new(1, -14, 0, 48); have.Size = UDim2.fromOffset(120, 18); have.TextXAlignment = Enum.TextXAlignment.Right
+			end
+			local FOOT = LAYOUT.compact and (leaves and 136 or 118) or 246   -- (a phone: shorter, so BUY shows and the egg is big)
+			local view = Preview.egg(c, eg.id, UDim2.new(1, -20, 1, -(FOOT + 84)), function() return 0.12 end)
+			view.Position = UDim2.fromOffset(10, 72); view.BackgroundTransparency = 1
+			-- the odds as one bar, then the words
+			local foot = clearFrame(c); foot.AnchorPoint = Vector2.new(0, 1); foot.Position = UDim2.new(0, 14, 1, -12); foot.Size = UDim2.new(1, -28, 0, FOOT)
+			local tm = title(foot, "⏱  HATCHES IN " .. string.upper(hatchTime(eg)), 15, WHITE); tm.Size = UDim2.new(1, 0, 0, 20)
+			local bar = frame(foot, Color3.fromRGB(10, 12, 20), 6); bar.Position = UDim2.fromOffset(0, 28); bar.Size = UDim2.new(1, 0, 0, 14); bar.ClipsDescendants = true
+			hlist(bar, 0)
+			local words = {}
+			for k, r in ipairs(Catalog.RARITIES) do
+				local pc = eg.odds[r]
+				if pc and pc > 0 then
+					local seg = frame(bar, RARITY_COL[r] or COL.DIM); seg.Size = UDim2.new(pc / 100, 0, 1, 0); seg.LayoutOrder = k
+					table.insert(words, pc .. "% " .. r)
+				end
+			end
+			local od = label(foot, table.concat(words, "  ·  "), 12, FONT_BODY, COL.DIM); od.Position = UDim2.fromOffset(0, 48); od.Size = UDim2.new(1, 0, 0, 32); od.TextYAlignment = Enum.TextYAlignment.Top
+			od.Visible = not LAYOUT.compact   -- (a phone: the bar says it; WHAT'S INSIDE has the numbers)
+			if leaves then
+				local lv = title(foot, "LEAVES THE SHOP IN " .. HX.span(leaves - HX.Drops.now()), 12, COL.ACCENT); lv.Position = UDim2.fromOffset(0, LAYOUT.compact and 46 or 84); lv.Size = UDim2.new(1, 0, 0, 16)
+			end
+			local peek = button(foot, "WHAT'S INSIDE?", 16, COL.GLASS2); peek.Position = UDim2.fromOffset(0, 108); peek.Size = UDim2.new(1, 0, 0, 52)
+			if LAYOUT.compact then   -- (a phone: up by the name)
+				peek.Parent = c; peek.Text = "INSIDE?"; peek.AnchorPoint = Vector2.new(1, 0); peek.Position = UDim2.new(1, -12, 0, 12); peek.Size = UDim2.fromOffset(92, 36)
+			end
+			peek.Activated:Connect(function() HX.whatsInside(eg) end)
+			local price = priceOf(eg)
 			if price and not P.restricted then
-				local b = button(c, "BUY  ·  " .. price, 13, eg.crowns and COL.GOLD or COL.GREEN)
-				b.AnchorPoint = Vector2.new(1, 0.5); b.Position = UDim2.new(1, -8, 0.5, 0); b.Size = UDim2.fromOffset(120, 44)
-				b.Activated:Connect(function()
+				local bh, bb = fatButton(foot, "BUY  ·  " .. price, eg.crowns and COL.GOLD or COL.GREEN, 20)
+				bh.AnchorPoint = Vector2.new(0, 1); bh.Position = UDim2.new(0, 0, 1, 0); bh.Size = UDim2.new(1, 0, 0, LAYOUT.compact and 64 or 72)
+				bb.Activated:Connect(function()
 					local r = call("EggBuy", eg.id); apply(r)
-					toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+					if not r.ok then toast(r.msg or "", COL.BAD); return end
+					local r2 = call("Hatchery"); if r2.ok then state.hatchery = r2.hatchery end
+					local hh = state.hatchery or h
+					local free
+					for k = 1, (hh.count or E.nests) do if not (hh.nests and hh.nests[tostring(k)]) then free = k; break end end
 					render.HATCHERY()
+					modal("YOU GOT A " .. string.upper(eg.name) .. "!", free and "Set it in a nest and it starts warming right away, even while you're away."
+						or "Every nest is busy: it waits with your eggs until one is free.",
+						{free and {"SET IT IN NEST " .. free, COL.GREEN, function() closeModal(); ui.hatchTab = "nests"; place(eg.id, free) end}
+							or {"SEE MY NESTS", COL.BLUE, function() closeModal(); ui.hatchTab = "nests"; render.HATCHERY() end}},
+						function(box) local v = Preview.egg(box, eg.id, UDim2.new(1, 0, 0, 220), function() return 0.4 end); v.LayoutOrder = 5; border(v, col, 3, 0) end, 460)
 				end)
 			else
-				local t = label(c, "gifts, login days and the pass", 11, FONT, COL.ACCENT)
-				t.AnchorPoint = Vector2.new(1, 0.5); t.Position = UDim2.new(1, -8, 0.5, 0); t.Size = UDim2.fromOffset(120, 44); t.TextXAlignment = Enum.TextXAlignment.Center
+				local t = title(foot, "FROM GIFTS · LOGIN DAYS · THE PASS", 13, COL.ACCENT)
+				t.AnchorPoint = Vector2.new(0, 1); t.Position = UDim2.new(0, 0, 1, -20); t.Size = UDim2.new(1, 0, 0, 30); t.TextXAlignment = Enum.TextXAlignment.Center
 			end
 		end
 	end
@@ -5373,7 +5691,7 @@ do
 		else
 			local acts = panel(il, nil, true)
 			local hb, b = fatButton(acts, "HATCH EGGS TO FIND IT", COL.BLUE, 18); hb.Size = UDim2.new(1, 0, 0, 52); hb.LayoutOrder = nextOrder()
-			b.Activated:Connect(function() ui.hatchTab = "nests"; render.HATCHERY() end)
+			b.Activated:Connect(function() ui.hatchTab = "shop"; render.HATCHERY() end)
 		end
 	end
 
@@ -5382,7 +5700,7 @@ do
 		for i, t in ipairs(TABS) do
 			local on = ui.hatchTab == t[1]
 			local h2, b = fatButton(tabs, t[2], on and COL.BLUE or COL.GLASS2, 20)
-			h2.Size = UDim2.fromOffset(210, 46); h2.LayoutOrder = i
+			h2.Size = UDim2.fromOffset(220, 46); h2.LayoutOrder = i
 			if not on then b.TextColor3 = COL.DIM end
 			b.Activated:Connect(function() ui.hatchTab = t[1]; render.HATCHERY() end)
 		end
@@ -5391,11 +5709,21 @@ do
 	render.HATCHERY = function()
 		local r = call("Hatchery")
 		if r.ok then state.hatchery = r.hatchery; state.gifts = r.gifts end
+		-- (first look: the shop for someone with nothing warming and no eggs, else the nests)
+		if not ui.hatchTab then
+			local h, any = state.hatchery or {}, false
+			for _, v in pairs(h.eggs or {}) do if v > 0 then any = true end end
+			for _ in pairs(h.nests or {}) do any = true end
+			ui.hatchTab = any and "nests" or "shop"
+		end
 		renderTabs()
 		clear(body)
-		if ui.hatchTab == "companions" then companions() else nests() end
+		HX.fitScreen(ui.hatchTab == "shop")
+		if ui.hatchTab == "companions" then companions() elseif ui.hatchTab == "shop" then HX.eggShop() else nests() end
 		renderSide()
 	end
+	-- (testing hook: the ScreenGui's `HatchTab` attribute = shop | nests | companions)
+	gui:GetAttributeChangedSignal("HatchTab"):Connect(function() ui.hatchTab = gui:GetAttribute("HatchTab"); if currentTab == "HATCHERY" then render.HATCHERY() end end)
 end
 
 --------------------------------------------------------------------
@@ -6015,7 +6343,7 @@ do
 		local name = ClientSettings.inputName(input)
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Escape then name = nil
 		elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.Unknown then return end
-		if name == MENU_KEY.Name then toast("M stays the menu key", COL.BAD); name = nil end
+		if name == LAYOUT.menuKey.Name then toast("M stays the menu key", COL.BAD); name = nil end
 		if name then
 			for _, k in ipairs(ClientSettings.KEYS) do
 				if k.key ~= listening.key and ClientSettings.get("Key_" .. k.key) == name then
@@ -6088,7 +6416,10 @@ local function refreshHeader()
 			TASKS = "FINISH TASKS FOR MARKS AND TASK SKINS",
 			APPEARANCE = ui.appDirty and "UNSAVED CHANGES" or "YOUR FACE, HAIR AND TITLE",
 			SERVERS = "PICK A SERVER, OR MAKE YOUR OWN",
-			SETTINGS = "CAMERA FEEL · KEYBINDS · ATTACK SIDE  ·  M IS THE MENU KEY",
+			SETTINGS = "CAMERA FEEL · KEYBINDS · ATTACK SIDE  ·  " .. HX.Hints.name("Menu") .. " IS THE MENU BUTTON",
+			HATCHERY = "BUY EGGS  ·  WARM THEM IN A NEST  ·  HATCH A PET THAT FOLLOWS YOU",
+			TRADE = "SWAP SKINS, EFFECTS AND EMOTES WITH OTHER PLAYERS",
+			INVENTORY = "EVERYTHING YOU OWN  ·  TAP ANY CARD TO INSPECT IT",
 			PASS = state.pass and string.format("TIER %d / %d  ·  PLAY AND FINISH TASKS TO CLIMB", state.pass.tier or 0, #(Catalog.PASS.tiers or {})) or "PLAY AND FINISH TASKS TO CLIMB",
 		}
 		sTitle.Text = def.title
@@ -6116,10 +6447,13 @@ selectTab = function(name)
 	for n, fr in pairs(tabFrame) do if n ~= "PLAY" then fr.Visible = n == name end end
 	if open then setBlur(isLobby and 0 or 18) end
 	refreshHeader()
+	-- (a phone: back to the top, the full height; the screen's render may fit it)
+	if content:IsA("ScrollingFrame") and was ~= name then content.CanvasPosition = Vector2.zero; HX.fitScreen(false) end
 	if render[name] then task.spawn(render[name]) end
 	renderSide()
 	if not isLobby and was ~= name then
-		local home = UDim2.fromOffset(28, content:GetAttribute("HomeY") or 108)
+		local home = UDim2.fromOffset(LAYOUT.side, content:GetAttribute("HomeY") or LAYOUT.head)
+
 		content.Position = home + UDim2.fromOffset(0, 18)
 		TweenService:Create(content, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = home}):Play()
 	end
@@ -6134,6 +6468,11 @@ gui:GetAttributeChangedSignal("Spin"):Connect(function()
 	if type(id) ~= "string" or not Catalog.CRATES[id] then return end
 	local r = call("OpenCrate", id, "crowns")
 	if r.ok and r.result then HX.spinCrate(r.result) else toast(r.msg or "", COL.BAD) end
+end)
+-- (a crate id: just its burst-open, over the screen, for a look at it; BurstSlow = a slow-motion factor)
+gui:GetAttributeChangedSignal("Burst"):Connect(function()
+	local id = gui:GetAttribute("Burst")
+	if type(id) == "string" and Catalog.CRATES[id] then task.spawn(HX.crateBurst, content, id) end
 end)
 -- ("kind|id", e.g. "skin|Longsword:Starforged": inspect it)
 gui:GetAttributeChangedSignal("Inspect"):Connect(function()
@@ -6281,8 +6620,8 @@ function HX.inspectReward(r)
 	end
 	if r.egg and Catalog.EGG[r.egg] then
 		local e = Catalog.EGG[r.egg]
-		return modal(string.upper(e.name), "An egg for your nests in the Hatchery: it hatches one of its own companions.",
-			{{"SEE THE HATCHERY", COL.GREEN, function() closeModal(); selectTab("HATCHERY") end}})
+		return modal(string.upper(e.name), "An egg for your nests (PETS): set it warming and it hatches one of its own pets.",
+			{{"GO TO MY NESTS", COL.GREEN, function() closeModal(); ui.hatchTab = "nests"; selectTab("HATCHERY") end}})
 	end
 	if r.title then return HX.inspect("title", r.title) end
 	modal("A GIFT", Preview.rewardName(r), nil)
@@ -6464,6 +6803,7 @@ HX.INV_SORTS = {"RARITY", "NEWEST", "NAME", "MOST COPIES"}
 HX.INV_PAGE = 40
 
 render.INVENTORY = function()
+	HX.fitScreen(true)
 	local f = tabFrame.INVENTORY
 	clear(f)
 	ui.invKind = ui.invKind or "ALL"
@@ -6617,7 +6957,7 @@ _G.HubMenuGo = function(tab, shopTab)
 	show(tab or "PLAY")
 end
 UserInputService.InputBegan:Connect(function(input)
-	if input.KeyCode ~= MENU_KEY or listening then return end
+	if input.KeyCode ~= LAYOUT.menuKey or listening then return end
 	if UserInputService:GetFocusedTextBox() then return end
 	menuKey()
 end)

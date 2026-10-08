@@ -88,6 +88,13 @@ SoundBank.POOLS = {
 		9118687051, 9118688017, 9118688358, 9118686853, 9118685591,
 	}},
 	WallGlass = {volume = 0.6, speed = {1.25, 1.4}, cut = 0.45, takes = {9118604471, 9118604463, 9118603081}},
+	WallIceStrike = {volume = 0.7, speed = {1.12, 1.24}, cut = 0.5, takes = {                 -- steel on ice: the stone strike, brighter
+		9118604471, 9118604463, 9118603081, 9118604769, 9118599252, 9118600998,
+	}},
+	WallIce = {volume = 0.45, speed = {1.05, 1.2}, cut = 0.45, takes = {9114863345, 9114863543}},   -- chips of ice skittering off
+	WallMarble = {volume = 0.8, speed = {1.0, 1.12}, cut = 0.6, takes = {                     -- polished stone: harder, a longer ring
+		9118604471, 9118604463, 9118603081, 9118604769, 9118599252, 9118600998,
+	}},
 
 	-- BODIES -------------------------------------------------------------
 	KickHit = {volume = 0.9, speed = {0.85, 1.0}, takes = {9113568548, 9113571074, 9113570867}},
@@ -128,7 +135,9 @@ SoundBank.VOICE_PITCH = {0.88, 1.06}   -- the spread of fighters' voices
 
 -- what a blade striking the world plays, by the material's family (CombatServer.clang)
 SoundBank.WALL = {Stone = {"WallStone", "WallGrit"}, Wood = {"WallWood", "WallWoodChip"}, Metal = {"WallMetal"},
-	Ground = {"WallGround"}, Glass = {"WallGlass"}}
+	Ground = {"WallGround"}, Glass = {"WallGlass"}, Ice = {"WallIceStrike", "WallIce"},
+	-- a material can have its own (else its family's)
+	Marble = {"WallMarble", "WallGrit"}}
 
 -- weapons whose head lands blunt (thud and crack instead of a cut)
 SoundBank.BLUNT = {Hammer = true, Mace = true, MorningStar = true, Maul = true, Quarterstaff = true}

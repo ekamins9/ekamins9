@@ -27,26 +27,28 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 --------------------------------------------------------------------
 local HINT_EVERY   = 3.5
+-- ({Action} becomes the key, the controller button or the touch button: ReplicatedStorage ▸ InputHints)
+local Hints = require(game:GetService("ReplicatedStorage"):WaitForChild("InputHints"))
 local HINTS = {
-	"Feint (Q) during the windup to bait a parry, then hit the real one.",
+	"Feint ({Feint}) during the windup to bait a parry, then hit the real one.",
 	"A parry is a block raised at the last moment — it refunds stamina and opens a riposte.",
 	"Chamber: start the mirror of their attack while they swing, and yours goes through.",
 	"Morph a swing into a stab mid-windup. The stab comes out on the opposite side.",
-	"Kick (G) breaks a held block. Miss, and it costs you.",
+	"Kick ({Kick}) breaks a held block. Miss, and it costs you.",
 	"Missed swings cost more stamina than hits. Hit something.",
 	"Guard raised without a parry clears your parry chain — commit or don't.",
 	"Heavy armor turns cuts into bruises. Light armor turns you into a ghost.",
 	"A stab to the face is a finisher, whatever the health bar says.",
 	"Sprint is forward only. Backpedalling is slow — turn and run.",
-	"Dodge (F, or double-tap A / D / S) sideways out of an overhead. It costs stamina; don't spam it.",
+	"Dodge ({Dodge}) sideways out of an overhead. It costs stamina; don't spam it.",
 	"Look down: yes, those are your own legs.",
 	"Friendly fire is on. Half damage, no kill credit, and everyone sees the feed.",
-	"Hold Tab for the board. Press M for the menu, anywhere.",
+	"{Board} shows the board. {Menu} opens the menu, anywhere.",
 	"Parties land on the same team. Bring friends, or make enemies.",
 	"A locked match can't be joined, even by a friend. Ranked is ranked.",
 	"Wall hits are free — no stamina lost, no stamina gained.",
 	"Chain parries: each one in a row refunds more stamina, up to five.",
-	"Pick up weapons off the ground with V. A dropped greatsword is still a greatsword.",
+	"Pick up weapons off the ground with {Pickup}. A dropped greatsword is still a greatsword.",
 	"The clunk of your boots gets heavier with armor. So do you.",
 }
 --------------------------------------------------------------------
@@ -157,7 +159,7 @@ local function build(name)
 	hint.TextSize = 16
 	hint.TextColor3 = COL_DIM
 	hint.TextWrapped = true
-	hint.Text = HINTS[math.random(#HINTS)]
+	hint.Text = Hints.fill(HINTS[math.random(#HINTS)])
 	hint.Parent = back
 	local hintTag = Instance.new("TextLabel")
 	hintTag.AnchorPoint = Vector2.new(0.5, 1)
@@ -198,7 +200,7 @@ local function setHint()
 	hintIdx = hintIdx % #HINTS + 1
 	TweenService:Create(hint, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
 	task.delay(0.25, function()
-		hint.Text = HINTS[hintIdx]
+		hint.Text = Hints.fill(HINTS[hintIdx])
 		TweenService:Create(hint, TweenInfo.new(0.35), {TextTransparency = 0}):Play()
 	end)
 end

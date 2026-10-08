@@ -264,6 +264,12 @@ something bought (the premium pass) becomes Marks. Don't remove those checks.
 A crate can also hold **kill effects and emotes** (`crate = "Relic"` on the line in
 `Catalog ▸ KillFX` / `Catalog ▸ Emotes`).
 
+**Its chest.** Every crate is a 3D chest in the menu (`ReplicatedStorage ▸ CrateModels`, built
+from parts, no art needed): the gallery the CRATES page opens on, the corner of its page, and the
+burst-open before the reel. Give it a look with `look = {wood = Color3, metal = Color3, emblem =
+"skull", glow = Color3}` on the crate (or a line in `CrateModels.LOOKS`); with none it takes its
+`accent` and a star. Emblems: sword · axe · hammer · gem · arrow · skull · crown · star · anchor · flame.
+
 ## 6a. A drop (a weekly release) — the whole recipe
 
 Everything rides on `Catalog ▸ Calendar`. A drop goes live **by itself** at its `at` time (UTC)
@@ -462,6 +468,14 @@ which carry `drop = "<drop id>"` so they stay hidden until it is out. Every hatc
 its own (tradable) and rolls a finish: Golden (4%) or Spectral (1%) — `Catalog ▸ Eggs ▸ variants`.
 Mythic companions (one per event egg) are numbered. New body styles: `bat` (a drake), `pumpkin`
 and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
+
+## 10e. What a blade sounds like on the world
+
+`ReplicatedStorage ▸ SoundBank`: `WALL[family]` lists the pools a blade striking that family
+plays (Stone, Wood, Metal, Ground, Glass, Ice), and `WALL[material]` gives one material its own
+(Marble rings longer than other stone). Families per material: `CombatServer ▸ WALL_FAMILY`.
+A `ClangSounds` folder in SoundService only speaks for a material in no family. Licensed
+library sounds only.
 
 ## 10d. Skin sounds
 

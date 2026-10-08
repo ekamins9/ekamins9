@@ -251,11 +251,45 @@ so all its maps take turns. Each vote offers three maps the last one didn't.)
 On a touch screen with no keyboard, `TouchControls` puts the fight under the right thumb:
 **BLOCK** (hold) in the corner, **◀ SWING** and **SWING ▶** (the side), **STAB**, **OVERHEAD**,
 **KICK**, **FEINT** and **DODGE** around it; **SPRINT** (hold) and **JUMP** above Roblox's
-movement stick; **☰ MENU** top left (the M key). A drag on open screen (right of the stick)
-turns the camera. Buttons go through `ReplicatedStorage ▸ TouchInput`, so each does exactly what
-its key does (`CombatClient`, `Movement`, `CameraRig` listen). They scale with the screen and
-hide while you're dead or in the menu; Roblox's own jump button is hidden. The training's
-lesson text names buttons instead of keys on a touch screen.
+movement stick, with **EMOTE**, **VIEW** (first / third person) and **CROUCH** (on / off) above
+them; **☰ MENU** and **🏆 SCORES** (the board, on / off) top left; tap a card on the weapon bar
+to switch weapons. A drag on open screen (right of the stick) turns the camera. Buttons go
+through `ReplicatedStorage ▸ TouchInput` (the action bus), so each does exactly what its key does
+(`CombatClient`, `RangedClient`, `Movement`, `CameraRig`, `Cosmetics`, `Scoreboard` listen). They
+scale with the screen and hide while you're dead or in the menu; Roblox's own jump button is hidden.
+
+**The menu on a phone** (`HubMenu`, `LAYOUT.compact`: a screen under 560 px tall). The design
+canvas shrinks to 1300×600 (everything is drawn bigger), text of 16 and under is 1.22× larger,
+the lobby rearranges (the dock in two columns down the left, PLAY bottom right, the leaderboard
+and today's shop above it, no tasks panel: they're behind TASKS), screens keep their full height
+and scroll (a **▼ MORE BELOW** chip until you do), screens that scroll inside themselves (the egg
+shop, the inventory, the crate gallery) fit the screen instead (`HX.fitScreen`), and pop-ups shrink
+until they fit. To look at it in Studio: set the attribute `PhoneSim = true` on ReplicatedStorage
+before pressing Play (a phone's 19.5:9 shape, letterboxed) — **and clear it before saving**.
+
+## Controllers (Xbox, PlayStation)
+
+`StarterPlayerScripts ▸ GamepadControls` sends a controller's buttons down the same action bus,
+so the fight code needs nothing of its own. The layout lives in `InputHints.PAD`:
+
+| Button | Does |
+|---|---|
+| RT / R2 | swing — aim it with the right stick: ← → a side, ↑ overhead, ↓ underhand; centred, the sides alternate |
+| RB / R1 · LB / L1 | stab · overhead |
+| LT / L2 | block (hold; a bow's let-down, a crossbow's aim) |
+| A / ✕ · B / ○ | jump · dodge |
+| X / □ · Y / △ | kick (or pick up, when a prompt shows) · feint |
+| LS click · RS click | sprint (on until you stop) · first / third person |
+| D-pad ↑ · ↓ · ← → | emote wheel (hold, aim with the right stick, let go) · crouch (toggle) · weapons |
+| VIEW / TOUCHPAD | tap: the menu · hold: the scoreboard |
+| right stick | look (SETTINGS ▸ Controller look speed) |
+
+Anywhere the game frees the mouse (the menu, the class screen, the vote, a pop-up), Roblox's
+virtual cursor turns on: the left stick moves it, A clicks. Every hint on screen asks
+`ReplicatedStorage ▸ InputHints` what to call a control: your key bind, the controller's button
+(Xbox letters or PlayStation shapes) or the touch button, and it switches the moment you pick
+up a different device (the tutorial, the intro's tips, the travel screen's tips, the menu tour,
+the emote wheel).
 
 ## The Archer, bows and crossbows (`Combat ▸ RangedServer`, `Combat ▸ RangedClient`)
 
@@ -539,6 +573,11 @@ in the Courtyard everyone within 24 studs shows too. Names fade in fast and out 
   second); `StaffRole` comes from the admin panel.
 
 ## Pastimes: playtime gifts, the Hatchery, companions (looks only)
+
+The menu calls it **PETS** (the dock tile, the screen): three tabs, nothing below the fold —
+**EGG SHOP** (every egg on sale as a big card: it turns, its odds as a bar, WHAT'S INSIDE, BUY;
+a bought egg offers to go straight into a free nest; it opens here for someone with no eggs),
+**MY NESTS** (the nests and the eggs you hold, and a way back to the shop) and **MY PETS**.
 
 Things to do between fights, so the Courtyard is a place to hang out. None of them touch combat.
 - **Playtime gifts** (`Catalog ▸ Gifts`): six a day for minutes played on any server (the

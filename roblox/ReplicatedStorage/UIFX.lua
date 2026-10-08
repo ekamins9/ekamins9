@@ -34,6 +34,8 @@ UIFX.SOUNDS = {
 	Shells   = {id = "rbxassetid://9114863539", vol = 0.35, speed = {1.2, 1.3}, cut = 1.0},     -- bits scattering
 	Unsheath = {id = "rbxassetid://9119742466", vol = 0.55},
 	Whoosh   = {id = "rbxassetid://9120709477", vol = 0.4, speed = {1.1, 1.25}},
+	Thud     = {id = "rbxassetid://9046338796", vol = 0.6, speed = {0.62, 0.7}, cut = 0.5},            -- a crate landing
+	Boom     = {id = "rbxassetid://1835337001", vol = 0.5, speed = {1.05, 1.15}, cut = 1.6},           -- a lid flung open
 }
 -- the reveal, by rarity: bigger pulls, bigger brass
 UIFX.REVEAL = {

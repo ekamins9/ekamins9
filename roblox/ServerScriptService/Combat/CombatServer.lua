@@ -233,20 +233,21 @@ local function humanoidModelOf(part)
 	end
 	return nil
 end
--- WHAT THE BLADE HIT: materials fold into a few clang families. A folder named
--- ClangSounds in SoundService (or ReplicatedStorage) may hold one Sound per
--- Enum.Material name (Slate, Wood, Metal…) and/or per family (Stone, Wood,
--- Metal, Ground, Glass); a family with no Sound falls back to the weapon's Wall
--- slot re-pitched (WALL_FEEL) so materials still sound apart. A material that is
--- in NO family (Plastic, SmoothPlastic, anything not listed) makes no sound and
--- no sparks — add it below to give it one.
+-- WHAT THE BLADE HIT: materials fold into a few clang families (Stone, Wood,
+-- Metal, Ground, Glass, Ice), and each family plays its SoundBank.WALL pools
+-- (licensed Pro Sound Effects takes, layered: the edge striking, the surface
+-- giving; a material can have its own pools there too). A weapon's own Wall slot
+-- replaces them, re-pitched per family (WALL_FEEL). An old ClangSounds folder
+-- (SoundService / ReplicatedStorage) only speaks for a material in NO family;
+-- anything else not listed (Plastic, SmoothPlastic…) makes no sound and no
+-- sparks — add it below to give it one.
 local WALL_FAMILY = {
 	Slate = "Stone", Concrete = "Stone", Brick = "Stone", Cobblestone = "Stone", Granite = "Stone", Marble = "Stone",
 	Basalt = "Stone", Rock = "Stone", Limestone = "Stone", Pavement = "Stone", Sandstone = "Stone", Asphalt = "Stone",
 	Salt = "Stone", Pebble = "Stone", Plaster = "Stone", CrackedLava = "Stone", RoofShingles = "Stone", ClayRoofTiles = "Stone",
 	Wood = "Wood", WoodPlanks = "Wood", Cardboard = "Wood",
 	Metal = "Metal", CorrodedMetal = "Metal", DiamondPlate = "Metal", Foil = "Metal",
-	Glass = "Glass", Ice = "Glass", Neon = "Glass", ForceField = "Glass",
+	Glass = "Glass", Ice = "Ice", Glacier = "Ice", Neon = "Glass", ForceField = "Glass",
 	Grass = "Ground", LeafyGrass = "Ground", Sand = "Ground", Mud = "Ground", Ground = "Ground", Snow = "Ground",
 	Fabric = "Ground", Carpet = "Ground", Leather = "Ground", Rubber = "Ground",
 }
@@ -256,6 +257,7 @@ local WALL_FEEL = {   -- fallback re-pitch of the Wall slot per family
 	Wood    = {Speed = 0.78, Volume = 0.55},
 	Ground  = {Speed = 0.55, Volume = 0.40},
 	Glass   = {Speed = 1.35, Volume = 0.60},
+	Ice     = {Speed = 1.20, Volume = 0.65},
 }
 function CombatServer.wallFamily(materialName)
 	return WALL_FAMILY[materialName]   -- nil = unknown: silent
@@ -265,8 +267,10 @@ end
 function CombatServer.clang(materialName, at, fallbackId)
 	if not at then return end
 	local family = CombatServer.wallFamily(materialName)
-	local folder = game:GetService("SoundService"):FindFirstChild("ClangSounds") or ReplicatedStorage:FindFirstChild("ClangSounds")
-	local src = folder and (folder:FindFirstChild(tostring(materialName)) or (family and folder:FindFirstChild(family)))
+	-- (an old ClangSounds folder's per-material Sounds only cover materials with no
+	-- family: they used to drown out the bank's wood, grass, ice and marble)
+	local folder = not family and (game:GetService("SoundService"):FindFirstChild("ClangSounds") or ReplicatedStorage:FindFirstChild("ClangSounds"))
+	local src = folder and folder:FindFirstChild(tostring(materialName))
 	if not src and not family then return end
 	if src and src:IsA("Sound") then
 		local s = src:Clone()
@@ -282,8 +286,9 @@ function CombatServer.clang(materialName, at, fallbackId)
 		Sounds.play(fallbackId, at, {Volume = WALL_FEEL[family].Volume, Speed = WALL_FEEL[family].Speed})
 		return
 	end
-	-- layered: the edge striking it, then the surface giving (SoundBank.WALL)
-	for _, pool in ipairs(family and SoundBank.WALL[family] or {}) do Sounds.bank(pool, at) end
+	-- layered: the edge striking it, then the surface giving (SoundBank.WALL: the
+	-- material's own pools if it has them, else its family's)
+	for _, pool in ipairs(SoundBank.WALL[tostring(materialName)] or (family and SoundBank.WALL[family]) or {}) do Sounds.bank(pool, at) end
 end
 
 local wallParams = RaycastParams.new()

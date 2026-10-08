@@ -7,7 +7,9 @@
      one. (No number keys: 1 – 9 belong to the backpack's weapon slots.) Your
      equipped emotes come from your profile (player attribute "Emotes", set
      by the server). Attacking, blocking, kicking or dodging ends an emote;
-     moving ends a whole-body one, while arms-only ones play on the move. ]]
+     moving ends a whole-body one, while arms-only ones play on the move.
+     A controller holds D-pad ↑ and aims with the right stick; a touch screen
+     taps EMOTE and then an emote (both through ReplicatedStorage ▸ TouchInput). ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,6 +22,15 @@ local Emotes = require(ReplicatedStorage:WaitForChild("Emotes"))
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
+local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
+-- the line under the wheel, for what the player holds
+local function wheelHint()
+	local m = InputHints.mode()
+	if m == "Touch" then return "tap an emote" end
+	if m == "Gamepad" then return "aim the right stick, let go of " .. InputHints.name("Emote") end
+	return "point and let go of " .. InputHints.name("Emote")
+end
 
 local player = Players.LocalPlayer
 local fx = ReplicatedStorage:WaitForChild("FxEvent")
@@ -146,7 +157,7 @@ sub.Size = UDim2.fromOffset(200, 18)
 sub.Font = Theme.FONT
 sub.TextSize = 12
 sub.TextColor3 = Theme.DIM
-sub.Text = "point and let go of B"
+sub.Text = wheelHint()
 sub.Parent = wheel
 
 local slots = {}
@@ -269,13 +280,27 @@ local function openWheel()
 	open = true
 	openedAt = os.clock()
 	hover = nil
-	hub.Text = "EMOTES"; sub.Text = "point and let go of B"
+	hub.Text = "EMOTES"; sub.Text = wheelHint()
 	gui.Enabled = true
 	wheelScale.Scale = 0.8
 	TweenService:Create(wheelScale, TweenInfo.new(0.15, Enum.EasingStyle.Back), {Scale = 1}):Play()
 end
--- the slot the mouse points at, from the wheel's middle (nil near the middle)
+-- the slot the mouse points at, from the wheel's middle (nil near the middle);
+-- with a controller, the slot the right stick leans towards (kept when it's let go)
 local function pointed()
+	if InputHints.mode() == "Gamepad" then
+		local ok, state = pcall(function() return UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1) end)
+		local r = Vector2.zero
+		if ok then for _, st in ipairs(state) do if st.KeyCode == Enum.KeyCode.Thumbstick2 then r = Vector2.new(st.Position.X, -st.Position.Y) end end end
+		if r.Magnitude < 0.5 or #slots == 0 then return hover end
+		local a = math.atan2(r.Y, r.X)
+		local best, bestD = nil, math.huge
+		for _, sl in ipairs(slots) do
+			local diff = math.abs((a - sl.angle + math.pi) % (2 * math.pi) - math.pi)
+			if diff < bestD then best, bestD = sl, diff end
+		end
+		return best
+	end
 	local centre = wheel.AbsolutePosition + wheel.AbsoluteSize / 2
 	local m = UserInputService:GetMouseLocation() - Vector2.new(0, game:GetService("GuiService"):GetGuiInset().Y)
 	local d = m - centre
@@ -296,7 +321,7 @@ local function setHover(sl)
 		TweenService:Create(sl.scale, TweenInfo.new(0.08), {Scale = 1.13}):Play(); sl.stroke.Thickness = 5
 		hub.Text = string.upper(sl.e.name); sub.Text = sl.e.description or ""
 	else
-		hub.Text = "EMOTES"; sub.Text = "point and let go of B"
+		hub.Text = "EMOTES"; sub.Text = wheelHint()
 	end
 end
 shade.MouseButton1Click:Connect(close)
@@ -338,6 +363,17 @@ UserInputService.InputEnded:Connect(function(input)
 	local sl = hover
 	close()
 	if sl then playEmote(sl.id) end
+end)
+-- the action bus: a controller's D-pad ↑ (held, let go to play) or the EMOTE touch button (a tap opens or closes)
+TouchInput.changed:Connect(function(action, down)
+	if action ~= "Emote" then return end
+	if down then
+		if open then close() else openWheel() end
+	elseif open and (os.clock() - openedAt >= 0.2 or hover) then
+		local sl = hover
+		close()
+		if sl then playEmote(sl.id) end
+	end
 end)
 -- the scroll wheel stabs / overheads
 UserInputService.InputChanged:Connect(function(input, gp)

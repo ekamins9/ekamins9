@@ -7,10 +7,13 @@
        • the blade's light swells (and a storm flickers),
        • the swing makes its sound (SkinFX.SWING: a whoosh of fire, a crackle
          of frost, a hum of shadow… from Roblox's licensed sound library), only
-         for a real swing: the tip's speed is measured against the body, so
-         walking and running with it never set it off.
-     And while it's held at all: the aura's quiet hum (SkinFX.HUM: a crackle of
-     fire, an electric hum…), swelling a little as it swings.
+         for a real attack: the one holding it is mid-swing (Acting), and the
+         tip's speed is measured in the body's own frame, so walking, running
+         and turning on the spot never set it off.
+     And while it's in someone's hands (an equipped Tool, never one worn on the
+     hip or the back, never one lying on the ground): the aura's quiet hum
+     (SkinFX.HUM: a crackle of fire, an electric hum…), swelling a little as it
+     swings. Your own weapon's sounds carry to the third-person camera.
      Everything here is local and looks only; nothing is sent anywhere. ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -28,6 +31,10 @@ local FADE = 0.18          -- seconds a cut swing sound takes to fade out
 local FLARE_FROM = 10      -- the aura starts to flare from this tip speed…
 local FLARE_FULL = 40      -- …and is at its fullest here
 local NEAR = 150           -- studs: farther weapons are left alone
+local MINE_NEAR = 18       -- your own weapon is at full volume this far out (the third-person camera sits ~9 away)
+local ACT_GRACE = 0.35     -- a swing's follow-through still counts this long after Acting clears
+local Players = game:GetService("Players")
+local me = Players.LocalPlayer
 local rng = Random.new()
 
 local tracked = {}   -- [handle] = state
@@ -109,15 +116,27 @@ RunService.Heartbeat:Connect(function(dt)
 		if not h.Parent then
 			untrack(h)
 		elseif st.tip and st.tip.Parent and h:IsDescendantOf(workspace) then
-			-- the tip against the body that holds it: a swing, not a stroll
+			-- in someone's hands: an equipped Tool (a holstered copy is a Model, a dropped
+			-- weapon has no body around it). The tip is measured in the body's own frame
+			-- (a swing, not a stroll, nor the body turning on the spot)
 			local tool = h.Parent
 			local holder = tool and tool.Parent
 			local root = holder and holder:FindFirstChild("HumanoidRootPart")
-			local held = root ~= nil and holder:FindFirstChildOfClass("Humanoid") ~= nil
+			local held = root ~= nil and tool:IsA("Tool") and holder:FindFirstChildOfClass("Humanoid") ~= nil
 			local pos = st.tip.WorldPosition
-			local rel = root and (pos - root.Position) or pos
+			local rel = root and root.CFrame:PointToObjectSpace(pos) or pos
 			local speed = st.last and (rel - st.last).Magnitude / math.max(dt, 1 / 240) or 0
 			st.last = rel
+			-- mid-attack (the server's Acting: it's up during the windup, before the blade flies)
+			if held and holder:GetAttribute("Acting") then st.actAt = now end
+			local attacking = held and now - (st.actAt or -1e9) < ACT_GRACE
+			-- your own weapon: heard from the third-person camera, not only up close
+			local mine = held and holder == me.Character
+			if st.mine ~= mine then
+				st.mine = mine
+				if st.hum then st.hum.RollOffMinDistance = mine and MINE_NEAR or 3; st.hum.RollOffMaxDistance = mine and 60 or 26 end
+				if st.sound then st.sound.RollOffMinDistance = mine and MINE_NEAR or 6 end
+			end
 			-- the hum: in someone's hands, near you; a little louder mid-swing
 			if st.hum then
 				local want = (held and (pos - eye).Magnitude <= HUM_NEAR) and st.humVolume * (1 + 0.6 * (st.boost or 0)) or 0
@@ -126,7 +145,11 @@ RunService.Heartbeat:Connect(function(dt)
 				if want > 0 and not st.hum.IsPlaying then st.hum:Play()
 				elseif want == 0 and v < 0.002 and st.hum.IsPlaying then st.hum:Stop() end
 			end
-			if (pos - eye).Magnitude <= NEAR and speed < 400 then   -- (a teleport is not a swing)
+			if not held then
+				-- worn or dropped: no flare, no sound (and a swing in progress ends)
+				st.swinging, st.boost = false, 0
+				if st.sound and st.sound.IsPlaying and not st.cut then st.sound:Stop() end
+			elseif (pos - eye).Magnitude <= NEAR and speed < 400 then   -- (a teleport is not a swing)
 				local flare = math.clamp((speed - FLARE_FROM) / (FLARE_FULL - FLARE_FROM), 0, 1)
 				st.boost = math.max(flare, st.boost - dt * 2.5)
 				for pe, base in pairs(st.emitters) do
@@ -143,7 +166,7 @@ RunService.Heartbeat:Connect(function(dt)
 				-- one sound per swing: it starts as the tip gets going and isn't
 				-- started again until the tip has come to rest, so a long swing
 				-- plays its whoosh once, through, instead of restarting it
-				if speed > SWING_SPEED then
+				if speed > SWING_SPEED and attacking then
 					st.slowFor = 0
 					if not st.swinging then
 						st.swinging = true

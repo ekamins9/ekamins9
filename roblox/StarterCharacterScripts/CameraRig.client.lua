@@ -518,6 +518,12 @@ ClientSettings.onChanged(function(key)
 	end, false, table.unpack(CROUCH_KEYS))
 end)
 
+-- the action bus (a controller's buttons, the touch buttons): the view and the crouch
+TouchInput.changed:Connect(function(action, down)
+	if action == "View" and down then camDistTarget = (camDistTarget <= FP_ENTER) and DEFAULT_DIST or 0
+	elseif action == "Crouch" then crouchWanted = down == true end
+end)
+
 --------------------------------------------------------------------
 --  MAIN
 --------------------------------------------------------------------

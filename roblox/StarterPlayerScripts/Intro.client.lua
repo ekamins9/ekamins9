@@ -193,7 +193,7 @@ local function welcome()
 	tagline.Size = UDim2.new(0.9, 0, 0, 30)
 	tagline.TextTransparency = 1
 	tagline.ZIndex = 45
-	local skipHint = label(gui, "PRESS ANY KEY TO SKIP", 14, Theme.DIM, Theme.FONT)
+	local skipHint = label(gui, InputHints.mode() == "Touch" and "TAP TO SKIP" or (InputHints.mode() == "Gamepad" and "PRESS ANY BUTTON TO SKIP" or "PRESS ANY KEY TO SKIP"), 14, Theme.DIM, Theme.FONT)
 	skipHint.AnchorPoint = Vector2.new(1, 1)
 	skipHint.Position = UDim2.new(1, -24, 1, -18)
 	skipHint.Size = UDim2.fromOffset(300, 18)
@@ -490,11 +490,9 @@ local BRIEF = {
 	FFA = "Everyone for themselves. Most kills when the clock runs out wins.",
 	KOTH = "Take the hill and hold it: points tick for the side standing on it.",
 }
-local function keyOf(action)
-	local n = ClientSettings.get("Key_" .. action) or action
-	local nice = {LeftShift = "SHIFT", LeftControl = "CTRL", LeftAlt = "ALT", MouseButton1 = "LEFT MOUSE", Space = "SPACE"}
-	return nice[n] or string.upper(tostring(n))
-end
+-- a control's name for what the player holds (keys, a controller, a touch screen)
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
+local function keyOf(action) return InputHints.name(action) end
 
 local function firstBattle()
 	local gui = Instance.new("ScreenGui")
@@ -566,7 +564,7 @@ local function firstBattle()
 		local chips = Instance.new("Frame"); chips.BackgroundTransparency = 1; chips.Position = UDim2.fromOffset(24, 140); chips.Size = UDim2.new(1, -48, 0, 34); chips.Parent = card
 		local lay = Instance.new("UIListLayout", chips); lay.FillDirection = Enum.FillDirection.Horizontal; lay.Padding = UDim.new(0, 8)
 		lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		for _, c in ipairs({"STICK WITH YOUR TEAM", "RIGHT MOUSE  ·  BLOCK", "WATCH YOUR STAMINA"}) do
+		for _, c in ipairs({"STICK WITH YOUR TEAM", keyOf("Block") .. "  ·  BLOCK", "WATCH YOUR STAMINA"}) do
 			local chip = Instance.new("TextLabel")
 			chip.BackgroundColor3 = Theme.GLASS2; chip.Font = Theme.FONT; chip.TextSize = 13; chip.TextColor3 = WHITE; chip.Text = c
 			chip.Size = UDim2.fromOffset(176, 32); chip.Parent = chips
@@ -589,7 +587,7 @@ local function firstBattle()
 		local last = hum.Health
 		hum.HealthChanged:Connect(function(h)
 			if h < last - 1 and h > 0 then
-				tip("hurt", "YOU'RE HIT!", "Hold RIGHT MOUSE to block their blows, or tap it just as a blow lands to PARRY: a parry costs you nothing and opens them up.")
+				tip("hurt", "YOU'RE HIT!", InputHints.fill("Hold {Block} to block their blows, or tap it just as a blow lands to PARRY: a parry costs you nothing and opens them up."))
 			end
 			last = h
 		end)
@@ -625,7 +623,7 @@ local function firstBattle()
 	end)
 	-- a minute in: the two tricks that beat a turtle
 	task.delay(75, function()
-		tip("tricks", "TWO TRICKS", string.format("[%s] feints a swing: they flinch at nothing. [%s] kicks straight through a raised guard.", keyOf("Feint"), keyOf("Kick")), 8)
+		tip("tricks", "TWO TRICKS", InputHints.fill("{Feint} feints a swing: they flinch at nothing. {Kick} kicks straight through a raised guard."), 8)
 	end)
 	-- the battle's over (the travel screen takes it from here)
 	player:GetAttributeChangedSignal("Tutorial"):Connect(function()

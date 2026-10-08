@@ -41,7 +41,9 @@ CombatClient.DEFAULTS = {
 	HITSTOP_HIT   = 0.06,   -- animation freeze on a clean hit
 	HITSTOP_BLOCK = 0.18,   -- hard freeze then cancel when blocked — weapon bounces off, doesn't swing through
 	HITSTOP_PARRY = 0.22,   -- same, held a touch longer — a parry is the bigger punish
-	HITSTOP_KILL  = 0.14,   -- the killing blow hangs longest
+	HITSTOP_KILL  = 0.14,   -- (unused: a kill slices through, KILL_SLICE)
+	KILL_SLICE    = 0.07,   -- a killing blow bites for this long at KILL_SLICE_SPEED, then carries on through
+	KILL_SLICE_SPEED = 0.35,
 	HEAVY_HITSTOP = 1.6,    -- two-handers and polearms hold their hits this much longer: weight you feel
 	TRAIL          = true,  -- blade trail while the hitbox is live
 	TRAIL_LIFETIME = 0.12,
@@ -288,6 +290,15 @@ function CombatClient.attach(Tool, weaponConfig)
 	local idleTrack, blockTrack, hitTrack
 	local attackCache = {}
 	local currentTrack, currentSpeed = nil, 1
+	-- hitstop time the playing swing is owed: its end-of-swing timer waits it out
+	local owed = 0
+	local function finishAfter(delay, fn)
+		task.delay(delay, function()
+			local o = owed
+			if o > 0.001 then owed = 0; finishAfter(o, fn); return end
+			fn()
+		end)
+	end
 	local lastSpeed = 1          -- the attack speed of the last swing (cancels/feints blend by it)
 	local armToken = 0           -- bumps whenever the release timing changes
 
@@ -359,10 +370,12 @@ function CombatClient.attach(Tool, weaponConfig)
 			local sp = (cfg.FIT_ANIMS ~= false and t.Length > 0) and t.Length / active or speed
 			t:AdjustSpeed(sp)
 			currentSpeed = sp
+			owed = 0
 			beginSweep(token, active)
 			-- the whole clip plays; just before it would end, hold its last frame and
-			-- fade back to idle from there (a finished track would otherwise snap)
-			task.delay(math.max(active - 0.02, 0), function()
+			-- fade back to idle from there (a finished track would otherwise snap).
+			-- (finishAfter waits out any hitstop, so a hit never cuts the swing short)
+			finishAfter(math.max(active - 0.02, 0), function()
 				if currentTrack == t and armToken == arm then
 					t:AdjustSpeed(0)
 					t:Stop(fadeA)
@@ -373,11 +386,16 @@ function CombatClient.attach(Tool, weaponConfig)
 		if windup > 0 then task.delay(windup, release) else release() end
 	end
 
-	-- a clean hit: brief slowdown for weight, then the swing finishes normally
-	local function hitstop(duration)
+	-- a clean hit: brief slowdown for weight, then the swing finishes normally.
+	-- `rel` = the speed kept, as a share of the swing's (default: nearly frozen);
+	-- the clip time it costs is owed to the end-of-swing timer, so the swing
+	-- still plays all the way through instead of being stopped early
+	local function hitstop(duration, rel)
 		local t, s = currentTrack, currentSpeed
 		if not t or s <= 0 then return end
-		t:AdjustSpeed(0.05)
+		local slow = rel and s * rel or 0.05
+		t:AdjustSpeed(slow)
+		owed += duration * (1 - slow / s)
 		task.delay(duration, function()
 			if currentTrack == t and t.IsPlaying then t:AdjustSpeed(s) end
 		end)
@@ -476,7 +494,8 @@ function CombatClient.attach(Tool, weaponConfig)
 				local sp = (t and t.Length > 0) and t.Length / math.max(b or 0.01, 0.01) or 1
 				if t then t:AdjustSpeed(sp); currentSpeed = sp end
 				beginSweep(token, b or 0)
-				task.delay(math.max((b or 0) - 0.02, 0), function()
+				owed = 0
+				finishAfter(math.max((b or 0) - 0.02, 0), function()
 					if currentTrack == t and armToken == arm then t:AdjustSpeed(0); t:Stop(fadeA); currentTrack = nil end
 				end)
 			end)
@@ -495,7 +514,9 @@ function CombatClient.attach(Tool, weaponConfig)
 			impact(cfg.TWO_HANDED and "heavy" or "hit")
 
 		elseif what == "KillConfirm" then
-			hitstop(cfg.HITSTOP_KILL * (cfg.TWO_HANDED and 1.25 or 1))
+			-- the killing blow slices through: a short bite, then the swing carries on
+			-- (and can still catch the next one in its arc)
+			hitstop(cfg.KILL_SLICE * (cfg.TWO_HANDED and 1.25 or 1), cfg.KILL_SLICE_SPEED)
 			impact("kill")
 
 		elseif what == "Blocked" then

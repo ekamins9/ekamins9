@@ -1,4 +1,46 @@
-# Updated scripts: our own weapon bar, CS-style crate reel, a tidy first-battle screen
+# Updated scripts: phones and controllers, PETS, 3D crates, sounds that behave, swings that cut through
+
+- **Phones:** the whole menu is bigger on a phone.
+  - The dock moves to two columns on the left.
+  - Screens scroll, with a "more below" chip until you do.
+  - The egg shop, inventory and crate gallery fit the screen.
+  - Pop-ups shrink to fit.
+  - New touch buttons: EMOTE, VIEW, CROUCH and SCORES.
+- **Controllers:** full Xbox / PlayStation support.
+  - Triggers attack (aim with the right stick), bumpers stab and overhead, face buttons move you, the D-pad does emotes, crouch and weapons.
+  - VIEW opens the menu (hold it for the scoreboard), and a cursor appears in every menu.
+  - Every hint names your button (keyboard, controller or touch), including the tutorial.
+- **PETS** replaces HATCHERY, with three tabs:
+  - EGG SHOP: big egg cards with BUY and WHAT'S INSIDE. A bought egg goes straight into a nest.
+  - MY NESTS and MY PETS. No more scrolling to find the shelf.
+- **Crates are 3D chests:**
+  - A gallery to pick one.
+  - Its chest turns on its page.
+  - Opening it, the chest thumps down, shakes and bursts open before the reel.
+- **Own icons** for TRADE (two arrows round a coin and a gem) and INVENTORY (a satchel).
+- **Weapon sounds:** swing sounds only play for real attacks, never from a weapon on your hip or back or from turning. The hum only plays from a weapon in your hands, and you hear your own in third person.
+- **Wall hits:** wood, grass, marble, ice and the rest use the library sounds. An old folder was drowning them out. Marble rings, ice crackles.
+- **Swings cut through:** a kill no longer freezes and resets the swing. The blade bites and carries on, and every hit lets the swing finish.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | phone layout (`LAYOUT`, `HX.fitScreen`), PETS tabs + egg shop, crate gallery / burst (`HX.crateView`, `HX.crateGallery`, `HX.crateBurst`), new icons |
+| [GamepadControls.client.lua](StarterPlayerScripts/GamepadControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ GamepadControls | LocalScript | **new**: controllers |
+| [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage ▸ InputHints | ModuleScript | **new**: control names per device, the controller layout |
+| [CrateModels.lua](ReplicatedStorage/CrateModels.lua) | ReplicatedStorage ▸ CrateModels | ModuleScript | **new**: 3D chests |
+| [TouchControls.client.lua](StarterPlayerScripts/TouchControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | EMOTE, VIEW, CROUCH, SCORES |
+| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua), [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua), [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayerScripts · StarterCharacterScripts | LocalScript | the action bus: emote wheel, board, view, crouch |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua), [Intro.client.lua](StarterPlayerScripts/Intro.client.lua), [MenuTour.client.lua](StarterPlayerScripts/MenuTour.client.lua), [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua), [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | hints from InputHints |
+| [SkinFX.client.lua](StarterPlayerScripts/SkinFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ SkinFX | LocalScript | sounds only for real swings / held weapons; yours carries to the camera |
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat ▸ CombatClient | ModuleScript | hitstop no longer cuts a swing short; a kill slices through |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua), [SoundBank.lua](ReplicatedStorage/SoundBank.lua) | ServerScriptService ▸ Combat · ReplicatedStorage | ModuleScript | wall-hit sounds: bank first, Ice family, Marble |
+| [UIFX.lua](ReplicatedStorage/UIFX.lua), [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua), [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ReplicatedStorage | ModuleScript | Thud / Boom sounds; Controller look speed; basics text |
+
+**Studio-only (save the place):** two new Decals in `ReplicatedStorage ▸ Cosmetics ▸ Icons`: **Trade** and **Inventory**.
+
+---
+
+## Before that: our own weapon bar, CS-style crate reel, a tidy first-battle screen
 
 - **The weapon bar** replaces Roblox's backpack bar:
   - a card per weapon: primary 1, sidearm 2, pickups after

@@ -21,7 +21,7 @@ return {
 	lessons = {
 		{id = "basics", title = "Find Your Feet", goal = 6, event = "basics", basic = true,
 			controls = {"View", "Sprint", "Crouch", "Jump", "Dodge", "Cursor"},
-			text = "Before the steel, your feet. Try each control on the list: the camera, a sprint, a crouch, a hop, a dodge, and freeing your mouse."},
+			text = "Before the steel, your feet. Try each control on the list: the camera, a sprint, a crouch, a hop and a dodge (and with a mouse, setting it free)."},
 		{id = "swing", title = "The Swing", goal = 3, event = "hit", kind = "Swing", basic = true,
 			text = "Every fight starts with a good swing. Strike a straw dummy with {Swing}. Three times!"},
 		{id = "stab", title = "The Stab", goal = 2, event = "hit", kind = "Stab", basic = true,

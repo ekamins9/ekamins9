@@ -31,7 +31,9 @@ local hubRemote = ReplicatedStorage:WaitForChild("HubRemote")
 local WHITE = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 206, 90)
 
-local function menuKey() return "M" end   -- (the menu key is fixed: Escape is Roblox's)
+-- (the menu key is fixed: Escape is Roblox's; a controller's VIEW button, a touch screen's MENU)
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
+local function menuKey() return InputHints.name("Menu") end
 
 -- the stops: what to light up (by name inside the HubMenu), what to say
 local STEPS = {
@@ -45,6 +47,8 @@ local STEPS = {
 		text = "Everything you own, in one place: search it, sort it, and tap anything to inspect it up close."},
 	{target = "Dock_SHOP", title = "SHOP",
 		text = "A new daily shop every day, and the crates: Keys or Crowns open them, and the rarest skins only come out of crates."},
+	{target = "Dock_PETS", title = "PETS",
+		text = "Buy an egg in the EGG SHOP, set it in a nest, and it hatches a pet that follows you everywhere. Looks only, never stats."},
 	{target = "Dock_TASKS", title = "TASKS",
 		text = "Daily and weekly tasks pay Marks, XP and Keys. The Season Pass next to them levels up as you play."},
 	{target = "Dock_TRADE", title = "TRADE",
@@ -184,6 +188,15 @@ local function run()
 		local t = hubGui:FindFirstChild(step.target, true)
 		if t and t:IsA("GuiObject") and t.Visible and t.AbsoluteSize.X > 4 then return t end
 		return nil
+	end
+	-- (a stop whose target this screen hides — the tasks panel on a phone — is skipped)
+	do
+		local list = {}
+		for _, st in ipairs(STEPS) do
+			local t = st.target and hubGui and hubGui:FindFirstChild(st.target, true)
+			if not (t and t:IsA("GuiObject") and not t.Visible) then table.insert(list, st) end
+		end
+		STEPS = list
 	end
 	local function show()
 		local step = STEPS[i]

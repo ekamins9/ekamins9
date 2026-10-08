@@ -6,7 +6,8 @@ art in blender/icons.py (Cycles + Freestyle ink):
 names (default all): loadout (a great helm), armory (crossed longswords),
 shop (a treasure chest), tasks (a sealed scroll), wardrobe (a tabard on a
 hanger), settings (a gear), pass (a crowned banner), hatchery (a straw nest
-with two eggs). Output: 512x512 RGBA
+with two eggs: the PETS tile), trade (two arrows chasing round a coin and a gem),
+inventory (a buckled satchel with a sword hilt). Output: 512x512 RGBA
 PNGs in blender/out/ui/.
 """
 import bpy, bmesh, math, os, random, sys
@@ -313,9 +314,84 @@ def hatchery_nest():
     return objs
 
 
+def arc_arrow(name, a0, a1, r_in, r_out, mat, y=0.0, thick=0.2, head=0.5):
+    """a flat arrow bent round a circle (angles in radians, in the XZ plane), from a0
+    to a1 with its head past a1 (either way round)"""
+    d = 1 if a1 > a0 else -1
+    n = 18
+    outer = [(r_out * math.cos(a0 + (a1 - a0) * k / n), r_out * math.sin(a0 + (a1 - a0) * k / n)) for k in range(n + 1)]
+    inner = [(r_in * math.cos(a0 + (a1 - a0) * k / n), r_in * math.sin(a0 + (a1 - a0) * k / n)) for k in range(n, -1, -1)]
+    w = (r_out - r_in) * 0.62
+    mid = (r_in + r_out) / 2
+    tip = a1 + d * head
+    pts = outer + [((r_out + w) * math.cos(a1), (r_out + w) * math.sin(a1)), (mid * math.cos(tip), mid * math.sin(tip)),
+                   ((r_in - w) * math.cos(a1), (r_in - w) * math.sin(a1))] + inner
+    bm = bmesh.new()
+    face = bm.faces.new([bm.verts.new((x, 0, z)) for x, z in pts])
+    ext = bmesh.ops.extrude_face_region(bm, geom=[face])
+    bmesh.ops.translate(bm, vec=(0, thick, 0), verts=[e for e in ext["geom"] if isinstance(e, bmesh.types.BMVert)])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    o = I.mesh_obj(name, bm); o.location = (0, y - thick / 2, 0)
+    bv = o.modifiers.new("Bevel", "BEVEL"); bv.width = 0.025; bv.segments = 2
+    I.link(o, mat, smooth=False)
+    return o
+
+
+def trade_arrows():
+    """the trading post: two arrows chasing each other round a gold coin and a gem"""
+    m = I.mats()
+    gold = I.material("ArrowGold", I.GOLD, metallic=1.0, rough=0.28)
+    blue = I.material("ArrowBlue", (0.2, 0.5, 1.0), metallic=0.3, rough=0.3, emit=0.08)
+    objs = [arc_arrow("Give", math.radians(165), math.radians(28), 0.6, 0.92, gold),
+            arc_arrow("Get", math.radians(-15), math.radians(-152), 0.6, 0.92, blue)]
+    objs.append(I.coin("Coin", (-0.14, 0.05, 0.02), 0.34, m["gold"], rot=(math.pi / 2, 0, 0.2)))
+    objs.append(I.gem("Gem", (0.2, -0.12, -0.06), 0.26, m["gem_red"], rot=(0.3, 0.4, 0.6)))
+    return objs
+
+
+def satchel():
+    """the inventory: a buckled leather satchel with a sword hilt poking out"""
+    leather = I.material("Leather", (0.46, 0.24, 0.1), rough=0.6)
+    leather_dark = I.material("LeatherDark", (0.29, 0.14, 0.05), rough=0.65)
+    gold = I.material("Gold", I.GOLD, metallic=1.0, rough=0.3)
+    dark = I.material("Dark", DARK, rough=0.6)
+    steel = I.material("Steel", STEEL, metallic=1.0, rough=0.25)
+    grip = I.material("Grip", (0.32, 0.05, 0.05), rough=0.6)
+    objs = [box("Body", (1.5, 0.72, 1.12), (0, 0, -0.1), leather, bevel=0.24)]
+    # the flap over the top, down the front, rounded at the bottom
+    objs.append(box("FlapTop", (1.56, 0.78, 0.1), (0, 0, 0.45), leather_dark, bevel=0.05))
+    objs.append(box("Flap", (1.56, 0.1, 0.66), (0, -0.4, 0.15), leather_dark, bevel=0.12))
+    # a front pocket under it
+    objs.append(box("Pocket", (0.96, 0.12, 0.42), (0, -0.4, -0.42), leather, bevel=0.08))
+    objs.append(box("PocketLip", (0.98, 0.14, 0.05), (0, -0.41, -0.22), leather_dark, bevel=0.02))
+    # the strap and its gold buckle
+    objs.append(box("Strap", (0.2, 0.06, 0.62), (0, -0.47, -0.04), leather_dark, bevel=0.02))
+    objs.append(box("Buckle", (0.36, 0.07, 0.28), (0, -0.5, -0.06), gold, bevel=0.03))
+    objs.append(box("Slot", (0.22, 0.08, 0.14), (0, -0.51, -0.06), dark, bevel=0.01))
+    objs.append(box("Tongue", (0.05, 0.09, 0.2), (0, -0.53, -0.06), gold, bevel=0.01))
+    # the handle, an arch of leather on top
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.36, minor_radius=0.065, major_segments=40, minor_segments=10,
+                                     location=(0, 0, 0.5), rotation=(math.pi / 2, 0, 0))
+    h = bpy.context.active_object; h.name = "Handle"
+    bm = bmesh.new(); bm.from_mesh(h.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.y < -0.02], context="VERTS")   # (local y is world z)
+    bm.to_mesh(h.data); bm.free()
+    I.link(h, leather_dark); smooth(h); objs.append(h)
+    for x in (-0.36, 0.36):
+        objs.append(box("Rivet", (0.14, 0.12, 0.1), (x, 0, 0.52), gold, bevel=0.03))
+    # a sword hilt poking out at the side
+    tilt = (0, math.radians(28), 0)
+    objs.append(cyl("Grip", 0.06, 0.5, (0.7, 0.05, 0.78), grip, rot=tilt, verts=16))
+    objs.append(box("Guard", (0.56, 0.1, 0.09), (0.6, 0.05, 0.55), steel, rot=tilt, bevel=0.03))
+    objs.append(sphere("Pommel", 0.1, (0.82, 0.05, 1.02), gold))
+    return objs
+
+
 MODELS = {"loadout": (helmet, 0.92, 0.0), "armory": (crossed_swords, 0.9, -0.55), "shop": (chest, 0.92, -0.55),
           "tasks": (scroll, 0.92, -0.3), "wardrobe": (wardrobe, 0.92, -0.3), "settings": (gear, 0.95, -0.4),
-          "pass": (pass_banner, 0.92, -0.25), "hatchery": (hatchery_nest, 0.86, -0.5)}
+          "pass": (pass_banner, 0.92, -0.25), "hatchery": (hatchery_nest, 0.86, -0.5),
+          "trade": (trade_arrows, 0.9, -0.2), "inventory": (satchel, 0.9, -0.45)}
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []

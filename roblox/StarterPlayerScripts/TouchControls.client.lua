@@ -6,8 +6,10 @@
        right thumb   BLOCK (hold) in the corner, with ◀ SWING and SWING ▶ (the
                      side of the swing), STAB, OVERHEAD, KICK, FEINT and DODGE
                      around it
-       left side     SPRINT (hold) and JUMP above the stick
-       top left      MENU (the M key)
+       left side     SPRINT (hold) and JUMP above the stick; EMOTE, VIEW
+                     (first / third person) and CROUCH (on / off) above them
+       top left      MENU (the M key) and SCORES (the board, on / off)
+       weapons       tap a slot on the weapon bar (Hotbar)
        a drag anywhere else on the screen turns the camera
 
      Shown only while you have a body and the menu is closed. Roblox's own jump
@@ -50,8 +52,8 @@ local function pad(anchor, pos, size)
 end
 
 -- a round button: centre (x, y) in its pad, diameter d; hold = it reports
--- being let go too (BLOCK, SPRINT)
-local function round(parent, label, x, y, d, color, action, side, hold)
+-- being let go too (BLOCK, SPRINT); toggle = each tap flips it on or off (CROUCH)
+local function round(parent, label, x, y, d, color, action, side, hold, toggle)
 	local b = Instance.new("TextButton")
 	b.Name = label
 	b.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -75,13 +77,26 @@ local function round(parent, label, x, y, d, color, action, side, hold)
 	stroke.Color = Color3.new(1, 1, 1)
 	stroke.Transparency = 0.55
 	stroke.Thickness = 2
-	local down = false
+	local down, latched = false, false
 	local function set(on)
 		if on == down then return end
 		down = on
+		if toggle then
+			if not on then return end
+			latched = not latched
+			b.BackgroundTransparency = latched and 0.05 or 0.25
+			stroke.Transparency = latched and 0.1 or 0.55
+			TouchInput.press(action, latched, side)
+			return
+		end
 		b.BackgroundTransparency = on and 0.05 or 0.25
 		stroke.Transparency = on and 0.1 or 0.55
 		if on or hold then TouchInput.press(action, on, side) end
+	end
+	b:SetAttribute("Toggle", toggle == true)
+	if toggle then
+		-- (a fresh body starts standing)
+		player.CharacterAdded:Connect(function() if latched then latched = false; b.BackgroundTransparency = 0.25; stroke.Transparency = 0.55; TouchInput.press(action, false, side) end end)
 	end
 	b.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then set(true) end
@@ -104,10 +119,13 @@ round(right, "KICK", 110, 185, 56, COL.other, "Kick")
 round(right, "FEINT", 180, 105, 52, COL.other, "Feint")
 round(right, "DODGE", 283, 68, 56, COL.move, "Dodge")
 
--- the left: SPRINT and JUMP above the stick
-local left = pad(Vector2.new(0, 1), UDim2.new(0, 12, 1, -230), UDim2.fromOffset(170, 80))
-round(left, "SPRINT", 40, 40, 64, COL.move, "Sprint", nil, true)
-round(left, "JUMP", 120, 40, 58, COL.move, "Jump")
+-- the left: SPRINT and JUMP above the stick, and above them EMOTE, VIEW, CROUCH
+local left = pad(Vector2.new(0, 1), UDim2.new(0, 12, 1, -230), UDim2.fromOffset(200, 150))   -- (SPRINT / JUMP stay where they were, clear of the stick)
+round(left, "EMOTE", 34, 32, 50, COL.other, "Emote")
+round(left, "VIEW", 96, 32, 50, COL.other, "View")
+round(left, "CROUCH", 158, 32, 50, COL.other, "Crouch", nil, false, true)
+round(left, "SPRINT", 40, 110, 64, COL.move, "Sprint", nil, true)
+round(left, "JUMP", 120, 110, 58, COL.move, "Jump")
 
 -- MENU, top left under the Roblox buttons
 local menu = Instance.new("TextButton")
@@ -123,6 +141,14 @@ menu.TextColor3 = Color3.new(1, 1, 1)
 menu.Parent = gui
 Instance.new("UICorner", menu).CornerRadius = UDim.new(0, 10)
 menu.Activated:Connect(function() if _G.HubMenuToggle then _G.HubMenuToggle() end end)
+-- SCORES, beside it: the board on and off
+local scores = menu:Clone()
+scores.Name = "Scores"
+scores.Text = "🏆 SCORES"
+scores.Size = UDim2.fromOffset(116, 40)
+scores.Position = UDim2.fromOffset(116, 8)
+scores.Parent = gui
+scores.Activated:Connect(function() TouchInput.press("Board", true, "Toggle") end)
 
 --------------------------------------------------------------------
 --  THE CAMERA: a drag on open screen (not on a button, not the stick's half)
@@ -161,6 +187,7 @@ RunService.RenderStepped:Connect(function(dt)
 	gui.Enabled = TouchInput.active()
 	right.Visible, left.Visible = on, on
 	menu.Visible = TouchInput.active() and not menuOpen
+	scores.Visible = on
 	if not on then
 		-- nothing stays held down while hidden
 		for t in pairs(looking) do looking[t] = nil end

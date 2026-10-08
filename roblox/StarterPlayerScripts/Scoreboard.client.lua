@@ -570,6 +570,14 @@ UserInputService.InputEnded:Connect(function(input)
 	if input.KeyCode == BOARD_KEY then setBoard(false) end
 end)
 UserInputService.WindowFocusReleased:Connect(function() setBoard(false) end)
+-- a controller's held VIEW button, or the SCORES touch button (a tap shows it, another hides it)
+do
+	local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
+	TouchInput.changed:Connect(function(action, down, side)
+		if action ~= "Board" then return end
+		if side == "Toggle" then if down then setBoard(not holding) end else setBoard(down == true) end
+	end)
+end
 -- live while held (or during the intermission)
 local acc = 0
 RunService.RenderStepped:Connect(function(dt)

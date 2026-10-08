@@ -43,17 +43,12 @@ local function hubMenuUp()
 	return h ~= nil and h.Enabled
 end
 
--- a key bind's name, the way a player says it
-local NICE = {MouseButton1 = "LEFT MOUSE", MouseButton3 = "MIDDLE MOUSE", MouseWheelUp = "SCROLL UP", MouseWheelDown = "SCROLL DOWN",
-	LeftAlt = "LEFT ALT", RightAlt = "RIGHT ALT", LeftShift = "LEFT SHIFT", LeftControl = "LEFT CTRL", Space = "SPACE"}
--- (on a touch screen the moves are buttons: TouchControls)
-local function touchOnly() return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled end
-local function keyName(action)
-	if touchOnly() then return "the " .. string.upper(action) .. " button" end
-	if action == "Block" then return "[RIGHT MOUSE]" end
-	local n = ClientSettings.get("Key_" .. action) or action
-	return "[" .. (NICE[n] or string.upper(n)) .. "]"
-end
+-- a control's name for what the player holds: their key bind, the controller's
+-- button, or the touch button (ReplicatedStorage ▸ InputHints)
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
+local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
+local function touchOnly() return InputHints.mode() == "Touch" end
+local function keyName(action) return InputHints.say(action) end
 local function say(text)
 	return (text:gsub("{(%a+)}", function(a) return keyName(a) end))
 end
@@ -305,6 +300,7 @@ local function feetControls()
 	local l = LESSON.basics
 	return l and l.controls or {}
 end
+local markFeet   -- (below)
 local function buildFeet()
 	for _, r in pairs(feetRows) do r.row:Destroy() end
 	feetRows = {}
@@ -312,19 +308,22 @@ local function buildFeet()
 		local row = Instance.new("Frame")
 		row.BackgroundColor3 = Theme.GLASS2; row.BackgroundTransparency = 0.25; row.Size = UDim2.new(1, 0, 0, 34); row.LayoutOrder = i; row.Parent = feet
 		Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
-		local key = text(row, keyName(action):gsub("[%[%]]", ""), 13, WHITE)
+		local key = text(row, (action == "Cursor" and InputHints.mode() ~= "Keyboard") and "AUTO" or InputHints.name(action), 13, WHITE)
 		key.BackgroundTransparency = 0; key.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
 		key.Position = UDim2.fromOffset(6, 5); key.Size = UDim2.fromOffset(96, 24); key.TextXAlignment = Enum.TextXAlignment.Center; key.TextScaled = false
 		Instance.new("UICorner", key).CornerRadius = UDim.new(0, 6)
-		local what = text(row, FEET[action] or action, 13, WHITE, Theme.FONT); what.Position = UDim2.fromOffset(110, 0); what.Size = UDim2.new(1, -146, 1, 0)
+		local words = (action == "Cursor" and InputHints.mode() ~= "Keyboard") and "Menus give you a cursor by themselves" or (FEET[action] or action)
+		local what = text(row, words, 13, WHITE, Theme.FONT); what.Position = UDim2.fromOffset(110, 0); what.Size = UDim2.new(1, -146, 1, 0)
 		local tick = text(row, "", 20, Theme.GOOD); tick.AnchorPoint = Vector2.new(1, 0.5); tick.Position = UDim2.new(1, -8, 0.5, 0); tick.Size = UDim2.fromOffset(26, 26)
 		tick.TextXAlignment = Enum.TextXAlignment.Center
 		feetRows[action] = {row = row, tick = tick, what = what}
 	end
-	feetFoot.Text = "Anytime: M opens the menu (Settings has every key), Tab holds the scoreboard."
+	feetFoot.Text = InputHints.fill("Anytime: {Menu} opens the menu (Settings has every control), {Board} shows the scoreboard.")
 	gotIt.Visible = touchOnly()
+	-- (a controller or a touch screen has no mouse to set free: that one ticks itself)
+	if InputHints.mode() ~= "Keyboard" then task.delay(0.6, function() markFeet("Cursor") end) end
 end
-local function markFeet(action)
+markFeet = function(action)
 	local r = feetRows[action]
 	if not r or tried[action] then return end
 	tried[action] = true
@@ -345,6 +344,10 @@ UserInputService.InputBegan:Connect(function(input)
 	if not feet.Visible or UserInputService:GetFocusedTextBox() then return end
 	local action = ClientSettings.actionForInput(input)
 	if action and FEET[action] then markFeet(action) end
+end)
+-- a controller's buttons and the touch buttons come through the action bus
+TouchInput.changed:Connect(function(action, down)
+	if down and feet.Visible and FEET[action] then markFeet(action) end
 end)
 -- (on a touch screen the moves are buttons: a hop and a dodge show for themselves, the rest on GOT IT)
 gotIt.MouseButton1Click:Connect(function() for _, a in ipairs(feetControls()) do markFeet(a) end end)
