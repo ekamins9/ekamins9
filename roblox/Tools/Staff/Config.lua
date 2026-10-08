@@ -12,7 +12,9 @@ return {
 	SPELLS      = {"Firebolt", "ChainLightning", "FrostNova", "Mend"},
 	-- where spells leave from: the orb, in the Handle's space
 	ORB         = Vector3.new(0, 3.55, 0),
-	-- held across the fist, not along the arm: an arm held out stands the staff upright
-	-- (RigPose.staff tips it forward to cast)
-	GRIP        = CFrame.Angles(math.rad(90), 0, 0),
+	-- turned in the fist so a hand held low and forward stands it upright beside you, its
+	-- foot near the ground, like a walking staff (RigPose.staff tips it forward to cast)
+	GRIP        = CFrame.Angles(math.rad(35), 0, 0),
+	-- where spells leave from on the server: the orb in the casting stance, body frame
+	CAST_FROM   = Vector3.new(1, 2, -2.1),
 }

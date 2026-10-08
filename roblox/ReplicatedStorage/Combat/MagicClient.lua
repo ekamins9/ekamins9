@@ -96,7 +96,33 @@ local function spellBar()
 	name.BackgroundTransparency = 1; name.AnchorPoint = Vector2.new(0.5, 1); name.Position = UDim2.new(0.5, 0, 0, -4); name.Size = UDim2.new(1, 120, 0, 16)
 	name.Font = Theme.FONT_TITLE; name.TextSize = 14; name.TextColor3 = Color3.new(1, 1, 1); name.Parent = root
 	do local s = Instance.new("UIStroke", name); s.Color = Theme.OUTLINE; s.Thickness = 1.6 end
-	bar = {gui = gui, root = root, scale = sc, fill = fill, manaText = manaText, manaStroke = stroke, slots = slots, name = name}
+	-- THE CROSSHAIR, in the middle of the screen (where a spell goes): a ring in the chosen
+	-- spell's colour with four ticks, closing as the cast fills; red past the spell's reach,
+	-- dim while it can't be cast (cooling down, not enough mana)
+	local ret = Instance.new("Frame")
+	ret.Name = "Crosshair"; ret.AnchorPoint = Vector2.new(0.5, 0.5); ret.Position = UDim2.fromScale(0.5, 0.5)
+	ret.Size = UDim2.fromOffset(34, 34); ret.BackgroundTransparency = 1
+	ret.Parent = gui
+	Instance.new("UICorner", ret).CornerRadius = UDim.new(1, 0)
+	local retStroke = Instance.new("UIStroke", ret); retStroke.Thickness = 2; retStroke.Transparency = 0.2
+	local dot = Instance.new("Frame")
+	dot.AnchorPoint = Vector2.new(0.5, 0.5); dot.Position = UDim2.fromScale(0.5, 0.5); dot.Size = UDim2.fromOffset(4, 4)
+	dot.BorderSizePixel = 0; dot.Parent = ret
+	Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+	local ticks = {}
+	for i = 0, 3 do
+		local t = Instance.new("Frame")
+		local horiz = i % 2 == 0
+		t.AnchorPoint = Vector2.new(0.5, 0.5); t.Size = horiz and UDim2.fromOffset(8, 2) or UDim2.fromOffset(2, 8)
+		t.BorderSizePixel = 0; t.Parent = ret
+		ticks[i + 1] = {frame = t, dir = ({Vector2.new(1, 0), Vector2.new(0, 1), Vector2.new(-1, 0), Vector2.new(0, -1)})[i + 1]}
+	end
+	local note = Instance.new("TextLabel")
+	note.BackgroundTransparency = 1; note.AnchorPoint = Vector2.new(0.5, 0); note.Position = UDim2.new(0.5, 0, 1, 10); note.Size = UDim2.fromOffset(200, 14)
+	note.Font = Theme.FONT_TITLE; note.TextSize = 11; note.TextColor3 = Color3.fromRGB(255, 110, 110); note.Text = ""; note.Parent = ret
+	do local s = Instance.new("UIStroke", note); s.Color = Theme.OUTLINE; s.Thickness = 1.4 end
+	bar = {gui = gui, root = root, scale = sc, fill = fill, manaText = manaText, manaStroke = stroke, slots = slots, name = name,
+		ret = ret, retStroke = retStroke, retDot = dot, retTicks = ticks, retNote = note}
 	return bar
 end
 
@@ -249,6 +275,31 @@ function MagicClient.attach(Tool, cfg)
 		local cur = Spells[book[chosen] or ""]
 		b.name.Text = cur and (string.upper(cur.name) .. (casting and "  ·  CASTING…" or "")) or ""
 		b.name.TextColor3 = cur and (cur.glow or Color3.new(1, 1, 1)) or Color3.new(1, 1, 1)
+		-- the crosshair
+		local shown = cur or (casting and sp)
+		local s = (casting and sp) or cur
+		if s then
+			local k = (casting and sp) and math.clamp((now - castFrom) / sp.cast, 0, 1) or 0
+			local d = casting and (44 - 28 * k) or (warding and 46 or 30)
+			b.ret.Size = UDim2.fromOffset(d, d)
+			local hitAt = aimPoint()
+			local root = c:FindFirstChild("HumanoidRootPart")
+			local far = s.kind ~= "nova" and s.kind ~= "bolt" and hitAt and root and (hitAt - root.Position).Magnitude > (s.range or 999)
+			local ready = now >= (readyAt[(casting and castId) or book[chosen]] or 0) and mana >= s.mana
+			local col = far and Color3.fromRGB(255, 90, 90) or (s.color or Color3.new(1, 1, 1))
+			if casting then col = col:Lerp(Color3.new(1, 1, 1), 0.35 * k) end
+			b.retStroke.Color = col
+			b.retStroke.Transparency = (ready or casting) and 0.15 or 0.65
+			b.retDot.BackgroundColor3 = col
+			for _, t in ipairs(b.retTicks) do
+				t.frame.BackgroundColor3 = col
+				t.frame.Position = UDim2.new(0.5, t.dir.X * (d / 2 + 6), 0.5, t.dir.Y * (d / 2 + 6))
+				t.frame.BackgroundTransparency = (ready or casting) and 0 or 0.6
+			end
+			b.retNote.Text = far and "OUT OF REACH" or (s.kind == "nova" and "ROUND YOU" or "")
+			b.retNote.TextColor3 = far and Color3.fromRGB(255, 110, 110) or Color3.fromRGB(200, 220, 255)
+		end
+		b.ret.Visible = shown ~= nil
 	end))
 
 	local function clear()

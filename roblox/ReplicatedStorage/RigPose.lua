@@ -50,10 +50,13 @@ RigPose.CONFIG = {
 	                   twist = -0.3, aimRightAcross = 0.1, aimLeftAcross = 1.6, aimLeftRaise = 0.05,
 	                   bend = 0.85, bendPull = 0.3, strokes = 3,
 	                   spanRight = 0.65, spanRightAcross = 0.25, spanLeft = 0.75, spanLeftPull = 0.35, spanLeftAcross = 1.6},
-	-- the staff (RigPose.staff): at ease the right arm out level-ish (the staff upright), casting
-	-- the right arm lower (the staff tips forward) and the left hand out at the target
-	STAFF           = {easeRaise = 1.3, easeAcross = 0.15, easeLeftRaise = 0.15, easeLeftAcross = 0.1,
-	                   castRaise = 0.85, castAcross = 0.3, drawLift = 0.5, castLeftAcross = 0.45, twist = 0.25},
+	-- the staff (RigPose.staff; its Tool.Grip turns it 35° in the fist: the staff stands upright
+	-- when the arm is that far forward, staff angle = arm raise + 180° - grip): at ease the hand
+	-- low and out to the side, the staff planted beside you; casting the arm drops (the staff
+	-- tips forward, the orb leading) and the left hand goes out at the target; the cast's charge
+	-- lifts the staff back and up (drawLift), and it snaps forward as the spell goes
+	STAFF           = {easeRaise = 0.6, easeAcross = -0.22, easeLeftRaise = 0.12, easeLeftAcross = 0.05,
+	                   castRaise = 0.15, castAcross = 0.1, drawLift = 0.6, castLeftAcross = 0.45, twist = 0.25},
 }
 local C = RigPose.CONFIG
 

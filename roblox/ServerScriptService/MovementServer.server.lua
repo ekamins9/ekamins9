@@ -78,6 +78,7 @@ local function govern(char)
 			if sprintHeld[char] and dot >= M.SPRINT_MIN_DOT
 				and not char:GetAttribute("Blocking") and not char:GetAttribute("Crouching")
 				and not char:GetAttribute("Acting") and not char:GetAttribute("SpeedMult_Draw")   -- (no sprinting with a bow drawn or a crossbow being wound)
+				and not char:GetAttribute("Warded")   -- (nor behind a Mage's ward)
 				and hum.Health > 0 and not incapacitated(char) then
 				sprint = char:GetAttribute("SprintMult") or M.SPRINT_MULT   -- the armor weight's (Catalog ▸ Weights)
 			end

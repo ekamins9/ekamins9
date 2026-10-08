@@ -309,13 +309,13 @@ function MagicServer.attach(tool, cfg)
 		clearCast(c)
 		if why then fx:FireAllClients("Fizzle", c) end
 	end
-	-- the origin: the staff's orb (its TrailTip), else in front of the face
+	-- the origin: where the orb is in the casting stance (RigPose.staff), in the body's frame
+	-- (the server doesn't see the stance: the pose is drawn on each screen, which starts the
+	-- spell at the orb it sees, MagicFX)
+	local castFrom = cfg.CAST_FROM or Vector3.new(1, 2, -2.1)
 	local function originOf(c)
-		local tip = tool:FindFirstChild("TrailTip", true)
-		if tip and tip:IsA("Attachment") then return tip.WorldPosition end
-		local head = c:FindFirstChild("Head")
 		local r = rootOf(c)
-		return head and (head.Position + (r and r.CFrame.LookVector or Vector3.zero) * 1.5) or c:GetPivot().Position
+		return r and (r.CFrame * castFrom) or c:GetPivot().Position
 	end
 
 	local function release(c, myToken)
@@ -350,7 +350,7 @@ function MagicServer.attach(tool, cfg)
 			c:SetAttribute("Casting", a)
 			c:SetAttribute("CastStart", workspace:GetServerTimeNow())
 			c:SetAttribute("CastTime", sp.cast)
-			c:SetAttribute("SpeedMult_Cast", 0.65)
+			c:SetAttribute("SpeedMult_Cast", Spells.CAST_WALK)
 			c:SetAttribute("Acting", true)
 			lastCast[c] = os.clock()
 			-- a hit while casting breaks it
