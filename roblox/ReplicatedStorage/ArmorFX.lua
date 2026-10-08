@@ -34,7 +34,9 @@ local SPOTS = {
 	LeftArmClothing = {Vector3.new(0, -0.6, 0)}, RightArmClothing = {Vector3.new(0, -0.6, 0)},
 	LeftLegClothing = {Vector3.new(0, -0.5, 0)}, RightLegClothing = {Vector3.new(0, -0.5, 0)},
 }
-local RATE = 0.22   -- × the weapon aura's rates, per spot (a whole body of it)
+local RATE = {0.22, 0.22, 0.3, 0.4}   -- × the weapon aura's rates, per spot (a whole body of it), by tier
+local TIER = {Common = 1, Rare = 1, Epic = 2, Legendary = 3, Mythic = 4}
+ArmorFX.TIER = TIER
 
 function ArmorFX.def(id) return id and Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[id] or nil end
 
@@ -80,6 +82,13 @@ function ArmorFX.apply(container, char, id, preview, builtIn)
 		end
 	end
 	container:SetAttribute("Finish", id)
+	-- what StarterPlayerScripts ▸ ArmorFX needs for the rest: footprints, streaks, surges,
+	-- motes and a rim, by the finish's rarity (on menu mannequins too)
+	container:SetAttribute("FinishTier", TIER[def.rarity] or 1)
+	container:SetAttribute("FinishAccent", glowCol or L.accent or Color3.new(1, 1, 1))
+	container:SetAttribute("FinishAura", L.aura)
+	container:SetAttribute("FinishRadiant", L.radiant == true)
+	CollectionService:AddTag(container, "FinishWorn")
 	if preview then return true end
 	-- the aura: particles off the shoulders, arms and legs
 	local aura = L.aura and SkinFX.AURA_DEF and SkinFX.AURA_DEF[L.aura]
@@ -93,7 +102,7 @@ function ArmorFX.apply(container, char, id, preview, builtIn)
 					for j, e in ipairs(aura.emit or {}) do
 						if not e.locked then
 							local pe = SkinFX.makeEmitter(e, "Finish" .. j)
-							pe.Rate = (e.rate or 0) * RATE
+							pe.Rate = (e.rate or 0) * RATE[TIER[def.rarity] or 1]
 							pe:SetAttribute("BaseRate", pe.Rate)
 							pe.Parent = a
 						end

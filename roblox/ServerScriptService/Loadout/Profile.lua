@@ -61,7 +61,7 @@ local cache, dirty = {}, {}
 function Profile.defaultLoadout(classId)
 	local cls = GameConfig.CLASSES[classId]
 	local w = cls and cls.weight or "Light"
-	local function d(slot) local p = Catalog.defaultPiece(slot, w); return p and p.id or nil end
+	local function d(slot) local p = Catalog.defaultPiece(slot, w, cls and cls.starter); return p and p.id or nil end
 	-- the class's own pair (GameConfig.CLASSES primary / secondary), else the first free weapon
 	local function free(id) local wd = id and Catalog.WEAPON[id]; return wd and wd.unlock and wd.unlock.free and id or nil end
 	local weapon = free(cls and cls.primary)

@@ -10,6 +10,7 @@ return {
 	Rarity      = "Mythic",
 	Crate       = "Forge",
 	Finish      = "Sunblessed",
+	Colors      = {Metal = Color3.fromRGB(250, 244, 226), Accent = Color3.fromRGB(232, 184, 74)},   -- (its own colours: the player's picks don't repaint these)
 	Covers      = {"Hair", "Face"},
 	HelmName = "Winged Helm", TopName = "Seraph Plate", LegsName = "Seraph Greaves",
 }

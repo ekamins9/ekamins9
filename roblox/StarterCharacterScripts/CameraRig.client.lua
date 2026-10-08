@@ -806,7 +806,7 @@ local function loopBody(dt)
 		-- front holding the bow. A crossbow: both (only the weapon shows). (RangedClient)
 		local ranged = character:GetAttribute("LocalRanged") or 0
 		if ranged > 0.5 then
-			local bow = ranged < 1.5
+			local bow = ranged < 1.5 or ranged > 2.5   -- (a staff, like a bow, keeps the right arm: it holds it)
 			LeftArm.LocalTransparencyModifier = 1
 			if not bow then RightArm.LocalTransparencyModifier = 1 end
 			for part in pairs(armPieces) do

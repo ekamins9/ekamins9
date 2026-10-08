@@ -345,6 +345,33 @@ W.Quarterstaff = function()
 	out[#out + 1] = hitbox(0.6, 2.75, 0.5)
 	return out
 end
+-- THE MAGE'S STAFF: a long blackwood shaft shod in iron, a brass collar and four claws curling
+-- up round an orb of light. The orb is the "Blade" (a skin recolours it); spells leave from it
+-- (Tools ▸ Staff ▸ Config.ORB). No hitbox: a staff casts, it doesn't cut.
+W.Staff = function()
+	local out = {grip(0.9, 0.24, C.DARKLEATHER, M.LEATHER)}
+	B.join(out, wraps(0.9, 0.24, 3, C.LEATHER))
+	B.join(out, haft(-1.9, 3.0, 0.22, 0.9, C.DARKWOOD))
+	out[#out + 1] = cap(-1.95, 0.26)
+	out[#out + 1] = B.cyl("Band", 0.27, 0.1, cf(0, 1.6, 0), C.BRASS, M.METAL, {SkinPart = "Grip"})
+	out[#out + 1] = B.cyl("Collar", 0.36, 0.22, cf(0, 3.05, 0), C.BRASS, M.METAL, {SkinPart = "Grip"})
+	-- (a rod between two points: a cylinder's Y axis laid along them)
+	local function rod(name, a, b, d, color, mat, attrs)
+		local mid, dir = (a + b) / 2, b - a
+		local up = math.abs(dir.Unit.Y) > 0.98 and Vector3.zAxis or Vector3.yAxis
+		return B.cyl(name, d, dir.Magnitude, CFrame.lookAt(mid, b, up) * CFrame.Angles(-math.pi / 2, 0, 0), color, mat, attrs)
+	end
+	for i = 0, 3 do   -- the claws: out from the collar, round the orb, curling in over it
+		local a = i * math.pi / 2 + math.pi / 4
+		local d = Vector3.new(math.cos(a), 0, math.sin(a))
+		local p0, p1, p2 = Vector3.new(0, 3.12, 0) + d * 0.1, Vector3.new(0, 3.5, 0) + d * 0.38, Vector3.new(0, 3.92, 0) + d * 0.16
+		out[#out + 1] = rod("Claw", p0, p1, 0.09, C.BRASS, M.METAL, {SkinPart = "Grip"})
+		out[#out + 1] = rod("Claw", p1, p2, 0.08, C.BRASS, M.METAL, {SkinPart = "Grip"})
+		out[#out + 1] = B.ball("ClawTip", 0.11, CFrame.new(p2), C.BRASS, M.METAL, {SkinPart = "Grip"})
+	end
+	out[#out + 1] = B.ball("Orb", 0.56, cf(0, 3.55, 0), Color3.fromRGB(140, 200, 255), M.NEON, {SkinPart = "Blade"})
+	return out
+end
 W.Greatsword = function() return sword{grip = 1.2, gripD = 0.28, blade = 4.0, w = 0.36, th = 0.12, guard = 1.6, guardT = 0.16, pommel = 0.34} end
 W.Shortsword = function() return sword{grip = 0.55, blade = 2.2, w = 0.28, guard = 0.9, pommel = 0.26, wraps = 2} end
 

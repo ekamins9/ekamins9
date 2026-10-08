@@ -30,6 +30,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
+local Ward = require(script.Parent:WaitForChild("Ward"))
 local Injury = require(script.Parent:WaitForChild("Injury"))
 local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundBank = require(ReplicatedStorage:WaitForChild("SoundBank"))
@@ -318,6 +319,7 @@ local function kindSound(fx, which, at)
 		end
 		local friendly = CombatServer.friendlyMult(shooter, target)
 		dmg *= friendly
+		dmg = Ward.scale(target, shooter, dmg)   -- (a Mage's ward soaks an arrow from the front)
 		if dmg <= 0 then return end
 		local lethal = hum.Health - dmg <= 0
 		CombatServer.credit(target, shooter, shotWeapon, region == "head" and "headshot" or "arrow")

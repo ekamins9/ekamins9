@@ -39,4 +39,6 @@ return {
 	{id = "Quarterstaff", name = "Quarterstaff", family = "Polearm", secondary = false, unlock = {level = 3}, marks = 400},
 	{id = "Bow", name = "Longbow", family = "Ranged", secondary = false, ranged = true, unlock = {free = true}},
 	{id = "Crossbow", name = "Crossbow", family = "Ranged", secondary = false, ranged = true, unlock = {level = 3}, marks = 600},
+	-- the Mage's (GameConfig.CLASSES.Mage): only a magic class carries one, and a magic class carries one
+	{id = "Staff", name = "Arcane Staff", family = "Magic", secondary = false, magic = true, unlock = {free = true}},
 }

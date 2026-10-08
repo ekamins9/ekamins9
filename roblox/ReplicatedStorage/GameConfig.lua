@@ -178,8 +178,14 @@ GameConfig.CLASSES = {
 		description = "A bow or a crossbow, and a sidearm for when they get close. The lightest armor of all (85 health, nothing to stop a blade): stay back, aim for the head."},
 	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any", primary = "ArmingSword", secondary = "Shortsword",
 		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
+	-- the Mage: a staff (MagicSpells: fire, lightning, frost, mending; a ward of mana) and a
+	-- sidearm. Robes, not armor: even less than the Archer (80 health, nothing to stop a blade),
+	-- and a mana bar beside the stamina. Starts in the Apprentice's robes (starter = a set).
+	Mage     = {name = "Mage",     weight = "Light",  armorType = "Light",  weapons = "any", primary = "Staff", secondary = "Shortsword",
+		magic = true, health = -20, prot = 0, speed = 1.0, starter = "ApprenticeRobes",
+		description = "A staff of fire, lightning, frost and mending, and a ward that turns blows into lost mana. The least health of anyone (80, no armor): keep your distance, cast, and never stand still."},
 }
-GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard", "Archer"}
+GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard", "Archer", "Mage"}
 -- a new player's class (the intro, their training and their first battle are fought in it)
 GameConfig.DEFAULT_CLASS = "Knight"
 

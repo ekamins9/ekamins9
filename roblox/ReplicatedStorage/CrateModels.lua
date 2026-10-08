@@ -15,7 +15,7 @@
 
      A crate's look can also sit on the crate itself (Catalog ▸ Crates): look =
      {wood = Color3, metal = Color3, emblem = "skull", glow = Color3}. Emblems:
-     sword · axe · hammer · gem · arrow · skull · crown · star · anchor · flame ]]
+     sword · axe · hammer · gem · arrow · skull · crown · star · anchor · flame · helm ]]
 
 local CrateModels = {}
 
@@ -30,6 +30,7 @@ CrateModels.LOOKS = {
 	Grim       = {wood = C(30, 34, 30), metal = C(90, 170, 100), emblem = "skull", glow = C(110, 255, 140)},
 	Royal      = {wood = C(90, 20, 30), metal = GOLD, emblem = "crown", glow = C(255, 220, 120)},
 	Forge      = {wood = C(40, 36, 34), metal = C(200, 90, 40), emblem = "hammer", glow = C(255, 130, 50)},
+	WarChest   = {wood = C(34, 30, 32), metal = C(190, 196, 206), emblem = "helm", glow = C(255, 80, 60)},
 	Ossuary    = {wood = C(150, 140, 118), metal = C(222, 210, 182), emblem = "skull", glow = C(255, 240, 200)},
 	Hollow     = {wood = C(40, 26, 20), metal = C(255, 140, 40), emblem = "flame", glow = C(255, 150, 40)},
 	Foundry    = {wood = C(54, 50, 50), metal = C(255, 150, 70), emblem = "hammer", glow = C(255, 130, 50)},
@@ -95,6 +96,12 @@ local function emblem(model, kind, at, s, color)
 	elseif kind == "anchor" then
 		b(0.1, 0.8, 0, 0); b(0.46, 0.08, 0, 0.26); b(0.18, 0.18, 0, 0.44, 45)
 		b(0.36, 0.08, -0.17, -0.38, 30); b(0.36, 0.08, 0.17, -0.38, -30)
+	elseif kind == "helm" then   -- a great helm: its drum, a flat top, the eye slit and a cross of breaths
+		b(0.62, 0.7, 0, -0.06)
+		b(0.7, 0.12, 0, 0.32)
+		b(0.5, 0.08, 0, 0.08, 0, Enum.Material.SmoothPlastic, dark)
+		b(0.08, 0.36, 0, -0.18, 0, Enum.Material.SmoothPlastic, dark)
+		b(0.1, 0.3, 0, 0.5, 0, NEON, color:Lerp(Color3.new(1, 1, 1), 0.5))
 	elseif kind == "flame" then
 		b(0.44, 0.44, 0, -0.18, 45); b(0.3, 0.3, 0, 0.08, 45); b(0.18, 0.18, 0.02, 0.3, 45)
 		b(0.2, 0.2, 0, -0.16, 45, NEON, color:Lerp(Color3.new(1, 1, 0.6), 0.6))

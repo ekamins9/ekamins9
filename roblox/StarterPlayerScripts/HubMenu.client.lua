@@ -2332,7 +2332,22 @@ function HX.crateGallery(host, liveCrates)
 		wt.Position = UDim2.fromOffset(14, 10); wt.Size = UDim2.new(1, -28, 0, 16)
 		local nm = title(card, c.name, 22); nm.Position = UDim2.fromOffset(14, VH + 28); nm.Size = UDim2.new(1, -28, 0, 28); nm.TextTruncate = Enum.TextTruncate.AtEnd
 		local top
-		for _, it in ipairs(Catalog.crateItems(lc.id)) do if it.rarity == "Mythic" then top = it end end
+		local items = Catalog.crateItems(lc.id)
+		for _, it in ipairs(items) do if it.rarity == "Mythic" then top = it end end
+		do   -- what's inside, at a glance: an armor crate says so in big letters
+			local has = {}
+			for _, it in ipairs(items) do has[it.kind] = true end
+			local tags = {}
+			for _, k in ipairs({{"piece", "ARMOR"}, {"skin", "SKINS"}, {"armorfx", "FINISHES"}, {"killfx", "KILL FX"}, {"emote", "EMOTES"}}) do
+				if has[k[1]] then table.insert(tags, k[2]) end
+			end
+			local chip = title(card, table.concat(tags, " · "), 11, Color3.new(1, 1, 1))
+			chip.BackgroundTransparency = 0; chip.BackgroundColor3 = has.piece and Color3.fromRGB(190, 60, 40) or col:Lerp(Color3.new(0, 0, 0), 0.45)
+			chip.AutomaticSize = Enum.AutomaticSize.X; chip.Size = UDim2.fromOffset(0, 20); chip.AnchorPoint = Vector2.new(1, 0); chip.Position = UDim2.new(1, -10, 0, 34)
+			chip.TextXAlignment = Enum.TextXAlignment.Center; chip.ZIndex = 3
+			padding(chip, 8, 8, 0, 0)
+			Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 6)
+		end
 		local mt = title(card, top and ("MYTHIC INSIDE: " .. string.upper(top.name)) or (c.description or ""), 12, top and RARITY_COL.Mythic or COL.DIM)
 		mt.Position = UDim2.fromOffset(14, VH + 58); mt.Size = UDim2.new(1, -28, 0, 16); mt.TextTruncate = Enum.TextTruncate.AtEnd
 		local price = P.restricted and string.format("%d KEY%s", c.keys or 1, (c.keys or 1) > 1 and "S" or "")
@@ -2476,7 +2491,8 @@ do
 			local lo = mine and classLoadout(cls) or nil
 			-- other members: we only know their class; show the class default
 			if not lo then
-				lo = {helmet = (Catalog.defaultPiece("helmet", weightOf(cls)) or {}).id, top = (Catalog.defaultPiece("top", weightOf(cls)) or {}).id, bottom = (Catalog.defaultPiece("bottom", weightOf(cls)) or {}).id, colors = {Primary = "Slate", Secondary = "Umber", Accent = "Ochre", Metal = "Ash"}}
+				local st = GameConfig.CLASSES[cls] and GameConfig.CLASSES[cls].starter
+				lo = {helmet = (Catalog.defaultPiece("helmet", weightOf(cls), st) or {}).id, top = (Catalog.defaultPiece("top", weightOf(cls), st) or {}).id, bottom = (Catalog.defaultPiece("bottom", weightOf(cls), st) or {}).id, colors = {Primary = "Slate", Secondary = "Umber", Accent = "Ochre", Metal = "Ash"}}
 			end
 			local sub, subColor = className(cls), COL.DIM
 			if party then
@@ -3792,7 +3808,7 @@ function Preview.strip(parent, pool, selectedKey, onPick, height)
 	padding(sf, 10, 10, 8, 8)
 	for i, it in ipairs(pool) do
 		local key = it.kind .. "|" .. it.id
-		local have = owns(it.kind == "skin" and "skins" or (it.kind == "killfx" and "killfx" or "emotes"), it.id)
+		local have = owns(HX.OWNKIND[it.kind] or "emotes", it.id)
 		local on = key == selectedKey
 		local c = button(sf, "", 12, on and COL.BLUE or COL.GLASS2)
 		c.AutoButtonColor = false
@@ -3801,7 +3817,8 @@ function Preview.strip(parent, pool, selectedKey, onPick, height)
 		border(c, RARITY_COL[it.rarity] or COL.DIM, on and 3 or 2, on and 0 or 0.35)
 		local th = Preview.thumb(c, it, UDim2.new(1, -12, 0, 76), 1.45); th.Position = UDim2.new(0, 6, 0, 6); th.BackgroundTransparency = 1
 		local t = title(c, it.name, 13); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
-		local subText = it.kind == "skin" and string.upper(Catalog.WEAPON[it.weapon] and Catalog.WEAPON[it.weapon].name or it.weapon) or (it.kind == "killfx" and "KILL FX" or "EMOTE")
+		local subText = it.kind == "skin" and string.upper(Catalog.WEAPON[it.weapon] and Catalog.WEAPON[it.weapon].name or it.weapon)
+			or ({killfx = "KILL FX", piece = "ARMOR", armorfx = "ARMOR FINISH"})[it.kind] or "EMOTE"
 		local sub = title(c, subText .. (have and "  ✔" or ""), 11, have and COL.GOOD or COL.DIM); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
 		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
 		c.Activated:Connect(function() onPick(it) end)
@@ -4009,7 +4026,7 @@ do
 		local nm = title(stg, w.name, 34); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 38)
 		local sk = title(stg, sel.name == "Default" and "DEFAULT LOOK" or (string.upper(sel.name) .. "  SKIN"), 18, RARITY_COL[sel.rarity] or COL.DIM); sk.Position = UDim2.fromOffset(20, 50); sk.Size = UDim2.new(1, -40, 0, 22)
 		if sel.name ~= "Default" then local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16) end
-		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or (w.family == "Ranged" and "Ranged (the Archer's)" or "Polearm"))
+		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or (w.family == "Ranged" and "Ranged (the Archer's)" or (w.family == "Magic" and "Magic (the Mage's)" or "Polearm")))
 		local fxText = Preview.fxText(sel)
 		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or "") .. (fxText and ("  ·  " .. fxText) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
 		local desc = (weaponStats(w.id) or {}).Description
@@ -4034,7 +4051,8 @@ do
 			-- (a bow is the Archer's; a blade isn't)
 			local cls = classFor(nil)
 			if w.ranged then cls = "Archer"
-			elseif GameConfig.CLASSES[cls] and GameConfig.CLASSES[cls].ranged then cls = GameConfig.DEFAULT_CLASS end
+			elseif w.magic then cls = "Mage"
+			elseif GameConfig.CLASSES[cls] and (GameConfig.CLASSES[cls].ranged or GameConfig.CLASSES[cls].magic) then cls = GameConfig.DEFAULT_CLASS end
 			fat("EQUIP ON " .. string.upper(className(cls)), COL.GREEN, function()
 				equip(cls, function(lo) lo.weapon = w.id; lo.weaponSkin = sel.id; if lo.secondary == w.id then lo.secondary = nil; lo.secondarySkin = nil end end, w.name .. (sel.name ~= "Default" and (" · " .. sel.name) or ""))
 			end)

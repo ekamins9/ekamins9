@@ -10,6 +10,7 @@ return {
 	Rarity      = "Legendary",
 	Crate       = "Forge",
 	Finish      = "Frostbound",
+	Colors      = {Metal = Color3.fromRGB(226, 232, 240), Accent = Color3.fromRGB(176, 220, 255)},   -- (its own colours: the player's picks don't repaint these)
 	Covers      = {"Hair"},
 	HelmName = "Crown of Icicles", TopName = "Warden's Rimeplate", LegsName = "Warden's Greaves",
 }

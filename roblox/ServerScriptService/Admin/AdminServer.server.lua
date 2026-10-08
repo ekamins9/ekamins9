@@ -143,6 +143,12 @@ local function everything(plr)
 	for _, b in ipairs(Catalog.BODY.beards or {}) do Profile.grant(plr, "beards", b.id); n += 1 end
 	for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do Profile.grant(plr, "titles", t.title); n += 1 end
 	for _, c in ipairs(Catalog.COMPANIONS) do if not Profile.has(plr, "companions", c.id) then Profile.grant(plr, "companions", c.id); n += 1 end end
+	for _, f in ipairs(Catalog.ARMORFX or {}) do Profile.grant(plr, "armorfx", f.id); n += 1 end
+	for _, h in ipairs(Catalog.BODY.hair or {}) do if h.crowns then Profile.grant(plr, "hairs", h.id); n += 1 end end
+	for _, c in ipairs(Catalog.BODY.eyeColors or {}) do if c.crowns then Profile.grant(plr, "eyeColors", c.name); n += 1 end end
+	for layer, list in pairs(Catalog.BODY.faceParts or {}) do
+		for _, it in ipairs(list) do if it.crowns then Profile.grant(plr, "faceParts", layer .. "_" .. it.id); n += 1 end end
+	end
 	return n
 end
 

@@ -49,7 +49,7 @@ return {
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(110, 200, 120),
 	},
 	Royal = {
-		name = "Royal Armoury", description = "No Commons. Heraldic steel for every weapon and the crown jewels. Comes and goes.",
+		name = "Royal Armoury", description = "No Commons. Heraldic steel for every weapon and the crown jewels. Comes and goes. Armor finish: Regalia.",
 		cost = 120, odds = {Rare = 56, Epic = 34, Legendary = 9.5, Mythic = 0.5}, pity = 20,
 		refund = {Rare = 500, Epic = 1200, Legendary = 3000, Mythic = 8000}, accent = C(232, 184, 74),
 	},
@@ -60,37 +60,43 @@ return {
 		cost = 90, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(255, 130, 50),
 	},
+	-- the second armor crate: six more crate-only sets (Config Crate = "WarChest") and its finishes
+	WarChest = {
+		name = "War Chest", description = "Armor. Six sets you'll only find here, a piece at a time: a bear, a ranger, a pirate captain, the deathless, the lion, and obsidian.",
+		cost = 90, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
+		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(220, 60, 50),
+	},
 	-- THE DROPS (Catalog ▸ Calendar): each in rotation for a few weeks, then vaulted
 	Ossuary = {
-		name = "Ossuary Crate", description = "Bone blades, skull pommels, vertebrae grips. Mythic: The Marrow King.",
+		name = "Ossuary Crate", description = "Bone blades, skull pommels, vertebrae grips. Mythic: The Marrow King. Armor finish: Bonewhite.",
 		cost = 75, odds = DROP_ODDS, pity = 35, refund = DROP_REFUND, accent = C(222, 210, 182),
 	},
 	Hollow = {
-		name = "Hollow Crate", description = "Halloween 2026 only. Pumpkins, candles, witchlight. Mythic: The Hollow Headsman.",
+		name = "Hollow Crate", description = "Halloween 2026 only. Pumpkins, candles, witchlight. Mythic: The Hollow Headsman. Armor finish: Hollowfire.",
 		cost = 80, odds = EVENT_ODDS, pity = 25, refund = DROP_REFUND, accent = C(255, 140, 40),
 	},
 	Foundry = {
-		name = "Foundry Crate", description = "Riveted plate, slag and sparks. Mythic: The Forgefather.",
+		name = "Foundry Crate", description = "Riveted plate, slag and sparks. Mythic: The Forgefather. Armor finish: Slagforged.",
 		cost = 75, odds = NO_COMMON, pity = 35, refund = DROP_REFUND, accent = C(255, 150, 70),
 	},
 	WildHunt = {
-		name = "Hunter's Crate", description = "Antlers, fur and thorn. Mythic: The Horned King.",
+		name = "Hunter's Crate", description = "Antlers, fur and thorn. Mythic: The Horned King. Armor finish: Thornbound.",
 		cost = 75, odds = NO_COMMON, pity = 35, refund = DROP_REFUND, accent = C(150, 230, 120),
 	},
 	Longship = {
-		name = "Longship Crate", description = "Rune-carved steel and dragon pommels from the north. Mythic: Jarl's Bane.",
+		name = "Longship Crate", description = "Rune-carved steel and dragon pommels from the north. Mythic: Jarl's Bane. Armor finish: Runecarved.",
 		cost = 75, odds = NO_COMMON, pity = 35, refund = DROP_REFUND, accent = C(120, 200, 255),
 	},
 	Rime = {
-		name = "Rime Crate", description = "Ice from Frostgate. Mythic: Rimeheart.",
+		name = "Rime Crate", description = "Ice from Frostgate. Mythic: Rimeheart. Armor finish: Rimeglass.",
 		cost = 75, odds = NO_COMMON, pity = 35, refund = DROP_REFUND, accent = C(170, 230, 255),
 	},
 	Yule = {
-		name = "Yule Crate", description = "Yuletide 2026 only. Candy canes, holly, starlight. Mythic: Krampus' Chain.",
+		name = "Yule Crate", description = "Yuletide 2026 only. Candy canes, holly, starlight. Mythic: Krampus' Chain. Armor finish: Hollyberry.",
 		cost = 80, odds = EVENT_ODDS, pity = 25, refund = DROP_REFUND, accent = C(230, 60, 60),
 	},
 	BlackSails = {
-		name = "Black Sails Crate", description = "Cutlasses, salt and sea-green brass. Mythic: Davy's Locker.",
+		name = "Black Sails Crate", description = "Cutlasses, salt and sea-green brass. Mythic: Davy's Locker. Armor finish: Brineshell.",
 		cost = 75, odds = NO_COMMON, pity = 35, refund = DROP_REFUND, accent = C(90, 255, 210),
 	},
 }

@@ -21,6 +21,7 @@ return {
 	Earned         = {name = "Earned in battle", free = true, earned = true, color = Color3.fromRGB(60, 50, 40)},
 	-- crate-only sets (never sold: their pieces come out of the Forge Crate, one at a time)
 	Forge          = {name = "The Forge", crate = true, color = Color3.fromRGB(150, 70, 30)},
+	WarChest       = {name = "The War Chest", crate = true, color = Color3.fromRGB(150, 40, 34)},
 
 	-- LIGHT (Vanguard)
 	RoadLevy      = {name = "Road Levy",            weight = "Light",  bundle = 0.15, color = Color3.fromRGB(104, 92, 70)},

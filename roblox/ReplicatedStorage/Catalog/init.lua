@@ -140,6 +140,9 @@ local function autoPieces()
 					description = cfg.Description,
 					-- (a crate-only set: its pieces drop one at a time, as tradable copies; a built-in finish)
 					crate = cfg.Crate, fx = cfg.Finish,
+					-- (its own colours: these slots ignore the player's picks, so the set looks like itself)
+					colors = type(cfg.Colors) == "table" and cfg.Colors or nil,
+					classStarter = cfg.ClassStarter,   -- (a class's own starter: never another's default)
 				})
 			end
 		end
@@ -193,8 +196,8 @@ function Catalog.weaponFits(cls, w, slot)
 	if not (cls and w) then return false end
 	if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
 	if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == w.id then ok = true end end; if not ok then return false end end
-	if slot == "secondary" then return w.secondary == true and not w.ranged end
-	return (w.ranged == true) == (cls.ranged == true)
+	if slot == "secondary" then return w.secondary == true and not w.ranged and not w.magic end
+	return (w.ranged == true) == (cls.ranged == true) and (w.magic == true) == (cls.magic == true)
 end
 Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end
 
@@ -261,8 +264,10 @@ function Catalog.piecesFor(slot, weight)
 end
 
 -- the first free piece for a slot and weight (what a new player wears)
-function Catalog.defaultPiece(slot, weight)
-	for _, p in ipairs(Catalog.piecesFor(slot, weight)) do if Catalog.isFree(p) then return p end end
+function Catalog.defaultPiece(slot, weight, set)
+	-- (a class with a starter set of its own: GameConfig.CLASSES starter, the Mage's robes)
+	if set then for _, p in ipairs(Catalog.piecesFor(slot, weight)) do if p.set == set and Catalog.isFree(p) then return p end end end
+	for _, p in ipairs(Catalog.piecesFor(slot, weight)) do if Catalog.isFree(p) and not p.classStarter then return p end end
 	return Catalog.piecesFor(slot, weight)[1]
 end
 
@@ -605,6 +610,9 @@ if RunService:IsServer() then
 				for _, f in ipairs(Catalog.KILLFX) do if f.crate == id and f.rarity == r then any = true end end
 				for _, e in ipairs(Catalog.EMOTES) do if e.crate == id and e.rarity == r then any = true end end
 				for _, f in ipairs(Catalog.ARMORFX or {}) do if f.crate == id and f.rarity == r then any = true end end
+				for _, pc in ipairs(Catalog.PIECES or {}) do if pc.crate == id and pc.rarity == r then any = true end end
+				-- (a crate's armor sets arrive with the Armor folder: where it isn't here yet, they can't be counted)
+				if not any and (Catalog.PACKS[id] and Catalog.PACKS[id].crate) and #(Catalog.PIECES or {}) == 0 then any = true end
 				if n > 0 and not any then warn("[Catalog] crate", id, "can roll", r, "but has nothing of that rarity") end
 			end
 			if math.abs(sum - 100) > 0.001 then warn("[Catalog] crate", id, "odds add up to", sum, "(should be 100)") end

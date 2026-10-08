@@ -66,6 +66,7 @@ local GameConfig = (function()
 	return ok and type(t) == "table" and t or {FRIENDLY_FIRE = 0.5}
 end)()
 local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
+local Ward        = require(script.Parent:WaitForChild("Ward"))
 -- optional: ServerScriptService.Loadout.Armor (damage reduction on armored limbs)
 local Armor do
 	local loadout = script.Parent.Parent:FindFirstChild("Loadout")
@@ -1081,6 +1082,8 @@ function CombatServer.attach(Tool, weaponConfig)
 			dmg = dmg * friendly
 			dprint("friendly fire x" .. tostring(friendly), "on", target.Name)
 		end
+		-- a Mage's ward (Combat ▸ Ward): a blow from the front soaks into their mana
+		dmg = Ward.scale(target, character, dmg)
 		local lethal = hum.Health - dmg <= 0
 		CombatServer.showDamage(character, target, dmg, region, lethal, friendly < 1)
 		hitSounds(part, target, info.kind, (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name

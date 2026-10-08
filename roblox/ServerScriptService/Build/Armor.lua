@@ -1596,6 +1596,384 @@ A_.Seraph = set(seraphHelm(), seraphTorso(),
 	function(s) return arm(sleeve(C.LINEN, nil, nil, 1.0, -0.6), plateArm(s, SERAPH, C.GOLD, {elbow = C.GOLD, gauntlet = C.GOLD, flutes = true})) end,
 	function(s) return leg(hose(C.LINEN), plateLeg(s, SERAPH, C.GOLD, {knee = C.GOLD, foot = C.GOLD, toe = "pointed", flutes = true})) end)
 
+--------------------------------------------------------------------
+--  THE WAR CHEST SETS (Catalog ▸ Crates ▸ WarChest: six more crate-only sets,
+--  a piece at a time, each a tradable copy)
+--------------------------------------------------------------------
+local BEAR, BEAR2 = Color3.fromRGB(92, 66, 44), Color3.fromRGB(58, 40, 26)
+local RGREEN, RGREEN2 = Color3.fromRGB(62, 96, 52), Color3.fromRGB(40, 64, 36)
+local GRAVE = Color3.fromRGB(110, 255, 140)
+local MANE = Color3.fromRGB(214, 150, 64)
+local OBS, MAGMA = Color3.fromRGB(26, 22, 30), Color3.fromRGB(255, 110, 30)
+-- a point on the breastplate's swell (cuirass ▸ Breast) or just in front of the cuirass, for
+-- things laid on the chest
+local BREAST = {c = v(0, 0.32, -0.48), s = v(2.0, 1.5, 0.32)}
+local function onBreast(x, y)
+	local p = front(BREAST, x, y)
+	return Vector3.new(x, y, math.min(p.Z, -0.565) - 0.02)
+end
+
+-- BERSERKER (Light): a whole bear for a hood — its skull over your brow, ears, fangs and
+-- amber eyes; a bear pelt over the shoulders with the paws hanging down the chest; bare arms
+local function bearHood()
+	local out = {middle(HEAD),
+		egg("Pelt", v(1.62, 1.1, 1.72), cf(0, 0.42, 0.12), BEAR, M.FABRIC),
+		egg("Brow", v(1.3, 0.32, 0.56), cf(0, 0.62, -0.48), BEAR2, M.FABRIC),
+		egg("Snout", v(0.8, 0.5, 0.9), cf(0, 0.52, -0.8, 10, 0, 0), BEAR, M.FABRIC),
+		egg("Muzzle", v(0.56, 0.3, 0.5), cf(0, 0.42, -1.06, 10, 0, 0), BEAR2, M.FABRIC),
+		egg("Nose", v(0.34, 0.2, 0.2), cf(0, 0.58, -1.24), C.BLACK, M.PLASTIC),
+		cone("Drape", v(1.98, 0.9, 1.92), cf(0, -0.3, 0.32), BEAR, M.FABRIC, nil, 0.7),
+	}
+	for _, s in ipairs({-1, 1}) do
+		out[#out + 1] = egg("Ear", v(0.36, 0.38, 0.18), cf(s * 0.56, 0.98, 0.16, 0, 0, -s * 18), BEAR, M.FABRIC)
+		out[#out + 1] = egg("EarIn", v(0.2, 0.22, 0.06), cf(s * 0.56, 0.98, 0.06, 0, 0, -s * 18), BEAR2, M.FABRIC)
+		out[#out + 1] = egg("Eye", v(0.16, 0.1, 0.06), cf(s * 0.3, 0.76, -0.76, 0, 0, s * 12), AMBER, M.NEON, A)
+		out[#out + 1] = spike("Fang", v(s * 0.2, 0.34, -1.12), v(s * 0.19, 0.1, -1.08), 0.1, FANG, M.PLASTIC)
+	end
+	return out
+end
+local function berserkerTorso()
+	local out = {middle(TORSO),
+		rbox("Jerkin", v(2.12, 2.04, 1.12), cf(), C.LEATHER, M.LEATHER, nil, 0.2),
+		tbox("Mantle", v(2.9, 0.62, 1.7), cf(0, 0.86, 0.06), 0.8, BEAR, M.FABRIC, nil, 0.3),
+		egg("MantleBack", v(2.4, 1.7, 0.5), cf(0, 0.16, 0.62), BEAR, M.FABRIC),
+		plate("Strap", v(-0.86, 0.62, -0.58), v(0.82, -0.62, -0.58), 0.22, 0.05, C.DARKLEATHER, M.LEATHER),
+		plate("Strap", v(0.86, 0.62, -0.58), v(-0.82, -0.62, -0.58), 0.22, 0.05, C.DARKLEATHER, M.LEATHER),
+		cyl("Boss", 0.36, 0.08, cf(0, 0, -0.62, 90, 0, 0), C.IRON, M.METAL, MT),
+		rbox("Sash", v(2.24, 0.3, 1.24), cf(0, -0.56, 0), C.CLOTH, M.FABRIC, P, 0.1),
+		tbox("Kilt", v(2.32, 0.5, 1.3), cf(0, -0.86, 0.02), 0.95, BEAR, M.FABRIC, nil, 0.14),
+	}
+	for _, s in ipairs({-1, 1}) do   -- the bear's forepaws hanging down your chest
+		out[#out + 1] = egg("Paw", v(0.44, 0.74, 0.26), cf(s * 0.62, 0.3, -0.64, 0, 0, s * 8), BEAR, M.FABRIC)
+		for i = -1, 1 do
+			out[#out + 1] = spike("Claw", v(s * 0.62 + i * 0.11, -0.02, -0.74), v(s * 0.62 + i * 0.12, -0.2, -0.76), 0.08, FANG, M.PLASTIC)
+		end
+		out[#out + 1] = rbox("SashTail", v(0.3, 0.6, 0.06), cf(s * 0.5, -0.84, -0.66, 0, 0, s * 6), C.CLOTH, M.FABRIC, P, 0.04)
+	end
+	return out
+end
+
+-- RANGER (Light): a deep forest hood with a long tail and a red feather, a leather
+-- jerkin with a quiver of arrows on the back, bracers and soft boots
+local function rangerHood()
+	return {middle(HEAD),
+		egg("Hood", v(1.64, 1.66, 1.76), cf(0, 0.18, 0.28), RGREEN, M.FABRIC),
+		egg("HoodTail", v(0.6, 0.6, 1.2), cf(0, 0.56, 1.0, -30, 0, 0), RGREEN, M.FABRIC),
+		cone("Tail", v(0.5, 0.9, 0.5), cf(0, 0.3, 1.6, 120, 0, 0), RGREEN, M.FABRIC),
+		cone("Drape", v(2.04, 0.5, 2.04), cf(0, -0.5, 0.14), RGREEN, M.FABRIC, nil, 0.8),
+		egg("Feather", v(0.12, 0.9, 0.24), cf(0.72, 0.62, 0.34, -24, 0, -32), C.RED, M.FABRIC, A),
+		rod("Quill", v(0.58, 0.28, 0.2), v(0.66, 0.5, 0.28), 0.04, C.LINEN, M.PLASTIC),
+	}
+end
+local function rangerTorso()
+	local out = {middle(TORSO),
+		rbox("Tunic", v(2.1, 2.02, 1.1), cf(), C.CLOTH, M.FABRIC, P, 0.2),
+		rbox("Jerkin", v(2.18, 1.5, 1.18), cf(0, 0.22, 0), C.LEATHER, M.LEATHER, nil, 0.2),
+		tbox("Mantle", v(2.56, 0.46, 1.54), cf(0, 0.9, 0.05), 0.8, RGREEN, M.FABRIC, nil, 0.24),
+		plate("QuiverStrap", v(-0.86, 0.86, -0.6), v(0.84, -0.56, -0.6), 0.18, 0.05, C.DARKLEATHER, M.LEATHER),
+		cyl("Quiver", 0.5, 1.6, cf(0.42, 0.34, 0.8, 0, 0, -22), C.DARKLEATHER, M.LEATHER),
+		torus("QuiverRim", v(0.54, 0.08, 0.54), cf(0.72, 1.08, 0.8, 0, 0, -22), C.BRASS, M.METAL, A),
+	}
+	for i = 0, 4 do   -- the arrows standing out of the quiver
+		local base = Vector3.new(0.62 + (i - 2) * 0.06, 1.02, 0.72 + (i % 2) * 0.12)
+		local tip = base + Vector3.new(0.22 + (i - 2) * 0.03, 0.62, 0)
+		out[#out + 1] = rod("Arrow", base, tip, 0.04, C.WOOD, M.PLASTIC)
+		out[#out + 1] = egg("Fletch", v(0.1, 0.26, 0.14), CFrame.lookAt(tip, tip + Vector3.new(0.3, 0.86, 0)) * CFrame.Angles(-math.pi / 2, 0, 0), C.LINEN, M.FABRIC)
+	end
+	for i = 0, 3 do   -- laces down the jerkin
+		out[#out + 1] = box("Lace", v(0.36, 0.04, 0.03), cf(0, 0.74 - i * 0.18, -0.605, 0, 0, i % 2 == 0 and 20 or -20), C.LINEN, M.FABRIC)
+	end
+	return J(out, belt(-0.58, C.BRASS, true))
+end
+
+-- CORSAIR (Medium): a black tricorn with a white plume over a red bandana; a long captain's
+-- coat in your colours, gold buttons and epaulettes, a baldric, tall boots with turned cuffs
+local function tricorn()
+	local out = {middle(HEAD),
+		egg("Bandana", v(1.34, 0.8, 1.4), cf(0, 0.3, 0.04), C.RED, M.FABRIC, S),
+		cyl("Crown", 1.24, 0.46, cf(0, 0.78, 0.04), C.BLACK, M.FABRIC),
+		egg("CrownTop", v(1.24, 0.3, 1.24), cf(0, 1.0, 0.04), C.BLACK, M.FABRIC),
+	}
+	local R, corners = 1.3, {}   -- (the walls just touch the crown: R = 2 × its radius)
+	for i = 0, 2 do
+		local a = math.rad(i * 120)
+		corners[i + 1] = Vector3.new(math.sin(a) * R, 0.6, 0.04 - math.cos(a) * R)
+	end
+	for i = 1, 3 do   -- the brim turned up into three walls, the corner at the front
+		local p, q = corners[i], corners[i % 3 + 1]
+		local mid = (p + q) / 2
+		local outward = Vector3.new(mid.X, 0, mid.Z - 0.04).Unit
+		local frame = CFrame.lookAt(mid + Vector3.new(0, 0.2, 0), mid + Vector3.new(0, 0.2, 0) + outward) * CFrame.Angles(math.rad(-16), 0, 0)
+		out[#out + 1] = box("Wall", v((p - q).Magnitude * 0.98, 0.42, 0.08), frame, C.BLACK, M.FABRIC)
+		out[#out + 1] = rod("Trim", p + Vector3.new(0, 0.41, 0) + (p - mid).Unit * -0.02, q + Vector3.new(0, 0.41, 0), 0.06, C.GOLD, M.METAL, A)
+		out[#out + 1] = ball("Corner", 0.14, CFrame.new(p + Vector3.new(0, 0.41, 0)), C.GOLD, M.METAL, A)
+		-- the brim under the corner, from the crown out to it
+		local flat = Vector3.new(p.X, 0.6, p.Z)
+		local from = Vector3.new(0, 0.6, 0.04)
+		out[#out + 1] = box("Brim", v(0.9, 0.06, (flat - from).Magnitude), CFrame.lookAt((flat + from) / 2, flat), C.BLACK, M.FABRIC)
+	end
+	-- the plume, and a skull-and-bones badge on the front corner
+	out[#out + 1] = egg("Plume", v(0.24, 1.3, 0.4), cf(0.62, 1.12, 0.32, -30, 0, -42), C.WHITE, M.FABRIC)
+	out[#out + 1] = egg("Plume", v(0.18, 1.0, 0.3), cf(0.74, 1.02, 0.52, -40, 0, -56), C.LINEN, M.FABRIC)
+	out[#out + 1] = ball("Badge", 0.22, cf(0, 0.86, -1.22), C.WHITE, M.PLASTIC)
+	out[#out + 1] = box("Bones", v(0.4, 0.06, 0.04), cf(0, 0.74, -1.24, 0, 0, 30), C.WHITE, M.PLASTIC)
+	out[#out + 1] = box("Bones", v(0.4, 0.06, 0.04), cf(0, 0.74, -1.24, 0, 0, -30), C.WHITE, M.PLASTIC)
+	for _, s in ipairs({-1, 1}) do   -- the bandana's knot tails behind
+		out[#out + 1] = egg("Knot", v(0.2, 0.5, 0.12), cf(s * 0.16, -0.06, 0.72, 20, 0, s * 18), C.RED, M.FABRIC, S)
+	end
+	return out
+end
+local function corsairTorso()
+	local out = {middle(TORSO),
+		rbox("Coat", v(2.16, 2.06, 1.16), cf(0, 0, 0.02), C.CLOTH, M.FABRIC, P, 0.22),
+		box("Shirt", v(0.62, 1.6, 0.06), cf(0, 0.18, -0.6), C.LINEN, M.FABRIC),
+		tbox("Ruffle", v(0.5, 0.5, 0.12), cf(0, 0.72, -0.64), 1.4, C.WHITE, M.FABRIC, nil, 0.06),
+		plate("Lapel", v(-0.34, 0.98, -0.6), v(-0.4, 0.0, -0.62), 0.22, 0.05, C.CLOTH2, M.FABRIC, S),
+		plate("Lapel", v(0.34, 0.98, -0.6), v(0.4, 0.0, -0.62), 0.22, 0.05, C.CLOTH2, M.FABRIC, S),
+		plate("Baldric", v(0.9, 0.9, -0.66), v(-0.86, -0.7, -0.66), 0.22, 0.05, C.DARKLEATHER, M.LEATHER),
+		rbox("BaldricBuckle", v(0.24, 0.24, 0.06), cf(0.02, 0.1, -0.71, 0, 0, 42), C.GOLD, M.METAL, A, 0.03),
+		rbox("Sash", v(2.26, 0.3, 1.26), cf(0, -0.56, 0), C.RED, M.FABRIC, S, 0.1),
+		box("CoatTail", v(2.14, 0.84, 0.08), cf(0, -1.3, 0.62, -6, 0, 0), C.CLOTH, M.FABRIC, P),
+		rod("TailHem", v(-1.07, -1.7, 0.66), v(1.07, -1.7, 0.66), 0.06, C.GOLD, M.METAL, A),
+	}
+	for _, s in ipairs({-1, 1}) do
+		for i = 0, 3 do out[#out + 1] = ball("Button", 0.12, cf(s * 0.46, 0.66 - i * 0.3, -0.62), C.GOLD, M.METAL, A) end
+		out[#out + 1] = egg("Epaulette", v(0.92, 0.24, 1.02), cf(s * 1.2, 1.04, 0.02, 0, 0, -s * 10), C.GOLD, M.METAL, A)
+		for i = -2, 2 do   -- the fringe
+			out[#out + 1] = rod("Fringe", v(s * 1.6, 0.96, i * 0.18), v(s * 1.66, 0.7, i * 0.18), 0.06, C.GOLD, M.METAL, A)
+		end
+		out[#out + 1] = box("SideSkirt", v(0.6, 0.7, 0.08), cf(s * 0.78, -1.26, -0.62, 6, 0, 0), C.CLOTH, M.FABRIC, P)
+	end
+	return out
+end
+
+-- DEATHLESS (Medium): a knight who died and kept fighting — a skull for a helm with green fire
+-- in the sockets under a rusted crown, a ribcage over black iron, skulls on the shoulders
+local function skullHelm()
+	local skull = {c = v(0, 0.22, 0.02), s = v(1.5, 1.44, 1.6)}
+	local out = {middle(HEAD),
+		shell("Skull", skull, BONE, M.PLASTIC),
+		rbox("Cheek", v(1.2, 0.5, 1.08), cf(0, -0.3, -0.08), BONE, M.PLASTIC, nil, 0.2),
+		rbox("Jaw", v(1.0, 0.22, 0.9), cf(0, -0.58, -0.14), BONE, M.PLASTIC, nil, 0.08),
+		egg("Socket", v(0.4, 0.36, 0.14), cf(-0.28, 0.1, -0.76), C.BLACK, M.PLASTIC),
+		egg("Socket", v(0.4, 0.36, 0.14), cf(0.28, 0.1, -0.76), C.BLACK, M.PLASTIC),
+		ball("Eye", 0.17, cf(-0.28, 0.1, -0.8), GRAVE, M.NEON, A),
+		ball("Eye", 0.17, cf(0.28, 0.1, -0.8), GRAVE, M.NEON, A),
+		egg("Nose", v(0.16, 0.24, 0.08), cf(0, -0.16, -0.7), C.BLACK, M.PLASTIC),
+		torus("Crown", v(1.3, 0.12, 1.4), cf(0, 0.72, 0.04), C.BLACKIRON, M.METAL, MT),
+	}
+	for i = -3, 3 do out[#out + 1] = box("Tooth", v(0.1, 0.17, 0.06), cf(i * 0.12, -0.42, -0.65), FANG, M.PLASTIC) end
+	for i = 0, 7 do   -- the crown's rusted points
+		local a = i / 8 * math.pi * 2
+		local base = Vector3.new(math.sin(a) * 0.64, 0.72, 0.04 - math.cos(a) * 0.68)
+		out[#out + 1] = spike("CrownPoint", base, base + Vector3.new(math.sin(a) * 0.06, i % 2 == 0 and 0.42 or 0.26, -math.cos(a) * 0.06), 0.16, C.BLACKIRON, M.METAL, MT)
+	end
+	return out
+end
+local function deathlessTorso()
+	local out = J(cuirass(C.BLACKIRON, BONE, {smooth = true}), cape(C.CLOTH, P, true, GRAVE), belt(-0.78, BONE))
+	out[#out + 1] = box("Sternum", v(0.16, 1.1, 0.08), cf(0, 0.34, -0.68), BONE, M.PLASTIC)
+	for i = 0, 4 do   -- the ribs, curving round from the breastbone, on the breastplate's swell
+		for _, s in ipairs({-1, 1}) do
+			local at = onBreast(s * 0.44, 0.7 - i * 0.22)
+			out[#out + 1] = egg("Rib", v(0.82 - i * 0.04, 0.12, 0.1), CFrame.new(at) * CFrame.Angles(0, 0, math.rad(s * (14 + i * 3))), BONE, M.PLASTIC)
+		end
+	end
+	for _, s in ipairs({-1, 1}) do   -- a skull on each shoulder, green in its eyes
+		local at = Vector3.new(s * 1.42, 1.06, 0)
+		out[#out + 1] = egg("ShoulderSkull", v(0.82, 0.72, 0.86), CFrame.new(at), BONE, M.PLASTIC)
+		out[#out + 1] = rbox("ShoulderJaw", v(0.56, 0.24, 0.5), CFrame.new(at + Vector3.new(0, -0.32, -0.12)), BONE, M.PLASTIC, nil, 0.06)
+		for _, x in ipairs({-0.15, 0.15}) do
+			out[#out + 1] = ball("ShoulderEye", 0.14, CFrame.new(at + Vector3.new(x, 0.02, -0.44)), GRAVE, M.NEON, A)
+		end
+		out[#out + 1] = egg("Pauldron", v(1.2, 0.5, 1.3), cf(s * 1.46, 0.62, 0.02, 0, 0, -s * 14), C.BLACKIRON, M.METAL, MT)
+	end
+	return out
+end
+
+-- LIONHEART (Heavy): a crowned great helm with a lion's mane for a crest; bright plate with
+-- gilt lions' faces on the shoulders, a mane of fur round the neck and a crown on the tabard
+local function lionHelm()
+	local m = C.STEEL
+	local out = {middle(HEAD),
+		drum("Helm", 0.76, 0.78, -0.64, 0.5, 0.04, m, M.METAL, MT),
+		cyl("Top", 1.5, 0.1, cf(0, 0.54, 0.04), m, M.METAL, MT),
+		torus("Crown", v(1.58, 0.14, 1.62), cf(0, 0.56, 0.04), C.GOLD, M.METAL, A),
+		box("Cross", v(0.14, 0.86, 0.06), cf(0, -0.16, -0.76), C.GOLD, M.METAL, A),
+	}
+	B.join(out, drumBand("Sight", 0.76, 0.78, 0.04, 0.12, -62, 62, 0.08, C.BLACK, M.PLASTIC, nil, 0.012),
+		drumBand("Brow", 0.76, 0.78, 0.04, 0.24, -56, 56, 0.1, C.GOLD, M.METAL, A, 0.02))
+	for i = 0, 7 do   -- the crown's points
+		local a = i / 8 * math.pi * 2
+		local base = Vector3.new(math.sin(a) * 0.76, 0.6, 0.04 - math.cos(a) * 0.78)
+		out[#out + 1] = spike("CrownPoint", base, base + Vector3.new(0, i % 2 == 0 and 0.34 or 0.22, 0), 0.18, C.GOLD, M.METAL, A)
+	end
+	for i = 0, 2 do   -- breaths on the right cheek
+		out[#out + 1] = ball("Breath", 0.08, cf(0.34 + (i % 2) * 0.1, -0.22 - i * 0.12, -0.72), C.BLACK, M.PLASTIC)
+	end
+	for i = 0, 7 do   -- the mane: tufts from the brow over the crown and down the back
+		local t = i / 7
+		local y, z = 0.66 + math.sin(t * math.pi) * 0.5, -0.5 + t * 1.3
+		out[#out + 1] = egg("Mane", v(0.34, 0.8 - math.abs(t - 0.4) * 0.5, 0.4), cf(0, y, z, -30 - t * 90, 0, 0), MANE, M.FABRIC)
+		for _, s in ipairs({-1, 1}) do
+			out[#out + 1] = egg("Mane", v(0.26, 0.56, 0.32), cf(s * 0.2, y - 0.08, z, -30 - t * 90, 0, s * 26), MANE:Lerp(C.HAIR, 0.3), M.FABRIC)
+		end
+	end
+	return out
+end
+local function lionTorso()
+	local out = J(cuirass(C.STEEL, C.GOLD, {plackart = true}),
+		pauldron(-1, C.STEEL, M.METAL, MT, "sun", C.GOLD), pauldron(1, C.STEEL, M.METAL, MT, "sun", C.GOLD),
+		tabard(1.62, nil, nil, true), cape(C.CLOTH2, S, false, C.GOLD))
+	out[#out + 1] = tbox("Mane", v(2.7, 0.46, 1.62), cf(0, 0.94, 0.04), 0.82, MANE, M.FABRIC, nil, 0.3)
+	for i = 0, 9 do   -- the mane's tufts round the neck
+		local a = i / 10 * math.pi * 2
+		out[#out + 1] = egg("ManeTuft", v(0.42, 0.5, 0.3), CFrame.new(math.sin(a) * 0.98, 0.9, 0.04 - math.cos(a) * 0.62) * CFrame.Angles(0, -a, 0) * CFrame.Angles(math.rad(-30), 0, 0), MANE:Lerp(C.HAIR, (i % 2) * 0.3), M.FABRIC)
+	end
+	-- the crown on the tabard
+	local z = -0.725
+	out[#out + 1] = box("TabardCrown", v(0.7, 0.2, 0.04), cf(0, 0.2, z), C.GOLD, M.FABRIC, A)
+	for i = -1, 1 do
+		out[#out + 1] = box("TabardCrown", v(0.14, 0.34, 0.04), cf(i * 0.27, 0.44, z, 0, 0, i * -12), C.GOLD, M.FABRIC, A)
+		out[#out + 1] = box("TabardJewel", v(0.1, 0.1, 0.04), cf(i * 0.27, 0.64, z - 0.005, 0, 0, 45), C.RED, M.FABRIC)
+	end
+	return out
+end
+
+-- OBSIDIAN (Heavy): black volcanic plate split by molten seams, a crown of black crystal
+-- shards and a T of fire for a visor, crystal shoulders. It walks out of the volcano still hot.
+local function obsidianHelm()
+	local out = {middle(HEAD)}
+	local sh, dome = helmShell(0.75, 0.78, 0.06, -0.6, 0.22, 0.6, OBS, M.METAL, MT)
+	B.join(out, sh,
+		drumBand("Sight", 0.75, 0.78, 0.06, 0.1, -50, 50, 0.1, MAGMA, M.NEON, A, 0.014),
+		{box("SightDown", v(0.11, 0.5, 0.06), cf(0, -0.16, -0.735), MAGMA, M.NEON, A),
+		 torus("Gorget", v(1.6, 0.12, 1.64), cf(0, -0.6, 0.06), OBS, M.METAL, MT)})
+	for i = 0, 10 do   -- the crown of shards, tallest at the front
+		local a = math.rad(-100 + i * 20)
+		local base = Vector3.new(math.sin(a) * 0.58, 0.56, 0.06 - math.cos(a) * 0.6)
+		local h = 0.5 + (1 - math.abs(i - 5) / 5) * 0.5 - (i % 2) * 0.2
+		out[#out + 1] = spike("Shard", base, base + Vector3.new(math.sin(a) * 0.22, h, -math.cos(a) * 0.22), 0.26, OBS, M.METAL, MT)
+	end
+	for _, s in ipairs({-1, 1}) do   -- molten cracks down the cheeks
+		out[#out + 1] = plate("Crack", v(s * 0.5, 0.0, -0.545), v(s * 0.42, -0.5, -0.6), 0.05, 0.03, MAGMA, M.NEON, A, Vector3.new(0.8, 0, -s * 0.6).Unit)
+	end
+	return out
+end
+local function obsidianTorso()
+	local out = J(cuirass(OBS, MAGMA, {plackart = true}), cape(C.CLOTH, P, true, MAGMA), belt(-0.78, OBS))
+	for _, s in ipairs({-1, 1}) do   -- crystal shoulders
+		out[#out + 1] = egg("Pauldron", v(1.3, 0.8, 1.4), cf(s * 1.42, 0.92, 0.02, 0, 0, -s * 10), OBS, M.METAL, MT)
+		for i = 0, 3 do
+			local foot = Vector3.new(s * (1.24 + i * 0.12), 1.18 - i * 0.04, -0.4 + i * 0.28)
+			out[#out + 1] = spike("Shard", foot, foot + Vector3.new(s * (0.18 + i * 0.04), 0.56 - i * 0.08, 0.04), 0.26, OBS, M.METAL, MT)
+		end
+		out[#out + 1] = egg("Lame", v(1.12, 0.4, 1.28), cf(s * 1.5, 0.5, 0.02, 0, 0, -s * 16), OBS, M.METAL, MT)
+	end
+	-- the seams: molten cracks across the breast
+	local cracks = {{onBreast(-0.5, 0.8), onBreast(-0.2, 0.36)}, {onBreast(-0.2, 0.36), onBreast(-0.34, -0.1)},
+		{onBreast(0.6, 0.66), onBreast(0.3, 0.2)}, {onBreast(0.3, 0.2), onBreast(0.46, -0.3)}, {onBreast(0.04, 0.6), onBreast(0.12, 0.1)}}
+	for _, c in ipairs(cracks) do out[#out + 1] = rod("Crack", c[1], c[2], 0.06, MAGMA, M.NEON, A) end
+	return out
+end
+
+A_.Berserker = set(bearHood(), berserkerTorso(),
+	function(s) return arm({rbox("Armband", v(1.16, 0.18, 1.16), cf(0, 0.62, 0), C.IRON, M.METAL, MT, 0.12),
+		egg("FurCuff", v(1.32, 0.34, 1.32), cf(0, -0.24, 0), BEAR, M.FABRIC)}, bracer(C.DARKLEATHER, -0.3, -0.84, true), wraps(C.LINEN, 2, -0.92, 0.12)) end,
+	function() return leg(hose(C.DARKLEATHER, nil, 1.0, -0.3, M.LEATHER), boot(BEAR, -0.24, true), wraps(C.LINEN, 3, -0.66, 0.16)) end)
+
+A_.Ranger = set(rangerHood(), rangerTorso(),
+	function() return arm(sleeve(RGREEN2, nil, nil, 1.0, -0.4), bracer(C.DARKLEATHER, -0.16, -0.76, true), glove(C.LEATHER)) end,
+	function() return leg(hose(RGREEN2), boot(C.LEATHER, -0.1, true)) end)
+
+A_.Corsair = set(tricorn(), corsairTorso(),
+	function() return arm(sleeve(C.CLOTH, P, nil, 1.0, -0.5), {rbox("Cuff", v(1.3, 0.38, 1.3), cf(0, -0.5, 0), C.CLOTH2, M.FABRIC, S, 0.16),
+		ball("CuffButton", 0.1, cf(0, -0.46, -0.66), C.GOLD, M.METAL, A),
+		tbox("Lace", v(1.18, 0.22, 1.18), cf(0, -0.78, 0), 0.85, C.WHITE, M.FABRIC, nil, 0.1)}) end,
+	function() return leg(hose(C.CLOTH2, S), boot(C.BLACK, 0.2, true)) end)
+
+A_.Deathless = set(skullHelm(), deathlessTorso(),
+	function(s) return arm(sleeve(C.BLACK, nil, nil, 1.0, -0.6), {
+		rod("Bone", v(-0.2, -0.06, -0.6), v(-0.2, -0.66, -0.6), 0.12, BONE, M.PLASTIC),
+		rod("Bone", v(0.2, -0.06, -0.6), v(0.2, -0.66, -0.6), 0.12, BONE, M.PLASTIC),
+		rod("Bone", v(s * 0.6, 0.86, 0), v(s * 0.6, 0.12, 0), 0.16, BONE, M.PLASTIC),
+		ball("Joint", 0.24, cf(s * 0.6, 0.06, 0), BONE, M.PLASTIC)}, glove(C.BLACKIRON, M.METAL)) end,
+	function() return leg(hose(C.BLACK), kneeGreave(C.BLACKIRON, BONE, {}), {rod("Shin", v(0, -0.12, -0.62), v(0, -0.7, -0.62), 0.14, BONE, M.PLASTIC)}, boot(C.BLACK)) end)
+
+A_.Lionheart = set(lionHelm(), lionTorso(),
+	function(s) return arm(mailSleeve(-0.4), plateArm(s, C.STEEL, C.GOLD, {elbow = C.GOLD, gauntlet = C.GOLD, flutes = true})) end,
+	function(s) return leg(mailChausses(), plateLeg(s, C.STEEL, C.GOLD, {knee = C.GOLD, foot = C.GOLD, toe = "bear"})) end)
+
+A_.Obsidian = set(obsidianHelm(), obsidianTorso(),
+	function(s) return arm(sleeve(C.BLACK, nil, nil, 1.0, -0.6), plateArm(s, OBS, MAGMA, {spike = true, talons = true})) end,
+	function(s) return leg(hose(C.BLACK), plateLeg(s, OBS, MAGMA, {spike = true, toe = "talons"})) end)
+
+--------------------------------------------------------------------
+--  APPRENTICE ROBES (Light, free: the Mage's starter, GameConfig.CLASSES.Mage
+--  starter): a wizard's hat with its tip flopped back, a long robe in your
+--  colours, bell sleeves, a rope belt and a stole of gold stars
+--------------------------------------------------------------------
+-- a four-point star facing front at `at`, s studs across
+local function star(name, at, s, color, attrs)
+	return {box(name, v(0.2 * s, s, 0.03), CFrame.new(at), color, M.FABRIC, attrs),
+		box(name, v(s, 0.2 * s, 0.03), CFrame.new(at), color, M.FABRIC, attrs),
+		box(name, v(0.26 * s, 0.26 * s, 0.035), CFrame.new(at) * CFrame.Angles(0, 0, math.rad(45)), color, M.FABRIC, attrs)}
+end
+local function wizardHat()
+	local out = {middle(HEAD),
+		egg("Cap", v(1.36, 0.6, 1.4), cf(0, 0.52, 0.04), C.CLOTH, M.FABRIC, P),
+		cyl("Brim", 2.5, 0.08, cf(0, 0.56, 0.04), C.CLOTH, M.FABRIC, P),
+		torus("BrimRoll", v(2.5, 0.12, 2.5), cf(0, 0.57, 0.04), C.CLOTH, M.FABRIC, P),
+		cyl("Band", 1.3, 0.2, cf(0, 0.7, 0.04), C.CLOTH2, M.FABRIC, S),
+	}
+	-- the cone in three tiers, bending back and over at the tip
+	local a1, b1 = v(0, 0.66, 0.04), v(0, 1.46, 0.1)
+	local b2 = b1 + v(0, 0.56, 0.24)
+	local b3 = b2 + v(0, 0.24, 0.5)
+	local f1, l1 = span(a1, b1)
+	local f2, l2 = span(b1, b2)
+	local f3, l3 = span(b2, b3)
+	B.join(out, {
+		cone("Cone", v(1.26, l1, 1.26), f1, C.CLOTH, M.FABRIC, P, 0.64),
+		ball("Bend", 0.8, CFrame.new(b1), C.CLOTH, M.FABRIC, P),
+		cone("Cone", v(0.8, l2, 0.8), f2, C.CLOTH, M.FABRIC, P, 0.62),
+		ball("Bend", 0.5, CFrame.new(b2), C.CLOTH, M.FABRIC, P),
+		cone("Tip", v(0.5, l3, 0.5), f3, C.CLOTH, M.FABRIC, P, 0),
+		ball("Bobble", 0.18, CFrame.new(b3), C.GOLD, M.FABRIC, A),
+	}, star("Buckle", v(0, 0.7, -0.67), 0.3, C.GOLD, A), star("Star", v(-0.22, 1.08, -0.58), 0.2, C.GOLD, A), star("Star", v(0.16, 1.28, -0.5), 0.14, C.GOLD, A))
+	return out
+end
+local function robeTorso()
+	local out = {middle(TORSO),
+		rbox("Robe", v(2.14, 2.08, 1.14), cf(), C.CLOTH, M.FABRIC, P, 0.24),
+		tbox("Collar", v(1.7, 0.4, 1.34), cf(0, 0.98, 0.04), 0.86, C.CLOTH2, M.FABRIC, S, 0.16),
+		egg("Hood", v(1.5, 0.9, 0.6), cf(0, 0.84, 0.66, 20, 0, 0), C.CLOTH2, M.FABRIC, S),
+		box("Stole", v(0.34, 1.9, 0.06), cf(-0.36, 0.02, -0.6), C.CLOTH2, M.FABRIC, S),
+		box("Stole", v(0.34, 1.9, 0.06), cf(0.36, 0.02, -0.6), C.CLOTH2, M.FABRIC, S),
+		rbox("Rope", v(2.26, 0.14, 1.26), cf(0, -0.52, 0), C.ROPE, M.FABRIC, nil, 0.07),
+		rod("Tassel", v(-0.62, -0.52, -0.66), v(-0.68, -1.12, -0.69), 0.07, C.ROPE, M.FABRIC),
+		rod("Tassel", v(-0.5, -0.52, -0.66), v(-0.52, -0.96, -0.69), 0.07, C.ROPE, M.FABRIC),
+		ball("Knot", 0.18, cf(-0.56, -0.52, -0.66), C.ROPE, M.FABRIC),
+		box("Skirt", v(2.1, 0.7, 0.08), cf(0, -1.3, 0.6, 6, 0, 0), C.CLOTH, M.FABRIC, P),
+		box("Tail", v(0.34, 0.66, 0.06), cf(-0.36, -1.3, -0.63), C.CLOTH2, M.FABRIC, S),
+		box("Tail", v(0.34, 0.66, 0.06), cf(0.36, -1.3, -0.63), C.CLOTH2, M.FABRIC, S),
+		rbox("TailTrim", v(0.36, 0.06, 0.08), cf(-0.36, -1.62, -0.64), C.GOLD, M.FABRIC, A, 0.02),
+		rbox("TailTrim", v(0.36, 0.06, 0.08), cf(0.36, -1.62, -0.64), C.GOLD, M.FABRIC, A, 0.02),
+	}
+	for _, x in ipairs({-0.36, 0.36}) do   -- stars down the stole
+		B.join(out, star("Star", v(x, 0.62, -0.64), 0.24, C.GOLD, A), star("Star", v(x, 0.06, -0.64), 0.18, C.GOLD, A), star("Star", v(x, -1.12, -0.67), 0.2, C.GOLD, A))
+	end
+	return out
+end
+
+A_.ApprenticeRobes = set(wizardHat(), robeTorso(),
+	function() return arm(sleeve(C.CLOTH, P, nil, 1.0, -0.3), {
+		tbox("Bell", v(1.34, 0.62, 1.34), cf(0, -0.56, 0.06), 0.8, C.CLOTH, M.FABRIC, P, 0.12),
+		rbox("BellTrim", v(1.46, 0.08, 1.46), cf(0, -0.86, 0.06), C.GOLD, M.FABRIC, A, 0.1)}) end,
+	function() return leg(hose(C.CLOTH, P, 1.0, -0.6), {
+		tbox("Hem", v(1.24, 0.3, 1.24), cf(0, -0.62, 0), 0.9, C.CLOTH, M.FABRIC, P, 0.1),
+		rbox("HemTrim", v(1.26, 0.07, 1.26), cf(0, -0.77, 0), C.GOLD, M.FABRIC, A, 0.08)}, boot(C.DARKLEATHER, -0.66)) end)
+
 -- the three starter sets (the free kit of each weight)
 A_.KnightSkin = set(closeHelm(), knightTorso(),
 	function(s) return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.6), plateArm(s, C.STEEL)) end,

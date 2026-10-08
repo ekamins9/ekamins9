@@ -98,14 +98,14 @@ local function update(char)
 	end
 end
 
--- THE ARMS ARE THE POSE'S: with a bow or crossbow in hand, Roblox's own animations
+-- THE ARMS ARE THE POSE'S: with a bow, a crossbow or a staff in hand, Roblox's own animations
 -- (the "holding a tool" arm stuck straight out, the walk's arm swing) are taken off
 -- the shoulders every frame before it draws, so only the archer's stance shows (it
 -- used to jolt up as you walked off and drop as you stopped).
 local IDENTITY = CFrame.identity
 local function stillArms(c)
 	local tool = c:FindFirstChildOfClass("Tool")
-	if not (tool and tool:GetAttribute("Ranged")) then return end
+	if not (tool and (tool:GetAttribute("Ranged") or tool:GetAttribute("Magic"))) then return end   -- (a staff's stance too: MagicServer)
 	local torso = c:FindFirstChild("Torso")
 	if not torso then return end
 	for _, name in ipairs({"Right Shoulder", "Left Shoulder"}) do

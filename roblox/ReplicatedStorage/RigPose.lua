@@ -50,6 +50,10 @@ RigPose.CONFIG = {
 	                   twist = -0.3, aimRightAcross = 0.1, aimLeftAcross = 1.6, aimLeftRaise = 0.05,
 	                   bend = 0.85, bendPull = 0.3, strokes = 3,
 	                   spanRight = 0.65, spanRightAcross = 0.25, spanLeft = 0.75, spanLeftPull = 0.35, spanLeftAcross = 1.6},
+	-- the staff (RigPose.staff): at ease the right arm out level-ish (the staff upright), casting
+	-- the right arm lower (the staff tips forward) and the left hand out at the target
+	STAFF           = {easeRaise = 1.3, easeAcross = 0.15, easeLeftRaise = 0.15, easeLeftAcross = 0.1,
+	                   castRaise = 0.85, castAcross = 0.3, drawLift = 0.5, castLeftAcross = 0.45, twist = 0.25},
 }
 local C = RigPose.CONFIG
 
@@ -102,7 +106,8 @@ function RigPose.compute(i, o)
 		["Left Shoulder"]  = swayCF * o["Left Shoulder"]  * CFrame.Angles(0, 0, i.arm * C.LEFT_ARM_DIR),
 	}
 	local rk = i.ranged or 0
-	if rk > 0.5 then RigPose.ranged(out, i, o, rk > 1.5) end
+	if rk > 2.5 then RigPose.staff(out, i, o)
+	elseif rk > 0.5 then RigPose.ranged(out, i, o, rk > 1.5) end
 	return out
 end
 
@@ -193,6 +198,30 @@ function RigPose.ranged(out, i, o, crossbow)
 	end
 end
 
+-- THE STAFF (ranged = 3: MagicClient). The staff rides in the right fist like any weapon, so an
+-- arm held out level stands it upright. AT EASE (aim 0): out in front, upright, the left hand
+-- loose. CASTING / WARDING (aim 1): the left hand thrust out at the target (it follows the
+-- camera's pitch), the staff tipped forward over it, the orb leading; the cast (draw 0..1)
+-- draws the staff back and up, and it snaps forward as the spell goes.
+function RigPose.staff(out, i, o)
+	local S = C.STAFF
+	local aim, draw = math.clamp(i.aim or 0, 0, 1), math.clamp(i.draw or 0, 0, 1)
+	local level = math.pi / 2
+	local pitch = i.arm or 0
+	local function mix(a, b) return a + (b - a) * aim end
+	local rR = mix(S.easeRaise, S.castRaise + S.drawLift * draw + pitch * 0.5)
+	local rA = mix(S.easeAcross, S.castAcross)
+	local lR = mix(S.easeLeftRaise, level + pitch)
+	local lA = mix(S.easeLeftAcross, S.castLeftAcross)
+	local tw = S.twist * aim * C.TWIST_DIR
+	if tw ~= 0 then
+		out.RootJoint = out.RootJoint * CFrame.Angles(0, 0, tw)
+		out.Neck = out.Neck * CFrame.Angles(0, 0, -tw)
+	end
+	out["Right Shoulder"] = arm(o, "Right Shoulder", rR, rA - tw)
+	out["Left Shoulder"] = arm(o, "Left Shoulder", lR, lA + tw)
+end
+
 -- an emote (ReplicatedStorage ▸ Emotes) layers its pose over the targets and
 -- snaps to it; required lazily (Emotes is a sibling module)
 local Emotes = nil
@@ -246,6 +275,7 @@ end
 function RigPose.lerpInputs(from, to, alpha)
 	local i = {}
 	for _, k in ipairs(KEYS) do i[k] = from[k] + (to[k] - from[k]) * alpha end
+	i.ranged = to.ranged   -- (a stance, not an amount: never half a bow on the way to a staff)
 	return i
 end
 

@@ -99,14 +99,20 @@ function Dresser.paint(container, colors, teamKey)
 	local GameConfig = ReplicatedStorage:FindFirstChild("GameConfig") and require(ReplicatedStorage.GameConfig)
 	local teamColor = teamKey and GameConfig and GameConfig.TEAMS[teamKey] and GameConfig.TEAMS[teamKey].rgb
 	local painted = 0
-	for _, p in ipairs(container:GetDescendants()) do
-		if p:IsA("BasePart") then
-			local slot = p:GetAttribute("ColorSlot")
-			if slot then
-				local name = colors and colors[slot]
-				local c = name and Catalog.COLOR[name] and Catalog.COLOR[name].color
-				if teamColor and slot == "Primary" then c = teamColor elseif teamColor and slot == "Secondary" then c = darker(teamColor) end
-				if c then p.Color = c; painted += 1 end
+	-- (a crate set keeps its own colours where its Config names them: Catalog piece.colors)
+	for _, m in ipairs(container:GetChildren()) do
+		local pc = Catalog.PIECE[m:GetAttribute("Piece") or ""]
+		local own = pc and pc.colors
+		for _, p in ipairs(m:GetDescendants()) do
+			if p:IsA("BasePart") then
+				local slot = p:GetAttribute("ColorSlot")
+				if slot then
+					local name = colors and colors[slot]
+					local c = name and Catalog.COLOR[name] and Catalog.COLOR[name].color
+					if own and typeof(own[slot]) == "Color3" then c = own[slot] end
+					if teamColor and slot == "Primary" then c = teamColor elseif teamColor and slot == "Secondary" then c = darker(teamColor) end
+					if c then p.Color = c; painted += 1 end
+				end
 			end
 		end
 	end

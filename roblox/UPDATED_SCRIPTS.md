@@ -1,4 +1,64 @@
-# Updated scripts: build your own face, eleven new hairstyles, no helmet, the Helmet Toss
+# Updated scripts: the Mage, the War Chest, armor in every drop crate, finishes that come alive
+
+- **The Mage, a new class.** An Arcane Staff, a sidearm, and robes instead of armor: 80 health, no protection, a **mana bar** beside the stamina.
+  - **Four spells** (scroll or RB/LB to pick; Swing casts):
+    - **Firebolt:** a dodgeable fireball that burns and splashes.
+    - **Chain Lightning:** hits who you aim at and leaps to one more.
+    - **Frost Nova:** a ring of ice round you that slows everyone close.
+    - **Mend:** heals you or the ally you aim at.
+  - **The Ward** (Block): blows from the front cost mana instead of health until the mana runs out.
+  - **Balance:** every cast takes a moment (magic circle, slower walk), and a hit breaks it.
+  - **The look:** spells look the same to everyone (bolts, lightning, ice, healing light, flames, frost); the staff stands upright and tips forward to cast.
+  - **Apprentice Robes**, the free starter: a floppy wizard hat, a long robe in your colours, gold stars.
+- **The War Chest**, a second armor crate that's always in the shop. Six sets you can only find there, a piece at a time, each a tradable copy:
+  - **Ranger** (Light, Rare): a forest hood with a red feather, a quiver of arrows.
+  - **Berserker** (Light, Epic): a whole bear for a hood, its paws down your chest.
+  - **Corsair** (Medium, Epic): a black tricorn with a plume, a captain's coat with gold epaulettes.
+  - **Deathless** (Medium, Legendary): a skull helm with green fire in the eyes, a ribcage, skulls on the shoulders.
+  - **Lionheart** (Heavy, Legendary): a crowned great helm with a lion's mane.
+  - **Obsidian** (Heavy, Mythic): black volcanic plate with molten seams and a crown of shards.
+- **Five new finishes in the War Chest:** Moonsilver, Oxblood, Bloodrage, Gravelight, Lionsmane.
+- **Armor in every drop crate:** one finish each, in the crate's colours: Bonewhite, Hollowfire, Slagforged, Thornbound, Runecarved, Rimeglass, Hollyberry, Brineshell, Regalia.
+- **Crate sets keep their own colours:** Seraph stays white-gold, Obsidian black, Dragonscale red. Your paint no longer turns them grey; team colours still apply in team modes.
+- **Finishes are alive now,** in the world and on menu mannequins:
+  - **Every finish:** the plates glint, and a kill flares it (a ring, a burst of its aura, a flash of the trims).
+  - **Epic and up:** footprints in its element (frost, fire, sparks, petals, smoke, stars).
+  - **Legendary and up:** light streaks off your arms and legs when you sprint or swing, and a surge ring every few seconds.
+  - **Mythic:** three motes circle you and a rim of light outlines you. A kill throws up a pillar of light.
+- **Crate cards** in the shop say what's inside (ARMOR · SKINS · FINISHES · KILL FX · EMOTES).
+- **Fixes:**
+  - A crate's strip labelled armor and finishes "EMOTE" and showed them locked even when owned.
+  - Admin "unlock everything" now also gives finishes, premium hair, eye colours and face parts.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MagicSpells.lua](ReplicatedStorage/MagicSpells.lua), [MagicFX.lua](ReplicatedStorage/MagicFX.lua) | ReplicatedStorage | ModuleScript | the spells; what magic looks like (new) |
+| [Combat/MagicClient.lua](ReplicatedStorage/Combat/MagicClient.lua) | ReplicatedStorage ▸ Combat ▸ MagicClient | ModuleScript | casting, picking, the ward, the spell and mana bar (new) |
+| [Combat/MagicServer.lua](ServerScriptService/Combat/MagicServer.lua), [Combat/Ward.lua](ServerScriptService/Combat/Ward.lua) | ServerScriptService ▸ Combat | ModuleScript | casts timed, paid and resolved; the ward (new) |
+| [Tools/Staff](Tools/Staff) | ServerStorage ▸ Weapons ▸ Staff | Tool (Script · LocalScript · ModuleScript) | the Arcane Staff (new) |
+| [MagicFX.client.lua](StarterPlayerScripts/MagicFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ MagicFX | LocalScript | starts MagicFX (new) |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua), [Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua), [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage | ModuleScript | the Mage class; the staff; magic weapon fits; class starter sets |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua), [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [RangedFX.client.lua](StarterPlayerScripts/RangedFX.client.lua) | ReplicatedStorage · StarterCharacterScripts · StarterPlayerScripts | ModuleScript · LocalScript | the staff stance |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua), [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | blades and arrows ask the ward |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua), [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | Script · ModuleScript | mana at spawn (`classStats`), the Mage's robes by default |
+| [Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | ServerScriptService ▸ Build ▸ Weapons | ModuleScript | the staff's body |
+| [ServerStorage/Armor/ApprenticeRobes](ServerStorage/Armor/ApprenticeRobes) | ServerStorage ▸ Armor ▸ ApprenticeRobes | Model + ModuleScript | the robes (new) |
+| [ArmorFX.client.lua](StarterPlayerScripts/ArmorFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ ArmorFX | LocalScript | glints, kill flares, footprints, streaks, surges, motes, rims |
+| [ArmorFX.lua](ReplicatedStorage/ArmorFX.lua) | ReplicatedStorage ▸ ArmorFX | ModuleScript | tags the wearer (`FinishWorn`, tier, accent, aura); aura rate by tier |
+| [Catalog/ArmorFX.lua](ReplicatedStorage/Catalog/ArmorFX.lua) | ReplicatedStorage ▸ Catalog ▸ ArmorFX | ModuleScript | 14 new finishes |
+| [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua), [Catalog/Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua), [Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the War Chest; drop crates name their finish |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | a set's own `Colors` |
+| [CrateModels.lua](ReplicatedStorage/CrateModels.lua) | ReplicatedStorage ▸ CrateModels | ModuleScript | the War Chest's look, a helm emblem |
+| [ServerStorage/Armor/Berserker…Obsidian](ServerStorage/Armor) (6 new), and the four Forge sets | ServerStorage ▸ Armor ▸ &lt;Set&gt; ▸ Config | ModuleScript | the new sets; `Colors` |
+| [Build/Armor.lua](ServerScriptService/Build/Armor.lua) | ServerScriptService ▸ Build ▸ Armor | ModuleScript | the six sets' blueprints |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | crate card contents; the strip's labels and ownership |
+| [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService ▸ Admin ▸ AdminServer | Script | unlock everything covers finishes and premium looks |
+
+**Studio-only (save the place):** the meshes of the six War Chest sets and the Apprentice Robes (`assemble_armor.lua`).
+
+---
+
+## Before that: build your own face, eleven new hairstyles, no helmet, the Helmet Toss
 
 - **Faces, redrawn and built in layers:**
   - eyes: 11 shapes, coloured irises with highlights, 10 eye colours

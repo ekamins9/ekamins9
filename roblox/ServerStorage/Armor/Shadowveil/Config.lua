@@ -10,6 +10,7 @@ return {
 	Rarity      = "Legendary",
 	Crate       = "Forge",
 	Finish      = "Voidtouched",
+	Colors      = {Metal = Color3.fromRGB(44, 46, 52), Accent = Color3.fromRGB(176, 86, 255)},   -- (its own colours: the player's picks don't repaint these)
 	Covers      = {"Hair", "Beard"},
 	HelmName = "Veil of Night", TopName = "Shadowveil Leathers", LegsName = "Shadowveil Hose",
 }

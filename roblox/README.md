@@ -373,6 +373,43 @@ draw zooms a little. On a touch screen, hold a SWING button to draw, BLOCK lets 
 across the back when not in hand (`Holsters`). Tuning: each Tool's `Config` over
 `RangedServer.DEFAULTS` / `RangedClient.DEFAULTS`.
 
+## The Mage, staffs and spells (`Combat ▸ MagicServer`, `Combat ▸ MagicClient`, `MagicSpells`)
+
+The **Mage** (`GameConfig.CLASSES.Mage`, `magic = true`) carries the **Arcane Staff** (a magic
+weapon: only a magic class carries one, and a magic class carries one: `Catalog.weaponFits`) and a
+one-handed sidearm. Robes, not armor: **80 health, no protection**, Light pieces, starting in the
+free **Apprentice Robes** (a class's `starter` set: `Catalog.defaultPiece`; `ClassStarter` in the
+set's Config keeps it from being anyone else's default). A **mana bar** (100) sits over the spell
+bar beside the stamina; it comes back 11 a second once 1.1 s have passed since the last cast,
+never while warding (`MaxMana` / `Mana` on the character, set by `LoadoutServer.classStats`).
+
+**The spells** (`ReplicatedStorage ▸ MagicSpells`, the staff's Config lists which it casts):
+
+| Spell | Mana | Cast | Cooldown | What it does |
+|---|---|---|---|---|
+| Firebolt | 16 | 0.42 s | 0.55 s | a bolt at 120 studs/s: 18 (head ×1.5), burns 3/s for 3 s, splashes 6 round it |
+| Chain Lightning | 28 | 0.6 s | 3 s | 14 to whoever's under the crosshair (48 studs), leaps to one more within 14 for 9 |
+| Frost Nova | 34 | 0.3 s | 7 s | 8 to everyone within 12, slowed 45% for 2.5 s |
+| Mend | 38 | 0.85 s | 9 s | heals 32 over 2 s: the ally under the crosshair, else you |
+
+**Casting** (the Swing bind; scroll / RB-LB picks the spell; Q feints a cast; on a phone the
+SWING / STAB / OVERHEAD buttons): the server times it (`Casting`, `CastStart`, `CastTime` on the
+character), you walk at 65%, and **a hit while casting breaks it** (nothing paid). The aim is the
+crosshair at the end of the cast. **The Ward** (Block, held): frontal blows within 70° lose 70% of
+their damage, paid from your mana point for point; out of mana it breaks. Blades
+(`CombatServer`), arrows (`RangedServer`) and spells all ask `Combat ▸ Ward`. Kick works too.
+Spells respect friendly fire, peaceful places and spawn protection; armor turns half of what it
+would turn from a blade.
+
+**What everyone sees** (`ReplicatedStorage ▸ MagicFX`, `StarterPlayerScripts ▸ MagicFX`): a magic
+circle of runes turning at the staff's orb as the cast fills; bolts with a trail, fire and sparks,
+bursting where they land; jagged lightning leaping between them; a ring of ice racing out and
+shards bursting up; rising light round whoever's healed; a ring of light for the ward that ripples
+when struck and shatters when it breaks; flames on the burning, frost on the slowed. Each screen
+starts a spell at the orb it sees. **The stance** is `RigPose.staff` (`ranged = 3`): the staff
+upright in front at ease, tipped forward with the left hand thrust at the target while casting or
+warding (`STAFF`); Roblox's own arm animations are taken off (`RangedFX`). Bots never play Mage.
+
 ## Classes, pieces, the Dresser
 
 `LoadoutServer` turns off `Players.CharacterAutoLoads`; nobody has a body until they pick a
@@ -817,7 +854,24 @@ credit and reads TEAMKILLED in the feed.
   (Medium, Legendary), Shadowveil (Light, Legendary), Seraph (Medium, Mythic). Each wears its own
   finish.
 
-Everything out of it is a copy of its own (`"armor:"`, `"finish:"`): trade it, scrap it, keep
+The **War Chest** (always in rotation too) is the second armor crate: six more crate-only sets,
+Ranger (Light, Rare), Berserker (Light, Epic: a bear for a hood), Corsair (Medium, Epic: a
+tricorn and a captain's coat), Deathless (Medium, Legendary: a skull helm, a ribcage), Lionheart
+(Heavy, Legendary: a crowned great helm with a mane), Obsidian (Heavy, Mythic: volcanic glass),
+and five finishes (Moonsilver, Oxblood, Bloodrage, Gravelight, Lionsmane). Every drop crate
+(Ossuary, Hollow, Foundry, Hunter's, Longship, Rime, Yule, Black Sails, Royal Armoury) also
+carries one finish in its own colours. A crate set keeps **its own colours** (Config `Colors`):
+the player's paint doesn't repaint them, except team colours in team modes. The shop's crate
+cards say what's inside (ARMOR · SKINS · FINISHES · KILL FX · EMOTES).
+
+**What a finish does, by rarity** (`StarterPlayerScripts ▸ ArmorFX`, on menu mannequins too):
+every finish's plates glint now and then, and a kill flares it (a ring, a burst of its aura, a
+flash of the trims; a Mythic adds a pillar of light). Epic and up leave footprints in their
+element (frost, fire, sparks, petals, smoke…). Legendary and up streak light off the arms and
+legs while you sprint or swing, and roll a surge ring off you every few seconds. A Mythic has
+three motes of it circling you and a rim of its light round your outline (the nearest eight).
+
+Everything out of them is a copy of its own (`"armor:"`, `"finish:"`): trade it, scrap it, keep
 it. Looks only: stats still come from the weight. The shop never sells a crate piece.
 
 ```

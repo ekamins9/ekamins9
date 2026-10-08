@@ -10,6 +10,7 @@ return {
 	Rarity      = "Legendary",
 	Crate       = "Forge",
 	Finish      = "Emberforged",
+	Colors      = {Metal = Color3.fromRGB(96, 28, 24), Accent = Color3.fromRGB(232, 184, 74)},   -- (its own colours: the player's picks don't repaint these)
 	Covers      = {"Hair", "Face"},
 	HelmName = "Dragon's Skull", TopName = "Dragonscale Plate", LegsName = "Dragonscale Greaves",
 }

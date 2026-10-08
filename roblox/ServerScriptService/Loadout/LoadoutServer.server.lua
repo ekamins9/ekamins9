@@ -183,6 +183,23 @@ local function show(plr, reason)
 	event:FireClient(plr, "Show", Profile.get(plr).active, reason)
 end
 
+-- a class lighter (or heavier) than its weight (the Archer, the Mage: GameConfig.CLASSES health /
+-- prot / speed), and a magic class's mana bar (MagicSpells.MAX_MANA, full). After the Dresser.
+local Spells = require(ReplicatedStorage:WaitForChild("MagicSpells"))
+local function classStats(char, hum, classId)
+	local cdef = GameConfig.CLASSES[classId]
+	if cdef.health then
+		local base = char:GetAttribute("BaseMaxHealth") or 100
+		hum.MaxHealth = math.max(10, hum.MaxHealth + cdef.health)
+		hum.Health = hum.MaxHealth
+		char:SetAttribute("BaseMaxHealth", base)
+	end
+	if cdef.prot then char:SetAttribute("ArmorProtection", cdef.prot) end
+	char:SetAttribute("SpeedMult_Class", cdef.speed)
+	char:SetAttribute("MaxMana", cdef.magic and Spells.MAX_MANA or nil)
+	char:SetAttribute("Mana", cdef.magic and Spells.MAX_MANA or nil)
+end
+
 spawnAs = function(plr, classId)
 	if spawning[plr] then return end
 	if isAlive(plr) then return end
@@ -226,16 +243,7 @@ spawnAs = function(plr, classId)
 	local team = Game.teamOf(plr)
 	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = team})
 	Game.Teams.mark(char, team)
-	-- a class lighter (or heavier) than its weight: the Archer (GameConfig.CLASSES health / prot / speed)
-	local cdef = GameConfig.CLASSES[classId]
-	if cdef.health then
-		local base = char:GetAttribute("BaseMaxHealth") or 100
-		hum.MaxHealth = math.max(10, hum.MaxHealth + cdef.health)
-		hum.Health = hum.MaxHealth
-		char:SetAttribute("BaseMaxHealth", base)
-	end
-	if cdef.prot then char:SetAttribute("ArmorProtection", cdef.prot) end
-	if cdef.speed then char:SetAttribute("SpeedMult_Class", cdef.speed) end
+	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP, 1) end
 	if SPAWN_PROTECT > 0 and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then
@@ -282,6 +290,7 @@ _G.CourtyardRedress = function(plr)
 	char:SetAttribute("Class", classId)
 	char:SetAttribute("Title", p.appearance.title or "")
 	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = Game.teamOf(plr)})
+	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut, 1) end
 	log(plr.Name, "re-dressed in the Courtyard as", classId)

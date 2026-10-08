@@ -95,14 +95,29 @@ with `Finish = "Emberforged"` (it keeps the set's metal and cloth, and only ligh
 brings the aura; worn with the set's TOP unless the class picked a finish). Its models can come from
 a blueprint in `Build ▸ Armor` (`A_.<SetName> = set(helm, torso, armFn, legFn)`) until hand-made
 ones exist. The Forge's four: Dragonscale (Heavy), Frostwarden (Medium), Shadowveil (Light), Seraph
-(Medium, Mythic: wings of light).
+(Medium, Mythic: wings of light). The War Chest's six (`Crate = "WarChest"`): Ranger, Berserker,
+Corsair, Deathless, Lionheart, Obsidian. Give a crate set **its own colours** with
+`Colors = {Metal = Color3.fromRGB(…), Accent = …, Secondary = …}`: those slots ignore the
+player's paint (team colours still win in team modes), so the set always looks like itself.
+
+**A spell** (`ReplicatedStorage ▸ MagicSpells`): `S.MySpell = {name, glyph, kind, mana, cast,
+cooldown, color, glow, desc, …its numbers}` with `kind` one of `bolt` (speed, range, radius, damage,
+headMult, burn = {dps, time}, splash, splashDamage), `chain` (range, width, damage, chain,
+chainRange, chainDamage), `nova` (radius, damage, slow, slowTime) or `heal` (range, width, heal,
+healTime). A staff casts the ones its Config lists (`SPELLS`, in the spell bar's order); a new
+`kind` needs a resolver in `Combat ▸ MagicServer` (`RESOLVE.<kind>`) and a look in `MagicFX`.
+A new staff: a Tool folder like `Tools/Staff` (its Config: `SPELLS`, `ORB`, `GRIP`), a blueprint in
+`Build ▸ Weapons` and a `magic = true` line in `Catalog ▸ Weapons`.
 
 **An armor finish** (`Catalog ▸ ArmorFX`): `{id, name, rarity, crate, description, look = {metal,
 metalMaterial, accent, glow, tint, body, aura, light, pulse | flicker | radiant}}`: the plates
 recoloured, the trims lit, an aura from `SkinFX` off the shoulders, arms and legs. It goes on any
 set of any weight, one per class (LOADOUT › FINISH), looks only, a tradable copy
 (`"finish:" .. id`). The rarer, the more alive: Rares recolour, Epics glow and shed something,
-Legendaries crackle, Mythics walk the rainbow or burn.
+Legendaries crackle, Mythics walk the rainbow or burn. The rarity also brings, with no config
+(`StarterPlayerScripts ▸ ArmorFX`): glints on the plates and a flare on every kill (all), footprints
+of the aura's element (Epic +), light streaks off the limbs and a surge ring (Legendary +), orbiting
+motes and a glowing rim (Mythic). Any crate can carry a finish: `crate = "Ossuary"`.
 
 Stats come from the **weight only** (`Catalog ▸ Weights`): every Heavy piece gives the same
 health / speed / protection, so looks never buy power. A set may skip slots (no
