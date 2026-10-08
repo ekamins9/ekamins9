@@ -199,7 +199,7 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	local sum = label(b, "…", 14, FONT, COL_TEXT); sum.AnchorPoint = Vector2.new(0, 1); sum.Position = UDim2.new(0, 0, 1, 0); sum.Size = UDim2.new(1, 0, 0, 44); sum.TextYAlignment = Enum.TextYAlignment.Top
 	b.MouseEnter:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD:Lerp(COL_CARD_ON, 0.35) end end)
 	b.MouseLeave:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD end end)
-	b.Activated:Connect(function() selected = id; paint() end)
+	b.Activated:Connect(function() selected = id; paint(); event:FireServer("Pick", id) end)
 	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s, vp = vp, cam = cam}
 end
 
@@ -348,6 +348,7 @@ local function show(active, reason)
 	fetchCatalog()
 	if GameConfig.CLASSES[active] then selected = active elseif catalog and GameConfig.CLASSES[catalog.active] then selected = catalog.active end
 	paint()
+	event:FireServer("Pick", selected)
 	refreshModeLine()
 	spawnBtn.Text = "SPAWN"
 	open = true
@@ -377,6 +378,10 @@ RunService.Heartbeat:Connect(function()
 		spawnBtn.BackgroundColor3 = COL_SPAWN_ON
 		waitLine.Text = waitReason or ""
 		refreshModeLine()
+	elseif roundNode:GetAttribute("ObjKind") == "Horde" and roundNode:GetAttribute("ObjState") == "break" then
+		-- (the next wave takes you in by itself, as the class you're on)
+		local d = GameConfig.CLASSES[selected]
+		waitLine.Text = string.format("%s  ·  or you go in as %s when it starts", roundNode:GetAttribute("ObjNote") or "NEXT WAVE SOON", d and string.upper(d.name) or "your class")
 	else
 		waitLine.Text = waitReason or ""
 	end

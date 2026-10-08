@@ -1202,8 +1202,12 @@ The HORDE door (PLAY board): you and your party against waves of bots, in a Frie
 the Training Yard. A short breather, then wave 1 pours in through the map's gates (`Spots ▸
 HordeGate1..n`): each wave bigger and better trained (Knights from wave 3, Champions from 6), a
 **Warlord** every fifth wave. At most 10 bots are on the field at once; the rest wait their turn.
-The fallen spawn again between waves (12 s), and the standing get all their stamina and a quarter
-of their health back; when everyone is down at once the horde wins and the round ends. Players
+The fallen spawn again between waves (12 s), and nobody misses a wave for not pressing SPAWN:
+when the break runs out, whoever is still on the class screen goes in as the class card they're
+on (LoadoutServer `_G.AutoSpawn`, the screen's "Pick"). The standing are made whole for the next
+one (`_G.MakeWhole`): full health, stamina and mana, burns and frost gone, and a body that lost a
+limb, is bleeding or had its weapon knocked away is rebuilt where it stands. When everyone is
+down at once the horde wins and the round ends. Players
 can't hurt each other and bots don't hurt each other. Each wave beaten pays
 everyone `wave` (15 Marks, 30 XP), each bot killed pays `kill`, and your best wave is kept
 (`stats.hordeBest`). The HUD shows the wave, the foes left and the countdown between waves.

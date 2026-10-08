@@ -1,4 +1,20 @@
-# Updated scripts: the Mage, done properly — an arsenal, meditation, the grimoire and the wand, a staff that fights
+# Updated scripts: Horde never leaves you behind, the break makes you whole, no bodies left standing
+
+- **Horde auto-spawn:** when the break between waves runs out, anyone still on the class screen goes in automatically as the class they picked. Nobody gets locked out of a wave for not pressing SPAWN, and the class screen says so during the break.
+- **Whole again between waves:** everyone standing gets full health, stamina and mana; burns and frost are cleared. If you lost a limb, are bleeding or had your weapon knocked away, you're rebuilt where you stand with every limb, your armor and your weapons.
+- **No bodies left standing:** a player who left (or was rebuilt) while alive after losing a limb used to leave a standing copy of themselves behind; now nothing is left. A body still upright when its owner leaves is laid down flat.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Game/Modes/Horde.lua](ServerScriptService/Game/Modes/Horde.lua) | ServerScriptService ▸ Game ▸ Modes ▸ Horde | ModuleScript | auto-spawn at the wave; made whole at the break |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | the class you're on ("Pick"); `_G.AutoSpawn`; `_G.MakeWhole` (a rebuild in place) |
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ LoadoutMenu | LocalScript | tells the server your class card; "or you go in as …" |
+| [Combat/Corpses.lua](ServerScriptService/Combat/Corpses.lua) | ServerScriptService ▸ Combat ▸ Corpses | ModuleScript | only a dead body is laid out; a standing one is laid flat |
+| [README.md](README.md) | | doc | Horde |
+
+---
+
+## Before that: the Mage, done properly — an arsenal, meditation, the grimoire and the wand, a staff that fights
 
 - **Mana comes back only by meditating:** hold R (controller Y) standing still. Casting slows you to a crawl (20%) with no sprint. Mages stand behind the line, then have to stop.
 - **Pick your arsenal** in the loadout (LOADOUT ▸ SPELLS). Twelve spells, more unlocking as you level: Firebolt, Ice Lance, Chain Lightning, Arcane Missiles, Meteor, Miasma, Frost Nova, Mend, Haste, Barrier, Hex, Blink.

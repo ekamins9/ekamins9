@@ -131,7 +131,8 @@ local function limbKey(name) return (name:gsub(" %(severed%)$", "")) end
 --  WHAT EACH KIND LEAVES
 --------------------------------------------------------------------
 -- copies of the parts you could see, where they lie
-local function copies(model, parts)
+-- lie (optional): a CFrame laying the copies down (a body that never fell: gather)
+local function copies(model, parts, lie)
 	local out = {}
 	for _, p in ipairs(parts) do
 		local c = p:Clone()
@@ -146,6 +147,7 @@ local function copies(model, parts)
 			if q:IsA("BasePart") then q.Anchored, q.CanCollide, q.CanQuery, q.CanTouch, q.Massless = true, false, false, false, true end
 		end
 		c.CFrame = p.CFrame
+		if lie then for _, q in ipairs({c, table.unpack(c:GetDescendants())}) do if q:IsA("BasePart") then q.CFrame = lie * q.CFrame end end end
 		c.Parent = model
 		table.insert(out, c)
 	end
@@ -182,12 +184,12 @@ end
 
 local KIND = {}
 KIND.body = function(model, b)
-	copies(model, b.parts)
+	copies(model, b.parts, b.lie)
 	copies(model, b.limbs)
 	return true
 end
 KIND.charred = function(model, b)
-	local cs = copies(model, b.parts)
+	local cs = copies(model, b.parts, b.lie)
 	local ls = copies(model, b.limbs)
 	recolor(cs, C.CHAR, M.Slate); recolor(ls, C.CHAR, M.Slate)
 	if cs[1] then smoke(b.torso and model:FindFirstChild(b.torso.Name) or cs[1], 7) end
@@ -422,7 +424,7 @@ local AFTER_BODY = {none = true, grave = true, flat = true, mound = true, puddle
 local RIG = {Head = true, Torso = true, ["Left Arm"] = true, ["Right Arm"] = true, ["Left Leg"] = true, ["Right Leg"] = true}
 
 -- everything about the body the remains are built from
-local function gather(char)
+local function gather(char, flatten)
 	local id = Corpses.idOf(char)
 	local remains = Janitor.folder()
 	-- what can be seen of it, and the limbs it lost (lying in Remains, tagged CorpseOf)
@@ -445,6 +447,13 @@ local function gather(char)
 	b.centre = at.Position
 	b.floor = floorUnder(b.centre, {char, remains})
 	b.id, b.remains = id, remains
+	-- (flatten: a body taken away still standing — its owner gone before their fall reached
+	-- the server — is laid down flat where it stood, never left upright)
+	local t = flatten and b.torso and b.torso.CFrame
+	if t and t.UpVector.Y > 0.85 then
+		local at = Vector3.new(t.X, b.floor + 0.5, t.Z)
+		b.lie = CFrame.new(at) * CFrame.fromAxisAngle(t.RightVector, -math.pi / 2) * CFrame.new(-at)
+	end
 	return b
 end
 
@@ -478,11 +487,11 @@ end
 
 -- delay (optional): build the remains that much later, from what the body is
 -- now (only for kinds that don't copy the body: AFTER_BODY)
-function Corpses.lay(char, kind, delay)
+function Corpses.lay(char, kind, delay, flatten)
 	if not char or char:GetAttribute("Laid") then return end
 	char:SetAttribute("Laid", true)
 	kind = KIND[kind or ""] and kind or "body"
-	local b = gather(char)
+	local b = gather(char, flatten)
 	if not b then return end
 	if delay and delay > 0 and AFTER_BODY[kind] then
 		task.delay(delay, function() build(b, kind) end)
@@ -510,14 +519,17 @@ function Corpses.died(char)
 	end)
 end
 
--- a player respawning before their body was laid out: lay it out as it lies
+-- a player respawning (or leaving) before their body was laid out: lay it out as it lies.
+-- Only a dead one: a living body that lost a limb carries a CorpseId too (its limbs are
+-- tagged with it), and a living body taken away (made whole between Horde waves, a player
+-- leaving) leaves nothing behind
 local function watch(plr)
 	plr.CharacterRemoving:Connect(function(char)
 		local hum = char:FindFirstChildOfClass("Humanoid")
-		if (hum and hum.Health <= 0) or char:GetAttribute("CorpseId") then
+		if not hum or hum.Health <= 0 then
 			-- (a kill effect still playing: its remains come when it says)
 			local due = (char:GetAttribute("RemainsDue") or 0) - os.clock()
-			Corpses.lay(char, char:GetAttribute("RemainsPending") or "body", due)
+			Corpses.lay(char, char:GetAttribute("RemainsPending") or "body", due, true)
 		end
 	end)
 end

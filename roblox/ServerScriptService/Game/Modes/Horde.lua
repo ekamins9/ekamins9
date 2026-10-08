@@ -3,8 +3,11 @@
      map's gates (Map ▸ Spots ▸ HordeGate1..n; the map's B spawns if there are
      none). Each wave is bigger and better trained: Knights from wave 3,
      Champions from wave 6, and every fifth wave a Warlord (a Champion with a
-     lot of health). The fallen come back between waves; when everyone is
-     down at once, the horde has won and the round ends.
+     lot of health). The fallen come back between waves (and when the break
+     runs out, whoever hasn't pressed SPAWN goes in as the class they're on:
+     LoadoutServer ▸ _G.AutoSpawn); the standing are made whole, limbs and all
+     (_G.MakeWhole). When everyone is down at once, the horde has won and the
+     round ends.
 
      Players can't hurt each other (pvp = false) and bots don't hurt each other
      (FriendlyFire off). Each wave cleared pays everyone here `wave`; each bot
@@ -95,7 +98,7 @@ function Horde:stop()
 end
 
 function Horde:canSpawn(plr)
-	if self.phase == "wave" then return false, "The wave is on: you're back in when it's beaten" end
+	if self.phase == "wave" then return false, "The wave is on: you're back in when it's beaten (you go in by yourself)" end
 	return true
 end
 
@@ -140,7 +143,16 @@ function Horde:tick(dt)
 		node:SetAttribute("ObjLabel", self.wave == 0 and "GET READY" or ("WAVE " .. self.wave .. " BEATEN"))
 		node:SetAttribute("ObjNote", string.format("NEXT WAVE IN %d", math.max(0, math.ceil(self.nextAt - now))))
 		node:SetAttribute("ObjProgress", math.clamp(1 - (self.nextAt - now) / (self.wave == 0 and FIRST or BREAK), 0, 1))
-		if now >= self.nextAt and up > 0 then self:startWave() end
+		if now >= self.nextAt then
+			-- nobody is shut out of the wave for not pressing SPAWN: whoever's still on the
+			-- class screen goes in as the class they picked (LoadoutServer: _G.AutoSpawn)
+			local any = false
+			for _, p in ipairs(Players:GetPlayers()) do
+				any = true
+				if _G.AutoSpawn then _G.AutoSpawn(p) end
+			end
+			if any then self:startWave() end
+		end
 	elseif self.phase == "wave" then
 		-- feed the field from the queue, a few at a time, through the gates
 		local alive = 0
@@ -167,13 +179,9 @@ function Horde:tick(dt)
 				if _G.RoundBump then _G.RoundBump(p, "wave") end
 				local st = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile")).get(p).stats
 				st.hordeBest = math.max(st.hordeBest or 0, self.wave)
-				-- the break: your wind back at once, and a quarter of your health
-				local c = p.Character
-				local hum = c and c:FindFirstChildOfClass("Humanoid")
-				if hum and hum.Health > 0 then
-					c:SetAttribute("BlockMeter", c:GetAttribute("BlockMax") or 100)
-					hum.Health = math.min(hum.MaxHealth, hum.Health + hum.MaxHealth * 0.25)
-				end
+				-- the break: whole again, where you stand: full health, your wind and mana, and
+				-- lost limbs, bleeding and a knocked-away weapon put right (LoadoutServer: _G.MakeWhole)
+				if _G.MakeWhole then _G.MakeWhole(p) end
 			end
 			event:FireAllClients("Stage", {text = "WAVE " .. self.wave .. " BEATEN", add = 0, team = "A", final = false, horde = true})
 		end

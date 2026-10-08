@@ -248,14 +248,16 @@ local function classStats(char, hum, classId)
 	char:SetAttribute("Mana", cdef.magic and Spells.MAX_MANA or nil)
 end
 
-spawnAs = function(plr, classId)
+-- opts (optional): again = true rebuilds a living body (made whole: _G.MakeWhole), at = where
+spawnAs = function(plr, classId, opts)
+	opts = opts or {}
 	if spawning[plr] then return end
-	if isAlive(plr) then return end
+	if isAlive(plr) and not opts.again then return end
 	if not GameConfig.CLASSES[classId] then classId = Profile.get(plr).active end
 	local ok, why = Game.canSpawn(plr)
-	if not ok then show(plr, why); return end
+	if not ok and not opts.again then show(plr, why); return end
 	-- reinforcements come in waves (a mode's waveSpawn): wait for your side's next one
-	local wave = Game.waveWait(plr)
+	local wave = opts.again and 0 or Game.waveWait(plr)
 	if wave > 0.4 then
 		spawning[plr] = true
 		event:FireClient(plr, "Wave", wave)
@@ -283,7 +285,8 @@ spawnAs = function(plr, classId)
 	if not (hum and hrp and char.Parent) then spawning[plr] = nil; return end
 
 	local cf = Game.spawnCFrame(plr)
-	if cf then char:PivotTo(CFrame.new(cf.Position + Vector3.new(0, 3, 0)) * (cf - cf.Position)) end
+	if opts.at then char:PivotTo(opts.at)
+	elseif cf then char:PivotTo(CFrame.new(cf.Position + Vector3.new(0, 3, 0)) * (cf - cf.Position)) end
 	-- names are drawn by NameTags (only when you look right at someone), not by Roblox
 	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
@@ -295,7 +298,7 @@ spawnAs = function(plr, classId)
 	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2, lo) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP, 1, lo) end
-	if SPAWN_PROTECT > 0 and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then
+	if SPAWN_PROTECT > 0 and not opts.again and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then
 		local ff = Instance.new("ForceField"); ff.Visible = true; ff.Parent = char
 		Debris:AddItem(ff, SPAWN_PROTECT)
 	end
@@ -346,10 +349,56 @@ _G.CourtyardRedress = function(plr)
 end
 Players.PlayerRemoving:Connect(function(plr) redressAt[plr] = nil end)
 
+-- the class card you're on (the class screen tells us as you click): what a mode that
+-- sends you in without a SPAWN press spawns you as
+local picked = {}
 event.OnServerEvent:Connect(function(plr, what, a)
 	if what == "Spawn" then spawnAs(plr, a)
+	elseif what == "Pick" then if type(a) == "string" and GameConfig.CLASSES[a] then picked[plr] = a end
 	elseif what == "Ready" then if not isAlive(plr) then show(plr) end end
 end)
+Players.PlayerRemoving:Connect(function(plr) picked[plr] = nil end)
+-- in you go, as the class you picked (Horde: the next wave doesn't leave you behind)
+_G.AutoSpawn = function(plr)
+	if not plr.Parent or isAlive(plr) or spawning[plr] then return end
+	task.spawn(spawnAs, plr, picked[plr] or Profile.get(plr).active)
+end
+-- WHOLE AGAIN where you stand (Horde, between waves): health, wind and mana back, and a body
+-- that lost a limb, is bleeding or had its weapon knocked away is rebuilt in place as the
+-- same class (limbs, armor, weapons and all)
+_G.MakeWhole = function(plr)
+	local char = plr.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0) or spawning[plr] then return end
+	local classId = char:GetAttribute("Class") or Profile.get(plr).active
+	local broken = char:GetAttribute("Bleeding") == true
+	for _, k in ipairs({"LeftArm", "RightArm", "LeftLeg", "RightLeg"}) do
+		if char:GetAttribute("LimbLost_" .. k) then broken = true end
+	end
+	local lo = GameConfig.CLASSES[classId] and Profile.validateLoadout(plr, classId, Profile.get(plr).classes[classId])
+	local bp = plr:FindFirstChildOfClass("Backpack")
+	local function carried(name)
+		if not name then return true end
+		for _, holder in ipairs({char, bp}) do
+			for _, t in ipairs(holder and holder:GetChildren() or {}) do
+				if t:IsA("Tool") and (t.Name == name or t:GetAttribute("Twin") == name) then return true end
+			end
+		end
+		return false
+	end
+	if lo and not (carried(lo.weapon) and carried(lo.secondary)) then broken = true end
+	if broken then
+		local root = char:FindFirstChild("HumanoidRootPart")
+		task.spawn(spawnAs, plr, classId, {again = true, at = root and root.CFrame})
+		return
+	end
+	hum.Health = hum.MaxHealth
+	char:SetAttribute("BlockMeter", char:GetAttribute("BlockMax") or 100)
+	if char:GetAttribute("MaxMana") then char:SetAttribute("Mana", char:GetAttribute("MaxMana")) end
+	-- (the fire put out, the frost thawed)
+	char:SetAttribute("BurnToken", (char:GetAttribute("BurnToken") or 0) + 1)
+	for _, k in ipairs({"Burning", "Frosted", "SpeedMult_Frost"}) do char:SetAttribute(k, nil) end
+end
 
 Game.intermissionStarted.Event:Connect(function()
 	for _, plr in ipairs(Players:GetPlayers()) do
