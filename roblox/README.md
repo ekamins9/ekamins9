@@ -77,6 +77,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
+| `ReplicatedStorage/Ballistics.lua` | `ReplicatedStorage` → `Ballistics` (the arc that lands an arrow on its aim) | ModuleScript |
 | `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `StarterPlayerScripts/NameTags.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NameTags` | LocalScript |
@@ -266,14 +267,17 @@ class, applied by `LoadoutServer`).
 **The longbow** (free) is held in the right hand; the left draws the string. **Hold** the Swing bind (left mouse) to draw: 1.6 s
 to full, walking at 20% and no sprinting. **Let go** to loose; let go before 40% of the draw and
 the string is let down, no shot. The power is the draw the **server** timed: a part draw is weak
-and drops hard; a full draw flies at 147 studs/s (half again the range it had at 120) and still drops. The aim always wanders a little,
+and arcs high; a full draw flies at 180 studs/s (about 800 studs at the longest lob). **The arrow lands on the point under the
+reticle** at any range it can reach: it's loosed on the arc that carries it there at its speed (`Ballistics`: the client sends
+the point, the server solves with the speed it timed; out of reach, the 45° lob that carries furthest; aimed at the sky, it flies
+along the look). The aim always wanders a little,
 more while you're pulling; held at full draw past 0.6 s it costs stamina and shakes more and more (more on the move or winded, less crouched); out of breath, the draw drops.
 After a shot the archer **nocks the next arrow** (1.5 s: the hand goes back to the quiver). Right
 mouse lets a draw down. A shot every ~3.5 s at best.
 
 **The crossbow** (level 3) is carried at ease in both hands, low across the body. **Hold right mouse**
 to raise it to the shoulder (it follows where you look, and the view zooms down the tiller);
-**click** looses it, only while raised (steady aim, 160 studs/s, a hard hit, more armor pierce).
+**click** looses it, only while raised (steady aim, 160 studs/s, a hard hit, more armor pierce; it lands under the reticle too).
 Then it stays **empty until you span it**: the **Reload** bind (R), or a click while empty, starts
 a **5 s haul** at 8% walking speed: bent over, the nose down in the stirrup at your right foot,
 pulling the string up in three strokes (everyone sees the string follow: Round `ReloadAt`).

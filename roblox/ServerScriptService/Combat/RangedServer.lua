@@ -34,6 +34,7 @@ local Injury = require(script.Parent:WaitForChild("Injury"))
 local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundBank = require(ReplicatedStorage:WaitForChild("SoundBank"))
 local ArrowFX = require(ReplicatedStorage:WaitForChild("ArrowFX"))
+local Ballistics = require(ReplicatedStorage:WaitForChild("Ballistics"))
 local Armor do
 	local loadout = script.Parent.Parent:FindFirstChild("Loadout")
 	local mod = loadout and loadout:FindFirstChild("Armor")
@@ -262,7 +263,7 @@ function RangedServer.attach(Tool, cfgIn)
 
 	-- what an arrow does to what it meets
 	-- a skin's arrows have their own voice: a layer over the plain sounds (ArrowFX.sound)
-	local function kindSound(fx, which, at)
+local function kindSound(fx, which, at)
 		local snd = fx and ArrowFX.sound(fx, which)
 		if snd and at then Sounds.play(snd.id, at, {Volume = snd.Volume, Speed = snd.Speed, MaxDistance = 90, Ttl = 4}) end
 	end
@@ -339,7 +340,7 @@ function RangedServer.attach(Tool, cfgIn)
 	end
 
 	-- loose one: the server's own flight, stepped every frame
-	local function loose(dirIn, shotId)
+	local function loose(dirIn, shotId, target)
 		local head = character:FindFirstChild("Head")
 		local hrp = character:FindFirstChild("HumanoidRootPart")
 		if not (head and hrp) then return end
@@ -347,17 +348,24 @@ function RangedServer.attach(Tool, cfgIn)
 		if isBow then
 			power = math.clamp((os.clock() - drawStart) / cfg.DRAW_TIME, cfg.MIN_POWER, 1)
 		end
-		-- the aim must be roughly where you face
+		local speed = cfg.SPEED_MIN + (cfg.SPEED_MAX - cfg.SPEED_MIN) * power
+		local g = cfg.GRAVITY * (isBow and (1.4 - 0.4 * power) or 1)
 		local dir = dirIn.Unit
+		local origin
+		-- the point under the shooter's reticle: onto the arc that lands it there, at the
+		-- speed this server timed (the client only says where it aimed)
+		if typeof(target) == "Vector3" and target == target and (target - head.Position).Magnitude > 3 and (target - head.Position).Magnitude < 2000 then
+			dir, origin = Ballistics.launch(head.Position, target, speed, g)
+		end
+		-- the aim must be roughly where you face
 		local flatLook = hrp.CFrame.LookVector * Vector3.new(1, 0, 1)
 		local flatDir = dir * Vector3.new(1, 0, 1)
 		if flatLook.Magnitude > 0.1 and flatDir.Magnitude > 0.1 and math.deg(math.acos(math.clamp(flatLook.Unit:Dot(flatDir.Unit), -1, 1))) > cfg.AIM_CONE then
 			dir = (flatLook.Unit + Vector3.new(0, dir.Y, 0)).Unit
+			origin = nil
 		end
-		local origin = head.Position + dir * 1.2 + Vector3.new(0, -0.2, 0)
-		local speed = cfg.SPEED_MIN + (cfg.SPEED_MAX - cfg.SPEED_MIN) * power
+		origin = origin or (head.Position + dir * 1.2 + Vector3.new(0, -0.2, 0))
 		local vel = dir * speed
-		local g = cfg.GRAVITY * (isBow and (1.4 - 0.4 * power) or 1)
 		local shooter, shotWeapon, kind = character, weaponName, cfg.KIND
 		local fx = Tool:GetAttribute("ArrowFx")
 		shotSeq += 1
@@ -397,7 +405,7 @@ function RangedServer.attach(Tool, cfgIn)
 		end)
 	end
 
-	table.insert(conns, remote.OnServerEvent:Connect(function(who, action, a, b)
+	table.insert(conns, remote.OnServerEvent:Connect(function(who, action, a, b, c)
 		if not character or who ~= player then return end
 		local now = os.clock()
 		local hum = character:FindFirstChildOfClass("Humanoid")
@@ -421,7 +429,7 @@ function RangedServer.attach(Tool, cfgIn)
 				-- not drawn far enough: the string is let down, no shot
 				if now - drawStart < cfg.DRAW_TIME * cfg.MIN_DRAW then cancelDraw(); lastShot = now; return end
 				ammo -= 1
-				loose(a, b)
+				loose(a, b, c)
 				cancelDraw()
 				-- the next arrow out of the quiver and onto the string
 				reloadUntil = now + cfg.NOCK_TIME
@@ -434,7 +442,7 @@ function RangedServer.attach(Tool, cfgIn)
 				if not loaded or stunned or now < reloadUntil or ammo <= 0 then return end
 				ammo -= 1
 				loaded = false
-				loose(a, b)
+				loose(a, b, c)
 				-- (empty now, until it's spanned again: "Reload")
 			end
 			lastShot = now

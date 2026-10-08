@@ -11,6 +11,9 @@
        • THE AIM: the middle of the screen, through what's there, shaking a
          little (more held at full draw, on the move, or out of breath: the
          Config's SWAY_*). The reticle shows the shake and how far you've drawn.
+         The arrow lands ON the point under the reticle: it's loosed on the arc
+         that carries it there at its speed (Ballistics), here for your own
+         arrow and on the server for the real one (it's sent the point).
        • THE POSE: local attributes the camera rig turns into arms and a stance
          everyone sees (RigPose: LocalRanged, LocalAim, LocalDraw, LocalReload)
          and a little zoom at full draw (LocalZoom).
@@ -24,6 +27,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
 local ArrowFlight = require(ReplicatedStorage:WaitForChild("ArrowFlight"))
+local Ballistics = require(ReplicatedStorage:WaitForChild("Ballistics"))
 
 local RangedClient = {}
 RangedClient.DEFAULTS = {
@@ -118,9 +122,10 @@ function RangedClient.attach(Tool, cfgIn)
 		if not (cam and head) then return nil end
 		local look = (cam.CFrame * CFrame.Angles(sy, sx, 0)).LookVector
 		aimParams.FilterDescendantsInstances = {c, workspace:FindFirstChild("ArrowFlights"), workspace:FindFirstChild("Arrows")}
-		local res = workspace:Raycast(cam.CFrame.Position, look * 1000, aimParams)
-		local target = res and res.Position or (cam.CFrame.Position + look * 1000)
-		return (target - head.Position).Unit, target, head
+		local res = workspace:Raycast(cam.CFrame.Position, look * 1500, aimParams)
+		local target = res and res.Position or (cam.CFrame.Position + look * 1500)
+		-- (nothing under it, the sky: no point to land on, it's loosed along the look)
+		return res and (target - head.Position).Unit or look, target, head, res ~= nil
 	end
 
 	local function startDraw()
@@ -149,11 +154,14 @@ function RangedClient.attach(Tool, cfgIn)
 			if not c:GetAttribute("Loaded") or c:GetAttribute("Reloading") then return end
 			speed, g = cfg.SPEED_MAX, cfg.GRAVITY
 		end
-		local dir, _, head = aimAt()
+		local dir, target, head, onSomething = aimAt()
 		if not dir then return end
+		local origin = head.Position + dir * 1.2 + Vector3.new(0, -0.2, 0)
+		-- onto the arc that lands it where the reticle is
+		if onSomething and (target - head.Position).Magnitude > 3 then dir, origin = Ballistics.launch(head.Position, target, speed, g) end
 		shotN += 1
-		remote:FireServer("Loose", dir, shotN)
-		ArrowFlight.fly(player.UserId .. ":" .. shotN, head.Position + dir * 1.2 + Vector3.new(0, -0.2, 0), dir * speed, g, cfg.KIND, true, Tool:GetAttribute("ArrowFx"))
+		remote:FireServer("Loose", dir, shotN, onSomething and target or nil)
+		ArrowFlight.fly(player.UserId .. ":" .. shotN, origin, dir * speed, g, cfg.KIND, true, Tool:GetAttribute("ArrowFx"))
 		lastShotAt = now
 	end
 	local function letDown()

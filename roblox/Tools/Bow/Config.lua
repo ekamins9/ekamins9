@@ -10,10 +10,10 @@ return {
 
 	DRAW_TIME   = 1.6,    -- seconds to full draw (let go before 40% of it: the string's let down)
 	NOCK_TIME   = 1.5,    -- after a shot: the next arrow out of the quiver and onto the string
-	SPEED_MIN   = 55,     -- studs/s: a snap shot…
-	SPEED_MAX   = 147,    -- …a full draw (range goes with speed²: ×1.22 speed = ×1.5 range)
+	SPEED_MIN   = 67,     -- studs/s: a snap shot…
+	SPEED_MAX   = 180,    -- …a full draw (range goes with speed²: ×1.22 speed = ×1.5 range; ~800 studs lobbed)
 	GRAVITY     = 40,
-	MAX_FLIGHT  = 6,      -- seconds an arrow may fly (a long lob takes ~5)
+	MAX_FLIGHT  = 9,      -- seconds an arrow may fly (the longest lob takes ~7)
 	DAMAGE      = 30,     -- a body hit at full draw (head ×2: 60, never a one-shot)
 	HEAD_MULT   = 2.0,
 	ARMOR_PEN   = 0.05,

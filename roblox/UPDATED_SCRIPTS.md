@@ -1,4 +1,23 @@
-# Updated scripts: the newcomer's intro, no starting kill effect, the vote's cursor for good
+# Updated scripts: arrows land where you aim, and the bow shoots 1.5x farther
+
+- **Arrows land on the point under the reticle**, near or far: they're loosed on the arc that carries them there at their speed.
+  - The client sends the point; the server solves with the speed it timed itself, so the real arrow and the one you see agree.
+  - Tested through the real server: shots at 73, 157, 305 and 504 studs all hit their target.
+  - Out of reach, a shot lobs at the angle that carries furthest. Aimed at the open sky, it flies along your look.
+  - The crossbow lands under its reticle too.
+- **The longbow shoots 1.5x farther**: a full draw is 180 studs/s (was 147), about 800 studs at the longest lob. Arrows may fly 9 s.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Ballistics.lua](ReplicatedStorage/Ballistics.lua) | ReplicatedStorage ▸ Ballistics | ModuleScript | **new**: the arc that lands an arrow on its aim |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat ▸ RangedClient | ModuleScript | sends the aimed point; your arrow flies the arc |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | solves the arc at the server's speed |
+| [Bow/Config.lua](Tools/Bow/Config.lua) | the Bow Tool ▸ Config | ModuleScript | 67–180 studs/s, 9 s flights |
+| [ArrowFlight.lua](ReplicatedStorage/ArrowFlight.lua) | ReplicatedStorage ▸ ArrowFlight | ModuleScript | a lost arrow lasts 10 s |
+
+---
+
+## Before that: the newcomer's intro, no starting kill effect, the vote's cursor for good
 
 - **The game has a name: Steel & Glory** (`GameConfig.GAME_NAME`).
 - **The welcome** (new `Intro`):

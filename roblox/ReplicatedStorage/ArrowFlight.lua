@@ -98,7 +98,7 @@ function ArrowFlight.fly(id, origin, velocity, gravity, kind, mine, fx)
 	live[id] = e
 	place(e)
 	-- (a lost arrow: gone after a while whatever happens; longer than the longest flight)
-	task.delay(7, function() if live[id] == e then ArrowFlight.stop(id) end end)
+	task.delay(10, function() if live[id] == e then ArrowFlight.stop(id) end end)
 end
 
 function ArrowFlight.stop(id, at)
