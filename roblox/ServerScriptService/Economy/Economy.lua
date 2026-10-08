@@ -98,8 +98,8 @@ end
 function Economy.spend(plr, marks, crowns)
 	local p = Profile.get(plr)
 	marks, crowns = marks or 0, crowns or 0
-	if p.wallet.marks < marks then return false, "not enough Marks" end
-	if p.wallet.crowns < crowns then return false, "not enough Crowns" end
+	if p.wallet.marks < marks then return false, string.format("not enough Marks (you need %d, you have %d)", marks, p.wallet.marks) end
+	if p.wallet.crowns < crowns then return false, string.format("not enough Crowns (you need %d, you have %d)", crowns, p.wallet.crowns) end
 	p.wallet.marks -= marks; p.wallet.crowns -= crowns
 	Profile.markDirty(plr)
 	return true
@@ -174,8 +174,8 @@ function Economy.buy(plr, kind, id, currency)
 		if not Catalog.skinOnSale(id) then return false, Catalog.soldOut(sk) and "sold out: every one has been made" or "not in today's shop" end
 		local m, c = price(sk.marks, sk.crowns, currency); if not m then return false, c end
 		local p = Profile.get(plr)
-		if p.wallet.marks < m then return false, "not enough Marks" end
-		if p.wallet.crowns < c then return false, "not enough Crowns" end
+		if p.wallet.marks < m then return false, string.format("not enough Marks (you need %d, you have %d)", m, p.wallet.marks) end
+		if p.wallet.crowns < c then return false, string.format("not enough Crowns (you need %d, you have %d)", c, p.wallet.crowns) end
 		-- a numbered one takes its number first (a limited one may just have sold out)
 		local it, why = collection().grantNumbered(plr, id, "the shop")
 		if not it then return false, why or "sold out" end
@@ -254,15 +254,20 @@ function Economy.openCrate(plr, crateId, free, payWith)
 		local it = collection().grantNumbered(plr, win.id, from, variant)
 		serial = it and it.n
 		copies = Profile.copyCount(p, win.id)
-	elseif dup then
-		refund = (crate.refund or {})[win.rarity] or 0; p.wallet.marks += refund
-	else Profile.grant(plr, ownKind, win.id) end
+	else
+		-- a kill effect or an emote too: kept as a copy of its own, never paid back
+		-- (a Mythic one numbered); trade the spare, or scrap it if you choose
+		local key = (win.kind == "killfx" and "fx:" or "emote:") .. win.id
+		if win.rarity == "Mythic" then serial = collection().serial(key) end
+		Profile.addCopy(plr, key, {n = serial, from = from, bound = not collection().tradable(key)})
+		copies = Profile.copyCount(p, key)
+	end
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
 	log(plr.Name, "opened", crateId, "->", win.kind, win.id, win.rarity, dup and ("dup +" .. refund) or "")
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
 		or ((win.kind == "killfx" and "Kill effect · " or "Emote · ") .. win.name)
-	return {kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
+	return {crate = crateId, kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
 		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
 		copies = copies}
 end
@@ -281,9 +286,23 @@ function Economy.grantReward(plr, r)
 	if r.crowns then p.wallet.crowns += r.crowns; table.insert(bits, string.format("+%d Crowns", r.crowns)) end
 	if r.keys then p.wallet.keys = (p.wallet.keys or 0) + r.keys; table.insert(bits, string.format("+%d Key%s", r.keys, r.keys > 1 and "s" or "")) end
 	if r.skin and Catalog.SKIN[r.skin] then
-		Profile.grant(plr, "skins", r.skin)
 		local s = Catalog.SKIN[r.skin]
-		table.insert(bits, (Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. " · " .. s.name .. " skin")
+		local wname = (Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. " · " .. s.name
+		if collection().wantsSerial(s) then
+			-- a numbered one (a Mythic, a Unique: one of one) is a copy of its own
+			local it, why = collection().grantNumbered(plr, r.skin, r.from or "a reward")
+			if it then table.insert(bits, wname .. (s.unique and " (UNIQUE: the only one)" or (it.n and (" #" .. it.n) or "")))
+			elseif r.from then
+				-- (a reward of a Unique someone already has: Marks instead)
+				p.wallet.marks += 20000
+				table.insert(bits, "+20000 Marks (" .. tostring(why) .. ")")
+			else
+				table.insert(bits, "not given: " .. tostring(why))
+			end
+		else
+			Profile.grant(plr, "skins", r.skin)
+			table.insert(bits, wname .. " skin")
+		end
 	end
 	if r.title then Profile.grant(plr, "titles", r.title); table.insert(bits, "the title " .. r.title) end
 	if r.piece and Catalog.PIECE[r.piece] then Profile.grant(plr, "pieces", r.piece); table.insert(bits, Catalog.PIECE[r.piece].name) end
@@ -305,7 +324,7 @@ function Economy.grantReward(plr, r)
 	end
 	if r.crate then
 		crateResult = Economy.openCrate(plr, r.crate, r.paid and "paid" or true)
-		if crateResult then table.insert(bits, crateResult.name .. (crateResult.dup and string.format(" (dup, +%d Marks)", crateResult.refund) or "")) end
+		if crateResult then table.insert(bits, crateResult.name .. (crateResult.dup and " (another copy)" or "")) end
 	end
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)

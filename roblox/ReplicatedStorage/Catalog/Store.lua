@@ -10,8 +10,11 @@
        always     pack keys that are on sale every day regardless of the window
        epoch      the UTC day the rotation counts from (any date; shifts the window)
      WEAPONS — the second shelf: single weapon skins on sale today.
-       skinSlots    how many skin offers a day (the first is a big Epic /
-                    Legendary headliner when there is one)
+       skinSlots    how many skin offers a day (the first is the headliner)
+       epicChance / legendaryChance   the chance a day's headliner is an Epic / a
+                    Legendary (otherwise a Rare). The rest are Rares and Commons:
+                    Legendaries mostly come out of crates; Mythics and Uniques never
+                    come here at all
        skinPins     a lineup for a UTC date ("YYYY-MM-DD" = {"Longsword:Duelist", …})
        skinRetired  skin ids that never come back
      The pool is every priced skin with no crate, pack or unlock (Catalog ▸
@@ -34,6 +37,8 @@ return {
 	always = {},
 
 	skinSlots = 4,
+	epicChance = 0.5,
+	legendaryChance = 0.12,
 	skinPins = {
 		-- ["2026-10-31"] = {"Zweihander:Nightfall", "Spear:Thornguard", "Mace:Hunter", "Rapier:Duelist"},
 	},

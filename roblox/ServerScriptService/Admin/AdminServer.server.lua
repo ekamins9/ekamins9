@@ -15,6 +15,8 @@
            bots {skill, count}              clearbots {}
            currency {userId, kind = "marks"|"crowns", amount (negative takes)}
            item {userId, kind, id, take}    unlockall {userId}       level {userId, level}
+                                            (a Unique skin: given as THE one copy, #1 of 1;
+                                            refused if somebody already has it)
            reset {userId}                   setrole {userId, name, role ("" takes it away)}
            shutdown {reason}
        AdminEvent (RemoteEvent)  server → client: "Announce", text, byName, roleName
@@ -131,7 +133,8 @@ end
 local function everything(plr)
 	local n = 0
 	for _, pc in ipairs(Catalog.PIECES) do Profile.grant(plr, "pieces", pc.id); n += 1 end
-	for _, s in ipairs(Catalog.SKINS) do Profile.grant(plr, "skins", s.id); n += 1 end
+	-- (never a Unique: one of one, they're given one at a time with "item")
+	for _, s in ipairs(Catalog.SKINS) do if not s.unique then Profile.grant(plr, "skins", s.id); n += 1 end end
 	for _, w in ipairs(Catalog.WEAPONS) do Profile.grant(plr, "weapons", w.id); n += 1 end
 	for _, f in ipairs(Catalog.KILLFX) do Profile.grant(plr, "killfx", f.id); n += 1 end
 	for _, e in ipairs(Catalog.EMOTES) do Profile.grant(plr, "emotes", e.id); n += 1 end

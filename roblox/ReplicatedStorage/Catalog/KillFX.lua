@@ -34,4 +34,7 @@ return {
 	{id = "SerpentsMaw",   name = "Serpent's Maw",     rarity = "Legendary", crate = "Grim", description = "A great serpent bursts from the ground, swallows them whole, and spits out the bones.", remains = "bones", remainsAt = 3.1},
 	{id = "HeavensHand",   name = "Hand of the Heavens", rarity = "Legendary", crate = "Grim", description = "The clouds part and a giant hand comes down. Flat.", remains = "flat", remainsAt = 1.8},
 	{id = "BlackHole",     name = "Black Hole",        rarity = "Legendary", crate = "Grim", description = "A point of nothing opens at the chest. Everything goes in.", remains = "rift", remainsAt = 2.3},
+	-- THE MYTHICS: one in each of the two effect crates, the rarest pull in it
+	{id = "ReapersToll",   name = "Reaper's Toll",     rarity = "Mythic",    crate = "Grim",  description = "The ground goes dark. A great spectral scythe comes down through them, and their soul rises out of what's left.", remains = "grave", remainsAt = 1.8},
+	{id = "Supernova",     name = "Supernova",         rarity = "Mythic",    crate = "Relic", description = "They collapse into a star. The star bursts: a shockwave, a shower of stars, a pillar of light.", remains = "light", remainsAt = 1.5}
 }

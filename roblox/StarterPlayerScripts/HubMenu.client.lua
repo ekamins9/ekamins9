@@ -80,7 +80,11 @@ local function call(op, ...)
 	lastCallAt = os.clock()
 	local ok, res = pcall(hubRemote.InvokeServer, hubRemote, op, ...)
 	callBusy = false
-	if ok and type(res) == "table" then return res end
+	if ok and type(res) == "table" then
+		-- short of Crowns or Marks: the way to get more, right there (HX.shortOf)
+		if res.ok == false and type(res.msg) == "string" and res.msg:find("^not enough") and _G.HubShortOf then task.defer(_G.HubShortOf, res.msg) end
+		return res
+	end
 	return {ok = false, msg = ok and "no answer" or tostring(res)}
 end
 
@@ -115,8 +119,8 @@ local function weightLine(weight)
 	return string.format("+%d health  ·  %d%% protection on covered limbs  ·  %d%% speed, %d%% sprint  ·  %d stamina, %d%% regen  ·  dodges cost %d%%, reach %d%%",
 		w.health or 0, pct(w.prot or 0), pct(w.speed), pct((w.sprint or 1.45) / 1.45), math.floor(100 * (w.stamina or 1) + 0.5), pct(w.regen), pct(w.dodgeCost), pct(w.dodgeReach))
 end
-local RARITY_COL  = {Mythic = Color3.fromRGB(255, 52, 78), Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40)}
-local RARITY_ORDER = {Common = 1, Rare = 2, Epic = 3, Legendary = 4, Mythic = 5}
+local RARITY_COL  = {Unique = Color3.fromRGB(255, 236, 190), Mythic = Color3.fromRGB(255, 52, 78), Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40)}
+local RARITY_ORDER = {Common = 1, Rare = 2, Epic = 3, Legendary = 4, Mythic = 5, Unique = 6}
 
 local orderN = 0
 local function nextOrder() orderN += 1; return orderN end
@@ -927,6 +931,8 @@ local function owns(kind, id)
 	end
 	if kind == "skins" and #HX.copies(id) > 0 then return true end
 	if kind == "companions" and #HX.copies("pet:" .. tostring(id)) > 0 then return true end
+	if kind == "killfx" and #HX.copies("fx:" .. tostring(id)) > 0 then return true end
+	if kind == "emotes" and #HX.copies("emote:" .. tostring(id)) > 0 then return true end
 	return p ~= nil and p.owned ~= nil and p.owned[kind] ~= nil and p.owned[kind][id] == true
 end
 local function unlockText(w) return Catalog.unlockText(w.unlock) end
@@ -1853,6 +1859,7 @@ local function skinWhere(s)
 	local src = Catalog.skinSource(s)
 	local status, note = HX.Drops.skinStatus(s)
 	if status == "relic" then return "RELIC  ·  " .. note .. ": it never comes back", "relic" end
+	if src == "unique" then return "UNIQUE  ·  ONE OF ONE  ·  " .. string.upper(s.who or "a season champion's"), "relic" end
 	if src == "founder" then return "FOUNDERS  ·  free to everyone who plays before the Founders' window closes", "claim" end
 	if src == "claim" then return "a free gift " .. ((HX.Drops.claim(s.claim) or {}).note or "on its day") .. "  ·  " .. note, "claim" end
 	if s.limited then
@@ -1902,7 +1909,63 @@ function Preview.where(it, ownKind)
 	return "", "owned"
 end
 
+-- SHORT OF CROWNS OR MARKS: a pop-up that gets you more right there. Crowns: the
+-- bundles (one click buys); Marks: the Crowns › Marks exchange, and where Marks come from
+function HX.shortOf(msg)
+	if type(msg) ~= "string" or not msg:find("^not enough") then return false end
+	if os.clock() - (HX.shortAt or 0) < 0.6 then return true end   -- (one pop-up per refusal)
+	HX.shortAt = os.clock()
+	local need, have = tonumber(msg:match("need (%d+)")), tonumber(msg:match("have (%d+)"))
+	local short = (need and have) and math.max(need - have, 0) or nil
+	if msg:find("Crowns") then
+		local buttons, best = {}, nil
+		for i, pr in ipairs(ECON.products or {}) do
+			if short and pr.crowns >= short and not best then best = i end
+		end
+		for i, pr in ipairs(ECON.products or {}) do
+			table.insert(buttons, {string.format("%s%s CROWNS  ·  R$ %s", i == best and "★ " or "", fmt(pr.crowns), fmt(pr.robux)), i == best and COL.GREEN or COL.GOLD, function()
+				closeModal()
+				local res = call("BuyCrowns", i)
+				toast(res.msg or "", res.ok and COL.GOOD or COL.BAD)
+			end})
+		end
+		modal("NOT ENOUGH CROWNS", short and string.format("You need %s more Crowns. Get a bundle now: they land in your wallet the moment you buy.", fmt(short))
+			or "Get a bundle now: Crowns land in your wallet the moment you buy.", buttons)
+	else
+		local buttons = {}
+		local crowns = state.profile and state.profile.wallet and state.profile.wallet.crowns or 0
+		for i, e in ipairs(ECON.exchange or {}) do
+			if not short or e.marks >= short or i == #(ECON.exchange or {}) then
+				table.insert(buttons, {string.format("%s MARKS FOR %s CROWNS", fmt(e.marks), fmt(e.crowns)), crowns >= e.crowns and COL.GOLD or COL.GLASS2, function()
+					closeModal()
+					local res = call("Exchange", i)
+					toast(res.msg or "", res.ok and COL.GOOD or COL.BAD)
+					if res.profile then state.profile = res.profile; refreshWallet() end
+				end})
+				if #buttons >= 2 then break end
+			end
+		end
+		table.insert(buttons, {"FIND A BATTLE  ·  EARN MARKS", COL.GREEN, function() closeModal(); selectTab("MODES") end})
+		modal("NOT ENOUGH MARKS", (short and string.format("You need %s more Marks. ", fmt(short)) or "")
+			.. "Every battle pays Marks (more for a win), and so do tasks. Or trade Crowns for Marks:", buttons)
+	end
+	return true
+end
+_G.HubShortOf = function(msg) return HX.shortOf(msg) end
+
+-- a crate opened somewhere else (the pass, a daily or a playtime gift): its spin
+-- plays on the crate screen, the same as a crate you open there
+function HX.spinCrate(res)
+	if type(res) ~= "table" or not (res.crate and Catalog.CRATES[res.crate]) then return false end
+	HX.pendingSpin = res
+	ui.shopTab, ui.crate, ui.crateItem = "crates", res.crate, nil
+	show("SHOP")
+	return true
+end
+_G.HubCrateSpin = function(res) return HX.spinCrate(res) end
+
 local function afterBuy(r, rerenderFn)
+	if not r.ok and HX.shortOf(r.msg) then return end
 	toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 	if r.profile then state.profile = r.profile; refreshWallet() end
 	closeModal()
@@ -2081,6 +2144,7 @@ do
 					local r = call("GiftClaim", nextI)
 					toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 					if r.profile then state.profile = r.profile; refreshWallet() end
+					if r.ok and r.crate then HX.spinCrate(r.crate) end
 					if r.ok and r.gifts then
 						local list = {}
 						for k in pairs(r.gifts.claimed or {}) do table.insert(list, k) end
@@ -4049,6 +4113,10 @@ do
 		end)
 		local liveOf = {}
 		for _, lc in ipairs(liveCrates) do liveOf[lc.id] = lc end
+		-- (a crate opened elsewhere, out of rotation now: shown for its spin)
+		if not liveOf[ui.crate] and HX.pendingSpin and HX.pendingSpin.crate == ui.crate and Catalog.CRATES[ui.crate] then
+			liveOf[ui.crate] = {id = ui.crate, c = Catalog.CRATES[ui.crate]}
+		end
 		if not liveOf[ui.crate] then ui.crate = liveCrates[1] and liveCrates[1].id; ui.crateItem = nil end
 		local crate = Catalog.CRATES[ui.crate]
 		if not crate then dim(left, "No crates in rotation right now."); return end
@@ -4132,9 +4200,7 @@ do
 		local V = ECON.variants or {}
 		dim(c1, string.format("Every skin also rolls a finish: Masterwork %s · Radiant %s (otherwise Standard). Within a rarity every item is equally likely.", HX.pct(V.Masterwork or 0), HX.pct(V.Radiant or 0)), 12)
 		dim(c1, string.format("A Legendary or better is guaranteed within %d opens  ·  %d since your last.", crate.pity or 20, since), 12)
-		local rf = {}
-		for _, r in ipairs(Catalog.RARITIES) do if crate.refund and crate.refund[r] then table.insert(rf, string.lower(r) .. " " .. fmt(crate.refund[r])) end end
-		dim(c1, "Duplicates pay Marks back (" .. table.concat(rf, " · ") .. ") and count toward forging the skin a better finish.", 12)
+		dim(c1, "Every pull is yours to keep: a duplicate is another copy, to trade, to forge (three skins into a better finish) or to scrap for Marks if you choose.", 12)
 		-- open with a Key (earned only) or Crowns (not where paid random items are barred)
 		local keys = P.wallet and P.wallet.keys or 0
 		local need = crate.keys or 1
@@ -4148,15 +4214,9 @@ do
 			dim(c1, "In your region crates open with Keys only. Keys are earned: a Key every level-up, one for your first win each day, more from tasks and events.", 12)
 		end
 		local rollNote = dim(c1, ui.rolling and "rolling…" or "")
-		local function open(payWith, btn)
-			if ui.rolling or #pool == 0 then return end
+		local function spin(res)
 			ui.rolling = true
-			btn.Active = false
 			rollNote.Text = "rolling…"
-			local r = call("OpenCrate", ui.crate, payWith)
-			if not r.ok then ui.rolling = false; btn.Active = true; toast(r.msg or "", COL.BAD); rollNote.Text = r.msg or ""; return end
-			if r.profile then state.profile = r.profile; refreshWallet() end
-			local res = r.result
 			-- the strip spins: flick through the pool fast, slow down, stop on the win
 			local wonIndex = 1
 			for i, it in ipairs(pool) do if it.kind == (res.kind or "skin") and it.id == (res.itemId or res.skinId) then wonIndex = i end end
@@ -4185,8 +4245,7 @@ do
 			local won = res.skinId and Catalog.SKIN[res.skinId]
 			local line = kind == "skin" and "New skin! Equip it from the ARMORY or your LOADOUT." or (kind == "killfx" and "New kill effect! Equip it in the ARMORY." or "New emote! Put it on your wheel in the ARMORY.")
 			if res.variant then line = string.upper(res.variant) .. " FINISH!  " .. line end
-			local dupLine = res.copies and string.format("Another copy: you have %d. Trade it, scrap it, or forge three into a better finish.", res.copies)
-				or string.format("Duplicate — %s Marks back.", fmt(res.refund))
+			local dupLine = string.format("Another copy: you have %d. Trade it, scrap it%s.", res.copies or 2, kind == "skin" and ", or forge three into a better finish" or "")
 			if res.dup and res.variant then dupLine = string.upper(res.variant) .. " FINISH!  " .. dupLine end
 			modal(string.upper(res.rarity) .. "!  " .. res.name .. (res.serial and ("  #" .. fmt(res.serial)) or ""), res.dup and dupLine or line,
 				{{"EQUIP IT", COL.GREEN, function()
@@ -4205,11 +4264,31 @@ do
 				end, 560)
 			render.SHOP()
 		end
+		local function open(payWith, btn)
+			if ui.rolling or #pool == 0 then return end
+			ui.rolling = true
+			btn.Active = false
+			rollNote.Text = "rolling…"
+			local r = call("OpenCrate", ui.crate, payWith)
+			if not r.ok then
+				ui.rolling = false; btn.Active = true; rollNote.Text = r.msg or ""
+				if not HX.shortOf(r.msg) then toast(r.msg or "", COL.BAD) end
+				return
+			end
+			if r.profile then state.profile = r.profile; refreshWallet() end
+			spin(r.result)
+		end
 		openBtn.Activated:Connect(function() open("keys", openBtn) end)
 		if crownBtn then crownBtn.Activated:Connect(function() open("crowns", crownBtn) end) end
+		-- a crate opened somewhere else: its spin plays here
+		if HX.pendingSpin and HX.pendingSpin.crate == ui.crate and not ui.rolling then
+			local res = HX.pendingSpin
+			HX.pendingSpin = nil
+			task.spawn(spin, res)
+		end
 		local pl = panel(rightList, "YOUR PULLS THIS SESSION", true)
 		if #ui.pulls == 0 then dim(pl, "Nothing yet.") end
-		for i, pu in ipairs(ui.pulls) do if i <= 8 then row(pl, pu.name .. (pu.serial and (" #" .. pu.serial) or ""), pu.dup and ("dup +" .. fmt(pu.refund)) or ((pu.variant and (pu.variant .. " ") or "") .. pu.rarity), false, nil, HX.VARIANT_COL[pu.variant] or RARITY_COL[pu.rarity]) end end
+		for i, pu in ipairs(ui.pulls) do if i <= 8 then row(pl, pu.name .. (pu.serial and (" #" .. pu.serial) or ""), pu.dup and ("copy ×" .. tostring(pu.copies or 2)) or ((pu.variant and (pu.variant .. " ") or "") .. pu.rarity), false, nil, HX.VARIANT_COL[pu.variant] or RARITY_COL[pu.rarity]) end end
 	end
 
 	----------------------------------------------------------------
@@ -4714,14 +4793,9 @@ do
 		toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 		if r.pass then state.pass = r.pass end
 		if r.profile then state.profile = r.profile; refreshWallet() end
-		if r.crate and r.crate.skinId then
-			local won = Catalog.SKIN[r.crate.skinId]
-			modal(string.upper(r.crate.rarity) .. "!  " .. r.crate.name, r.crate.dup and string.format("Duplicate — %s Marks back.", fmt(r.crate.refund)) or "A free crate open from the pass.", nil, function(box)
-				local th = weaponStage(box, won and won.weapon or r.crate.weapon, r.crate.skinId, UDim2.new(1, 0, 0, 220)); th.LayoutOrder = 5
-				border(th, RARITY_COL[r.crate.rarity] or COL.DIM, 3, 0)
-			end, 520)
-		end
 		render.PASS(true)
+		-- a crate in it: the spin, on the crate screen
+		if r.crate then HX.spinCrate(r.crate) end
 	end
 
 	render.PASS = function(fresh)
@@ -5218,13 +5292,8 @@ local function loginPopup()
 			if r.login then state.login = r.login end
 			if r.profile then state.profile = r.profile; refreshWallet() end
 			closeModal()
-			if r.crate and r.crate.skinId then
-				local won = Catalog.SKIN[r.crate.skinId]
-				modal(string.upper(r.crate.rarity) .. "!  " .. r.crate.name, r.crate.dup and string.format("Duplicate — %s Marks back.", fmt(r.crate.refund)) or "Your free crate open.", nil, function(box)
-					local th = weaponStage(box, won and won.weapon or r.crate.weapon, r.crate.skinId, UDim2.new(1, 0, 0, 220)); th.LayoutOrder = 5
-				end, 520)
-			end
 			renderSide()
+			if r.crate then HX.spinCrate(r.crate) end
 		end}} or nil, function(box)
 			local row7 = clearFrame(box); row7.Size = UDim2.new(1, 0, 0, 178); row7.LayoutOrder = 5
 			local l = hlist(row7, 8); l.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -6110,10 +6179,12 @@ local pendingInvite = nil
 --------------------------------------------------------------------
 do
 	local f = tabFrame.TRADE
-	local POINTS = {Common = 1, Rare = 4, Epic = 12, Legendary = 35, Mythic = 150}
+	local POINTS = {Common = 1, Rare = 4, Epic = 12, Legendary = 35, Mythic = 150, Unique = 1000}
 	local VX = {Masterwork = 2, Radiant = 5, Golden = 2, Spectral = 5}
 	local function defOf(key)
 		if key:sub(1, 4) == "pet:" then return Catalog.COMPANION[key:sub(5)], true end
+		if key:sub(1, 3) == "fx:" then return Catalog.KILLFX_BY[key:sub(4)], "fx" end
+		if key:sub(1, 6) == "emote:" then return Catalog.EMOTE[key:sub(7)], "emote" end
 		return Catalog.SKIN[key], false
 	end
 	local function worth(c)
@@ -6127,7 +6198,14 @@ do
 		b.AutoButtonColor = false
 		border(b, d and RARITY_COL[d.rarity] or COL.DIM, 2, picked and 0 or 0.3)
 		if d then
-			local th = pet and Preview.companion(b, d.id, UDim2.new(1, -8, 0, 88), true) or weaponThumb(b, d.weapon, c.key, UDim2.new(1, -8, 0, 88), 1.5)
+			local th
+			if pet == "fx" or pet == "emote" then
+				-- a kill effect / an emote: its kind, big, in its rarity's colour
+				th = title(b, pet == "fx" and "KILL\nEFFECT" or "EMOTE", 20, RARITY_COL[d.rarity] or COL.DIM)
+				th.Size = UDim2.new(1, -8, 0, 88); th.TextXAlignment = Enum.TextXAlignment.Center; th.TextWrapped = true
+			else
+				th = pet and Preview.companion(b, d.id, UDim2.new(1, -8, 0, 88), true) or weaponThumb(b, d.weapon, c.key, UDim2.new(1, -8, 0, 88), 1.5)
+			end
 			th.Position = UDim2.fromOffset(4, 4); th.BackgroundTransparency = 1
 			local nm = title(b, d.name, 12); nm.Position = UDim2.fromOffset(6, 94); nm.Size = UDim2.new(1, -12, 0, 14); nm.TextTruncate = Enum.TextTruncate.AtEnd
 			local sub = (c.v and (string.upper(c.v) .. " ") or "") .. (c.n and ("#" .. c.n) or string.upper(d.rarity))
@@ -6187,7 +6265,7 @@ do
 			if n == 0 then dim(inv, "None right now.", 13) end
 			local rules = panel(rl, "HOW TRADING WORKS")
 			dim(rules, string.format("Both of you put up what you want to swap (up to %d each), both press READY, wait %s, then both CONFIRM. Any change un-readies both of you, so nothing can be swapped out at the last second.", can.max or 8, "5 seconds"), 13)
-			dim(rules, "Crate and shop skins and hatched companions trade, with their number, finish and story. Founder gifts, free gifts, the pass and earned skins stay with whoever got them. Marks and Crowns never trade.", 13)
+			dim(rules, "Crate and shop skins, Uniques, kill effects and emotes out of crates, and hatched companions trade, with their number, finish and story. Founder gifts, free gifts, the pass and earned skins stay with whoever got them. Marks and Crowns never trade.", 13)
 			dim(rules, "Trading opens at level " .. tostring(can.minLevel or 5) .. ". Nobody from staff will ever ask you to trade.", 13)
 			return
 		end
@@ -6237,7 +6315,7 @@ do
 			end, offered[c.u])
 			cb.LayoutOrder = i
 		end
-		if #mine == 0 then dim(pg, "Nothing tradable yet: crate skins and hatched companions can be traded.", 13) end
+		if #mine == 0 then dim(pg, "Nothing tradable yet: crate and shop skins, kill effects and emotes out of crates, and hatched companions can be traded.", 13) end
 		-- ready / confirm / cancel
 		local acts = clearFrame(f); acts.AnchorPoint = Vector2.new(1, 0); acts.Position = UDim2.new(1, 0, 0, 310); acts.Size = UDim2.new(0, 320, 1, -310)
 		local al = scroll(acts, 10)

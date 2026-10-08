@@ -3,7 +3,9 @@
      scripts/skins_handmade.part, the rest come from TINTS, SHOP_STYLES and TASK_SKINS.
      Every weapon gets a free "Default" skin automatically, so only extras are listed.
        weapon   the weapon id       name    unique within the weapon
-       rarity   Common | Rare | Epic | Legendary | Mythic
+       rarity   Common | Rare | Epic | Legendary | Mythic | Unique
+                (Mythic: crates only, every crate has one, the lowest odds, numbered.
+                Unique: one of one, ever; never in a crate or the shop)
      WHERE A SKIN COMES FROM (never bought at will):
        crate    "Bladesmith" / "Hafted" / "Royal": rolled from that crate
        crate = "earned", kills = n        n kills with the weapon unlock it
@@ -15,16 +17,19 @@
        limited = n                        only n are ever made, each numbered (#1..n)
        claim = "<id>"                     a free gift while that Calendar claim is open (numbered)
        founder = true                     given to everyone who plays before Calendar.founders ends
+       unique = true, who = "..."         one of one: a season champion's reward (Catalog ▸
+                                          Economy ▸ seasonRewards) or a staff gift (admin panel)
      LOOKS:
        blade / grip   tints for parts with attribute SkinPart = "Blade" / "Grip"
        trim     the shape change (ReplicatedStorage ▸ SkinTrims): wrap rivets rings fuller
                 studs notch laurel feather spikes flame frost runes royal crown halo
-                bone serpent wave thunder. Bows and crossbows have their own set, fitted to
+                bone serpent wave thunder (trim2: a second one on top, the Mythics' and
+                Uniques'). Bows and crossbows have their own set, fitted to
                 their limbs / prod: bands fletch horn thorn crystal wing ember frost runic
                 skull gilded storm venom blood void dragon halo
        accent / glow  the trim's metal and its Neon (defaults by rarity)
        fx       an aura (ReplicatedStorage ▸ SkinFX): embers frost holy shadow storm toxic
-                petals gold blood.
+                petals gold blood; the Mythics' own: celestial inferno sovereign phoenix.
        arrow    (bows, crossbows) what its arrows wear in flight and burst with where they
                 land (ReplicatedStorage ▸ ArrowFX): fire frost shadow holy storm toxic gold blood void
                 spirit. Epic and Legendary skins also leave a swing trail
@@ -327,6 +332,18 @@ return {
 	{weapon = "Halberd", name = "Warden's Vow", rarity = "Legendary", unlock = {stat = "contract", n = 45}, blade = Color3.fromRGB(236, 240, 250), grip = Color3.fromRGB(40, 60, 150), trim = "halo", glow = Color3.fromRGB(170, 210, 255), fx = "holy", look = "wardensvow"},
 	{weapon = "Zweihander", name = "Dawnbringer", rarity = "Legendary", unlock = {stat = "contract", n = 60}, blade = Color3.fromRGB(255, 240, 200), grip = Color3.fromRGB(230, 230, 236), trim = "flame", glow = Color3.fromRGB(255, 236, 170), fx = "embers", look = "dawnbringer"},
 	{weapon = "Maul", name = "Last Bastion", rarity = "Legendary", unlock = {stat = "contract", n = 80}, blade = Color3.fromRGB(225, 228, 236), grip = Color3.fromRGB(36, 50, 120), trim = "crown", glow = Color3.fromRGB(60, 120, 255), fx = "storm", look = "lastbastion"},
+	-- GENERATED: the Mythics, one in each crate that had none (numbered)
+	{weapon = "Longsword", name = "Starforged", rarity = "Mythic", crate = "Bladesmith", blade = Color3.fromRGB(34, 38, 74), grip = Color3.fromRGB(20, 20, 34), trim = "runes", trim2 = "halo", glow = Color3.fromRGB(150, 170, 255), fx = "celestial"},
+	{weapon = "Maul", name = "Worldbreaker", rarity = "Mythic", crate = "Hafted", blade = Color3.fromRGB(36, 30, 30), grip = Color3.fromRGB(26, 18, 16), trim = "thunder", trim2 = "spikes", glow = Color3.fromRGB(255, 110, 30), fx = "inferno"},
+	{weapon = "Zweihander", name = "The Sovereign", rarity = "Mythic", crate = "Royal", blade = Color3.fromRGB(250, 244, 226), grip = Color3.fromRGB(220, 180, 80), trim = "crown", trim2 = "laurel", glow = Color3.fromRGB(255, 230, 150), fx = "sovereign"},
+	{weapon = "Bow", name = "Phoenix", rarity = "Mythic", crate = "Fletcher", blade = Color3.fromRGB(200, 60, 30), grip = Color3.fromRGB(255, 190, 60), trim = "ember", trim2 = "wing", glow = Color3.fromRGB(255, 150, 40), fx = "phoenix", arrow = "fire"},
+	-- GENERATED: the Uniques, one of one (season champions, staff gifts)
+	{weapon = "Greatsword", name = "Crown of the First Season", rarity = "Unique", unique = true, who = "the Season 1 Warfront champion", blade = Color3.fromRGB(255, 236, 170), grip = Color3.fromRGB(150, 20, 34), trim = "crown", trim2 = "halo", glow = Color3.fromRGB(255, 214, 110), fx = "sovereign"},
+	{weapon = "Longsword", name = "The Undefeated", rarity = "Unique", unique = true, who = "Season 1's best duellist (ranked 1v1)", blade = Color3.fromRGB(236, 240, 255), grip = Color3.fromRGB(30, 34, 60), trim = "laurel", trim2 = "runes", glow = Color3.fromRGB(170, 200, 255), fx = "celestial"},
+	{weapon = "Dagger", name = "Bloodmoon", rarity = "Unique", unique = true, who = "Season 1's best pair (ranked 2v2)", blade = Color3.fromRGB(150, 16, 30), grip = Color3.fromRGB(24, 10, 12), trim = "serpent", trim2 = "spikes", glow = Color3.fromRGB(255, 40, 60), fx = "blood"},
+	{weapon = "Halberd", name = "Stormbringer", rarity = "Unique", unique = true, who = "Season 1's best trio (ranked 3v3)", blade = Color3.fromRGB(60, 80, 120), grip = Color3.fromRGB(20, 24, 34), trim = "thunder", trim2 = "royal", glow = Color3.fromRGB(150, 210, 255), fx = "storm"},
+	{weapon = "Zweihander", name = "Kingslayer", rarity = "Unique", unique = true, who = "given by staff", blade = Color3.fromRGB(24, 22, 26), grip = Color3.fromRGB(200, 150, 50), trim = "crown", trim2 = "flame", glow = Color3.fromRGB(255, 120, 30), fx = "inferno"},
+	{weapon = "Bow", name = "Aetherwind", rarity = "Unique", unique = true, who = "given by staff", blade = Color3.fromRGB(230, 240, 255), grip = Color3.fromRGB(120, 160, 255), trim = "wing", trim2 = "halo", glow = Color3.fromRGB(170, 220, 255), fx = "celestial", arrow = "spirit"},
 	-- GENERATED: the weekly drops (Catalog > Calendar); hidden until their drop goes live
 	{weapon = "Longsword", name = "Founder's Oath", rarity = "Mythic", founder = true, drop = "Founders", look = "founders", fx = "holy"},
 	{weapon = "Shortsword", name = "Gravedigger", rarity = "Common", crate = "Ossuary", drop = "Bonewright", look = "gravedigger"},

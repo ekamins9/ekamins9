@@ -207,6 +207,9 @@ function Profile.has(plr, kind, id)
 	if kind == "skins" then local s = Catalog.SKIN[id]; if s and s.unlock and Catalog.unlocked(s.unlock, p) then return true end end
 	if kind == "killfx" then local f = Catalog.KILLFX_BY[id]; if f and (f.free or (f.unlock and Catalog.unlocked(f.unlock, p))) then return true end end
 	if kind == "emotes" then local e = Catalog.EMOTE[id]; if e and (e.free or (e.unlock and Catalog.unlocked(e.unlock, p))) then return true end end
+	-- (out of a crate: a copy of its own, "fx:" / "emote:", tradable like a skin)
+	if kind == "killfx" and Profile.copyCount(p, "fx:" .. tostring(id)) > 0 then return true end
+	if kind == "emotes" and Profile.copyCount(p, "emote:" .. tostring(id)) > 0 then return true end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end

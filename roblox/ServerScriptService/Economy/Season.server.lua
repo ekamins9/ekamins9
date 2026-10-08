@@ -109,7 +109,14 @@ local function payBoards()
 					local line = lineFor(b.lines, rank)
 					local id = tonumber(it.key)
 					if line and id and (it.value or 0) > 0 then
-						grant(grants, id, b.board, rank, line.reward)
+						-- the champion: this season's Unique on top (one of one)
+						local reward = line.reward
+						local champ = rank == 1 and REWARDS.champions and REWARDS.champions[SEASON]
+						if champ and champ[b.board] then
+							reward = table.clone(reward)
+							reward.skin, reward.from = champ[b.board], SEASON .. " " .. b.board .. " champion"
+						end
+						grant(grants, id, b.board, rank, reward)
 						written += 1
 						task.wait(WRITE_GAP)
 						-- keep the lease while the job runs

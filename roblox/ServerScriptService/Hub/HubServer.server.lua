@@ -709,7 +709,7 @@ local function boardFor(plr, which)
 end
 
 -- a player's PROFILE (here or not): who they are, how they fight, what they wear and own
-local RARITY_RANK = {Mythic = 5, Legendary = 4, Epic = 3, Rare = 2, Common = 1}
+local RARITY_RANK = {Unique = 6, Mythic = 5, Legendary = 4, Epic = 3, Rare = 2, Common = 1}
 local function profileFor(plr, userId)
 	userId = tonumber(userId)
 	if not userId or userId <= 0 then return {ok = false, msg = "no such player"} end

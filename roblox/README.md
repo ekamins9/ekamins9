@@ -415,7 +415,9 @@ and a UIScale fits it to any screen.
   the shop) or EQUIP on a class of that weight. **KILL FX** plays each kill effect on you, over
   and over, with EQUIP. **EMOTES** loops each emote on you and edits the six-slot wheel.
 - **SHOP**: **DAILY** has the packs plus the **WEAPONS shelf** (single skins, a headliner and
-  three more, new every day; `Catalog ▸ Store`). **CRATES** has the chosen item on a big stage
+  three more, new every day; `Catalog ▸ Store`). Rare is rare there: mostly Commons and Rares, an
+  Epic headliner on about half the days, a Legendary on about one day in eight (Legendaries mostly
+  come out of crates), never a Mythic or a Unique, never an earned, pass or task skin. **CRATES** has the chosen item on a big stage
   (a skin turning on its weapon, a kill effect or emote played on you), the strip, odds, pity
   and the spinning drum. The **Relic Crate** holds kill effects and emotes; the **Grim Crate** only kill effects (a
   serpent from the ground, a hand from the sky, an anvil, a black hole and more). **CROWNS** has the Robux bundles and Crowns →
@@ -611,16 +613,25 @@ nothing with `drop = "<id>"` shows before then. Staff: F2 ▸ DROPS releases one
 one back (every server; remembered in DataStore `AdminDrops_v1`). Studio: `/clock 2026-10-31`,
 `/clock +3d`, `/clock reset`, `/drop now <id>`.
 
-**Rarity and scarcity.** Five tiers (Common, Rare, Epic, Legendary, **Mythic**), and the reasons
-something is rare are shown on it: VAULTED (its crate is out of rotation, may return), RELIC
+**Rarity and scarcity.** Six tiers: Common, Rare, Epic, Legendary, **Mythic** (crates only, the
+lowest odds in every crate (0.3–0.5%), numbered, two trims, an aura of its own and starry glints)
+and **Unique** (one of one, EVER: a serial with a limit of 1; never in a crate or the shop; the
+season's rank-1 champions get that season's Unique (`seasonRewards.champions`) and staff can give
+one (F2 ▸ item); it has everything a Mythic has and its colours walk through the rainbow; it
+trades, it can't be scrapped). The Mythics: Starforged (Bladesmith), Worldbreaker (Hafted), The
+Sovereign (Royal), Phoenix (Fletcher), and the kill effects Reaper's Toll (Grim) and Supernova
+(Relic). The Uniques: Crown of the First Season, The Undefeated, Bloodmoon, Stormbringer
+(Season 1's champions), Kingslayer and Aetherwind (staff). The reasons something is rare are
+shown on it: VAULTED (its crate is out of rotation, may return), RELIC
 (gone for good: event crates, past claims, the Founders' window), LIMITED (a fixed number made,
 e.g. the Frostgift: 2,026, with the stock live in the shop), a serial number (#12: every Mythic,
 limited, claim and Founder copy; counted globally in DataStore `Serials_v1`).
 
 **Copies.** Every skin out of a crate or the shop and every hatched companion is a COPY of its own
-(`Profile.copies`): its number, its finish, when and where it came from, how many times it has
-been traded. Duplicates are kept: trade them, **scrap** a spare for Marks, or **forge** three into
-one with the next finish. Finishes: Masterwork (5%, a gold glint), Radiant (1%, its glow, trail
+(`Profile.copies`), and so is every kill effect and emote out of a crate (`fx:` / `emote:` keys):
+its number, its finish, when and where it came from, how many times it has been traded.
+**Duplicates are never paid back**: they're kept, to trade, to **scrap** a spare for Marks if you
+choose, or (skins) to **forge** three into one with the next finish. Finishes: Masterwork (5%, a gold glint), Radiant (1%, its glow, trail
 and aura cycle through colours); companions Golden (4%) or Spectral (1%). Each skin counts its
 kills (shown on its card). Earned, pass, pack, claim and Founder items are BOUND (never traded).
 The **Armoury rating** (`Collection.rating`) adds it all up: rarity × finish × relic / limited /
@@ -630,7 +641,11 @@ low-number bonuses.
 always-there Bladesmith, Hafted and Relic). Open with **Keys** (earned only: a Key per level-up,
 one for the first win of the day, more from events) or Crowns. The odds (with the finish
 chances) are on screen before every open, and when the pity is due they say so (Legendary or
-better). **Roblox's paid-random-item rules:** where `PolicyService` restricts paid random items
+better; the pity is long, 20–40 opens, so a Legendary is a moment). A crate opened anywhere
+else (the pass, a daily or playtime gift) **spins on the crate screen** like any other
+(`HX.spinCrate`). **Short of Crowns or Marks** anywhere in the menu: a pop-up offers the Crown
+bundles (one click buys) or the Crowns › Marks exchange right there (`HX.shortOf`).
+**Roblox's paid-random-item rules:** where `PolicyService` restricts paid random items
 (`ArePaidRandomItemsRestricted`), Crowns don't open crates (Keys do), eggs aren't sold, early
 hatching is off, and crates or eggs inside a purchase (the premium pass) become Marks.
 

@@ -135,7 +135,7 @@ end
 
 local function rarityAccent(skin)
 	if skin.accent then return skin.accent end
-	if skin.rarity == "Legendary" or skin.rarity == "Epic" then return GOLD end
+	if skin.rarity == "Legendary" or skin.rarity == "Epic" or skin.rarity == "Mythic" or skin.rarity == "Unique" then return GOLD end
 	return STEEL
 end
 
@@ -775,18 +775,27 @@ function SkinTrims.apply(tool, skin)
 	local P = {blade = skin.blade or STEEL, grip = skin.grip or LEATHER, accent = rarityAccent(skin), glow = skin.glow}
 	local ok, specs, F
 	-- a bow or a crossbow: the ranged set, fitted to its limbs / prod
+	-- (trim2: a second trim on top: the Mythics' and the Uniques')
+	local names = {skin.trim, skin.trim2}
 	if skin.weapon == "Bow" or skin.weapon == "Crossbow" then
-		local builder = RT[skin.trim]
 		local handle = tool:FindFirstChild("Handle")
-		if not (builder and handle and handle:IsA("BasePart")) then return false end
+		if not (RT[skin.trim] and handle and handle:IsA("BasePart")) then return false end
 		F = {handle = handle}
-		ok, specs = pcall(builder, rangedGeom(skin.weapon == "Crossbow" and "crossbow" or "bow"), P)
+		local G = rangedGeom(skin.weapon == "Crossbow" and "crossbow" or "bow")
+		ok, specs = true, {}
+		for _, name in ipairs(names) do
+			local good, got = pcall(RT[name] or function() return {} end, G, P)
+			if good and type(got) == "table" then for _, x in ipairs(got) do table.insert(specs, x) end else ok, specs = false, got; break end
+		end
 	else
-		local builder = T[skin.trim]
-		if not builder then return false end
+		if not T[skin.trim] then return false end
 		F = SkinTrims.frame(tool)
 		if not F then return false end
-		ok, specs = pcall(builder, F, P)
+		ok, specs = true, {}
+		for _, name in ipairs(names) do
+			local good, got = pcall(T[name] or function() return {} end, F, P)
+			if good and type(got) == "table" then for _, x in ipairs(got) do table.insert(specs, x) end else ok, specs = false, got; break end
+		end
 	end
 	if not ok or type(specs) ~= "table" then warn("[SkinTrims]", skin.trim, specs); return false end
 	local folder = Instance.new("Folder")

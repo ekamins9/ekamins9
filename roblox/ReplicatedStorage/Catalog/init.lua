@@ -16,7 +16,7 @@
        Catalog.skinSource(skin)              "crate" | "earned" | "pack" | "shop" | "founder" | "claim" | "free"
        Catalog.skinOffers(day) / skinOnSale(id, day)   the store's daily WEAPONS section
        Catalog.released(item)                is it out yet? (its `drop`, Catalog ▸ Calendar)
-       Catalog.RARITY_RANK[rarity]           1 Common … 5 Mythic
+       Catalog.RARITY_RANK[rarity]           1 Common … 5 Mythic, 6 Unique (one of one)
        Catalog.limitedMade(skinId)           how many of a limited skin exist (server-published)
 
      SKINS ARE NEVER SOLD AT WILL: a skin comes out of a crate, is earned
@@ -63,8 +63,8 @@ Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot w
 	top    = {"TorsoClothing", "LeftArmClothing", "RightArmClothing"},
 	bottom = {"LeftLegClothing", "RightLegClothing"},
 }
-Catalog.RARITIES = {"Common", "Rare", "Epic", "Legendary", "Mythic"}
-Catalog.RARITY_RANK = {Common = 1, Rare = 2, Epic = 3, Legendary = 4, Mythic = 5}
+Catalog.RARITIES = {"Common", "Rare", "Epic", "Legendary", "Mythic", "Unique"}
+Catalog.RARITY_RANK = {Common = 1, Rare = 2, Epic = 3, Legendary = 4, Mythic = 5, Unique = 6}
 -- Catalog ▸ Calendar's drops gate what is out (ReplicatedStorage ▸ Drops)
 local Drops
 local function drops()
@@ -350,6 +350,7 @@ end
 --------------------------------------------------------------------
 function Catalog.skinSource(s)
 	if not s then return "free" end
+	if s.unique then return "unique" end   -- one of one: a season champion's, or a staff gift
 	if s.founder then return "founder" end
 	if s.claim then return "claim" end
 	if s.pass then return "pass" end
@@ -360,9 +361,12 @@ function Catalog.skinSource(s)
 	return "free"
 end
 
--- today's WEAPONS offers (skin ids; the first is the headliner, Epic or
--- better when the pool has one). Drawn by the date from the shop skins, one
--- per weapon, so everyone sees the same; Store.skinPins fixes a day.
+-- today's WEAPONS offers (skin ids; the first is the headliner). Drawn by the
+-- date from the shop skins, one per weapon, so everyone sees the same;
+-- Store.skinPins fixes a day. RARE IS RARE: mostly Commons and Rares; an Epic
+-- headlines on some days (Store.epicChance), a Legendary on a few
+-- (Store.legendaryChance: crates are where Legendaries come from), never two;
+-- a Mythic or a Unique never (crates and champions only).
 function Catalog.skinOffers(dateKey)
 	dateKey = dateKey or os.date("!%Y-%m-%d")
 	local S = Catalog.STORE or {}
@@ -383,7 +387,8 @@ function Catalog.skinOffers(dateKey)
 	for _, id in ipairs(out) do featured[id] = true end
 	local pool = {}
 	for _, s in ipairs(Catalog.SKINS) do
-		if Catalog.skinSource(s) == "shop" and not retired[s.id] and not s.limited and not featured[s.id] and Catalog.released(s) then table.insert(pool, s) end
+		if Catalog.skinSource(s) == "shop" and not retired[s.id] and not s.limited and not featured[s.id] and Catalog.released(s)
+			and (Catalog.RARITY_RANK[s.rarity] or 1) <= 4 then table.insert(pool, s) end
 	end
 	table.sort(pool, function(a, b) return a.id < b.id end)
 	local rng = Random.new(dayNumber(dateKey) * 7919 + 17)
@@ -392,15 +397,24 @@ function Catalog.skinOffers(dateKey)
 	-- one weapon and one style each, so the shelf is never four of a kind
 	local usedWeapon, usedName = {}, {}
 	local function take(s) table.insert(out, s.id); usedWeapon[s.weapon] = true; usedName[s.name] = true end
-	if #out == 0 then
+	local function first(rarity)
 		for _, s in ipairs(pool) do
-			if s.rarity == "Legendary" or s.rarity == "Epic" then take(s); break end
+			if s.rarity == rarity and not usedWeapon[s.weapon] and not usedName[s.name] then take(s); return true end
 		end
+		return false
 	end
+	-- the headliner: a Legendary on a lucky day, an Epic on some, else a Rare
+	if #out == 0 then
+		local roll = rng:NextNumber()
+		if roll < (S.legendaryChance or 0.12) then first("Legendary")
+		elseif roll < (S.legendaryChance or 0.12) + (S.epicChance or 0.5) then first("Epic") end
+	end
+	-- the rest: Rares and Commons (never another Legendary; an Epic only to fill an empty shelf)
 	for _, s in ipairs(pool) do
 		if #out >= slots then break end
-		if not usedWeapon[s.weapon] and not usedName[s.name] then take(s) end
+		if (s.rarity == "Rare" or s.rarity == "Common") and not usedWeapon[s.weapon] and not usedName[s.name] then take(s) end
 	end
+	while #out < slots and first("Epic") do end
 	return out
 end
 

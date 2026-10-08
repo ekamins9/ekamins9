@@ -1,4 +1,35 @@
-# Updated scripts: arrows land where you aim, and the bow shoots 1.5x farther
+# Updated scripts: rare is rare — the daily shop, Mythics in every crate, Uniques, duplicates kept
+
+- **The daily shop:** mostly Commons and Rares. An Epic headliner on about half the days, a Legendary on about one day in eight, never a Mythic or a Unique. Earned, pass and task skins never show there. Over 60 days: 109 Common, 91 Rare, 34 Epic, 6 Legendary.
+- **Mythic in every crate**, at the lowest odds (0.3–0.5%), numbered. Odds and pity were rebalanced so a Legendary is a moment. New Mythics:
+  - **Starforged** (Bladesmith): starlight aura.
+  - **Worldbreaker** (Hafted): inferno aura.
+  - **The Sovereign** (Royal): sovereign light.
+  - **Phoenix** (Fletcher): a bow with phoenix fire and fire arrows.
+  - Kill effects **Reaper's Toll** (Grim: a giant spectral scythe, souls rising) and **Supernova** (Relic: they collapse into a star that bursts).
+- **Unique** (one of one, ever): never in a crate or the shop.
+  - Season 1's rank-1 champions get **Crown of the First Season** (Warfront), **The Undefeated** (1v1), **Bloodmoon** (2v2) and **Stormbringer** (3v3).
+  - Staff can give **Kingslayer** and **Aetherwind** (F2 ▸ item).
+  - Two trims, an aura, and colours that walk through the rainbow. They trade; they can't be scrapped.
+- **Duplicates are kept, never paid back:** kill effects and emotes out of crates are copies now too, and they trade.
+- **Every crate spins:** a crate from the pass, a daily or a playtime gift opens on the crate screen with the drum and the reveal.
+- **Short of Crowns or Marks:** a pop-up offers the Crown bundles (one click) or the Crowns › Marks exchange right there.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Catalog/Store.lua](ReplicatedStorage/Catalog/Store.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Unique tier, the shelf's rarity rules |
+| [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog ▸ Crates | ModuleScript | Mythic odds everywhere, longer pity |
+| [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua), [scripts/gen_content.py](../scripts/gen_content.py) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | Mythics, Uniques, `trim2`; bows keep their own looks |
+| [Catalog/KillFX.lua](ReplicatedStorage/Catalog/KillFX.lua), [KillFX.lua](ReplicatedStorage/KillFX.lua) | ReplicatedStorage | ModuleScript | Reaper's Toll, Supernova |
+| [Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage ▸ Catalog ▸ Economy | ModuleScript | season champions' Uniques |
+| [SkinFX.lua](ReplicatedStorage/SkinFX.lua), [SkinTrims.lua](ReplicatedStorage/SkinTrims.lua), [UIFX.lua](ReplicatedStorage/UIFX.lua) | ReplicatedStorage | ModuleScript | Mythic auras and glints, Unique prism, two trims |
+| [Collection.lua](ServerScriptService/Economy/Collection.lua), [Economy.lua](ServerScriptService/Economy/Economy.lua), [Season.server.lua](ServerScriptService/Economy/Season.server.lua) | ServerScriptService ▸ Economy | ModuleScript · Script | one-of-one serials, fx/emote copies, no refunds, champion payouts, amounts in "not enough" |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua), [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua), [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService | ModuleScript · Script | copies count as owned; no Uniques in unlock-all |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `HX.spinCrate`, `HX.shortOf`, Unique colours, fx/emote trade cards |
+
+---
+
+## Before that: arrows land where you aim, and the bow shoots 1.5x farther
 
 - **Arrows land on the point under the reticle**, near or far: they're loosed on the arc that carries them there at their speed.
   - The client sends the point; the server solves with the speed it timed itself, so the real arrow and the one you see agree.

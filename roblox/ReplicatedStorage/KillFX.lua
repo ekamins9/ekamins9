@@ -1300,6 +1300,185 @@ FX.BlackHole = function(folder, origin, opts)
 	return D
 end
 
+--------------------------------------------------------------------
+--  THE MYTHICS (one in the Grim crate, one in the Relic crate)
+--------------------------------------------------------------------
+-- the ground goes dark, a great spectral scythe comes down through them, and
+-- their soul rises out of what's left (a grave stays: Corpses)
+FX.ReapersToll = function(folder, origin, opts)
+	local D, CUT = 3.2, 0.42
+	local GHOST, PALE, DARK = Color3.fromRGB(120, 255, 170), Color3.fromRGB(210, 255, 225), Color3.fromRGB(10, 14, 12)
+	sfx(folder, opts, origin, SND.rift, {volume = 0.8, speed = 0.35, cut = 2.4, fade = 0.6})
+	sfx(folder, opts, origin, SND.raven, {volume = 0.6, speed = 0.8, delay = 0.15})
+	sfx(folder, opts, origin, SND.swish, {volume = 1, speed = 0.45, delay = D * (CUT - 0.12)})
+	sfx(folder, opts, origin, SND.metalHit, {volume = 0.8, speed = 0.6, delay = D * CUT})
+	sfx(folder, opts, origin, SND.choir, {volume = 0.55, speed = 0.55, delay = D * CUT, cut = 1.6, fade = 0.8})
+	local floor = floorOf(origin)
+	-- the shadow pooling underfoot, and a ring of ghost-fire round its edge
+	local pool = ring(folder, floor * CFrame.new(0, 0.1, 0), 0.4, 0.06, DARK, M.SmoothPlastic, 0.1)
+	local fireRing = ring(folder, floor * CFrame.new(0, 0.05, 0), 0.4, 0.08, GHOST, M.Neon, 0.3)
+	-- the scythe: a long haft and a crescent blade of wedges, pivoting high behind them
+	local pivot = origin * CFrame.new(0, 7.5, 3.5)
+	local haft = part(folder, Enum.PartType.Cylinder, Vector3.new(11, 0.4, 0.4), pivot, Color3.fromRGB(40, 44, 42), M.Wood, 1)
+	local blade = {}
+	for i = 0, 5 do
+		-- a crescent, curving back from the haft's end: wide at the heel, a point at the tip
+		local w = part(folder, Enum.PartType.Block, Vector3.new(0.22, 1.25 - i * 0.19, 1.25), pivot, i % 2 == 0 and GHOST or PALE, M.Neon, 1)
+		table.insert(blade, {p = w, i = i})
+	end
+	local glow = ball(folder, 1, origin, GHOST, M.Neon, 1)
+	-- the souls: wisps that rise and spiral away
+	local souls = {}
+	for i = 1, 7 do
+		table.insert(souls, {p = ball(folder, rng:NextNumber(0.35, 0.6), origin, i % 2 == 0 and PALE or GHOST, M.Neon, 1),
+			ang = rng:NextNumber(0, 6.28), r = rng:NextNumber(0.4, 1.4), sp = rng:NextNumber(2, 4), y0 = rng:NextNumber(-1.5, 0.5), h = rng:NextNumber(7, 11)})
+	end
+	if opts.world then
+		local l = Instance.new("PointLight"); l.Color = GHOST; l.Range = 16; l.Brightness = 0; l.Parent = glow
+		emit(floor * CFrame.new(0, 0.5, 0), folder, {Texture = FIRE, Color = ColorSequence.new(GHOST, Color3.fromRGB(40, 160, 90)), Size = NumberSequence.new(1.2, 0),
+			Lifetime = NumberRange.new(0.6, 1.1), Speed = NumberRange.new(2, 5), SpreadAngle = Vector2.new(70, 70), LightEmission = 1, Rate = 60, Acceleration = Vector3.new(0, 6, 0)})
+	end
+	animate(D, opts, function(a)
+		local open = easeOut(seg(a, 0, 0.2))
+		local fade = seg(a, 0.75, 1)
+		pool.Size = Vector3.new(0.06, 9 * open + 0.01, 9 * open + 0.01)
+		pool.Transparency = 0.1 + 0.9 * fade
+		fireRing.Size = Vector3.new(0.08, 10 * open + 0.01, 10 * open + 0.01)
+		fireRing.CFrame = floor * CFrame.new(0, 0.05, 0) * CFrame.Angles(0, a * 3, 0) * CFrame.Angles(0, 0, math.pi / 2)
+		fireRing.Transparency = 0.3 + 0.7 * fade
+		-- the scythe: raised high (0.1-0.3), then down and through (0.3-CUT), then gone
+		local show = seg(a, 0.08, 0.2) * (1 - seg(a, CUT + 0.12, CUT + 0.3))
+		local swing
+		if a < 0.3 then swing = -2.1 - 0.25 * easeOut(seg(a, 0.08, 0.3))
+		else swing = -2.35 + 3.3 * easeIn(seg(a, 0.3, CUT)) end
+		local arm = pivot * CFrame.Angles(swing, 0, 0)
+		haft.CFrame = arm * CFrame.new(0, -5.5, 0) * CFrame.Angles(0, 0, math.pi / 2)
+		haft.Transparency = 1 - show
+		for _, b in ipairs(blade) do
+			-- each piece a step further along the curve, turned a little more
+			local cf = arm * CFrame.new(0, -10.4, 0)
+			for _ = 0, b.i do cf = cf * CFrame.new(0, 0, -0.55) * CFrame.Angles(-0.17, 0, 0) * CFrame.new(0, 0, -0.55) end
+			b.p.CFrame = cf
+			b.p.Transparency = 1 - show * 0.88
+		end
+		-- the cut: a flash of ghost-light, and the body goes pale and fades
+		local hit = seg(a, CUT, CUT + 0.12)
+		glow.Size = Vector3.one * (0.5 + 7 * easeOut(hit))
+		glow.Transparency = a < CUT and 1 or (0.2 + 0.8 * hit)
+		local l = glow:FindFirstChildOfClass("PointLight")
+		if l then l.Brightness = 3 * (1 - math.abs(seg(a, CUT - 0.1, CUT + 0.4) * 2 - 1)) end
+		if a >= CUT then
+			local P = puppet(folder, origin, opts)
+			if not P.tinted then
+				P.tinted = true
+				for _, q in ipairs(P.list) do q.p.Color = q.p.Color:Lerp(PALE, 0.6); q.p.Material = M.Neon end
+			end
+			local k = seg(a, CUT, 0.75)
+			-- the two halves part a little as they fade
+			for _, q in ipairs(P.list) do
+				local w = origin * q.rel
+				local up = (w.Position.Y > origin.Position.Y) and 1 or -1
+				q.p.CFrame = w + Vector3.new(0, up * 0.6 * easeOut(k), 0)
+				q.p.Transparency = q.t0 + (1 - q.t0) * k
+			end
+		end
+		-- the souls rise and spiral away
+		local rise = seg(a, CUT, 1)
+		for _, s in ipairs(souls) do
+			local ang = s.ang + rise * s.sp * 3
+			local r = s.r + rise * 1.5
+			s.p.CFrame = CFrame.new(origin.Position + Vector3.new(math.cos(ang) * r, s.y0 + s.h * easeOut(rise), math.sin(ang) * r))
+			s.p.Transparency = a < CUT and 1 or (0.15 + 0.85 * seg(a, 0.7, 1))
+		end
+	end)
+	return D
+end
+
+-- they collapse into a star; the star bursts (a shockwave, a shower of
+-- stars, a pillar of light) and burns out
+FX.Supernova = function(folder, origin, opts)
+	local D, BLOW = 2.9, 0.48
+	local WHITE, GOLD, CYAN, ROSE = Color3.fromRGB(255, 255, 245), Color3.fromRGB(255, 210, 110), Color3.fromRGB(120, 230, 255), Color3.fromRGB(255, 120, 200)
+	sfx(folder, opts, origin, SND.synthRip, {volume = 0.7, speed = 0.5, cut = D * BLOW, fade = 0.15})
+	sfx(folder, opts, origin, SND.choir, {volume = 0.5, speed = 1.4, cut = 1.2})
+	sfx(folder, opts, origin, SND.thunder, {volume = 0.9, speed = 1.6, delay = D * BLOW, cut = 1.8, fade = 0.8})
+	sfx(folder, opts, origin, SND.glassShatter, {volume = 0.5, speed = 1.3, delay = D * BLOW + 0.05})
+	local centre = origin * CFrame.new(0, 0.4, 0)
+	local floor = floorOf(origin)
+	local core = ball(folder, 0.2, centre, WHITE, M.Neon, 0)
+	local halo = ball(folder, 0.4, centre, GOLD, M.Neon, 0.6)
+	local orbits = {}
+	for i, col in ipairs({GOLD, CYAN, ROSE}) do
+		table.insert(orbits, {p = ring(folder, centre, 0.4, 0.08, col, M.Neon, 0.3), tilt = i * 1.05, sp = 4 + i * 2})
+	end
+	local wave = shockRing(folder, floor, GOLD, M.Neon)
+	local wave2 = ring(folder, centre, 0.3, 0.12, CYAN, M.Neon, 1)
+	local pillar = part(folder, Enum.PartType.Cylinder, Vector3.new(40, 0.1, 0.1), CFrame.new(origin.Position + Vector3.new(0, 18, 0)) * CFrame.Angles(0, 0, math.pi / 2), WHITE, M.Neon, 1)
+	local flashB = ball(folder, 1, centre, WHITE, M.Neon, 1)
+	-- the stars it throws out
+	local stars = debris(folder, centre, 26, function(i)
+		local col = ({WHITE, GOLD, CYAN, ROSE})[(i - 1) % 4 + 1]
+		return part(folder, Enum.PartType.Ball, Vector3.one * rng:NextNumber(0.2, 0.45), centre, col, M.Neon, 0)   -- (hidden until the burst: hideBits)
+	end, {speedMin = 10, speedMax = 22, upMin = -0.4, upMax = 1})
+	if opts.world then
+		local l = Instance.new("PointLight"); l.Color = GOLD; l.Range = 22; l.Brightness = 1; l.Parent = core
+	end
+	animate(D, opts, function(a, dt)
+		local gather = seg(a, 0, BLOW)
+		-- the body is drawn into the point
+		if a >= 0.04 and a < BLOW then
+			local P = puppet(folder, origin, opts)
+			local k = easeIn(seg(a, 0.04, BLOW - 0.04))
+			for _, q in ipairs(P.list) do
+				local w = origin * q.rel
+				q.p.Size = q.size * (1 - k * 0.9)
+				q.p.CFrame = CFrame.new(w.Position:Lerp(centre.Position, k)) * w.Rotation * CFrame.Angles(k * 3, k * 5, 0)
+				q.p.Transparency = k > 0.95 and 1 or q.t0
+			end
+		elseif a >= BLOW then
+			for _, q in ipairs(puppet(folder, origin, opts).list) do q.p.Transparency = 1 end
+		end
+		-- the star swells and pulses as it takes them in, then bursts
+		local pulse = 1 + 0.15 * math.sin(a * 60)
+		local starSize = a < BLOW and (0.3 + 2.2 * easeIn(gather)) * pulse or 0
+		core.Size = Vector3.one * (starSize + 0.01)
+		core.Transparency = a < BLOW and 0 or 1
+		halo.Size = Vector3.one * (starSize * 1.6 + 0.01)
+		halo.Transparency = a < BLOW and 0.55 or 1
+		for _, o in ipairs(orbits) do
+			local r = a < BLOW and (3.2 - 2.2 * gather) or 0
+			o.p.Size = Vector3.new(0.08, r * 2 + 0.01, r * 2 + 0.01)
+			o.p.CFrame = centre * CFrame.Angles(o.tilt, a * o.sp * (1 + 3 * gather), 0) * CFrame.Angles(0, 0, math.pi / 2)
+			o.p.Transparency = a < BLOW and 0.25 or 1
+		end
+		local l = core:FindFirstChildOfClass("PointLight")
+		if l then l.Brightness = a < BLOW and (1 + 3 * gather) or 4 * (1 - seg(a, BLOW, 1)) end
+		-- THE BURST
+		local f = seg(a, BLOW, BLOW + 0.18)
+		flashB.Size = Vector3.one * (1 + 16 * easeOut(f))
+		flashB.Transparency = a < BLOW and 1 or (0.05 + 0.95 * f)
+		local w = seg(a, BLOW, BLOW + 0.4)
+		if a >= BLOW then
+			stepRing(wave, floor, w, 14, 0.25)
+			wave2.Size = Vector3.new(0.12, 18 * easeOut(w) + 0.01, 18 * easeOut(w) + 0.01)
+			wave2.CFrame = centre * CFrame.Angles(math.pi / 2, 0, 0) * CFrame.Angles(0, 0, math.pi / 2)
+			wave2.Transparency = 0.2 + 0.8 * w
+		else
+			wave.Transparency, wave2.Transparency = 1, 1
+		end
+		local pl = seg(a, BLOW, 1)
+		pillar.Size = Vector3.new(40, 2.6 * (1 - pl) + 0.05, 2.6 * (1 - pl) + 0.05)
+		pillar.Transparency = a < BLOW and 1 or (0.3 + 0.7 * pl)
+		if a >= BLOW then
+			local sa = seg(a, BLOW, 1)
+			stepDebris(stars, sa, dt, {gravity = 4, fadeFrom = 0.5}, D * (1 - BLOW))
+		else
+			hideBits(stars)
+		end
+	end)
+	return D
+end
+
 KillFX.IDS = {}
 for k in pairs(FX) do table.insert(KillFX.IDS, k) end
 table.sort(KillFX.IDS)

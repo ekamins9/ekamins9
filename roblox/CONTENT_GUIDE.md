@@ -180,7 +180,15 @@ looks like this (every weapon already has a free "Default"):
  drop = "Bonewright", look = "marrowking", fx = "toxic"},
 ```
 
-**Rarity:** Common, Rare, Epic, Legendary, **Mythic** (one per drop crate, about 0.5%).
+**Rarity:** Common, Rare, Epic, Legendary, **Mythic** (crates only: every crate has one, at its
+lowest odds), **Unique** (one of one: `unique = true, who = "…"`; never in a crate or the shop;
+`gen_content.py` `UNIQUE_SKINS`; give it as a season champion's reward or from F2 ▸ item). The
+rarer, the more it gets: Mythics and Uniques wear two trims (`trim2`) and an aura of their own
+(`celestial inferno sovereign phoenix`); a Unique's colours walk through the rainbow. New crate
+Mythics go in `gen_content.py` `MYTHIC_SKINS`.
+
+**The daily shelf** (`Catalog ▸ Store`): `epicChance` / `legendaryChance` decide the headliner;
+the rest are Commons and Rares. Mythics, Uniques, earned, pass and task skins never show there.
 
 **Where it comes from. Skins are never sold at will:**
 - `crate = "Ossuary"`: rolled from that crate, only while the crate is in rotation
@@ -242,7 +250,10 @@ Ossuary = {name = "Ossuary Crate", description = "Bone blades. Mythic: The Marro
 -- Calendar:  Ossuary = {windows = {{from = "Bonewright", to = "Ironclad"}}},
 ```
 
-`odds` must sum to 100 and every rarity in them needs an item (the server warns). They are
+`odds` must sum to 100 and every rarity in them needs an item (the server warns). Every crate
+has a **Mythic** at the lowest odds (0.3–0.5%) and a long `pity` (20–40): rare must feel rare.
+`refund` is only what a spare copy scraps for when its owner chooses: duplicates are kept, never
+paid back. They are
 shown before every open, with the finish chances; `pity` guarantees a **Legendary or better**
 within that many opens (when it is due the odds on screen switch to say so). A crate opens for
 `cost` Crowns or `keys` Keys (default 1). Keys are earned only (level-ups, the first win of the
@@ -279,7 +290,8 @@ never return: their items become RELICS, which is what makes them worth somethin
 
 `Catalog ▸ Economy ▸ seasonRewards`: `Warfront` and `Lists` are lists of `{top = n, reward = …}`
 (best line reached is paid; a reward is like a pass reward: marks, crowns, keys, title, skin…),
-`tiers` pays by the ranked tier finished in. The season's end is `Catalog ▸ Pass` `ends`; a new
+`tiers` pays by the ranked tier finished in. `champions` = {[season id] = {[board] = skin id}}:
+rank 1 on that board also gets that Unique (one of one). The season's end is `Catalog ▸ Pass` `ends`; a new
 season (a new `season` id) gets fresh boards automatically.
 
 ## 6e. Ranged weapons

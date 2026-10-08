@@ -62,6 +62,12 @@ return {
 			{top = 10,  reward = {title = "Grand Duelist", crowns = 200, marks = 6000}},
 			{top = 100, reward = {title = "Listed", crowns = 60, marks = 2500}},
 		},
+		-- the season's champions (rank 1 on a board) also get that season's UNIQUE: a skin
+		-- that is one of one, ever (Catalog ▸ Skins, unique = true)
+		champions = {
+			S1 = {Warfront = "Greatsword:Crown of the First Season", ["1v1"] = "Longsword:The Undefeated",
+				["2v2"] = "Dagger:Bloodmoon", ["3v3"] = "Halberd:Stormbringer"},
+		},
 		tiers = {
 			Knight   = {marks = 1000, keys = 1},
 			Banneret = {marks = 2000, keys = 2, title = "Banneret"},

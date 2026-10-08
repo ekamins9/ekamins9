@@ -43,8 +43,9 @@ UIFX.REVEAL = {
 	Epic      = {id = "rbxassetid://1840296036", vol = 0.6, cut = 3.2},      -- brass flourish
 	Legendary = {id = "rbxassetid://1835295052", vol = 0.65, cut = 4.2},     -- Forging the Army sting
 	Mythic    = {id = "rbxassetid://83315768373322", vol = 0.7, cut = 6},    -- Conquering Heroes
+	Unique    = {id = "rbxassetid://83315768373322", vol = 0.85, cut = 9},   -- (the same, longer: there is only one)
 }
-UIFX.BIG = {Legendary = true, Mythic = true}
+UIFX.BIG = {Legendary = true, Mythic = true, Unique = true}
 
 local settings = nil
 local function volume()

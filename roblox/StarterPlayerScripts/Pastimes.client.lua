@@ -236,6 +236,8 @@ chip.MouseButton1Click:Connect(function()
 	local r = call("GiftClaim", i)
 	claiming = false
 	say(r.msg or "", r.ok and Theme.GOOD or Theme.BAD)
+	-- a crate in it: the spin, on the menu's crate screen
+	if r.ok and r.crate and _G.HubCrateSpin then _G.HubCrateSpin(r.crate) end
 	if r.ok and r.gifts then
 		local list = {}
 		for k in pairs(r.gifts.claimed or {}) do table.insert(list, k) end

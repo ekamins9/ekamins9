@@ -5,9 +5,14 @@
          its accent, else the rarity colour); Legendary trails shimmer. A skin can
          opt out with trail = false or in with trail = true.
        • A skin with fx = "<aura>" wears that aura: embers frost holy shadow
-         storm toxic petals gold blood (Legendary skins have one each). An aura is
-         a few layers of particles off the blade, a light on it, sparks that fly
-         off the tip when it swings, and the sound of the swing.
+         storm toxic petals gold blood (Legendary skins have one each), and the
+         Mythics' own: celestial inferno sovereign phoenix. An aura is a few
+         layers of particles off the blade, a light on it, sparks that fly off the
+         tip when it swings, and the sound of the swing.
+       • MYTHIC: the longest, brightest trail, the strongest light, and stars
+         twinkling along the blade. UNIQUE (one of one): all that, and its glow,
+         its trail and a shimmer walk through the rainbow (like a Radiant finish,
+         always).
      Alive in the world: the client's SkinFX driver (StarterPlayerScripts ▸
      SkinFX) makes the aura flare and the light swell while the blade moves, throws
      the sparks and plays the swing sound. Trails and particles don't render
@@ -29,7 +34,8 @@ local TEX = {
 	fire = "rbxasset://textures/particles/fire_main.dds",
 	smoke = "rbxasset://textures/particles/smoke_main.dds",
 }
-local RARITY = {Common = Color3.fromRGB(150, 160, 175), Rare = Color3.fromRGB(70, 150, 255), Epic = Color3.fromRGB(180, 90, 255), Legendary = Color3.fromRGB(255, 186, 60)}
+local RARITY = {Common = Color3.fromRGB(150, 160, 175), Rare = Color3.fromRGB(70, 150, 255), Epic = Color3.fromRGB(180, 90, 255), Legendary = Color3.fromRGB(255, 186, 60),
+	Mythic = Color3.fromRGB(255, 60, 90), Unique = Color3.fromRGB(255, 244, 214)}
 local C = Color3.fromRGB
 
 local function seq(a, b) return ColorSequence.new(a, b or a) end
@@ -121,6 +127,49 @@ local AURAS = {
 		swing = {sound = 9113760225, pitch = 1.6, volume = 0.2, cut = 0.5,
 			burst = {tex = TEX.spark, c0 = C(255, 240, 150), c1 = C(230, 170, 40), size = {{0, 0.34}, {1, 0}}, count = 6, life = {0.4, 0.8}, speed = {4, 9}, accel = Vector3.new(0, -16, 0), spread = 60, light = 1}},
 	},
+	-- THE MYTHICS' OWN
+	celestial = {
+		emit = {
+			{tex = TEX.smoke, c0 = C(70, 56, 160), c1 = C(20, 30, 96), size = {{0, 0.5}, {1, 1.5}}, rate = 6, life = {1.2, 2}, speed = {0.05, 0.25}, spread = 180, light = 0.45, transp = {{0, 0.6}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(255, 255, 255), c1 = C(170, 190, 255), size = {{0, 0.05}, {0.5, 0.2}, {1, 0}}, rate = 36, life = {0.3, 0.7}, speed = {0, 0.05}, spread = 180, light = 1, locked = true},
+			{tex = TEX.spark, c0 = C(200, 215, 255), c1 = C(120, 140, 255), size = {{0, 0.2}, {1, 0}}, rate = 14, life = {1, 2}, speed = {0.2, 0.6}, accel = Vector3.new(0, 0.6, 0), spread = 180, light = 1, rot = 90},
+		},
+		light = C(140, 150, 255),
+		swing = {sound = 1846902441, pitch = 1.8, volume = 0.12, cut = 0.6,
+			burst = {tex = TEX.spark, c0 = C(255, 255, 255), c1 = C(150, 170, 255), size = {{0, 0.3}, {1, 0}}, count = 9, life = {0.4, 0.9}, speed = {4, 9}, accel = Vector3.new(0, -4, 0), spread = 70, light = 1}},
+	},
+	inferno = {
+		emit = {
+			{tex = TEX.fire, c0 = C(255, 170, 60), c1 = C(220, 40, 10), size = {{0, 0.8}, {0.5, 0.5}, {1, 0.05}}, rate = 30, life = {0.3, 0.6}, speed = {0.4, 1.4}, accel = Vector3.new(0, 7, 0), spread = 25, light = 1, transp = {{0, 0.2}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(255, 200, 80), c1 = C(255, 60, 10), size = {{0, 0.2}, {1, 0.1}}, rate = 10, life = {0.5, 0.9}, speed = {0.1, 0.4}, accel = Vector3.new(0, -22, 0), spread = 20, light = 1},
+			{tex = TEX.spark, c0 = C(255, 220, 120), c1 = C(255, 80, 20), size = {{0, 0.16}, {1, 0}}, rate = 30, life = {0.8, 1.6}, speed = {0.6, 2}, accel = Vector3.new(0, 8, 0), spread = 70, light = 1},
+			{tex = TEX.smoke, c0 = C(50, 30, 25), size = {{0, 0.4}, {1, 1.6}}, rate = 6, life = {1, 1.6}, speed = {0.3, 0.9}, accel = Vector3.new(0, 3, 0), spread = 40, light = 0, transp = {{0, 0.6}, {1, 1}}},
+		},
+		light = C(255, 110, 30),
+		flicker = true,
+		swing = {sound = 9120696702, pitch = 1.0, volume = 0.35,
+			burst = {tex = TEX.spark, c0 = C(255, 230, 130), c1 = C(255, 60, 10), size = {{0, 0.36}, {1, 0}}, count = 10, life = {0.3, 0.7}, speed = {6, 13}, accel = Vector3.new(0, -16, 0), spread = 50, light = 1}},
+	},
+	sovereign = {
+		emit = {
+			{tex = TEX.spark, c0 = C(255, 236, 160), c1 = C(232, 172, 40), size = {{0, 0.22}, {1, 0}}, rate = 26, life = {0.7, 1.4}, speed = {0.2, 0.7}, accel = Vector3.new(0, 1.2, 0), spread = 180, light = 1},
+			{tex = TEX.spark, c0 = C(255, 255, 235), size = {{0, 0.1}, {0.5, 0.32}, {1, 0}}, rate = 22, life = {0.3, 0.6}, speed = {0, 0.05}, spread = 180, light = 1, locked = true},
+			{tex = TEX.smoke, c0 = C(255, 245, 220), size = {{0, 0.4}, {1, 1.2}}, rate = 5, life = {1, 1.6}, speed = {0.05, 0.2}, accel = Vector3.new(0, 0.8, 0), spread = 180, light = 0.6, transp = {{0, 0.7}, {1, 1}}},
+		},
+		light = C(255, 225, 150),
+		swing = {sound = 1846902441, pitch = 1.3, volume = 0.14, cut = 0.7,
+			burst = {tex = TEX.spark, c0 = C(255, 250, 200), c1 = C(232, 172, 40), size = {{0, 0.34}, {1, 0}}, count = 9, life = {0.4, 0.9}, speed = {4, 9}, accel = Vector3.new(0, -10, 0), spread = 60, light = 1}},
+	},
+	phoenix = {
+		emit = {
+			{tex = TEX.spark, c0 = C(255, 210, 90), c1 = C(230, 50, 20), size = {{0, 0.3}, {1, 0.12}}, rate = 20, life = {0.6, 1.2}, speed = {0.5, 1.5}, accel = Vector3.new(0, 4, 0), spread = 50, light = 1, rot = 140},
+			{tex = TEX.fire, c0 = C(255, 190, 70), c1 = C(230, 60, 20), size = {{0, 0.6}, {1, 0.05}}, rate = 20, life = {0.25, 0.5}, speed = {0.3, 1}, accel = Vector3.new(0, 6, 0), spread = 25, light = 1, transp = {{0, 0.25}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(255, 250, 200), size = {{0, 0.08}, {0.5, 0.16}, {1, 0}}, rate = 20, life = {0.2, 0.4}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
+		},
+		light = C(255, 140, 40),
+		swing = {sound = 9125386714, pitch = 1.4, volume = 0.2, cut = 0.6,
+			burst = {tex = TEX.spark, c0 = C(255, 220, 110), c1 = C(230, 50, 20), size = {{0, 0.36}, {1, 0.1}}, count = 8, life = {0.5, 1}, speed = {4, 9}, accel = Vector3.new(0, -6, 0), spread = 70, light = 1, rot = 180}},
+	},
 	blood = {
 		emit = {
 			{tex = TEX.smoke, c0 = C(150, 12, 24), c1 = C(60, 0, 8), size = {{0, 0.26}, {1, 0.7}}, rate = 12, life = {0.6, 1.1}, speed = {0.05, 0.35}, accel = Vector3.new(0, -1.2, 0), spread = 180, light = 0, transp = {{0, 0.4}, {1, 1}}},
@@ -137,12 +186,13 @@ SkinFX.SWING = {}
 for k, a in pairs(AURAS) do table.insert(SkinFX.AURAS, k); SkinFX.SWING[k] = a.swing end
 table.sort(SkinFX.AURAS)
 
-local NAME = {embers = "Embers", frost = "Frost", holy = "Holy light", shadow = "Shadow", storm = "Storm", toxic = "Venom", petals = "Petals", gold = "Gold dust", blood = "Blood mist"}
+local NAME = {embers = "Embers", frost = "Frost", holy = "Holy light", shadow = "Shadow", storm = "Storm", toxic = "Venom", petals = "Petals", gold = "Gold dust", blood = "Blood mist",
+	celestial = "Starlight", inferno = "Inferno", sovereign = "Sovereign light", phoenix = "Phoenix fire"}
 
 local function wantsTrail(skin, variant)
 	if variant then return true end
 	if skin.trail ~= nil then return skin.trail == true end
-	return skin.rarity == "Epic" or skin.rarity == "Legendary" or skin.rarity == "Mythic"
+	return skin.rarity == "Epic" or skin.rarity == "Legendary" or skin.rarity == "Mythic" or skin.rarity == "Unique"
 end
 
 function SkinFX.describe(skin)
@@ -150,6 +200,7 @@ function SkinFX.describe(skin)
 	local bits = {}
 	if wantsTrail(skin, variant) then table.insert(bits, "Trail") end
 	if skin.fx and NAME[skin.fx] then table.insert(bits, NAME[skin.fx]) end
+	if skin.rarity == "Unique" then table.insert(bits, "Prismatic") end
 	-- a bow's or a crossbow's arrows (ReplicatedStorage ▸ ArrowFX)
 	if skin.arrow then
 		local ok, ArrowFX = pcall(require, script.Parent:WaitForChild("ArrowFX", 2))
@@ -224,7 +275,8 @@ function SkinFX.apply(tool, skin, variant)
 	local F = SkinTrims.frame(tool)
 	if not (handle and F) then return false end
 	local any = false
-	local legendary = skin.rarity == "Legendary" or skin.rarity == "Mythic" or variant == "Radiant"
+	local mythic = skin.rarity == "Mythic" or skin.rarity == "Unique"
+	local legendary = mythic or skin.rarity == "Legendary" or variant == "Radiant"
 	local col = skin.glow or skin.accent or RARITY[skin.rarity] or RARITY.Epic
 	-- the blade's line, guard to tip, in the Handle's space
 	local base = Vector3.new(F.bX, F.guard + math.min(0.25, F.bLen * 0.15), 0)
@@ -239,7 +291,7 @@ function SkinFX.apply(tool, skin, variant)
 		t.Color = seq(col:Lerp(Color3.new(1, 1, 1), 0.25), col)
 		t.Transparency = nseq({{0, legendary and 0.05 or 0.25}, {0.5, legendary and 0.4 or 0.6}, {1, 1}})
 		t.WidthScale = nseq({{0, 1}, {1, 0.3}})
-		t.Lifetime = legendary and 0.3 or 0.2
+		t.Lifetime = mythic and 0.42 or (legendary and 0.3 or 0.2)
 		t.MinLength = 0.04
 		t.LightEmission = legendary and 1 or 0.7
 		t.LightInfluence = 0
@@ -248,7 +300,7 @@ function SkinFX.apply(tool, skin, variant)
 		t:SetAttribute("SkinFX", true)
 		t.Parent = handle
 		-- the glow: wider and softer, past both ends of the blade, lingering longer
-		local over = math.max(0.4, F.bLen * 0.18)
+		local over = math.max(0.4, F.bLen * (mythic and 0.3 or 0.18))
 		local g0 = attachment(handle, "TrailGlowBase", base - Vector3.new(0, over * 0.6, 0))
 		local g1 = attachment(handle, "TrailGlowTip", tipPos + Vector3.new(0, over, 0))
 		local g = Instance.new("Trail")
@@ -257,7 +309,7 @@ function SkinFX.apply(tool, skin, variant)
 		g.Color = seq(col)
 		g.Transparency = nseq({{0, legendary and 0.55 or 0.7}, {1, 1}})
 		g.WidthScale = nseq({{0, 1}, {1, 0.5}})
-		g.Lifetime = legendary and 0.45 or 0.3
+		g.Lifetime = mythic and 0.65 or (legendary and 0.45 or 0.3)
 		g.MinLength = 0.04
 		g.LightEmission = 1
 		g.LightInfluence = 0
@@ -273,8 +325,8 @@ function SkinFX.apply(tool, skin, variant)
 		local l = Instance.new("PointLight")
 		l.Name = "SkinLight"
 		l.Color = aura.light or col
-		l.Range = legendary and 9 or 6
-		l.Brightness = legendary and 1.4 or 0.8
+		l.Range = mythic and 13 or (legendary and 9 or 6)
+		l.Brightness = mythic and 2.1 or (legendary and 1.4 or 0.8)
 		l.Shadows = false
 		l:SetAttribute("SkinFX", true)
 		l:SetAttribute("BaseBrightness", l.Brightness)
@@ -288,6 +340,26 @@ function SkinFX.apply(tool, skin, variant)
 			b.Parent = tip
 		end
 		handle:SetAttribute("SkinAura", skin.fx)
+		any = true
+	end
+	-- MYTHIC and UNIQUE: stars twinkle along the blade in its glow; a Unique's glow,
+	-- trails and a shimmer walk through the rainbow, always (the client driver turns them)
+	if mythic then
+		local body0 = bladePart(tool) or handle
+		local glint = emitter({tex = TEX.spark, c0 = Color3.new(1, 1, 1), c1 = col, size = {{0, 0.06}, {0.5, 0.26}, {1, 0}},
+			rate = 16, life = {0.4, 0.9}, speed = {0, 0.05}, spread = 180, light = 1, locked = true}, "SkinMythic")
+		glint.Parent = body0
+		if skin.rarity == "Unique" then
+			local prism = emitter({tex = TEX.spark, c0 = C(255, 120, 220), c1 = C(120, 220, 255), size = {{0, 0.2}, {0.5, 0.34}, {1, 0}},
+				rate = 18, life = {0.7, 1.4}, speed = {0.1, 0.5}, accel = Vector3.new(0, 0.8, 0), spread = 180, light = 1}, "SkinUnique")
+			prism:SetAttribute("Radiant", true)
+			prism.Parent = body0
+			for _, d in ipairs(tool:GetDescendants()) do
+				if (d:IsA("Trail") and d:GetAttribute("SkinFX")) or (d:IsA("BasePart") and d.Material == Enum.Material.Neon) or (d:IsA("PointLight") and d:GetAttribute("SkinFX")) then
+					d:SetAttribute("Radiant", true)
+				end
+			end
+		end
 		any = true
 	end
 	-- THE FINISH: Masterwork glints gold along the blade; Radiant cycles every

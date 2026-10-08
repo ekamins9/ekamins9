@@ -20,8 +20,11 @@
        Collection.checkClaims(plr)       hands out open Calendar claims and the Founder's Oath
        Collection.rating(p)              the Armoury rating: what a collection is worth
 
-     Numbered (serial) things: every Mythic, every limited skin, every claim and
-     Founder gift, every Mythic companion. ]]
+     Numbered (serial) things: every Mythic, every Unique (#1 of 1: there is only
+     ever one), every limited skin, every claim and Founder gift, every Mythic
+     companion.
+     Copies are kept for kill effects and emotes out of crates too ("fx:" .. id,
+     "emote:" .. id), so a duplicate is never wasted: trade it, or scrap it. ]]
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -139,7 +142,16 @@ function Collection.rollPetVariant() return Collection.rollVariant(Catalog.EGGS.
 
 -- a skin that wants a number gets one
 function Collection.wantsSerial(s)
-	return s ~= nil and (s.rarity == "Mythic" or s.limited ~= nil or s.claim ~= nil or s.founder == true)
+	return s ~= nil and (s.rarity == "Mythic" or s.unique == true or s.limited ~= nil or s.claim ~= nil or s.founder == true)
+end
+-- how many may ever exist (nil = no limit): a Unique is one of one
+function Collection.limitOf(s) return s and (s.unique and 1 or s.limited) or nil end
+-- a kill effect's / an emote's catalog entry from its copy key ("fx:Meteor", "emote:Jig")
+function Collection.itemOf(key)
+	if type(key) ~= "string" then return nil end
+	if key:sub(1, 3) == "fx:" then return Catalog.KILLFX_BY[key:sub(4)], "killfx" end
+	if key:sub(1, 6) == "emote:" then return Catalog.EMOTE[key:sub(7)], "emotes" end
+	return nil
 end
 -- may a copy of it change hands? Crate and shop skins, hatched companions: yes.
 -- Founder gifts, claims, the pass, earned and pack skins stay with whoever got them.
@@ -149,10 +161,12 @@ function Collection.tradable(key)
 		local c = Catalog.COMPANION[key:sub(5)]
 		return c ~= nil and not c.pass
 	end
+	local it = Collection.itemOf(key)
+	if it then return Catalog.itemSource(it) == "crate" end
 	local s = Catalog.SKIN[key]
 	if not s then return false end
 	local src = Catalog.skinSource(s)
-	return src == "crate" or src == "shop"
+	return src == "crate" or src == "shop" or src == "unique"
 end
 
 -- a skin as a new copy, numbered if it wants one (nil, "sold out" for a limited one)
@@ -161,8 +175,9 @@ function Collection.grantNumbered(plr, skinId, from, variant)
 	if not s then return nil end
 	local n
 	if Collection.wantsSerial(s) then
-		n = Collection.serial(skinId, s.limited)
-		if s.limited and not n then return nil, "sold out" end
+		local limit = Collection.limitOf(s)
+		n = Collection.serial(skinId, limit)
+		if limit and not n then return nil, s.unique and "that Unique already belongs to someone" or "sold out" end
 	end
 	return Profile.addCopy(plr, skinId, {n = n, v = variant, from = from, bound = not Collection.tradable(skinId)})
 end
@@ -200,8 +215,10 @@ function Collection.scrap(plr, uid)
 	if not key then return false, "you don't have that copy" end
 	if Profile.copyCount(p, key) <= 1 then return false, "that's your only one: keep it" end
 	local pet = key:sub(1, 4) == "pet:"
-	local def = pet and Catalog.COMPANION[key:sub(5)] or Catalog.SKIN[key]
+	local item = Collection.itemOf(key)
+	local def = pet and Catalog.COMPANION[key:sub(5)] or item or Catalog.SKIN[key]
 	if not def then return false, "unknown item" end
+	if def.unique then return false, "a Unique can't be scrapped" end
 	local refund
 	if pet then refund = (Catalog.EGGS.refund or {})[def.rarity] or 100
 	else
@@ -282,7 +299,7 @@ end)
 --------------------------------------------------------------------
 --  THE ARMOURY RATING
 --------------------------------------------------------------------
-local POINTS = {Common = 1, Rare = 4, Epic = 12, Legendary = 35, Mythic = 150}
+local POINTS = {Common = 1, Rare = 4, Epic = 12, Legendary = 35, Mythic = 150, Unique = 1000}
 local VARIANT_X = {Masterwork = 2, Radiant = 5, Golden = 2, Spectral = 5}
 function Collection.rating(p)
 	local total = 0
