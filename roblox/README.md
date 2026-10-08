@@ -225,7 +225,8 @@ newcomer on the server). Bots carry a team (`Team`, tabard, team colours) and th
 `FillBot`. Never more than the map suits (`GameConfig.MAP_FIGHTERS`: Rose Court 6, the arenas
 12, Sandpit 16, Highbridge 20, the baileys and bridges 24, the open fields 32, the sieges 40);
 the map vote offers maps sized to who's there and the bots the mode brings, and a public
-server's room shrinks to its map's most.
+server's room shrinks to its map's most. (Horde skips the size rule: the horde is its own crowd,
+so all its maps take turns. Each vote offers three maps the last one didn't.)
 - They fight **everyone not on their side**, players and bots (`Bots.spawn{fightBots = true}`),
   and with nobody within ~38 studs they **head for the objective** (`goal`: Round `ObjPos`, the
   hill or the ram). Long trips use **pathfinding** (`Bot:pathDir`, PathfindingService, worked out

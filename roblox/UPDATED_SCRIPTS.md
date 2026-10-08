@@ -1,4 +1,15 @@
-# Updated scripts: the inventory, inspect everywhere, eggs of their own, quieter skins, showing off in the Courtyard
+# Updated scripts: every Horde map in the vote again
+
+- **Horde votes showed only The Wildwood, Ravenhold and Stormbreak.** The map-size rule counted a solo player and no bots, so the three Horde-only maps (which have no size rating) always ranked first. Horde now skips the size rule (the horde is its own crowd), so all 10 of its maps take turns: Colosseum, Hollow Grove, Pinewatch, Marshfen, Cinderfall, Bloodpit, Frosthollow and the rest.
+- **Every vote (any mode) offers three maps the last one didn't**, instead of repeating two.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game ▸ GameServer | Script | Horde skips the map-size rule; the vote's rotation steps by three |
+
+---
+
+## Before that: the inventory, inspect everywhere, eggs of their own, quieter skins, showing off in the Courtyard
 
 - **Eggs:** every egg has its own companions, nothing hatches from every egg (the dragon only comes out of the Ember Egg). Speckled is farm and shore, Mossy woods and marsh, Ember fire and night, Royal the crown's beasts. WHAT'S INSIDE scrolls instead of running off the screen.
 - **INVENTORY** (a new dock tile): everything you own (skins, kill effects, emotes, companions, armor, titles), with search, kind filters, four sorts, copy counts and finishes.

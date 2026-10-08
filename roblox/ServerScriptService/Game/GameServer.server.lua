@@ -84,12 +84,15 @@ local rotation = {}
 local function candidates(def)
 	local players = #Players:GetPlayers()
 	local bots = (BotFill.wanted and BotFill.wanted(def)) or 0
+	-- (the Horde brings its own crowd, wave after wave: every one of its maps suits it,
+	-- so they all take their turn instead of the size rule picking the same few)
+	local sized = def.category ~= "Horde"
 	local fits = {{}, {}, {}}
 	for _, m in ipairs(def.maps or {}) do
-		if MapLoader.exists(m) then table.insert(fits[GameConfig.mapFit(m, players, bots) + 1], m) end
+		if MapLoader.exists(m) then table.insert(fits[(sized and GameConfig.mapFit(m, players, bots) or 0) + 1], m) end
 	end
 	local start = (rotation[def] or 0)
-	rotation[def] = start + 1
+	rotation[def] = start + 3   -- (three fresh maps a vote, not the same two again)
 	local out = {}
 	local function take(list)
 		for i = 0, #list - 1 do
