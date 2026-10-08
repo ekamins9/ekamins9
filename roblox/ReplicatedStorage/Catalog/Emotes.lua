@@ -16,6 +16,8 @@ return {
 	{id = "Jig",       name = "Jig",         rarity = "Epic",      crate = "Relic", description = "A tavern jig, arms and legs flying."},
 	{id = "WarCry",    name = "War Cry",     rarity = "Epic",      pass = true,     description = "Arms up, head back, a roar."},
 	{id = "BladeToss", name = "Blade Toss",  rarity = "Epic",      crate = "Relic", description = "Toss the blade, let it spin, catch it."},
-	{id = "Windmill",  name = "Windmill",    rarity = "Legendary", pass = true,     description = "The blade whirls overhead, faster and faster."},
-	{id = "Champion",  name = "Champion",    rarity = "Legendary", crate = "Relic", description = "Plant the blade, rest on the pommel, look victorious."},
+	{id = "Windmill",  name = "Windmill",    rarity = "Legendary", pass = true,     description = "The blade whirls overhead in a whirlwind, faster and faster, until you lift off."},
+	{id = "Champion",  name = "Champion",    rarity = "Legendary", crate = "Relic", description = "Raise the blade, drive it into the ground, and stand in a pillar of light."},
+	{id = "Thunderlord", name = "Thunderlord", rarity = "Mythic", crate = "Relic", description = "Hold the blade up to the storm. The storm answers, three times, then you bring it down."},
+	{id = "Ascension", name = "Ascension",   rarity = "Mythic",    crate = "Relic", description = "Kneel, then rise into the air on wings of light."},
 }

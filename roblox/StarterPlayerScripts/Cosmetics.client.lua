@@ -19,6 +19,7 @@ local TweenService = game:GetService("TweenService")
 
 local KillFX = require(ReplicatedStorage:WaitForChild("KillFX"))
 local Emotes = require(ReplicatedStorage:WaitForChild("Emotes"))
+local EmoteFX = require(ReplicatedStorage:WaitForChild("EmoteFX"))   -- (what an emote does besides move: rarer, more)
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
@@ -91,7 +92,7 @@ fx.OnClientEvent:Connect(function(what, a, b, c, d)
 		if typeof(plr) ~= "Instance" or not plr.Character then return end
 		-- our own emote already started the moment we pressed it
 		if plr == player and Emotes.playing(plr.Character) == id then return end
-		Emotes.play(plr.Character, id, startedAt)
+		if Emotes.play(plr.Character, id, startedAt) then EmoteFX.attach(plr.Character, id) end
 	elseif what == "EmoteStop" then
 		-- b = the refused emote's id (the server said no): ours stops only then
 		local plr = a
@@ -117,7 +118,8 @@ hintGui.IgnoreGuiInset = true
 hintGui.DisplayOrder = 2101
 hintGui.Parent = player.PlayerGui
 
-local RARITY = {Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40)}
+local RARITY = {Common = Color3.fromRGB(120, 134, 152), Rare = Color3.fromRGB(56, 140, 255), Epic = Color3.fromRGB(170, 80, 240), Legendary = Color3.fromRGB(255, 176, 40),
+	Mythic = Color3.fromRGB(255, 52, 78), Unique = Color3.fromRGB(255, 236, 190)}
 
 local shade = Instance.new("TextButton")
 shade.Text = ""
@@ -219,6 +221,7 @@ local function playEmote(id)
 		return
 	end
 	if not Emotes.play(char, id) then return end
+	EmoteFX.attach(char, id)
 	startedAt = os.clock()
 	emoteRemote:FireServer("Play", id)
 end

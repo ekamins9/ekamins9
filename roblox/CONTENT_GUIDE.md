@@ -364,6 +364,13 @@ Mark arms-only emotes `upper = true` so they play while walking. Attacking, bloc
 dodging ends any emote; moving ends a whole-body one. Start and end on the resting pose
 (`{blade = {0, 0, -1}}`) so it blends in and out.
 
+**Its effects** (`ReplicatedStorage ▸ EmoteFX.DEF[id]`): a list of cues on the emote's clock, e.g.
+`{"ring", t = 0.8, d = 0.7, at = "feet", color = GOLD, r0 = 0.6, r1 = 4}`. Kinds: ring, pillar,
+burst, motes, orbit, bolt, spark, glint, wings, halo, cloud, scorch, confetti, notes, and in the
+world only light, sound (`{id, vol, speed, cut}`) and trail. `at` = feet · chest · head · tip · hand
+· lhand · sky. They're built from glowing parts, so the menu's previews show them. **The rarer the
+emote, the more it does**: a Common glints, a Mythic calls down the sky.
+
 **Where they come from** (both lists): `free = true` (everyone has it) · `crate = "Relic"` ·
 `pass = true` (a season-pass reward names it: `{killfx = "ShadowRift"}` / `{emote = "WarCry"}`)
 · `unlock = {...}` (earned, like a skin). Neither ever changes damage, speed or anything else:

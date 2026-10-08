@@ -1,4 +1,29 @@
-# Updated scripts: phones and controllers, PETS, 3D crates, sounds that behave, swings that cut through
+# Updated scripts: emotes, 10× — the rarer the cooler, and two Mythics
+
+- **Every emote moves with weight now:** a small move the other way first, a hair past the pose and back, a held beat, a follow-through. The Bow sweeps a hand out first, the Cheer dips and pumps, the Kneel drops heavily, the Laugh throws the head back and slaps the knee, the Jig twirls and leaps, the War Cry gathers in and roars, the Windmill lifts off, the Champion raises the blade and drives it into the ground.
+- **The rarer, the more it does (EmoteFX):**
+  - Commons glint, puff dust or throw confetti.
+  - Rares leave trails and kick up dust and embers.
+  - Epics send shockwaves, music notes and a war horn.
+  - Legendaries raise a whirlwind or a pillar of light.
+- **Two Mythic emotes** in the Relic Crate:
+  - **Thunderlord:** a storm gathers, three bolts strike your raised blade, then you drive it into the ground in a blast.
+  - **Ascension:** you rise into the air on wings of light, with a halo and a choir.
+- Effects play for everyone in step, and **the menu's previews show them** (inspect any emote).
+- **Fix:** a crate's lid opens up instead of sinking into the box (the gallery hover and the burst).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [EmoteFX.lua](ReplicatedStorage/EmoteFX.lua) | ReplicatedStorage ▸ EmoteFX | ModuleScript | **new**: emote effects |
+| [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage ▸ Emotes | ModuleScript | reworked motions, Thunderlord, Ascension, `Emotes.elapsed` |
+| [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua) | ReplicatedStorage ▸ Catalog ▸ Emotes | ModuleScript | the two Mythics |
+| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Cosmetics | LocalScript | starts the effects with every emote |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | previews play the effects; a wider stage |
+| [CrateModels.lua](ReplicatedStorage/CrateModels.lua) | ReplicatedStorage ▸ CrateModels | ModuleScript | the lid opens the right way |
+
+---
+
+## Before that: phones and controllers, PETS, 3D crates, sounds that behave, swings that cut through
 
 - **Phones:** the whole menu is bigger on a phone.
   - The dock moves to two columns on the left.

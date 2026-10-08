@@ -644,7 +644,16 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   the way they see the combat pose.
   - **Arms-only emotes** (`upper = true`: Salute, Cheer, Flourish, Wave, Shrug, Beckon, Laugh,
     War Cry, Blade Toss) play while you walk; the legs keep the walk animation. **Whole-body ones**
-    (Bow, Kneel, Jig, Windmill, Champion) need you standing still and end when you move.
+    (Bow, Kneel, Jig, Windmill, Champion, Thunderlord, Ascension) need you standing still and end
+    when you move.
+  - **The rarer, the more it does** (`EmoteFX`, cues on the emote's own clock, so every client sees
+    them in step and the menu's previews show them too):
+    - **Common:** a glint, a puff of dust, confetti.
+    - **Rare:** trails, rings, rising dust and embers.
+    - **Epic:** shockwaves, a war horn, music notes and coloured stamps.
+    - **Legendary:** a whirlwind with crackling steel, or a pillar of light from the planted sword.
+    - **Mythic:** **Thunderlord** (a storm gathers, three bolts strike the raised blade, it's driven into the ground in a blast) and **Ascension** (rising into the air on wings of light, a halo, a choir).
+    The motions have weight: a small move the other way first, a hair past the pose and back, a follow-through.
   - **Fighting ends emotes:** attacking, blocking, kicking or dodging ends any emote at once (the
     keys locally, the character's `Acting` / `Blocking` flags for everyone), and no emote starts
     mid-fight.

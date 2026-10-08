@@ -9,6 +9,7 @@
        Emotes.play(character, id [, startedAt])   start (or restart) an emote
        Emotes.stop(character)                     end it, restore the grip
        Emotes.playing(character)                  the id, or nil
+       Emotes.elapsed(character)                  seconds since it started, or nil
        Emotes.isUpper(id)                         an arms-only emote (you can walk)
        Emotes.modify(character, targets)          used by RigPose.apply
        Emotes.sample(id, t)                       the pose at time t (previews)
@@ -105,42 +106,52 @@ end
 --  THE EMOTES: duration, upper?, pose(t)
 --------------------------------------------------------------------
 local DEF = {}
+-- (the motions have weight: a small move the other way before the big one,
+-- a hair past the pose and back, a held beat, a follow-through on the way out)
 
--- blade to the brow
-local SALUTE = {rs = {132, 0, -27}, blade = {0, 1, 0.05}, neck = {4, 0, 0}, waist = {4, 0, 0}}
+-- blade to the brow: a crisp snap up (a hair past, then settle), chin up, held, a sharp drop
+local SALUTE = {rs = {132, 0, -27}, blade = {0, 1, 0.05}, neck = {6, 0, 0}, waist = {5, 0, 0}}
 DEF.Salute = {d = 2.0, upper = true, pose = track({
-	{0, {}}, {0.35, SALUTE}, {1.45, SALUTE}, {2.0, {}},
+	{0, {}}, {0.14, {rs = {-12, 0, 10}, neck = {-4, 0, 0}}},
+	{0.32, {rs = {142, 0, -31}, blade = {0, 1, 0.05}, neck = {8, 0, 0}, waist = {7, 0, 0}}}, {0.44, SALUTE}, {1.45, SALUTE},
+	{1.64, {rs = {-8, 0, 6}}}, {2.0, {}},
 })}
 
--- a courtly bow: hand to the heart, the sword swept out behind
+-- a courtly bow: the free hand sweeps out wide, then to the heart; the sword swept out behind
 local BOW = {waist = {-42, 0, 0}, neck = {-12, 0, 0}, ls = {80, 0, 44}, rs = {-30, 0, 30}, blade = {0.35, 0.05, 1}}
 -- (the blade swings out to the side and round, never through the floor)
 local REST = {blade = {0, 0, -1}}
-DEF.Bow = {d = 2.3, pose = track({
-	{0, REST}, {0.25, {ls = {60, 0, 30}, rs = {-10, 0, 20}, blade = {1, 0.05, -0.3}}}, {0.65, BOW}, {1.55, BOW},
-	{1.95, {ls = {30, 0, 10}, rs = {-10, 0, 15}, blade = {1, 0.05, -0.2}}}, {2.3, REST},
+DEF.Bow = {d = 2.5, pose = track({
+	{0, REST},
+	{0.22, {ls = {50, 0, -70}, rs = {-6, 0, 22}, neck = {4, 0, 0}, blade = {1, 0.05, -0.3}}},
+	{0.48, {ls = {75, 0, 20}, rs = {-16, 0, 26}, waist = {-14, 0, 0}, blade = {1, 0.05, 0.2}}},
+	{0.78, {waist = {-48, 0, 0}, neck = {-16, 0, 0}, ls = {82, 0, 46}, rs = {-34, 0, 34}, blade = {0.35, 0.05, 1}}}, {0.92, BOW}, {1.7, BOW},
+	{2.1, {ls = {30, 0, 10}, rs = {-10, 0, 15}, blade = {1, 0.05, -0.2}}}, {2.5, REST},
 })}
 
--- both arms up, pumping (and hopping, when you stand still)
+-- a dip to spring from, then both arms up, the fists pumping in turn (and hopping, standing still)
 local CHEER = {rs = {165, 0, 22}, ls = {165, 0, -22}, neck = {18, 0, 0}, waist = {6, 0, 0}, blade = {0.15, 1, 0.1}}
-DEF.Cheer = {d = 2.0, upper = true, pose = with(track({
-	{0, {}}, {0.25, CHEER}, {1.6, CHEER}, {2.0, {}},
+DEF.Cheer = {d = 2.2, upper = true, pose = with(track({
+	{0, {}}, {0.16, {rs = {20, 0, 10}, ls = {20, 0, -10}, waist = {-10, 0, 0}, neck = {-6, 0, 0}, rootY = -0.25}},
+	{0.34, CHEER}, {1.8, CHEER}, {2.2, {}},
 }), function(t, p)
-	local w = window(t, 0.25, 1.6, 0.15)
-	local s = math.sin((t - 0.25) * 10)
-	p.rs[1] += 10 * s * w; p.ls[1] += 10 * s * w
-	p.hopY = math.abs(math.sin((t - 0.25) * 5)) * 0.4 * w
+	local w = window(t, 0.34, 1.8, 0.15)
+	local s = math.sin((t - 0.34) * 11)
+	p.rs[1] += 14 * s * w; p.ls[1] -= 14 * s * w
+	p.neck[3] += 6 * math.sin((t - 0.34) * 5.5) * w
+	p.hopY = math.abs(math.sin((t - 0.34) * 5.5)) * 0.55 * w
 end)}
 
--- twirl the sword twice at your side, then salute. The arm rises with the
+-- twirl the sword three times at your side, then salute. The arm rises with the
 -- blade's length, so even a greatsword's tip clears the floor.
 DEF.Flourish = {d = 2.4, upper = true, pose = with(track({
 	{0, {blade = {0, 0, -1}}},
 	{0.3, {rs = {20, 0, 70}, blade = {0, 0, -1}, neck = {0, -10, 0}}},
-	{1.2, {rs = {20, 0, 70}, blade = {0, 0, -1}, twirl = 720, neck = {0, -10, 0}}},
-	{1.55, {rs = {132, 0, -27}, blade = {0, 1, 0.05}, twirl = 720, neck = {4, 0, 0}}},
-	{1.9, {rs = {132, 0, -27}, blade = {0, 1, 0.05}, twirl = 720, neck = {4, 0, 0}}},
-	{2.4, {blade = {0, 0, -1}, twirl = 720}},
+	{1.2, {rs = {20, 0, 70}, blade = {0, 0, -1}, twirl = 1080, neck = {0, -10, 0}}},
+	{1.42, {rs = {142, 0, -31}, blade = {0, 1, 0.05}, twirl = 1080, neck = {8, 0, 0}}},
+	{1.55, {rs = {132, 0, -27}, blade = {0, 1, 0.05}, twirl = 1080, neck = {4, 0, 0}}},
+	{1.95, {rs = {132, 0, -27}, blade = {0, 1, 0.05}, twirl = 1080, neck = {-6, 0, 0}}},
+	{2.4, {blade = {0, 0, -1}, twirl = 1080}},
 }), function(t, p, reach)
 	-- the hand must stand higher than the blade is long: lift the arm out
 	local need = math.deg(math.acos(math.clamp((3.1 - reach) / 2, -1, 1)))
@@ -149,67 +160,92 @@ DEF.Flourish = {d = 2.4, upper = true, pose = with(track({
 	if t > 0.3 and t < 1.2 then
 		local k = math.sin((t - 0.3) / 0.9 * math.pi)
 		p.rs[1] += 8 * math.sin(t * 15) * k
+		p.waist[2] += 6 * math.sin(t * 7.5) * k
 	end
 end)}
 
--- the free hand waves
-local WAVE = {ls = {140, 0, -30}, neck = {0, 0, -6}}
-DEF.Wave = {d = 1.8, upper = true, pose = with(track({
-	{0, {}}, {0.25, WAVE}, {1.4, WAVE}, {1.8, {}},
-}), function(t, p) p.ls[3] += 20 * math.sin((t - 0.25) * 13) * window(t, 0.25, 1.4, 0.12) end)}
+-- the free hand waves, the wrist swinging, the head tilting along
+local WAVE = {ls = {150, 0, -34}, neck = {0, -8, -8}, waist = {0, -6, 0}}
+DEF.Wave = {d = 2.0, upper = true, pose = with(track({
+	{0, {}}, {0.22, {ls = {165, 0, -20}, neck = {4, -8, -4}}}, {0.34, WAVE}, {1.55, WAVE}, {2.0, {}},
+}), function(t, p)
+	local w = window(t, 0.3, 1.55, 0.12)
+	p.ls[3] += 24 * math.sin((t - 0.3) * 13) * w
+	p.ls[2] += 12 * math.sin((t - 0.3) * 13 + 0.6) * w
+	p.neck[3] += 3 * math.sin((t - 0.3) * 6.5) * w
+end)}
 
-local SHRUG = {rs = {34, 0, 34}, ls = {34, 0, -34}, neck = {4, 0, 14}, waist = {5, 0, 0}}
-DEF.Shrug = {d = 1.6, upper = true, pose = track({
-	{0, {}}, {0.3, SHRUG}, {1.15, SHRUG}, {1.6, {}},
+-- shoulders up, palms out, head tilted
+local SHRUG = {rs = {38, 0, 40}, ls = {38, 0, -40}, neck = {4, 0, 16}, waist = {6, 0, 0}, rootY = 0.12}
+DEF.Shrug = {d = 1.8, upper = true, pose = track({
+	{0, {}}, {0.12, {rs = {10, 0, 8}, ls = {10, 0, -8}, rootY = -0.06}},
+	{0.32, {rs = {44, 0, 46}, ls = {44, 0, -46}, neck = {6, 0, 20}, waist = {7, 0, 0}, rootY = 0.16}},
+	{0.42, SHRUG}, {1.25, SHRUG}, {1.8, {}},
 })}
 
--- "come here"
-local BECKON = {ls = {84, 0, -6}, neck = {4, 8, -6}}
-DEF.Beckon = {d = 2.0, upper = true, pose = with(track({
-	{0, {}}, {0.25, BECKON}, {1.6, BECKON}, {2.0, {}},
-}), function(t, p) p.ls[1] += 24 * math.sin((t - 0.25) * 12) * window(t, 0.25, 1.6, 0.1) end)}
+-- "come on, then": leaning back, chin up, the hand curling, a nod with every curl
+local BECKON = {ls = {84, 0, -6}, neck = {10, 8, -6}, waist = {8, 10, 0}}
+DEF.Beckon = {d = 2.2, upper = true, pose = with(track({
+	{0, {}}, {0.25, BECKON}, {1.8, BECKON}, {2.2, {}},
+}), function(t, p)
+	local w = window(t, 0.25, 1.8, 0.1)
+	local s = math.sin((t - 0.25) * 12)
+	p.ls[1] += 26 * s * w
+	p.neck[1] += 4 * math.max(0, s) * w
+end)}
 
 -- the arms' forward raise that puts the hands `h` studs above the floor
 -- (the shoulder pivot stands `pivot` high; the hand hangs 1.5 below it)
 local function raiseFor(h, pivot) return math.deg(math.acos(math.clamp((pivot - h) / 1.5, -1, 1))) end
 
--- down on one knee, both hands on the planted sword (higher for a longer one)
-local KNEEL = {rootY = -0.6, lh = {58, 0, 0}, rh = {-55, 0, 0}, rs = {0, 0, -14}, ls = {0, 0, 22}, neck = {-16, 0, 0}, plantW = 1}
-DEF.Kneel = {d = 3.2, pose = with(track({
-	{0, REST}, {0.45, KNEEL}, {2.6, KNEEL}, {3.2, REST},
+-- down on one knee with weight (a drop, a settle), both hands on the planted
+-- sword (higher for a longer one); the head bows, then lifts
+local function kneel(neck, drop)
+	return {rootY = drop or -0.6, lh = {58, 0, 0}, rh = {-55, 0, 0}, rs = {0, 0, -14}, ls = {0, 0, 22}, neck = {neck, 0, 0}, plantW = 1}
+end
+DEF.Kneel = {d = 3.4, pose = with(track({
+	{0, REST}, {0.4, kneel(-26, -0.72)}, {0.55, kneel(-16)}, {1.3, kneel(-30)}, {2.1, kneel(6)}, {2.7, kneel(-4)}, {3.4, REST},
 }), function(t, p, reach)
-	local k = ease(window(t, 0, 3.2, 0.5))
+	local k = ease(window(t, 0, 3.4, 0.5))
 	local x = math.min(95, math.max(55, raiseFor(0.8 * reach, 2.9)))
 	p.rs[1] += x * k; p.ls[1] += (x - 4) * k
 end)}
 
-local LAUGH = {waist = {-16, 0, 0}, neck = {24, 0, 0}, ls = {42, 0, 30}, rs = {28, 0, -8}}
-DEF.Laugh = {d = 2.4, upper = true, pose = with(track({
-	{0, {}}, {0.25, LAUGH}, {2.0, LAUGH}, {2.4, {}},
+-- the head thrown back, then doubled over, a hand slapping the knee
+DEF.Laugh = {d = 2.6, upper = true, pose = with(track({
+	{0, {}}, {0.22, {waist = {10, 0, 0}, neck = {30, 0, 0}, ls = {30, 0, 20}, rs = {20, 0, -6}}},
+	{0.9, {waist = {6, 0, 0}, neck = {26, 0, 0}, ls = {36, 0, 26}, rs = {24, 0, -8}}},
+	{1.2, {waist = {-24, 0, 0}, neck = {10, 0, 0}, ls = {10, 0, 8}, rs = {28, 0, -8}}},
+	{2.1, {waist = {-20, 0, 0}, neck = {14, 0, 0}, ls = {14, 0, 10}, rs = {28, 0, -8}}}, {2.6, {}},
 }), function(t, p)
-	local s = math.sin(t * 26) * 5 * window(t, 0.25, 2.0, 0.15)
+	local s = math.sin(t * 26) * 5 * window(t, 0.22, 2.1, 0.15)
 	p.waist[1] += s; p.neck[1] += s * 0.6
+	if t > 1.15 and t < 2.1 then p.ls[1] += 14 * math.max(0, math.sin((t - 1.15) * 9)) end
 end)}
 
--- a tavern jig: one leg kicks at a time, the other stays down
-DEF.Jig = {d = 3.2, pose = with(track({
-	{0, {}}, {3.2, {}},
+-- a tavern jig: one leg kicks at a time, a twirl in the middle, a leap to finish
+DEF.Jig = {d = 3.6, pose = with(track({
+	{0, {}}, {3.6, {}},
 }), function(t, p)
-	local w = window(t, 0.2, 2.9, 0.2)
+	local w = window(t, 0.2, 3.3, 0.2)
 	local s = math.sin(t * 13)
 	p.rh = {40 * math.max(0, s) * w, 0, 0}
 	p.lh = {40 * math.max(0, -s) * w, 0, 0}
 	p.rs = {(-40 * s + 40) * w, 0, 30 * w}
 	p.ls = {(40 * s + 40) * w, 0, -30 * w}
 	p.waist = {0, 16 * math.sin(t * 6.5) * w, 0}
-	p.rootY = math.abs(s) * 0.3 * w
+	p.rootY = math.abs(s) * 0.3 * w + 0.7 * window(t, 2.8, 3.2, 0.18)
+	p.root = {0, 360 * ease(math.clamp((t - 1.5) / 0.6, 0, 1)), 0}
 end)}
 
-local CRY = {rs = {160, 0, 30}, ls = {160, 0, -30}, neck = {30, 0, 0}, waist = {14, 0, 0}, blade = {0.2, 1, -0.15}}
-DEF.WarCry = {d = 2.4, upper = true, pose = with(track({
-	{0, {}}, {0.3, CRY}, {1.9, CRY}, {2.4, {}},
+-- gathering it in (a crouch, arms down), then the roar: arms flung up, head back, shaking
+local CRY = {rs = {160, 0, 30}, ls = {160, 0, -30}, neck = {30, 0, 0}, waist = {14, 0, 0}, blade = {0.2, 1, -0.15}, rootY = 0.1}
+DEF.WarCry = {d = 2.6, upper = true, pose = with(track({
+	{0, {}}, {0.32, {rs = {-20, 0, 24}, ls = {-20, 0, -24}, neck = {-14, 0, 0}, waist = {-20, 0, 0}, rootY = -0.35}},
+	{0.5, {rs = {170, 0, 34}, ls = {170, 0, -34}, neck = {34, 0, 0}, waist = {18, 0, 0}, blade = {0.2, 1, -0.15}, rootY = 0.18}},
+	{0.62, CRY}, {2.1, CRY}, {2.6, {}},
 }), function(t, p)
-	local s = math.sin(t * 40) * 3 * window(t, 0.3, 1.9, 0.1)
+	local s = math.sin(t * 40) * 3 * window(t, 0.5, 2.1, 0.1)
 	p.rs[3] += s; p.ls[3] -= s; p.neck[3] += s
 end)}
 
@@ -223,26 +259,68 @@ DEF.BladeToss = {d = 2.7, upper = true, pose = track({
 	{2.0, SALUTE}, {2.25, SALUTE}, {2.7, {}},
 })}
 
--- the sword spins flat over your head like a rotor while you turn on the spot
+-- the sword spins flat over your head like a rotor while you turn on the spot,
+-- lifting off the ground as it goes faster, and a stamp to land
 local MILL = {rs = {172, 0, 4}, ls = {24, 0, -24}, neck = {14, 0, 0}, blade = {0, 0.05, -1}}
-DEF.Windmill = {d = 3.2, pose = with(track({
-	{0, REST}, {0.3, MILL}, {2.8, MILL}, {3.2, REST},
+DEF.Windmill = {d = 3.3, pose = with(track({
+	{0, REST}, {0.3, MILL}, {2.8, MILL}, {3.3, REST},
 }), function(t, p)
 	-- six whole turns, winding up and easing down, so the blade lands where it started
 	local k = math.clamp((t - 0.3) / 2.5, 0, 1)
 	p.rotor = 6 * 360 * ease(k)
 	p.root = {0, 360 * ease(k), 0}
+	p.rootY = 0.45 * window(t, 0.6, 2.75, 0.5) - 0.3 * window(t, 2.85, 3.15, 0.1)
 end)}
 
--- the sword planted upright before you, both hands on the pommel: the hands
--- stand as high as the blade is long, so its tip just meets the ground
+-- the blade raised high, then driven down and planted upright before you, both
+-- hands on the pommel (as high as the blade is long, so its tip just meets the
+-- ground), chest out, surveying the field
 local CHAMP = {rs = {0, 0, -24}, ls = {0, 0, 26}, plantW = 1, neck = {10, 0, 0}, waist = {4, 0, 0}}
-DEF.Champion = {d = 3.4, pose = with(track({
-	{0, REST}, {0.45, CHAMP}, {2.9, CHAMP}, {3.4, REST},
+DEF.Champion = {d = 3.8, pose = with(track({
+	{0, REST},
+	{0.45, {rs = {165, 0, 10}, ls = {150, 0, -14}, neck = {16, 0, 0}, waist = {8, 0, 0}, blade = {0, 1, 0.2}}},
+	{0.75, {rs = {0, 0, -24}, ls = {0, 0, 26}, plantW = 1, neck = {-6, 0, 0}, waist = {-10, 0, 0}, rootY = -0.15}},
+	{0.92, CHAMP}, {3.3, CHAMP}, {3.8, REST},
 }), function(t, p, reach)
-	local k = ease(window(t, 0, 3.4, 0.45))
+	local k = ease(window(t, 0.65, 3.8, 0.25))
 	local x = math.min(125, math.max(35, raiseFor(0.92 * reach, 3.5)))
 	p.rs[1] += x * k; p.ls[1] += (x + 2) * k
+	p.neck[2] += 22 * math.sin((t - 1.2) * 1.6) * window(t, 1.2, 3.1, 0.3)
+end)}
+
+-- MYTHIC: the blade held up to the sky; three bolts strike it (each jolts the
+-- arms), the charge hums, then it's driven into the ground in a blast
+local SKY = {rs = {176, 0, 4}, ls = {168, 0, -12}, neck = {34, 0, 0}, waist = {10, 0, 0}, blade = {0, 1, 0}, rootY = 0.15}
+DEF.Thunderlord = {d = 4.4, pose = with(track({
+	{0, REST},
+	{0.35, {rs = {40, 0, 20}, ls = {30, 0, -20}, waist = {-14, 0, 0}, neck = {-10, 0, 0}, rootY = -0.3, blade = {0, 0.2, -1}}},
+	{0.75, SKY}, {3.0, SKY},
+	{3.3, {rs = {190, 0, 4}, ls = {180, 0, -12}, neck = {20, 0, 0}, waist = {14, 0, 0}, blade = {0, 1, 0.3}, rootY = 0.25}},
+	{3.5, {rs = {30, 0, 4}, ls = {26, 0, -10}, neck = {-20, 0, 0}, waist = {-30, 0, 0}, rootY = -0.4, plantW = 1}},
+	{3.9, {rs = {30, 0, 4}, ls = {26, 0, -10}, neck = {-10, 0, 0}, waist = {-24, 0, 0}, rootY = -0.35, plantW = 1}},
+	{4.4, REST},
+}), function(t, p)
+	for _, c in ipairs({1.25, 1.95, 2.65}) do
+		local j = window(t, c, c + 0.25, 0.04)
+		p.rs[3] += 6 * math.sin(t * 70) * j; p.ls[3] -= 6 * math.sin(t * 70) * j; p.neck[1] -= 6 * j
+	end
+	p.rootY = (p.rootY or 0) + 0.08 * math.sin(t * 4) * window(t, 0.75, 3.0, 0.3)
+end)}
+
+-- MYTHIC: a knee and a bowed head, then rising into the air, arms opening like
+-- wings, held aloft, floating, and down again to land
+local ALOFT = {rootY = 3.2, neck = {20, 0, 0}, rs = {30, 0, 95}, ls = {30, 0, -95}, waist = {10, 0, 0}, rh = {-10, 0, 0}, lh = {14, 0, 0}, blade = {0.6, -1, 0}}
+DEF.Ascension = {d = 5.0, pose = with(track({
+	{0, REST},
+	{0.5, {rootY = -0.6, lh = {58, 0, 0}, rh = {-55, 0, 0}, neck = {-26, 0, 0}, rs = {10, 0, -10}, ls = {10, 0, 10}, blade = {0.3, -1, 0}}},
+	{1.2, {rootY = 0.4, neck = {28, 0, 0}, rs = {20, 0, 70}, ls = {20, 0, -70}, waist = {8, 0, 0}, blade = {0.4, -1, 0}}},
+	{2.6, ALOFT}, {3.4, ALOFT},
+	{4.4, {rootY = 0.2, rs = {10, 0, 30}, ls = {10, 0, -30}, blade = {0.3, -1, 0}}},
+	{4.55, {rootY = -0.25, waist = {-10, 0, 0}, rs = {10, 0, 30}, ls = {10, 0, -30}, blade = {0.3, -1, 0}}},
+	{5.0, REST},
+}), function(t, p)
+	p.rootY = (p.rootY or 0) + 0.15 * math.sin(t * 2.6) * window(t, 2.6, 3.6, 0.4)
+	p.lh[1] += 8 * math.sin(t * 2.6) * window(t, 2.0, 3.8, 0.4)
 end)}
 
 Emotes.DURATION = {}
@@ -372,6 +450,11 @@ local active = setmetatable({}, {__mode = "k"})   -- character → {id, t0, grip
 function Emotes.playing(char)
 	local a = char and active[char]
 	return a and a.id or nil
+end
+-- seconds since it started (EmoteFX keeps its effects in step with it)
+function Emotes.elapsed(char)
+	local a = char and active[char]
+	return a and (os.clock() - a.t0) or nil
 end
 
 -- the weld that holds the weapon: this game's ToolGrip Motor6D (attack

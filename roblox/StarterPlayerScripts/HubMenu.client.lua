@@ -1509,13 +1509,17 @@ end
 function Preview.emote(parent, id, size, still, light)
 	local holder, world, cam = Preview.box(parent, size)
 	cam.FieldOfView = 40
-	cam.CFrame = light and CFrame.lookAt(Vector3.new(0, 0.8, -8.6), Vector3.new(0, 0, 0)) or CFrame.lookAt(Vector3.new(0, 1.4, -12), Vector3.new(0, 0.2, 0))
+	-- (pulled back on the big stages: an emote's light, wings and lightning need the sky)
+	cam.CFrame = light and CFrame.lookAt(Vector3.new(0, 0.8, -8.6), Vector3.new(0, 0, 0)) or (still and CFrame.lookAt(Vector3.new(0, 1.4, -12), Vector3.new(0, 0.2, 0)) or CFrame.lookAt(Vector3.new(0, 3.2, -17), Vector3.new(0, 1.9, 0)))
 	local rig = Preview.rig(world, true, light)
 	rig:PivotTo(CFrame.Angles(0, math.rad(16), 0))
 	if not light then platformDisc(world, 0, 0, COL.BLUE) end
 	local origins = {}
 	local dur = Preview.Emotes.DURATION[id] or 2
 	if still then Preview.Emotes.poseRig(rig, id, dur * still, origins); settle(rig); return holder end
+	-- (its effects too: the rarer, the more it does — ReplicatedStorage ▸ EmoteFX)
+	Preview.EmoteFX = Preview.EmoteFX or require(ReplicatedStorage:WaitForChild("EmoteFX"))
+	local efx = Preview.EmoteFX.new(rig, id, world, true)
 	local t0 = os.clock()
 	task.spawn(function()
 		while holder.Parent do
@@ -1523,6 +1527,7 @@ function Preview.emote(parent, id, size, still, light)
 				local t = (os.clock() - t0) % (dur + 0.8)
 				Preview.Emotes.poseRig(rig, id, math.min(t, dur), origins)
 				settle(rig)
+				efx:update(t)
 			end
 			task.wait(1 / 30)
 		end

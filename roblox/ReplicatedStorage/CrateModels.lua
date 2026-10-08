@@ -180,7 +180,7 @@ function CrateModels.build(crateId, def)
 	-- (the model can be moved: the hinge goes with the base)
 	local baseRel = base.CFrame:ToObjectSpace(hinge)
 	function rig.setLid(a)
-		local h = base.CFrame * baseRel * CFrame.Angles(-a, 0, 0)
+		local h = base.CFrame * baseRel * CFrame.Angles(a, 0, 0)   -- (the front edge lifts: the hinge is at the back)
 		for p, r in pairs(rel) do p.CFrame = h * r end
 	end
 	function rig.glow(k, spin)
