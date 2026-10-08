@@ -51,6 +51,7 @@ Catalog.PASS      = child("Pass")
 Catalog.LOGIN     = child("Login")
 Catalog.KILLFX    = child("KillFX")
 Catalog.EMOTES    = child("Emotes")
+Catalog.ARMORFX   = child("ArmorFX")   -- armor finishes (the Forge Crate)
 Catalog.GIFTS     = child("Gifts")
 Catalog.EGGS      = child("Eggs")
 Catalog.COMPANIONS = child("Companions")
@@ -137,6 +138,8 @@ local function autoPieces()
 					rarity = cfg.Rarity or "Common", marks = cfg.PriceMarks or 0, crowns = cfg.PriceCrowns or 0,
 					covers = d.slot == "helmet" and d.covers or nil, set = set.Name, setName = base, auto = true,
 					description = cfg.Description,
+					-- (a crate-only set: its pieces drop one at a time, as tradable copies; a built-in finish)
+					crate = cfg.Crate, fx = cfg.Finish,
 				})
 			end
 		end
@@ -178,6 +181,7 @@ end
 Catalog.COLOR = {}  for _, c in ipairs(Catalog.PALETTE) do Catalog.COLOR[c.name] = c end
 Catalog.KILLFX_BY = {}  for _, f in ipairs(Catalog.KILLFX) do Catalog.KILLFX_BY[f.id] = f end
 Catalog.EMOTE = {}      for _, e in ipairs(Catalog.EMOTES) do Catalog.EMOTE[e.id] = e end
+Catalog.ARMORFX_BY = {} for _, f in ipairs(Catalog.ARMORFX) do Catalog.ARMORFX_BY[f.id] = f end
 Catalog.EGG = {}        for _, e in ipairs(Catalog.EGGS.eggs) do Catalog.EGG[e.id] = e end
 
 -- may this weapon go in this slot for this class? A ranged class's primary is a
@@ -198,7 +202,8 @@ Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPAN
 --  QUERIES
 --------------------------------------------------------------------
 -- free = costs nothing and is not earned (earned pieces carry an `unlock`)
-function Catalog.isFree(piece) return (piece.marks or 0) == 0 and (piece.crowns or 0) == 0 and piece.unlock == nil end
+-- (a crate-only piece has no price either, but it's anything but free)
+function Catalog.isFree(piece) return (piece.marks or 0) == 0 and (piece.crowns or 0) == 0 and piece.unlock == nil and piece.crate == nil end
 
 --------------------------------------------------------------------
 --  UNLOCKS — shared by weapons, earned pieces and earned titles
@@ -441,9 +446,16 @@ function Catalog.itemSource(it)
 	return "free"
 end
 
--- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote")
+-- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote"),
+-- armor pieces of a crate-only set ("piece") and armor finishes ("armorfx")
 function Catalog.crateItems(crateId)
 	local out = {}
+	for _, pc in ipairs(Catalog.PIECES or {}) do
+		if pc.crate == crateId then table.insert(out, {kind = "piece", id = pc.id, name = pc.name, rarity = pc.rarity, ref = pc}) end
+	end
+	for _, f in ipairs(Catalog.ARMORFX or {}) do
+		if f.crate == crateId then table.insert(out, {kind = "armorfx", id = f.id, name = f.name, rarity = f.rarity, ref = f}) end
+	end
 	for _, s in ipairs(Catalog.crateSkins(crateId)) do
 		if Catalog.released(s) then
 			table.insert(out, {kind = "skin", id = s.id, name = s.name, rarity = s.rarity, weapon = s.weapon, ref = s})
@@ -553,6 +565,7 @@ if RunService:IsServer() then
 				for _, s in ipairs(Catalog.SKINS) do if s.crate == id and s.rarity == r then any = true end end
 				for _, f in ipairs(Catalog.KILLFX) do if f.crate == id and f.rarity == r then any = true end end
 				for _, e in ipairs(Catalog.EMOTES) do if e.crate == id and e.rarity == r then any = true end end
+				for _, f in ipairs(Catalog.ARMORFX or {}) do if f.crate == id and f.rarity == r then any = true end end
 				if n > 0 and not any then warn("[Catalog] crate", id, "can roll", r, "but has nothing of that rarity") end
 			end
 			if math.abs(sum - 100) > 0.001 then warn("[Catalog] crate", id, "odds add up to", sum, "(should be 100)") end

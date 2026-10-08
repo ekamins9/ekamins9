@@ -24,7 +24,8 @@
      ever one), every limited skin, every claim and Founder gift, every Mythic
      companion.
      Copies are kept for kill effects and emotes out of crates too ("fx:" .. id,
-     "emote:" .. id), so a duplicate is never wasted: trade it, or scrap it. ]]
+     "emote:" .. id), and for armor out of the Forge Crate ("armor:" .. pieceId,
+     "finish:" .. finishId), so a duplicate is never wasted: trade it, or scrap it. ]]
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -151,6 +152,8 @@ function Collection.itemOf(key)
 	if type(key) ~= "string" then return nil end
 	if key:sub(1, 3) == "fx:" then return Catalog.KILLFX_BY[key:sub(4)], "killfx" end
 	if key:sub(1, 6) == "emote:" then return Catalog.EMOTE[key:sub(7)], "emotes" end
+	if key:sub(1, 6) == "armor:" then return Catalog.PIECE[key:sub(7)], "pieces" end
+	if key:sub(1, 7) == "finish:" then return Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[key:sub(8)], "armorfx" end
 	return nil
 end
 -- may a copy of it change hands? Crate and shop skins, hatched companions: yes.
@@ -311,12 +314,12 @@ function Collection.rating(p)
 	end
 	for key, list in pairs(p.copies or {}) do
 		local pet = key:sub(1, 4) == "pet:"
-		local def = pet and Catalog.COMPANION[key:sub(5)] or Catalog.SKIN[key]
+		local def = pet and Catalog.COMPANION[key:sub(5)] or Collection.itemOf(key) or Catalog.SKIN[key]
 		if def then
 			local mult = 1
 			if pet then
 				if def.egg and not Drops.eggReturns(def.egg) and not Drops.eggLive(def.egg) then mult = 2 end
-			else
+			elseif Catalog.SKIN[key] then
 				local status = Drops.skinStatus(def)
 				if status == "relic" then mult = 2 elseif status == "vaulted" then mult = 1.3 end
 				if def.limited then mult *= 2 end

@@ -2,7 +2,7 @@
      the server (real spawns) and on the client (the menu mannequin), reading
      models from ReplicatedStorage ▸ Cosmetics through Catalog.
 
-       Dresser.dress(char, {loadout = {helmet, top, bottom, colors, weapon, weaponSkin},
+       Dresser.dress(char, {loadout = {helmet, top, bottom, colors, armorFx, weapon, weaponSkin},
                             appearance = {skin, hair, hairColor, beard, face},
                             weight = "Heavy", team = "A"|"B"|nil, preview = bool})
        Dresser.undress(char)              removes armor + body, resets stats
@@ -25,6 +25,7 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local SkinTrims = require(ReplicatedStorage:WaitForChild("SkinTrims"))
 local SkinFX = require(ReplicatedStorage:WaitForChild("SkinFX"))
 local Defight = require(ReplicatedStorage:WaitForChild("Defight"))
+local ArmorFX   -- (required on first use: it needs Catalog's finishes)
 
 local Dresser = {}
 
@@ -289,6 +290,13 @@ function Dresser.dress(char, opts)
 	-- layers that sit flush (a glove as wide as its sleeve) would flicker: nudge them apart
 	Defight.run(container)
 	local painted = Dresser.paint(container, lo.colors, opts.team)
+	-- the armor's finish (Catalog ▸ ArmorFX): the class's pick, else the top's own (a crate set's)
+	local picked = lo.armorFx ~= nil and lo.armorFx ~= ""
+	local finish = picked and lo.armorFx or (Catalog.PIECE[lo.top or ""] and Catalog.PIECE[lo.top].fx)
+	if finish then
+		ArmorFX = ArmorFX or require(ReplicatedStorage:WaitForChild("ArmorFX"))
+		pcall(ArmorFX.apply, container, char, finish, opts.preview, not picked)
+	end
 	-- what each covered limb shows through the gaps (GAPS; the head keeps its skin)
 	local under = {}
 	for _, m in ipairs(container:GetChildren()) do

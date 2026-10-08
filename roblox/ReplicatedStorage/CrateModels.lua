@@ -29,6 +29,7 @@ CrateModels.LOOKS = {
 	Fletcher   = {wood = C(96, 82, 44), metal = C(120, 170, 80), emblem = "arrow", glow = C(170, 255, 120)},
 	Grim       = {wood = C(30, 34, 30), metal = C(90, 170, 100), emblem = "skull", glow = C(110, 255, 140)},
 	Royal      = {wood = C(90, 20, 30), metal = GOLD, emblem = "crown", glow = C(255, 220, 120)},
+	Forge      = {wood = C(40, 36, 34), metal = C(200, 90, 40), emblem = "hammer", glow = C(255, 130, 50)},
 	Ossuary    = {wood = C(150, 140, 118), metal = C(222, 210, 182), emblem = "skull", glow = C(255, 240, 200)},
 	Hollow     = {wood = C(40, 26, 20), metal = C(255, 140, 40), emblem = "flame", glow = C(255, 150, 40)},
 	Foundry    = {wood = C(54, 50, 50), metal = C(255, 150, 70), emblem = "hammer", glow = C(255, 130, 50)},

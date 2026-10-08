@@ -801,6 +801,19 @@ credit and reads TEAMKILLED in the feed.
 
 ## Armor sets
 
+**Armor is collectable now, like skins.** The **Forge Crate** (always in rotation) drops:
+- **finishes** (`Catalog ▸ ArmorFX`, `ReplicatedStorage ▸ ArmorFX`), one per class in LOADOUT ›
+  FINISH, on any set of any weight. Rare: Gilded, Blackened, Bloodsteel, Verdigris. Epic:
+  Emberforged, Frostbound, Verdant, Rosewarden. Legendary: Stormborn, Voidtouched, Sunblessed.
+  Mythic: Celestial, Infernal. They recolour the plates, light the trims (pulse, crackle or
+  rainbow: `StarterPlayerScripts ▸ ArmorFX`), and wrap you in an aura and a glow in the world.
+- **four crate-only sets**, one piece at a time: Dragonscale (Heavy, Legendary), Frostwarden
+  (Medium, Legendary), Shadowveil (Light, Legendary), Seraph (Medium, Mythic). Each wears its own
+  finish.
+
+Everything out of it is a copy of its own (`"armor:"`, `"finish:"`): trade it, scrap it, keep
+it. Looks only: stats still come from the weight. The shop never sells a crate piece.
+
 ```
 ServerStorage
 └─ Armor (Folder)

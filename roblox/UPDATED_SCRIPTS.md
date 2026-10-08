@@ -1,4 +1,30 @@
-# Updated scripts: no more bare dummy in the previews
+# Updated scripts: armor is collectable — the Forge Crate, finishes, four crate-only sets
+
+- **Armor finishes** (13, Rare to Mythic): they recolour your plates, light your trims (breathing, crackling or walking the rainbow) and wrap you in an aura: embers, frost, leaves, petals, storm, smoke, holy light, stars, fire. They go on any set, one per class (LOADOUT › FINISH).
+- **The Forge Crate** (always in rotation) drops finishes and **four sets you can only find there**, one piece at a time, each with its own finish:
+  - **Dragonscale** (Heavy): skull helm, burning eyes, horns, scales.
+  - **Frostwarden** (Medium): a crown of icicles and furs.
+  - **Shadowveil** (Light): a hood, a mask, two glowing eyes, runes.
+  - **Seraph** (Medium, Mythic): a halo, a winged helm and great wings of light.
+- **Tradeable:** everything out of it is a copy of its own. Trade it, scrap it, collect the set.
+- Armor shows on a mannequin everywhere: the crate's stage and reel, inspect, the inventory (new FINISHES filter), trade cards and try-on.
+- The shop never sells a crate piece. Looks only: stats still come from the weight.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/ArmorFX.lua](ReplicatedStorage/Catalog/ArmorFX.lua) | ReplicatedStorage ▸ Catalog ▸ ArmorFX | ModuleScript | **new**: the finishes |
+| [ArmorFX.lua](ReplicatedStorage/ArmorFX.lua) | ReplicatedStorage ▸ ArmorFX | ModuleScript | **new**: puts a finish on dressed armor |
+| [ArmorFX.client.lua](StarterPlayerScripts/ArmorFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ ArmorFX | LocalScript | **new**: glowing trims breathe / crackle / cycle |
+| [ServerStorage/Armor/Dragonscale · Frostwarden · Shadowveil · Seraph](ServerStorage/Armor) | ServerStorage ▸ Armor | Model + Config | **new** crate-only sets |
+| [Build/Armor.lua](ServerScriptService/Build/Armor.lua) | ServerScriptService ▸ Build ▸ Armor | ModuleScript | their blueprints |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Crates.lua](ReplicatedStorage/Catalog/Crates.lua), [Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua), [Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the Forge Crate, crate pieces and finishes in crates, never free |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua), [SkinFX.lua](ReplicatedStorage/SkinFX.lua), [CrateModels.lua](ReplicatedStorage/CrateModels.lua) | ReplicatedStorage | ModuleScript | the finish after the paint; shared auras; the Forge's chest |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua), [Economy.lua](ServerScriptService/Economy/Economy.lua), [Collection.lua](ServerScriptService/Economy/Collection.lua) | ServerScriptService | ModuleScript | `armorFx` per class; armor copies out of crates, tradable, scrappable; never bought |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | FINISH picker, armor on stages / thumbs / inspect / inventory / trade |
+
+---
+
+## Before that: no more bare dummy in the previews
 
 - **Wardrobe:** you stand in your active class's armor with only the helmet off, so the face and hair you're editing show (WITH HELMET still puts it on).
 - **Every little preview window** (kill effects, emotes, the inventory, inspect) shows you as you are: your active class's armor and look, not a bare body. The dressed figure is built once per look and copied, so a screen full of looping thumbnails stays cheap.

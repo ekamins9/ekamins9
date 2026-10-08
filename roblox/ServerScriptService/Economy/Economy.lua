@@ -119,6 +119,7 @@ function Economy.buy(plr, kind, id, currency)
 	if kind == "piece" then
 		local pc = Catalog.PIECE[id]; if not pc then return false, "no such piece" end
 		if Profile.has(plr, "pieces", id) then return false, "already owned" end
+		if pc.crate then return false, "this one only comes out of the " .. ((Catalog.CRATES[pc.crate] or {}).name or "crate") end
 		if not Catalog.isFree(pc) and not Catalog.onSale(pc.pack) then return false, "not in today's store" end
 		local m, c = price(pc.marks, pc.crowns, currency); if not m then return false, c end
 		local ok, msg = Economy.spend(plr, m, c); if not ok then return false, msg end
@@ -128,7 +129,7 @@ function Economy.buy(plr, kind, id, currency)
 		if not Catalog.onSale(id) then return false, "not in today's store" end
 		local m, c, list = 0, 0, {}
 		for _, pc in ipairs(Catalog.PIECES) do
-			if pc.pack == id and not Profile.has(plr, "pieces", pc.id) then table.insert(list, pc); m += pc.marks; c += pc.crowns end
+			if pc.pack == id and not pc.crate and not Profile.has(plr, "pieces", pc.id) then table.insert(list, pc); m += pc.marks; c += pc.crowns end
 		end
 		for _, sk in ipairs(Catalog.SKINS) do
 			if sk.pack == id and not Profile.has(plr, "skins", sk.id) then table.insert(list, sk); m += sk.marks or 0; c += sk.crowns or 0 end
@@ -243,7 +244,8 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	local win = picks[math.random(#picks)]
 	cc.opens += 1
 	cc.sinceLegendary = (win.rarity == "Legendary" or win.rarity == "Mythic") and 0 or cc.sinceLegendary + 1
-	local ownKind = win.kind == "skin" and "skins" or (win.kind == "killfx" and "killfx" or "emotes")
+	local OWN = {skin = "skins", killfx = "killfx", emote = "emotes", piece = "pieces", armorfx = "armorfx"}
+	local ownKind = OWN[win.kind] or "emotes"
 	local dup = Profile.has(plr, ownKind, win.id)
 	local refund = 0
 	local variant, serial
@@ -255,9 +257,10 @@ function Economy.openCrate(plr, crateId, free, payWith)
 		serial = it and it.n
 		copies = Profile.copyCount(p, win.id)
 	else
-		-- a kill effect or an emote too: kept as a copy of its own, never paid back
-		-- (a Mythic one numbered); trade the spare, or scrap it if you choose
-		local key = (win.kind == "killfx" and "fx:" or "emote:") .. win.id
+		-- a kill effect, an emote, an armor piece or a finish too: kept as a copy of
+		-- its own, never paid back (a Mythic one numbered); trade the spare, or scrap it
+		local PREFIX = {killfx = "fx:", emote = "emote:", piece = "armor:", armorfx = "finish:"}
+		local key = (PREFIX[win.kind] or "emote:") .. win.id
 		if win.rarity == "Mythic" then serial = collection().serial(key) end
 		Profile.addCopy(plr, key, {n = serial, from = from, bound = not collection().tradable(key)})
 		copies = Profile.copyCount(p, key)
@@ -265,8 +268,9 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
 	log(plr.Name, "opened", crateId, "->", win.kind, win.id, win.rarity, dup and ("dup +" .. refund) or "")
+	local KIND_LABEL = {killfx = "Kill effect · ", emote = "Emote · ", piece = "Armor · ", armorfx = "Armor finish · "}
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
-		or ((win.kind == "killfx" and "Kill effect · " or "Emote · ") .. win.name)
+		or ((KIND_LABEL[win.kind] or "") .. win.name)
 	return {crate = crateId, kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
 		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
 		copies = copies}

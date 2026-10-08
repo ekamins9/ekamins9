@@ -985,6 +985,8 @@ local function owns(kind, id)
 	if kind == "companions" and #HX.copies("pet:" .. tostring(id)) > 0 then return true end
 	if kind == "killfx" and #HX.copies("fx:" .. tostring(id)) > 0 then return true end
 	if kind == "emotes" and #HX.copies("emote:" .. tostring(id)) > 0 then return true end
+	if kind == "pieces" and #HX.copies("armor:" .. tostring(id)) > 0 then return true end
+	if kind == "armorfx" and #HX.copies("finish:" .. tostring(id)) > 0 then return true end
 	return p ~= nil and p.owned ~= nil and p.owned[kind] ~= nil and p.owned[kind][id] == true
 end
 local function unlockText(w) return Catalog.unlockText(w.unlock) end
@@ -1687,6 +1689,7 @@ end
 function Preview.thumb(parent, it, size, zoom)
 	if it.kind == "skin" then return weaponThumb(parent, it.weapon, it.id, size, zoom) end
 	if it.kind == "killfx" then return Preview.killFx(parent, it.id, size, 0.3, true) end
+	if it.kind == "piece" or it.kind == "armorfx" then return HX.armorThumb(parent, it.kind, it.id, size) end
 	return Preview.emote(parent, it.id, size, 0.45, true)
 end
 
@@ -2172,6 +2175,45 @@ _G.HubCrateSpin = function(res) return HX.spinCrate(res) end
 --------------------------------------------------------------------
 HX.CrateModels = require(ReplicatedStorage:WaitForChild("CrateModels"))
 HX.Hints = require(ReplicatedStorage:WaitForChild("InputHints"))   -- (control names for keys / a controller / touch)
+-- ARMOR on show: what a piece or a finish looks like on someone. A piece is shown
+-- with the rest of its set (a crate set wears its finish only whole), on the
+-- active class if the weight fits, else the first class of its weight; a finish
+-- on the active class's armor.
+function HX.armorLook(kind, id)
+	local cls = state.activeClass
+	local lo = {}
+	if kind == "piece" then
+		local pc = Catalog.PIECE[id]
+		if not pc then return nil end
+		if weightOf(cls) ~= pc.weight then
+			for cid, c in pairs(GameConfig.CLASSES) do if c.weight == pc.weight then cls = cid; break end end
+		end
+		for k, v in pairs(classLoadout(cls)) do lo[k] = v end
+		lo.armorFx = ""
+		if pc.set then
+			for _, other in ipairs(Catalog.PIECES) do if other.set == pc.set then lo[other.slot] = other.id end end
+		end
+		lo[pc.slot] = pc.id
+		return lo, pc.weight
+	end
+	for k, v in pairs(classLoadout(cls)) do lo[k] = v end
+	lo.armorFx = id
+	return lo, weightOf(cls)
+end
+function HX.armorThumb(parent, kind, id, size)
+	local lo, w = HX.armorLook(kind, id)
+	local th = mannequinThumb(parent, lo or {}, w or "Light", size, nil, {dist = 9.6, appearance = state.profile and state.profile.appearance})
+	th.BackgroundTransparency = 1
+	return th
+end
+function HX.armorStage(parent, kind, id, size)
+	local holder = clearFrame(parent); holder.Size = size or UDim2.fromScale(1, 1); holder.ClipsDescendants = true
+	local st = Stage.new(holder, {dist = 10.5, fov = 40, platform = COL.BLUE})
+	local lo, w = HX.armorLook(kind, id)
+	st:set({{loadout = lo or {}, appearance = state.profile and state.profile.appearance, weight = w}})
+	return holder
+end
+
 -- a phone: a screen that scrolls inside itself (a grid, a row of cards) fits the
 -- visible height instead of scrolling twice; the rest keep their full height
 function HX.fitScreen(on)
@@ -3405,10 +3447,20 @@ do
 			local text, kind = skinWhere(s)
 			how = text
 			if kind == "buy" then buys = skinBuyButtons(s, render.CLASSES) end
+		elseif t.slot == "armorFx" then
+			local f = Catalog.ARMORFX_BY[t.id]
+			name = (f and f.name or t.id) .. " finish"
+			local cr = f and Catalog.CRATES[f.crate or ""]
+			how = string.format("%s, out of the %s. Looks only.", f and f.rarity or "", cr and cr.name or "Forge Crate")
+			if cr then table.insert(buys, {"OPEN THE " .. string.upper(cr.name), COL.GOLD, function() ui.shopTab, ui.crate, ui.crateItem = "crates", f.crate, "armorfx|" .. f.id; selectTab("SHOP") end}) end
 		else
 			local pc = Catalog.PIECE[t.id]
 			name = pc and pc.name or t.id
-			if pc and pc.unlock then how = "Earn it: " .. Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)
+			if pc and pc.crate then
+				local cr = Catalog.CRATES[pc.crate]
+				how = string.format("Only out of the %s, one piece at a time (a tradable copy).", cr and cr.name or "crate")
+				if cr then table.insert(buys, {"OPEN THE " .. string.upper(cr.name), COL.GOLD, function() ui.shopTab, ui.crate, ui.crateItem = "crates", pc.crate, "piece|" .. pc.id; selectTab("SHOP") end}) end
+			elseif pc and pc.unlock then how = "Earn it: " .. Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)
 			elseif pc then
 				local pk = Catalog.PACKS[pc.pack]
 				local on = Catalog.onSale(pc.pack, storeDay())
@@ -3538,12 +3590,29 @@ do
 				local have = owns("pieces", pc.id)
 				local pk = Catalog.PACKS[pc.pack]
 				local sub = have and ((slot == "helmet" and #(pc.covers or {}) > 0) and ("covers " .. string.lower(table.concat(pc.covers, " + "))) or (pk and pk.name or ""))
-					or (pc.unlock and Catalog.unlockText(pc.unlock) or priceText(pc.marks, pc.crowns))
+					or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
 				itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t, have, RARITY_COL[pc.rarity], function()
 					if have then choose(slot, pc.id) else tryOn(slot, pc.id) end
 				end, t and t.slot == slot and t.id == pc.id)
 			end
 			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet.") end
+		end
+		-- THE FINISH (Catalog ▸ ArmorFX): looks only, on any set
+		do
+			local fp = panel(list, "FINISH  ·  LOOKS ONLY")
+			dim(fp, "Recolours the plates, lights the trims and wraps you in an aura. Out of the Forge Crate.", 12)
+			local fg = cardGrid(fp, 40)
+			local top = Catalog.PIECE[lo.top or ""]
+			local own = top and top.fx and Catalog.ARMORFX_BY[top.fx]
+			itemCard(fg, 0, "None", own and ("the set's own: " .. own.name) or "plain", (lo.armorFx or "") == "" and not (t and t.slot == "armorFx"), true, nil, function()
+				lo.armorFx = ""; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
+			end)
+			for i, f in ipairs(Catalog.ARMORFX or {}) do
+				local have = owns("armorfx", f.id)
+				itemCard(fg, i, f.name, have and f.rarity or ((Catalog.CRATES[f.crate or ""] or {}).name or "a crate"), lo.armorFx == f.id and not t, have, RARITY_COL[f.rarity], function()
+					if have then lo.armorFx = f.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("armorFx", f.id) end
+				end, t and t.slot == "armorFx" and t.id == f.id)
+			end
 		end
 		local cp = panel(list, "COLORS")
 		for _, slot in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
@@ -4530,7 +4599,7 @@ do
 			return a.kind .. a.id < b.kind .. b.id
 		end)
 		local function keyOf(it) return it.kind .. "|" .. it.id end
-		local function ownKind(it) return it.kind == "skin" and "skins" or (it.kind == "killfx" and "killfx" or "emotes") end
+		local function ownKind(it) return HX.OWNKIND[it.kind] or "emotes" end
 		local sel
 		for _, it in ipairs(pool) do if keyOf(it) == ui.crateItem then sel = it end end
 		sel = sel or pool[1]
@@ -4541,9 +4610,12 @@ do
 			local stg
 			if sel.kind == "skin" then stg = weaponStage(stageH, sel.weapon, sel.id)
 			elseif sel.kind == "killfx" then stg = Preview.killFx(stageH, sel.id, UDim2.fromScale(1, 1))
+			elseif sel.kind == "piece" or sel.kind == "armorfx" then stg = HX.armorStage(stageH, sel.kind, sel.id, UDim2.fromScale(1, 1))
 			else stg = Preview.emote(stageH, sel.id, UDim2.fromScale(1, 1)) end
 			local nm = title(stg, sel.name, 32); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 36)
-			local kindText = sel.kind == "skin" and string.upper(Catalog.WEAPON[sel.weapon] and Catalog.WEAPON[sel.weapon].name or sel.weapon) or (sel.kind == "killfx" and "KILL EFFECT" or "EMOTE")
+			local kindText = sel.kind == "skin" and string.upper(Catalog.WEAPON[sel.weapon] and Catalog.WEAPON[sel.weapon].name or sel.weapon)
+				or (sel.kind == "piece" and ((sel.ref and sel.ref.weight or "") .. " ARMOR  ·  " .. string.upper((sel.ref and sel.ref.slot == "bottom") and "LEGS" or (sel.ref and sel.ref.slot or ""))):upper())
+				or (HX.KIND_NAME[sel.kind] or "EMOTE")
 			local fxText = sel.kind == "skin" and Preview.fxText(sel.ref) or nil
 			local wn = title(stg, kindText .. (fxText and ("  ·  " .. string.upper(fxText)) or ""), 16, COL.DIM); wn.Position = UDim2.fromOffset(20, 48); wn.Size = UDim2.new(1, -40, 0, 20)
 			local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16)
@@ -4598,7 +4670,9 @@ do
 			end
 		end
 		local V = ECON.variants or {}
-		dim(c1, string.format("Every skin also rolls a finish: Masterwork %s · Radiant %s (otherwise Standard). Within a rarity every item is equally likely.", HX.pct(V.Masterwork or 0), HX.pct(V.Radiant or 0)), 12)
+		local hasSkins = false
+		for _, it in ipairs(pool) do if it.kind == "skin" then hasSkins = true end end
+		dim(c1, (hasSkins and string.format("Every skin also rolls a finish: Masterwork %s · Radiant %s (otherwise Standard). ", HX.pct(V.Masterwork or 0), HX.pct(V.Radiant or 0)) or "") .. "Within a rarity every item is equally likely.", 12)
 		dim(c1, string.format("A Legendary or better is guaranteed within %d opens  ·  %d since your last.", crate.pity or 20, since), 12)
 		dim(c1, "Every pull is yours to keep: a duplicate is another copy, to trade, to forge (three skins into a better finish) or to scrap for Marks if you choose.", 12)
 		-- open with a Key (earned only) or Crowns (not where paid random items are barred)
@@ -4626,13 +4700,21 @@ do
 			local kind = res.kind or "skin"
 			ui.crateItem = kind .. "|" .. (res.itemId or res.skinId)
 			local won = res.skinId and Catalog.SKIN[res.skinId]
-			local line = kind == "skin" and "New skin! Equip it from the ARMORY or your LOADOUT." or (kind == "killfx" and "New kill effect! Equip it in the ARMORY." or "New emote! Put it on your wheel in the ARMORY.")
+			local LINES = {skin = "New skin! Equip it from the ARMORY or your LOADOUT.", killfx = "New kill effect! Equip it in the ARMORY.",
+				piece = "New armor! Wear it in your LOADOUT (collect the whole set: it wears its own finish).", armorfx = "New finish! Put it on in your LOADOUT › FINISH, on any set."}
+			local line = LINES[kind] or "New emote! Put it on your wheel in the ARMORY."
 			if res.variant then line = string.upper(res.variant) .. " FINISH!  " .. line end
 			local dupLine = string.format("Another copy: you have %d. Trade it, scrap it%s.", res.copies or 2, kind == "skin" and ", or forge three into a better finish" or "")
 			if res.dup and res.variant then dupLine = string.upper(res.variant) .. " FINISH!  " .. dupLine end
 			modal(string.upper(res.rarity) .. "!  " .. res.name .. (res.serial and ("  #" .. fmt(res.serial)) or ""), res.dup and dupLine or line,
 				{{"EQUIP IT", COL.GREEN, function()
 					closeModal()
+					if kind == "armorfx" then HX.wearFinish(state.activeClass, res.itemId); return end
+					if kind == "piece" then
+						local pc = Catalog.PIECE[res.itemId]
+						for cid, c in pairs(GameConfig.CLASSES) do if pc and c.weight == pc.weight then ui.editing = cid; if cid == state.activeClass then break end end end
+						selectTab("CLASSES"); return
+					end
 					if kind == "skin" then ui.armoryTab = "weapons"; ui.shopWeapon = won and won.weapon or res.weapon; ui.shopSkin = res.skinId
 					elseif kind == "killfx" then ui.armoryTab = "killfx"; ui.fxSel = res.itemId
 					else ui.armoryTab = "emotes"; ui.emoteSel = res.itemId end
@@ -4641,6 +4723,7 @@ do
 					local th
 					if kind == "skin" then th = weaponStage(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 240))
 					elseif kind == "killfx" then th = Preview.killFx(box, res.itemId, UDim2.new(1, 0, 0, 260))
+					elseif kind == "piece" or kind == "armorfx" then th = HX.armorStage(box, kind, res.itemId, UDim2.new(1, 0, 0, 280))
 					else th = Preview.emote(box, res.itemId, UDim2.new(1, 0, 0, 260)) end
 					th.LayoutOrder = 5
 					border(th, RARITY_COL[res.rarity] or COL.DIM, 3, 0)
@@ -6596,22 +6679,26 @@ end
 --  the creature walking), what it is, where it comes from, YOUR COPIES of it
 --  (number, finish, story, kills) and what you can do with it
 --------------------------------------------------------------------
-HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", title = "TITLE"}
-HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", title = "titles"}
+HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", armorfx = "ARMOR FINISH", title = "TITLE"}
+HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", armorfx = "armorfx", title = "titles"}
 function HX.defOf(kind, id)
 	if kind == "skin" then return Catalog.SKIN[id] end
 	if kind == "killfx" then return Catalog.KILLFX_BY[id] end
 	if kind == "emote" then return Catalog.EMOTE[id] end
 	if kind == "companion" then return Catalog.COMPANION[id] end
 	if kind == "piece" then return Catalog.PIECE[id] end
+	if kind == "armorfx" then return Catalog.ARMORFX_BY[id] end
 	if kind == "title" then return {id = id, name = id, rarity = "Rare"} end
 	return nil
 end
 -- a copy's key and back ("fx:Meteor", "emote:Jig", "pet:Raven", "Longsword:Gilded")
+HX.KEY_PREFIX = {killfx = "fx:", emote = "emote:", companion = "pet:", piece = "armor:", armorfx = "finish:"}
 function HX.copyKey(kind, id)
-	return (kind == "killfx" and "fx:" or (kind == "emote" and "emote:" or (kind == "companion" and "pet:" or ""))) .. tostring(id)
+	return (HX.KEY_PREFIX[kind] or "") .. tostring(id)
 end
 function HX.fromKey(key)
+	if key:sub(1, 6) == "armor:" then return "piece", key:sub(7) end
+	if key:sub(1, 7) == "finish:" then return "armorfx", key:sub(8) end
 	if key:sub(1, 3) == "fx:" then return "killfx", key:sub(4) end
 	if key:sub(1, 6) == "emote:" then return "emote", key:sub(7) end
 	if key:sub(1, 4) == "pet:" then return "companion", key:sub(5) end
@@ -6623,6 +6710,7 @@ function HX.thumb(parent, kind, d, size)
 	if kind == "killfx" then return Preview.killFx(parent, d.id, size, 0.3, true) end
 	if kind == "emote" then return Preview.emote(parent, d.id, size, 0.45, true) end
 	if kind == "companion" then return Preview.companion(parent, d.id, size, true) end
+	if kind == "piece" or kind == "armorfx" then return HX.armorThumb(parent, kind, d.id, size) end
 	local holder = clearFrame(parent); holder.Size = size
 	local img = iconImage(holder, "Wardrobe", 72); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
 	return holder
@@ -6646,6 +6734,17 @@ function HX.inspectReward(r)
 	end
 	if r.title then return HX.inspect("title", r.title) end
 	modal("A GIFT", Preview.rewardName(r), nil)
+end
+
+function HX.wearFinish(classId, id)
+	local lo = {}
+	for k, v in pairs(classLoadout(classId)) do lo[k] = v end
+	lo.armorFx = id or ""
+	local r = call("SaveClass", classId, lo)
+	if r.ok then
+		if r.profile then state.profile = r.profile end
+		toast((Catalog.ARMORFX_BY[id or ""] and Catalog.ARMORFX_BY[id].name or "No finish") .. " on your " .. className(classId), COL.GOOD)
+	else toast(r.msg or "", COL.BAD) end
 end
 
 function HX.closeInspect()
@@ -6679,6 +6778,7 @@ function HX.inspect(kind, id, copy, theirs)
 	elseif kind == "killfx" then stg = Preview.killFx(stageH, d.id, UDim2.fromScale(1, 1))
 	elseif kind == "emote" then stg = Preview.emote(stageH, d.id, UDim2.fromScale(1, 1))
 	elseif kind == "companion" then stg = Preview.companion(stageH, d.id, UDim2.fromScale(1, 1), false, P.stars and P.stars[d.id])
+	elseif kind == "piece" or kind == "armorfx" then stg = HX.armorStage(stageH, kind, d.id, UDim2.fromScale(1, 1))
 	else
 		stg = frame(stageH, COL.GLASS2, 14); stg.Size = UDim2.fromScale(1, 1)
 		local img = iconImage(stg, "Wardrobe", 220); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
@@ -6717,7 +6817,13 @@ function HX.inspect(kind, id, copy, theirs)
 		local w = kind == "companion" and Catalog.companionSource(d) or Preview.where(d, HX.OWNKIND[kind])
 		local wl = title(head, string.upper(w or ""), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 0); wl.AutomaticSize = Enum.AutomaticSize.Y; wl.TextWrapped = true; wl.LayoutOrder = nextOrder()
 	elseif kind == "piece" then
-		dim(head, string.format("%s armor  ·  %s", tostring(d.weight or d.type or ""), tostring(d.slot or "")), 14)
+		dim(head, string.format("%s armor  ·  %s", tostring(d.weight or d.type or ""), d.slot == "bottom" and "legs" or tostring(d.slot or "")), 14)
+		if d.fx and Catalog.ARMORFX_BY[d.fx] then local fl = title(head, "WEARS ITS OWN FINISH: " .. string.upper(Catalog.ARMORFX_BY[d.fx].name), 14, COL.ACCENT); fl.Size = UDim2.new(1, 0, 0, 18); fl.LayoutOrder = nextOrder() end
+		local wl = title(head, d.crate and ("ONLY OUT OF THE " .. string.upper((Catalog.CRATES[d.crate] or {}).name or d.crate) .. ", ONE PIECE AT A TIME") or "", 13, COL.DIM)
+		wl.Size = UDim2.new(1, 0, 0, d.crate and 18 or 0); wl.LayoutOrder = nextOrder()
+	elseif kind == "armorfx" then
+		dim(head, "Looks only: it goes on any set, of any weight (LOADOUT › FINISH). The world shows its aura and glow.", 13)
+		local wl = title(head, "OUT OF THE " .. string.upper((Catalog.CRATES[d.crate or ""] or {}).name or "FORGE CRATE"), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 18); wl.LayoutOrder = nextOrder()
 	end
 	-- THE COPY you came from (a trade), then YOURS
 	local function copyLine(parent, c, mineToo)
@@ -6736,7 +6842,7 @@ function HX.inspect(kind, id, copy, theirs)
 		copyLine(cp, copy, not theirs)
 	end
 	local key = HX.copyKey(kind, id)
-	local mine = (kind ~= "piece" and kind ~= "title") and HX.copies(key) or {}
+	local mine = kind ~= "title" and HX.copies(key) or {}
 	local have = owns(HX.OWNKIND[kind] or "skins", id)
 	local yp = panel(list, have and (#mine > 1 and string.format("YOU HAVE %d", #mine) or "YOU HAVE IT") or "YOU DON'T HAVE IT YET")
 	if #mine > 0 then
@@ -6766,10 +6872,17 @@ function HX.inspect(kind, id, copy, theirs)
 			toast(r.ok and (d.name .. " is out with you") or (r.msg or ""), r.ok and COL.GOOD or COL.BAD)
 			if r.profile then state.profile = r.profile end
 		end)
+	elseif have and kind == "piece" then
+		act("WEAR IT  ·  LOADOUT", COL.GREEN, function()
+			for cid, c in pairs(GameConfig.CLASSES) do if c.weight == d.weight then ui.editing = cid; if cid == state.activeClass then break end end end
+			selectTab("CLASSES")
+		end)
+	elseif have and kind == "armorfx" then
+		act("WEAR IT ON YOUR " .. string.upper(className(state.activeClass)), COL.GREEN, function() HX.wearFinish(state.activeClass, id) end)
 	elseif not have and d.crate and Catalog.CRATES[d.crate] then
 		act("OPEN THE " .. string.upper(Catalog.CRATES[d.crate].name), COL.GOLD, function()
 			ui.shopTab, ui.crate = "crates", d.crate
-			ui.crateItem = (kind == "skin" and "skin|" or (kind == "killfx" and "killfx|" or "emote|")) .. id
+			ui.crateItem = kind .. "|" .. id
 			selectTab("SHOP")
 		end)
 	end
@@ -6798,7 +6911,7 @@ function HX.inventory()
 		return b, at
 	end
 	local function add(kind, d, sub)
-		local list = (kind ~= "piece" and kind ~= "title") and HX.copies(HX.copyKey(kind, d.id)) or {}
+		local list = kind ~= "title" and HX.copies(HX.copyKey(kind, d.id)) or {}
 		local b, at = best(list)
 		table.insert(out, {kind = kind, id = d.id, d = d, name = d.name or tostring(d.id), sub = sub, rarity = d.rarity or "Common",
 			count = math.max(#list, 1), best = b, at = at})
@@ -6812,6 +6925,7 @@ function HX.inventory()
 	for _, pc in ipairs(Catalog.PIECES) do
 		if not Catalog.isFree(pc) and owns("pieces", pc.id) then add("piece", pc, "Armor") end
 	end
+	for _, f in ipairs(Catalog.ARMORFX or {}) do if owns("armorfx", f.id) then add("armorfx", f, "Armor finish") end end
 	for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do
 		if owns("titles", t.title) then add("title", {id = t.title, name = t.title, rarity = "Rare"}, "Title") end
 	end
@@ -6819,7 +6933,7 @@ function HX.inventory()
 end
 
 HX.INV_KINDS = {{text = "ALL", k = nil}, {text = "SKINS", k = "skin"}, {text = "KILL FX", k = "killfx"}, {text = "EMOTES", k = "emote"},
-	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "piece"}, {text = "TITLES", k = "title"}}
+	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "piece"}, {text = "FINISHES", k = "armorfx"}, {text = "TITLES", k = "title"}}
 HX.INV_SORTS = {"RARITY", "NEWEST", "NAME", "MOST COPIES"}
 HX.INV_PAGE = 40
 
@@ -7010,6 +7124,8 @@ do
 		if key:sub(1, 4) == "pet:" then return Catalog.COMPANION[key:sub(5)], true end
 		if key:sub(1, 3) == "fx:" then return Catalog.KILLFX_BY[key:sub(4)], "fx" end
 		if key:sub(1, 6) == "emote:" then return Catalog.EMOTE[key:sub(7)], "emote" end
+		if key:sub(1, 6) == "armor:" then return Catalog.PIECE[key:sub(7)], "armor" end
+		if key:sub(1, 7) == "finish:" then return Catalog.ARMORFX_BY[key:sub(8)], "finish" end
 		return Catalog.SKIN[key], false
 	end
 	local function worth(c)
@@ -7024,7 +7140,9 @@ do
 		border(b, d and RARITY_COL[d.rarity] or COL.DIM, 2, picked and 0 or 0.3)
 		if d then
 			local th
-			if pet == "fx" or pet == "emote" then
+			if pet == "armor" or pet == "finish" then
+				th = HX.armorThumb(b, pet == "armor" and "piece" or "armorfx", d.id, UDim2.new(1, -8, 0, 88))
+			elseif pet == "fx" or pet == "emote" then
 				-- a kill effect / an emote: its kind, big, in its rarity's colour
 				th = title(b, pet == "fx" and "KILL\nEFFECT" or "EMOTE", 20, RARITY_COL[d.rarity] or COL.DIM)
 				th.Size = UDim2.new(1, -8, 0, 88); th.TextXAlignment = Enum.TextXAlignment.Center; th.TextWrapped = true

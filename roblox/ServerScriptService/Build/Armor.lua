@@ -1435,6 +1435,167 @@ A_.SunKnights = set(sunArmet(), sunTorso(),
 	function(s) return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.6), plateArm(s, C.BRIGHT, C.GOLD, {elbow = C.GOLD, gauntlet = C.GOLD, flutes = true})) end,
 	function(s) return leg(hose(C.CLOTH2, S), plateLeg(s, C.BRIGHT, C.GOLD, {knee = C.GOLD, foot = C.GOLD, toe = "bear", flutes = true})) end)
 
+--------------------------------------------------------------------
+--  THE FORGE CRATE'S SETS (crate-only: their pieces drop one at a time,
+--  each a tradable copy; each wears a finish of its own, Config ▸ Finish)
+--------------------------------------------------------------------
+local DRAGON, DRAGON2, DHORN = Color3.fromRGB(96, 28, 24), Color3.fromRGB(46, 20, 18), Color3.fromRGB(58, 40, 30)
+local ICE, FROSTFUR = Color3.fromRGB(176, 220, 255), Color3.fromRGB(226, 230, 236)
+local VEIL, VEILGLOW = Color3.fromRGB(28, 26, 34), Color3.fromRGB(176, 86, 255)
+local SERAPH = Color3.fromRGB(250, 244, 226)
+
+-- DRAGONSCALE (Heavy): a dragon's skull of a helm — a snout, burning eye-slits, horns swept
+-- back and a crest of spines; scale-plated breast, spined shoulders, a tattered wing of a cape
+local function dragonHelm()
+	local m = DRAGON
+	local out = {middle(HEAD)}
+	local sh, dome = helmShell(0.74, 0.78, 0.06, -0.56, 0.24, 0.64, m, M.METAL, MT)
+	local foot = CFrame.new(0, -0.14, -0.4) * CFrame.Angles(-math.pi / 2, 0, 0)   -- the snout's foot: its Y runs forward
+	B.join(out, sh, {
+		cone("Snout", v(1.24, 0.62, 0.96), foot * CFrame.new(0, 0.31, 0), m, M.METAL, MT, 0.42),
+		torus("Gorget", v(1.58, 0.1, 1.62), cf(0, -0.56, 0.06), C.GOLD, M.METAL, A),
+	}, row("Sight", dome, 0.26, -0.48, -0.12, 0.085, AMBER, M.NEON, A, 0.012),
+		row("Sight", dome, 0.26, 0.12, 0.48, 0.085, AMBER, M.NEON, A, 0.012))
+	for _, s in ipairs({-1, 1}) do
+		-- the horns: out from the temples, swept back and up
+		local a, b = Vector3.new(s * 0.6, 0.36, 0.12), Vector3.new(s * 0.9, 0.58, 0.5)
+		local c, d = Vector3.new(s * 0.98, 0.8, 0.96), Vector3.new(s * 0.88, 0.98, 1.4)
+		out[#out + 1] = rod("Horn", a, b, 0.3, DHORN, M.PLASTIC)
+		out[#out + 1] = ball("Horn", 0.28, CFrame.new(b), DHORN, M.PLASTIC)
+		out[#out + 1] = rod("Horn", b, c, 0.24, DHORN, M.PLASTIC)
+		out[#out + 1] = ball("Horn", 0.22, CFrame.new(c), DHORN, M.PLASTIC)
+		out[#out + 1] = spike("Horn", c, d, 0.22, DHORN, M.PLASTIC)
+		-- fangs at the corners of the snout
+		out[#out + 1] = spike("Fang", Vector3.new(s * 0.36, -0.36, -0.7), Vector3.new(s * 0.34, -0.6, -0.74), 0.12, BONE, M.PLASTIC)
+	end
+	for i = 0, 4 do   -- the crest: spines from the brow over the crown and down the back
+		local base = Vector3.new(0, 0.62 - i * i * 0.03, -0.1 + i * 0.24)
+		out[#out + 1] = spike("Spine", base, base + Vector3.new(0, 0.42 - i * 0.05, 0.16), 0.2, C.GOLD, M.METAL, A)
+	end
+	return out
+end
+local function dragonTorso()
+	local out = J(cuirass(DRAGON, C.GOLD, {plackart = true}),
+		pauldron(-1, DRAGON, M.METAL, MT, "spikes", C.GOLD), pauldron(1, DRAGON, M.METAL, MT, "spikes", C.GOLD),
+		cape(DRAGON2, nil, true, C.GOLD), belt(-0.78, C.GOLD))
+	for r = 0, 3 do   -- scales over the breast, each row offset
+		for x = -3, 3 do
+			local px = x * 0.25 + (r % 2) * 0.125
+			if math.abs(px) < 0.82 then
+				out[#out + 1] = egg("Scale", v(0.26, 0.22, 0.08), cf(px, 0.62 - r * 0.21, -0.66, 8, 0, 0), DRAGON2, M.METAL, MT)
+			end
+		end
+	end
+	return out
+end
+
+-- FROSTWARDEN (Medium): bright plate grown over with ice — a crown of icicles, a fur
+-- mantle and aventail, ice spikes off the shoulders
+local function frostHelm()
+	local m = C.BRIGHT
+	local out = {middle(HEAD)}
+	local sh, dome = helmShell(0.73, 0.76, 0.06, -0.5, 0.26, 0.62, m, M.METAL, MT)
+	B.join(out, sh, {
+		cone("Aventail", v(1.92, 0.5, 1.92), cf(0, -0.44, 0.08), FROSTFUR, M.FABRIC, nil, 0.84),
+		torus("Brow", v(1.5, 0.1, 1.54), cf(0, 0.36, 0.06), ICE, Enum.Material.Ice, A),
+	}, row("Sight", dome, 0.2, -0.46, 0.46, 0.08, C.BLACK, M.PLASTIC, nil, 0.012))
+	for i = 0, 8 do   -- the crown of ice, tallest at the front
+		local a = math.rad(-80 + i * 20)
+		local base = Vector3.new(math.sin(a) * 0.6, 0.6, 0.06 - math.cos(a) * 0.62)
+		local h = (i % 2 == 0) and (0.7 - math.abs(i - 4) * 0.06) or 0.36
+		out[#out + 1] = spike("Icicle", base, base + Vector3.new(math.sin(a) * 0.14, h, -math.cos(a) * 0.14), 0.2, ICE, Enum.Material.Ice, A)
+	end
+	return out
+end
+local function frostTorso()
+	local out = J(cuirass(C.BRIGHT, ICE), pauldron(-1, C.BRIGHT, M.METAL, MT, nil, ICE), pauldron(1, C.BRIGHT, M.METAL, MT, nil, ICE),
+		{tbox("Mantle", v(2.6, 0.5, 1.56), cf(0, 0.88, 0.04), 0.84, FROSTFUR, M.FABRIC, nil, 0.24)},
+		cape(C.CLOTH, P, false, ICE), belt(-0.78, C.IRON))
+	for _, s in ipairs({-1, 1}) do   -- ice breaking out of the shoulders
+		for i = 0, 2 do
+			local foot = Vector3.new(s * (1.3 + i * 0.12), 1.16 - i * 0.06, -0.2 + i * 0.22)
+			out[#out + 1] = spike("IceShard", foot, foot + Vector3.new(s * 0.3, 0.5 - i * 0.1, 0.06), 0.22, ICE, Enum.Material.Ice, A)
+		end
+	end
+	return out
+end
+
+-- SHADOWVEIL (Light): a deep hood over a black half-mask with two burning eyes, a tattered
+-- cloak and black leathers with glowing runes
+local function veilHood()
+	return {middle(HEAD),
+		egg("Hood", v(1.7, 1.75, 1.82), cf(0, 0.15, 0.32), VEIL, M.FABRIC),
+		cone("Peak", v(0.8, 0.56, 0.8), cf(0, 0.96, 0.62, -42, 0, 0), VEIL, M.FABRIC),
+		cone("Drape", v(2.02, 0.5, 2.02), cf(0, -0.5, 0.14), VEIL, M.FABRIC, nil, 0.8),
+		plate("Mask", v(0, 0.02, -0.66), v(0, -0.5, -0.62), 1.12, 0.06, C.BLACKIRON, M.METAL, MT, X, 0.03),
+		egg("Eye", v(0.26, 0.08, 0.04), cf(-0.22, 0.12, -0.67, 0, 0, -14), VEILGLOW, M.NEON, A),
+		egg("Eye", v(0.26, 0.08, 0.04), cf(0.22, 0.12, -0.67, 0, 0, 14), VEILGLOW, M.NEON, A),
+	}
+end
+local function veilTorso()
+	local out = {middle(TORSO),
+		rbox("Jack", v(2.16, 2.08, 1.16), cf(), VEIL, M.FABRIC, nil, 0.22),
+		cone("Collar", v(1.56, 0.4, 1.42), cf(0, 1.08, 0.02), VEIL, M.FABRIC, nil, 0.92),
+		plate("Strap", v(-0.9, 0.5, -0.62), v(0.86, -0.7, -0.62), 0.17, 0.04, C.BLACK, M.LEATHER),
+	}
+	for i = -1, 1 do   -- runes down the breast
+		out[#out + 1] = box("Rune", v(0.07, 0.36, 0.04), cf(i * 0.3, 0.32 - math.abs(i) * 0.1, -0.6), VEILGLOW, M.NEON, A)
+		out[#out + 1] = box("Rune", v(0.2, 0.06, 0.04), cf(i * 0.3, 0.42 - math.abs(i) * 0.1, -0.6), VEILGLOW, M.NEON, A)
+	end
+	return J(out, cape(VEIL, nil, true, VEILGLOW), belt(-0.74, C.BLACKIRON, true, C.BLACK))
+end
+
+-- SERAPH (Medium): white-gold plate, a winged helm under a halo, and on the back two great
+-- wings of light
+local function seraphHelm()
+	local m = SERAPH
+	local out = {middle(HEAD)}
+	local sh = helmShell(0.73, 0.76, 0.06, -0.56, 0.24, 0.62, m, M.METAL, MT)
+	local visor = {c = v(0, -0.02, -0.34), s = v(1.38, 1.08, 1.0)}
+	B.join(out, sh, {
+		shell("Visor", visor, m, M.METAL, MT),
+		torus("Circlet", v(1.06, 0.1, 1.1), cf(0, 0.66, 0.06), C.GOLD, M.METAL, A),
+		torus("Halo", v(1.0, 0.05, 1.0), cf(0, 1.22, 0.3, 18, 0, 0), C.GOLD, M.NEON, A),
+	}, row("Sight", visor, 0.24, -0.44, 0.44, 0.07, C.BLACK, M.PLASTIC, nil, 0.012))
+	for _, s in ipairs({-1, 1}) do   -- little wings at the temples
+		for i = 0, 3 do
+			out[#out + 1] = egg("Feather", v(0.14, 0.72 - i * 0.1, 0.28), cf(s * (0.8 + i * 0.05), 0.32 + i * 0.12, 0.12 + i * 0.12, -30 - i * 10, 0, -s * (30 + i * 14)), m, M.METAL, MT)
+		end
+	end
+	return out
+end
+local function seraphTorso()
+	local out = J(cuirass(SERAPH, C.GOLD, {smooth = true}), pauldron(-1, SERAPH, M.METAL, MT, "sun", C.GOLD), pauldron(1, SERAPH, M.METAL, MT, "sun", C.GOLD),
+		belt(-0.78, C.GOLD, false, C.GOLD))
+	for _, s in ipairs({-1, 1}) do   -- the wings: two fans of long feathers of light from the shoulder blades
+		local base = Vector3.new(s * 0.45, 0.55, 0.66)
+		for i = 0, 6 do
+			local a = math.rad(18 + i * 15)
+			local len = 1.5 + i * 0.22 - math.max(0, i - 4) * 0.4
+			local dir = Vector3.new(s * math.sin(a), math.cos(a), 0.32).Unit
+			local frame, l = span(base, base + dir * len)
+			out[#out + 1] = egg("Wing", v(0.34 - i * 0.02, l, 0.08), frame, Color3.fromRGB(255, 248, 226), M.NEON, nil)
+		end
+	end
+	return out
+end
+
+A_.Dragonscale = set(dragonHelm(), dragonTorso(),
+	function(s) return arm(sleeve(DRAGON2, nil, nil, 1.0, -0.6), plateArm(s, DRAGON, C.GOLD, {elbow = C.GOLD, spike = true, talons = true})) end,
+	function(s) return leg(hose(DRAGON2), plateLeg(s, DRAGON, C.GOLD, {knee = C.GOLD, spike = true, toe = "talons"})) end)
+
+A_.Frostwarden = set(frostHelm(), frostTorso(),
+	function(s) return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.6), plateArm(s, C.BRIGHT, ICE, {elbow = ICE, gauntlet = ICE})) end,
+	function(s) return leg(hose(C.CLOTH2, S), plateLeg(s, C.BRIGHT, ICE, {knee = ICE, toe = "pointed"})) end)
+
+A_.Shadowveil = set(veilHood(), veilTorso(),
+	function() return arm(sleeve(VEIL, nil, nil, 1.0, -0.5), bracer(C.BLACK, -0.3, -0.9, true), glove(C.BLACK)) end,
+	function() return leg(hose(VEIL), boot(C.BLACK)) end)
+
+A_.Seraph = set(seraphHelm(), seraphTorso(),
+	function(s) return arm(sleeve(C.LINEN, nil, nil, 1.0, -0.6), plateArm(s, SERAPH, C.GOLD, {elbow = C.GOLD, gauntlet = C.GOLD, flutes = true})) end,
+	function(s) return leg(hose(C.LINEN), plateLeg(s, SERAPH, C.GOLD, {knee = C.GOLD, foot = C.GOLD, toe = "pointed", flutes = true})) end)
+
 -- the three starter sets (the free kit of each weight)
 A_.KnightSkin = set(closeHelm(), knightTorso(),
 	function(s) return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.6), plateArm(s, C.STEEL)) end,

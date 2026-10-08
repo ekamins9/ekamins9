@@ -53,6 +53,13 @@ return {
 		cost = 120, odds = {Rare = 56, Epic = 34, Legendary = 9.5, Mythic = 0.5}, pity = 20,
 		refund = {Rare = 500, Epic = 1200, Legendary = 3000, Mythic = 8000}, accent = C(232, 184, 74),
 	},
+	-- ARMOR: finishes for any set, and the sets you can only find here (Catalog ▸ ArmorFX,
+	-- sets whose Config says Crate = "Forge"); everything a tradable copy
+	Forge = {
+		name = "Forge Crate", description = "Armor. Finishes that set your plate alight, and four sets you'll only find here, one piece at a time.",
+		cost = 90, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
+		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(255, 130, 50),
+	},
 	-- THE DROPS (Catalog ▸ Calendar): each in rotation for a few weeks, then vaulted
 	Ossuary = {
 		name = "Ossuary Crate", description = "Bone blades, skull pommels, vertebrae grips. Mythic: The Marrow King.",

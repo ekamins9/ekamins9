@@ -274,6 +274,10 @@ local function emitter(e, name)
 	return pe
 end
 
+-- (shared with ReplicatedStorage ▸ ArmorFX: an armor finish wears the same auras)
+SkinFX.AURA_DEF = AURAS
+SkinFX.makeEmitter = emitter
+
 local function attachment(handle, name, pos)
 	local a = Instance.new("Attachment")
 	a.Name = name; a:SetAttribute("SkinFX", true)

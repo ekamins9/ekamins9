@@ -210,6 +210,9 @@ function Profile.has(plr, kind, id)
 	-- (out of a crate: a copy of its own, "fx:" / "emote:", tradable like a skin)
 	if kind == "killfx" and Profile.copyCount(p, "fx:" .. tostring(id)) > 0 then return true end
 	if kind == "emotes" and Profile.copyCount(p, "emote:" .. tostring(id)) > 0 then return true end
+	-- (armor out of the Forge Crate: a piece of a crate-only set, "armor:", and a finish, "finish:")
+	if kind == "pieces" and Profile.copyCount(p, "armor:" .. tostring(id)) > 0 then return true end
+	if kind == "armorfx" and Profile.copyCount(p, "finish:" .. tostring(id)) > 0 then return true end
 	if kind == "weapons" then local w = Catalog.WEAPON[id]; if w and Catalog.unlocked(w.unlock, p) then return true end end
 	if kind == "colors" then local c = Catalog.COLOR[id]; if c and not c.crowns then return true end end
 	if kind == "hairColors" then for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == id and not h.crowns then return true end end end
@@ -294,6 +297,8 @@ function Profile.validateLoadout(plr, classId, lo)
 		local piece = id and Catalog.PIECE[id]
 		if piece and piece.slot == slot and piece.weight == cls.weight and Profile.has(plr, "pieces", id) then out[slot] = id end
 	end
+	-- the armor's finish (Catalog ▸ ArmorFX): one you own, or none ("")
+	out.armorFx = (type(lo.armorFx) == "string" and Catalog.ARMORFX_BY[lo.armorFx] and Profile.has(plr, "armorfx", lo.armorFx)) and lo.armorFx or ""
 	out.colors = {}
 	for _, s in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
 		local c = type(lo.colors) == "table" and lo.colors[s]

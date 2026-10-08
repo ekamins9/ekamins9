@@ -108,6 +108,7 @@ return {
 	},
 	crates = {
 		Bladesmith = {always = true},
+		Forge      = {always = true},
 		Hafted     = {always = true},
 		Relic      = {always = true},
 		Grim       = {always = true},
