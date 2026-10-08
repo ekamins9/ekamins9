@@ -719,7 +719,7 @@ local function loopBody(dt)
 		reload = character:GetAttribute("LocalReload") or 0,
 	}
 	local legA = kickPose > 0 and math.clamp(dt*KICK_SNAP, 0, 1) or a
-	RigPose.apply(Joints, RigPose.compute(inputs, Origins), a, legA)
+	RigPose.apply(Joints, RigPose.compute(RigPose.calm(character, inputs), Origins), a, legA)
 	-- heartbeat: proves THIS loop is the one drawing the body
 	if DebugFlags.get("Logs") and now - lastAliveLog > 3 then
 		lastAliveLog = now

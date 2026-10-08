@@ -37,7 +37,14 @@
        twirl          the weapon turns like a wheel beside the body (degrees)
        rotor          the weapon turns flat about the hand, like a rotor (degrees)
        toss, tossW, tossSpin   the weapon flies free of the hand: a point in
-                      the torso's frame, how free (0..1), its spin ]]
+                      the body's upright frame (the root's: up is up, wherever you
+                      look), how free (0..1), its spin
+
+     ANYTHING ELSE ENDS IT (every client, for every character, from what replicates):
+     an attack, a block, a kick or a dodge (Acting / Blocking), a weapon drawn, put
+     away or swapped, a jump or a fall, a hit (HitTick), death; a whole-body emote
+     also ends when you walk off. While one plays the look's bend lets go of the body
+     (RigPose.calm). Catalog.emoteBlock says which need a weapon or a helmet. ]]
 
 local RunService = game:GetService("RunService")
 
@@ -511,10 +518,25 @@ local function busy(char)
 end
 Emotes.busy = busy
 
+-- something else happened since it started: a weapon drawn / put away / swapped, a jump
+-- or a fall, a hit; a whole-body emote walked off (after a beat, so a nudge doesn't end it)
+local function interrupted(char, rec, d, t)
+	if (char:FindFirstChildOfClass("Tool") or false) ~= rec.tool then return true end
+	if char:GetAttribute("HitTick") ~= rec.hitTick then return true end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		local v = hrp.AssemblyLinearVelocity
+		if math.abs(v.Y) > 12 then return true end
+		if not d.upper and t > 0.3 and v.X * v.X + v.Z * v.Z > 6 then return true end
+	end
+	return false
+end
+
 function Emotes.play(char, id, startedAt)
 	if not (char and DEF[id]) or busy(char) then return false end
 	Emotes.stop(char)
-	active[char] = {id = id, t0 = os.clock() - math.max(0, (startedAt and (workspace:GetServerTimeNow() - startedAt)) or 0)}
+	active[char] = {id = id, t0 = os.clock() - math.max(0, (startedAt and (workspace:GetServerTimeNow() - startedAt)) or 0),
+		tool = char:FindFirstChildOfClass("Tool") or false, hitTick = char:GetAttribute("HitTick")}
 	return true
 end
 
@@ -531,7 +553,7 @@ function Emotes.modify(char, targets)
 	if not rec then return nil end
 	local t = os.clock() - rec.t0
 	local d = DEF[rec.id]
-	if t >= d.d then Emotes.stop(char); return nil end
+	if t >= d.d or busy(char) or interrupted(char, rec, d, t) then Emotes.stop(char); return nil end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	local rj = hrp and hrp:FindFirstChild("RootJoint")
 	return posed(d.pose(t, reachIn(char)), targets, rj and rj.C1 or CFrame.identity, not moving(char))
@@ -547,10 +569,9 @@ if RunService:IsClient() then RunService.RenderStepped:Connect(function()
 	for char, rec in pairs(active) do
 		if not char.Parent then active[char] = nil; continue end
 		local hum = char:FindFirstChildOfClass("Humanoid")
-		if busy(char) or (hum and hum.Health <= 0) then Emotes.stop(char); continue end
 		local d = DEF[rec.id]
 		local t = os.clock() - rec.t0
-		if t >= d.d then Emotes.stop(char); continue end
+		if busy(char) or (hum and hum.Health <= 0) or t >= d.d or interrupted(char, rec, d, t) then Emotes.stop(char); continue end
 		-- the animation (the weapon's idle guard, the walk's arm swing) fades
 		-- out over the first 0.2 s and back in over the last, so nothing snaps
 		local fade = ease(math.clamp(math.min(t, d.d - t) / 0.2, 0, 1))
@@ -576,7 +597,10 @@ if RunService:IsClient() then RunService.RenderStepped:Connect(function()
 			local armCF = torsoCF * sh.C0 * sh.Transform * sh.C1:Inverse()
 			local c0 = gripC0(p, armCF, hrp.CFrame, rec.gripC0, reach)
 			if (p.tossW or 0) > 0 and p.toss then
-				local want = torsoCF * CFrame.new(p.toss) * CFrame.Angles(rad(p.tossSpin or 0), 0, 0) * CFrame.Angles(math.pi / 2, 0, 0)
+				-- (the root's frame, not the torso's: a torso leaning with the walk or the look
+				-- would throw it behind you)
+				local up = CFrame.new(hrp.Position) * (hrp.CFrame - hrp.Position)
+				local want = up * CFrame.new(p.toss) * CFrame.Angles(rad(p.tossSpin or 0), 0, 0) * CFrame.Angles(math.pi / 2, 0, 0)
 				local free = armCF:Inverse() * want * grip.C1
 				c0 = c0:Lerp(free, math.clamp(p.tossW, 0, 1))
 			end

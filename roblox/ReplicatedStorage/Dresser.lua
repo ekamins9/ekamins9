@@ -63,14 +63,19 @@ local function weldMiddle(limb, model)
 end
 
 -- weld an Accessory-style model (Handle + attachment) onto the head
+local R6_HEAD = {HairAttachment = CFrame.new(0, 0.6, 0), HatAttachment = CFrame.new(0, 0.6, 0),
+	FaceFrontAttachment = CFrame.new(0, 0, -0.6), FaceCenterAttachment = CFrame.new(0, 0, 0)}
 local function weldAccessory(head, model)
 	local handle = model:FindFirstChild("Handle", true)
 	if not (handle and handle:IsA("BasePart")) then return false end
 	strip(model)
 	local hAtt
-	for _, a in ipairs(handle:GetChildren()) do if a:IsA("Attachment") then hAtt = a; break end end
+	for _, a in ipairs(handle:GetChildren()) do if a:IsA("Attachment") and (not hAtt or R6_HEAD[a.Name]) then hAtt = a end end
+	-- (the head's own attachment, else where a standard R6 head has it: a player's avatar
+	-- hair and face accessories land where they do on Roblox)
 	local headAtt = hAtt and head:FindFirstChild(hAtt.Name)
-	local c0 = headAtt and (headAtt.CFrame * hAtt.CFrame:Inverse()) or CFrame.new(0, 0.5, 0)
+	local at = headAtt and headAtt.CFrame or (hAtt and R6_HEAD[hAtt.Name])
+	local c0 = at and (at * hAtt.CFrame:Inverse()) or CFrame.new(0, 0.5, 0)
 	for _, p in ipairs(model:GetDescendants()) do
 		if p:IsA("BasePart") then
 			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
@@ -186,88 +191,208 @@ end
 --------------------------------------------------------------------
 --  BODY
 --------------------------------------------------------------------
+-- WHAT A HELMET HIDES stays on, hidden: each hidden thing says what covers it
+-- (attribute Covered = "hair" | "face" | "beard"), and the character says what its
+-- helmet covers (CoversHair / CoversFace / CoversBeard). Off comes the helmet
+-- (Dresser.setHelmet: the Helmet Toss) and the hair, the face, the beard show.
+local function covered(char, cat, helmetOn)
+	if not helmetOn then return false end
+	if cat == "hair" then return char:GetAttribute("CoversHair") == true end
+	if cat == "face" then return char:GetAttribute("CoversFace") == true end
+	if cat == "beard" then return char:GetAttribute("CoversBeard") == true or char:GetAttribute("CoversFace") == true end
+	return false
+end
+local function setShown(x, shown)
+	if x:GetAttribute("BaseT") == nil then x:SetAttribute("BaseT", x.Transparency) end
+	x.Transparency = shown and x:GetAttribute("BaseT") or 1
+end
+local function showBody(char, helmetOn)
+	local body = char:FindFirstChild("Body")
+	for _, m in ipairs(body and body:GetChildren() or {}) do
+		local cat = m:GetAttribute("Covered")
+		if cat then
+			local shown = not covered(char, cat, helmetOn)
+			for _, p in ipairs(m:GetDescendants()) do
+				if (p:IsA("BasePart") and p.Name ~= "Middle") or p:IsA("Decal") then setShown(p, shown) end
+			end
+		end
+	end
+	local head = char:FindFirstChild("Head")
+	for _, d in ipairs(head and head:GetChildren() or {}) do
+		if d:IsA("Decal") and d:GetAttribute("Covered") then setShown(d, not covered(char, d:GetAttribute("Covered"), helmetOn)) end
+	end
+end
+
+-- the classic face, for an avatar whose own doesn't fit an R6 head
+local DEFAULT_FACE = "rbxasset://textures/face.png"
+local KIT_KEY = {Head = "Head", Torso = "Torso", ["Left Arm"] = "LeftArm", ["Right Arm"] = "RightArm", ["Left Leg"] = "LeftLeg", ["Right Leg"] = "RightLeg"}
+
+-- the avatar kit for an appearance (Loadout ▸ Avatars: a player's own hair, face, skin), or nil
+local function kitOf(app)
+	local id = app and app.avatar
+	local folder = id and ReplicatedStorage:FindFirstChild("Avatars")
+	local kit = folder and folder:FindFirstChild(tostring(id))
+	return (kit and kit:GetAttribute("Ready")) and kit or nil
+end
+Dresser.kitOf = kitOf
+
 local function applyBody(char, app, coversHair, coversFace, coversBeard, under)
 	app = app or {}
 	under = under or {}
+	char:SetAttribute("CoversHair", coversHair or nil)
+	char:SetAttribute("CoversFace", coversFace or nil)
+	char:SetAttribute("CoversBeard", coversBeard or nil)
 	local body = Instance.new("Folder"); body.Name = "Body"
-	-- skin tone (a limb under a garment takes the garment's shade, see GAPS)
-	local tone = Catalog.BODY.skins[app.skin or Catalog.BODY.defaults.skin] or Catalog.BODY.skins[1]
+	-- A PLAYER is themselves under the armor (their avatar's kit); a bot or an NPC wears a
+	-- made-up look (Catalog ▸ Body: skin, hair, beard, the face builder)
+	local kit = kitOf(app)
+	local catalogTone = Catalog.BODY.skins[app.skin or Catalog.BODY.defaults.skin] or Catalog.BODY.skins[1]
+	local function toneOf(n)
+		local c = kit and kit:GetAttribute(KIT_KEY[n])
+		return typeof(c) == "Color3" and c or catalogTone
+	end
+	local tone = toneOf("Head")
 	char:SetAttribute("SkinTone", tone)
+	-- skin (a limb under a garment takes the garment's shade, see GAPS)
 	for _, n in ipairs(BODY_PARTS) do
 		local p = char:FindFirstChild(n)
 		if p and p:IsA("BasePart") then
 			local u = under[n]
-			p.Color = u and u.color or tone
+			p.Color = u and u.color or toneOf(n)
 			if u then
 				local half = p.Size.Y / 2
-				bareStretch(p, u, -half, math.max(-half, u.lo + 0.04), tone)   -- tucked a hair under the garment's edge
-				bareStretch(p, u, math.min(half, u.hi - 0.04), half, tone)
+				bareStretch(p, u, -half, math.max(-half, u.lo + 0.04), toneOf(n))   -- tucked a hair under the garment's edge
+				bareStretch(p, u, math.min(half, u.hi - 0.04), half, toneOf(n))
 			end
 		end
 	end
 	local bc = char:FindFirstChildOfClass("BodyColors")
 	if bc then
 		bc.HeadColor3 = tone
-		for n, prop in pairs(BODY_COLOR) do bc[prop] = under[n] and under[n].color or tone end
+		for n, prop in pairs(BODY_COLOR) do bc[prop] = under[n] and under[n].color or toneOf(n) end
 	end
 	local head = char:FindFirstChild("Head")
-	local hairColor = Catalog.BODY.hairColors[1].color
-	for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == app.hairColor then hairColor = h.color end end
-	local function add(kind, id, hidden)
-		if not id or id == "None" or id == "Bald" or hidden or not head then return end
-		local t = Catalog.bodyModel(kind, id)
-		if not t then return end
-		local m = putOn(head, t)
-		if m then
-			m.Name = kind
-			for _, p in ipairs(m:GetDescendants()) do if p:IsA("BasePart") and p.Name ~= "Middle" and p:GetAttribute("KeepColor") ~= true then p.Color = hairColor end end
-			m.Parent = body
-		end
+	if head then for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and d:GetAttribute("FaceLayer") then d:Destroy() end end end
+	local decal = head and head:FindFirstChild("face")
+	if head and not decal then
+		for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and not d:GetAttribute("FaceLayer") then decal = d end end
 	end
-	add("Hair", app.hair, coversHair)
-	add("Beard", app.beard, coversFace or coversBeard)
-	-- face: a texture on the head's own face Decal. The textures are Decals in
-	-- Cosmetics ▸ Body ▸ Face ▸ <id> (made in Studio, see blender/faces.py), or a
-	-- `texture` id in Catalog ▸ Body. A helmet that covers the face hides it.
-	-- the face builder (Catalog.faceLayers): one Decal per layer, stacked by ZIndex, the iris,
-	-- brows and paint tinted; the head's own face decal steps aside. Without the FaceParts
-	-- (an old place) the single-texture face below is used.
-	local layered = false
-	if head then
-		for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and d:GetAttribute("FaceLayer") then d:Destroy() end end
-		for _, L in ipairs(Catalog.faceLayers(app, hairColor)) do
-			local src = Catalog.bodyModel("FaceParts", L.part)
-			if src and src:IsA("Decal") then
-				local d = Instance.new("Decal")
-				d.Name = "FaceLayer_" .. L.part
-				d.Texture = src.Texture
-				d.Face = Enum.NormalId.Front
-				d.ZIndex = L.z
-				if L.tint then d.Color3 = L.tint end
-				d.Transparency = coversFace and 1 or 0
-				d:SetAttribute("FaceLayer", true)
-				d.Parent = head
-				layered = true
+	if head and not decal then
+		decal = Instance.new("Decal"); decal.Name = "face"; decal.Face = Enum.NormalId.Front; decal.Parent = head
+	end
+	if decal then decal:SetAttribute("BaseT", nil); decal:SetAttribute("Covered", nil); decal.Transparency = 0 end
+
+	if kit then
+		-- their own hair and face accessories, their own face
+		for _, acc in ipairs(kit:GetChildren()) do
+			if acc:IsA("Accessory") and head then
+				local m = putOn(head, acc)
+				if m then
+					m.Name = "Avatar_" .. acc.Name
+					m:SetAttribute("Covered", acc:GetAttribute("Kind") == "hair" and "hair" or "face")
+					m.Parent = body
+				end
 			end
 		end
-	end
-	if head then
-		local decal = head:FindFirstChild("face")
-		if not decal then
-			for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and not d:GetAttribute("FaceLayer") then decal = d end end
+		if decal then
+			local tex = kit:GetAttribute("Face")
+			decal.Texture = (type(tex) == "string" and tex ~= "") and tex or DEFAULT_FACE
+			decal:SetAttribute("Covered", "face")
 		end
-		if not decal then
-			decal = Instance.new("Decal"); decal.Name = "face"; decal.Face = Enum.NormalId.Front; decal.Parent = head
+	else
+		local hairColor = Catalog.BODY.hairColors[1].color
+		for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == app.hairColor then hairColor = h.color end end
+		local function add(kind, id, cat)
+			if not id or id == "None" or id == "Bald" or not head then return end
+			local t = Catalog.bodyModel(kind, id)
+			if not t then return end
+			local m = putOn(head, t)
+			if m then
+				m.Name = kind
+				for _, p in ipairs(m:GetDescendants()) do if p:IsA("BasePart") and p.Name ~= "Middle" and p:GetAttribute("KeepColor") ~= true then p.Color = hairColor end end
+				m:SetAttribute("Covered", cat)
+				m.Parent = body
+			end
 		end
-		local face
-		for _, f in ipairs(Catalog.BODY.faces) do if f.id == app.face then face = f end end
-		face = face or Catalog.BODY.faces[1]
-		local src = face and Catalog.bodyModel("Face", face.id)
-		if src and src:IsA("Decal") then decal.Texture = src.Texture
-		elseif face and face.texture and face.texture ~= "" then decal.Texture = face.texture end
-		decal.Transparency = (coversFace or layered) and 1 or 0
+		add("Hair", app.hair, "hair")
+		add("Beard", app.beard, "beard")
+		-- face: the face builder (Catalog.faceLayers): one Decal per layer, stacked by ZIndex, the
+		-- iris, brows and paint tinted; the head's own face decal steps aside. Without the
+		-- FaceParts (an old place) a single texture on the head's own face Decal (Cosmetics ▸
+		-- Body ▸ Face ▸ <id>, or a `texture` id in Catalog ▸ Body).
+		local layered = false
+		if head then
+			for _, L in ipairs(Catalog.faceLayers(app, hairColor)) do
+				local src = Catalog.bodyModel("FaceParts", L.part)
+				if src and src:IsA("Decal") then
+					local d = Instance.new("Decal")
+					d.Name = "FaceLayer_" .. L.part
+					d.Texture = src.Texture
+					d.Face = Enum.NormalId.Front
+					d.ZIndex = L.z
+					if L.tint then d.Color3 = L.tint end
+					d:SetAttribute("FaceLayer", true)
+					d:SetAttribute("Covered", "face")
+					d.Parent = head
+					layered = true
+				end
+			end
+		end
+		if decal then
+			local face
+			for _, f in ipairs(Catalog.BODY.faces) do if f.id == app.face then face = f end end
+			face = face or Catalog.BODY.faces[1]
+			local src = face and Catalog.bodyModel("Face", face.id)
+			if src and src:IsA("Decal") then decal.Texture = src.Texture
+			elseif face and face.texture and face.texture ~= "" then decal.Texture = face.texture end
+			if layered then decal.Transparency = 1 else decal:SetAttribute("Covered", "face") end
+		end
 	end
 	body.Parent = char
+	showBody(char, true)
+end
+
+-- the helmet off (false) or back on (true): it hides, stops protecting the head (Off:
+-- Loadout ▸ Armor), and what it covered shows. Hub ▸ Cosmetics' Helmet Toss.
+function Dresser.setHelmet(char, on)
+	local armor = char:FindFirstChild("Armor")
+	local helm = armor and armor:FindFirstChild("HeadClothing")
+	if helm then
+		helm:SetAttribute("Off", (not on) or nil)
+		for _, d in ipairs(helm:GetDescendants()) do
+			if d:IsA("BasePart") and d.Name ~= "Middle" then setShown(d, on)
+			elseif d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Trail") then d.Enabled = on end
+		end
+	end
+	showBody(char, on and helm ~= nil)
+end
+-- is a helmet on (and not thrown off)?
+function Dresser.helmetOn(char)
+	local armor = char:FindFirstChild("Armor")
+	local helm = armor and armor:FindFirstChild("HeadClothing")
+	return helm ~= nil and not helm:GetAttribute("Off")
+end
+-- put on a helmet picked up off the ground (someone's thrown one: a clone of their
+-- HeadClothing, its own colours and finish); covers = the piece's ("Hair", "Face", "Beard")
+function Dresser.wearHelmet(char, template, covers)
+	local head = char:FindFirstChild("Head")
+	if not (head and template) then return false end
+	local armor = char:FindFirstChild("Armor")
+	if not armor then armor = Instance.new("Folder"); armor.Name = "Armor"; armor.Parent = char end
+	local old = armor:FindFirstChild("HeadClothing")
+	if old then old:Destroy() end
+	local m = putOn(head, template)
+	if not m then return false end
+	for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d:SetAttribute("BaseT", nil) end end
+	m.Name = "HeadClothing"; m:SetAttribute("Limb", "Head"); m:SetAttribute("Off", nil)
+	m.Parent = armor
+	local c = {}
+	for _, x in ipairs(covers or {"Hair"}) do c[x] = true end
+	char:SetAttribute("CoversHair", c.Hair or nil)
+	char:SetAttribute("CoversFace", c.Face or nil)
+	char:SetAttribute("CoversBeard", c.Beard or nil)
+	showBody(char, true)
+	return true
 end
 
 --------------------------------------------------------------------
@@ -279,10 +404,11 @@ function Dresser.undress(char)
 	local base = char:GetAttribute("BaseMaxHealth")
 	if hum and base then local frac = hum.MaxHealth > 0 and hum.Health / hum.MaxHealth or 1; hum.MaxHealth = base; hum.Health = base * frac end
 	for _, a in ipairs({"SpeedMult_Armor", "ClunkMult_Armor", "ArmorId", "ArmorType", "ArmorProtection", "TeamPainted", "Pieces",
-		"StaminaMult", "RegenMult", "StaminaCostMult", "SprintMult", "DodgeCost", "DodgeReach"}) do char:SetAttribute(a, nil) end
+		"StaminaMult", "RegenMult", "StaminaCostMult", "SprintMult", "DodgeCost", "DodgeReach", "CoversHair", "CoversFace", "CoversBeard"}) do char:SetAttribute(a, nil) end
 	local head = char:FindFirstChild("Head")
 	if head then for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") and d:GetAttribute("FaceLayer") then d:Destroy() end end end
-	local decal = head and (head:FindFirstChild("face") or head:FindFirstChildOfClass("Decal")); if decal then decal.Transparency = 0 end
+	local decal = head and (head:FindFirstChild("face") or head:FindFirstChildOfClass("Decal"))
+	if decal then decal.Transparency = 0; decal:SetAttribute("BaseT", nil); decal:SetAttribute("Covered", nil) end
 	-- the limbs a garment had painted go back to skin
 	local tone = char:GetAttribute("SkinTone")
 	if typeof(tone) == "Color3" then
@@ -315,7 +441,11 @@ function Dresser.dress(char, opts)
 				local limb = char:FindFirstChild(LIMB_OF[modelName])
 				if limb then
 					local m = putOn(limb, template)
-					if m then m.Name = modelName; m:SetAttribute("Limb", LIMB_OF[modelName]); m:SetAttribute("Piece", id); m.Parent = container end
+					if m then
+						m.Name = modelName; m:SetAttribute("Limb", LIMB_OF[modelName]); m:SetAttribute("Piece", id)
+						if slot == "helmet" then m:SetAttribute("Covers", table.concat(piece.covers or {}, ",")) end
+						m.Parent = container
+					end
 				end
 			end
 		end

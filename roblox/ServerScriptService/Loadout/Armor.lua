@@ -202,7 +202,8 @@ function Armor.pieceOn(char, limbName)
 	local container = char:FindFirstChild("Armor")
 	if not container then return nil end
 	for _, m in ipairs(container:GetChildren()) do
-		if m:GetAttribute("Limb") == limbName then return m end
+		-- (a helmet thrown off: Hub ▸ Cosmetics' Helmet Toss, Dresser.setHelmet)
+		if m:GetAttribute("Limb") == limbName and not m:GetAttribute("Off") then return m end
 	end
 	return nil
 end

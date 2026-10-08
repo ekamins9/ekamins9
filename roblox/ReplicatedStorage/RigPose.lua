@@ -233,6 +233,17 @@ local function emotes()
 	return Emotes
 end
 
+-- an emote owns the body: the look's bend (the torso, head and arms following the camera's
+-- pitch) and a weapon's stance are let go while one plays, so a salute is a salute and a
+-- tossed blade goes straight up wherever you're looking. Returns the inputs to pose with.
+function RigPose.calm(char, inputs)
+	local E = emotes()
+	if not (E and char and E.playing(char)) then return inputs end
+	local out = table.clone(inputs)
+	out.pitch, out.arm, out.ranged, out.aim, out.draw, out.reload = 0, 0, 0, 0, 0, 0
+	return out
+end
+
 -- lerps each joint's C0 toward the target; legAlpha lets kicks snap faster
 function RigPose.apply(j, target, alpha, legAlpha)
 	legAlpha = legAlpha or alpha

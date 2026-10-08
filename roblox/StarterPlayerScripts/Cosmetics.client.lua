@@ -214,6 +214,8 @@ local function playEmote(id)
 	local char = alive()
 	if not char or not id then return end
 	if Emotes.busy(char) then say("Not mid-fight"); return end
+	local why = Catalog.emoteBlock(char, id)
+	if why then say(why); return end
 	-- whole-body emotes need you standing still; arms-only ones play on the move
 	if not Emotes.isUpper(id) and isMoving(char) then
 		local e = Catalog.EMOTE[id]
@@ -405,4 +407,18 @@ RunService.RenderStepped:Connect(function()
 	local char = player.Character
 	local id = char and Emotes.playing(char)
 	if id and not Emotes.isUpper(id) and os.clock() - startedAt > 0.25 and isMoving(char) then stopEmote() end
+end)
+
+-- a thrown helmet's "Put on" (Hub ▸ Cosmetics' Helmet Toss) shows only while you've no helmet on
+local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
+task.spawn(function()
+	while true do
+		task.wait(0.3)
+		local f = workspace:FindFirstChild("ThrownHelmets")
+		if f then
+			local c = player.Character
+			local free = c ~= nil and not Dresser.helmetOn(c)
+			for _, d in ipairs(f:GetDescendants()) do if d:IsA("ProximityPrompt") then d.Enabled = free end end
+		end
+	end
 end)

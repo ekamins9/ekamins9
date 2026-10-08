@@ -17,12 +17,13 @@
        SHOP       DAILY (packs + the WEAPONS shelf, rotating) · CRATES (the drum)
                   · CROWNS (Robux bundles, Crowns › Marks) · COLORS
        TASKS      daily + weekly contracts, the task-skin track, mastery
-       WARDROBE   hair, beard, face, skin, hair colour, title
+       (no wardrobe: you're yourself under the armor, your avatar's hair, face and skin,
+        Loadout ▸ Avatars; tap the player card to pick a title: HX.titlePicker)
        SERVERS    the browser with filters, and CREATE CUSTOM
        SETTINGS   camera feel, keybinds, attack side (ClientSettings)
 
      Every mannequin is a real dressed rig (Dresser) in a ViewportFrame, so what
-     you see is what spawns. Talks to HubServer (HubRemote / HubEvent) and
+     you see is what spawns (HX.myLook: you, as your avatar). Talks to HubServer (HubRemote / HubEvent) and
      LoadoutServer (LoadoutRemote "Catalog", LoadoutEvent "Spawn").
      _G.MenuBus: "OpenHub", screen · "HubOpened" · "HubClosed" (class screen).
      Test hooks (set from the command bar / Studio MCP): ScreenGui attributes
@@ -483,14 +484,6 @@ local function iconImage(parent, key, px)
 	end
 	return img
 end
--- a face texture (Cosmetics ▸ Body ▸ Face ▸ <id>)
-local function faceTexture(id)
-	local d = Catalog.bodyModel("Face", id)
-	if d and d:IsA("Decal") then return d.Texture end
-	for _, f in ipairs(Catalog.BODY.faces) do if f.id == id and f.texture then return f.texture end end
-	return ""
-end
-
 -- a dock button: a big 3D icon popping out of a dark tile, its name under it
 local function dockTile(parent, iconKey, text)
 	local b = Instance.new("TextButton")
@@ -768,6 +761,15 @@ do
 	pName.Position = UDim2.fromOffset(72, 6)
 	pName.Size = UDim2.new(1, -82, 0, 26)
 	pName.TextTruncate = Enum.TextTruncate.AtEnd
+	-- your title (the card is a button: HX.titlePicker)
+	local tLbl = title(profileChip, "", 13, COL.ACCENT)
+	tLbl.Name = "Title"
+	tLbl.AnchorPoint = Vector2.new(1, 0); tLbl.Position = UDim2.new(1, -12, 0, 10); tLbl.Size = UDim2.fromOffset(150, 20)
+	tLbl.TextXAlignment = Enum.TextXAlignment.Right; tLbl.TextTruncate = Enum.TextTruncate.AtEnd
+	local chipBtn = Instance.new("TextButton")
+	chipBtn.Name = "TitleButton"; chipBtn.Text = ""; chipBtn.BackgroundTransparency = 1; chipBtn.Size = UDim2.fromScale(1, 1); chipBtn.ZIndex = 5
+	chipBtn.Parent = profileChip
+	chipBtn.Activated:Connect(function() if HX.titlePicker then HX.titlePicker() end end)
 	lvlBadge = title(profileChip, "LVL 1", 14)
 	lvlBadge.BackgroundTransparency = 0
 	lvlBadge.BackgroundColor3 = COL.BLUE
@@ -889,7 +891,7 @@ local state = {studio = false, reserved = false, access = "Public", name = "", c
 	profile = nil, contracts = {}, servers = {}, friends = {}, catalog = nil, activeClass = GameConfig.DEFAULT_CLASS,
 	queue = nil, matchFound = nil, boards = {}, serversAt = 0, store = nil}
 local ui = {bracket = "1v1", ranked = false, lbTab = "Warfront", editing = GameConfig.DEFAULT_CLASS,
-	classEdit = {}, dirty = {}, team = nil, appDraft = nil, appDirty = false, helmPreview = false, tryOn = nil,
+	classEdit = {}, dirty = {}, team = nil, tryOn = nil,
 	shopTab = "daily", crate = nil, crateItem = nil, rolling = false, pulls = {},
 	armoryTab = "weapons", shopWeapon = "Longsword", shopSkin = nil, armorSet = nil, armorSlots = {helmet = true, top = true, bottom = true},
 	ownedOnly = true,   -- the Armory shows what you have; the filter off shows everything you can get
@@ -1048,6 +1050,12 @@ local function refreshWallet()
 	crownsText.Text = fmt(p and p.wallet and p.wallet.crowns or 0)
 	local lvl = p and p.level or 1
 	lvlBadge.Text = "LVL " .. tostring(lvl)
+	local tl = profileChip:FindFirstChild("Title")
+	if tl then
+		local t = p and p.appearance and p.appearance.title
+		tl.Text = (t and t ~= "") and ("« " .. string.upper(t) .. " »") or "PICK A TITLE ›"
+		tl.TextColor3 = (t and t ~= "") and COL.ACCENT or COL.DIM
+	end
 	local need = xpNeeded(lvl)
 	local have = p and p.xp or 0
 	xpFill.Size = UDim2.new(math.clamp(have / math.max(need, 1), 0, 1), 0, 1, 0)
@@ -1465,6 +1473,17 @@ function Preview.box(parent, size)
 	return holder, world, cam
 end
 -- you in your active class (light = no armor: the small cards)
+-- YOU, under the armor: your saved appearance (the title) and your own avatar's hair,
+-- face and skin (Loadout ▸ Avatars keeps everyone's kit in ReplicatedStorage ▸ Avatars);
+-- someone else: theirs (only the ones in this server have a kit; the rest wear the stand-in)
+function HX.lookOf(userId, base)
+	local a = {}
+	for k, v in pairs(base or Catalog.BODY.defaults) do a[k] = v end
+	a.avatar = userId
+	return a
+end
+function HX.myLook() return HX.lookOf(player.UserId, state.profile and state.profile.appearance) end
+
 -- (you, as you are: your active class's armor and look. Dressed once per look and
 -- copied after, so a screenful of looping thumbnails stays cheap; `light` = no weapon)
 Preview.rigCache = {}
@@ -1472,11 +1491,11 @@ function Preview.rig(world, weapon, light)
 	local lo = {}
 	for k, v in pairs(classLoadout(state.activeClass)) do lo[k] = v end
 	local ok, key = pcall(function()
-		return game:GetService("HttpService"):JSONEncode({lo, state.profile and state.profile.appearance or false, state.activeClass, weapon == true})
+		return game:GetService("HttpService"):JSONEncode({lo, HX.myLook(), state.activeClass, weapon == true, Dresser.kitOf(HX.myLook()) ~= nil})
 	end)
 	local tpl = ok and Preview.rigCache[key]
 	if not (tpl and tpl.Parent == nil and tpl:FindFirstChild("Torso")) then
-		tpl = dressedRig({loadout = lo, appearance = state.profile and state.profile.appearance, weight = weightOf(state.activeClass), weapon = weapon})
+		tpl = dressedRig({loadout = lo, appearance = HX.myLook(), weight = weightOf(state.activeClass), weapon = weapon})
 		if ok then
 			local n = 0
 			for _ in pairs(Preview.rigCache) do n += 1 end
@@ -1704,7 +1723,6 @@ local SCREEN_DEF = {
 	ARMORY     = {title = "ARMORY",   icon = "Armory"},
 	SHOP       = {title = "SHOP",     icon = "Shop"},
 	TASKS      = {title = "TASKS",    icon = "Tasks"},
-	APPEARANCE = {title = "WARDROBE", icon = "Wardrobe"},
 	SERVERS    = {title = "SERVERS",  icon = "Tasks"},
 	SETTINGS   = {title = "SETTINGS", icon = "Settings"},
 	PASS       = {title = "SEASON PASS", icon = "Pass"},
@@ -1715,7 +1733,7 @@ local SCREEN_DEF = {
 	INVENTORY  = {title = "INVENTORY", icon = "Inventory"},
 }
 -- old tab names and the names other scripts send over the bus
-local ALIAS = {INV = "INVENTORY", COLLECTION = "INVENTORY", LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
+local ALIAS = {INV = "INVENTORY", COLLECTION = "INVENTORY", LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "PLAY", APPEARANCE = "PLAY", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
 	EGGS = "HATCHERY", PETS = "HATCHERY", EGGSHOP = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
@@ -2202,7 +2220,7 @@ function HX.armorLook(kind, id)
 end
 function HX.armorThumb(parent, kind, id, size)
 	local lo, w = HX.armorLook(kind, id)
-	local th = mannequinThumb(parent, lo or {}, w or "Light", size, nil, {dist = 9.6, appearance = state.profile and state.profile.appearance})
+	local th = mannequinThumb(parent, lo or {}, w or "Light", size, nil, {dist = 9.6, appearance = HX.myLook()})
 	th.BackgroundTransparency = 1
 	return th
 end
@@ -2210,36 +2228,8 @@ function HX.armorStage(parent, kind, id, size)
 	local holder = clearFrame(parent); holder.Size = size or UDim2.fromScale(1, 1); holder.ClipsDescendants = true
 	local st = Stage.new(holder, {dist = 10.5, fov = 40, platform = COL.BLUE})
 	local lo, w = HX.armorLook(kind, id)
-	st:set({{loadout = lo or {}, appearance = state.profile and state.profile.appearance, weight = w}})
+	st:set({{loadout = lo or {}, appearance = HX.myLook(), weight = w}})
 	return holder
-end
-
--- A FACE ON A DISC (the wardrobe's cards): the face builder's layers stacked over a skin-coloured
--- circle, tinted like the head's decals (Catalog.faceLayers)
-function HX.faceDisc(parent, app, px)
-	local tone = Catalog.BODY.skins[app.skin or Catalog.BODY.defaults.skin] or Catalog.BODY.skins[1]
-	local disc = frame(parent, tone)
-	disc.Size = UDim2.fromOffset(px, px)
-	disc.ClipsDescendants = true
-	Instance.new("UICorner", disc).CornerRadius = UDim.new(1, 0)
-	local hair = Catalog.BODY.hairColors[1].color
-	for _, h in ipairs(Catalog.BODY.hairColors) do if h.name == app.hairColor then hair = h.color end end
-	local any = false
-	for _, L in ipairs(Catalog.faceLayers(app, hair)) do
-		local src = Catalog.bodyModel("FaceParts", L.part)
-		if src and src:IsA("Decal") then
-			local img = Instance.new("ImageLabel")
-			-- (the features sit in the middle of the texture: zoomed so they fill the disc)
-			img.BackgroundTransparency = 1; img.Size = UDim2.fromScale(1.75, 1.75); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.56)
-			img.Image = src.Texture; img.ImageColor3 = L.tint or Color3.new(1, 1, 1); img.ZIndex = L.z + 1
-			img.Parent = disc
-			any = true
-		end
-	end
-	if not any then   -- (no FaceParts in this place: the old single texture)
-		local img = Instance.new("ImageLabel"); img.BackgroundTransparency = 1; img.Size = UDim2.fromScale(1, 1); img.Image = faceTexture(app.face or "Smile"); img.Parent = disc
-	end
-	return disc
 end
 
 -- a phone: a screen that scrolls inside itself (a grid, a row of cards) fits the
@@ -2505,7 +2495,7 @@ do
 				table.insert(buttons, {"LEAVE PARTY", COL.GLASS2, function() call("PartyLeave"); state.party = nil; state.queue = nil; toast("left the party", COL.DIM); rerender() end})
 			end
 			return {
-				loadout = lo, appearance = mine and state.profile and state.profile.appearance or nil, weight = weightOf(cls), back = not mine,
+				loadout = lo, appearance = mine and HX.myLook() or HX.lookOf(m.id), weight = weightOf(cls), back = not mine,
 				tag = mine and player.DisplayName or string.format("%s  ·  %d", m.name, m.level or 1),
 				sub = sub, subColor = subColor, buttons = buttons,
 				onKick = (leader and not mine) and function()
@@ -2911,7 +2901,7 @@ do
 		hlist(dock, 12)
 	end
 	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"INVENTORY", "Inventory", "INVENTORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
-		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
+		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
 		b.Size = UDim2.fromOffset(100, 100)
@@ -3069,6 +3059,19 @@ do
 		end
 	end)
 	bus.Event:Connect(function(what) if what == "PartyChanged" and open and currentTab == "PLAY" then renderStage(); renderPlayArea() end end)
+	-- your avatar's look (Loadout ▸ Avatars) arriving after the lobby was drawn: drawn again, as you
+	task.spawn(function()
+		local avatars = ReplicatedStorage:WaitForChild("Avatars", 60)
+		if not avatars then return end
+		local function watch(kit)
+			if kit.Name ~= tostring(player.UserId) then return end
+			local function ready() if kit:GetAttribute("Ready") and open and currentTab == "PLAY" then renderStage() end end
+			kit:GetAttributeChangedSignal("Ready"):Connect(ready)
+			ready()
+		end
+		avatars.ChildAdded:Connect(watch)
+		for _, k in ipairs(avatars:GetChildren()) do watch(k) end
+	end)
 end
 
 --------------------------------------------------------------------
@@ -3525,7 +3528,7 @@ do
 		stop.Activated:Connect(function() ui.tryOn = nil; render.CLASSES() end)
 	end
 	local function renderStage()
-		stage:set({{loadout = worn(), appearance = state.profile and state.profile.appearance, weight = weightOf(ui.editing), team = ui.team,
+		stage:set({{loadout = worn(), appearance = HX.myLook(), weight = weightOf(ui.editing), team = ui.team,
 			tag = className(ui.editing), sub = string.upper(weightOf(ui.editing)) .. (ui.dirty[ui.editing] and "  ·  UNSAVED" or ""), subColor = ui.dirty[ui.editing] and COL.ACCENT or (TYPE_COL[weightOf(ui.editing)] or COL.DIM)}})
 		stageHint.Text = ui.team and ("TEAM PREVIEW: PRIMARY FORCED TO " .. string.upper(GameConfig.TEAMS[ui.team] and GameConfig.TEAMS[ui.team].name or ui.team))
 			or "EVERY CLICK RE-DRESSES YOU  ·  CLICK SOMETHING LOCKED TO TRY IT ON  ·  DRAG TO TURN"
@@ -3633,7 +3636,7 @@ do
 			for i, pc in ipairs(pieces) do
 				local have = owns("pieces", pc.id)
 				local pk = Catalog.PACKS[pc.pack]
-				local sub = have and ((slot == "helmet" and #(pc.covers or {}) > 0) and ("covers " .. string.lower(table.concat(pc.covers, " + "))) or (pk and pk.name or ""))
+				local sub = have and (pk and pk.name or "")
 					or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
 				itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t and not (slot == "helmet" and lo.noHelm), have, RARITY_COL[pc.rarity], function()
 					if have then if slot == "helmet" then lo.noHelm = nil end; choose(slot, pc.id) else tryOn(slot, pc.id) end
@@ -4175,7 +4178,7 @@ do
 		for _, slot in ipairs(Catalog.SLOTS) do
 			lo[slot] = (ui.armorSlots[slot] and set.pieces[slot]) and set.pieces[slot].id or base[slot]
 		end
-		stg:set({{loadout = lo, appearance = state.profile and state.profile.appearance, weight = set.weight, weapon = false,
+		stg:set({{loadout = lo, appearance = HX.myLook(), weight = set.weight, weapon = false,
 			tag = set.name, sub = string.upper(set.weight) .. "  ·  " .. string.upper(set.rarity), subColor = RARITY_COL[set.rarity]}})
 		hint.Text = "YOUR COLOURS, YOUR FACE  ·  DRAG TO TURN  ·  TOGGLE THE PIECES BELOW"
 		-- piece toggles
@@ -5063,200 +5066,52 @@ do
 end
 
 --------------------------------------------------------------------
---  WARDROBE (APPEARANCE) — hair, beard, face, skin, hair colour, title
+--  TITLES — what's written under your name. You are yourself under the armor (your
+--  avatar's hair, face and skin: Loadout ▸ Avatars), so the old wardrobe is gone; the
+--  title is picked from the player card (tap it).
 --------------------------------------------------------------------
-do
-	local f = tabFrame.APPEARANCE
-	local left = clearFrame(f); left.Size = UDim2.new(1, -452, 1, 0)
-	local stageHolder = clearFrame(left); stageHolder.Size = UDim2.new(1, 0, 1, -72)
-	local _, stage, stageHint = stageBlock(stageHolder, "", {dist = 5.6, platform = COL.BLUE, fov = 40, focusY = 0.7})
-	local foot = clearFrame(left); foot.AnchorPoint = Vector2.new(0, 1); foot.Position = UDim2.new(0, 0, 1, 0); foot.Size = UDim2.new(1, 0, 0, 60)
-	screenFoot.APPEARANCE = foot
-	local right = clearFrame(f); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 440, 1, 0)
-	local list = scroll(right, 10)
-
-	local function draft()
-		if not ui.appDraft then
-			ui.appDraft = {}
-			for k, v in pairs(state.profile and state.profile.appearance or Catalog.BODY.defaults) do ui.appDraft[k] = v end
-		end
-		return ui.appDraft
+function HX.titlePicker()
+	local p = state.profile
+	if not p then return end
+	local cur = p.appearance and p.appearance.title or ""
+	local have, list = {}, {}
+	for _, t in ipairs(Catalog.BODY.titles) do if not have[t] then have[t] = true; table.insert(list, t) end end
+	for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do if owns("titles", et.title) and not have[et.title] then have[et.title] = true; table.insert(list, et.title) end end
+	if p.owned and p.owned.titles then for t in pairs(p.owned.titles) do if not have[t] then have[t] = true; table.insert(list, t) end end end
+	table.sort(list)
+	local function pick(t)
+		local a = {}
+		for k, v in pairs(p.appearance or {}) do a[k] = v end
+		a.title = t
+		local r = call("SaveAppearance", a)
+		if r.ok then
+			if r.profile then state.profile = r.profile end
+			refreshWallet()
+			toast(t ~= "" and ("Title: " .. t) or "No title", COL.GOOD)
+			closeModal()
+		else toast(r.msg or "couldn't save", COL.BAD) end
 	end
-	local function renderStage()
-		local a = draft()
-		local lo = classLoadout(state.activeClass)
-		if ui.helmPreview then
-			stage:set({{loadout = lo, appearance = a, weight = weightOf(state.activeClass), weapon = false, tag = player.DisplayName, sub = className(state.activeClass) .. "'s helmet on"}})
-			stageHint.Text = "THE ACTIVE CLASS'S HELMET SHOWS WHAT IT HIDES"
-		else
-			stage:set({{loadout = lo, appearance = a, helmet = false, weight = weightOf(state.activeClass), weapon = false, tag = player.DisplayName, sub = a.title or ""}})
-			stageHint.Text = "YOUR HELMET COMES OFF WHILE YOU EDIT  ·  DRAG TO TURN, SCROLL TO ZOOM"
-		end
-	end
-	local function set(k, v, buyKind, price)
-		local a = draft()
-		if buyKind and not owns(buyKind, v) then
-			modal("PREMIUM", string.format("%s costs %d Crowns, once, forever.", tostring(v), price or 0), {{"BUY  ·  " .. tostring(price) .. " CROWNS", COL.GOLD, function()
-				local BUY = {hairColors = "hairColor", eyeColors = "eyeColor", hairs = "hair", beards = "beard"}
-				local r = call("Buy", BUY[buyKind] or "beard", v, "crowns")
-				toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
-				if r.profile then state.profile = r.profile; refreshWallet() end
-				closeModal()
-				if r.ok then set(k, v) end
-			end}})
-			return
-		end
-		a[k] = v
-		ui.appDirty = true
-		render.APPEARANCE()
-	end
-	-- a grid of word tiles (hair, beards)
-	local function wordGrid(parent, items, isOn, onClick, lockedText)
-		local g = clearFrame(parent)
-		g.AutomaticSize = Enum.AutomaticSize.Y
-		g.Size = UDim2.new(1, 0, 0, 0)
-		g.LayoutOrder = nextOrder()
+	modal("YOUR TITLE", "Written under your name for everyone to see. Earn more in battle.", {}, function(box)
+		local g = clearFrame(box)
+		g.AutomaticSize = Enum.AutomaticSize.Y; g.Size = UDim2.new(1, 0, 0, 0); g.LayoutOrder = 3
 		local gl = Instance.new("UIGridLayout", g)
-		gl.CellSize = UDim2.new(1 / 3, -7, 0, 40)
-		gl.CellPadding = UDim2.fromOffset(10, 8)
-		gl.SortOrder = Enum.SortOrder.LayoutOrder
-		for i, it in ipairs(items) do
-			local on = isOn(it)
-			local lock = lockedText and lockedText(it)
-			local b = button(g, (lock and "🔒 " or "") .. it.name, 14, on and COL.BLUE or COL.GLASS2)
-			b.LayoutOrder = i
-			b.TextTruncate = Enum.TextTruncate.AtEnd
-			if lock then
-				b.TextColor3 = COL.CROWNS
-				local pr = label(b, lock, 10, FONT, COL.CROWNS); pr.AnchorPoint = Vector2.new(0.5, 1); pr.Position = UDim2.new(0.5, 0, 1, -1); pr.Size = UDim2.new(1, 0, 0, 11); pr.TextXAlignment = Enum.TextXAlignment.Center
-			end
-			b.Activated:Connect(function() onClick(it) end)
+		gl.CellSize = UDim2.new(0.5, -5, 0, 40); gl.CellPadding = UDim2.fromOffset(10, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
+		local none = button(g, "No title", 14, cur == "" and COL.BLUE or COL.GLASS2); none.LayoutOrder = 0
+		none.Activated:Connect(function() pick("") end)
+		for i, t in ipairs(list) do
+			local b = button(g, t, 14, t == cur and COL.BLUE or COL.GLASS2); b.LayoutOrder = i; b.TextTruncate = Enum.TextTruncate.AtEnd
+			b.Activated:Connect(function() pick(t) end)
 		end
-		return g
-	end
-	render.APPEARANCE = function()
-		local a = draft()
-		clear(list)
-		-- THE FACE: a preset in one click, or build your own, part by part (each card shows your
-		-- face with that part in it)
-		local fp = panel(list, "FACE")
-		do
-			local cur = Catalog.faceParts(a)
-			local function grid(parent)
-				local g = clearFrame(parent)
-				g.AutomaticSize = Enum.AutomaticSize.Y
-				g.Size = UDim2.new(1, 0, 0, 0)
-				g.LayoutOrder = nextOrder()
-				local gl = Instance.new("UIGridLayout", g)
-				gl.CellSize = UDim2.fromOffset(74, 92)
-				gl.CellPadding = UDim2.fromOffset(8, 8)
-				gl.SortOrder = Enum.SortOrder.LayoutOrder
-				return g
-			end
-			local function card(g, i, name, look, on, locked, onClick)
-				local b = button(g, "", 12, on and COL.BLUE or COL.GLASS2)
-				b.LayoutOrder = i
-				border(b, on and WHITE or COL.GLASS2, on and 3 or 1, on and 0 or 0.6)
-				local d = HX.faceDisc(b, look, 60); d.AnchorPoint = Vector2.new(0.5, 0); d.Position = UDim2.new(0.5, 0, 0, 6)
-				local n = title(b, (locked and "🔒 " or "") .. name, 11, locked and COL.GOLD or COL.TEXT)
-				n.AnchorPoint = Vector2.new(0.5, 1); n.Position = UDim2.new(0.5, 0, 1, -4); n.Size = UDim2.new(1, -6, 0, 14); n.TextXAlignment = Enum.TextXAlignment.Center; n.TextTruncate = Enum.TextTruncate.AtEnd
-				b.Activated:Connect(onClick)
-			end
-			local function with(k, v)
-				local t = {}
-				for kk, vv in pairs(a) do t[kk] = vv end
-				for kk, vv in pairs(cur) do t[kk] = vv end
-				t[k] = v
-				return t
-			end
-			heading(fp, "PRESETS")
-			local pg = grid(fp)
-			for i, fc in ipairs(Catalog.BODY.faces) do
-				local look = {skin = a.skin, hairColor = a.hairColor, face = fc.id}
-				card(pg, i, fc.name, look, false, false, function()
-					local d = draft()
-					d.face = fc.id
-					for _, k in ipairs({"eyes", "brows", "mouth", "mark", "paint"}) do d[k] = nil end
-					local f = Catalog.faceParts(d)
-					for _, k in ipairs({"eyes", "brows", "mouth", "mark", "paint"}) do d[k] = f[k] end
-					ui.appDirty = true
-					render.APPEARANCE()
-				end)
-			end
-			local SECTIONS = {{"eyes", "EYES"}, {"brows", "BROWS  ·  YOUR HAIR COLOUR"}, {"mouth", "MOUTH"}, {"mark", "SCARS & MARKS"}, {"paint", "WAR PAINT"}}
-			for _, sec in ipairs(SECTIONS) do
-				local layer = sec[1]
-				heading(fp, sec[2])
-				local g = grid(fp)
-				for i, it in ipairs(Catalog.BODY.faceParts[layer] or {}) do
-					local locked = it.crowns ~= nil and not owns("faceParts", layer .. "_" .. it.id)
-					card(g, i, it.name, with(layer, it.id), cur[layer] == it.id, locked, function()
-						if locked then
-							modal("PREMIUM", string.format("%s costs %d Crowns, once, forever.", it.name, it.crowns), {{"BUY  ·  " .. it.crowns .. " CROWNS", COL.GOLD, function()
-								local r = call("Buy", "facePart", layer .. "_" .. it.id, "crowns")
-								toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
-								if r.profile then state.profile = r.profile; refreshWallet() end
-								closeModal()
-								if r.ok then set(layer, it.id) end
-							end}})
-						else set(layer, it.id) end
-					end)
-				end
-				if layer == "eyes" then
-					heading(fp, "EYE COLOUR")
-					swatches(fp, Catalog.BODY.eyeColors, function(c) return cur.eyeColor == c.name end, function(c) return c.crowns and not owns("eyeColors", c.name) end,
-						function(c) set("eyeColor", c.name, c.crowns and "eyeColors" or nil, c.crowns) end, 34)
-				elseif layer == "paint" then
-					heading(fp, "PAINT COLOUR")
-					swatches(fp, Catalog.BODY.paintColors, function(c) return cur.paintColor == c.name end, function() return false end, function(c) set("paintColor", c.name) end, 34)
-				end
-			end
-		end
-		local hp = panel(list, "HAIR")
-		wordGrid(hp, Catalog.BODY.hair, function(it) return a.hair == it.id end, function(it) set("hair", it.id, it.crowns and "hairs" or nil, it.crowns) end,
-			function(it) return (it.crowns and not owns("hairs", it.id)) and (tostring(it.crowns) .. " CROWNS") or nil end)
-		heading(hp, "HAIR COLOUR")
-		swatches(hp, Catalog.BODY.hairColors, function(it) return a.hairColor == it.name end, function(it) return it.crowns and not owns("hairColors", it.name) end,
-			function(it) set("hairColor", it.name, it.crowns and "hairColors" or nil, it.crowns) end, 34)
-		local bp = panel(list, "BEARD")
-		wordGrid(bp, Catalog.BODY.beards, function(it) return a.beard == it.id end, function(it) set("beard", it.id, it.crowns and "beards" or nil, it.crowns) end,
-			function(it) return (it.crowns and not owns("beards", it.id)) and (tostring(it.crowns) .. " CROWNS") or nil end)
-		local sp = panel(list, "SKIN")
-		local tones = {}
-		for i, c in ipairs(Catalog.BODY.skins) do table.insert(tones, {i = i, color = c}) end
-		swatches(sp, tones, function(it) return a.skin == it.i end, function() return false end, function(it) set("skin", it.i) end, 38)
-		local tp = panel(list, "TITLE")
-		local titles = {}
-		for _, t in ipairs(Catalog.BODY.titles) do titles[t] = true end
-		if state.profile and state.profile.owned and state.profile.owned.titles then for t in pairs(state.profile.owned.titles) do titles[t] = true end end
-		local ordered = {}
-		for t in pairs(titles) do table.insert(ordered, t) end
-		table.sort(ordered)
-		local items = {}
-		for _, t in ipairs(ordered) do table.insert(items, {name = t}) end
-		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do
-			if owns("titles", et.title) and not titles[et.title] then table.insert(items, {name = et.title}) end
-		end
-		wordGrid(tp, items, function(it) return a.title == it.name end, function(it) set("title", it.name) end)
 		local locked = {}
 		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do if not owns("titles", et.title) then table.insert(locked, et) end end
 		if #locked > 0 then
-			heading(tp, "EARN MORE")
-			for _, et in ipairs(locked) do row(tp, "🔒 " .. et.title, Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock), false, nil, COL.DIM) end
+			local h = dim(box, "EARN MORE", 13); h.LayoutOrder = 4
+			for i, et in ipairs(locked) do
+				local l = dim(box, "🔒 " .. et.title .. "  ·  " .. Catalog.unlockText(et.unlock) .. "  ·  " .. progressText(et.unlock), 12)
+				l.LayoutOrder = 4 + i
+			end
 		end
-		dim(list, "Locked colours, beards and face parts are premium: bought once with Crowns, yours forever.", 12)
-		renderStage()
-		renderSide()
-	end
-	render.APPEARANCE_save = function()
-		local r = call("SaveAppearance", draft())
-		if r.ok then
-			toast("appearance saved", COL.GOOD)
-			if r.profile then state.profile = r.profile end
-			ui.appDraft = nil; ui.appDirty = false
-			render.APPEARANCE()
-		else toast(r.msg or "save failed", COL.BAD) end
-	end
+	end, 520)
 end
 
 --------------------------------------------------------------------
@@ -6370,7 +6225,7 @@ HX.screens = function()
 				local cell = clearFrame(g3); cell.LayoutOrder = i
 				local lo = (d.classes or {})[cid] or {}
 				pcall(function()
-					local th = mannequinThumb(cell, lo, def and def.weight or "Medium", UDim2.new(1, 0, 0, 206), nil, {appearance = d.appearance, weapon = true})
+					local th = mannequinThumb(cell, lo, def and def.weight or "Medium", UDim2.new(1, 0, 0, 206), nil, {appearance = HX.lookOf(id, d.appearance), weapon = true})
 					th.LayoutOrder = 1
 				end)
 				local n = title(cell, string.upper(def and def.name or cid) .. (d.active == cid and "  ★" or ""), 14, d.active == cid and COL.ACCENT or COL.TEXT)
@@ -6606,9 +6461,6 @@ renderSide = function()
 		fat("TEAM PREVIEW" .. (ui.team and (": " .. (GameConfig.TEAMS[ui.team] and string.upper(GameConfig.TEAMS[ui.team].name) or ui.team)) or ""), ui.team and COL.PURPLE or COL.GLASS2, function()
 			ui.team = ui.team == nil and "A" or (ui.team == "A" and "B" or nil); render.CLASSES()
 		end, 260)
-	elseif currentTab == "APPEARANCE" then
-		fat(ui.appDirty and "SAVE" or "SAVED ✔", ui.appDirty and COL.GREEN or COL.GLASS2, function() if ui.appDirty then render.APPEARANCE_save() end end)
-		fat(ui.helmPreview and "BACK TO EDITING" or "WITH HELMET", ui.helmPreview and COL.BLUE or COL.GLASS2, function() ui.helmPreview = not ui.helmPreview; render.APPEARANCE() end)
 	elseif currentTab == "SERVERS" then
 		fat(ui.customOpen and "CLOSE CUSTOM" or "CREATE CUSTOM", COL.GOLD, function() ui.customOpen = not ui.customOpen; render.SERVERS() end)
 		fat("REFRESH", COL.BLUE, function() state.serversAt = 0; render.SERVERS() end, 180)
@@ -6624,7 +6476,6 @@ local function refreshHeader()
 			ARMORY = "EVERY WEAPON AND EVERY SET  ·  AND WHERE TO GET THEM",
 			SHOP = "NEW ITEMS IN " .. storeCountdown(),
 			TASKS = "FINISH TASKS FOR MARKS AND TASK SKINS",
-			APPEARANCE = ui.appDirty and "UNSAVED CHANGES" or "YOUR FACE, HAIR AND TITLE",
 			SERVERS = "PICK A SERVER, OR MAKE YOUR OWN",
 			SETTINGS = "CAMERA FEEL · KEYBINDS · ATTACK SIDE  ·  " .. HX.Hints.name("Menu") .. " IS THE MENU BUTTON",
 			HATCHERY = "BUY EGGS  ·  WARM THEM IN A NEST  ·  HATCH A PET THAT FOLLOWS YOU",

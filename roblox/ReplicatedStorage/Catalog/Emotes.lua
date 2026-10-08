@@ -2,12 +2,14 @@
      (ARMORY ▸ EMOTES). The motions live in ReplicatedStorage ▸ Emotes under the
      same id; a weapon in hand joins in (the Flourish spins it).
        id, name, rarity, description
+       needs = "weapon"  only with a weapon in hand (not a bow)  ·  "helmet"  only with one on
+                         (Catalog.emoteBlock: the wheel says why, the server refuses)
      WHERE IT COMES FROM: free = true · crate = "Relic" · pass · unlock = {...} ]]
 return {
 	{id = "Salute",    name = "Salute",      rarity = "Common",    free = true,     description = "Blade to the brow."},
 	{id = "Bow",       name = "Bow",         rarity = "Common",    free = true,     description = "A courteous bow before the bout."},
 	{id = "Cheer",     name = "Cheer",       rarity = "Common",    free = true,     description = "Weapon to the sky."},
-	{id = "Flourish",  name = "Flourish",    rarity = "Rare",      free = true,     description = "Two spins of the blade and a salute."},
+	{id = "Flourish",  name = "Flourish",    rarity = "Rare",      free = true,     needs = "weapon", description = "Two spins of the blade and a salute."},
 	{id = "Wave",      name = "Wave",        rarity = "Common",    crate = "Relic", description = "Hello there."},
 	{id = "Shrug",     name = "Shrug",       rarity = "Common",    crate = "Relic", description = "Could have gone either way."},
 	{id = "Beckon",    name = "Beckon",      rarity = "Rare",      crate = "Relic", description = "Come on, then."},
@@ -15,10 +17,10 @@ return {
 	{id = "Laugh",     name = "Laugh",       rarity = "Rare",      crate = "Relic", description = "Doubled over. Was it that funny?"},
 	{id = "Jig",       name = "Jig",         rarity = "Epic",      crate = "Relic", description = "A tavern jig, arms and legs flying."},
 	{id = "WarCry",    name = "War Cry",     rarity = "Epic",      pass = true,     description = "Arms up, head back, a roar."},
-	{id = "BladeToss", name = "Blade Toss",  rarity = "Epic",      crate = "Relic", description = "Toss the blade, let it spin, catch it."},
-	{id = "Windmill",  name = "Windmill",    rarity = "Legendary", pass = true,     description = "The blade whirls overhead in a whirlwind, faster and faster, until you lift off."},
-	{id = "Champion",  name = "Champion",    rarity = "Legendary", crate = "Relic", description = "Raise the blade, drive it into the ground, and stand in a pillar of light."},
-	{id = "HelmetToss", name = "Helmet Toss", rarity = "Epic",    crate = "Relic", description = "Pull your helmet off and throw it at someone. It clangs. It stings. You've a spare."},
-	{id = "Thunderlord", name = "Thunderlord", rarity = "Mythic", crate = "Relic", description = "Hold the blade up to the storm. The storm answers, three times, then you bring it down."},
+	{id = "BladeToss", name = "Blade Toss",  rarity = "Epic",      crate = "Relic", needs = "weapon", description = "Toss the blade, let it spin, catch it."},
+	{id = "Windmill",  name = "Windmill",    rarity = "Legendary", pass = true,     needs = "weapon", description = "The blade whirls overhead in a whirlwind, faster and faster, until you lift off."},
+	{id = "Champion",  name = "Champion",    rarity = "Legendary", crate = "Relic", needs = "weapon", description = "Raise the blade, drive it into the ground, and stand in a pillar of light."},
+	{id = "HelmetToss", name = "Helmet Toss", rarity = "Epic",    crate = "Relic", needs = "helmet", description = "Pull your helmet off and throw it at someone. It clangs. It stings. Then go and pick it up."},
+	{id = "Thunderlord", name = "Thunderlord", rarity = "Mythic", crate = "Relic", needs = "weapon", description = "Hold the blade up to the storm. The storm answers, three times, then you bring it down."},
 	{id = "Ascension", name = "Ascension",   rarity = "Mythic",    crate = "Relic", description = "Kneel, then rise into the air on wings of light."},
 }

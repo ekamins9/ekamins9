@@ -73,18 +73,23 @@ _G.KillFxHook = function(killer, victimChar)
 end
 
 --------------------------------------------------------------------
---  THE HELMET TOSS (the emote HelmetToss): at 0.5 s a copy of your helmet comes off
---  your head into your left hand (a weld: every client sees it follow the posed arm),
---  at 1.12 s it's thrown — a real tumbling object — and a spare turns up on your
---  head at 2 s. It clangs off the world; it stings whoever it hits (HELM_DAMAGE,
---  friendly fire and peaceful places respected) and knocks them a little. A step,
---  an attack or a block before it's thrown puts it back.
+--  THE HELMET TOSS (the emote HelmetToss; only with a helmet on: Catalog.emoteBlock).
+--  At 0.5 s your helmet comes off your head into your left hand (a copy, welded: every
+--  client sees it follow the posed arm) and your hair and face show (Dresser.setHelmet:
+--  off, it doesn't protect your head either). At 1.12 s it's thrown — a real tumbling
+--  object. It clangs off the world, stings whoever it hits (HELM_DAMAGE, friendly fire
+--  and peaceful places respected) and knocks them a little. Then it lies there for a
+--  minute: walk up and put it back on (E), or anyone without a helmet can put it on
+--  theirs (its own colours and finish: Dresser.wearHelmet). A step, a jump, a weapon
+--  drawn, an attack or a block before it's thrown puts it straight back on.
 --------------------------------------------------------------------
-local HELM_LIFT, HELM_THROW, HELM_SPARE = 0.5, 1.12, 2.0
+local HELM_LIFT, HELM_THROW = 0.5, 1.12
+local HELM_STAY = 60
 local HELM_DAMAGE = 8
 local CLANG = {9116750726, 9116751108, 9119072660}
 local thrownFolder
 local CombatServer
+local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 local function clangAt(part, vol)
 	local s = Instance.new("Sound")
 	s.SoundId = "rbxassetid://" .. CLANG[math.random(#CLANG)]
@@ -95,21 +100,53 @@ local function clangAt(part, vol)
 	s:Play()
 	game:GetService("Debris"):AddItem(s, 3)
 end
+-- a thrown helmet on the ground: anyone without a helmet on can put it on
+local function pickupPrompt(copy, box, owner, ownerChar, template, covers)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "HelmetPickup"
+	prompt.ActionText = "Put on"
+	prompt.ObjectText = owner.DisplayName .. "'s helmet"
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.HoldDuration = 0.25
+	prompt.MaxActivationDistance = 9
+	prompt.RequiresLineOfSight = false
+	prompt:SetAttribute("HelmetPickup", true)   -- (Cosmetics.client hides it while you've a helmet on)
+	prompt.Parent = box
+	prompt.Triggered:Connect(function(who)
+		local c = who.Character
+		local h = c and c:FindFirstChildOfClass("Humanoid")
+		if not (h and h.Health > 0 and copy.Parent) or Dresser.helmetOn(c) then return end
+		if c == ownerChar then
+			Dresser.setHelmet(c, true)   -- your own, back on
+		else
+			Dresser.wearHelmet(c, template:Clone(), covers)
+		end
+		local head = c:FindFirstChild("Head")
+		if head then clangAt(head, 0.45) end
+		copy:Destroy()
+	end)
+end
 local function helmetToss(plr, char)
 	local root = char:FindFirstChild("HumanoidRootPart")
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	local armor = char:FindFirstChild("Armor")
 	local helm = armor and armor:FindFirstChild("HeadClothing")
 	local arm = char:FindFirstChild("Left Arm")
-	if not (root and hum and helm and arm) then return end   -- (bareheaded: just the moves)
+	if not (root and hum and helm and arm) or helm:GetAttribute("Off") then return end
 	local start = root.Position
+	local tool0 = char:FindFirstChildOfClass("Tool")
 	local function stillOn()
 		return char.Parent ~= nil and hum.Health > 0 and not char:GetAttribute("Acting") and not char:GetAttribute("Blocking")
-			and (root.Position - start).Magnitude < 2.5
+			and (root.Position - start).Magnitude < 2.5 and char:FindFirstChildOfClass("Tool") == tool0
+			and math.abs(root.AssemblyLinearVelocity.Y) < 12 and helm.Parent ~= nil
 	end
 	task.wait(HELM_LIFT)
 	if not stillOn() then return end
-	-- the copy: one assembly round a hit box, in the left hand
+	-- a clean copy to wear again (whoever picks it up), and what it covers
+	local template = helm:Clone()
+	local covers = {}
+	for _, c in ipairs(string.split(helm:GetAttribute("Covers") or "Hair", ",")) do if c ~= "" then table.insert(covers, c) end end
+	-- the copy in the hand: one assembly round a hit box
 	local copy = helm:Clone()
 	for _, d in ipairs(copy:GetDescendants()) do
 		if d:IsA("JointInstance") or d:IsA("Constraint") or d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Attachment") then d:Destroy() end
@@ -132,14 +169,14 @@ local function helmetToss(plr, char)
 	copy.Parent = thrownFolder
 	local hold = Instance.new("Weld"); hold.Part0, hold.Part1 = arm, box; hold.C0 = CFrame.new(0, -1.5, 0); hold.Parent = box
 	box.CanCollide = false
-	-- your own helmet: off your head while it's in your hand and in the air
-	local was = {}
-	for _, p in ipairs(helm:GetDescendants()) do if p:IsA("BasePart") then was[p] = p.Transparency; p.Transparency = 1 end end
-	local function spare()
-		for p, t in pairs(was) do if p.Parent then p.Transparency = t end end
-	end
+	-- off your head: your hair and your face show, and your head is bare
+	Dresser.setHelmet(char, false)
 	task.wait(HELM_THROW - HELM_LIFT)
-	if not stillOn() then copy:Destroy(); spare(); return end
+	if not stillOn() then
+		copy:Destroy()
+		if char.Parent then Dresser.setHelmet(char, true) end
+		return
+	end
 	-- the throw
 	hold:Destroy()
 	box.CanCollide = true
@@ -169,8 +206,9 @@ local function helmetToss(plr, char)
 			clangAt(box, 0.75 - clangs * 0.12)
 		end
 	end)
-	game:GetService("Debris"):AddItem(copy, 5)
-	task.delay(HELM_SPARE - HELM_THROW, spare)
+	-- once it's out of the hand's way: it can be picked up
+	task.delay(0.6, function() if copy.Parent then pickupPrompt(copy, box, plr, char, template, covers) end end)
+	game:GetService("Debris"):AddItem(copy, HELM_STAY)
 end
 
 local last = {}
@@ -185,7 +223,7 @@ emote.OnServerEvent:Connect(function(plr, what, id)
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not (hum and hum.Health > 0) then return end
 	-- not mid-swing, mid-kick, mid-dodge or behind a block
-	if char:GetAttribute("Acting") or char:GetAttribute("Blocking") then fx:FireAllClients("EmoteStop", plr, id); return end
+	if char:GetAttribute("Acting") or char:GetAttribute("Blocking") or Catalog.emoteBlock(char, id) then fx:FireAllClients("EmoteStop", plr, id); return end
 	fx:FireAllClients("Emote", plr, id, workspace:GetServerTimeNow())
 	if id == "HelmetToss" then task.spawn(helmetToss, plr, char) end
 end)

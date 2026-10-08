@@ -37,7 +37,8 @@ local wearers = {}   -- [Armor folder] = state (below)
 local function addGlow(p)
 	if not p:IsA("BasePart") then return end
 	local c = p:GetAttribute("GlowColor")
-	parts[p] = {base = typeof(c) == "Color3" and c or p.Color, seed = rng:NextNumber(0, 6.28), mode = p:GetAttribute("Mode"), cont = p:FindFirstAncestor("Armor")}
+	parts[p] = {base = typeof(c) == "Color3" and c or p.Color, seed = rng:NextNumber(0, 6.28), mode = p:GetAttribute("Mode"), cont = p:FindFirstAncestor("Armor"),
+		model = p:FindFirstAncestorWhichIsA("Model")}
 end
 CollectionService:GetInstanceAddedSignal("ArmorGlow"):Connect(addGlow)
 CollectionService:GetInstanceRemovedSignal("ArmorGlow"):Connect(function(p) parts[p] = nil end)
@@ -398,6 +399,7 @@ RunService.RenderStepped:Connect(function(dt)
 	acc = 0
 	for p, g in pairs(parts) do
 		if not p.Parent then parts[p] = nil; continue end
+		if g.model and g.model:GetAttribute("Off") then continue end   -- (a helmet thrown off: Dresser.setHelmet)
 		-- (far away in the world: left as it is)
 		if eye and p:IsDescendantOf(workspace) and (p.Position - eye).Magnitude > 160 then continue end
 		local w = g.cont and wearers[g.cont]

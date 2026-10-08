@@ -461,8 +461,8 @@ and a UIScale fits it to any screen.
   and open slots (shadows with a green **+**) stand around you, and the leader's red **X** over
   a teammate removes them. **Daily tasks** and **friends** are on the left; the **leaderboard**
   and **today's shop** are on the right. Along the bottom runs the **dock** of 3D icons: LOADOUT,
-  ARMORY, SHOP (a NEW badge when the day turns), TASKS (open tasks counted), WARDROBE,
-  SETTINGS. The big green **PLAY** opens the MODES board. Party members get **READY UP**
+  ARMORY, INVENTORY, SHOP (a NEW badge when the day turns), PASS, PETS, TRADE, TASKS (open
+  tasks counted), SETTINGS. Tap the **player card** (top left) to pick your **title**. The big green **PLAY** opens the MODES board. Party members get **READY UP**
   instead. A search shows **SEARCHING 0:42** with CANCEL. With no body in the Courtyard, a blue
   **ENTER COURTYARD** spawns you.
 - **MODES** (`GameConfig.DOORS`): big tiles, each with a small 3D scene of posed, dressed
@@ -528,13 +528,21 @@ and a UIScale fits it to any screen.
   title or your look in the menu and the body you're standing in changes at once, no respawn
   (`_G.CourtyardRedress`, LoadoutServer; a match waits for your next spawn).
 - **Playtime gifts** in the lobby's left column: the next gift, a live countdown and CLAIM.
-- **WARDROBE**: you in your armor with the helmet off. **Build your own face**: presets in one click,
-  then eyes (11 shapes, 10 colours), brows (in your hair colour), mouth (12), scars & marks, war paint
-  (in a paint colour); every card shows your face with that part in it. Hair (20 styles, the new
-  wave: spiky, swoop, curtains, ponytail, twin tails, man bun, afro, mohawk; long & flowing, viking
-  braids, dreadlocks premium), hair colour, beard, skin, title.
+- **You, under the armor** (`Loadout ▸ Avatars`): every player is their own Roblox avatar under
+  their armor: its hair and face accessories, its face, its skin colours. When you join, the
+  server builds your avatar (`GetHumanoidDescriptionFromUserId` → an R6 model) and keeps the kit
+  in `ReplicatedStorage ▸ Avatars ▸ <UserId>`; the Dresser puts it on your spawn and on every
+  menu mannequin of you (`appearance.avatar`; the HubMenu's `HX.myLook`). Hats and anything worn
+  on the body stay off (armor goes there). A helmet hides what it covers. Bots and NPCs keep the
+  made-up looks of `Catalog ▸ Body`. There is no wardrobe any more; the **title** is picked on
+  the player card (`HX.titlePicker`).
 - **Bareheaded**: LOADOUT ▸ HELMET ▸ "No helmet" shows your face and hair in battle; your head has
-  no armor then (a helmet's protection only covers the head when you wear one).
+  no armor then (a helmet's protection only covers the head when you wear one). What a helmet
+  hides stays on, hidden (`Covered`), so taking it off shows it (`Dresser.setHelmet`).
+- **The Helmet Toss** (only with a helmet on): off it comes and your hair and face show; thrown, it
+  clangs and stings whoever it hits, then lies there for a minute. Walk up and put it back on (E),
+  or anyone without a helmet can wear it, colours, finish and all (`Dresser.wearHelmet`). A thrown
+  helmet doesn't protect anyone's head (`Off`).
 - **SERVERS**: the browser with filters and **CREATE CUSTOM**: door, mode, map, player limit,
   round length, who may join, friendly fire, respawns, ground weapons, and cheats. A cheat
   server gives the host `/god /heal /speed /tp /bring /give /kick` and pays nobody.

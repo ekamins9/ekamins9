@@ -56,7 +56,7 @@ local function clothingOn(char, limbName)
 	local container = char:FindFirstChild("Armor")
 	if not container then return nil end
 	for _, m in ipairs(container:GetChildren()) do
-		if m:GetAttribute("Limb") == limbName then return m end
+		if m:GetAttribute("Limb") == limbName and not m:GetAttribute("Off") then return m end   -- (a thrown helmet: Off)
 	end
 	return nil
 end

@@ -100,6 +100,13 @@ Corsair, Deathless, Lionheart, Obsidian. Give a crate set **its own colours** wi
 `Colors = {Metal = Color3.fromRGB(…), Accent = …, Secondary = …}`: those slots ignore the
 player's paint (team colours still win in team modes), so the set always looks like itself.
 
+**An emote that needs something** (`Catalog ▸ Emotes`): `needs = "weapon"` (a weapon in hand,
+not a bow: the Flourish, the Blade Toss) or `needs = "helmet"` (the Helmet Toss). The wheel says
+why it can't play and the server refuses it (`Catalog.emoteBlock`). Any other action ends a playing
+emote (a weapon drawn or swapped, a jump, a hit, an attack, walking off a whole-body one), and while
+one plays the look's bend lets go of the body (`RigPose.calm`), so poses are the same wherever you
+look.
+
 **A spell** (`ReplicatedStorage ▸ MagicSpells`): `S.MySpell = {name, glyph, kind, mana, cast,
 cooldown, color, glow, desc, …its numbers}` with `kind` one of `bolt` (speed, range, radius, damage,
 headMult, burn = {dps, time}, splash, splashDamage), `chain` (range, width, damage, chain,

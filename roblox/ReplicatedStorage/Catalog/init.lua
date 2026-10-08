@@ -514,6 +514,22 @@ function Catalog.crateItems(crateId)
 	return out
 end
 
+-- why a character can't play an emote right now (nil: it can). needs = "weapon": a weapon
+-- in hand, not a bow; "helmet": a helmet on (not off, not thrown: HeadClothing Off)
+function Catalog.emoteBlock(char, id)
+	local e = Catalog.EMOTE[id]
+	if not (e and char) then return "No such emote" end
+	if e.needs == "weapon" then
+		local t = char:FindFirstChildOfClass("Tool")
+		if not (t and t:FindFirstChild("Handle") and not t:GetAttribute("Ranged")) then return "Draw a weapon first" end
+	elseif e.needs == "helmet" then
+		local a = char:FindFirstChild("Armor")
+		local h = a and a:FindFirstChild("HeadClothing")
+		if not h or h:GetAttribute("Off") then return "You need a helmet on" end
+	end
+	return nil
+end
+
 -- the companions an egg can hatch (any not tied to another egg, not a pass reward)
 function Catalog.eggPool(eggId)
 	local out = {}

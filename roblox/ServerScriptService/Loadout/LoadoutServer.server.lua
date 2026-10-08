@@ -186,6 +186,7 @@ end
 -- a class lighter (or heavier) than its weight (the Archer, the Mage: GameConfig.CLASSES health /
 -- prot / speed), and a magic class's mana bar (MagicSpells.MAX_MANA, full). After the Dresser.
 local Spells = require(ReplicatedStorage:WaitForChild("MagicSpells"))
+local Avatars = require(script.Parent:WaitForChild("Avatars"))
 local function classStats(char, hum, classId)
 	local cdef = GameConfig.CLASSES[classId]
 	if cdef.health then
@@ -225,6 +226,7 @@ spawnAs = function(plr, classId)
 
 	if Game.current and Game.current.def.teams == 2 and not Game.teamOf(plr) then Game.Teams.assign(plr) end
 
+	Avatars.ensure(plr, 4)   -- (you, under the armor: your avatar's hair, face and skin)
 	plr:LoadCharacter()
 	local char = plr.Character or plr.CharacterAdded:Wait()
 	local hum  = char:WaitForChild("Humanoid", 10)
@@ -241,7 +243,7 @@ spawnAs = function(plr, classId)
 	char:SetAttribute("Class", classId)
 	char:SetAttribute("Title", p.appearance.title or "")
 	local team = Game.teamOf(plr)
-	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = team})
+	Dresser.dress(char, {loadout = lo, appearance = Avatars.appearanceOf(plr), weight = GameConfig.CLASSES[classId].weight, team = team})
 	Game.Teams.mark(char, team)
 	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
@@ -289,7 +291,7 @@ _G.CourtyardRedress = function(plr)
 	end
 	char:SetAttribute("Class", classId)
 	char:SetAttribute("Title", p.appearance.title or "")
-	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = Game.teamOf(plr)})
+	Dresser.dress(char, {loadout = lo, appearance = Avatars.appearanceOf(plr), weight = GameConfig.CLASSES[classId].weight, team = Game.teamOf(plr)})
 	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut, 1) end

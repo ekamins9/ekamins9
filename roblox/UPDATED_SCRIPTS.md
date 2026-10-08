@@ -1,4 +1,29 @@
-# Updated scripts: the Mage, the War Chest, armor in every drop crate, finishes that come alive
+# Updated scripts: you under the armor, emotes that behave, a helmet you can pick back up
+
+- **You are your own avatar under the armor.** Your real Roblox hair, face and skin colour show wherever your helmet doesn't cover, in battle and on every menu mannequin. Face accessories (beards, glasses) come along; hats and body accessories stay off, since armor goes there. Bots and NPCs keep the made-up looks.
+- **The Wardrobe is gone.** Tap your player card (top left) to pick a title.
+- **Emotes fixed:**
+  - Looking down no longer bends emotes: the arms don't rotate backwards and the Blade Toss goes straight up.
+  - Anything else you do ends an emote: drawing, putting away or swapping a weapon, jumping, getting hit, attacking, blocking, or walking off a whole-body emote. No more sword left floating.
+  - Weapon emotes (Flourish, Blade Toss, Windmill, Champion, Thunderlord) need a weapon in hand; the Helmet Toss needs a helmet on. The wheel tells you why.
+- **The Helmet Toss:** when the helmet comes off, your hair and face show. Thrown, it stays on the ground for a minute. Walk up and put it back on (E), or anyone without a helmet can wear it. While it's off, your head has no armor.
+- Helmet cards in the loadout show their set, like the other pieces.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Loadout/Avatars.lua](ServerScriptService/Loadout/Avatars.lua) | ServerScriptService ▸ Loadout ▸ Avatars | ModuleScript | each player's avatar kit (new) |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage ▸ Dresser | ModuleScript | the avatar on the body; what a helmet hides stays on, hidden; `setHelmet`, `wearHelmet`, `helmetOn` |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | dresses players as their avatar |
+| [Emotes.lua](ReplicatedStorage/Emotes.lua), [RigPose.lua](ReplicatedStorage/RigPose.lua), [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [RigReplicator.client.lua](StarterPlayerScripts/RigReplicator.client.lua) | ReplicatedStorage · StarterCharacterScripts · StarterPlayerScripts | ModuleScript · LocalScript | `RigPose.calm`; emotes end on any action; the toss in the upright frame |
+| [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua), [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `needs`, `Catalog.emoteBlock` |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua), [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | ServerScriptService ▸ Hub · StarterPlayerScripts | Script · LocalScript | the Helmet Toss pickup; emote checks |
+| [Armor.lua](ServerScriptService/Loadout/Armor.lua), [Injury.lua](ServerScriptService/Combat/Injury.lua) | ServerScriptService | ModuleScript | a thrown helmet doesn't protect |
+| [ArmorFX.client.lua](StarterPlayerScripts/ArmorFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ ArmorFX | LocalScript | leaves a thrown-off helmet hidden |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | no wardrobe; title picker on the player card; mannequins as your avatar; helmet card subtitles |
+
+---
+
+## Before that: the Mage, the War Chest, armor in every drop crate, finishes that come alive
 
 - **The Mage, a new class.** An Arcane Staff, a sidearm, and robes instead of armor: 80 health, no protection, a **mana bar** beside the stamina.
   - **Four spells** (scroll or RB/LB to pick; Swing casts):
