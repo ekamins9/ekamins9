@@ -420,7 +420,9 @@ and a UIScale fits it to any screen.
   Epic headliner on about half the days, a Legendary on about one day in eight (Legendaries mostly
   come out of crates), never a Mythic or a Unique, never an earned, pass or task skin. **CRATES** has the chosen item on a big stage
   (a skin turning on its weapon, a kill effect or emote played on you), the strip, odds, pity
-  and the spinning drum. The **Relic Crate** holds kill effects and emotes; the **Grim Crate** only kill effects (a
+  and the spinning drum. Opening one plays **the reel** (`HX.crateReel`, CS-style): the stage goes grey
+  (a big ?), a long strip of cards (filler drawn by the crate's own odds) rushes under a gold
+  marker ticking card by card, creeps the last stretch, stops somewhere on the winner and bursts. The **Relic Crate** holds kill effects and emotes; the **Grim Crate** only kill effects (a
   serpent from the ground, a hand from the sky, an anvil, a black hole and more). **CROWNS** has the Robux bundles and Crowns →
   Marks. **COLORS** has the premium colours.
 - **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
@@ -439,6 +441,10 @@ and a UIScale fits it to any screen.
   as silhouettes, stars, and TAKE IT ALONG / SEND IT HOME. **Every egg has its own companions**
   (Speckled: farm and shore; Mossy: woods and marsh; Ember: fire and night; Royal: the crown's
   beasts): nothing hatches from every egg. WHAT'S INSIDE scrolls, and any companion in it inspects.
+- **The weapon bar** (`Hotbar`, in place of Roblox's): a slot per weapon (the primary 1, the
+  sidearm 2, pickups after), each a 3D picture of the weapon in its skin edged in the skin's
+  rarity, its key and name; the one in your hands lifts, glows and turns; a bow or crossbow shows
+  its arrows left. 1–9 / a click / a tap take one out, the same again puts it away; D-pad steps.
 - **INVENTORY** (dock tile): everything you own in one grid (skins, kill effects, emotes,
   companions, armor, titles), with SEARCH, the kinds as chips, SORT (rarity · newest · name · most
   copies), ×N for copies and the best copy's finish and number. Any card opens **INSPECT**.

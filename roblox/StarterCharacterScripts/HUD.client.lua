@@ -30,7 +30,7 @@ gui.DisplayOrder = 10
 local root = Instance.new("Frame")
 root.Name = "Bars"
 root.AnchorPoint = Vector2.new(0.5, 1)
-root.Position = UDim2.new(0.5, 0, 1, -84)   -- above the Roblox hotbar
+root.Position = UDim2.new(0.5, 0, 1, -100)   -- above the weapon bar (StarterPlayerScripts ▸ Hotbar)
 root.Size = UDim2.fromOffset(BAR_W * 2 + 16, BAR_H)
 root.BackgroundTransparency = 1
 root.Parent = gui
@@ -92,7 +92,7 @@ local staFill, staText, staLabel = makeBar(BAR_W + 16, STA_COL, "Energy")
 -- weapon chip, bottom right: what is in your hands
 local chip = Instance.new("Frame")
 chip.AnchorPoint = Vector2.new(1, 1)
-chip.Position = UDim2.new(1, -24, 1, -84)
+chip.Position = UDim2.new(1, -24, 1, -100)
 chip.Size = UDim2.fromOffset(220, 46)
 chip.BackgroundColor3 = BG_COL
 chip.BackgroundTransparency = 0.25

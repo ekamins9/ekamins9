@@ -149,12 +149,15 @@ local function isAlive(plr)
 	return hum ~= nil and hum.Health > 0 and char.Parent ~= nil
 end
 
-local function giveWeapon(plr, char, weaponId, skinId, equip)
+local function giveWeapon(plr, char, weaponId, skinId, equip, slot)
 	local template = findWeapon(weaponId)
 	if not template then warn("[Loadout] no Tool named", weaponId, "in ServerStorage.Weapons"); return end
 	local tool = template:Clone()
 	-- which skin it wears, for whatever reads it (a bow's skin decides its arrows: Catalog ▸ Skins arrow)
 	tool:SetAttribute("Skin", skinId)
+	tool:SetAttribute("SkinId", skinId)
+	-- its place on the weapon bar (StarterPlayerScripts ▸ Hotbar): the primary 1, the sidearm 2
+	tool:SetAttribute("Slot", slot)
 	local skinDef = skinId and Catalog.SKIN[skinId]
 	tool:SetAttribute("ArrowFx", skinDef and skinDef.arrow or nil)
 	if skinId then
@@ -233,8 +236,8 @@ spawnAs = function(plr, classId)
 	end
 	if cdef.prot then char:SetAttribute("ArmorProtection", cdef.prot) end
 	if cdef.speed then char:SetAttribute("SpeedMult_Class", cdef.speed) end
-	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false) end
-	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP) end
+	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
+	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP, 1) end
 	if SPAWN_PROTECT > 0 and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then
 		local ff = Instance.new("ForceField"); ff.Visible = true; ff.Parent = char
 		Debris:AddItem(ff, SPAWN_PROTECT)
@@ -279,8 +282,8 @@ _G.CourtyardRedress = function(plr)
 	char:SetAttribute("Class", classId)
 	char:SetAttribute("Title", p.appearance.title or "")
 	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = Game.teamOf(plr)})
-	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false) end
-	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut) end
+	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2) end
+	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut, 1) end
 	log(plr.Name, "re-dressed in the Courtyard as", classId)
 end
 Players.PlayerRemoving:Connect(function(plr) redressAt[plr] = nil end)

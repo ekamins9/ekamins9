@@ -1965,6 +1965,123 @@ function HX.shortOf(msg)
 end
 _G.HubShortOf = function(msg) return HX.shortOf(msg) end
 
+-- THE REEL (a crate opening, CS-style): the stage goes grey (what it'll be is a
+-- mystery), a long strip of cards (the filler drawn by the crate's own odds, the
+-- win near the end) rushes under a gold marker, ticking card by card, creeps the
+-- last stretch, stops somewhere on the winner (never quite the middle) and BOOM.
+-- Yields until it has landed and burst; the caller shows the result.
+function HX.crateReel(host, pool, res, crate)
+	if #pool == 0 then return end
+	local W, G, N, WIN = 150, 8, 52, 46
+	local GOLD = Color3.fromRGB(255, 214, 90)
+	local o = frame(host, COL.BACK, 14)
+	o.Name = "Reel"
+	o.Size = UDim2.fromScale(1, 1)
+	o.BackgroundTransparency = 0.02
+	o.ZIndex = 20
+	o.Active = true
+	-- the stage, greyed: a mystery until it lands
+	local mystery = frame(o, Color3.fromRGB(24, 28, 42), 14)
+	mystery.Size = UDim2.new(1, 0, 1, -204)
+	do local g = Instance.new("UIGradient", mystery); g.Rotation = 90; g.Color = ColorSequence.new(Color3.fromRGB(46, 52, 72), Color3.fromRGB(14, 16, 26)) end
+	local q = title(mystery, "?", 170, Color3.fromRGB(78, 86, 110))
+	q.AnchorPoint = Vector2.new(0.5, 0.5); q.Position = UDim2.fromScale(0.5, 0.44); q.Size = UDim2.fromOffset(200, 200); q.TextXAlignment = Enum.TextXAlignment.Center
+	q.TextScaled = true   -- (text stops at 100 px otherwise)
+	local qs = Instance.new("UIScale", q)
+	local rl = title(mystery, "ROLLING  ·  " .. string.upper(crate and crate.name or ""), 20, COL.DIM)
+	rl.AnchorPoint = Vector2.new(0.5, 0); rl.Position = UDim2.new(0.5, 0, 0.44, 104); rl.Size = UDim2.new(1, -40, 0, 26); rl.TextXAlignment = Enum.TextXAlignment.Center
+	-- the reel
+	local reel = frame(o, Color3.fromRGB(8, 10, 18), 14)
+	reel.AnchorPoint = Vector2.new(0, 1); reel.Position = UDim2.new(0, 0, 1, 0); reel.Size = UDim2.new(1, 0, 0, 196)
+	reel.ClipsDescendants = true
+	border(reel, WHITE, 2, 0.8)
+	local inner = clearFrame(reel)
+	inner.Size = UDim2.fromOffset(N * (W + G), 196)
+	-- the filler by the crate's odds (a Legendary flashing past is part of the show)
+	local byR = {}
+	for _, it in ipairs(pool) do byR[it.rarity] = byR[it.rarity] or {}; table.insert(byR[it.rarity], it) end
+	local function draw()
+		local r, acc = math.random() * 100, 0
+		for _, name in ipairs({"Mythic", "Legendary", "Epic", "Rare", "Common"}) do
+			acc += (crate and crate.odds and crate.odds[name]) or 0
+			if r < acc and byR[name] then return byR[name][math.random(#byR[name])] end
+		end
+		return pool[math.random(#pool)]
+	end
+	local won
+	for _, it in ipairs(pool) do if it.kind == (res.kind or "skin") and it.id == (res.itemId or res.skinId) then won = it end end
+	won = won or {kind = res.kind or "skin", id = res.itemId or res.skinId, name = res.name, rarity = res.rarity, weapon = res.weapon}
+	local cards = {}
+	for i = 1, N do
+		local it = i == WIN and won or draw()
+		local col = RARITY_COL[it.rarity] or COL.DIM
+		local c = frame(inner, Color3.fromRGB(26, 30, 46), 12)
+		c.Position = UDim2.fromOffset((i - 1) * (W + G) + G / 2, 10)
+		c.Size = UDim2.fromOffset(W, 176)
+		do local g = Instance.new("UIGradient", c); g.Rotation = 90; g.Color = ColorSequence.new(Color3.fromRGB(30, 34, 52), col:Lerp(Color3.new(0, 0, 0), 0.45)) end
+		local band = frame(c, col, 0); band.AnchorPoint = Vector2.new(0, 1); band.Position = UDim2.new(0, 0, 1, 0); band.Size = UDim2.new(1, 0, 0, 6)
+		local ok = pcall(function()
+			local th = Preview.thumb(c, it, UDim2.new(1, -10, 0, 112), 1.4)
+			th.Position = UDim2.fromOffset(5, 6); th.BackgroundTransparency = 1
+		end)
+		if not ok then local x = title(c, "?", 40, col); x.Size = UDim2.new(1, 0, 0, 112); x.TextXAlignment = Enum.TextXAlignment.Center end
+		local nm = title(c, it.name or "", 13, col); nm.Position = UDim2.fromOffset(8, 124); nm.Size = UDim2.new(1, -16, 0, 16); nm.TextTruncate = Enum.TextTruncate.AtEnd
+		local rr = title(c, string.upper(it.rarity or ""), 10, COL.DIM); rr.Position = UDim2.fromOffset(8, 142); rr.Size = UDim2.new(1, -16, 0, 14)
+		cards[i] = c
+	end
+	-- the marker: a gold line with a notch top and bottom
+	local line = frame(reel, GOLD, 0); line.AnchorPoint = Vector2.new(0.5, 0); line.Position = UDim2.new(0.5, 0, 0, 0); line.Size = UDim2.new(0, 4, 1, 0); line.ZIndex = 30
+	for _, top in ipairs({true, false}) do
+		local n = title(reel, top and "▼" or "▲", 22, GOLD); n.AnchorPoint = Vector2.new(0.5, top and 0 or 1)
+		n.Position = UDim2.new(0.5, 0, top and 0 or 1, top and -6 or 6); n.Size = UDim2.fromOffset(30, 26); n.TextXAlignment = Enum.TextXAlignment.Center; n.ZIndex = 31
+	end
+	-- the ride: fast, a long slow creep, landing anywhere on the winner but its very edge
+	local step = W + G
+	local landing = -((WIN - 0.5) * step) + (math.random() * 2 - 1) * W * 0.38
+	local from = -(1.5 * step)
+	local dur = 6.2
+	local t0 = os.clock()
+	HX.FX.play("DrumRoll")
+	local tick = HX.FX.ticker("Tick")
+	while true do
+		local t = math.clamp((os.clock() - t0) / dur, 0, 1)
+		local e = 1 - (1 - t) ^ 4.6
+		local x = from + (landing - from) * e
+		inner.Position = UDim2.new(0.5, x, 0, 0)
+		-- a tick each time a card crosses the marker, higher as it slows
+		tick(math.floor(-x / step), 1 + t * 0.4)
+		qs.Scale = 1 + 0.05 * math.sin(os.clock() * 6)
+		if t >= 1 then break end
+		task.wait()
+	end
+	task.wait(0.45)
+	-- BOOM: the winner pops and glows, the stage lights up
+	local wc = cards[WIN]
+	local col = RARITY_COL[won.rarity] or COL.DIM
+	local st = Instance.new("UIStroke", wc); st.Color = col; st.Thickness = 4
+	local sc = Instance.new("UIScale", wc); sc.Scale = 1
+	wc.ZIndex = 25
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), {Scale = 1.12}):Play()
+	for i, c in ipairs(cards) do if i ~= WIN then TweenService:Create(c, TweenInfo.new(0.3), {BackgroundTransparency = 0.6}):Play() end end
+	q.Text = string.upper(won.rarity or "")
+	q.TextScaled = false
+	q.Size = UDim2.fromOffset(700, 90)
+	q.TextSize = 72
+	q.TextColor3 = col
+	rl.Text = string.upper(won.name or "")
+	rl.TextColor3 = WHITE
+	HX.revealMoment(o, res.rarity, res.variant, res.dup)
+	task.wait(HX.FX.BIG[res.rarity] and 1.8 or 1.1)   -- (the big ones get longer in the light)
+	TweenService:Create(o, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
+	for _, d in ipairs(o:GetDescendants()) do
+		if d:IsA("GuiObject") then TweenService:Create(d, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play() end
+		if d:IsA("TextLabel") then TweenService:Create(d, TweenInfo.new(0.3), {TextTransparency = 1}):Play() end
+		if d:IsA("ViewportFrame") then TweenService:Create(d, TweenInfo.new(0.3), {ImageTransparency = 1}):Play() end
+		if d:IsA("UIStroke") then TweenService:Create(d, TweenInfo.new(0.3), {Transparency = 1}):Play() end
+	end
+	task.delay(0.4, function() o:Destroy() end)
+end
+
 -- a crate opened somewhere else (the pass, a daily or a playtime gift): its spin
 -- plays on the crate screen, the same as a crate you open there
 function HX.spinCrate(res)
@@ -4233,27 +4350,8 @@ do
 		local function spin(res)
 			ui.rolling = true
 			rollNote.Text = "rolling…"
-			-- the strip spins: flick through the pool fast, slow down, stop on the win
-			local wonIndex = 1
-			for i, it in ipairs(pool) do if it.kind == (res.kind or "skin") and it.id == (res.itemId or res.skinId) then wonIndex = i end end
-			local cardW = 132
-			local total = #pool * 3 + wonIndex - 1
-			local t0 = os.clock()
-			local dur = 3.6
-			HX.FX.play("DrumRoll")
-			local tick = HX.FX.ticker("Tick")
-			while os.clock() - t0 < dur do
-				local fr = (os.clock() - t0) / dur
-				local eased = 1 - (1 - fr) * (1 - fr) * (1 - fr)
-				local pos = eased * total * cardW
-				sf.CanvasPosition = Vector2.new(pos % (#pool * cardW), 0)
-				-- a tick each card that passes; higher as it slows to a stop
-				tick(math.floor(pos / cardW + 0.5), 1 + fr * 0.35)
-				task.wait()
-			end
-			sf.CanvasPosition = Vector2.new((wonIndex - 1) * cardW, 0)
-			task.wait(0.35)
-			HX.revealMoment(sf, res.rarity, res.variant, res.dup)
+			-- the reel: the stage greyed, a strip of cards under a marker, a slow creep, BOOM
+			HX.crateReel(left, pool, res, crate)
 			ui.rolling = false
 			table.insert(ui.pulls, 1, res)
 			local kind = res.kind or "skin"
@@ -6030,6 +6128,13 @@ sClose.Activated:Connect(function() selectTab("PLAY") end)
 -- testing hooks: set the ScreenGui's `Tab` attribute (or `ShopTab`) from the
 -- command bar / Studio MCP to switch screens without clicking
 gui:GetAttributeChangedSignal("Tab"):Connect(function() local t = gui:GetAttribute("Tab"); if t then selectTab(t) end end)
+-- (a crate id: open it with Crowns and watch the reel, as if you'd pressed OPEN)
+gui:GetAttributeChangedSignal("Spin"):Connect(function()
+	local id = gui:GetAttribute("Spin")
+	if type(id) ~= "string" or not Catalog.CRATES[id] then return end
+	local r = call("OpenCrate", id, "crowns")
+	if r.ok and r.result then HX.spinCrate(r.result) else toast(r.msg or "", COL.BAD) end
+end)
 -- ("kind|id", e.g. "skin|Longsword:Starforged": inspect it)
 gui:GetAttributeChangedSignal("Inspect"):Connect(function()
 	local k, id = tostring(gui:GetAttribute("Inspect") or ""):match("^(%w+)|(.+)$")

@@ -105,7 +105,7 @@ local function build(name)
 	local stats = Instance.new("TextLabel")
 	stats.Name = "Stats"
 	stats.AnchorPoint = Vector2.new(0.5, 0.5)
-	stats.Position = UDim2.fromScale(0.5, 0.42 + 0.115)
+	stats.Position = UDim2.fromScale(0.5, 0.62)   -- (below the sweeping bar, never across it)
 	stats.Size = UDim2.new(0.8, 0, 0, 30)
 	stats.BackgroundTransparency = 1
 	stats.Font = FONT_BLACK
@@ -116,7 +116,7 @@ local function build(name)
 	local note = Instance.new("TextLabel")
 	note.Name = "Note"
 	note.AnchorPoint = Vector2.new(0.5, 0.5)
-	note.Position = UDim2.fromScale(0.5, 0.42 + 0.16)
+	note.Position = UDim2.fromScale(0.5, 0.67)
 	note.Size = UDim2.new(0.7, 0, 0, 40)
 	note.BackgroundTransparency = 1
 	note.Font = FONT_BODY

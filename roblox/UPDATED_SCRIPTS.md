@@ -1,4 +1,29 @@
-# Updated scripts: every Horde map in the vote again
+# Updated scripts: our own weapon bar, CS-style crate reel, a tidy first-battle screen
+
+- **The weapon bar** replaces Roblox's backpack bar:
+  - a card per weapon: primary 1, sidearm 2, pickups after
+  - each card shows a 3D picture of the weapon in its skin, edged in the skin's rarity colour, with its key and name
+  - the weapon in your hands lifts, glows gold and slowly turns; a bow or crossbow shows its arrows left
+  - 1–9, a click or a tap takes one out, and the same again puts it away; the D-pad steps through on a gamepad
+  - hidden while you're dead, in a menu or travelling
+- **The crate reel:**
+  - the stage greys out to a big "?" while it rolls
+  - a long strip of cards (filler drawn by the crate's own odds) rushes under a gold marker, ticking card by card
+  - it creeps the last stretch, stops somewhere on the winner (never dead centre), then BOOM: the winner pops and glows, a flash, the rarity sting
+  - crates from the pass and gifts get the same reel
+- **The first-battle screen:** the stats line no longer runs across the loading bar.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Hotbar | LocalScript | **new**: the weapon bar |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout ▸ LoadoutServer | Script | weapons carry their `Slot` and `SkinId` |
+| [HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ HUD | LocalScript | the bars sit above the weapon bar |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | `HX.crateReel`; a `Spin` test hook (attribute = crate id) |
+| [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ TravelScreen | LocalScript | first-battle stats below the bar |
+
+---
+
+## Before that: every Horde map in the vote again
 
 - **Horde votes showed only The Wildwood, Ravenhold and Stormbreak.** The map-size rule counted a solo player and no bots, so the three Horde-only maps (which have no size rating) always ranked first. Horde now skips the size rule (the horde is its own crowd), so all 10 of its maps take turns: Colosseum, Hollow Grove, Pinewatch, Marshfen, Cinderfall, Bloodpit, Frosthollow and the rest.
 - **Every vote (any mode) offers three maps the last one didn't**, instead of repeating two.
