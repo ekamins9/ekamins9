@@ -1,4 +1,17 @@
-# Updated scripts: the whole game a touch quicker
+# Updated scripts: the longbow shoots 1.5× farther
+
+- **Longbow arrows fly faster:** a full draw goes from 120 to 147 studs/s, and a snap shot from 45 to 55. Gravity is the same, and range goes with speed squared, so every shot carries about 1.5× as far and hits a bit sooner.
+- **Arrows may fly for up to 6 s** (was 4), so long lobs aren't dropped mid-air. The arrow everyone sees lasts 7 s.
+- Damage is unchanged, and so is the crossbow.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Tools/Bow/Config.lua](Tools/Bow/Config.lua) | ServerStorage ▸ Weapons ▸ Bow ▸ Config | ModuleScript | SPEED_MIN 55, SPEED_MAX 147, MAX_FLIGHT 6 |
+| [ArrowFlight.lua](ReplicatedStorage/ArrowFlight.lua) | ReplicatedStorage ▸ ArrowFlight | ModuleScript | a lost arrow lasts 7 s |
+
+---
+
+## Before that: the whole game a touch quicker
 
 - **Swings are 12% quicker:** every weapon's windup, swing and recovery (`GameConfig.TEMPO.swing` = 1.12, on top of each weapon's own speed). Bots, feints, morphs and parry windows follow, since they're all timed from the same numbers. The menu's windup figures match.
 - **Movement is 10% quicker:** base walk speed 11 (was 10). Sprint, armor and weapon weight, the slow-downs while swinging and blocking, bots and footstep cadence all scale from it.

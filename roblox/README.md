@@ -239,7 +239,7 @@ class, applied by `LoadoutServer`).
 **The longbow** (free) is held in the right hand; the left draws the string. **Hold** the Swing bind (left mouse) to draw: 1.6 s
 to full, walking at 20% and no sprinting. **Let go** to loose; let go before 40% of the draw and
 the string is let down, no shot. The power is the draw the **server** timed: a part draw is weak
-and drops hard; a full draw flies at 120 studs/s and still drops. The aim always wanders a little,
+and drops hard; a full draw flies at 147 studs/s (half again the range it had at 120) and still drops. The aim always wanders a little,
 more while you're pulling; held at full draw past 0.6 s it costs stamina and shakes more and more (more on the move or winded, less crouched); out of breath, the draw drops.
 After a shot the archer **nocks the next arrow** (1.5 s: the hand goes back to the quiver). Right
 mouse lets a draw down. A shot every ~3.5 s at best.

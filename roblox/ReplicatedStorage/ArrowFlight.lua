@@ -97,8 +97,8 @@ function ArrowFlight.fly(id, origin, velocity, gravity, kind, mine, fx)
 	local e = {model = m, shaft = shaft, head = head, fl = fl, len = len, pos = origin, vel = velocity, g = gravity or 30, t = 0, mine = mine == true, fx = fx}
 	live[id] = e
 	place(e)
-	-- (a lost arrow: gone after a while whatever happens)
-	task.delay(5, function() if live[id] == e then ArrowFlight.stop(id) end end)
+	-- (a lost arrow: gone after a while whatever happens; longer than the longest flight)
+	task.delay(7, function() if live[id] == e then ArrowFlight.stop(id) end end)
 end
 
 function ArrowFlight.stop(id, at)
