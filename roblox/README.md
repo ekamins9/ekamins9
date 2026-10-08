@@ -288,7 +288,14 @@ the nut while spanned and the bolt in its groove. The **stances** are `RigPose.r
 - Someone else's arrow passing within 9 studs of your camera **whizzes by** (`ArrowFlight`;
   louder the closer, once per arrow).
 
-**Skins and arrow effects.** Bows and crossbows have their own section in the Armory
+**Skins and arrow effects.** Every bow and crossbow skin changes the silhouette with a ranged trim
+(`SkinTrims` `RT`, fitted to the limbs and the prod: flame tongues, horn curls, thorns, crystal
+clusters, wings, ice spikes, a skull, gilded caps, storm zig-zags, obsidian shards, a dragon's
+ridge). Its arrows (`ArrowFX`) wear a two-layer trail, particles and a light in flight, the kind's
+own touch (a halo, a flicker, smoke, wisps), land with the kind's own impact (a fire that keeps
+burning, ice shards, a lightning bolt from the sky, a pillar of light, an implosion, a splash, a
+lingering cloud, a fountain of gold, rising spirits) and have their own release and impact sounds
+(`ArrowFX.sound`, played by RangedServer). Bows and crossbows have their own section in the Armory
 (**RANGED · ARCHER**) and skins like any weapon. The Epics and Legendaries change the arrows
 (`arrow = "<kind>"` → `ArrowFX`): fire, frost, shadow, holy, storm, venom, gilded, blood — a trail,
 a glowing head, particles, a light, a burst where it lands, a smoulder where it sticks. The Tool

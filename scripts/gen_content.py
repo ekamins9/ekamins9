@@ -362,12 +362,15 @@ SKINS_HEADER = """--[[ WEAPON SKINS — looks for a weapon; never stats. GENERAT
        blade / grip   tints for parts with attribute SkinPart = "Blade" / "Grip"
        trim     the shape change (ReplicatedStorage ▸ SkinTrims): wrap rivets rings fuller
                 studs notch laurel feather spikes flame frost runes royal crown halo
-                bone serpent wave thunder
+                bone serpent wave thunder. Bows and crossbows have their own set, fitted to
+                their limbs / prod: bands fletch horn thorn crystal wing ember frost runic
+                skull gilded storm venom blood void dragon halo
        accent / glow  the trim's metal and its Neon (defaults by rarity)
        fx       an aura (ReplicatedStorage ▸ SkinFX): embers frost holy shadow storm toxic
                 petals gold blood.
        arrow    (bows, crossbows) what its arrows wear in flight and burst with where they
-                land (ReplicatedStorage ▸ ArrowFX): fire frost shadow holy storm toxic gold blood. Epic and Legendary skins also leave a swing trail
+                land (ReplicatedStorage ▸ ArrowFX): fire frost shadow holy storm toxic gold blood void
+                spirit. Epic and Legendary skins also leave a swing trail
                 (trail = false to opt out, trail = true to opt in below Epic)
        look     the Forge theme (blender/themes.py): the skin's own mesh, built by
                 blender/forge.py and welded on from Cosmetics ▸ Skins ▸ <weapon> ▸ <name>

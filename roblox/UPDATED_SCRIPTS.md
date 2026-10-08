@@ -1,4 +1,26 @@
-# Updated scripts: the crossbow — aim to shoot, reload yourself, new poses
+# Updated scripts: bow and crossbow skins that look and sound different
+
+- **Every bow and crossbow skin changes its silhouette.** A new ranged trim set is fitted to the limbs and the prod:
+  - flame tongues, horn curls, thorns, crystal clusters, wings, feathers, ice spikes
+  - a skull, gilded caps, storm zig-zags, venom drops, blood barbs, obsidian shards and a void core
+  - a dragon's horns and dorsal ridge, a halo
+- **Arrows look better:**
+  - In flight: a wide colour trail with a hot core, particles, a light, and the kind's own touch (a halo, a flicker, smoke, wisps).
+  - On landing, each kind has its own impact: a fire that keeps burning, ice shards, a lightning bolt from the sky, a pillar of light, an implosion, a splash of blood, a lingering poison cloud, a fountain of gold, rising spirits.
+  - Two new kinds: **Void** and **Spirit**.
+- **Arrows sound different:** each kind has its own release and impact sound (licensed library sounds) layered over the bow's own.
+- **5 new skins in the Fletcher's Crate:** Seraph's Wing, Crystalline, Voidcaller (bows); Soulreaper, Runecaster (crossbows).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [SkinTrims.lua](ReplicatedStorage/SkinTrims.lua) | ReplicatedStorage ▸ SkinTrims | ModuleScript | the ranged trim set (`RT`) |
+| [ArrowFX.lua](ReplicatedStorage/ArrowFX.lua) | ReplicatedStorage ▸ ArrowFX | ModuleScript | richer flight, impacts per kind, sounds, void / spirit |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat ▸ RangedServer | ModuleScript | plays each kind's release / impact sounds |
+| [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua), [scripts/skins_handmade.part](../scripts/skins_handmade.part), [scripts/gen_content.py](../scripts/gen_content.py) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | trims on every ranged skin, 5 new skins |
+
+---
+
+## Before that: the crossbow — aim to shoot, reload yourself, new poses
 
 - **Controls:**
   - Hold right mouse to raise the crossbow and aim; it zooms down the tiller. Click fires, but only while it's raised; otherwise a hint says to hold right mouse.

@@ -462,9 +462,304 @@ T.thunder = function(F, P)
 	return out
 end
 
+--------------------------------------------------------------------
+--  RANGED TRIMS: a bow's limbs and a crossbow's prod are curves, not a blade
+--  on a guard, so these fit to the shapes Build ▸ Weapons gives them:
+--    G.at(f, side) → position, tangent (out along the limb), out-normal (the
+--    belly: away from the string), for f 0 (the grip) .. 1 (the tip)
+--    G.riser (the grip's front / the crossbow's lock), G.butt, G.nose, G.tiller
+--------------------------------------------------------------------
+-- (bigger than a sword's: a bow is seen from further off)
+local RZ = 1.45
+local function rthorn(out, cf, len, width, thick, color, material, extra) thorn(out, cf, len * RZ, width * RZ, thick * 1.25, color, material, extra) end
+local function rvane(out, cf, len, width, color, material) vane(out, cf, len * RZ, width * RZ, color, material) end
+local function rball(d, cf, color, material, extra) return ball(d * 1.3, cf, color, material, extra) end
+local function rangedGeom(kind)
+	if kind == "crossbow" then
+		local c, tip0 = Vector3.new(0, 0.55, -2.28), 1.27
+		local function at(f, side)
+			local tip = Vector3.new(side * tip0, 0.55, -2.02)
+			local t = (tip - c).Unit
+			local n = Vector3.new(t.Z, 0, -t.X)
+			if n.Z > 0 then n = -n end
+			return c:Lerp(tip, f), t, n
+		end
+		return {kind = "crossbow", at = at, riser = Vector3.new(0, 0.72, -0.5), riserDir = Vector3.yAxis,
+			butt = Vector3.new(0, 0.3, 1.52), nose = Vector3.new(0, 0.55, -2.62),
+			tillerA = Vector3.new(0, 0.64, -2.2), tillerB = Vector3.new(0, 0.64, 0.4), w = 0.16}
+	end
+	local Rb, PHI = 4.0, 0.56
+	local function at(f, side)
+		local a = PHI * f
+		return Vector3.new(0, side * Rb * math.sin(a), Rb * (1 - math.cos(a))),
+			Vector3.new(0, side * math.cos(a), math.sin(a)), Vector3.new(0, side * math.sin(a), -math.cos(a))
+	end
+	return {kind = "bow", at = at, riser = Vector3.new(0, 0, -0.17), riserDir = Vector3.new(0, 0, -1), w = 0.18}
+end
+-- a band round a limb at f (a short cylinder across the limb's axis)
+local function bandAt(out, G, f, side, d, thick, color, mat)
+	local p, t = G.at(f, side)
+	table.insert(out, spec("Cylinder", Vector3.new(thick, d, d), along(p, t) * CFrame.Angles(0, 0, math.pi / 2), color, mat or M.Metal))
+end
+-- a ring lying round an axis through `pos`
+local function ringAround(out, pos, axis, d, thick, color, mat)
+	table.insert(out, spec("Cylinder", Vector3.new(thick, d, d), along(pos, axis) * CFrame.Angles(0, 0, math.pi / 2), color, mat or M.Metal))
+end
+local SIDES = {-1, 1}
+local RT = {}
+
+-- metal bands down the limbs (and the tiller): plain and sturdy
+RT.bands = function(G, P)
+	local out = {}
+	for _, s in ipairs(SIDES) do for _, f in ipairs({0.25, 0.55, 0.85}) do bandAt(out, G, f, s, G.w + 0.08, 0.06, P.accent) end end
+	if G.kind == "crossbow" then
+		for _, k in ipairs({0.15, 0.45, 0.85}) do ringAround(out, G.tillerA:Lerp(G.tillerB, k), Vector3.zAxis, 0.42, 0.07, P.accent) end
+	end
+	return out
+end
+-- feathers at the tips, leather wraps at the grip
+RT.fletch = function(G, P)
+	local out = {}
+	for _, s in ipairs(SIDES) do
+		local p, t, n = G.at(1, s)
+		for i = -1, 1 do rvane(out, along(p, (t + n * 0.6 + Vector3.xAxis * i * 0.35).Unit), 0.5, 0.16, i == 0 and P.accent or P.blade, M.SmoothPlastic) end
+		bandAt(out, G, 0.08, s, G.w + 0.06, 0.08, P.grip, M.Fabric)
+	end
+	return out
+end
+-- bone horns curling off each tip, bone collars by the grip
+RT.horn = function(G, P)
+	local out = {}
+	for _, s in ipairs(SIDES) do
+		local p, t, n = G.at(1, s)
+		local pos, dir = p, t
+		for i = 1, 4 do
+			dir = (dir * 0.6 + n * 0.55).Unit
+			pos = pos + dir * 0.18
+			table.insert(out, rball(0.2 - i * 0.03, CFrame.new(pos), BONE, M.SmoothPlastic))
+		end
+		rthorn(out, along(pos, dir), 0.22, 0.1, 0.08, BONE, M.SmoothPlastic)
+		for _, f in ipairs({0.12, 0.2}) do bandAt(out, G, f, s, G.w + 0.07, 0.06, BONE, M.SmoothPlastic) end
+	end
+	return out
+end
+-- thorns all down the belly, a thorn off each tip
+RT.thorn = function(G, P)
+	local out = {}
+	for _, s in ipairs(SIDES) do
+		for i = 1, 6 do
+			local p, t, n = G.at(0.15 + i * 0.13, s)
+			rthorn(out, along(p + n * G.w * 0.4, (n + t * 0.4).Unit), 0.24, 0.1, 0.07, P.accent, M.SmoothPlastic)
+		end
+		local p, t = G.at(1, s)
+		rthorn(out, along(p, t), 0.3, 0.12, 0.08, P.accent, M.SmoothPlastic)
+	end
+	if G.kind == "crossbow" then
+		for i = 0, 3 do rthorn(out, along(G.tillerA:Lerp(G.tillerB, i / 4) + Vector3.new(0, 0.15, 0), Vector3.new(0, 1, 0.3)), 0.22, 0.1, 0.06, P.accent, M.SmoothPlastic) end
+	end
+	return out
+end
+-- crystal clusters at the tips and a great crystal at the grip, lit
+RT.crystal = function(G, P)
+	local out = {}
+	local c = P.glow or Color3.fromRGB(160, 220, 255)
+	local x = {transparency = 0.1}
+	for _, s in ipairs(SIDES) do
+		local p, t, n = G.at(1, s)
+		for i = -1, 1 do rthorn(out, along(p, (t + n * 0.3 * i + Vector3.xAxis * 0.4 * i).Unit), 0.34 - math.abs(i) * 0.1, 0.14, 0.12, c, M.Glass, x) end
+		local q = G.at(0.5, s)
+		table.insert(out, rball(0.14, CFrame.new(q), c, M.Neon))
+	end
+	rthorn(out, along(G.riser, G.riserDir), 0.34, 0.2, 0.18, c, M.Glass, x)
+	table.insert(out, rball(0.16, CFrame.new(G.riser), c, M.Neon))
+	return out
+end
+-- wings: feathered fans spread from the grip, a feather on each tip
+RT.wing = function(G, P)
+	local out = {}
+	for _, s in ipairs(SIDES) do
+		local base = G.at(0.18, s)
+		for i = 1, 4 do
+			local _, t, n = G.at(0.18 + i * 0.12, s)
+			rvane(out, along(base, (n * 0.8 + t * (0.3 + i * 0.25)).Unit), 0.45 + i * 0.12, 0.18, i % 2 == 0 and P.accent or P.blade, M.SmoothPlastic)
+		end
+		local p, t, n = G.at(1, s)
+		rvane(out, along(p, (t + n * 0.5).Unit), 0.36, 0.14, P.accent, M.SmoothPlastic)
+	end
+	return out
+end
+-- tongues of flame along the belly and off the tips, glowing
+RT.ember = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(255, 140, 40)
+	for _, s in ipairs(SIDES) do
+		for i = 1, 5 do
+			local p, t, n = G.at(0.2 + i * 0.14, s)
+			rthorn(out, along(p + n * G.w * 0.3, (n + t * 0.6).Unit), 0.2 + 0.12 * (i % 2), 0.14, 0.05, glow, M.Neon)
+		end
+		local p, t = G.at(1, s)
+		rthorn(out, along(p, t), 0.36, 0.16, 0.06, glow, M.Neon)
+	end
+	table.insert(out, rball(0.18, CFrame.new(G.riser), glow, M.Neon))
+	return out
+end
+-- ice: glassy spikes off the belly, a burst at each tip
+RT.frost = function(G, P)
+	local out = {}
+	local ice = P.glow or Color3.fromRGB(190, 236, 255)
+	local x = {transparency = 0.15}
+	for _, s in ipairs(SIDES) do
+		for i = 1, 4 do
+			local p, t, n = G.at(0.2 + i * 0.17, s)
+			rthorn(out, along(p + n * G.w * 0.3, (n + t * 0.5).Unit), 0.22 + 0.06 * i, 0.12, 0.08, ice, M.Glass, x)
+		end
+		local p, t, n = G.at(1, s)
+		for i = -1, 1 do rthorn(out, along(p, (t + n * 0.5 * i).Unit), 0.3, 0.12, 0.08, ice, M.Glass, x) end
+	end
+	table.insert(out, rball(0.2, CFrame.new(G.riser), ice, M.Glass, x))
+	return out
+end
+-- runes: glowing bands at intervals, a lit gem at the grip
+RT.runic = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(150, 110, 255)
+	for _, s in ipairs(SIDES) do for i = 1, 4 do bandAt(out, G, 0.15 + i * 0.18, s, G.w + 0.05, 0.04, glow, M.Neon) end end
+	table.insert(out, rball(0.18, CFrame.new(G.riser), glow, M.Neon))
+	return out
+end
+-- a skull at the grip, bone ribs down the limbs, fangs at the tips
+RT.skull = function(G, P)
+	local out = {}
+	local sk = G.riser + G.riserDir * 0.12
+	table.insert(out, rball(0.34, CFrame.new(sk), BONE, M.SmoothPlastic))
+	table.insert(out, block(Vector3.new(0.2, 0.12, 0.16), CFrame.new(sk + Vector3.new(0, -0.16, -0.06)), BONE, M.SmoothPlastic))
+	for _, x in ipairs({-0.07, 0.07}) do table.insert(out, rball(0.09, CFrame.new(sk + Vector3.new(x, 0.03, -0.14)), P.glow or Color3.fromRGB(20, 16, 14), P.glow and M.Neon or M.SmoothPlastic)) end
+	for _, s in ipairs(SIDES) do
+		for i = 1, 4 do bandAt(out, G, 0.15 + i * 0.17, s, G.w + 0.06, 0.07, BONE, M.SmoothPlastic) end
+		local p, t, n = G.at(1, s)
+		rthorn(out, along(p, (t + n * 0.4).Unit), 0.3, 0.12, 0.08, BONE, M.SmoothPlastic)
+	end
+	return out
+end
+-- gilded: gold caps on the tips, gold bands, a jewel at the grip
+RT.gilded = function(G, P)
+	local out = {}
+	for _, s in ipairs(SIDES) do
+		table.insert(out, rball(0.22, CFrame.new((G.at(1, s))), GOLD, M.Metal))
+		for _, f in ipairs({0.3, 0.6, 0.86}) do bandAt(out, G, f, s, G.w + 0.07, 0.06, GOLD, M.Metal) end
+	end
+	table.insert(out, rball(0.22, CFrame.new(G.riser), P.glow or Color3.fromRGB(220, 40, 60), M.Glass))
+	ringAround(out, G.riser, G.riserDir, 0.32, 0.06, GOLD, M.Metal)
+	return out
+end
+-- storm: zig-zag bolts down the limbs, lit tips
+RT.storm = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(150, 210, 255)
+	for _, s in ipairs(SIDES) do
+		local prev
+		for i = 0, 6 do
+			local p, _, n = G.at(0.12 + i * 0.13, s)
+			local q = p + n * (G.w * 0.6 + ((i % 2 == 0) and 0.12 or -0.02))
+			if prev then
+				table.insert(out, block(Vector3.new(0.03, (q - prev).Magnitude + 0.03, 0.07), along((prev + q) / 2, q - prev), glow, M.Neon))
+			end
+			prev = q
+		end
+		table.insert(out, rball(0.14, CFrame.new((G.at(1, s))), glow, M.Neon))
+	end
+	return out
+end
+-- venom: green barbs and drops of poison hanging off the tips
+RT.venom = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(120, 255, 90)
+	for _, s in ipairs(SIDES) do
+		for i = 1, 4 do
+			local p, t, n = G.at(0.2 + i * 0.17, s)
+			rthorn(out, along(p + n * G.w * 0.3, (n - t * 0.4).Unit), 0.2, 0.1, 0.06, P.accent, M.SmoothPlastic)
+		end
+		local p = G.at(1, s)
+		for k = 1, 3 do table.insert(out, rball(0.1 - k * 0.02, CFrame.new(p + Vector3.new(0, -0.12 * k, 0)), glow, M.Neon)) end
+	end
+	return out
+end
+-- blood: crimson barbs and veins of red light
+RT.blood = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(220, 30, 40)
+	for _, s in ipairs(SIDES) do
+		for i = 1, 4 do bandAt(out, G, 0.12 + i * 0.2, s, G.w + 0.03, 0.03, glow, M.Neon) end
+		for i = 1, 3 do
+			local p, t, n = G.at(0.25 + i * 0.22, s)
+			rthorn(out, along(p + n * G.w * 0.3, (n + t * 0.5).Unit), 0.26, 0.12, 0.07, P.blade, M.SmoothPlastic)
+		end
+	end
+	table.insert(out, rball(0.2, CFrame.new(G.riser), glow, M.Neon))
+	return out
+end
+-- void: obsidian shards round the tips, a violet core in a ring of motes at the grip
+RT.void = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(150, 70, 230)
+	local obs = Color3.fromRGB(24, 18, 32)
+	for _, s in ipairs(SIDES) do
+		local p, t, n = G.at(1, s)
+		for i = -1, 1 do rthorn(out, along(p - t * 0.1, (t + n * 0.6 * i + Vector3.xAxis * 0.5 * i).Unit), 0.38, 0.14, 0.1, obs, M.Glass) end
+		for i = 1, 3 do
+			local q, tt, nn = G.at(0.2 + i * 0.2, s)
+			rthorn(out, along(q + nn * G.w * 0.3, (nn + tt * 0.3).Unit), 0.22, 0.12, 0.08, obs, M.Glass)
+		end
+	end
+	table.insert(out, rball(0.22, CFrame.new(G.riser), glow, M.Neon))
+	for i = 0, 9 do
+		local a = i / 10 * math.pi * 2
+		local off = (G.kind == "bow") and Vector3.new(math.cos(a) * 0.34, math.sin(a) * 0.34, 0) or Vector3.new(math.cos(a) * 0.34, 0, math.sin(a) * 0.34)
+		table.insert(out, rball(0.06, CFrame.new(G.riser + off), glow, M.Neon))
+	end
+	return out
+end
+-- a dragon: horns off the tips, a dorsal ridge (down the tiller), ember eyes
+RT.dragon = function(G, P)
+	local out = RT.horn(G, P)
+	for _, s in ipairs(out) do s.color = P.accent end
+	local glow = P.glow or Color3.fromRGB(255, 120, 40)
+	if G.kind == "crossbow" then
+		for i = 0, 5 do rthorn(out, along(G.tillerA:Lerp(G.tillerB, i / 6) + Vector3.new(0, 0.14, 0), Vector3.new(0, 1, 0.5)), 0.26 - i * 0.02, 0.14, 0.06, P.accent, M.SmoothPlastic) end
+		for _, x in ipairs({-0.1, 0.1}) do table.insert(out, rball(0.08, CFrame.new(G.nose + Vector3.new(x, 0.12, 0.1)), glow, M.Neon)) end
+	else
+		for _, s in ipairs(SIDES) do
+			for i = 1, 4 do
+				local p, t, n = G.at(0.2 + i * 0.17, s)
+				rthorn(out, along(p + n * G.w * 0.3, (n + t * 0.6).Unit), 0.2, 0.12, 0.06, P.accent, M.SmoothPlastic)
+			end
+		end
+		table.insert(out, rball(0.16, CFrame.new(G.riser), glow, M.Neon))
+	end
+	return out
+end
+-- holy: a halo of light round the grip, gold-tipped limbs
+RT.halo = function(G, P)
+	local out = {}
+	local glow = P.glow or Color3.fromRGB(255, 226, 140)
+	for i = 0, 13 do
+		local a = i / 14 * math.pi * 2
+		local off = (G.kind == "bow") and Vector3.new(math.cos(a) * 0.55, math.sin(a) * 0.55, -0.1) or Vector3.new(math.cos(a) * 0.5, 0.3, math.sin(a) * 0.5)
+		table.insert(out, rball(0.08, CFrame.new(G.riser + off), glow, M.Neon))
+	end
+	for _, s in ipairs(SIDES) do
+		local p, t = G.at(1, s)
+		rthorn(out, along(p, t), 0.3, 0.14, 0.08, GOLD, M.Metal)
+		for _, f in ipairs({0.4, 0.7}) do bandAt(out, G, f, s, G.w + 0.06, 0.05, GOLD, M.Metal) end
+	end
+	return out
+end
+
 SkinTrims.NAMES = {}
 for k in pairs(T) do table.insert(SkinTrims.NAMES, k) end
+for k in pairs(RT) do if not T[k] then table.insert(SkinTrims.NAMES, k) end end
 table.sort(SkinTrims.NAMES)
+SkinTrims.RANGED = RT   -- (bows and crossbows: their own trim set)
 
 --------------------------------------------------------------------
 --  BUILD
@@ -476,12 +771,23 @@ end
 
 function SkinTrims.apply(tool, skin)
 	SkinTrims.clear(tool)
-	local builder = skin and skin.trim and T[skin.trim]
-	if not builder then return false end
-	local F = SkinTrims.frame(tool)
-	if not F then return false end
+	if not (skin and skin.trim) then return false end
 	local P = {blade = skin.blade or STEEL, grip = skin.grip or LEATHER, accent = rarityAccent(skin), glow = skin.glow}
-	local ok, specs = pcall(builder, F, P)
+	local ok, specs, F
+	-- a bow or a crossbow: the ranged set, fitted to its limbs / prod
+	if skin.weapon == "Bow" or skin.weapon == "Crossbow" then
+		local builder = RT[skin.trim]
+		local handle = tool:FindFirstChild("Handle")
+		if not (builder and handle and handle:IsA("BasePart")) then return false end
+		F = {handle = handle}
+		ok, specs = pcall(builder, rangedGeom(skin.weapon == "Crossbow" and "crossbow" or "bow"), P)
+	else
+		local builder = T[skin.trim]
+		if not builder then return false end
+		F = SkinTrims.frame(tool)
+		if not F then return false end
+		ok, specs = pcall(builder, F, P)
+	end
 	if not ok or type(specs) ~= "table" then warn("[SkinTrims]", skin.trim, specs); return false end
 	local folder = Instance.new("Folder")
 	folder.Name = "Trim"

@@ -261,6 +261,12 @@ function RangedServer.attach(Tool, cfgIn)
 	table.insert(conns, Tool.AncestryChanged:Connect(function() if not Tool:IsDescendantOf(workspace) then cancelDraw() end end))
 
 	-- what an arrow does to what it meets
+	-- a skin's arrows have their own voice: a layer over the plain sounds (ArrowFX.sound)
+	local function kindSound(fx, which, at)
+		local snd = fx and ArrowFX.sound(fx, which)
+		if snd and at then Sounds.play(snd.id, at, {Volume = snd.Volume, Speed = snd.Speed, MaxDistance = 90, Ttl = 4}) end
+	end
+
 	local function onHit(shooter, shotWeapon, res, vel, power, shotKind, fx)
 		local part = res.Instance
 		local model = part and part:FindFirstAncestorOfClass("Model")
@@ -279,6 +285,7 @@ function RangedServer.attach(Tool, cfgIn)
 			for _, pool in ipairs(SoundBank.WALL[family] or {"WallGround"}) do Sounds.bank(pool, at2, {Volume = 0.7}) end
 			if family == "Ground" then Sounds.play(SND.dirt, at2, {Volume = 0.8, MaxDistance = 70})
 			elseif family == "Wood" then Sounds.play(SND.wood, at2, {Volume = 0.8, Speed = 1.25, MaxDistance = 70}) end
+			kindSound(fx, "impact", at2)
 			stick(shotKind, at * CFrame.new(0, 0, 0.5), part, cfg.STICK_LIFE, fx)
 			return
 		end
@@ -321,6 +328,7 @@ function RangedServer.attach(Tool, cfgIn)
 		CombatServer.interrupt(target, "hit")
 		Sounds.bank("HitStab", part)
 		Sounds.play(SND.flesh, part, {Volume = 0.6, Speed = 1.1, MaxDistance = 70})
+		kindSound(fx, "impact", part)
 		if lethal then Sounds.bank("HitBone", part) else Sounds.voice("Hurt", target:FindFirstChild("Head") or part, {Who = target}) end
 		if region == "head" and shooter and shooter.Parent then
 			shooter:SetAttribute("GuardText", lethal and "HEADSHOT!" or "HEADSHOT")
@@ -362,6 +370,7 @@ function RangedServer.attach(Tool, cfgIn)
 			Sounds.play(SND.crossbow, head, {Volume = 0.8, Speed = 1.45, MaxDistance = 100, Ttl = 2})
 			Sounds.play(SND.whoosh, head, {Volume = 0.5, Speed = 2.6, MaxDistance = 70, Ttl = 2})
 		end
+		kindSound(fx, "release", head)
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
 		params.FilterDescendantsInstances = {shooter, stuckFolder}
