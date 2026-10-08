@@ -488,6 +488,10 @@ and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
 - **Horde maps:** give the Horde ways in: `K.spot(ctx, "HordeGate1", CFrame.lookAt(outside,
   middle))` a dozen studs outside each opening, with the ground from there to the middle clear
   enough to walk (bots steer round trees, wagons and walls, but not through a maze).
+- **Bots don't climb steps:** a 1-stud step stops them. Anything a bot must reach, such as a KOTH
+  hill on a platform, needs a ramp (an invisible WedgePart over the steps does it) or a rise of
+  half a stud at most. Terrain `FillCylinder` / `FillBlock` thinner than a voxel row (4 studs)
+  can write nothing at all.
 - **Water you can fall into:** give the map an attribute `DrownY` (a height a little above the
   water's surface, e.g. -13 over water at -16): anyone below it for 1.2 s drowns.
 - **Its picture on the vote:** put a StringValue (or Decal / ImageLabel) named after the map in
