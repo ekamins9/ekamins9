@@ -6,10 +6,13 @@
      North to south: the castle wall and its towers; the Drill Master's
      platform under a blue awning, the lesson circle in front of it; the
      straw dummies down the west side; the sparring ring on the east, with
-     its challenge sign; tents, racks, hay and torches by the south gate,
-     where you arrive.
+     its challenge sign; the archery range along the north-west wall (Wren
+     the Bowmaster); the arcane circle in the north (Magister Orrin); tents,
+     racks, hay and torches by the south gate, where you arrive.
      Spots (Map ▸ Spots, for Game ▸ Training): DrillMaster, LessonAttacker,
-     LessonBlocker, Dummy1..6, Ring (Radius), RingPlayer, RingBot, RingSign. ]]
+     LessonBlocker, Dummy1..6, Ring (Radius), RingPlayer, RingBot, RingSign,
+     Bowmaster, ArcheryTarget1..3, ArcheryLine, ArcheryFar, ArcheryCharge,
+     Magister, MageTarget1..3, MageCircle, MageCharge. ]]
 
 return function(K)
 	local C, M = K.C, K.M
@@ -157,12 +160,57 @@ return function(K)
 		K.spot(ctx, "Practice", CFrame.new(pg + V3(0, 1, 0)), {Radius = 12})
 	end
 
-	-- straw archery butts along the north palisade (dressing)
-	for _, x in ipairs({30, 40, 50}) do
-		K.box(ctx, "ButtStand", V3(0.4, 4, 0.4), V3(x, 2, -60), C.DARKWOOD, M.Wood)
-		local butt = K.cyl(ctx, "Butt", 3.6, 1.2, CFrame.new(x, 4, -59.4) * CFrame.Angles(math.rad(90), 0, 0), C.THATCH, M.Fabric)
-		K.cyl(ctx, "ButtRing", 2.4, 1.25, CFrame.new(x, 4, -59.4) * CFrame.Angles(math.rad(90), 0, 0), Color3.fromRGB(190, 40, 36), M.Fabric).CanCollide = false
-		K.cyl(ctx, "ButtEye", 1.0, 1.3, CFrame.new(x, 4, -59.4) * CFrame.Angles(math.rad(90), 0, 0), C.GOLD, M.Fabric).CanCollide = false
+	-- THE ARCHERY RANGE (Wren the Bowmaster's): a lane down the north-west wall,
+	-- straw targets before straw butts at the far end, a near line and a far line
+	do
+		K.box(ctx, "RangeLane", V3(26, 0.12, 54), V3(-30, 0.06, -35), Color3.fromRGB(214, 190, 136), M.Sand).CanCollide = false
+		for i, x in ipairs({-38, -30, -22}) do
+			K.box(ctx, "ButtStand", V3(0.4, 5, 0.4), V3(x - 1.4, 2.5, -61), C.DARKWOOD, M.Wood)
+			K.box(ctx, "ButtStand", V3(0.4, 5, 0.4), V3(x + 1.4, 2.5, -61), C.DARKWOOD, M.Wood)
+			K.cyl(ctx, "Butt", 4.4, 1.2, CFrame.new(x, 4.6, -60.4) * CFrame.Angles(math.rad(90), 0, 0), C.THATCH, M.Fabric)
+			K.cyl(ctx, "ButtRing", 3, 1.25, CFrame.new(x, 4.6, -60.4) * CFrame.Angles(math.rad(90), 0, 0), Color3.fromRGB(190, 40, 36), M.Fabric).CanCollide = false
+			K.cyl(ctx, "ButtEye", 1.2, 1.3, CFrame.new(x, 4.6, -60.4) * CFrame.Angles(math.rad(90), 0, 0), C.GOLD, M.Fabric).CanCollide = false
+			K.cyl(ctx, "TargetPad", 4, 0.2, V3(x, 0.15, -56), Color3.fromRGB(186, 160, 110), M.Sand).CanCollide = false
+			K.spot(ctx, "ArcheryTarget" .. i, CFrame.lookAt(V3(x, 3, -56), V3(x, 3, 0)))
+		end
+		-- the lines: rope on stakes (the near one twenty paces out, the far one forty-five)
+		for _, z in ipairs({-34, -11}) do
+			K.box(ctx, "ShootLine", V3(24, 0.14, 0.6), V3(-30, 0.08, z), C.WHITE, M.SmoothPlastic).CanCollide = false
+			for _, x in ipairs({-42.5, -17.5}) do K.pole(ctx, V3(x, 0, z), 2.2) end
+		end
+		K.spot(ctx, "ArcheryLine", CFrame.lookAt(V3(-30, 3, -32), V3(-30, 3, -56)))
+		K.spot(ctx, "ArcheryFar", CFrame.lookAt(V3(-30, 3, -9), V3(-30, 3, -56)))
+		K.spot(ctx, "ArcheryCharge", CFrame.lookAt(V3(-41, 3, -59), V3(-30, 3, -30)))
+		-- the Bowmaster's corner: a rack of bows, a barrel of arrows, a red banner
+		K.spot(ctx, "Bowmaster", CFrame.lookAt(V3(-47, 3, -33), V3(-30, 3, -33)))
+		K.rack(ctx, CFrame.new(-50, 0, -29) * CFrame.Angles(0, math.rad(90), 0))
+		K.barrel(ctx, V3(-49, 0, -37))
+		K.banner(ctx, V3(-47, 0, -39), 9, C.RED)
+	end
+
+	-- THE ARCANE CIRCLE (Magister Orrin's): a ring of rune stones glowing on the
+	-- sand, three straw dummies standing close together beyond it
+	do
+		local ctr = V3(21, 0, -47)
+		local RUNE = Color3.fromRGB(150, 100, 255)
+		K.cyl(ctx, "CircleFloor", 15, 0.2, ctr + V3(0, 0.12, 0), Color3.fromRGB(70, 60, 96), M.Slate).CanCollide = false
+		K.cyl(ctx, "CircleGlow", 13.4, 0.24, ctr + V3(0, 0.13, 0), RUNE, M.Neon).CanCollide = false
+		K.cyl(ctx, "CircleInner", 12.8, 0.26, ctr + V3(0, 0.14, 0), Color3.fromRGB(56, 48, 80), M.Slate).CanCollide = false
+		for i = 0, 7 do
+			local a = i / 8 * math.pi * 2
+			local p = ctr + V3(math.cos(a) * 8.4, 0, math.sin(a) * 8.4)
+			K.box(ctx, "RuneStone", V3(1, 2.6 + (i % 2) * 0.8, 0.7), CFrame.new(p + V3(0, 1.3, 0)) * CFrame.Angles(0, -a, 0), C.STONEDARK, M.Slate)
+			K.box(ctx, "RuneMark", V3(0.2, 0.9, 0.74), CFrame.new(p + V3(0, 1.7, 0)) * CFrame.Angles(0, -a, 0) * CFrame.new(-0.45, 0, 0), RUNE, M.Neon).CanCollide = false
+		end
+		K.spot(ctx, "MageCircle", CFrame.new(ctr + V3(0, 1, 0)), {Radius = 7})
+		for i, x in ipairs({16.5, 21, 25.5}) do
+			K.cyl(ctx, "TargetPad", 4, 0.2, V3(x, 0.15, -59 + (i == 2 and -1.5 or 0)), Color3.fromRGB(186, 160, 110), M.Sand).CanCollide = false
+			K.spot(ctx, "MageTarget" .. i, CFrame.lookAt(V3(x, 3, -59 + (i == 2 and -1.5 or 0)), V3(21, 3, -40)))
+		end
+		K.spot(ctx, "MageCharge", CFrame.lookAt(V3(28, 3, -62), V3(21, 3, -45)))
+		K.spot(ctx, "Magister", CFrame.lookAt(V3(21, 3, -35.5), V3(21, 3, 0)))
+		K.banner(ctx, ctr + V3(-9.5, 0, 9), 9, Color3.fromRGB(96, 56, 170))
+		K.banner(ctx, ctr + V3(9.5, 0, 9), 9, Color3.fromRGB(96, 56, 170))
 	end
 
 	-- the camp by the gate
@@ -177,7 +225,7 @@ return function(K)
 	K.box(ctx, "Trough", V3(6, 1.6, 2), V3(-12, 0.8, 30), C.WOOD, M.WoodPlanks)
 	K.box(ctx, "TroughWater", V3(5.4, 0.2, 1.4), V3(-12, 1.45, 30), C.WATER, M.Glass).CanCollide = false
 	-- torches round the yard
-	for _, p in ipairs({V3(-20, 0, -26), V3(20, 0, -26), V3(-40, 0, 0), V3(30, 0, 14), V3(-14, 0, 56), V3(14, 0, 56), V3(-54, 0, -24), V3(66, 0, -26)}) do K.torchPost(ctx, p) end
+	for _, p in ipairs({V3(-13, 0, -28), V3(12, 0, -27), V3(-40, 0, 0), V3(30, 0, 14), V3(-14, 0, 56), V3(14, 0, 56), V3(-54, 0, -24), V3(66, 0, -26)}) do K.torchPost(ctx, p) end
 	-- trees outside the palisade
 	local r = Random.new(11)
 	for i = 1, 36 do

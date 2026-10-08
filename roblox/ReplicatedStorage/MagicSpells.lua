@@ -118,18 +118,57 @@ S.Blink = {
 	color = C(160, 140, 255), glow = C(235, 230, 255),
 	desc = "Vanish and step out of the air up to 18 studs where you're looking. The way out, not the way in.",
 }
--- THE WAND'S (it carries nothing else and needs no mana: a sidearm for when you're dry)
+-- WAND SPELLS (wand = true): the sidearm's, two at a time (LOADOUT ▸ SPELLS ▸ WAND). Quick,
+-- cheap (a sip of mana) and weak: for when the mana's low and they're close. A staff or a grimoire can't
+-- carry them, and a wand carries nothing else.
 S.Spark = {
-	name = "Spark", glyph = "💫", kind = "bolt", target = "aim", unlock = {free = true}, fixed = true,
-	mana = 0, cast = 0.15, cooldown = 0.55,
+	name = "Spark", glyph = "💫", kind = "bolt", target = "aim", unlock = {free = true}, wand = true,
+	mana = 3, cast = 0.15, cooldown = 0.55,
 	speed = 150, range = 120, radius = 0.35, damage = 5, headMult = 1.4,
 	color = C(255, 230, 140), glow = C(255, 250, 225), shape = "spark",
-	desc = "A snap of light off the wand's tip. Weak, quick, free.",
+	desc = "A snap of light off the wand's tip. Weak, quick, nearly free.",
+}
+S.Mote = {
+	name = "Mote", glyph = "🔮", kind = "bolt", target = "aim", unlock = {free = true}, wand = true,
+	mana = 4, cast = 0.2, cooldown = 1.0,
+	speed = 70, range = 90, radius = 0.4, damage = 4, headMult = 1.2, seek = 3.2,
+	color = C(160, 120, 255), glow = C(235, 225, 255), shape = "wisp",
+	desc = "A little wisp that drifts after whoever's under your crosshair. Slow, but it finds them.",
+}
+S.Ember = {
+	name = "Ember", glyph = "🕯", kind = "bolt", target = "aim", unlock = {level = 6}, wand = true,
+	mana = 5, cast = 0.2, cooldown = 1.4,
+	speed = 120, range = 100, radius = 0.4, damage = 3, headMult = 1.3, burn = {dps = 1.5, time = 3},
+	color = C(255, 130, 50), glow = C(255, 220, 140), shape = "spark",
+	desc = "A flick of flame that sets them smouldering for a few seconds.",
+}
+S.FrostDart = {
+	name = "Frost Dart", glyph = "❄", kind = "bolt", target = "aim", unlock = {level = 8}, wand = true,
+	mana = 5, cast = 0.2, cooldown = 1.6,
+	speed = 170, range = 110, radius = 0.3, damage = 3, headMult = 1.4, chill = {slow = 0.2, time = 1.5},
+	color = C(160, 225, 255), glow = C(240, 252, 255), shape = "lance",
+	desc = "A sliver of ice: barely a scratch, but it slows them a step.",
+}
+S.Zap = {
+	name = "Zap", glyph = "⚡", kind = "chain", target = "aim", unlock = {level = 10}, wand = true,
+	mana = 7, cast = 0.25, cooldown = 2.2,
+	range = 22, width = 1.4, damage = 6, chain = 0,
+	color = C(150, 210, 255), glow = C(235, 248, 255),
+	desc = "A short crack of lightning at whoever's close. You can't dodge it, but it won't reach far.",
+}
+S.Gust = {
+	name = "Gust", glyph = "🌬", kind = "nova", target = "self", unlock = {level = 12}, wand = true, gust = true,
+	mana = 10, cast = 0.2, cooldown = 7,
+	radius = 9, damage = 0, shove = 34, slow = 0, slowTime = 0,
+	color = C(220, 240, 255), glow = C(255, 255, 255),
+	desc = "A blast of wind that throws everyone close away from you. Your way out.",
 }
 
 -- every spell a Mage can pick (the LOADOUT's order), and the starting four
 S.ORDER = {"Firebolt", "IceLance", "ChainLightning", "ArcaneMissiles", "Meteor", "Miasma", "FrostNova",
 	"Mend", "Haste", "Barrier", "Hex", "Blink"}
 S.DEFAULT = {"Firebolt", "ChainLightning", "FrostNova", "Mend"}
+S.WAND_ORDER = {"Spark", "Mote", "Ember", "FrostDart", "Zap", "Gust"}
+S.WAND_DEFAULT = {"Spark", "Mote"}
 for id, sp in pairs(S) do if type(sp) == "table" and sp.kind then sp.id = id end end
 return S

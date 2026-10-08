@@ -21,6 +21,8 @@ local DebugFlags  = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Janitor     = require(script.Parent:WaitForChild("Janitor"))
+local Catalog     = require(ReplicatedStorage:WaitForChild("Catalog"))
+local GameConfig  = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local Pickup = {}
 
@@ -58,9 +60,22 @@ end
 
 -- could this character hold it? (the same rule as Injury.canWield, read off
 -- the LimbLost_* attributes here: Injury requires this module)
+-- and is it a weapon their class carries? A Knight can't take up a bow or a wand, a Mage a
+-- sword (Catalog.weaponFits, either slot); a bot (no class) takes up steel only
+function Pickup.fitsClass(char, tool)
+	local id = tool.Name
+	-- (a staff's melee self is the staff: its Twin)
+	if not Catalog.WEAPON[id] then id = tool:GetAttribute("Twin") or Pickup.config(tool).TWIN or id end
+	local w = Catalog.WEAPON[id]
+	if not w then return true end
+	local cls = GameConfig.CLASSES[char:GetAttribute("Class") or ""]
+	if not cls then return not w.ranged and not w.magic end
+	return Catalog.weaponFits(cls, w, "primary") or Catalog.weaponFits(cls, w, "secondary")
+end
 function Pickup.canHold(char, tool)
 	if not char then return false end
 	if char:GetAttribute("LimbLost_RightArm") == true then return false end
+	if not Pickup.fitsClass(char, tool) then return false end
 	return not (Pickup.config(tool).TWO_HANDED == true and char:GetAttribute("LimbLost_LeftArm") == true)
 end
 

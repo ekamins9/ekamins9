@@ -3649,6 +3649,12 @@ do
 				local track = frame(b, Color3.fromRGB(6, 8, 16), 4); track.Position = UDim2.new(0, 152, 0, y + 3); track.Size = UDim2.new(1, -164, 0, 8); track.BackgroundTransparency = 0.2
 				local fill = frame(track, bar[3], 4); fill.Size = UDim2.new(math.clamp(bar[2], 0.08, 1), 0, 1, 0)
 			end
+			if not Catalog.classOpen(id, state.profile) then
+				-- (the Archer and the Mage open at level 5: a veil and the level)
+				local veil = frame(b, Color3.fromRGB(6, 8, 16), 10); veil.Size = UDim2.fromScale(1, 1); veil.BackgroundTransparency = 0.45; veil.ZIndex = 5
+				local lt = title(veil, "🔒  " .. string.upper(Catalog.unlockText(def.unlock)), 18); lt.Size = UDim2.new(1, 0, 0, 24); lt.Position = UDim2.new(0, 0, 0.5, -12)
+				lt.TextXAlignment = Enum.TextXAlignment.Center; lt.ZIndex = 6
+			end
 			if state.activeClass == id then
 				local chipA = title(b, "★ ACTIVE", 12); chipA.BackgroundTransparency = 0; chipA.BackgroundColor3 = COL.GREEN
 				chipA.AnchorPoint = Vector2.new(0, 1); chipA.Position = UDim2.new(0, 10, 1, -8); chipA.Size = UDim2.fromOffset(78, 20); chipA.TextXAlignment = Enum.TextXAlignment.Center
@@ -3823,7 +3829,10 @@ do
 	end
 	render.CLASSES_active = function()
 		local r = call("SetActive", ui.editing)
-		if r.ok then state.activeClass = ui.editing; if r.profile then state.profile = r.profile end; toast("Spawning as " .. className(ui.editing), COL.GOOD) end
+		if r.ok then
+			state.activeClass = ui.editing; if r.profile then state.profile = r.profile end; toast("Spawning as " .. className(ui.editing), COL.GOOD)
+			HX.offerLesson(ui.editing)
+		else toast(r.msg or "", COL.BAD) end
 		render.CLASSES()
 	end
 end
@@ -5200,8 +5209,39 @@ function HX.spellsPanel(list, lo, classId, cardGrid, itemCard)
 			end
 		end)
 	end
+	-- THE WAND (the sidearm): its own little spells, two at a time
+	local wand = lo.secondary and Catalog.WEAPON[lo.secondary]
+	if wand and wand.wand then
+		local wslots = wand.slots or 2
+		local wcur = {}
+		for _, x in ipairs(type(lo.wandSpells) == "table" and lo.wandSpells or Spells.WAND_DEFAULT) do if Spells[x] and Spells[x].wand and #wcur < wslots then table.insert(wcur, x) end end
+		local function setW(newList) lo.wandSpells = newList; ui.dirty[classId] = true; render.CLASSES() end
+		heading(mp, string.format("WAND  ·  %d / %d  ·  CHEAP, QUICK, WEAK", #wcur, wslots))
+		local wg = cardGrid(mp, 40)
+		local inW = {}
+		for _, x in ipairs(wcur) do inW[x] = true end
+		for i, x in ipairs(Spells.WAND_ORDER) do
+			local spx = Spells[x]
+			local have = Catalog.unlocked(spx.unlock or {free = true}, state.profile)
+			local sub = have and string.format("%d mana  ·  %.1fs  ·  every %.1fs", spx.mana, spx.cast, spx.cooldown) or unlockText(spx)
+			itemCard(wg, i, (spx.glyph or "") .. "  " .. spx.name, sub, inW[x] == true, have, spx.color, function()
+				ui.spellInfo = x
+				if not have then render.CLASSES(); return end
+				if inW[x] then
+					local nl = {}
+					for _, y in ipairs(wcur) do if y ~= x then table.insert(nl, y) end end
+					setW(nl)
+				elseif #wcur < wslots then
+					local nl = table.clone(wcur); table.insert(nl, x); setW(nl)
+				else
+					toast("Your wand carries " .. wslots .. ": take one out first", COL.BAD)
+					render.CLASSES()
+				end
+			end)
+		end
+	end
 	local info = ui.spellInfo and Spells[ui.spellInfo]
-	dim(mp, info and (string.upper(info.name) .. ":  " .. info.desc .. string.format("  (cooldown %ds)", info.cooldown or 0))
+	dim(mp, info and (string.upper(info.name) .. ":  " .. info.desc .. string.format("  (cooldown %.1fs)", info.cooldown or 0))
 		or "Mana comes back only when you meditate: hold " .. HX.Hints.name("Reload") .. " standing still. Mages don't hold the line.", 12)
 	-- LOOKS: a skin for each spell you carry (Catalog ▸ SpellSkins, out of the Arcana Crate)
 	local looks = type(lo.spellSkins) == "table" and lo.spellSkins or {}
@@ -5963,6 +6003,42 @@ end
 --------------------------------------------------------------------
 --  LOGIN REWARDS — the pop-up on the first open of the day
 --------------------------------------------------------------------
+--------------------------------------------------------------------
+--  THE CLASSES THAT OPEN AT LEVEL 5 (the Archer, the Mage): a pop-up the first time the
+--  menu opens after it, and an offer to learn one the first time you pick it. "Learn"
+--  goes to the Training Yard, straight to that class's teacher (Play: opts.track)
+--------------------------------------------------------------------
+function HX.trackDone(track)
+	local p = state.profile
+	for _, l in ipairs(Catalog.DRILLS.lessons) do
+		if l.track == track and p and p.drills and p.drills[l.id] then return true end
+	end
+	return false
+end
+function HX.learn(track)
+	closeModal()
+	if goDoor("Tiltyard", {track = track}) then hide() end
+end
+function HX.unlockPopup()
+	local p = state.profile
+	if not p or p.unlockSeen or (p.level or 1) < 5 or not inHub() or _G.IntroActive or _G.TourActive or modalBack.Visible then return end
+	p.unlockSeen = true
+	task.spawn(call, "UnlockSeen")
+	modal("ARCHER & MAGE UNLOCKED!", "Level 5! The ARCHER shoots from afar; the MAGE casts fire, lightning and frost. "
+		.. "Go to the Training Yard: their teachers show you how in a few minutes, and every lesson pays.",
+		{{"LEARN THE ARCHER  ·  TRAINING YARD", COL.GREEN, function() HX.learn("archer") end},
+		 {"LEARN THE MAGE  ·  TRAINING YARD", COL.PURPLE, function() HX.learn("mage") end}})
+end
+HX.offered = {}
+function HX.offerLesson(classId)
+	local c = GameConfig.CLASSES[classId]
+	if not (c and c.tutor) or HX.offered[classId] or HX.trackDone(c.tutor) then return end
+	HX.offered[classId] = true
+	local who = (Catalog.DRILLS.tracks[c.tutor] or {}).master or "a teacher"
+	modal("NEW TO THE " .. string.upper(c.name) .. "?", who .. " teaches the " .. c.name .. " in the Training Yard: a few short lessons, and each pays the first time. Learn it before your first battle?",
+		{{"LEARN IT  ·  TRAINING YARD", COL.GREEN, function() HX.learn(c.tutor) end}})
+end
+
 local loginShownDay = nil
 local function loginPopup()
 	local L = state.login
@@ -6626,7 +6702,12 @@ renderSide = function()
 	if currentTab == "CLASSES" then
 		local d = ui.dirty[ui.editing]
 		fat(d and ("SAVE " .. string.upper(className(ui.editing))) or "SAVED ✔", d and COL.GREEN or COL.GLASS2, function() if d then render.CLASSES_save() end end)
-		fat(state.activeClass == ui.editing and "★ ACTIVE CLASS" or "SET ACTIVE", state.activeClass == ui.editing and COL.GLASS2 or COL.BLUE, render.CLASSES_active)
+		if not Catalog.classOpen(ui.editing, state.profile) then
+			local c = GameConfig.CLASSES[ui.editing]
+			fat("🔒 OPENS AT " .. string.upper(Catalog.unlockText(c and c.unlock)), COL.GLASS2, function() toast("Reach " .. Catalog.unlockText(c and c.unlock) .. " to play the " .. className(ui.editing), COL.BAD) end)
+		else
+			fat(state.activeClass == ui.editing and "★ ACTIVE CLASS" or "SET ACTIVE", state.activeClass == ui.editing and COL.GLASS2 or COL.BLUE, render.CLASSES_active)
+		end
 		fat("TEAM PREVIEW" .. (ui.team and (": " .. (GameConfig.TEAMS[ui.team] and string.upper(GameConfig.TEAMS[ui.team].name) or ui.team)) or ""), ui.team and COL.PURPLE or COL.GLASS2, function()
 			ui.team = ui.team == nil and "A" or (ui.team == "A" and "B" or nil); render.CLASSES()
 		end, 260)
@@ -6708,6 +6789,19 @@ end)
 gui:GetAttributeChangedSignal("Inspect"):Connect(function()
 	local k, id = tostring(gui:GetAttribute("Inspect") or ""):match("^(%w+)|(.+)$")
 	if k then HX.inspect(k, id) else HX.closeInspect() end
+end)
+-- ("unlock": the level-5 pop-up, whatever's up)
+gui:GetAttributeChangedSignal("Popup"):Connect(function()
+	if gui:GetAttribute("Popup") == "unlock" and state.profile then closeModal(); state.profile.unlockSeen = false; HX.unlockPopup() end
+end)
+-- (a crate id: its page in the shop; a class id: its loadout)
+gui:GetAttributeChangedSignal("Crate"):Connect(function()
+	local id = gui:GetAttribute("Crate")
+	if type(id) == "string" and Catalog.CRATES[id] then ui.shopTab, ui.crate, ui.crateItem = "crates", id, nil; selectTab("SHOP") end
+end)
+gui:GetAttributeChangedSignal("EditClass"):Connect(function()
+	local id = gui:GetAttribute("EditClass")
+	if type(id) == "string" and GameConfig.CLASSES[id] then ui.editing = id; selectTab("CLASSES") end
 end)
 gui:GetAttributeChangedSignal("ShopTab"):Connect(function() local t = gui:GetAttribute("ShopTab"); if t then ui.shopTab = t; if currentTab == "SHOP" and render.SHOP then task.spawn(render.SHOP) end end end)
 
@@ -7195,6 +7289,14 @@ show = function(tab)
 		loginShownDay = day
 		task.delay(0.4, loginPopup)
 	end
+	-- (level 5: the Archer and the Mage — once, when nothing else is up: after the login gift)
+	task.spawn(function()
+		for _ = 1, 40 do
+			task.wait(1.5)
+			if not open then return end
+			if not modalBack.Visible then HX.unlockPopup(); return end
+		end
+	end)
 end
 
 hide = function()

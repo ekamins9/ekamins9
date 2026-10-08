@@ -55,12 +55,26 @@ function Economy.addXP(plr, xp)
 	local p = Profile.get(plr)
 	p.xp += xp
 	local leveled = 0
+	local was = p.level
 	while true do
 		local need = E.levels[p.level + 1] or E.levels[#E.levels]
 		if p.xp >= need then p.xp -= need; p.level += 1; leveled += 1; p.wallet.marks += E.levelMarks else break end
 	end
 	-- a Key per level, earned only
 	if leveled > 0 then p.wallet.keys = (p.wallet.keys or 0) + leveled * ((E.keys or {}).levelUp or 0) end
+	-- a class opening at this level (the Archer and the Mage at 5): say so at once
+	if leveled > 0 then
+		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+		local opened = {}
+		for _, id in ipairs(GameConfig.CLASS_ORDER) do
+			local c = GameConfig.CLASSES[id]
+			if c.unlock and c.unlock.level and was < c.unlock.level and p.level >= c.unlock.level then table.insert(opened, string.upper(c.name)) end
+		end
+		local ev = ReplicatedStorage:FindFirstChild("HubEvent")
+		if #opened > 0 and ev and plr.Parent then
+			ev:FireClient(plr, "Toast", table.concat(opened, " & ") .. " UNLOCKED!  Learn " .. (#opened > 1 and "them" or "it") .. " in the Training Yard (PLAY)")
+		end
+	end
 	Profile.markDirty(plr)
 	return leveled
 end

@@ -152,8 +152,9 @@ end
 local giveWeapon
 -- a magic weapon carries the class's arsenal and its looks (Combat ▸ MagicServer reads them)
 local function arm(tool, lo)
-	if not (lo and Catalog.WEAPON[tool.Name] and Catalog.WEAPON[tool.Name].magic) then return end
-	tool:SetAttribute("Spells", table.concat(lo.spells or {}, ","))
+	local w = lo and Catalog.WEAPON[tool.Name]
+	if not (w and w.magic) then return end
+	tool:SetAttribute("Spells", table.concat((w.wand and lo.wandSpells or lo.spells) or {}, ","))
 	local parts = {}
 	for spellId, skinId in pairs(lo.spellSkins or {}) do table.insert(parts, spellId .. "=" .. skinId) end
 	tool:SetAttribute("SpellSkins", table.concat(parts, ","))
@@ -254,6 +255,7 @@ spawnAs = function(plr, classId, opts)
 	if spawning[plr] then return end
 	if isAlive(plr) and not opts.again then return end
 	if not GameConfig.CLASSES[classId] then classId = Profile.get(plr).active end
+	if not Catalog.classOpen(classId, Profile.get(plr)) then classId = GameConfig.DEFAULT_CLASS end
 	local ok, why = Game.canSpawn(plr)
 	if not ok and not opts.again then show(plr, why); return end
 	-- reinforcements come in waves (a mode's waveSpawn): wait for your side's next one
@@ -323,7 +325,7 @@ end
 -- match never re-dresses anyone mid-round: there, it's the next spawn.
 local redressAt = {}
 _G.CourtyardRedress = function(plr)
-	if Game.modeId ~= "Hub" then return end
+	if Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then return end
 	-- (a burst of saves while you edit: one re-dress at the end of it)
 	local mine = os.clock()
 	redressAt[plr] = mine
@@ -334,6 +336,12 @@ _G.CourtyardRedress = function(plr)
 	if not (hum and hum.Health > 0 and char:FindFirstChild("HumanoidRootPart")) then return end
 	local p = Profile.get(plr)
 	local classId = GameConfig.CLASSES[p.active] and p.active or GameConfig.DEFAULT_CLASS
+	-- the training yard too: rebuilt where you stand as the class and loadout you just saved
+	-- (a fresh body: mana, health, weapons and all)
+	if Game.modeId == "Tiltyard" then
+		task.spawn(spawnAs, plr, classId, {again = true, at = char.HumanoidRootPart.CFrame})
+		return
+	end
 	local lo = Profile.validateLoadout(plr, classId, p.classes[classId])
 	local hadOut = char:FindFirstChildOfClass("Tool") ~= nil
 	for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
@@ -354,7 +362,7 @@ Players.PlayerRemoving:Connect(function(plr) redressAt[plr] = nil end)
 local picked = {}
 event.OnServerEvent:Connect(function(plr, what, a)
 	if what == "Spawn" then spawnAs(plr, a)
-	elseif what == "Pick" then if type(a) == "string" and GameConfig.CLASSES[a] then picked[plr] = a end
+	elseif what == "Pick" then if type(a) == "string" and GameConfig.CLASSES[a] and Catalog.classOpen(a, Profile.get(plr)) then picked[plr] = a end
 	elseif what == "Ready" then if not isAlive(plr) then show(plr) end end
 end)
 Players.PlayerRemoving:Connect(function(plr) picked[plr] = nil end)
@@ -362,6 +370,11 @@ Players.PlayerRemoving:Connect(function(plr) picked[plr] = nil end)
 _G.AutoSpawn = function(plr)
 	if not plr.Parent or isAlive(plr) or spawning[plr] then return end
 	task.spawn(spawnAs, plr, picked[plr] or Profile.get(plr).active)
+end
+-- dressed as a class where you stand (the training yard's class lessons: Game ▸ Training)
+_G.Respawn = function(plr, classId, at)
+	if not plr.Parent or spawning[plr] then return end
+	task.spawn(spawnAs, plr, classId, {again = true, at = at})
 end
 -- WHOLE AGAIN where you stand (Horde, between waves): health, wind and mana back, and a body
 -- that lost a limb, is bleeding or had its weapon knocked away is rebuilt in place as the

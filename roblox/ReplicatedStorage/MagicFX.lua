@@ -449,6 +449,18 @@ end
 function EVENTS.Nova(spellId, pos, radius, skin)
 	local L = MagicFX.lookOf(spellId, skin)
 	groundRing(pos, radius, 0.45, L.glow, 0.3)
+	if Spells[spellId] and Spells[spellId].gust then
+		-- a gust: rings of wind racing out, dust thrown up
+		groundRing(pos + Vector3.new(0, 1, 0), radius * 0.8, 0.35, L.color, 0.2)
+		groundRing(pos + Vector3.new(0, 2, 0), radius * 0.6, 0.3, L.glow, 0.15)
+		local h = part(Vector3.one * 0.2, L.color); h.Transparency = 1; h.Position = pos + Vector3.new(0, 0.5, 0)
+		local pe = emitter(h, TEX.smoke, Color3.fromRGB(210, 200, 180), L.color, 2.5, 0, {0.5, 0.9}, {18, 30}, Vector3.zero, 90, 0)
+		pe.EmissionDirection = Enum.NormalId.Top
+		pe:Emit(30)
+		Debris:AddItem(h, 1.2)
+		sound(SND.whoosh, pos, 0.7, 0.8, 1)
+		return
+	end
 	-- shards of ice (or the skin's petals) bursting up round you
 	for i = 1, 14 do
 		local a = math.random() * math.pi * 2

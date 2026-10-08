@@ -41,11 +41,13 @@ local player = Players.LocalPlayer
 --  THE RETICLE (one, shared by every ranged weapon)
 --------------------------------------------------------------------
 local ret
+-- (it goes with the body: a bow held as the body is replaced can't hide it itself, its
+-- script going with the body; a new one is made for the next)
 local function reticle()
-	if ret then return ret end
+	if ret and ret.gui.Parent then return ret end
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "RangedReticle"
-	gui.ResetOnSpawn = false
+	gui.ResetOnSpawn = true
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 30
 	gui.Enabled = false

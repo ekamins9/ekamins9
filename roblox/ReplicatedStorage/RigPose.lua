@@ -50,6 +50,7 @@ RigPose.CONFIG = {
 	                   twist = -0.3, aimRightAcross = 0.1, aimLeftAcross = 1.6, aimLeftRaise = 0.05,
 	                   bend = 0.85, bendPull = 0.3, strokes = 3,
 	                   spanRight = 0.65, spanRightAcross = 0.25, spanLeft = 0.75, spanLeftPull = 0.35, spanLeftAcross = 1.6},
+	MAGIC_STEADY = 0.15,   -- how much walk lean / step bob is left with a magic weapon in hand
 	-- magic weapons (RigPose.staff): each arm's raise forward / swing across (radians) at ease and
 	-- lifted (aim = 1), the free hand at rest and thrust out to cast
 	STAFF           = {
@@ -95,7 +96,10 @@ end
 function RigPose.compute(i, o)
 	local p = i.pitch * C.PITCH_DIR
 	local hx, hz = (i.hitX or 0) * C.HIT_JOLT_DIR, (i.hitZ or 0) * C.HIT_JOLT_DIR
-	local walkLean   = CFrame.Angles(i.leanZ * C.LEAN_DIR + hz, 0, i.leanX * C.LEAN_DIR + hx)
+	-- a Mage walks tall and steady: with a staff, a grimoire or a wand (ranged 3..5) the walk's
+	-- lean and the step's bob are mostly let go, so what they hold doesn't wobble
+	local steady = (i.ranged or 0) > 2.5 and C.MAGIC_STEADY or 1
+	local walkLean   = CFrame.Angles(i.leanZ * steady * C.LEAN_DIR + hz, 0, i.leanX * steady * C.LEAN_DIR + hx)
 	local kickLean   = CFrame.Angles(C.KICK_LEAN * C.KICK_LEAN_DIR * i.kick, 0, 0)
 	local crouchLean = CFrame.Angles(C.CROUCH_LEAN * C.CROUCH_LEAN_DIR * i.crouch, 0, 0)
 	local aim = CFrame.new(0, 0, -C.TORSO_PIVOT) * CFrame.Angles(p * C.TORSO_PITCH, 0, 0) * CFrame.new(0, 0, C.TORSO_PIVOT)
@@ -105,7 +109,7 @@ function RigPose.compute(i, o)
 	local swayCF   = CFrame.Angles(i.swayY, i.swayX, 0)
 	local out = {
 		Neck      = o.Neck * CFrame.Angles(p * C.NECK_PITCH, 0, 0),
-		RootJoint = CFrame.new(0, i.bob - C.CROUCH_DROP * i.crouch, 0) * rootBend,
+		RootJoint = CFrame.new(0, i.bob * steady - C.CROUCH_DROP * i.crouch, 0) * rootBend,
 		["Left Hip"]  = counter * o["Left Hip"]  * CFrame.Angles(0, 0, -legFold),
 		["Right Hip"] = counter * o["Right Hip"] * CFrame.Angles(0, 0, C.KICK_DIR * C.KICK_ANGLE * i.kick + legFold),
 		["Right Shoulder"] = swayCF * o["Right Shoulder"] * CFrame.Angles(0, 0, i.arm * C.RIGHT_ARM_DIR),

@@ -173,17 +173,21 @@ GameConfig.CLASSES = {
 		description = "Mail and gambeson. The all-rounder — quick enough, tough enough."},
 	-- the Archer: a bow or a crossbow and a one-handed sidearm. The lightest of all
 	-- (Light pieces, then health / prot / speed on top: LoadoutServer)
+	-- (unlock: the Archer and the Mage open at level 5; the Training Yard teaches each:
+	-- Catalog ▸ Drills, the Bowmaster's and the Magister's lessons)
 	Archer   = {name = "Archer",   weight = "Light",  armorType = "Light",  weapons = "any", primary = "Bow", secondary = "Shortsword",
-		ranged = true, health = -15, prot = 0, speed = 1.04,
+		ranged = true, health = -15, prot = 0, speed = 1.04, unlock = {level = 5}, tutor = "archer",
 		description = "A bow or a crossbow, and a sidearm for when they get close. The lightest armor of all (85 health, nothing to stop a blade): stay back, aim for the head."},
 	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any", primary = "ArmingSword", secondary = "Shortsword",
 		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
 	-- the Mage: a staff (MagicSpells: fire, lightning, frost, mending; a ward of mana) and a
-	-- sidearm. Robes, not armor: even less than the Archer (80 health, nothing to stop a blade),
+	-- wand at the hip (little free spells: no blade — a staff's weak melee self is all the
+	-- steel a Mage has). Robes, not armor: far
+	-- less than the Archer (65 health, nothing to stop a blade),
 	-- and a mana bar beside the stamina. Starts in the Apprentice's robes (starter = a set).
 	Mage     = {name = "Mage",     weight = "Light",  armorType = "Light",  weapons = "any", primary = "Staff", secondary = "Wand",
-		magic = true, health = -20, prot = 0, speed = 1.0, starter = "ApprenticeRobes",
-		description = "A staff of fire, lightning, frost and mending, and a ward that turns blows into lost mana. The least health of anyone (80, no armor): keep your distance, cast, and never stand still."},
+		magic = true, health = -35, prot = 0, speed = 1.0, starter = "ApprenticeRobes", unlock = {level = 5}, tutor = "mage",
+		description = "A staff of fire, lightning, frost and mending, and a ward that turns blows into lost mana. The least health of anyone (65, no armor), and only a wand at the hip: keep your distance, cast, and never let them close."},
 }
 GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard", "Archer", "Mage"}
 -- a new player's class (the intro, their training and their first battle are fought in it)

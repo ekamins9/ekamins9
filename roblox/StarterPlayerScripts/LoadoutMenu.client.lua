@@ -154,9 +154,17 @@ crl.SortOrder = Enum.SortOrder.LayoutOrder
 
 local cards = {}   -- [classId] = {btn, sum, tag}
 local selected = GameConfig.DEFAULT_CLASS
+-- is this class open to you yet? (the Archer and the Mage wait for level 5)
+local lockVeils = {}
+local function open_(id)
+	local d = GameConfig.CLASSES[id]
+	return d ~= nil and (d.unlock == nil or (Players.LocalPlayer:GetAttribute("Level") or 1) >= (d.unlock.level or 0))
+end
 local catalog = nil
 
 local function paint()
+	for id, v in pairs(lockVeils) do v.Visible = not open_(id) end
+	if not open_(selected) then selected = GameConfig.DEFAULT_CLASS end
 	for id, c in pairs(cards) do
 		local on = id == selected
 		TweenService:Create(c.btn, TweenInfo.new(0.12), {BackgroundColor3 = on and COL_CARD_ON or COL_CARD}):Play()
@@ -199,7 +207,19 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	local sum = label(b, "…", 14, FONT, COL_TEXT); sum.AnchorPoint = Vector2.new(0, 1); sum.Position = UDim2.new(0, 0, 1, 0); sum.Size = UDim2.new(1, 0, 0, 44); sum.TextYAlignment = Enum.TextYAlignment.Top
 	b.MouseEnter:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD:Lerp(COL_CARD_ON, 0.35) end end)
 	b.MouseLeave:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD end end)
-	b.Activated:Connect(function() selected = id; paint(); event:FireServer("Pick", id) end)
+	b.Activated:Connect(function()
+		if not open_(id) then return end
+		selected = id; paint(); event:FireServer("Pick", id)
+	end)
+	-- (locked: a veil and the level it opens at — GameConfig.CLASSES unlock)
+	if def.unlock then
+		local veil = Instance.new("Frame"); veil.Name = "Locked"; veil.BackgroundColor3 = Color3.fromRGB(8, 10, 18); veil.BackgroundTransparency = 0.35
+		veil.Size = UDim2.fromScale(1, 1); veil.ZIndex = 20; veil.Visible = false; veil.Parent = b
+		Instance.new("UICorner", veil).CornerRadius = UDim.new(0, 10)
+		local lt = label(veil, "🔒  LEVEL " .. tostring(def.unlock.level or "?"), 18, FONT, COL_TEXT)
+		lt.Size = UDim2.new(1, 0, 0, 30); lt.Position = UDim2.new(0, 0, 0.5, -15); lt.TextXAlignment = Enum.TextXAlignment.Center; lt.ZIndex = 21
+		lockVeils[id] = veil
+	end
 	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s, vp = vp, cam = cam}
 end
 

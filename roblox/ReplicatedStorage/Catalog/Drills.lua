@@ -15,6 +15,19 @@
                  each step's dummy; then it's off to their first battle)
      A lesson finished for the first time pays Catalog ▸ Economy ▸ earn.drill
      and counts as a drill (daily tasks, the Drill Master title).
+
+     THREE TEACHERS (tracks): Sir Aldric teaches steel (no `track`); Wren the
+     Bowmaster teaches the bow at the archery range (track = "archer"); Magister
+     Orrin teaches magic at the arcane circle (track = "mage"). A track's class
+     (tracks ▸ class) must be open to you (GameConfig.CLASSES unlock: level 5),
+     and its lessons dress you as that class. Their events:
+       arrow     an arrow lands on a target (full = at full draw · head = in the
+                 head · far = from at least that many studs away)
+       charge    a bot of `skill` comes down the range at you: bring it down
+       spell     a spell lands on a target · cast (that many DIFFERENT spells cast)
+       meditate  that much mana won back meditating (you start low)
+       ward      a blow turned by your Ward · chain (one Chain Lightning strikes
+                 two targets) · staffhit (a hit with the staff's melee self)
        spar      per skill: first (Marks for your first win) and again (each win after)
        gauntlet  perWave (Marks for each wave past your best), payTo (no pay past this wave) ]]
 return {
@@ -48,6 +61,40 @@ return {
 			text = "The masters' trick: as the dummy swings, start the SAME attack from your mirrored side. Its blow dies and yours lands. Once!"},
 		{id = "spar", title = "First Blood", goal = 1, event = "spar", skill = "Squire", basic = true,
 			text = "Enough dummies. A Squire meets you in the ring: use what you learned and beat him!"},
+
+		-- WREN THE BOWMASTER, at the archery range
+		{id = "loose", track = "archer", title = "Nock and Loose", goal = 3, event = "arrow",
+			text = "Hold {Swing} to draw, let go to loose. Put three arrows into the straw targets down the range."},
+		{id = "fulldraw", track = "archer", title = "Full Draw", goal = 2, event = "arrow", full = true,
+			text = "Hold the draw until the bow creaks: a full-draw arrow flies flatter and hits far harder. Two hits at full draw!"},
+		{id = "headshot", track = "archer", title = "Between the Eyes", goal = 1, event = "arrow", head = true,
+			text = "An arrow to the head is worth half again. Put one in a target's head."},
+		{id = "longshot", track = "archer", title = "The Long Shot", goal = 1, event = "arrow", far = 40,
+			text = "Back to the far line! Arrows drop over distance: aim a little high. Hit a target from forty paces."},
+		{id = "holdline", track = "archer", title = "Hold the Line", goal = 1, event = "charge", skill = "Squire",
+			text = "A Squire is charging down the range at you! Shoot him down before he reaches you (and if he does, your sidearm is on 2)."},
+
+		-- MAGISTER ORRIN, at the arcane circle
+		{id = "firstfire", track = "mage", title = "First Fire", goal = 2, event = "spell",
+			text = "{Swing} casts the spell you hold. A Firebolt flies slowly: lead your target. Burn the straw dummies twice."},
+		{id = "arsenal", track = "mage", title = "Your Arsenal", goal = 3, event = "cast",
+			text = "You carry several spells: {Stab} and {Overhead} pick the next one along the bar. Cast three DIFFERENT spells."},
+		{id = "meditate", track = "mage", title = "Breathe", goal = 40, event = "meditate",
+			text = "Mana only comes back when you meditate. Stand still and hold {Reload}. Win back forty mana."},
+		{id = "ward", track = "mage", title = "The Ward", goal = 2, event = "ward", setup = "attacker",
+			text = "Your staff can shield you: hold {Block} to raise a Ward. It turns blows from the front, for mana. Ward off two of the drill dummy's blows."},
+		{id = "leap", track = "mage", title = "Lightning Leaps", goal = 1, event = "chain",
+			text = "Chain Lightning jumps from one foe to the next. Strike one of the dummies standing together so it leaps to another."},
+		{id = "bonk", track = "mage", title = "Staff and Steel", goal = 2, event = "staffhit",
+			text = "Too close for spells? Press {Stance}: your staff fights like a quarterstaff. Hit a straw dummy twice with it, then {Stance} back."},
+		{id = "spellbound", track = "mage", title = "Spellbound", goal = 1, event = "charge", skill = "Squire",
+			text = "A Squire is charging at you! Bring him down with your spells: Frost Nova if he gets close. Then stand still and breathe."},
+	},
+	-- the teachers: who teaches each track, where (Map ▸ Spots), and the class it's for
+	tracks = {
+		knight = {master = "Sir Aldric, Drill Master", short = "DRILL MASTER", spot = "DrillMaster"},
+		archer = {master = "Wren, Bowmaster", short = "BOWMASTER", spot = "Bowmaster", class = "Archer", where = "THE ARCHERY RANGE"},
+		mage   = {master = "Magister Orrin", short = "MAGISTER", spot = "Magister", class = "Mage", where = "THE ARCANE CIRCLE"},
 	},
 	spar = {
 		Squire   = {first = 100, again = 15},

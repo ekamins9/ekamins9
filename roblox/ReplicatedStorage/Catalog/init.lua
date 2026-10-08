@@ -206,7 +206,11 @@ function Catalog.weaponFits(cls, w, slot)
 	if not (cls and w) then return false end
 	if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
 	if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == w.id then ok = true end end; if not ok then return false end end
-	if slot == "secondary" then return w.secondary == true and not w.ranged and (not w.magic or cls.magic == true) end
+	-- (a magic class's only sidearm is a wand: a staff's weak melee self is all the steel it has)
+	if slot == "secondary" then
+		if cls.magic then return w.secondary == true and w.magic == true end
+		return w.secondary == true and not w.ranged and not w.magic
+	end
 	return (w.ranged == true) == (cls.ranged == true) and (w.magic == true) == (cls.magic == true)
 end
 Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end
@@ -246,6 +250,12 @@ function Catalog.unlocked(u, p)
 	if not p then return false end
 	local have, need = Catalog.unlockProgress(u, p)
 	return need ~= nil and have >= need
+end
+-- may this profile play this class? (GameConfig.CLASSES unlock: the Archer and the Mage at level 5)
+function Catalog.classOpen(classId, p)
+	local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+	local c = GameConfig.CLASSES[classId]
+	return c ~= nil and (c.unlock == nil or Catalog.unlocked(c.unlock, p))
 end
 local FAMILY_WORD = {OneHanded = "one-handed", TwoHanded = "two-handed", Polearm = "polearm"}
 local STAT_WORD = {contract = "daily tasks done", parry = "parries", chamber = "chambers", drill = "Tiltyard drills",

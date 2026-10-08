@@ -324,6 +324,7 @@ local function kindSound(fx, which, at)
 		local lethal = hum.Health - dmg <= 0
 		CombatServer.credit(target, shooter, shotWeapon, region == "head" and "headshot" or "arrow")
 		target:SetAttribute("LastHitAttack", "Arrow")
+		target:SetAttribute("LastHitPower", power)   -- (how far it was drawn: the training yard's full-draw lesson)
 		CombatServer.showDamage(shooter, target, dmg, region == "head" and "head" or region, lethal, friendly < 1)
 		CombatServer.markCombat(shooter)
 		CombatServer.markCombat(target)

@@ -123,6 +123,15 @@ star crescent skull phoenix dragon wyrm: `MagicFX ▸ SHAPES`); `forks`/`thick`/
 `petals`/`shard` (a nova), `halo` (a heal), `smoke` (a blink). A new shape is a function in SHAPES
 returning its parts. The crate needs one of each rarity it rolls (the Catalog warns otherwise).
 
+**A wand spell**: as a spell, with `wand = true` and its id in `S.WAND_ORDER` (cheap, quick, weak:
+the sidearm carries two; nothing else can). `shove = n` on a `nova` throws foes back instead of
+hurting them (Gust).
+
+**A lesson for a class's teacher** (`Catalog ▸ Drills`): `track = "archer"` / `"mage"` in
+`lessons`, with an `event` from the list at the top (`arrow` with `full` / `head` / `far`,
+`charge`, `spell`, `cast`, `meditate`, `ward`, `chain`, `staffhit`). `tracks` says who teaches
+each, where (a Map ▸ Spots name) and the class it's fought as.
+
 **A magic weapon**: a Tool folder like `Tools/Staff` (Config: `SLOTS`, `POWER`, `CAST_MULT`,
 `MANA_MULT`, `WALK`, `WARD`, `STANCE`, `ORB`, `CAST_FROM`, `TWIN`, or `FIXED` for a wand), a
 blueprint in `Build ▸ Weapons`, and a `magic = true, slots = N` line in `Catalog ▸ Weapons`.

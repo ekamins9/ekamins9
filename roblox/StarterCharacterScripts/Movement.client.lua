@@ -284,7 +284,19 @@ table.insert(conns, ProximityPromptService.PromptShown:Connect(function(prompt)
 	if prompt.Name == "PickupPrompt" then prompt.KeyboardKeyCode = ClientSettings.key("Pickup") end
 end))
 -- a weapon you can't hold isn't offered: no right arm, nothing; one arm, no
--- two-handers (the server refuses them too: Pickup.canHold)
+-- two-handers; nor one your class doesn't carry (a Knight and a bow or a wand, a Mage
+-- and a sword: the server refuses them too, Pickup.canHold)
+local PickCatalog = require(ReplicatedStorage:WaitForChild("Catalog"))
+local PickConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local function classCarries(tool)
+	if not tool then return true end
+	local id = tool.Name
+	if not PickCatalog.WEAPON[id] and tool:GetAttribute("Twin") then id = tool:GetAttribute("Twin") end
+	local w = PickCatalog.WEAPON[id]
+	local cls = PickConfig.CLASSES[character:GetAttribute("Class") or ""]
+	if not (w and cls) then return true end
+	return PickCatalog.weaponFits(cls, w, "primary") or PickCatalog.weaponFits(cls, w, "secondary")
+end
 task.spawn(function()
 	while character.Parent do
 		local noRight = character:GetAttribute("LimbLost_RightArm") == true
@@ -292,7 +304,7 @@ task.spawn(function()
 		local f = workspace:FindFirstChild("DroppedWeapons")
 		for _, d in ipairs(f and f:GetDescendants() or {}) do
 			if d:IsA("ProximityPrompt") and d.Name == "PickupPrompt" then
-				d.Enabled = not noRight and not (noLeft and d:GetAttribute("TwoHanded") == true)
+				d.Enabled = not noRight and not (noLeft and d:GetAttribute("TwoHanded") == true) and classCarries(d:FindFirstAncestorOfClass("Tool"))
 			end
 		end
 		task.wait(0.3)

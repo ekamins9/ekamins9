@@ -2,8 +2,8 @@
      calls MagicServer.attach(Tool, Config)). The client only asks; here every cast
      is timed, paid for and resolved (ReplicatedStorage ▸ MagicSpells).
 
-     THE WEAPON (its Config): SLOTS (how many spells it carries), FIXED (a wand's own
-     spell instead of an arsenal), POWER (× every spell's damage and healing),
+     THE WEAPON (its Config): SLOTS (how many spells it carries), WAND (it carries wand
+     spells, and only those: MagicSpells wand = true), POWER (× every spell's damage and healing),
      CAST_MULT (× cast times), MANA_MULT (× costs), WALK (× MagicSpells.CAST_WALK: how
      fast you walk while casting), WARD (the right mouse soaks frontal blows into
      mana), STANCE (RigPose: 3 staff, 4 tome, 5 wand), TWIN (a Staff's melee self:
@@ -101,6 +101,7 @@ local function hurt(caster, target, dmg, spellName, head)
 	local h = humOf(target)
 	local lethal = dmg >= h.Health
 	CombatServer.credit(target, caster, spellName, "Spell")
+	target:SetAttribute("LastHitAttack", "Spell")   -- (no blade's attack: the training yard tells them apart)
 	CombatServer.markCombat(target); CombatServer.markCombat(caster)
 	local r, cr = rootOf(target), rootOf(caster)
 	if r and cr and (r.Position - cr.Position).Magnitude > 0.1 then CombatServer.flinch(target, (r.Position - cr.Position).Unit) end
@@ -110,6 +111,18 @@ local function hurt(caster, target, dmg, spellName, head)
 end
 MagicServer.hurt = hurt
 MagicServer.hurtMult = hurtMult
+
+-- a shove: thrown along `vel` for a moment (a held push: a walking body shrugs off a single
+-- change of velocity, and the push is simulated wherever the body is, a player's screen too)
+local function shove(m, vel)
+	local r = rootOf(m)
+	if not r then return end
+	local att = Instance.new("Attachment"); att.Name = "Shove"; att.Parent = r
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att; lv.MaxForce = 4e5; lv.VectorVelocity = vel
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World; lv.Parent = r
+	task.delay(0.22, function() lv:Destroy(); att:Destroy() end)
+end
 
 -- a burn: dps for `time` seconds (a fresh burn restarts it)
 local function burn(caster, target, b, spellName, power)
@@ -266,7 +279,17 @@ function RESOLVE.nova(caster, sp, ctx)
 	for _, m in ipairs(everyone()) do
 		local r = rootOf(m)
 		if m ~= caster and r and (r.Position - r0.Position).Magnitude <= sp.radius then
-			if hurt(caster, m, sp.damage * ctx.power, sp.name) then chill(caster, m, sp.slow or 0.4, sp.slowTime or 2) end
+			if sp.shove then
+				-- a gust: no harm, just thrown back (foes only)
+				if hurtMult(caster, m) > 0 then
+					local away = Vector3.new(r.Position.X - r0.Position.X, 0, r.Position.Z - r0.Position.Z)
+					if away.Magnitude < 0.1 then away = r0.CFrame.LookVector end
+					shove(m, away.Unit * sp.shove + Vector3.new(0, sp.shove * 0.3, 0))
+					CombatServer.flinch(m, away.Unit)
+					CombatServer.interrupt(m, "hit")
+					CombatServer.credit(m, caster, sp.name, "Spell")
+				end
+			elseif hurt(caster, m, sp.damage * ctx.power, sp.name) then chill(caster, m, sp.slow or 0.4, sp.slowTime or 2) end
 		end
 	end
 	fx:FireAllClients("Nova", ctx.id, r0.Position - Vector3.new(0, 2.8, 0), sp.radius, ctx.skin)
@@ -307,7 +330,7 @@ function RESOLVE.meteor(caster, sp, ctx)
 				if hurt(caster, m, (sp.edgeDamage + (sp.damage - sp.edgeDamage) * k) * ctx.power, sp.name) then
 					if sp.burn then burn(caster, m, sp.burn, sp.name, ctx.power) end
 					local away = (r.Position - at) * Vector3.new(1, 0, 1)
-					if away.Magnitude > 0.1 then r.AssemblyLinearVelocity += away.Unit * 22 * k + Vector3.new(0, 18 * k, 0) end
+					if away.Magnitude > 0.1 then shove(m, away.Unit * 34 * k + Vector3.new(0, 16 * k, 0)) end
 				end
 			end
 		end
@@ -444,11 +467,13 @@ function MagicServer.attach(tool, cfg)
 	tool:SetAttribute("Stance", cfg.STANCE or 3)
 	local power, castMult, manaMult = cfg.POWER or 1, cfg.CAST_MULT or 1, cfg.MANA_MULT or 1
 	-- the arsenal: the Spells attribute (the loadout's), else the weapon's own
+	local function fits(id) return Spells[id] ~= nil and Spells[id].kind ~= nil and (Spells[id].wand == true) == (cfg.WAND == true) end
 	local function book()
-		local list = cfg.FIXED or splitList(tool:GetAttribute("Spells"))
-		if #list == 0 then list = cfg.SPELLS or Spells.DEFAULT end
+		local list = {}
+		for _, id in ipairs(splitList(tool:GetAttribute("Spells"))) do if fits(id) then table.insert(list, id) end end
+		if #list == 0 then list = cfg.WAND and Spells.WAND_DEFAULT or Spells.DEFAULT end
 		local set = {}
-		for i, id in ipairs(list) do if Spells[id] and i <= math.max(cfg.SLOTS or 4, #(cfg.FIXED or {})) then set[id] = true end end
+		for i, id in ipairs(list) do if fits(id) and i <= (cfg.SLOTS or 4) then set[id] = true end end
 		return set
 	end
 	local cooldown = {}
@@ -466,9 +491,10 @@ function MagicServer.attach(tool, cfg)
 	end
 	local function clearCast(c)
 		if c then
-			for _, a in ipairs({"Casting", "CastStart", "CastTime", "SpeedMult_Cast"}) do c:SetAttribute(a, nil) end
+			for _, a in ipairs({"Casting", "CastStart", "CastTime", "CastReady", "SpeedMult_Cast"}) do c:SetAttribute(a, nil) end
 			c:SetAttribute("Acting", nil)
 		end
+		if casting and casting.hc then casting.hc:Disconnect() end
 		casting = nil
 	end
 	local function cancel(c, why)
@@ -476,6 +502,9 @@ function MagicServer.attach(tool, cfg)
 		token += 1
 		clearCast(c)
 		if why then fx:FireAllClients("Fizzle", c) end
+		-- (the caster's screen lets go of it too: a hit broke it, the mana ran out)
+		local plr = c and Players:GetPlayerFromCharacter(c)
+		if plr then remote:FireClient(plr, "Cancelled") end
 	end
 	-- where the orb is in the casting stance (RigPose), in the body's frame: the server doesn't
 	-- see the stance (each screen draws it, and starts the spell at the orb it sees)
@@ -489,7 +518,8 @@ function MagicServer.attach(tool, cfg)
 	end
 
 	local function release(c, myToken)
-		if not casting or casting.token ~= myToken or holder() ~= c or incapacitated(c) then return end
+		if not casting or casting.token ~= myToken or holder() ~= c then return end
+		if incapacitated(c) then cancel(c, true); return end
 		local id = casting.id
 		local sp = Spells[id]
 		local cost = (sp.mana or 0) * manaMult
@@ -504,6 +534,9 @@ function MagicServer.attach(tool, cfg)
 		local fn = RESOLVE[sp.kind]
 		local skin = skinsOf(tool:GetAttribute("SpellSkins"))[id]
 		if fn then task.spawn(fn, c, sp, {id = id, origin = origin, dir = dir, aim = typeof(aim) == "Vector3" and aim or nil, power = power, skin = skin}) end
+		-- (a spell gone off, for whoever's watching: the training yard's lessons)
+		c:SetAttribute("LastCast", id)
+		c:SetAttribute("CastTick", (c:GetAttribute("CastTick") or 0) + 1)
 		remote:FireClient(playerOf(c), "Cast", id, cooldown[id] - os.clock())
 	end
 
@@ -525,19 +558,26 @@ function MagicServer.attach(tool, cfg)
 			c:SetAttribute("CastTime", castTime)
 			c:SetAttribute("SpeedMult_Cast", math.min(1, Spells.CAST_WALK * (cfg.WALK or 1)))
 			c:SetAttribute("Acting", true)
-			-- a hit while casting breaks it
+			-- a hit while casting (or holding it charged) breaks it
 			local h = humOf(c)
 			local hp = h.Health
-			local hc
-			hc = h.HealthChanged:Connect(function(new)
-				if not casting or casting.token ~= myToken then hc:Disconnect(); return end
-				if new < hp - 0.5 then hc:Disconnect(); cancel(c, true) end
+			casting.hc = h.HealthChanged:Connect(function(new)
+				if not casting or casting.token ~= myToken then return end
+				if new < hp - 0.5 then cancel(c, true) end
 				hp = new
 			end)
+			-- WOUND UP: it holds there, charged, until you let go ("Release"); let go early and it
+			-- goes off the moment it's ready
 			task.delay(castTime + 0.06, function()
-				if hc.Connected then hc:Disconnect() end
-				release(c, myToken)
+				if not casting or casting.token ~= myToken then return end
+				casting.ready = true
+				c:SetAttribute("CastReady", true)
+				if casting.released then release(c, myToken) end
 			end)
+		elseif what == "Release" then
+			if not casting then return end
+			if typeof(a) == "Vector3" then casting.aim = a end
+			if casting.ready then release(c, casting.token) else casting.released = true end
 		elseif what == "Aim" then
 			if casting and typeof(a) == "Vector3" then casting.aim = a end
 		elseif what == "Cancel" then

@@ -43,11 +43,13 @@ local LIFT_UP, LIFT_DOWN = 2.6, 3.4   -- how fast the lift rises / sinks (per se
 --  THE SPELL BAR (one, shared by every magic weapon)
 --------------------------------------------------------------------
 local bar
+-- (it goes with the body, like the bow's reticle: a staff held as the body is replaced can't
+-- hide it itself)
 local function spellBar()
-	if bar then return bar end
+	if bar and bar.gui.Parent then return bar end
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "SpellBar"
-	gui.ResetOnSpawn = false
+	gui.ResetOnSpawn = true
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 29
 	gui.Enabled = false
@@ -160,10 +162,10 @@ function MagicClient.attach(Tool, cfg)
 	-- the arsenal: the Tool's Spells attribute (your loadout), else the weapon's own
 	local function bookNow()
 		local out = {}
-		if cfg.FIXED then for _, id in ipairs(cfg.FIXED) do if Spells[id] then table.insert(out, id) end end; return out end
+		local function fits(id) return Spells[id] ~= nil and Spells[id].kind ~= nil and (Spells[id].wand == true) == (cfg.WAND == true) end
 		local s = Tool:GetAttribute("Spells")
-		if type(s) == "string" then for id in s:gmatch("[^,]+") do if Spells[id] and #out < (cfg.SLOTS or 4) then table.insert(out, id) end end end
-		if #out == 0 then for _, id in ipairs(cfg.SPELLS or Spells.DEFAULT) do if #out < (cfg.SLOTS or 4) then table.insert(out, id) end end end
+		if type(s) == "string" then for id in s:gmatch("[^,]+") do if fits(id) and #out < (cfg.SLOTS or 4) then table.insert(out, id) end end end
+		if #out == 0 then for _, id in ipairs(cfg.WAND and Spells.WAND_DEFAULT or Spells.DEFAULT) do if #out < (cfg.SLOTS or 4) then table.insert(out, id) end end end
 		return out
 	end
 	local book = bookNow()
@@ -219,7 +221,7 @@ function MagicClient.attach(Tool, cfg)
 	local function cast()
 		if not equipped then return end
 		local c = char()
-		if not c or os.clock() < castUntil or warding then return end
+		if not c or castId or warding then return end
 		local id = book[chosen]
 		local sp = id and Spells[id]
 		if not sp then return end
@@ -229,13 +231,13 @@ function MagicClient.attach(Tool, cfg)
 		local castTime = sp.cast * castMult
 		castId, castFrom, castUntil = id, os.clock(), os.clock() + castTime
 		remote:FireServer("Cast", id, aimPoint())
-		-- the crosshair at the end of the cast is where it goes
-		task.delay(math.max(0, castTime - 0.03), function()
-			if castId == id and equipped then remote:FireServer("Aim", aimPoint()) end
-		end)
+	end
+	-- letting go: it goes where the crosshair is now (at once if it's charged, else when it is)
+	local function letGo()
+		if castId then remote:FireServer("Release", aimPoint()) end
 	end
 	local function cancel()
-		if os.clock() < castUntil then castUntil = 0; castId = nil; remote:FireServer("Cancel") end
+		if castId then castUntil = 0; castId = nil; remote:FireServer("Cancel") end
 	end
 	local function pick(step)
 		if #book == 0 then return end
@@ -254,7 +256,8 @@ function MagicClient.attach(Tool, cfg)
 
 	table.insert(conns, remote.OnClientEvent:Connect(function(what, id, cd)
 		if what == "Cast" then readyAt[id] = os.clock() + (tonumber(cd) or 0); castId = nil
-		elseif what == "NoMana" then noManaFlash = os.clock(); castUntil = 0; castId = nil end
+		elseif what == "NoMana" then noManaFlash = os.clock(); castUntil = 0; castId = nil
+		elseif what == "Cancelled" then castUntil = 0; castId = nil end
 	end))
 
 	local function isSwing(input)
@@ -274,6 +277,7 @@ function MagicClient.attach(Tool, cfg)
 		elseif a == "Kick" then remote:FireServer("Kick") end
 	end))
 	table.insert(conns, UIS.InputEnded:Connect(function(input)
+		if isSwing(input) then letGo() end
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then ward(false) end
 		if ClientSettings.actionForInput(input) == "Reload" then meditate(false) end
 	end))
@@ -291,6 +295,7 @@ function MagicClient.attach(Tool, cfg)
 			if down then cancel(); feintAt = os.clock() else feintAt = nil; meditate(false) end
 			return
 		end
+		if action == "Swing" and not down then letGo(); return end
 		if not down then return end
 		if action == "Swing" then cast()
 		elseif action == "Stab" then pick(1)
@@ -308,12 +313,13 @@ function MagicClient.attach(Tool, cfg)
 		if meditating and not c:GetAttribute("Meditating") and now - medAsked > 0.5 then
 			local r = c:FindFirstChild("HumanoidRootPart")
 			local v = r and r.AssemblyLinearVelocity or Vector3.zero
-			if Vector3.new(v.X, 0, v.Z).Magnitude < Spells.MEDITATE.still and now >= castUntil then
+			if Vector3.new(v.X, 0, v.Z).Magnitude < Spells.MEDITATE.still and not castId then
 				medAsked = now
 				remote:FireServer("Meditate", true)
 			end
 		end
-		local casting = now < castUntil
+		local casting = castId ~= nil   -- (winding up, or held charged till you let go)
+		local charged = casting and now >= castUntil
 		local raised = casting or warding or c:GetAttribute("Meditating") == true or (castId == nil and now - castFrom < 0.35)
 		lift += ((raised and 1 or 0) - lift) * math.clamp(dt * (raised and LIFT_UP or LIFT_DOWN), 0, 1)
 		-- (Roblox's "holding a tool" arm, stuck out in front: stopped, so the stance is RigPose's
@@ -344,7 +350,7 @@ function MagicClient.attach(Tool, cfg)
 		-- the meditation tip
 		local key = InputHints.mode() == "Gamepad" and ("HOLD " .. InputHints.name("Feint")) or (InputHints.mode() == "Touch" and "HOLD FEINT" or ("HOLD " .. InputHints.name("Reload")))
 		if c:GetAttribute("Meditating") then b.tip.Text = "MEDITATING…  STAY STILL"
-		elseif not cfg.FIXED and mana < max * 0.5 then b.tip.Text = key .. " TO MEDITATE  ·  STAND STILL"
+		elseif mana < max * 0.5 then b.tip.Text = key .. " TO MEDITATE  ·  STAND STILL"
 		else b.tip.Text = "" end
 		b.tip.TextColor3 = flash and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(150, 200, 255)
 		for i, sl in ipairs(b.slots) do

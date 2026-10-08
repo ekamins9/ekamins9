@@ -33,6 +33,8 @@
        wishDay     the last UTC day you wished at the Courtyard's fountain
        gauntlet    the best Gauntlet wave you cleared in the training yard
        askedTraining  a new player was offered the training once (before their first battle)
+       unlockSeen     the "Archer and Mage unlocked" pop-up was shown (level 5)
+       trainTrack     sent to the training yard to learn a class ("archer" / "mage"): read there once
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
 
@@ -81,7 +83,7 @@ local function default()
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
-		gauntlet = 0, askedTraining = false, copies = {}, tally = {}, claims = {}, copySeq = 0,
+		gauntlet = 0, askedTraining = false, unlockSeen = false, copies = {}, tally = {}, claims = {}, copySeq = 0,
 		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 2}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
@@ -138,6 +140,8 @@ local function fill(p)
 	for id in pairs(GameConfig.CLASSES) do if not p.classes[id] then p.classes[id] = Profile.defaultLoadout(id) end end
 	for k, v in pairs(Catalog.BODY.defaults) do if p.appearance[k] == nil then p.appearance[k] = v end end
 	if not GameConfig.CLASSES[p.active] then p.active = GameConfig.DEFAULT_CLASS end
+	-- (a class that's locked now — the Archer and the Mage wait for level 5 — isn't yours to spawn as)
+	if not Catalog.classOpen(p.active, p) then p.active = GameConfig.DEFAULT_CLASS end
 	p.stats.byWeapon = p.stats.byWeapon or {}
 	p.wallet.keys = p.wallet.keys or 0
 	return p
@@ -328,11 +332,23 @@ function Profile.validateLoadout(plr, classId, lo)
 		local list, seen = {}, {}
 		local function add(id)
 			local sp = type(id) == "string" and Spells[id]
-			if sp and sp.kind and not sp.fixed and not seen[id] and #list < slots and Profile.has(plr, "spells", id) then seen[id] = true; table.insert(list, id) end
+			if sp and sp.kind and not sp.wand and not seen[id] and #list < slots and Profile.has(plr, "spells", id) then seen[id] = true; table.insert(list, id) end
 		end
 		for _, id in ipairs(type(lo.spells) == "table" and lo.spells or {}) do add(id) end
 		if #list == 0 then for _, id in ipairs(Spells.DEFAULT) do add(id) end end
 		out.spells = list
+		-- the wand's (a sidearm's: wand spells only, as many as it carries)
+		local wand = out.secondary and Catalog.WEAPON[out.secondary]
+		if wand and wand.wand then
+			local wl, wseen = {}, {}
+			local function addW(id)
+				local sp = type(id) == "string" and Spells[id]
+				if sp and sp.wand and not wseen[id] and #wl < (wand.slots or 2) and Profile.has(plr, "spells", id) then wseen[id] = true; table.insert(wl, id); seen[id] = true end
+			end
+			for _, id in ipairs(type(lo.wandSpells) == "table" and lo.wandSpells or {}) do addW(id) end
+			if #wl == 0 then for _, id in ipairs(Spells.WAND_DEFAULT) do addW(id) end end
+			out.wandSpells = wl
+		end
 		out.spellSkins = {}
 		if type(lo.spellSkins) == "table" then
 			for spellId, skinId in pairs(lo.spellSkins) do
@@ -372,7 +388,11 @@ end
 --  SETTERS
 --------------------------------------------------------------------
 function Profile.setClass(plr, classId, loadout) Profile.get(plr).classes[classId] = loadout; dirty[plr] = true end
-function Profile.setActive(plr, classId) if GameConfig.CLASSES[classId] then Profile.get(plr).active = classId; dirty[plr] = true end end
+-- (a class still locked — the Archer and the Mage before level 5 — can't be made active)
+function Profile.setActive(plr, classId)
+	if GameConfig.CLASSES[classId] and Catalog.classOpen(classId, Profile.get(plr)) then Profile.get(plr).active = classId; dirty[plr] = true; return true end
+	return false
+end
 function Profile.setAppearance(plr, app) Profile.get(plr).appearance = app; dirty[plr] = true end
 function Profile.addStat(plr, key, n)
 	local p = cache[plr]; if not p then return end
@@ -388,7 +408,7 @@ function Profile.summary(plr)
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
 		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial, menuTour = p.menuTour,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
-		gauntlet = p.gauntlet, askedTraining = p.askedTraining,
+		gauntlet = p.gauntlet, askedTraining = p.askedTraining, unlockSeen = p.unlockSeen,
 	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder,
 	trading = Profile.tradingHook and Profile.tradingHook(plr) or nil,
 	restricted = Profile.restrictedHook and Profile.restrictedHook(plr) or false,

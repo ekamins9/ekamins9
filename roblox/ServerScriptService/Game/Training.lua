@@ -24,16 +24,26 @@
          pays D.gauntlet.perWave Marks.
        • THE PRACTICE GROUND (Practice): one to three bots of a chosen skill
          come at you together, as often as you like.
+       • TWO MORE TEACHERS, for the classes that open at level 5: WREN THE
+         BOWMASTER at the archery range (Bowmaster, ArcheryTarget1..3,
+         ArcheryLine / ArcheryFar, ArcheryCharge) and MAGISTER ORRIN at the
+         arcane circle (Magister, MageTarget1..3, MageCircle, MageCharge). Their
+         lessons (Catalog ▸ Drills, track = "archer" / "mage") dress you as the
+         class, watch arrows (full draw, the head, the far line) and spells (a
+         cast, a meditation, a ward, a leaping chain, the staff's melee self),
+         and end with a Squire charging at you. A player sent here to learn one
+         (the PLAY menu's "learn it" after level 5: profile trainTrack, or
+         _G.TrainingTrack when already here) starts on its first open lesson.
        • BASIC TRAINING: a newcomer (profile tutorial 0) gets the short course
          (Catalog ▸ Drills, basic = true) and is put right in front of each
          step's dummy, facing it. Finished — or skipped — they're on their way
          to their first battle (HubServer, _G.HubTravel).
      Players can't hurt each other here (the mode is peaceful).
      Remote: ReplicatedStorage ▸ TrainingRemote
-       client → server  "Lesson", id · "Restart" · "Spar", skill · "Leave" ·
+       client → server  "Lesson", id · "Restart", track · "Spar", skill · "Leave" ·
                         "Practice", skill, count · "ClearPractice" · "Gauntlet" ·
                         "Basic", control (Find Your Feet) · "SkipTraining"
-       server → client  "Menu", info · "Ring", records · "Progress" · "Done", id, line ·
+       server → client  "Menu", info, track | "practice" · "Ring", records · "Progress" · "Done", id, line ·
                         "Course" (basic training begins) · "Graduated", skipped ·
                         "Spar", what, … · "Gauntlet", what, … · "Practice", what, … ]]
 
@@ -51,8 +61,15 @@ local R6 = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("R6")
 
 local Training = {}
 local D = Catalog.DRILLS
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local LESSON = {}
-for i, l in ipairs(D.lessons) do l.index = i; LESSON[l.id] = l end
+local TRACK = {}   -- track → its lessons, in order (l.step = its place in them)
+for i, l in ipairs(D.lessons) do
+	l.index = i; l.track = l.track or "knight"; LESSON[l.id] = l
+	TRACK[l.track] = TRACK[l.track] or {}
+	table.insert(TRACK[l.track], l)
+	l.step = #TRACK[l.track]
+end
 local SKILL_ORDER = {Squire = 1, Knight = 2, Champion = 3}
 local WEAPONS = {"Longsword", "ArmingSword", "Mace", "Falchion", "Spear", "BattleAxe"}
 
@@ -114,7 +131,7 @@ local function publish(plr)
 	local L = learners[plr]
 	local l = L and LESSON[L.id or ""]
 	plr:SetAttribute("Drill", l and l.id or "")
-	plr:SetAttribute("DrillProgress", L and L.n or 0)
+	plr:SetAttribute("DrillProgress", L and math.floor(L.n or 0) or 0)
 	plr:SetAttribute("DrillGoal", l and l.goal or 0)
 	local done = {}
 	for id in pairs(profileOf(plr).drills) do table.insert(done, id) end
@@ -162,13 +179,48 @@ local function ensureDrill(kind)
 	watchTarget(drill[kind].model)
 end
 
+-- is this track's class open to them? (the Archer and the Mage wait for level 5)
+local function trackOpen(plr, track)
+	local t = D.tracks and D.tracks[track]
+	return not (t and t.class) or Catalog.classOpen(t.class, Profile.get(plr))
+end
+local spawnCharger, dropCharger   -- (below, with the ranges)
 local function setLesson(plr, id)
 	local l = LESSON[id]
 	if not l then return end
+	if not trackOpen(plr, l.track) then
+		local t = D.tracks[l.track]
+		local c = GameConfig.CLASSES[t.class]
+		toast(plr, "The " .. (c and c.name or "class") .. " opens at " .. Catalog.unlockText(c and c.unlock) .. ": come back then!")
+		return
+	end
 	learners[plr] = learners[plr] or {conns = {}}
 	local L = learners[plr]
+	dropCharger(plr)
 	L.id, L.n, L.sides, L.tried = id, 0, {}, {}
+	L.casts, L.chain, L.medFrom = {}, {}, nil
 	if l.setup then ensureDrill(l.setup) end
+	-- a track's lessons are fought as its class: dressed as one where you stand
+	local t = D.tracks and D.tracks[l.track]
+	local char = plr.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if t and t.class and char and char:GetAttribute("Class") ~= t.class and _G.Respawn then
+		_G.Respawn(plr, t.class, root and root.CFrame)
+	elseif l.track == "knight" and char and _G.Respawn then
+		-- (Sir Aldric teaches steel: out of a bow or a staff, into your own class, or the default)
+		local cd = GameConfig.CLASSES[char:GetAttribute("Class") or ""]
+		if cd and (cd.ranged or cd.magic) then
+			local own = GameConfig.CLASSES[Profile.get(plr).active]
+			_G.Respawn(plr, (own and not own.ranged and not own.magic) and Profile.get(plr).active or GameConfig.DEFAULT_CLASS, root and root.CFrame)
+		end
+	end
+	-- a Mage's lessons: a full mana bar, except the one that teaches you to win it back
+	task.delay(0.8, function()
+		local c = plr.Character
+		if learners[plr] ~= L or L.id ~= id or not (c and c:GetAttribute("MaxMana")) then return end
+		c:SetAttribute("Mana", l.event == "meditate" and 20 or c:GetAttribute("MaxMana"))
+	end)
+	if l.event == "charge" then task.delay(1.5, function() if learners[plr] == L and L.id == id then spawnCharger(plr, l) end end) end
 	publish(plr)
 	tell(plr, "Progress")
 	if L.course == "basic" then task.delay(0.6, function() if learners[plr] == L and L.id == id then placeFor(plr) end end) end
@@ -198,8 +250,8 @@ local function graduate(plr, skipped)
 	end)
 end
 
-local function firstOpen(p)
-	for _, l in ipairs(D.lessons) do if not p.drills[l.id] then return l end end
+local function firstOpen(p, track)
+	for _, l in ipairs(TRACK[track or "knight"] or {}) do if not p.drills[l.id] then return l end end
 	return nil
 end
 
@@ -227,13 +279,15 @@ local function complete(plr)
 	end
 	-- on to the next lesson: a replay walks the course in order; otherwise the
 	-- next one not done yet. Past the end, the first one not done anywhere.
+	dropCharger(plr)
+	local list = TRACK[l.track]
 	local nextL
 	if L.replay then
-		nextL = D.lessons[l.index + 1]
+		nextL = list[l.step + 1]
 	else
-		for i = l.index + 1, #D.lessons do if not p.drills[D.lessons[i].id] then nextL = D.lessons[i]; break end end
+		for i = l.step + 1, #list do if not p.drills[list[i].id] then nextL = list[i]; break end end
 	end
-	if not nextL then nextL = firstOpen(p) end
+	if not nextL then nextL = firstOpen(p, l.track) end
 	if nextL then
 		setLesson(plr, nextL.id)
 	else
@@ -259,6 +313,39 @@ local function note(plr, event, data)
 	elseif l.event == "riposte" and event == "hit" then
 		local c = plr.Character
 		count = c ~= nil and os.clock() <= (c:GetAttribute("FastUntil") or 0) + 0.15
+	elseif l.event == "arrow" and event == "hit" then
+		-- an arrow in a target: at full draw, in the head, from the far line, as the lesson asks
+		count = data.attack == "Arrow"
+			and (not l.full or (data.power or 0) >= 0.95)
+			and (not l.head or data.kind == "headshot")
+			and (not l.far or (data.dist or 0) >= l.far)
+	elseif l.event == "spell" and event == "hit" then
+		count = data.kind == "Spell"
+	elseif l.event == "chain" and event == "hit" then
+		-- one Chain Lightning striking two targets (its strikes land together)
+		if data.kind ~= "Spell" or data.with ~= "Chain Lightning" or not data.target then return end
+		local now = os.clock()
+		L.chain = L.chain or {}
+		L.chain[data.target] = now
+		local n = 0
+		for _, at in pairs(L.chain) do if now - at < 0.5 then n += 1 end end
+		count = n >= 2
+		if count then L.chain = {} end
+	elseif l.event == "staffhit" and event == "hit" then
+		local c = plr.Character
+		local tool = c and c:FindFirstChildOfClass("Tool")
+		count = data.kind ~= "Spell" and tool ~= nil and tool.Name == "StaffMelee"
+	elseif l.event == "cast" and event == "cast" then
+		-- three DIFFERENT spells
+		L.casts = L.casts or {}
+		if not data.spell or L.casts[data.spell] then return end
+		L.casts[data.spell] = true
+		count = true
+	elseif l.event == "meditate" and event == "meditate" then
+		L.n = math.min(l.goal, L.n + (data.gained or 0))
+		publish(plr)
+		if L.n >= l.goal then complete(plr) end
+		return
 	elseif l.event == event then
 		count = true
 	end
@@ -284,13 +371,28 @@ local function watchCharacter(plr, char)
 	on("MorphTick", function() note(plr, "morph") end)
 	on("KickTick", function() note(plr, "kick") end)
 	on("LastDodgeAt", function() note(plr, "dodge") end)
+	-- a Mage's: a spell gone off (MagicServer: CastTick), a blow warded, mana won back meditating
+	on("CastTick", function() note(plr, "cast", {spell = char:GetAttribute("LastCast")}) end)
+	on("WardHit", function() note(plr, "ward") end)
+	local lastMana = char:GetAttribute("Mana")
+	on("Mana", function()
+		local m = char:GetAttribute("Mana") or 0
+		if lastMana and m > lastMana and char:GetAttribute("Meditating") then note(plr, "meditate", {gained = m - lastMana}) end
+		lastMana = m
+	end)
 end
 
 -- hits on any of our NPCs, credited to whoever struck
 watchTarget = function(model)
 	table.insert(conns, model:GetAttributeChangedSignal("LastHitAt"):Connect(function()
 		local plr = Players:GetPlayerByUserId(model:GetAttribute("LastHitBy") or 0)
-		if plr then note(plr, "hit", {attack = model:GetAttribute("LastHitAttack"), kind = model:GetAttribute("LastHitKind"), target = model}) end
+		if plr then
+			local _, _, hrp = alive(plr)
+			local mine = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+			note(plr, "hit", {attack = model:GetAttribute("LastHitAttack"), kind = model:GetAttribute("LastHitKind"), target = model,
+				with = model:GetAttribute("LastHitWith"), power = model:GetAttribute("LastHitPower"),
+				dist = (hrp and mine) and (hrp.Position - mine.Position).Magnitude or 0})
+		end
 	end))
 end
 
@@ -298,11 +400,14 @@ end
 --  THE STRAW DUMMIES AND THE DRILL MASTER
 --------------------------------------------------------------------
 local BURLAP = Color3.fromRGB(184, 150, 98)
-local function strawDummy(i)
-	local at = spot("Dummy" .. i)
+-- spotName: where it stands (Dummy1..6 down the west side, ArcheryTarget1..3, MageTarget1..3);
+-- range: "archery" / "arcane" for the Bowmaster's and the Magister's, nil for the Drill Master's
+local function strawDummy(spotName, range)
+	local at = spot(spotName)
 	if not at or not running then return end
 	local m, hum, hrp = R6.rig("Straw Dummy", {skin = BURLAP, anchored = true, noFace = true, material = Enum.Material.Fabric})
 	m:SetAttribute("Straw", true)
+	m:SetAttribute("Range", range)
 	m:PivotTo(at.CFrame)
 	-- a rope belt and a painted target on the chest
 	local torso = m.Torso
@@ -321,45 +426,64 @@ local function strawDummy(i)
 	hum.Died:Once(function()
 		task.delay(2.5, function()
 			if m.Parent then m:Destroy() end
-			strawDummy(i)
+			strawDummy(spotName, range)
 		end)
 	end)
 end
 
-local function menuInfo(plr)
+local function menuInfo(plr, track)
 	local p = profileOf(plr)
 	local L = learners[plr]
 	local spars = {}
 	for k, v in pairs(p.spars) do spars[k] = v end
+	local t = D.tracks and D.tracks[track or "knight"]
+	local c = t and t.class and GameConfig.CLASSES[t.class]
 	return {current = L and L.id or nil, records = spars, gauntlet = p.gauntlet, practicing = practice[plr] ~= nil,
-		ringBusy = ring and ring.player ~= plr and ring.player.DisplayName or nil, perWave = (D.gauntlet and D.gauntlet.perWave) or 0}
+		ringBusy = ring and ring.player ~= plr and ring.player.DisplayName or nil, perWave = (D.gauntlet and D.gauntlet.perWave) or 0,
+		track = track or "knight", locked = (not trackOpen(plr, track or "knight")) and Catalog.unlockText(c and c.unlock) or nil}
 end
 
-local function drillMaster()
-	local at = spot("DrillMaster")
-	if not at then return end
-	local m, hum, hrp = R6.rig("Sir Aldric", {anchored = true})
+-- THE TEACHERS: Sir Aldric (steel), Wren the Bowmaster (the bow), Magister Orrin (magic).
+-- Each stands on its spot; E opens their menu (their track's lessons)
+local TEACHERS = {
+	knight = {rig = "Sir Aldric", weight = "Heavy", weapon = "Longsword", colors = {Primary = "Royal", Secondary = "Bone", Accent = "Gold", Metal = "Steel"}},
+	archer = {rig = "Wren", weight = "Light", weapon = "Bow", colors = {Primary = "Forest", Secondary = "Bone", Accent = "Ochre", Metal = "Ash"}},
+	mage   = {rig = "Orrin", weight = "Light", weapon = "Staff", set = "ApprenticeRobes", colors = {Primary = "Royal", Secondary = "Bone", Accent = "Gold", Metal = "Ash"}},
+}
+local teacherPos = {}   -- track → where they stand
+local function teacher(track)
+	local T = TEACHERS[track]
+	local tr = D.tracks[track]
+	local at = spot(tr.spot)
+	if not (T and at) then return end
+	local m, hum, hrp = R6.rig(T.rig, {anchored = true})
 	m:SetAttribute("Idle", true)
-	m:SetAttribute("DrillMaster", true)
+	m:SetAttribute("Instructor", track)
+	if track == "knight" then m:SetAttribute("DrillMaster", true) end
 	m:PivotTo(at.CFrame)
 	m.Parent = npcFolder
-	pcall(Dresser.dress, m, {loadout = Bots.loadoutFor("Heavy", {Primary = "Royal", Secondary = "Bone", Accent = "Gold", Metal = "Steel"}), appearance = Catalog.BODY.defaults, weight = "Heavy", preview = true})
-	pcall(Dresser.attachWeapon, m, "Longsword", "Longsword:Default")
-	hum.DisplayName = "Sir Aldric, Drill Master"
+	local lo = Bots.loadoutFor(T.weight, T.colors)
+	if T.set then
+		for _, slot in ipairs(Catalog.SLOTS) do local pc = Catalog.defaultPiece(slot, T.weight, T.set); if pc then lo[slot] = pc.id end end
+	end
+	pcall(Dresser.dress, m, {loadout = lo, appearance = Catalog.BODY.defaults, weight = T.weight, preview = true})
+	pcall(Dresser.attachWeapon, m, T.weapon, T.weapon .. ":Default")
+	hum.DisplayName = tr.master
 	hum.MaxHealth, hum.Health = 1e6, 1e6
 	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	-- no one cuts the Drill Master: out of the NPC folder, and blades pass through him
 	m.Parent = workspace:FindFirstChild("Map") or workspace
 	for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.CanQuery = false; d.CanTouch = false end end
-	masterPos = hrp.Position
+	teacherPos[track] = hrp.Position
+	if track == "knight" then masterPos = hrp.Position end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Talk"
-	prompt.ObjectText = "Drill Master"
+	prompt.ObjectText = (tr.short or "Teacher"):lower():gsub("^%l", string.upper):gsub(" %l", string.upper)
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.MaxActivationDistance = 14
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = hrp
-	table.insert(conns, prompt.Triggered:Connect(function(plr) tell(plr, "Menu", menuInfo(plr)) end))
+	table.insert(conns, prompt.Triggered:Connect(function(plr) tell(plr, "Menu", menuInfo(plr, track), track) end))
 	table.insert(stuff, m)
 end
 
@@ -619,10 +743,10 @@ end
 --------------------------------------------------------------------
 --  WHERE TO GO, and the drill dummies coming and going
 --------------------------------------------------------------------
-local function nearestDummy(pos)
+local function nearestDummy(pos, range)
 	local best, bd = nil, math.huge
 	for _, m in ipairs(stuff) do
-		if m.Parent and m:GetAttribute("Straw") then
+		if m.Parent and m:GetAttribute("Straw") and (range == nil or m:GetAttribute("Range") == range) then
 			local hum, hrp = m:FindFirstChildOfClass("Humanoid"), m:FindFirstChild("HumanoidRootPart")
 			if hum and hrp and hum.Health > 0 then
 				local d = (hrp.Position - pos).Magnitude
@@ -640,7 +764,23 @@ local function targetFor(plr)
 	local L = learners[plr]
 	local l = L and LESSON[L.id or ""]
 	if not l then return masterPos, "DRILL MASTER" end
-	if l.event == "basics" then return nil end   -- (right where you stand)
+	if l.event == "basics" or l.event == "meditate" or l.event == "cast" then return nil end   -- (right where you stand)
+	-- the Bowmaster's: the line to shoot from (the far one for a long shot), then the targets
+	if l.track == "archer" then
+		local line = spot(l.far and "ArcheryFar" or "ArcheryLine")
+		if line then
+			local d = Vector3.new(hrp.Position.X - line.Position.X, 0, hrp.Position.Z - line.Position.Z).Magnitude
+			if d > 6 then return line.Position, l.far and "THE FAR LINE" or "THE SHOOTING LINE" end
+		end
+		local t = nearestDummy(hrp.Position, "archery")
+		return t and t.Position, "THE TARGETS"
+	end
+	-- the Magister's: the dummies beyond the circle (the staff lesson: any straw dummy)
+	if l.track == "mage" and not l.setup then
+		if l.event == "charge" then local c = spot("MageCircle"); return c and c.Position, "THE ARCANE CIRCLE" end
+		local t = nearestDummy(hrp.Position, l.event ~= "staffhit" and "arcane" or nil)
+		return t and t.Position, "STRAW DUMMY"
+	end
 	if l.event == "spar" then
 		local c = spot("Ring")
 		return c and c.Position, "THE RING"
@@ -652,6 +792,42 @@ local function targetFor(plr)
 	local d = nearestDummy(hrp.Position)
 	if d then return d.Position, "STRAW DUMMY" end
 	return nil
+end
+
+-- HOLD THE LINE / SPELLBOUND: a bot comes at you down the range (or across the circle);
+-- bring it down and the lesson's done. Gone if the lesson changes or you fall.
+local chargers = {}   -- [player] = bot
+dropCharger = function(plr)
+	local b = chargers[plr]
+	chargers[plr] = nil
+	if b and b.model.Parent then poof(b.model); b:destroy() end
+end
+spawnCharger = function(plr, l)
+	local char, hum = alive(plr)
+	local at = spot(l.track == "archer" and "ArcheryCharge" or "MageCharge")
+	if not (char and at) then return end
+	dropCharger(plr)
+	local bot
+	bot = Bots.spawn({at = at.CFrame, skill = l.skill or "Squire", weapon = "Longsword", target = char, name = l.skill or "Squire",
+		startDelay = 1.2, corpseTime = 3,
+		onDeath = function()
+			if chargers[plr] ~= bot then return end
+			chargers[plr] = nil
+			note(plr, "charge")
+		end})
+	poof(bot.model)
+	chargers[plr] = bot
+	table.insert(stuff, bot.model)
+	toast(plr, "HERE HE COMES!")
+	hum.Died:Once(function()
+		if chargers[plr] == bot then
+			dropCharger(plr)
+			-- back on your feet: he comes again
+			local L = learners[plr]
+			local id = L and L.id
+			task.delay(6, function() if learners[plr] == L and L.id == id and LESSON[id] and LESSON[id].event == "charge" then spawnCharger(plr, LESSON[id]) end end)
+		end
+	end)
 end
 
 local function guide()
@@ -686,8 +862,9 @@ function Training.start(map)
 	spots = {}
 	local f = map and map:FindFirstChild("Spots")
 	for _, s in ipairs(f and f:GetChildren() or {}) do spots[s.Name] = s end
-	for i = 1, 6 do strawDummy(i) end
-	drillMaster()
+	for i = 1, 6 do strawDummy("Dummy" .. i) end
+	for i = 1, 3 do strawDummy("ArcheryTarget" .. i, "archery"); strawDummy("MageTarget" .. i, "arcane") end
+	for track in pairs(TEACHERS) do teacher(track) end
 	-- the challenge sign
 	local sign = spot("RingSign")
 	if sign then
@@ -715,18 +892,42 @@ function Training.start(map)
 	-- learners: everyone here gets the first lesson they haven't done
 	local function join(plr)
 		local p = profileOf(plr)
-		local first = firstOpen(p)
 		learners[plr] = learners[plr] or {conns = {}}
 		local L = learners[plr]
+		-- sent here to learn a class (the PLAY menu, after level 5): its first lesson not done
+		local want = p.trainTrack
+		if want then p.trainTrack = nil; Profile.markDirty(plr) end
+		local wantL = want and TRACK[want] and trackOpen(plr, want) and (firstOpen(p, want) or TRACK[want][1])
 		if (p.tutorial or 2) < 1 then
 			-- a newcomer: basic training, from the first step
 			L.course = "basic"
 			tell(plr, "Course")
 			setLesson(plr, basicAfter(nil).id)
-		elseif first then setLesson(plr, first.id) else publish(plr) end
+		elseif wantL then
+			-- straight in as that class, on its first lesson
+			local cls = D.tracks[want].class
+			if cls and _G.Respawn and not alive(plr) then _G.Respawn(plr, cls) end
+			task.delay(1.5, function() if learners[plr] == L then setLesson(plr, wantL.id) end end)
+		else
+			local first = firstOpen(p, "knight")
+			if first then setLesson(plr, first.id) else publish(plr) end
+		end
 		if plr.Character then watchCharacter(plr, plr.Character) end
 		table.insert(conns, plr.CharacterAdded:Connect(function(c)
 			watchCharacter(plr, c)
+			-- a class lesson is fought as that class: back in the wrong body, dressed again
+			local l = LESSON[L.id or ""]
+			local tr = l and D.tracks[l.track]
+			if tr and tr.class then
+				task.delay(1, function()
+					if plr.Character == c and learners[plr] == L and LESSON[L.id or ""] == l and c:GetAttribute("Class") ~= tr.class and _G.Respawn then
+						local root = c:FindFirstChild("HumanoidRootPart")
+						_G.Respawn(plr, tr.class, root and root.CFrame)
+					end
+				end)
+			end
+			-- (and a Mage's mana bar comes with the new body)
+			if l and l.track == "mage" then task.delay(0.8, function() if plr.Character == c and c:GetAttribute("MaxMana") then c:SetAttribute("Mana", l.event == "meditate" and 20 or c:GetAttribute("MaxMana")) end end) end
 			-- back on your feet in basic training: straight back to your step
 			if L.course == "basic" then task.delay(1, function() if plr.Character == c then placeFor(plr) end end) end
 		end))
@@ -737,6 +938,7 @@ function Training.start(map)
 		local L = learners[plr]
 		if L then for _, c in ipairs(L.conns) do c:Disconnect() end end
 		learners[plr] = nil
+		dropCharger(plr)
 		clearPractice(plr, true)
 		if ring and ring.player == plr then endRing("left") end
 	end))
@@ -751,7 +953,8 @@ function Training.start(map)
 			local L = learners[plr] or {conns = {}}
 			learners[plr] = L
 			L.replay = true
-			setLesson(plr, D.lessons[1].id)
+			local list = TRACK[type(a) == "string" and a or "knight"] or TRACK.knight
+			setLesson(plr, list[1].id)
 		elseif what == "Spar" and type(a) == "string" then startSpar(plr, a)
 		elseif what == "Gauntlet" then startGauntlet(plr)
 		elseif what == "Practice" and type(a) == "string" then startPractice(plr, a, b)
@@ -811,10 +1014,23 @@ function Training.start(map)
 	end)
 end
 
+-- already in the yard and asking to learn a class (HubServer: the PLAY menu's "learn it")
+_G.TrainingTrack = function(plr, track)
+	if not running or not TRACK[track] then return false end
+	local p = profileOf(plr)
+	local l = firstOpen(p, track) or TRACK[track][1]
+	local L = learners[plr] or {conns = {}}
+	learners[plr] = L
+	L.replay = nil
+	setLesson(plr, l.id)
+	return true
+end
+
 function Training.stop()
 	running = false
 	if ring then endRing("left") end
 	for plr in pairs(practice) do clearPractice(plr, true) end
+	for plr in pairs(chargers) do dropCharger(plr) end
 	for _, c in ipairs(conns) do c:Disconnect() end
 	conns = {}
 	for plr, L in pairs(learners) do
@@ -826,6 +1042,7 @@ function Training.stop()
 	stuff = {}
 	drill = {}
 	masterPos = nil
+	teacherPos = {}
 end
 
 return Training

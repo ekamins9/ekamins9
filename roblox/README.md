@@ -375,8 +375,10 @@ across the back when not in hand (`Holsters`). Tuning: each Tool's `Config` over
 
 ## The Mage: staffs, grimoires, wands, an arsenal of spells (`Combat ▸ MagicServer`, `Combat ▸ MagicClient`, `MagicSpells`)
 
-The **Mage** (`GameConfig.CLASSES.Mage`, `magic = true`): 80 health, no protection, robes
-(the free **Apprentice Robes**: the class's `starter` set). A **mana bar** (100) sits over the
+The **Mage** (`GameConfig.CLASSES.Mage`, `magic = true`, opens at **level 5** with the Archer:
+`unlock`): 65 health, no protection, robes (the free **Apprentice Robes**: the class's `starter`
+set), and no blade: the only sidearm a magic class carries is a wand (`Catalog.weaponFits`), and
+the staff's melee self is all its steel. A **mana bar** (100) sits over the
 spell bar, and **mana comes back only by meditating**: hold **R** (a controller's **Y**, the
 touch FEINT) standing still; after 0.7 s it returns 16 a second; moving, casting, warding or a
 hit ends it (`Meditating`, `MagicSpells.MEDITATE`). A Mage fights from behind the line, then has
@@ -389,7 +391,7 @@ class carries one: `Catalog.weaponFits`):
 |---|---|---|---|---|---|---|---|
 | Arcane Staff (free) | primary | 4 | 100% | normal | normal | 20% walk | the **Ward** (right mouse), a **melee self** (H) |
 | Grimoire (level 6) | primary | 5 | 85% | 25% faster | 20% cheaper | 35% walk | nothing between you and a sword |
-| Wand (free) | sidearm | Spark only | | instant-ish | free | 70% walk | for when you're dry |
+| Wand (free) | sidearm | 2 wand spells | | quick | a sip | 70% walk | for when you're low and they're close |
 
 **The staff's melee self** (`Tools ▸ StaffMelee`, the Tool's `Twin`): the Stance bind (**H**,
 D-pad ←) swaps it in (`LoadoutServer`: StanceSwap) and it fights with every quarterstaff swing,
@@ -397,7 +399,11 @@ its clips and rules (CombatClient / CombatServer), lighter. Only the one in your
 weapon bar (`TwinHidden`).
 
 **The arsenal** (LOADOUT ▸ SPELLS: the Tool's `Spells` attribute, `Profile.validateLoadout`):
-as many spells as the weapon carries, from every spell you have.
+as many spells as the weapon carries, from every spell you have. **The wand's own** (LOADOUT ▸
+SPELLS ▸ WAND, the loadout's `wandSpells`; `wand = true` spells, which nothing else carries): two of
+Spark (free) · Mote (free: a homing wisp) · Ember (6: a flick of fire, a burn) · Frost Dart (8: a
+slowing sliver) · Zap (10: short lightning) · Gust (12: wind that throws everyone close away, a
+held push). Each costs 3–10 mana and comes off the wand in a moment.
 
 | Spell | Unlock | Mana | Cast | Cooldown | What it does |
 |---|---|---|---|---|---|
@@ -414,9 +420,11 @@ as many spells as the weapon carries, from every spell you have.
 | Hex | level 9 | 26 | 0.75 | 13 | the cursed deal a quarter less and take 15% more for 5 s |
 | Blink | level 10 | 25 | 0.2 | 10 | 18 studs where you look, stopping short of walls |
 
-**Casting** (Swing; scroll / RB-LB picks; Q / Y cancels): the server times it (`Casting`,
-`CastStart`, `CastTime`), you walk at a crawl and can't sprint, and **a hit breaks it**. The aim
-is the crosshair at the end of the cast; the crosshair says what the spell wants (someone, the
+**Casting** (Swing; scroll / RB-LB picks; Q / Y cancels): **hold** to wind it up (the server
+times it: `Casting`, `CastStart`, `CastTime`); at full it **holds there, charged** (`CastReady`)
+until you **let go** ("Release"), and only then goes off and is paid for; a quick tap goes off the
+moment it's ready. You walk at a crawl and can't sprint the whole time, and **a hit breaks it**
+(the server tells your screen: "Cancelled"). The aim is the crosshair as you let go; the crosshair says what the spell wants (someone, the
 ground, an ally, nothing) and turns red past its reach. **The Ward** (a staff, right mouse):
 frontal blows within 70° lose 60% of their damage, paid 1.3 mana a point; out of mana it breaks.
 Every blow — blades, arrows, spells — asks `Combat ▸ Ward` (wards, **barriers** soak first,
@@ -430,7 +438,10 @@ at a hasted runner's heels, a blink's streak, a meditation's turning circle. **T
 cast, ward or meditate and sinking when you stop; the grimoire open at your waist, lifted to
 read from; the wand at your side, pointed to cast. Each screen holds a staff upright and a book
 open in the hand (MagicFX: the grip's C0), and Roblox's own "holding a tool" arm is stopped
-(MagicClient). Bots never play Mage.
+(MagicClient). With a magic weapon in hand the walk's lean and the step's bob are mostly let go
+(`RigPose` MAGIC_STEADY), so what you hold doesn't wobble. Put away, the staff hangs down your
+back, a grimoire at the hip, the wand at the right hip; a staff and its melee self are one weapon
+on you (`Holsters`). Bots never play Mage.
 
 **Spell skins** (`Catalog ▸ SpellSkins`, the **Arcana Crate**: always in the shop): a look for one
 spell, never its numbers. One Mage's Firebolt is a ball of fire, another's a **dragon's head**
@@ -442,6 +453,18 @@ per spell in LOADOUT ▸ SPELLS ▸ LOOKS (the class's `spellSkins`, kept for a 
 arsenal too), carried on the weapon (`SpellSkins` attribute) and passed with every spell's event,
 so everyone sees it; the spell bar and crosshair take its colours. Menus show a still model of it
 (`MagicFX.preview`) on cards, the crate page, inspect, inventory and trades.
+
+## Classes that open later: the Archer and the Mage (level 5)
+
+`GameConfig.CLASSES` `unlock = {level = 5}` (and `tutor`, the Training Yard track that teaches it):
+before then the class can't be made active (`Profile.setActive`, HubServer `SetActive`), the class
+screens veil it ("🔒 LEVEL 5"), the spawn falls back to the default class and a saved active class
+that's locked resets on load. Reaching it in a fight: a toast at once (`Economy.addXP`); the next
+time the menu opens, the **ARCHER & MAGE UNLOCKED!** pop-up (once: profile `unlockSeen`) with a
+button for each class's teacher. Picking one you've never been taught offers its lessons once.
+"Learn" travels to the Training Yard with `opts.track` (profile `trainTrack`, or
+`_G.TrainingTrack` when you're already there) and you arrive dressed as the class on its first
+lesson.
 
 ## Classes, pieces, the Dresser
 
@@ -1314,7 +1337,8 @@ dodge, kick or swing until it runs out.
 A weapon that leaves a hand — disarm, death, or a swap — lands as a pickup with a prompt (hold
 V) in `workspace.DroppedWeapons`, for `DESPAWN` (25) seconds. Only what you can hold is offered:
 without a right arm nothing, with one arm only one-handed weapons (`Pickup.canHold`, the
-weapon Config's `TWO_HANDED`); the prompt is hidden on your screen and the server refuses it
+weapon Config's `TWO_HANDED`), and only what your class carries (`Pickup.fitsClass`: a Knight
+can't take up a bow or a wand, a Mage a sword; bots take up steel only); the prompt is hidden on your screen and the server refuses it
 (bots don't go for them either).
 
 **Corpses (`Combat ▸ Corpses`).** The dead stay on the field: 2.8 s after a death the body is
@@ -1397,6 +1421,17 @@ it from the map's `Spots`:
   MorphTick, KickTick, LastDodgeAt, a CHAMBER guard). The first finish of each pays a drill
   (`earn.drill`, the drill stat for tasks and the Drill Master title). A card on the right shows
   the lesson in your own key binds, and he says it over his head.
+- **Wren, the Bowmaster** (the archery range down the north-west wall: straw targets before
+  straw butts, a near line and a far line) and **Magister Orrin** (the arcane circle in the north:
+  rune stones, three dummies standing close): each class's own lessons (`Catalog ▸ Drills`,
+  `track = "archer"` / `"mage"`), fought dressed as that class (`_G.Respawn`, in place). The
+  Bowmaster's: loose, full draw (`LastHitPower`), a headshot, a hit from the far line, then a Squire
+  charging down the range. The Magister's: a spell on a dummy, three different spells cast
+  (`CastTick`), forty mana won back meditating, two blows warded (`WardHit`), one Chain Lightning
+  striking two, two hits with the staff's melee self, then a charging Squire. A class still locked
+  gets "come back at level 5".
+- **Changes apply at once**, as in the Courtyard: save a loadout or pick a class in the menu and
+  you're rebuilt where you stand (`_G.CourtyardRedress`).
 - **Drill dummies** for the guard lessons (and footwork): one swings slowly at you, the other
   never drops its guard (so you can learn to kick it). They arrive with a lesson that needs them
   and leave when nobody's lesson does.

@@ -1,4 +1,46 @@
-# Updated scripts: spell skins and the Arcana Crate — one Mage's Firebolt is a fireball, another's is a dragon
+# Updated scripts: the Archer and the Mage open at level 5, with teachers; a wand of little spells; spells you hold charged
+
+- **Archer and Mage unlock at level 5.**
+  - Before that the class is locked: veiled on the class screens, refused by the server, and your spawn falls back to the default class.
+  - Reaching level 5 shows a toast in the fight, then an **"ARCHER & MAGE UNLOCKED!"** popup in the menu with a button that travels straight to that class's teacher in the Training Yard.
+  - Picking either class before you've done its lessons offers them once.
+- **Two new teachers in the Training Yard:**
+  - **Wren the Bowmaster** on a new archery range: loose, full draw, between the eyes, the long shot, then a Squire charging at you.
+  - **Magister Orrin** at a new arcane circle: first fire, three different spells, meditate, the ward, leaping lightning, the staff's melee form, then a charging Squire.
+  - Their lessons dress you as the class.
+  - Loadout and class changes in the yard now apply on the spot, like in the Courtyard.
+- **Mage changes:**
+  - **The wand is a sidearm with spells of its own**, two at a time, 3–10 mana each: Spark, Mote, Ember, Frost Dart, Zap, and Gust (throws everyone close away).
+  - The Mage has 65 health and no blade; the wand is its only sidearm.
+  - **Hold to cast:** a spell winds up, holds charged until you let go, and only then fires and costs mana. A quick tap fires as soon as it's ready.
+  - A steadier walk with a magic weapon in hand: no wobbling staff.
+- **Fixes:**
+  - A staff and its melee form no longer both show on you; the staff hangs on your back.
+  - The bow's and the spell bar's HUD no longer stay on screen after your body is replaced.
+  - Only your class's weapons can be picked up: no bows or wands for a Knight, no swords for a Mage.
+  - Meteor and Gust shoves now push properly.
+  - The spell info line no longer breaks on fractional cooldowns.
+- **Studio:** the training-yard map was rebuilt (new spots). **Save the place.**
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua), [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Catalog/Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | ReplicatedStorage | ModuleScript | `unlock`, `tutor`; `Catalog.classOpen`; a magic class's sidearm is a wand |
+| [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ReplicatedStorage ▸ Catalog ▸ Drills | ModuleScript | the Bowmaster's and the Magister's lessons, `tracks` |
+| [MagicSpells.lua](ReplicatedStorage/MagicSpells.lua), [MagicFX.lua](ReplicatedStorage/MagicFX.lua) | ReplicatedStorage | ModuleScript | wand spells; the gust |
+| [Combat/MagicClient.lua](ReplicatedStorage/Combat/MagicClient.lua), [Combat/RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua), [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage | ModuleScript | hold-to-cast, the wand's book; HUDs reset with the body; a steady Mage |
+| [Combat/MagicServer.lua](ServerScriptService/Combat/MagicServer.lua), [Combat/RangedServer.lua](ServerScriptService/Combat/RangedServer.lua), [Combat/Pickup.lua](ServerScriptService/Combat/Pickup.lua) | ServerScriptService ▸ Combat | ModuleScript | charged casts, Release, a held push, CastTick; LastHitPower; pickups by class |
+| [Game/Training.lua](ServerScriptService/Game/Training.lua), [Training.client.lua](StarterPlayerScripts/Training.client.lua) | ServerScriptService ▸ Game · StarterPlayerScripts | ModuleScript · LocalScript | three teachers, tracks, the new lessons and their menus |
+| [Build/MapTraining.lua](ServerScriptService/Build/MapTraining.lua) | ServerScriptService ▸ Build ▸ MapTraining | ModuleScript | the archery range, the arcane circle |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua), [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua), [Holsters.server.lua](ServerScriptService/Loadout/Holsters.server.lua) | ServerScriptService ▸ Loadout | ModuleScript · Script | locked classes, wand spells, `_G.Respawn`, the yard re-dress; holsters |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua), [Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService | Script · ModuleScript | SetActive refused when locked, `UnlockSeen`, Play's track; the level-5 toast |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the pop-up, the locks, LOADOUT ▸ SPELLS ▸ WAND; the class cards |
+| [Movement.client.lua](StarterCharacterScripts/Movement.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ Movement | LocalScript | pickup prompts only for your class's weapons |
+| [Tools/Wand/Config.lua](Tools/Wand/Config.lua) | ServerStorage ▸ Weapons ▸ Wand | ModuleScript | the wand: two wand spells |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | all of the above |
+
+---
+
+## Before that: spell skins and the Arcana Crate — one Mage's Firebolt is a fireball, another's is a dragon
 
 - **Twenty spell skins** in a new **Arcana Crate**, always in the shop. Looks only; every spell flies, hits and costs the same.
 - **The skins, by rarity:**

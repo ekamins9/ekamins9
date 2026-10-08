@@ -476,6 +476,14 @@ local function play(plr, doorId, opts)
 	if not group then return false, why end
 	local modeId = door.mode or (door.modes and door.modes[1])
 	if doorId == "Tiltyard" then
+		-- to learn a class (opts.track "archer" / "mage": the unlock popup's quick travel): the
+		-- yard starts you on its first lesson (Game ▸ Training reads trainTrack on arrival)
+		local track = opts.track == "archer" and "archer" or (opts.track == "mage" and "mage" or nil)
+		if track then
+			if Game.modeId == "Tiltyard" and _G.TrainingTrack and _G.TrainingTrack(plr, track) then return true, "to the lesson" end
+			Profile.get(plr).trainTrack = track
+			Profile.markDirty(plr)
+		end
 		if STUDIO then return studioSwitch(plr, "Tiltyard", {door = "Tiltyard", settings = nil, noRewards = false}) end
 		if Game.server.door == "Tiltyard" then return false, "you're in your Tiltyard" end
 		return reserve(group, modeId, "Friends", plr.DisplayName .. "'s Tiltyard", false, "Tiltyard", nil, "Tiltyard")
@@ -858,7 +866,10 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		if _G.CourtyardRedress and Profile.get(plr).active == a then task.spawn(_G.CourtyardRedress, plr) end
 		return {ok = true, loadout = lo, profile = Profile.summary(plr)}
 	elseif op == "SetActive" then
-		Profile.setActive(plr, a)
+		if not Profile.setActive(plr, a) then
+			local c = GameConfig.CLASSES[a]
+			return {ok = false, msg = c and ("The " .. c.name .. " unlocks at " .. Catalog.unlockText(c.unlock)) or "no such class"}
+		end
 		local party = partyOf(plr); if party then broadcast(party) end
 		if _G.CourtyardRedress then task.spawn(_G.CourtyardRedress, plr) end
 		return {ok = true, profile = Profile.summary(plr)}
@@ -919,6 +930,10 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		return {ok = ok, msg = msg, crate = crate, login = Economy.loginStatus(plr), profile = Profile.summary(plr)}
 	elseif op == "BuyCrowns" then local ok, msg = buyCrowns(plr, a); return {ok = ok, msg = msg}
 	-- pastimes: playtime gifts, the Hatchery, companions (Economy ▸ Pastimes)
+	elseif op == "UnlockSeen" then
+		Profile.get(plr).unlockSeen = true
+		Profile.markDirty(plr)
+		return {ok = true}
 	elseif op == "AskedTraining" then
 		Profile.get(plr).askedTraining = true
 		Profile.markDirty(plr)

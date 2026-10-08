@@ -1,6 +1,9 @@
 --[[ HOLSTERS — the weapons you carry but aren't holding are worn on you, so
      everyone sees your kit: two-handers and polearms across your back, one-
-     handers at your left hip, a dagger at your right. A worn weapon is a
+     handers at your left hip, a dagger at your right; a Mage's staff across the
+     back, a grimoire at the hip, a wand at the right hip. A staff and its melee
+     self (Twin) are one weapon: neither is worn while the other is in your hand,
+     and only one of them hangs on you while neither is. A worn weapon is a
      look-only copy of the Tool (skin and all; no scripts, no hitbox), welded to
      the torso. Drawing it takes it off the body with the sound of a blade
      leaving its scabbard; putting it away hangs it back on.
@@ -31,10 +34,16 @@ local SPOTS = {
 	-- a bow slung across the back, string out; a crossbow across the back, prod up
 	Bow      = CFrame.new(-0.2, 0.1, 0.62) * CFrame.Angles(0, 0, r(-28)),
 	Crossbow = CFrame.new(0, 0.2, 0.7) * CFrame.Angles(r(-90), 0, r(35)),
+	-- a Mage's staff: down the back, the orb up behind the left shoulder
+	Staff    = CFrame.new(0.3, -0.4, 0.7) * CFrame.Angles(0, 0, r(18)),
+	-- a grimoire hung flat at the left hip, its cover out
+	Book     = CFrame.new(-1.2, -0.75, 0) * CFrame.Angles(0, r(-90), 0),
 }
 
 local function spotFor(weaponId)
-	if weaponId == "Dagger" then return SPOTS.Dagger end
+	if weaponId == "Dagger" or weaponId == "Wand" then return SPOTS.Dagger end
+	if weaponId == "Staff" or weaponId == "StaffMelee" then return SPOTS.Staff end
+	if weaponId == "Tome" then return SPOTS.Book end
 	if weaponId == "Bow" or weaponId == "Crossbow" then return SPOTS[weaponId] end
 	local w = Catalog.WEAPON[weaponId]
 	local fam = w and w.family
@@ -87,8 +96,12 @@ local function track(plr, char)
 		if not char.Parent then return end
 		local backpack = plr:FindFirstChildOfClass("Backpack")
 		local inPack = {}
+		local held = char:FindFirstChildOfClass("Tool")
 		for _, t in ipairs(backpack and backpack:GetChildren() or {}) do
-			if isWeapon(t) then inPack[t] = true end
+			-- (a twin: never while its other self is in your hand, and only the main one)
+			local twin = t:GetAttribute("Twin")
+			local skip = twin and ((held and held.Name == twin) or t:GetAttribute("TwinHidden") == true)
+			if isWeapon(t) and not skip then inPack[t] = true end
 		end
 		-- off the body: drawn, dropped, gone
 		for t, m in pairs(worn) do

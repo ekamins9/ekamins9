@@ -33,7 +33,14 @@ local remote = ReplicatedStorage:WaitForChild("TrainingRemote", math.huge)   -- 
 local round = ReplicatedStorage:WaitForChild("Round")
 local D = Catalog.DRILLS
 local LESSON = {}
-for i, l in ipairs(D.lessons) do LESSON[l.id] = l; l.index = i end
+local TRACK = {}   -- track → its lessons (Sir Aldric's "knight", the Bowmaster's "archer", the Magister's "mage")
+for i, l in ipairs(D.lessons) do
+	LESSON[l.id] = l; l.index = i; l.track = l.track or "knight"
+	TRACK[l.track] = TRACK[l.track] or {}
+	table.insert(TRACK[l.track], l)
+	l.step = #TRACK[l.track]
+end
+local function teacherOf(track) return (D.tracks and D.tracks[track or "knight"]) or {master = "Drill Master", short = "DRILL MASTER"} end
 
 local WHITE = Color3.new(1, 1, 1)
 local GUIDE = Color3.fromRGB(255, 206, 70)
@@ -230,11 +237,12 @@ Instance.new("UICorner", bubbleBox).CornerRadius = UDim.new(0, 12)
 local bubbleText = Instance.new("TextLabel"); bubbleText.BackgroundTransparency = 1; bubbleText.Size = UDim2.new(1, -16, 1, -12); bubbleText.Position = UDim2.fromOffset(8, 6)
 bubbleText.Font = Theme.FONT; bubbleText.TextSize = 15; bubbleText.TextWrapped = true; bubbleText.TextColor3 = Color3.fromRGB(40, 30, 20); bubbleText.Parent = bubbleBox
 
-local function masterHead()
+-- the head of whoever teaches this track (Sir Aldric, Wren, Orrin: their Instructor attribute)
+local function masterHead(track)
 	local map = workspace:FindFirstChild("Map")
 	if not map then return nil end
 	for _, m in ipairs(map:GetChildren()) do
-		if m:IsA("Model") and m:GetAttribute("DrillMaster") then return m:FindFirstChild("Head") end
+		if m:IsA("Model") and (m:GetAttribute("Instructor") == (track or "knight") or (not track and m:GetAttribute("DrillMaster"))) then return m:FindFirstChild("Head") end
 	end
 	return nil
 end
@@ -245,11 +253,13 @@ local function refreshCard()
 	local l = LESSON[id]
 	card.Visible = yard and l ~= nil and not hubMenuUp() and not fighting
 	bubble.Enabled = yard
-	bubble.Adornee = yard and masterHead() or nil
+	bubble.Adornee = yard and masterHead(l and l.track or "knight") or nil
 	if not l then
-		local done = 0
-		for _ in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do done += 1 end
-		bubbleText.Text = done >= #D.lessons and "You've learned all I can teach. Spar in the ring, run the Gauntlet, or call up bots. Press E!"
+		local done = {}
+		for id in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do done[id] = true end
+		local all = true
+		for _, x in ipairs(TRACK.knight) do if not done[x.id] then all = false end end
+		bubbleText.Text = all and "You've learned all I can teach. Spar in the ring, run the Gauntlet, or call up bots. Press E!"
 			or "Come here, recruit. Press E and I'll teach you."
 		return
 	end
@@ -262,7 +272,7 @@ local function refreshCard()
 	if basic then
 		cardHead.Text = string.format("BASIC TRAINING  ·  STEP %d / %d", player:GetAttribute("CourseStep") or 1, player:GetAttribute("CourseSteps") or 7)
 	else
-		cardHead.Text = string.format("DRILL MASTER  ·  LESSON %d / %d", l.index, #D.lessons)
+		cardHead.Text = string.format("%s  ·  LESSON %d / %d", teacherOf(l.track).short or "DRILL MASTER", l.step, #TRACK[l.track])
 	end
 	cardTitle.Text = string.upper(l.title)
 	cardText.Text = say(l.text)
@@ -411,8 +421,10 @@ _G.MenuKeyOverride = function()
 	return true
 end
 
-local function lessonBoard()
-	local b = openBoard("THE DRILL MASTER'S LESSONS")
+local function lessonBoard(track)
+	track = track or (lastInfo and lastInfo.track) or "knight"
+	local t = teacherOf(track)
+	local b = openBoard(track == "knight" and "THE DRILL MASTER'S LESSONS" or (string.upper(t.master) .. "'S LESSONS"))
 	local done = {}
 	for id in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do done[id] = true end
 	local current = player:GetAttribute("Drill") or ""
@@ -423,7 +435,7 @@ local function lessonBoard()
 	list.BackgroundTransparency = 1; list.BorderSizePixel = 0; list.Position = UDim2.fromOffset(16, 76); list.Size = UDim2.new(1, -32, 1, -92)
 	list.CanvasSize = UDim2.new(); list.AutomaticCanvasSize = Enum.AutomaticSize.Y; list.ScrollBarThickness = 5; list.ZIndex = 7; list.Parent = b
 	local lay = Instance.new("UIListLayout", list); lay.Padding = UDim.new(0, 6); lay.SortOrder = Enum.SortOrder.LayoutOrder
-	for i, l in ipairs(D.lessons) do
+	for i, l in ipairs(TRACK[track] or {}) do
 		local on = l.id == current
 		local r = button(list, "", on and Theme.BLUE or Theme.GLASS2, UDim2.new(1, -8, 0, 46))
 		r.LayoutOrder = i; r.ZIndex = 8
@@ -481,21 +493,77 @@ local function practiceBoard()
 end
 
 -- the Drill Master's menu
-local function menuBoard(info)
+-- a class teacher's menu (Wren the Bowmaster, Magister Orrin): their lessons, or when you
+-- can come back (the class opens at level 5)
+local LINES = {
+	archer = {hello = "\"Steady hands, sharp eyes. Shall we?\"", done = "\"You don't need me any more. Go and make them duck.\"",
+		locked = "\"Come back when you've seen a few fights: the bow opens to you at %s.\""},
+	mage = {hello = "\"Magic is patience, then fire. Ready?\"", done = "\"I've nothing left to teach you. Mind your mana.\"",
+		locked = "\"The arcane waits until you're ready: come back at %s.\""},
+}
+local function classBoard(info, track)
+	local t = teacherOf(track)
+	local lines = LINES[track] or LINES.archer
+	local b = openBoard(string.upper(t.master))
+	b.Size = UDim2.fromOffset(640, info.locked and 260 or 420)
+	b.Position = UDim2.new(0.5, -320, 0.5, info.locked and -130 or -210)
+	local done = {}
+	for id in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do done[id] = true end
+	local list = TRACK[track] or {}
+	local doneN = 0
+	for _, l in ipairs(list) do if done[l.id] then doneN += 1 end end
+	if info.locked then
+		local sub = text(b, string.format(lines.locked, string.upper(info.locked)), 17, WHITE, Theme.FONT)
+		sub.Position = UDim2.fromOffset(20, 64); sub.Size = UDim2.new(1, -40, 0, 80); sub.TextYAlignment = Enum.TextYAlignment.Top; sub.ZIndex = 7
+		local ok = button(b, "I'LL BE BACK", Theme.GLASS2, UDim2.new(1, -40, 0, 54), UDim2.new(0, 20, 1, -74)); ok.ZIndex = 7; ok.TextSize = 18
+		ok.MouseButton1Click:Connect(closeBoard)
+		return
+	end
+	local cur = LESSON[info.current or ""]
+	if cur and cur.track ~= track then cur = nil end
+	local first
+	for _, l in ipairs(list) do if not done[l.id] then first = l; break end end
+	local sub = text(b, cur and string.format("\"Lesson %d: %s. %d of %d done.\"", cur.step, cur.title, doneN, #list)
+		or (doneN >= #list and lines.done or lines.hello), 15, Theme.DIM, Theme.FONT)
+	sub.Position = UDim2.fromOffset(20, 50); sub.Size = UDim2.new(1, -40, 0, 22); sub.ZIndex = 7
+	local rows = {
+		{cur and ("CARRY ON  ·  " .. string.upper(cur.title)) or (first and ("BEGIN  ·  " .. string.upper(first.title)) or "ALL LESSONS"), Theme.GREEN, function()
+			if cur then closeBoard() elseif first then remote:FireServer("Lesson", first.id); closeBoard() else lessonBoard(track) end end,
+			cur and "Back to it: follow the arrow." or (first and string.format("%d lessons, a few minutes. Each pays the first time.", #list) or "Every lesson, ticked when done.")},
+		{"ALL LESSONS", Theme.BLUE, function() lessonBoard(track) end, "Pick any lesson to learn or redo it."},
+		{"START OVER", Theme.GLASS2, function() remote:FireServer("Restart", track); closeBoard() end, "Walk the whole course again from the first lesson."},
+	}
+	for i, r in ipairs(rows) do
+		local y = 84 + (i - 1) * 72
+		local bt = button(b, r[1], r[2], UDim2.new(0.5, -24, 0, 58), UDim2.new(0, 20, 0, y)); bt.ZIndex = 7; bt.TextSize = 18
+		bt.MouseButton1Click:Connect(r[3])
+		local d = text(b, r[4], 13, Theme.DIM, Theme.FONT); d.Position = UDim2.new(0.5, 6, 0, y + 6); d.Size = UDim2.new(0.5, -26, 0, 46); d.TextYAlignment = Enum.TextYAlignment.Center; d.ZIndex = 7
+	end
+	local note = text(b, "Its lessons are fought as the " .. string.upper(track == "archer" and "Archer" or "Mage") .. ": you'll be dressed as one where you stand.", 12, Theme.DIM, Theme.FONT)
+	note.Position = UDim2.new(0, 20, 1, -44); note.Size = UDim2.new(1, -40, 0, 30); note.ZIndex = 7
+end
+
+local function menuBoard(info, track)
 	lastInfo = info or {}
+	track = track or lastInfo.track or "knight"
+	lastInfo.track = track
+	if track ~= "knight" then return classBoard(lastInfo, track) end
 	local b = openBoard("SIR ALDRIC, DRILL MASTER")
 	local doneN = 0
-	for _ in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do doneN += 1 end
+	local done = {}
+	for id in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do done[id] = true end
+	for _, l in ipairs(TRACK.knight) do if done[l.id] then doneN += 1 end end
 	local cur = LESSON[lastInfo.current or ""]
-	local sub = text(b, cur and string.format("\"You're on lesson %d: %s. %d of %d done.\"", cur.index, cur.title, doneN, #D.lessons)
-		or (doneN >= #D.lessons and "\"You've learned it all. Now prove it.\"" or "\"What'll it be, recruit?\""), 15, Theme.DIM, Theme.FONT)
+	if cur and cur.track ~= "knight" then cur = nil end
+	local sub = text(b, cur and string.format("\"You're on lesson %d: %s. %d of %d done.\"", cur.step, cur.title, doneN, #TRACK.knight)
+		or (doneN >= #TRACK.knight and "\"You've learned it all. Now prove it.\"" or "\"What'll it be, recruit?\""), 15, Theme.DIM, Theme.FONT)
 	sub.Position = UDim2.fromOffset(20, 50); sub.Size = UDim2.new(1, -40, 0, 22); sub.ZIndex = 7
 	local rows = {
 		{cur and ("CARRY ON  ·  " .. string.upper(cur.title)) or "PICK UP THE LESSONS", Theme.GREEN, function()
-			if cur then closeBoard() else lessonBoard() end end,
+			if cur then closeBoard() else lessonBoard("knight") end end,
 			cur and "Back to it: follow the arrow." or "Every lesson, ticked when done."},
-		{"ALL LESSONS", Theme.BLUE, lessonBoard, "Pick any lesson to learn or redo it."},
-		{"START OVER", Theme.GLASS2, function() remote:FireServer("Restart"); closeBoard() end, "Walk the whole course again from the first swing."},
+		{"ALL LESSONS", Theme.BLUE, function() lessonBoard("knight") end, "Pick any lesson to learn or redo it."},
+		{"START OVER", Theme.GLASS2, function() remote:FireServer("Restart", "knight"); closeBoard() end, "Walk the whole course again from the first swing."},
 		{"SPAR IN THE RING", Theme.GLASS2, function() ringBoard(lastInfo.records) end, "One on one with a Squire, a Knight or a Champion."},
 		{"PRACTICE BOTS", Theme.GLASS2, practiceBoard, "One to three bots at once on the practice ground."},
 		{"THE GAUNTLET", Theme.RED, function() remote:FireServer("Gauntlet"); closeBoard() end,
@@ -509,7 +577,11 @@ local function menuBoard(info)
 		local d = text(b, r[4], 13, Theme.DIM, Theme.FONT); d.Position = UDim2.new(0.5, 6, 0, y + 6); d.Size = UDim2.new(0.5, -26, 0, 46); d.TextYAlignment = Enum.TextYAlignment.Center; d.ZIndex = 7
 	end
 end
-menuB.MouseButton1Click:Connect(function() menuBoard(lastInfo) end)
+-- (the card's MENU: the menu of whoever teaches the lesson you're on)
+menuB.MouseButton1Click:Connect(function()
+	local l = LESSON[player:GetAttribute("Drill") or ""]
+	menuBoard(lastInfo, l and l.track or lastInfo.track or "knight")
+end)
 
 --------------------------------------------------------------------
 --  BANNERS (a countdown, a result) and the gauntlet's wave line
@@ -552,8 +624,8 @@ end
 remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	if what == "Menu" then
 		lastInfo = a or {}
-		if b == "practice" then practiceBoard() else menuBoard(a) end
-	elseif what == "Lessons" then lessonBoard()
+		if b == "practice" then practiceBoard() else menuBoard(a, b) end
+	elseif what == "Lessons" then lessonBoard(lastInfo.track)
 	elseif what == "Ring" then ringBoard(a)
 	elseif what == "Progress" then refreshCard()
 	elseif what == "Course" then
