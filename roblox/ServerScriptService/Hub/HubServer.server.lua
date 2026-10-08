@@ -854,14 +854,18 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		Profile.setClass(plr, a, lo)
 		local party = partyOf(plr)
 		if party and party.leader ~= plr and party.ready[plr] then party.ready[plr] = nil; broadcast(party) end
+		-- (in the Courtyard: the body you're in changes with it, LoadoutServer)
+		if _G.CourtyardRedress and Profile.get(plr).active == a then task.spawn(_G.CourtyardRedress, plr) end
 		return {ok = true, loadout = lo, profile = Profile.summary(plr)}
 	elseif op == "SetActive" then
 		Profile.setActive(plr, a)
 		local party = partyOf(plr); if party then broadcast(party) end
+		if _G.CourtyardRedress then task.spawn(_G.CourtyardRedress, plr) end
 		return {ok = true, profile = Profile.summary(plr)}
 	elseif op == "SaveAppearance" then
 		local app = Profile.validateAppearance(plr, a)
 		Profile.setAppearance(plr, app)
+		if _G.CourtyardRedress then task.spawn(_G.CourtyardRedress, plr) end
 		return {ok = true, appearance = app, profile = Profile.summary(plr)}
 	elseif op == "Buy" then local ok, msg = Economy.buy(plr, a, b, c); return {ok = ok, msg = msg, profile = Profile.summary(plr)}
 	elseif op == "OpenCrate" then

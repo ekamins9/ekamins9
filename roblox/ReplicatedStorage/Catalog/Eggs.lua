@@ -18,7 +18,8 @@
        variants   every hatch rolls one: Golden (gilded, sparkling) or Spectral (a
                   glowing ghost), at these percent chances (shown in the Hatchery);
                   the rest are ordinary
-       exclusive  this egg hatches only its own companions (egg = "<id>")
+       exclusive  this egg hatches only its own companions (egg = "<id>"): every egg
+                  is, so what's inside one is never inside another
      WHEN an egg is on the Hatchery's shelf: Catalog ▸ Calendar ▸ eggs (permanent
      eggs, the drops' eggs for a few weeks, event eggs for the event). An egg's
      own companions (egg = "<id>") only ever hatch from it.
@@ -36,16 +37,16 @@ return {
 	refund = {Common = 150, Rare = 400, Epic = 1000, Legendary = 2500, Mythic = 8000},
 	variants = {Golden = 4, Spectral = 1},
 	eggs = {
-		{id = "Speckled", name = "Speckled Egg", look = "speckled", rarity = "Common", minutes = 30, marks = 400,
+		{id = "Speckled", exclusive = true, name = "Speckled Egg", look = "speckled", rarity = "Common", minutes = 30, marks = 400,
 			odds = {Common = 64, Rare = 28, Epic = 7, Legendary = 1},
 			shell = Color3.fromRGB(238, 228, 206), spots = Color3.fromRGB(150, 118, 86)},
-		{id = "Mossy", name = "Mossy Egg", look = "mossy", rarity = "Rare", minutes = 120, marks = 1200,
+		{id = "Mossy", exclusive = true, name = "Mossy Egg", look = "mossy", rarity = "Rare", minutes = 120, marks = 1200,
 			odds = {Common = 30, Rare = 46, Epic = 19, Legendary = 5},
 			shell = Color3.fromRGB(128, 166, 100), spots = Color3.fromRGB(66, 98, 54)},
-		{id = "Ember", name = "Ember Egg", look = "ember", rarity = "Epic", minutes = 360, crowns = 60,
+		{id = "Ember", exclusive = true, name = "Ember Egg", look = "ember", rarity = "Epic", minutes = 360, crowns = 60,
 			odds = {Rare = 38, Epic = 46, Legendary = 16},
 			shell = Color3.fromRGB(190, 70, 40), spots = Color3.fromRGB(255, 186, 70), glow = true},
-		{id = "Royal", name = "Royal Egg", look = "royal", rarity = "Legendary", minutes = 720,
+		{id = "Royal", exclusive = true, name = "Royal Egg", look = "royal", rarity = "Legendary", minutes = 720,
 			odds = {Epic = 55, Legendary = 45},
 			shell = Color3.fromRGB(72, 62, 150), spots = Color3.fromRGB(255, 204, 80), glow = true},
 		-- THE DROPS' EGGS: in the Hatchery only while the Calendar says so

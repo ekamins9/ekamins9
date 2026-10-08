@@ -450,7 +450,9 @@ accent, glow, style, fx, egg, pass, description}`.
   (slithers and flicks its tongue; `hood` makes a cobra), `turtle` (`grove` grows a tree on its
   shell) or `crab`.
 - `fx`: `embers`, `frost`, `spirit` or `sparkle` (world-only particles).
-- `egg = "Royal"` means only that egg hatches it; `pass = true` means only a reward gives it.
+- `egg = "Royal"`: the egg that hatches it. **Every companion names its egg** and every egg is
+  `exclusive`: nothing hatches from every egg (a companion with no egg would hatch from none of
+  them). `pass = true` means only a reward gives it.
 - Each egg must have a companion of every rarity it can roll (the catalog warns when one is
   missing).
 
@@ -460,6 +462,12 @@ which carry `drop = "<drop id>"` so they stay hidden until it is out. Every hatc
 its own (tradable) and rolls a finish: Golden (4%) or Spectral (1%) — `Catalog ▸ Eggs ▸ variants`.
 Mythic companions (one per event egg) are numbered. New body styles: `bat` (a drake), `pumpkin`
 and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
+
+## 10d. Skin sounds
+
+`ReplicatedStorage ▸ SkinFX`: `SWING` (from each aura's `swing`) plays once per real swing;
+`HUM` = {[aura] = {sound, pitch, volume}} is the loop while it's held. Keep a hum under ~0.1 volume:
+it should be heard standing next to someone, never across the yard. Licensed library sounds only.
 
 ## 10b. The newcomer's intro
 

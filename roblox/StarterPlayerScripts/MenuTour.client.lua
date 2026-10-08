@@ -41,6 +41,8 @@ local STEPS = {
 		text = "Four classes: Knight, Footman, Vanguard and Archer. Pick each one's weapons and armor: heavier armor takes more hits, lighter armor moves faster."},
 	{target = "Dock_ARMORY", title = "ARMORY",
 		text = "Every weapon skin, kill effect and emote you own. Skins change how a weapon looks, never how it fights."},
+	{target = "Dock_INVENTORY", title = "INVENTORY",
+		text = "Everything you own, in one place: search it, sort it, and tap anything to inspect it up close."},
 	{target = "Dock_SHOP", title = "SHOP",
 		text = "A new daily shop every day, and the crates: Keys or Crowns open them, and the rarest skins only come out of crates."},
 	{target = "Dock_TASKS", title = "TASKS",

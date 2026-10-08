@@ -254,6 +254,37 @@ spawnAs = function(plr, classId)
 	end)
 end
 
+-- THE COURTYARD IS FOR SHOWING OFF: change your class, a piece, a colour, a skin,
+-- your title or your look in the menu and the body you're standing in changes at once,
+-- no respawn (HubServer calls this after SaveClass / SetActive / SaveAppearance). A
+-- match never re-dresses anyone mid-round: there, it's the next spawn.
+local redressAt = {}
+_G.CourtyardRedress = function(plr)
+	if Game.modeId ~= "Hub" then return end
+	-- (a burst of saves while you edit: one re-dress at the end of it)
+	local mine = os.clock()
+	redressAt[plr] = mine
+	task.wait(0.25)
+	if redressAt[plr] ~= mine or not plr.Parent or spawning[plr] then return end
+	local char = plr.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0 and char:FindFirstChild("HumanoidRootPart")) then return end
+	local p = Profile.get(plr)
+	local classId = GameConfig.CLASSES[p.active] and p.active or GameConfig.DEFAULT_CLASS
+	local lo = Profile.validateLoadout(plr, classId, p.classes[classId])
+	local hadOut = char:FindFirstChildOfClass("Tool") ~= nil
+	for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
+		for _, t in ipairs(holder and holder:GetChildren() or {}) do if t:IsA("Tool") then t:Destroy() end end
+	end
+	char:SetAttribute("Class", classId)
+	char:SetAttribute("Title", p.appearance.title or "")
+	Dresser.dress(char, {loadout = lo, appearance = p.appearance, weight = GameConfig.CLASSES[classId].weight, team = Game.teamOf(plr)})
+	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false) end
+	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut) end
+	log(plr.Name, "re-dressed in the Courtyard as", classId)
+end
+Players.PlayerRemoving:Connect(function(plr) redressAt[plr] = nil end)
+
 event.OnServerEvent:Connect(function(plr, what, a)
 	if what == "Spawn" then spawnAs(plr, a)
 	elseif what == "Ready" then if not isAlive(plr) then show(plr) end end

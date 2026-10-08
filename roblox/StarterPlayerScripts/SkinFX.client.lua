@@ -6,7 +6,11 @@
        • sparks fly off the tip (the skin's SkinBurst),
        • the blade's light swells (and a storm flickers),
        • the swing makes its sound (SkinFX.SWING: a whoosh of fire, a crackle
-         of frost, a hum of shadow… from Roblox's licensed sound library).
+         of frost, a hum of shadow… from Roblox's licensed sound library), only
+         for a real swing: the tip's speed is measured against the body, so
+         walking and running with it never set it off.
+     And while it's held at all: the aura's quiet hum (SkinFX.HUM: a crackle of
+     fire, an electric hum…), swelling a little as it swings.
      Everything here is local and looks only; nothing is sent anywhere. ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -14,10 +18,12 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SkinFX = require(ReplicatedStorage:WaitForChild("SkinFX"))
 
-local SWING_SPEED = 26     -- studs/s at the tip that start a swing (and its sound)…
-local SWING_END = 12       -- …which is over once the tip has stayed under this speed
+local SWING_SPEED = 40     -- studs/s at the tip, against the body, that start a swing (and its sound)…
+local SWING_END = 14       -- …which is over once the tip has stayed under this speed
 local SWING_REST = 0.3     -- for this long (a windup's turn into the release is one swing)
-local SWING_GAP = 0.6      -- seconds at least between two swing sounds
+local SWING_GAP = 0.8      -- seconds at least between two swing sounds
+local SWING_VOLUME = 0.7   -- × the aura's swing volume (it sits under the weapon's own whoosh)
+local HUM_NEAR = 60        -- studs: a hum farther than this isn't played at all
 local FADE = 0.18          -- seconds a cut swing sound takes to fade out
 local FLARE_FROM = 10      -- the aura starts to flare from this tip speed…
 local FLARE_FULL = 40      -- …and is at its fullest here
@@ -31,6 +37,7 @@ local function untrack(h)
 	if not st then return end
 	tracked[h] = nil
 	if st.sound then st.sound:Destroy() end
+	if st.hum then st.hum:Destroy() end
 end
 
 local function track(h)
@@ -59,7 +66,22 @@ local function track(h)
 			s.RollOffMinDistance = 6
 			s.RollOffMaxDistance = 70
 			s.Parent = h
-			st.sound, st.pitch, st.cut, st.volume = s, swing.pitch or 1, swing.cut, s.Volume
+			st.sound, st.pitch, st.cut, st.volume = s, swing.pitch or 1, swing.cut, s.Volume * SWING_VOLUME
+		end
+		-- the hum, while it's held
+		local hum = SkinFX.HUM and SkinFX.HUM[h:GetAttribute("SkinAura") or ""]
+		if hum and hum.sound then
+			local s = Instance.new("Sound")
+			s.Name = "SkinHum"
+			s.SoundId = "rbxassetid://" .. tostring(hum.sound)
+			s.Looped = true
+			s.Volume = 0
+			s.PlaybackSpeed = hum.pitch or 1
+			s.RollOffMode = Enum.RollOffMode.InverseTapered
+			s.RollOffMinDistance = 3
+			s.RollOffMaxDistance = 26
+			s.Parent = h
+			st.hum, st.humVolume = s, hum.volume or 0.05
 		end
 		tracked[h] = st
 	end)
@@ -87,9 +109,23 @@ RunService.Heartbeat:Connect(function(dt)
 		if not h.Parent then
 			untrack(h)
 		elseif st.tip and st.tip.Parent and h:IsDescendantOf(workspace) then
+			-- the tip against the body that holds it: a swing, not a stroll
+			local tool = h.Parent
+			local holder = tool and tool.Parent
+			local root = holder and holder:FindFirstChild("HumanoidRootPart")
+			local held = root ~= nil and holder:FindFirstChildOfClass("Humanoid") ~= nil
 			local pos = st.tip.WorldPosition
-			local speed = st.last and (pos - st.last).Magnitude / math.max(dt, 1 / 240) or 0
-			st.last = pos
+			local rel = root and (pos - root.Position) or pos
+			local speed = st.last and (rel - st.last).Magnitude / math.max(dt, 1 / 240) or 0
+			st.last = rel
+			-- the hum: in someone's hands, near you; a little louder mid-swing
+			if st.hum then
+				local want = (held and (pos - eye).Magnitude <= HUM_NEAR) and st.humVolume * (1 + 0.6 * (st.boost or 0)) or 0
+				local v = st.hum.Volume + (want - st.hum.Volume) * math.clamp(dt * 4, 0, 1)
+				st.hum.Volume = v
+				if want > 0 and not st.hum.IsPlaying then st.hum:Play()
+				elseif want == 0 and v < 0.002 and st.hum.IsPlaying then st.hum:Stop() end
+			end
 			if (pos - eye).Magnitude <= NEAR and speed < 400 then   -- (a teleport is not a swing)
 				local flare = math.clamp((speed - FLARE_FROM) / (FLARE_FULL - FLARE_FROM), 0, 1)
 				st.boost = math.max(flare, st.boost - dt * 2.5)

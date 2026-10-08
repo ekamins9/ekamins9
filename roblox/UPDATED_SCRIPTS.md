@@ -1,4 +1,24 @@
-# Updated scripts: rare is rare — the daily shop, Mythics in every crate, Uniques, duplicates kept
+# Updated scripts: the inventory, inspect everywhere, eggs of their own, quieter skins, showing off in the Courtyard
+
+- **Eggs:** every egg has its own companions, nothing hatches from every egg (the dragon only comes out of the Ember Egg). Speckled is farm and shore, Mossy woods and marsh, Ember fire and night, Royal the crown's beasts. WHAT'S INSIDE scrolls instead of running off the screen.
+- **INVENTORY** (a new dock tile): everything you own (skins, kill effects, emotes, companions, armor, titles), with search, kind filters, four sorts, copy counts and finishes.
+- **INSPECT** anything, anywhere: the inventory, pass and login rewards, both sides of a trade, an egg's contents. It shows:
+  - a big live look at it, its rarity, effects and where it comes from
+  - this copy and all your copies (number, finish, story, times traded, kills)
+  - Equip, Open the crate and Trade it buttons
+- **Skin sounds:** a swing sound only for a real swing, measured against your body, so walking never triggers it, and quieter. While held, a soft hum: fire crackles, storm hums like a lightsaber, holy shimmers. Only heard up close.
+- **Showing off in the Courtyard:** change your class, armor, colours, skin, title or look and your character changes at once, no respawn.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | INVENTORY screen, `HX.inspect`, inspect buttons, a 10-tile dock, scrolling egg contents |
+| [Catalog/Companions.lua](ReplicatedStorage/Catalog/Companions.lua), [Catalog/Eggs.lua](ReplicatedStorage/Catalog/Eggs.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | every companion in one egg; every egg exclusive |
+| [SkinFX.lua](ReplicatedStorage/SkinFX.lua), [SkinFX.client.lua](StarterPlayerScripts/SkinFX.client.lua) | ReplicatedStorage ▸ SkinFX · StarterPlayerScripts ▸ SkinFX | ModuleScript · LocalScript | `HUM` loops; swings measured against the body |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua), [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService | Script | `_G.CourtyardRedress` after SaveClass / SetActive / SaveAppearance |
+
+---
+
+## Before that: rare is rare — the daily shop, Mythics in every crate, Uniques, duplicates kept
 
 - **The daily shop:** mostly Commons and Rares. An Epic headliner on about half the days, a Legendary on about one day in eight, never a Mythic or a Unique. Earned, pass and task skins never show there. Over 60 days: 109 Common, 91 Rare, 34 Epic, 6 Legendary.
 - **Mythic in every crate**, at the lowest odds (0.3–0.5%), numbered. Odds and pity were rebalanced so a Legendary is a moment. New Mythics:

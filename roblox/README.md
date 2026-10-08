@@ -435,7 +435,20 @@ and a UIScale fits it to any screen.
   hatched early for Crowns (HATCH NOW, after a confirm). There is SET AN EGG for empty nests,
   your eggs, and the egg shelf (Marks / Crowns; the Royal Egg only comes from gifts, login days
   and the pass). **COMPANIONS** is the collection: the ones you have found on stages, the rest
-  as silhouettes, stars, and TAKE IT ALONG / SEND IT HOME.
+  as silhouettes, stars, and TAKE IT ALONG / SEND IT HOME. **Every egg has its own companions**
+  (Speckled: farm and shore; Mossy: woods and marsh; Ember: fire and night; Royal: the crown's
+  beasts): nothing hatches from every egg. WHAT'S INSIDE scrolls, and any companion in it inspects.
+- **INVENTORY** (dock tile): everything you own in one grid (skins, kill effects, emotes,
+  companions, armor, titles), with SEARCH, the kinds as chips, SORT (rarity · newest · name · most
+  copies), ×N for copies and the best copy's finish and number. Any card opens **INSPECT**.
+- **INSPECT** (`HX.inspect`, anywhere: the inventory, pass and login rewards, both sides of a
+  trade, an egg's contents): the thing big and alive (the weapon turning, the effect playing, the
+  creature walking), its rarity (a Unique's frame walks the rainbow), effects, where it comes
+  from, THIS COPY (from a trade) and YOUR COPIES (number, finish, story, times traded, kills), and
+  EQUIP · OPEN THE CRATE · TRADE IT. The little round **i** on a card opens it; M closes it.
+- **The Courtyard is for showing off**: change your active class, a piece, a colour, a skin, your
+  title or your look in the menu and the body you're standing in changes at once, no respawn
+  (`_G.CourtyardRedress`, LoadoutServer; a match waits for your next spawn).
 - **Playtime gifts** in the lobby's left column: the next gift, a live countdown and CLAIM.
 - **WARDROBE**: faces as a picture grid, hair, hair colour, beard, skin, title.
 - **SERVERS**: the browser with filters and **CREATE CUSTOM**: door, mode, map, player limit,
@@ -552,8 +565,11 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   on it, sparks thrown off the tip and a sound for the swing (`SkinFX.SWING`). The client's
   `SkinFX` driver brings them to life: while a blade moves the aura flares up to four times its
   rate, the sparks fly, the light swells (a storm flickers) and the swing makes its sound —
-  once per swing: it starts as the tip passes 26 studs/s and can't start again until the tip
-  has stayed under 12 studs/s for 0.3 s (a windup turning into its release is one swing), and a
+  only for a real swing (the tip's speed is measured against the body, so walking and running
+  never set it off), quieter than before, once per swing: it starts as the tip passes 40 studs/s
+  and can't start again until the tip has stayed under 14 studs/s for 0.3 s. While it's held at
+  all an aura **hums** (`SkinFX.HUM`, Pro Sound Effects loops): a crackle of fire, an electric hum, a
+  shimmer, a low pulse, only heard up close and swelling a little as it swings (a windup turning into its release is one swing), and a
   sound with a `cut` fades out over 0.18 s instead of snapping off.
 - **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): nobody starts with one (profile `killfx` "" = a
   plain fall; ARMORY ▸ KILL FX ▸ *No effect* goes back to it). `Scoreboard` (and the training dummies) call

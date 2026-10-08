@@ -22,7 +22,10 @@
        SkinFX.clear(tool)
        SkinFX.describe(skin)      "Trail · Embers" (or nil)
        SkinFX.AURAS               every aura name
-       SkinFX.SWING               [aura] = {sound, pitch, volume, burst = {...}} (the driver reads it) ]]
+       SkinFX.SWING               [aura] = {sound, pitch, volume, burst = {...}} (the driver reads it)
+       SkinFX.HUM                 [aura] = {sound, pitch, volume}: the quiet loop an aura makes
+                                  while the weapon is in someone's hands (a crackle of fire, an
+                                  electric hum, a shimmer; only heard up close) ]]
 
 local CollectionService = game:GetService("CollectionService")
 local SkinTrims = require(script.Parent:WaitForChild("SkinTrims"))
@@ -180,6 +183,17 @@ local AURAS = {
 		swing = {sound = 9120706422, pitch = 1.3, volume = 0.16, cut = 0.5,
 			burst = {tex = TEX.spark, c0 = C(220, 20, 40), c1 = C(100, 0, 10), size = {{0, 0.26}, {1, 0.05}}, count = 7, life = {0.4, 0.8}, speed = {4, 9}, accel = Vector3.new(0, -22, 0), spread = 50, light = 0.6}},
 	},
+}
+-- THE HUM: a quiet loop while it's held (Pro Sound Effects). Never more than a
+-- lightsaber's hum: you hear it standing next to them, it's gone a few steps away
+local FIRE_LOOP, ELECTRIC_HUM, SWIRL, LOW_PULSE = 9118030782, 9112889082, 9125899162, 9119845261
+SkinFX.HUM = {
+	embers = {sound = FIRE_LOOP, pitch = 0.8, volume = 0.06}, inferno = {sound = FIRE_LOOP, pitch = 0.7, volume = 0.09},
+	phoenix = {sound = FIRE_LOOP, pitch = 0.95, volume = 0.07}, storm = {sound = ELECTRIC_HUM, pitch = 1.3, volume = 0.05},
+	holy = {sound = SWIRL, pitch = 1.6, volume = 0.04}, sovereign = {sound = SWIRL, pitch = 1.4, volume = 0.05},
+	celestial = {sound = SWIRL, pitch = 1.2, volume = 0.06}, gold = {sound = SWIRL, pitch = 1.8, volume = 0.03},
+	frost = {sound = SWIRL, pitch = 2.2, volume = 0.03}, shadow = {sound = LOW_PULSE, pitch = 1, volume = 0.05},
+	blood = {sound = LOW_PULSE, pitch = 1.2, volume = 0.04},
 }
 SkinFX.AURAS = {}
 SkinFX.SWING = {}

@@ -1636,9 +1636,10 @@ local SCREEN_DEF = {
 	TRADE      = {title = "TRADE",    icon = "Shop"},
 	RANKS      = {title = "LEADERBOARDS", icon = "Tasks"},
 	PROFILE    = {title = "PROFILE",  icon = "Loadout"},
+	INVENTORY  = {title = "INVENTORY", icon = "Armory"},
 }
 -- old tab names and the names other scripts send over the bus
-local ALIAS = {LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
+local ALIAS = {INV = "INVENTORY", COLLECTION = "INVENTORY", LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "APPEARANCE", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
 	EGGS = "HATCHERY", PETS = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
@@ -1907,6 +1908,17 @@ function Preview.where(it, ownKind)
 	end
 	if src == "crate" then return "drops from the " .. (Catalog.CRATES[it.crate] and Catalog.CRATES[it.crate].name or it.crate), "crate" end
 	return "", "owned"
+end
+
+-- a small round "i" in a card's corner that opens HX.inspect
+function HX.inspectButton(parent, fn)
+	local b = button(parent, "i", 15, COL.BLUE)
+	b.Name = "Inspect"
+	b.AnchorPoint = Vector2.new(0, 0); b.Position = UDim2.fromOffset(6, 6); b.Size = UDim2.fromOffset(24, 24)
+	b.ZIndex = 3
+	Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
+	b.Activated:Connect(fn)
+	return b
 end
 
 -- SHORT OF CROWNS OR MARKS: a pop-up that gets you more right there. Crowns: the
@@ -2428,12 +2440,16 @@ do
 	local dock = clearFrame(lobby)
 	dock.AnchorPoint = Vector2.new(0, 1)
 	dock.Position = UDim2.new(0, 24, 1, -22)
-	dock.Size = UDim2.fromOffset(9 * 112 + 8 * 14, 112)
-	hlist(dock, 14)
-	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"}, {"HATCHERY", "Hatchery", "HATCHERY"},
-		{"TRADE", "Shop", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
+	dock.Size = UDim2.fromOffset(10 * 100 + 9 * 12, 100)
+	hlist(dock, 12)
+	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"INVENTORY", "Hatchery", "INVENTORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
+		{"HATCHERY", "Hatchery", "HATCHERY"}, {"TRADE", "Shop", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"WARDROBE", "Wardrobe", "APPEARANCE"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
+		b.Size = UDim2.fromOffset(100, 100)
+		for _, ch in ipairs(b:GetChildren()) do
+			if ch:IsA("ImageLabel") then ch.Size = UDim2.fromOffset(86, 86) elseif ch:IsA("TextLabel") and ch.Name ~= "Badge" then ch.TextSize = 15 end
+		end
 		b.Name = "Dock_" .. d[1]
 		b.LayoutOrder = i
 		b.Activated:Connect(function() selectTab(d[3]) end)
@@ -4739,6 +4755,7 @@ local function rewardCard(parent, r, state, onClaim, premium)
 	t.Position = UDim2.new(0, 6, 0, 104); t.Size = UDim2.new(1, -12, 0, 18); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
 	local s2 = title(card, sub or "", 11, COL.DIM)
 	s2.Position = UDim2.new(0, 6, 0, 122); s2.Size = UDim2.new(1, -12, 0, 14); s2.TextXAlignment = Enum.TextXAlignment.Center; s2.TextTruncate = Enum.TextTruncate.AtEnd
+	HX.inspectButton(card, function() HX.inspectReward(r) end)
 	if state == "claim" then
 		local b = button(card, "CLAIM", 15, COL.GREEN)
 		b.AnchorPoint = Vector2.new(0.5, 1); b.Position = UDim2.new(0.5, 0, 1, -6); b.Size = UDim2.new(1, -12, 0, 30)
@@ -4748,6 +4765,8 @@ local function rewardCard(parent, r, state, onClaim, premium)
 	else
 		local lock = frame(card, Color3.new(0, 0, 0), 14); lock.Size = UDim2.fromScale(1, 1); lock.BackgroundTransparency = 0.55
 		local l = title(lock, "🔒", 26); l.AnchorPoint = Vector2.new(0.5, 1); l.Position = UDim2.new(0.5, 0, 1, -6); l.Size = UDim2.new(1, 0, 0, 30); l.TextXAlignment = Enum.TextXAlignment.Center
+		-- (still inspectable through the lock)
+		HX.inspectButton(card, function() HX.inspectReward(r) end).ZIndex = 4
 	end
 	return card
 end
@@ -5154,10 +5173,14 @@ do
 				end)
 				local mineP = state.profile or {}
 				modal(string.upper(eg.name) .. "  ·  WHAT'S INSIDE", string.format("%d companions. Every hatch also rolls a finish: Golden %s · Spectral %s.", #pool, HX.pct(V.Golden or 0), HX.pct(V.Spectral or 0)), nil, function(box)
-					local g = Instance.new("Frame"); g.BackgroundTransparency = 1; g.Size = UDim2.new(1, 0, 0, 0); g.AutomaticSize = Enum.AutomaticSize.Y; g.LayoutOrder = 5; g.Parent = box
+					-- (a scrolling grid: a big egg's list never runs off the screen)
+					local g = Instance.new("ScrollingFrame"); g.BackgroundTransparency = 1; g.BorderSizePixel = 0; g.LayoutOrder = 5; g.Parent = box
+					g.Size = UDim2.new(1, 0, 0, math.min(math.ceil(#pool / 4) * 166, 360)); g.CanvasSize = UDim2.new(); g.AutomaticCanvasSize = Enum.AutomaticSize.Y
+					g.ScrollBarThickness = 6; g.ScrollBarImageColor3 = COL.DIM
 					local gl = Instance.new("UIGridLayout", g); gl.CellSize = UDim2.fromOffset(128, 158); gl.CellPadding = UDim2.fromOffset(8, 8); gl.SortOrder = Enum.SortOrder.LayoutOrder
 					for k, comp in ipairs(pool) do
-						local cell = frame(g, COL.GLASS2, 10); cell.LayoutOrder = k
+						local cell = button(g, "", 12, COL.GLASS2); cell.AutoButtonColor = false; cell.LayoutOrder = k
+						cell.Activated:Connect(function() HX.inspect("companion", comp.id) end)
 						border(cell, RARITY_COL[comp.rarity] or COL.DIM, 2, 0.3)
 						local have = (mineP.owned and mineP.owned.companions and mineP.owned.companions[comp.id]) or (mineP.copies and mineP.copies["pet:" .. comp.id])
 						local pv = Preview.companion(cell, comp.id, UDim2.new(1, -8, 0, 96), true); pv.Position = UDim2.fromOffset(4, 4); pv.BackgroundTransparency = 1
@@ -6007,6 +6030,11 @@ sClose.Activated:Connect(function() selectTab("PLAY") end)
 -- testing hooks: set the ScreenGui's `Tab` attribute (or `ShopTab`) from the
 -- command bar / Studio MCP to switch screens without clicking
 gui:GetAttributeChangedSignal("Tab"):Connect(function() local t = gui:GetAttribute("Tab"); if t then selectTab(t) end end)
+-- ("kind|id", e.g. "skin|Longsword:Starforged": inspect it)
+gui:GetAttributeChangedSignal("Inspect"):Connect(function()
+	local k, id = tostring(gui:GetAttribute("Inspect") or ""):match("^(%w+)|(.+)$")
+	if k then HX.inspect(k, id) else HX.closeInspect() end
+end)
 gui:GetAttributeChangedSignal("ShopTab"):Connect(function() local t = gui:GetAttribute("ShopTab"); if t then ui.shopTab = t; if currentTab == "SHOP" and render.SHOP then task.spawn(render.SHOP) end end end)
 
 --------------------------------------------------------------------
@@ -6098,6 +6126,336 @@ do
 end
 
 --------------------------------------------------------------------
+--  INSPECT — any item, anywhere (the inventory, the pass, a trade, an egg,
+--  a crate): a big live look at it (the weapon turning, the effect playing,
+--  the creature walking), what it is, where it comes from, YOUR COPIES of it
+--  (number, finish, story, kills) and what you can do with it
+--------------------------------------------------------------------
+HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", title = "TITLE"}
+HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", title = "titles"}
+function HX.defOf(kind, id)
+	if kind == "skin" then return Catalog.SKIN[id] end
+	if kind == "killfx" then return Catalog.KILLFX_BY[id] end
+	if kind == "emote" then return Catalog.EMOTE[id] end
+	if kind == "companion" then return Catalog.COMPANION[id] end
+	if kind == "piece" then return Catalog.PIECE[id] end
+	if kind == "title" then return {id = id, name = id, rarity = "Rare"} end
+	return nil
+end
+-- a copy's key and back ("fx:Meteor", "emote:Jig", "pet:Raven", "Longsword:Gilded")
+function HX.copyKey(kind, id)
+	return (kind == "killfx" and "fx:" or (kind == "emote" and "emote:" or (kind == "companion" and "pet:" or ""))) .. tostring(id)
+end
+function HX.fromKey(key)
+	if key:sub(1, 3) == "fx:" then return "killfx", key:sub(4) end
+	if key:sub(1, 6) == "emote:" then return "emote", key:sub(7) end
+	if key:sub(1, 4) == "pet:" then return "companion", key:sub(5) end
+	return "skin", key
+end
+-- a still picture of it for a card
+function HX.thumb(parent, kind, d, size)
+	if kind == "skin" then local t = weaponThumb(parent, d.weapon, d.id, size, 1.5); t.BackgroundTransparency = 1; return t end
+	if kind == "killfx" then return Preview.killFx(parent, d.id, size, 0.3, true) end
+	if kind == "emote" then return Preview.emote(parent, d.id, size, 0.45, true) end
+	if kind == "companion" then return Preview.companion(parent, d.id, size, true) end
+	local holder = clearFrame(parent); holder.Size = size
+	local img = iconImage(holder, "Wardrobe", 72); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
+	return holder
+end
+-- a reward of the pass / a login day / a gift, inspected
+function HX.inspectReward(r)
+	if type(r) ~= "table" then return end
+	if r.skin then return HX.inspect("skin", r.skin) end
+	if r.killfx then return HX.inspect("killfx", r.killfx) end
+	if r.emote then return HX.inspect("emote", r.emote) end
+	if r.companion then return HX.inspect("companion", r.companion) end
+	if r.crate and Catalog.CRATES[r.crate] then
+		local c = Catalog.CRATES[r.crate]
+		return modal(string.upper(c.name), (c.description or "") .. "  ·  A free open: it spins on the crate screen the moment it's yours.",
+			{{"SEE WHAT'S INSIDE", COL.PURPLE, function() closeModal(); ui.shopTab, ui.crate, ui.crateItem = "crates", r.crate, nil; selectTab("SHOP") end}})
+	end
+	if r.egg and Catalog.EGG[r.egg] then
+		local e = Catalog.EGG[r.egg]
+		return modal(string.upper(e.name), "An egg for your nests in the Hatchery: it hatches one of its own companions.",
+			{{"SEE THE HATCHERY", COL.GREEN, function() closeModal(); selectTab("HATCHERY") end}})
+	end
+	if r.title then return HX.inspect("title", r.title) end
+	modal("A GIFT", Preview.rewardName(r), nil)
+end
+
+function HX.closeInspect()
+	if HX.inspectFrame and HX.inspectFrame.Parent then HX.inspectFrame:Destroy(); HX.inspectFrame = nil; return true end
+	return false
+end
+
+-- kind, id; copy = the copy you came from (a trade card); theirs = someone else's copy
+function HX.inspect(kind, id, copy, theirs)
+	local d = HX.defOf(kind, id)
+	if not d then return end
+	HX.closeInspect()
+	local P = state.profile or {}
+	local o = frame(root, Color3.fromRGB(9, 12, 24), 0)
+	o.Name = "Inspect"
+	o.Size = UDim2.fromScale(1, 1)
+	o.BackgroundTransparency = 0
+	o.Active = true
+	o.ZIndex = 60
+	HX.inspectFrame = o
+	-- (below Roblox's own buttons along the top)
+	local top = clearFrame(o); top.Position = UDim2.fromOffset(40, 70); top.Size = UDim2.new(1, -80, 0, 50)
+	local k = title(top, "INSPECT  ·  " .. (HX.KIND_NAME[kind] or ""), 18, COL.DIM); k.Position = UDim2.fromOffset(0, 14); k.Size = UDim2.new(1, -80, 0, 22)
+	local xH, xB = closeX(top); xH.AnchorPoint = Vector2.new(1, 0); xH.Position = UDim2.new(1, 0, 0, 0)
+	xB.Activated:Connect(HX.closeInspect)
+	-- THE LOOK: big and alive
+	local stageH = clearFrame(o); stageH.Position = UDim2.fromOffset(40, 124); stageH.Size = UDim2.new(0.56, -60, 1, -160)
+	local col = RARITY_COL[d.rarity] or COL.DIM
+	local stg
+	if kind == "skin" then stg = weaponStage(stageH, d.weapon, d.id, UDim2.fromScale(1, 1))
+	elseif kind == "killfx" then stg = Preview.killFx(stageH, d.id, UDim2.fromScale(1, 1))
+	elseif kind == "emote" then stg = Preview.emote(stageH, d.id, UDim2.fromScale(1, 1))
+	elseif kind == "companion" then stg = Preview.companion(stageH, d.id, UDim2.fromScale(1, 1), false, P.stars and P.stars[d.id])
+	else
+		stg = frame(stageH, COL.GLASS2, 14); stg.Size = UDim2.fromScale(1, 1)
+		local img = iconImage(stg, "Wardrobe", 220); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
+	end
+	border(stg, col, 3, 0)
+	if d.rarity == "Unique" then
+		-- one of one: the frame walks through the rainbow
+		local st = stg:FindFirstChildOfClass("UIStroke")
+		task.spawn(function()
+			while st and st.Parent and o.Parent do
+				st.Color = Color3.fromHSV((os.clock() * 0.2) % 1, 0.45, 1)
+				task.wait(0.05)
+			end
+		end)
+	end
+	-- THE CARD
+	local right = clearFrame(o); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, -40, 0, 124); right.Size = UDim2.new(0.44, -20, 1, -160)
+	local list = scroll(right, 10)
+	local head = panel(list, nil)
+	local nm = title(head, d.name or tostring(id), 36, col); nm.Size = UDim2.new(1, 0, 0, 42); nm.TextTruncate = Enum.TextTruncate.AtEnd; nm.LayoutOrder = nextOrder()
+	local tags = clearFrame(head); tags.Size = UDim2.new(1, 0, 0, 22); tags.LayoutOrder = nextOrder()
+	hlist(tags, 8)
+	rarityTag(tags, d.rarity)
+	local sub
+	if kind == "skin" then sub = string.upper(Catalog.WEAPON[d.weapon] and Catalog.WEAPON[d.weapon].name or d.weapon or "")
+	else sub = HX.KIND_NAME[kind] or "" end
+	local sl = title(tags, sub, 14, COL.DIM); sl.AutomaticSize = Enum.AutomaticSize.X; sl.Size = UDim2.fromOffset(0, 22); sl.LayoutOrder = 5
+	if d.rarity == "Unique" then local u = title(head, "ONE OF ONE: there is only this one, ever", 15, RARITY_COL.Unique); u.Size = UDim2.new(1, 0, 0, 20); u.LayoutOrder = nextOrder() end
+	if d.description then dim(head, d.description, 14) end
+	if kind == "skin" then
+		local fx = Preview.fxText(d)
+		if fx then local fl = title(head, string.upper(fx), 14, COL.ACCENT); fl.Size = UDim2.new(1, 0, 0, 18); fl.LayoutOrder = nextOrder() end
+		local w = skinWhere(d)
+		local wl = title(head, string.upper(w or ""), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 0); wl.AutomaticSize = Enum.AutomaticSize.Y; wl.TextWrapped = true; wl.LayoutOrder = nextOrder()
+	elseif kind == "killfx" or kind == "emote" or kind == "companion" then
+		local w = kind == "companion" and Catalog.companionSource(d) or Preview.where(d, HX.OWNKIND[kind])
+		local wl = title(head, string.upper(w or ""), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 0); wl.AutomaticSize = Enum.AutomaticSize.Y; wl.TextWrapped = true; wl.LayoutOrder = nextOrder()
+	elseif kind == "piece" then
+		dim(head, string.format("%s armor  ·  %s", tostring(d.weight or d.type or ""), tostring(d.slot or "")), 14)
+	end
+	-- THE COPY you came from (a trade), then YOURS
+	local function copyLine(parent, c, mineToo)
+		local bits = {}
+		if c.n then table.insert(bits, "#" .. fmt(c.n)) end
+		if c.v then table.insert(bits, string.upper(c.v)) end
+		if c.from then table.insert(bits, "from " .. tostring(c.from)) end
+		if (c.tr or 0) > 0 then table.insert(bits, string.format("traded %d×", c.tr)) end
+		if mineToo and kind == "skin" and P.tally and P.tally[id] then table.insert(bits, fmt(P.tally[id]) .. " kills") end
+		local r = frame(parent, COL.GLASS2, 10); r.Size = UDim2.new(1, 0, 0, 34); r.LayoutOrder = nextOrder()
+		local t = title(r, #bits > 0 and table.concat(bits, "  ·  ") or "a copy", 13, HX.VARIANT_COL[c.v] or COL.TEXT)
+		t.Position = UDim2.fromOffset(10, 0); t.Size = UDim2.new(1, -20, 1, 0); t.TextTruncate = Enum.TextTruncate.AtEnd
+	end
+	if copy then
+		local cp = panel(list, theirs and "THEIR COPY" or "THIS COPY")
+		copyLine(cp, copy, not theirs)
+	end
+	local key = HX.copyKey(kind, id)
+	local mine = (kind ~= "piece" and kind ~= "title") and HX.copies(key) or {}
+	local have = owns(HX.OWNKIND[kind] or "skins", id)
+	local yp = panel(list, have and (#mine > 1 and string.format("YOU HAVE %d", #mine) or "YOU HAVE IT") or "YOU DON'T HAVE IT YET")
+	if #mine > 0 then
+		for i, c in ipairs(mine) do if i <= 8 then copyLine(yp, c, true) end end
+		if #mine > 8 then dim(yp, string.format("…and %d more.", #mine - 8), 12) end
+	elseif have then dim(yp, "Yours for good.", 13)
+	else dim(yp, "See above for where it comes from.", 13) end
+	-- WHAT YOU CAN DO
+	local acts = panel(list, nil, true)
+	local function act(text, colr, fn)
+		local h, b = fatButton(acts, text, colr, 18); h.Size = UDim2.new(1, 0, 0, 54); h.LayoutOrder = nextOrder()
+		b.Activated:Connect(function() HX.closeInspect(); fn() end)
+	end
+	if have and kind == "skin" then
+		act("EQUIP IT  ·  ARMORY", COL.GREEN, function() ui.armoryTab = "weapons"; ui.shopWeapon = d.weapon; ui.shopSkin = d.id; selectTab("ARMORY") end)
+	elseif have and kind == "killfx" then
+		act((P.killfx == id) and "EQUIPPED ★" or "EQUIP IT", COL.GREEN, function()
+			local r = call("Equip", "killfx", id)
+			toast(r.ok and (d.name .. " equipped") or (r.msg or ""), r.ok and COL.GOOD or COL.BAD)
+			if r.profile then state.profile = r.profile end
+		end)
+	elseif have and kind == "emote" then
+		act("PUT IT ON THE WHEEL", COL.GREEN, function() ui.armoryTab = "emotes"; ui.emoteSel = id; selectTab("ARMORY") end)
+	elseif have and kind == "companion" then
+		act((P.companion == id) and "OUT WITH YOU ★" or "TAKE IT OUT WITH YOU", COL.GREEN, function()
+			local r = call("Companion", id)
+			toast(r.ok and (d.name .. " is out with you") or (r.msg or ""), r.ok and COL.GOOD or COL.BAD)
+			if r.profile then state.profile = r.profile end
+		end)
+	elseif not have and d.crate and Catalog.CRATES[d.crate] then
+		act("OPEN THE " .. string.upper(Catalog.CRATES[d.crate].name), COL.GOLD, function()
+			ui.shopTab, ui.crate = "crates", d.crate
+			ui.crateItem = (kind == "skin" and "skin|" or (kind == "killfx" and "killfx|" or "emote|")) .. id
+			selectTab("SHOP")
+		end)
+	end
+	if #mine > 0 and kind ~= "companion" then
+		act("TRADE IT", COL.BLUE, function() selectTab("TRADE") end)
+	end
+	-- (it pops in)
+	local sc = Instance.new("UIScale", o); sc.Scale = 0.96
+	TweenService:Create(sc, TweenInfo.new(0.18, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	pcall(function() HX.FX.play("Click") end)
+end
+
+--------------------------------------------------------------------
+--  INVENTORY — everything you own, in one place: search it, filter it by
+--  kind, sort it, and inspect anything (HX.inspect)
+--------------------------------------------------------------------
+-- every item you own: {kind, id, d, name, sub, rarity, count, best, at}
+function HX.inventory()
+	local out = {}
+	local function best(list)
+		local b, at = nil, 0
+		for _, c in ipairs(list) do
+			at = math.max(at, c.at or 0)
+			if not b or (HX.RANK[c.v] or 0) > (HX.RANK[b.v] or 0) or ((HX.RANK[c.v] or 0) == (HX.RANK[b.v] or 0) and (c.n or math.huge) < (b.n or math.huge)) then b = c end
+		end
+		return b, at
+	end
+	local function add(kind, d, sub)
+		local list = (kind ~= "piece" and kind ~= "title") and HX.copies(HX.copyKey(kind, d.id)) or {}
+		local b, at = best(list)
+		table.insert(out, {kind = kind, id = d.id, d = d, name = d.name or tostring(d.id), sub = sub, rarity = d.rarity or "Common",
+			count = math.max(#list, 1), best = b, at = at})
+	end
+	for _, s in ipairs(Catalog.SKINS) do
+		if s.name ~= "Default" and owns("skins", s.id) then add("skin", s, Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) end
+	end
+	for _, f in ipairs(Catalog.KILLFX) do if owns("killfx", f.id) then add("killfx", f, "Kill effect") end end
+	for _, e in ipairs(Catalog.EMOTES) do if owns("emotes", e.id) then add("emote", e, "Emote") end end
+	for _, c in ipairs(Catalog.COMPANIONS) do if owns("companions", c.id) then add("companion", c, "Companion") end end
+	for _, pc in ipairs(Catalog.PIECES) do
+		if not Catalog.isFree(pc) and owns("pieces", pc.id) then add("piece", pc, "Armor") end
+	end
+	for _, t in ipairs(Catalog.BODY.earnedTitles or {}) do
+		if owns("titles", t.title) then add("title", {id = t.title, name = t.title, rarity = "Rare"}, "Title") end
+	end
+	return out
+end
+
+HX.INV_KINDS = {{text = "ALL", k = nil}, {text = "SKINS", k = "skin"}, {text = "KILL FX", k = "killfx"}, {text = "EMOTES", k = "emote"},
+	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "piece"}, {text = "TITLES", k = "title"}}
+HX.INV_SORTS = {"RARITY", "NEWEST", "NAME", "MOST COPIES"}
+HX.INV_PAGE = 40
+
+render.INVENTORY = function()
+	local f = tabFrame.INVENTORY
+	clear(f)
+	ui.invKind = ui.invKind or "ALL"
+	ui.invSort = ui.invSort or "RARITY"
+	ui.invQuery = ui.invQuery or ""
+	ui.invShown = ui.invShown or HX.INV_PAGE
+	local all = HX.inventory()
+	-- the bar: search, kinds, sort
+	local bar = clearFrame(f); bar.Size = UDim2.new(1, 0, 0, 84)
+	local sb = frame(bar, COL.GLASS2, 12); sb.Size = UDim2.fromOffset(340, 40)
+	border(sb, WHITE, 1.5, 0.8)
+	local box = Instance.new("TextBox")
+	box.BackgroundTransparency = 1; box.Size = UDim2.new(1, -24, 1, 0); box.Position = UDim2.fromOffset(12, 0)
+	box.Font = FONT; box.TextSize = 16; box.TextColor3 = COL.TEXT; box.PlaceholderText = "Search what you own…"; box.PlaceholderColor3 = COL.DIM
+	box.Text = ui.invQuery; box.ClearTextOnFocus = false; box.TextXAlignment = Enum.TextXAlignment.Left
+	box.Parent = sb
+	local counts = {}
+	for _, it in ipairs(all) do counts[it.kind] = (counts[it.kind] or 0) + 1 end
+	local kh = clearFrame(bar); kh.Position = UDim2.fromOffset(356, 0); kh.Size = UDim2.new(1, -356, 0, 40)
+	chips(kh, HX.INV_KINDS, function(it) return it.text == ui.invKind end, function(it) ui.invKind = it.text; ui.invShown = HX.INV_PAGE; render.INVENTORY() end, 36)
+	local sh = clearFrame(bar); sh.Position = UDim2.fromOffset(0, 48); sh.Size = UDim2.new(0.6, 0, 0, 32)
+	local sorts = {}
+	for _, s in ipairs(HX.INV_SORTS) do table.insert(sorts, {text = "SORT: " .. s, s = s}) end
+	chips(sh, sorts, function(it) return it.s == ui.invSort end, function(it) ui.invSort = it.s; render.INVENTORY() end, 30)
+	-- what matches
+	local kindOf = {}
+	for _, kd in ipairs(HX.INV_KINDS) do kindOf[kd.text] = kd.k end
+	local want, q = kindOf[ui.invKind], string.lower(ui.invQuery)
+	local list = {}
+	for _, it in ipairs(all) do
+		if (not want or it.kind == want) and (q == "" or string.find(string.lower(it.name .. " " .. (it.sub or "") .. " " .. it.rarity), q, 1, true)) then table.insert(list, it) end
+	end
+	table.sort(list, function(a, b)
+		if ui.invSort == "NAME" then return a.name < b.name end
+		if ui.invSort == "NEWEST" and a.at ~= b.at then return a.at > b.at end
+		if ui.invSort == "MOST COPIES" and a.count ~= b.count then return a.count > b.count end
+		local ra, rb = RARITY_ORDER[a.rarity] or 0, RARITY_ORDER[b.rarity] or 0
+		if ra ~= rb then return ra > rb end
+		return a.name < b.name
+	end)
+	local copiesN = 0
+	for _, it in ipairs(all) do copiesN += it.count end
+	local sumL = title(bar, string.format("%d THINGS  ·  %d COPIES  ·  %d SHOWN", #all, copiesN, #list), 13, COL.DIM)
+	sumL.AnchorPoint = Vector2.new(1, 0); sumL.Position = UDim2.new(1, 0, 0, 54); sumL.Size = UDim2.fromOffset(420, 20); sumL.TextXAlignment = Enum.TextXAlignment.Right
+	-- the grid
+	local sf = Instance.new("ScrollingFrame")
+	sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0; sf.Position = UDim2.fromOffset(0, 92); sf.Size = UDim2.new(1, 0, 1, -92)
+	sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.Y; sf.ScrollBarThickness = 6; sf.ScrollBarImageColor3 = COL.DIM
+	sf.Parent = f
+	local gl = Instance.new("UIGridLayout", sf); gl.CellSize = UDim2.fromOffset(150, 186); gl.CellPadding = UDim2.fromOffset(10, 10); gl.SortOrder = Enum.SortOrder.LayoutOrder
+	if #list == 0 then
+		local e = dim(sf, #all == 0 and "Nothing here yet: crates, the pass, tasks and the Hatchery fill it up." or "Nothing matches.", 15)
+		e.Size = UDim2.fromOffset(600, 40)
+	end
+	for i, it in ipairs(list) do
+		if i > ui.invShown then
+			local more = button(sf, string.format("SHOW MORE  ·  %d LEFT", #list - ui.invShown), 15, COL.BLUE)
+			more.LayoutOrder = i
+			more.Activated:Connect(function() ui.invShown += HX.INV_PAGE; render.INVENTORY() end)
+			break
+		end
+		local c = button(sf, "", 12, COL.GLASS2)
+		c.AutoButtonColor = false
+		c.LayoutOrder = i
+		local rc = RARITY_COL[it.rarity] or COL.DIM
+		border(c, rc, 2, it.rarity == "Common" and 0.6 or 0.15)
+		local th = HX.thumb(c, it.kind, it.d, UDim2.new(1, -8, 0, 112)); th.Position = UDim2.fromOffset(4, 4)
+		local n1 = title(c, it.name, 13, it.rarity == "Common" and COL.TEXT or rc); n1.Position = UDim2.fromOffset(8, 120); n1.Size = UDim2.new(1, -16, 0, 16); n1.TextTruncate = Enum.TextTruncate.AtEnd
+		local n2 = title(c, string.upper(it.sub or ""), 10, COL.DIM); n2.Position = UDim2.fromOffset(8, 138); n2.Size = UDim2.new(1, -16, 0, 14); n2.TextTruncate = Enum.TextTruncate.AtEnd
+		local b = it.best
+		local n3 = title(c, (b and b.v and (string.upper(b.v) .. " ") or "") .. (b and b.n and ("#" .. fmt(b.n)) or string.upper(it.rarity)), 11, (b and HX.VARIANT_COL[b.v]) or rc)
+		n3.Position = UDim2.fromOffset(8, 156); n3.Size = UDim2.new(1, -16, 0, 14); n3.TextTruncate = Enum.TextTruncate.AtEnd
+		if it.count > 1 then
+			local x = title(c, "×" .. it.count, 14); x.BackgroundTransparency = 0; x.BackgroundColor3 = COL.BLUE
+			x.AnchorPoint = Vector2.new(1, 0); x.Position = UDim2.new(1, -6, 0, 6); x.Size = UDim2.fromOffset(38, 22); x.TextXAlignment = Enum.TextXAlignment.Center
+			Instance.new("UICorner", x).CornerRadius = UDim.new(0, 7)
+		end
+		hoverScale(c, c, 1.05)
+		c.Activated:Connect(function() HX.inspect(it.kind, it.id) end)
+	end
+	-- (typing re-filters after a beat)
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		ui.invQuery = box.Text
+		local mine = box.Text
+		task.delay(0.35, function()
+			if ui.invQuery == mine and currentTab == "INVENTORY" then
+				ui.invShown = HX.INV_PAGE
+				render.INVENTORY()
+				-- keep typing where you were
+				local nb = tabFrame.INVENTORY:FindFirstChildWhichIsA("TextBox", true)
+				if nb then nb:CaptureFocus(); nb.CursorPosition = #nb.Text + 1 end
+			end
+		end)
+	end)
+end
+
+--------------------------------------------------------------------
 --  OPEN / CLOSE
 --------------------------------------------------------------------
 local autoOpen = true
@@ -6137,6 +6495,7 @@ topClose.Activated:Connect(function() hide() end)
 -- first, then a screen (back to the lobby), then the menu
 local function menuKey()
 	if _G.IntroActive then return end
+	if HX.closeInspect and HX.closeInspect() then return end
 	-- basic training asks "skip it?" instead (Training)
 	if not open and _G.MenuKeyOverride and _G.MenuKeyOverride() then return end
 	if open then
@@ -6212,6 +6571,10 @@ do
 			local sl = title(b, sub, 11, HX.VARIANT_COL[c.v] or RARITY_COL[d.rarity] or COL.DIM); sl.Position = UDim2.fromOffset(6, 110); sl.Size = UDim2.new(1, -12, 0, 13); sl.TextTruncate = Enum.TextTruncate.AtEnd
 		end
 		if onClick then b.Activated:Connect(onClick) end
+		if d then
+			local kind, id = HX.fromKey(c.key)
+			HX.inspectButton(b, function() HX.inspect(kind, id, c, c.theirs) end)
+		end
 		return b
 	end
 	local function grid(parent, h)
@@ -6280,6 +6643,7 @@ do
 			hd.Size = UDim2.new(1, 0, 0, 24)
 			local g = grid(h, 270); g.Position = UDim2.fromOffset(0, 28)
 			for i, c in ipairs(s.items) do
+				c.theirs = not mine
 				local cb = card(g, c, mine and function()
 					local keep = {}
 					for _, c2 in ipairs(you.items) do if c2.u ~= c.u then table.insert(keep, c2.u) end end
