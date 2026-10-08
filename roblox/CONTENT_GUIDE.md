@@ -454,7 +454,7 @@ and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
 - **A themed map in one line (`Build ▸ MapForge`):** add a row to `F.MAPS`:
   `Name = {title = "…", layout = "arena", theme = "winterNight", seed = 210}` (a siege also takes
   `champion = {name = "…", weapon = "Greatsword"}`), add the name to `F.ORDER`, to
-  `GameConfig.MAP_TITLES` and to the modes' `maps`, then in Studio
+  `GameConfig.MAP_TITLES`, `GameConfig.MAP_FIGHTERS` (below) and to the modes' `maps`, then in Studio
   `require(game.ServerScriptService.Build.Maps).build("Name")`, shoot its picture (below), **save
   the place**. Layouts: `arena bailey village bridge ruins clearing siege`. Themes (time of day,
   season, palette, trees, weather): `summer autumn winter winterNight desert desertDusk swamp
@@ -466,6 +466,12 @@ and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
   parts the mode scripts look for; `K.spot` makes them). Add its name to a mode's `maps` in
   `GameConfig.MODES`, and its on-screen name to `GameConfig.MAP_TITLES`. Maps built from code
   live in `Build ▸ Maps` (newer ones in `Build ▸ Map<Name>`).
+- **How many a map suits:** `GameConfig.MAP_FIGHTERS.Name = {fewest, most}` (players and bots
+  together). A match picks among the maps that suit the players there and the bots its mode
+  brings, then among maps that at least fit the players; bots never fill a map past its most, and
+  a public server's room is the smaller of the mode's `maxPlayers` and its map's most. Rough guide:
+  a walled court ~50 across `{2, 6}` (1v1 to 3v3), a 46-radius arena `{2, 12}`, a bailey or a
+  bridge `{6, 24}`, an open field ~240 across `{8, 32}`, a siege `{8, 40}`. Unlisted: suits anything.
 - **Terrain:** `K.terrain(ctx, corner, size, paint)` paints inside that box and stores it with the
   map. Whatever a brush paints *outside* the box is undone when the build finishes (so a build can
   never leave hills behind in the place), so make the box big enough to hold every hill whole.

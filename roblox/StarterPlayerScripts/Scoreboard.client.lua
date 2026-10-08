@@ -584,5 +584,10 @@ RunService.RenderStepped:Connect(function(dt)
 		gui.DisplayOrder = intermission() and 2100 or 30
 		if show then refreshBoard() end
 	end
+	-- the vote needs a cursor (alive, dead or spectating, whoever had the mouse last)
+	if board.Visible and intermission() and not hubMenuUp() then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+	end
 end)
 refreshRound()

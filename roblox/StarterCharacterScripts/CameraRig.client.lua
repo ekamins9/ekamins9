@@ -531,9 +531,12 @@ local function loopBody(dt)
 	local dtc = math.min(dt, 1/30)
 	local now = os.clock()
 
-	-- typing in chat / a TextBox, or the mouse set free: release the mouse and ignore look input
+	-- typing in chat / a TextBox, the mouse set free, or the round over and the
+	-- vote up: release the mouse and ignore look input
 	local typing = UIS:GetFocusedTextBox() ~= nil
-	local loose = typing or cursorFree
+	local round = ReplicatedStorage:FindFirstChild("Round")
+	local voting = round ~= nil and round:GetAttribute("State") == "Intermission" and round:GetAttribute("Mode") ~= "Hub"
+	local loose = typing or cursorFree or voting
 	Camera.CameraType   = Enum.CameraType.Scriptable
 	UIS.MouseBehavior   = loose and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
 	UIS.MouseIconEnabled = loose   -- no cursor over the crosshair-less view while we're alive

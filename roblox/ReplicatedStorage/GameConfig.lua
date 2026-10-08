@@ -127,6 +127,35 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
+-- how many fighters (players and bots together) a map suits: {fewest, most}. A
+-- match picks among the maps that suit its numbers, and bots never fill a map past
+-- its most (Game ▸ GameServer, BotFill). A map not listed suits anything
+GameConfig.MAP_FIGHTERS = {
+	RoseCourt = {2, 6},                                  -- a garden court: 1v1 to 3v3
+	Colosseum = {2, 12}, Bloodpit = {2, 12}, Moonring = {2, 12}, Dustbowl = {2, 12}, Thornpit = {2, 12}, Mirepit = {2, 12},
+	Sandpit = {2, 16},
+	Highbridge = {4, 20},
+	Abbeyfield = {6, 24}, Blackwater = {6, 24}, Redgorge = {6, 24}, Mistbridge = {6, 24},
+	Millfield = {8, 32}, Harvestvale = {8, 32}, Frosthollow = {8, 32}, Marshfen = {8, 32},
+	Cinderfall = {8, 32}, Duneshrine = {8, 32}, HollowGrove = {8, 32}, Pinewatch = {8, 32},
+	Frostgate = {8, 40}, Emberkeep = {8, 40}, Sunspire = {8, 40}, Thornwall = {8, 40}, Mistmoor = {8, 40},
+	Greenhollow = {8, 40}, Stormhold = {8, 40}, Ashenford = {8, 40}, Rimeholt = {8, 40}, Blossomgate = {8, 40},
+}
+function GameConfig.mapFighters(key)
+	local r = GameConfig.MAP_FIGHTERS[key]
+	if r then return r[1], r[2] end
+	return 1, math.huge
+end
+-- 0 a map that suits this many players with this many bots wanted (bots fill to
+-- its most), 1 the players fit but the bots would be cut back, 2 too many players
+function GameConfig.mapFit(key, players, bots)
+	local lo, hi = GameConfig.mapFighters(key)
+	if players > hi then return 2 end
+	local fighters = math.max(players, math.min(bots or 0, hi))
+	if fighters < lo then return 1 end
+	return (bots or 0) > hi and 1 or 0
+end
+
 -- order on the Play tab
 GameConfig.MODE_ORDER = {"Siege", "FFA", "Duel", "TDM", "LTS", "KOTH"}
 

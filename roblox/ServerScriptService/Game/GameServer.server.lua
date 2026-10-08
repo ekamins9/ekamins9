@@ -60,18 +60,31 @@ local function startingMode()
 	return Game.server.mode or "Hub"
 end
 
--- up to three candidate maps for a mode (that exist), rotating
+-- up to three candidate maps for a mode (that exist), rotating. Sized to the
+-- numbers: maps that suit the players here and the bots the mode brings first
+-- (GameConfig.MAP_FIGHTERS: a 1v1 isn't lost in a field, a 16v16 isn't crammed
+-- into a garden), then maps that at least fit the players
+local BotFill = require(script.Parent:WaitForChild("BotFill"))
 local rotation = {}
 local function candidates(def)
-	local list = {}
+	local players = #Players:GetPlayers()
+	local bots = (BotFill.wanted and BotFill.wanted(def)) or 0
+	local fits = {{}, {}, {}}
 	for _, m in ipairs(def.maps or {}) do
-		if MapLoader.exists(m) then table.insert(list, m) end
+		if MapLoader.exists(m) then table.insert(fits[GameConfig.mapFit(m, players, bots) + 1], m) end
 	end
-	if #list == 0 then list = def.maps and {def.maps[1] or "None"} or {"None"} end
 	local start = (rotation[def] or 0)
 	rotation[def] = start + 1
 	local out = {}
-	for i = 0, math.min(2, #list - 1) do table.insert(out, list[((start + i) % #list) + 1]) end
+	local function take(list)
+		for i = 0, #list - 1 do
+			if #out >= 3 then return end
+			table.insert(out, list[((start + i) % #list) + 1])
+		end
+	end
+	take(fits[1]); take(fits[2])
+	if #out == 0 then take(fits[3]) end
+	if #out == 0 then out = {def.maps and def.maps[1] or "None"} end
 	return out
 end
 

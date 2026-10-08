@@ -597,11 +597,37 @@ end
 
 -- feet that find a way round: a tree, a wagon or a wall across its path turns
 -- it aside, to whichever side is open, and it keeps to that side a moment so it
--- doesn't dither; boxed in, it backs out. Characters don't count (that's the fight)
+-- doesn't dither; boxed in, it backs out. Characters don't count (that's the fight).
+-- Rising ground (a hill, a ramp) is no wall: it walks up it. Something low (a
+-- rock, a log, a low wall) it hops over
 local STEER_ANGLES = {35, 70, 105}
+local BOT_JUMP = 32          -- its hop: ≈ 2.6 studs (a player's is a little lower)
+local HOP_CLEAR = 2.3        -- the tallest thing it tries to hop
+local FEET = 3               -- root to soles (R6)
 local steerParams = RaycastParams.new()
 steerParams.FilterType = Enum.RaycastFilterType.Exclude
 steerParams.RespectCanCollide = true
+local function walkable(inst) return inst:IsA("Terrain") or inst:IsA("WedgePart") or inst:IsA("CornerWedgePart") end
+-- what's ahead along d: nil when the way's open, else the hit and how high its top stands over the feet
+local function ahead(origin, d, feet)
+	local hit = workspace:Spherecast(origin, 1.1, d * 4.5, steerParams)
+	if not hit then return nil end
+	if hit.Normal.Y > 0.6 and walkable(hit.Instance) then return nil end      -- a slope: up it goes
+	-- in the way at head height too: a wall, a tree, a crate stack — no hopping that
+	if workspace:Spherecast(origin + Vector3.new(0, 2.6, 0), 1.1, d * 4.5, steerParams) then return hit, 99 end
+	-- something low: how high its top stands
+	local over = Vector3.new(hit.Position.X, feet + 3.6, hit.Position.Z) + d * 0.6
+	local top = workspace:Raycast(over, Vector3.new(0, -5, 0), steerParams)
+	local rise = top and (top.Position.Y - feet) or 0
+	if rise <= 1 then return nil end                                          -- a lip it steps over
+	return hit, rise
+end
+function Bot:hop(now)
+	if now < (self.hopAt or 0) or self.hum.FloorMaterial == Enum.Material.Air then return end
+	self.hopAt = now + 1
+	self.hum.JumpPower = BOT_JUMP
+	self.hum.Jump = true
+end
 function Bot:steer(want, now)
 	local flat = Vector3.new(want.X, 0, want.Z)
 	if flat.Magnitude < 0.05 then return want end
@@ -611,8 +637,11 @@ function Bot:steer(want, now)
 	for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(ignore, p.Character) end end
 	steerParams.FilterDescendantsInstances = ignore
 	local origin = self.hrp.Position - Vector3.new(0, 1.2, 0)   -- knee height: crates and logs count too
-	local function open(d) return workspace:Spherecast(origin, 1.1, d * 4.5, steerParams) == nil end
-	if open(w) then return want end
+	local feet = self.hrp.Position.Y - FEET
+	local function open(d) return ahead(origin, d, feet) == nil end
+	local hit, rise = ahead(origin, w, feet)
+	if not hit then return want end
+	if rise <= HOP_CLEAR then self:hop(now); return want end
 	local first = (self.steerUntil and now < self.steerUntil) and self.steerSide or (math.random() < 0.5 and 1 or -1)
 	for _, a in ipairs(STEER_ANGLES) do
 		for _, sgn in ipairs({first, -first}) do
@@ -630,15 +659,33 @@ end
 -- follows a path (PathfindingService), worked out in the background and walked
 -- point by point, and worked out again when the place moves or every few
 -- seconds. Nil while there's none yet (then it just steers).
+local pathParams = RaycastParams.new()
+pathParams.FilterType = Enum.RaycastFilterType.Exclude
+pathParams.FilterDescendantsInstances = {folder}
+pathParams.RespectCanCollide = true
 function Bot:pathDir(dest, now)
 	local P = self.path
 	if (not P or (P.dest - dest).Magnitude > 10 or now - P.at > 4) and not self.pathing then
 		self.pathing = true
 		local from = self.hrp.Position
 		task.spawn(function()
-			local path = PathfindingService:CreatePath({AgentRadius = 2, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 6})
-			local ok = pcall(path.ComputeAsync, path, from, dest)
-			local points = (ok and path.Status == Enum.PathStatus.Success) and path:GetWaypoints() or nil
+			-- (1.5: an R6 body fits between a hay bale and a barn wall)
+			local path = PathfindingService:CreatePath({AgentRadius = 1.5, AgentHeight = 5, AgentCanJump = false, WaypointSpacing = 6})
+			local points
+			-- the place itself may be inside something (a hill's middle under a windmill):
+			-- then open ground beside it, on the near side first
+			local back = Vector3.new(from.X - dest.X, 0, from.Z - dest.Z)
+			back = back.Magnitude > 0.1 and back.Unit or Vector3.new(1, 0, 0)
+			for _, off in ipairs({false, 0, 60, -60}) do
+				local to = dest
+				if off then
+					local d = CFrame.Angles(0, math.rad(off), 0):VectorToWorldSpace(back) * 10
+					local ground = workspace:Raycast(dest + d + Vector3.new(0, 30, 0), Vector3.new(0, -60, 0), pathParams)
+					to = ground and ground.Position + Vector3.new(0, 1, 0) or dest + d
+				end
+				local ok = pcall(path.ComputeAsync, path, from, to)
+				if ok and path.Status == Enum.PathStatus.Success then points = path:GetWaypoints(); break end
+			end
 			self.path = {dest = dest, at = os.clock(), points = points, i = 2}
 			self.pathing = false
 		end)
@@ -652,6 +699,33 @@ function Bot:pathDir(dest, now)
 		P.i += 1
 	end
 	return nil
+end
+
+-- STUCK: told to walk but it's hardly moved for a second (snagged on a corner, a
+-- prop the steering missed). First it hops; still stuck, it steps off to one side
+-- for a moment and works out a fresh path, and keeps to paths a while even for a
+-- foe close by
+function Bot:unstick(want, now)
+	local p = self.hrp.Position
+	if want.Magnitude < 0.3 then self.stuckAt, self.stuckN = nil, 0; return want end
+	if not self.stuckAt or (p - self.stuckFrom).Magnitude > 1.5 then
+		self.stuckAt, self.stuckFrom, self.stuckN = now, p, 0
+	elseif now - self.stuckAt > 0.9 then
+		self.stuckAt, self.stuckN = now, (self.stuckN or 0) + 1
+		if self.stuckN == 1 then
+			self:hop(now)
+		else
+			local flat = Vector3.new(want.X, 0, want.Z)
+			flat = flat.Magnitude > 0.05 and flat.Unit or Vector3.new(0, 0, -1)
+			local side = math.random() < 0.5 and 1 or -1
+			self.detour = (Vector3.new(-flat.Z, 0, flat.X) * side - flat * 0.4).Unit
+			self.detourUntil = now + 0.7 + math.random() * 0.5
+			self.path, self.pathUntil = nil, now + 5
+			self:hop(now)
+		end
+	end
+	if self.detourUntil and now < self.detourUntil then return self.detour end
+	return want
 end
 
 -- THE BRAIN, ten times a second: where to stand, when to swing
@@ -673,7 +747,7 @@ function Bot:think()
 		to = Vector3.new(to.X, 0, to.Z)
 		self.facing, self.foe, self.lookAt = nil, nil, to
 		if to.Magnitude > 4 then
-			local w = self:steer(self:pathDir(goal, os.clock()) or to.Unit, os.clock())
+			local w = self:unstick(self:steer(self:pathDir(goal, os.clock()) or to.Unit, os.clock()), os.clock())
 			hum.WalkSpeed = self:speedFor(w, true, false)
 			hum:Move(w)
 		else
@@ -787,12 +861,13 @@ function Bot:think()
 		off = Vector3.new(off.X, 0, off.Z)
 		if off.Magnitude > self.arena.radius - 2.5 then want = -off.Unit end
 	end
-	-- a foe far off (across the map, round a wall): the path there
-	if dist > 22 and not self.arena and not waiting then
+	-- a foe far off (across the map, round a wall), or it's been stuck: the path there
+	if (dist > 22 or now < (self.pathUntil or 0)) and dist > hitDist + 3 and not self.arena and not waiting then
 		local pd = self:pathDir(thrp.Position, now)
 		if pd then want = pd end
 	end
-	if want.Magnitude > 0.3 and dist > hitDist + 3 then want = self:steer(want, now) end
+	if want.Magnitude > 0.3 and dist > hitDist + 3 then want = self:unstick(self:steer(want, now), now)
+	else self.stuckAt = nil end
 	if (sk.pace or 0) <= 0 then want = Vector3.zero end
 	-- a body carries its momentum: it eases from one heading into the next
 	local w = want.Magnitude > 1 and want.Unit or want
@@ -869,7 +944,8 @@ function Bots.spawn(opts)
 	align.Responsiveness = 40
 	align.Parent = hrp
 	hum.WalkSpeed = MC.BASE_SPEED
-	hum.JumpPower = 0
+	hum.UseJumpPower = true
+	hum.JumpPower = BOT_JUMP   -- (it only jumps when its feet decide to: Bot:hop)
 	pcall(function() hrp:SetNetworkOwner(nil) end)
 	if opts.team then model:SetAttribute("Team", opts.team) end
 

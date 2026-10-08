@@ -197,7 +197,10 @@ KOTH 10, Siege 12. A player who joins takes a bot's place (the one farthest from
 leaves); a fallen bot's place fills again after 5 s (Last Team Standing: one life a round, bots
 too, all in at the start). Skills: 60% Squire, 33% Knight, 7% Champion (Squires only with a
 newcomer on the server). Bots carry a team (`Team`, tabard, team colours) and the attribute
-`FillBot`.
+`FillBot`. Never more than the map suits (`GameConfig.MAP_FIGHTERS`: Rose Court 6, the arenas
+12, Sandpit 16, Highbridge 20, the baileys and bridges 24, the open fields 32, the sieges 40);
+the map vote offers maps sized to who's there and the bots the mode brings, and a public
+server's room shrinks to its map's most.
 - They fight **everyone not on their side**, players and bots (`Bots.spawn{fightBots = true}`),
   and with nobody within ~38 studs they **head for the objective** (`goal`: Round `ObjPos`, the
   hill or the ram). Long trips use **pathfinding** (`Bot:pathDir`, PathfindingService, worked out
@@ -990,6 +993,10 @@ everyone `wave` (15 Marks, 30 XP), each bot killed pays `kill`, and your best wa
 Horde's maps are built for it: each has several ways in, and the horde walks in from a
 little way outside (no one appears in the middle of the fight). Bots steer round trees, wagons
 and walls in their way (`Bots ▸ Bot:steer`: a short look ahead at knee height, then the open side).
+Rising ground isn't a wall: they walk up hills and ramps. Something low (under ~2.3 studs: a rock,
+a log, a low wall) they hop over. Stuck for a second (`Bot:unstick`), they hop, then step aside
+and work out a fresh path; paths (agent radius 1.5) go to open ground beside a goal that sits
+inside something (a hill's middle under a windmill).
 
 **The Wildwood** (`Build ▸ MapWildwood`, Horde): a clearing in a dark forest at dusk, a muddy
 road through it and a merchant caravan that didn't make it: one wagon on its side, one on a

@@ -1,4 +1,30 @@
-# Updated scripts: bow and crossbow skins that look and sound different
+# Updated scripts: the vote's cursor, bots that climb and hop, maps sized to the numbers
+
+- **The cursor is back on the vote screen.** Players stay alive through the intermission and the camera kept locking and hiding the mouse every frame; it lets go while the vote is up, and the board keeps the cursor on for the dead and the spectating too.
+- **Bots:**
+  - They walk up hills and ramps. Their look-ahead used to take rising ground for a wall and turn away; Millfield's hill is the case that showed it.
+  - They hop over anything low (under ~2.3 studs: rocks, logs, low walls).
+  - Stuck for a second, they hop, then step aside and work out a fresh path.
+  - Paths are narrower (agent radius 1.5, so they get out between a hay bale and a barn wall). When the goal itself is unreachable (the hill's middle is under the windmill), the path goes to open ground beside it.
+- **Maps sized to the player count:**
+  - Every map has a fighter range, players and bots together (`GameConfig.MAP_FIGHTERS`). Rose Court is 2–6 (1v1 to 3v3), the arenas 2–12, Sandpit 2–16, Highbridge 4–20, the baileys and bridges 6–24, the open fields 8–32 and the sieges 8–40.
+  - The vote offers maps that suit the players there and the bots the mode brings.
+  - Bots never fill a map past its most.
+  - A public server's room shrinks to its map's most, so matchmaking won't pour 16 people into a garden.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts ▸ CameraRig | LocalScript | frees the mouse during the vote |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Scoreboard | LocalScript | keeps the cursor on while the vote is up |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat ▸ Bots | ModuleScript | slopes, hops, `unstick`, path fixes |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage ▸ GameConfig | ModuleScript | `MAP_FIGHTERS`, `mapFighters`, `mapFit` |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game ▸ GameServer | Script | map candidates sized to the numbers |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game ▸ BotFill | ModuleScript | caps bots at the map's most; `BotFill.wanted(def)` |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | a public server's room is its map's most |
+
+---
+
+## Before that: bow and crossbow skins that look and sound different
 
 - **Every bow and crossbow skin changes its silhouette.** A new ranged trim set is fitted to the limbs and the prod:
   - flame tongues, horn curls, thorns, crystal clusters, wings, feathers, ice spikes

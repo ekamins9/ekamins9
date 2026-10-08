@@ -84,12 +84,19 @@ local function entry()
 	local members = {}
 	for _, p in ipairs(Players:GetPlayers()) do table.insert(members, p.UserId) end
 	local st = sv.settings
+	-- a public match has room for what its mode and the map it's on both suit
+	-- (a garden court fills up at six; the next vote picks a bigger map)
+	local max = (st and tonumber(st.limit)) or (def and def.maxPlayers) or Players.MaxPlayers
+	if not (st and tonumber(st.limit)) then
+		local _, most = GameConfig.mapFighters(node:GetAttribute("Map") or "")
+		max = math.min(max, most)
+	end
 	return {
 		jobId = game.JobId, placeId = game.PlaceId, reserved = sv.reserved,
 		mode = sv.mode or node:GetAttribute("Mode") or "", modeName = node:GetAttribute("ModeName") or "",
 		category = node:GetAttribute("Category") or "", map = node:GetAttribute("Map") or "",
 		door = sv.door or "Warfront", bracket = sv.bracket, ranked = sv.ranked == true,
-		players = #Players:GetPlayers(), max = (st and tonumber(st.limit)) or (def and def.maxPlayers) or Players.MaxPlayers,
+		players = #Players:GetPlayers(), max = max,
 		custom = sv.custom, name = sv.name or "", access = sv.access, hostId = sv.hostId,
 		cheats = st and st.cheats == true or false, friendlyFire = not (st and st.friendlyFire == false),
 		respawns = not (st and st.respawns == false),

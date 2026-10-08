@@ -80,10 +80,10 @@ local function takeSeat(team, name)
 end
 
 -- is this server one that gets bots?
-local function wanted()
+local function wanted(def)
 	local sv = Game.server
 	if sv.ranked or sv.door ~= "Warfront" then return nil end
-	local def = Game.current and Game.current.def
+	def = def or (Game.current and Game.current.def)
 	if sv.custom then
 		local s = sv.settings
 		if not (s and s.bots ~= false) then return nil end
@@ -191,9 +191,15 @@ local function retireOne(team)
 	return true
 end
 
+-- (exported: the map pick wants the same number, for the mode it'll be)
+BotFill.wanted = wanted
+
 local function tick()
 	local target = wanted()
 	if not target then return end
+	-- never more fighters than the map suits (GameConfig.MAP_FIGHTERS)
+	local _, most = GameConfig.mapFighters(Game.node:GetAttribute("Map") or "")
+	target = math.min(target, most)
 	local def = Game.current.def
 	local now = os.clock()
 	-- forget the fallen whose place has come round again (or, no respawns, keep them)
