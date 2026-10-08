@@ -9,6 +9,7 @@
        HordeWave    the horde is coming / on you
        HordeBreak   between waves: breathe, but don't relax
        Boss         a warlord / champion is alive (Bot attribute Boss)
+       Intro        a newcomer's welcome (the cinematic and the TRAIN / BATTLE card)
        Win / Lose   a short sting when a round ends, by whether you won ]]
 
 return {
@@ -21,7 +22,10 @@ return {
 		HordeWave    = {1835323368, 1846799749, 1836763823, 1836763514},
 		HordeBreak   = {9046506025, 9046505640},
 		Boss         = {1843640242, 9046496901},
+		Intro        = {9043542688},
 	},
+	-- a mood louder than VOLUME (the intro's score is the scene)
+	MOOD_VOLUME = {Intro = 0.55},
 	STINGS = {
 		Win  = {1835324771, 1840296036, 1835295052, 136010378542579},
 		Lose = {115055593775910},

@@ -491,15 +491,18 @@ local function play(plr, doorId, opts)
 		return studioSwitch(plr, m, {door = "Warfront", settings = nil, noRewards = false})
 	end
 	if Game.server.door == "Warfront" and not Game.server.custom then return false, "you're on the Warfront" end
+	-- (a newcomer's first battle: one of the simple modes, never a siege to start with)
+	local FIRST = {TDM = true, FFA = true, KOTH = true}
+	local tag = opts.first and "YOUR FIRST BATTLE  ·  " or "Warfront  ·  "
 	for _, e in ipairs(listServers()) do
 		if e.door == "Warfront" and not e.custom and e.access == "Public" and e.reserved and e.accessCode and not e.here
-			and (e.players or 0) + #group <= (e.max or 0) then
-			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, "Warfront  ·  " .. (e.modeName or "") .. (e.map ~= "" and ("  ·  " .. e.map) or ""))
+			and (e.players or 0) + #group <= (e.max or 0) and (not opts.first or FIRST[e.mode or ""]) then
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, tag .. (e.modeName or "") .. (e.map ~= "" and ("  ·  " .. e.map) or ""))
 		end
 	end
 	-- (no room anywhere: a new server; a newcomer's first one is Team Deathmatch)
 	local m = (opts.first and GameConfig.MODES[opts.mode]) and opts.mode or modeId
-	return reserve(group, m, "Public", "", false, "Warfront", nil, "Warfront  ·  new server")
+	return reserve(group, m, "Public", "", false, "Warfront", nil, opts.first and "YOUR FIRST BATTLE  ·  Team Deathmatch" or "Warfront  ·  new server")
 end
 
 -- custom server: settings = GameConfig.CUSTOM_DEFAULTS keys (clamped here)
@@ -774,12 +777,49 @@ end
 --  REMOTES
 --------------------------------------------------------------------
 local lastCall = {}
+-- the newcomer's welcome (StarterPlayerScripts ▸ Intro): "Shown" when the card is up,
+-- then their answer, "Train" or "Battle"; and the menu tour's end (MenuTour)
+local introShown, introGone = {}, {}
+Players.PlayerRemoving:Connect(function(plr) introShown[plr] = nil; introGone[plr] = nil end)
+local function introOp(plr, what)
+	local t = Profile.get(plr).tutorial or 2
+	if Game.server.mode ~= "Hub" or t >= 1 then return {ok = false, msg = "not now"} end
+	if what == "Shown" then introShown[plr] = true; return {ok = true} end
+	if introGone[plr] then return {ok = false, msg = "on your way already"} end
+	introGone[plr] = true
+	local ok, msg
+	if what == "Battle" then
+		Profile.setTutorial(plr, 1)
+		Profile.get(plr).askedTraining = true
+		ok, msg = play(plr, "Warfront", {mode = "TDM", first = true})
+	else
+		ok, msg = play(plr, "Tiltyard")
+	end
+	if not ok then introGone[plr] = nil end
+	return {ok = ok, msg = msg}
+end
+local function tourDone(plr)
+	local p = Profile.get(plr)
+	if (p.tutorial or 0) < 2 then return {ok = false, msg = "not yet"} end
+	p.menuTour = true
+	plr:SetAttribute("MenuTour", true)
+	local line
+	if not p.starterGift then
+		p.starterGift = true
+		line = Economy.grantReward(plr, Catalog.ECONOMY.starterGift or {})
+	end
+	Profile.markDirty(plr)
+	return {ok = true, gift = line, profile = Profile.summary(plr)}
+end
+
 remote.OnServerInvoke = function(plr, op, a, b, c)
 	local now = os.clock()
 	if now - (lastCall[plr] or 0) < 0.08 then return {ok = false, msg = "slow down"} end
 	lastCall[plr] = now
 
 	if op == "State" then return state(plr)
+	elseif op == "Intro" then return introOp(plr, a)
+	elseif op == "TourDone" then return tourDone(plr)
 	elseif op == "Store" then return {ok = true, store = storeInfo()}
 	elseif op == "Products" then
 		-- the Crown bundles as linked at start (EconomyServer): price and art from the dashboard
@@ -850,7 +890,8 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		-- a = "killfx" + id, or "emotes" + {id, ...} (up to 6, owned)
 		local p = Profile.get(plr)
 		if a == "killfx" then
-			if type(b) ~= "string" or not Catalog.KILLFX_BY[b] or not Profile.has(plr, "killfx", b) then return {ok = false, msg = "you don't have that kill effect"} end
+			-- ("" = none: a plain fall)
+			if b ~= "" and (type(b) ~= "string" or not Catalog.KILLFX_BY[b] or not Profile.has(plr, "killfx", b)) then return {ok = false, msg = "you don't have that kill effect"} end
 			p.killfx = b
 		elseif a == "emotes" then
 			if type(b) ~= "table" then return {ok = false, msg = "bad list"} end
@@ -899,10 +940,11 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 end
 
 --------------------------------------------------------------------
---  A NEWCOMER'S PATH (profile tutorial): the Courtyard sends someone brand new
---  straight to basic training (Game ▸ Training), and someone who's trained (or
---  skipped it) straight into a battle. After that first battle they come back
---  here to the full menu.
+--  A NEWCOMER'S PATH (profile tutorial): someone brand new is welcomed in the
+--  Courtyard (Intro: a short cinematic, then TRAIN or STRAIGHT TO BATTLE: the
+--  "Intro" op above); someone who's trained (or skipped it) goes straight into a
+--  battle. After that first battle they come back here to the full menu (and
+--  the menu tour: MenuTour).
 --------------------------------------------------------------------
 _G.HubTravel = function(plr, doorId, opts) return play(plr, doorId, opts) end
 
@@ -910,9 +952,22 @@ local function routeNewcomer(plr)
 	if Game.server.mode ~= "Hub" then return end
 	local t = Profile.get(plr).tutorial or 2
 	if t >= 2 then return end
+	if t == 0 then
+		-- the welcome is theirs to answer; only if it never comes up (a client that
+		-- failed to load it) do they go to training on their own
+		local t0 = os.clock()
+		while plr.Parent and os.clock() - t0 < 30 do
+			if introShown[plr] or introGone[plr] then return end
+			task.wait(0.5)
+		end
+		if not plr.Parent or introShown[plr] or introGone[plr] or Game.server.mode ~= "Hub" then return end
+		introGone[plr] = true
+		play(plr, "Tiltyard")
+		return
+	end
 	task.wait(STUDIO and 0.5 or 2)   -- (the client is up: it shows the travel screen)
 	if not plr.Parent then return end
-	if t == 0 then play(plr, "Tiltyard") else play(plr, "Warfront", {mode = "TDM", first = true}) end
+	play(plr, "Warfront", {mode = "TDM", first = true})
 end
 
 -- the first battle is over: next stop, the menu
@@ -923,7 +978,7 @@ Game.roundEnded.Event:Connect(function(modeId)
 		if (Profile.get(plr).tutorial or 2) == 1 then
 			Profile.setTutorial(plr, 2)
 			event:FireClient(plr, "FirstBattleDone")
-			task.delay(9, function() if plr.Parent then goHub(plr) end end)
+			task.delay(STUDIO and 4 or 5.5, function() if plr.Parent then goHub(plr) end end)
 		end
 	end
 end)

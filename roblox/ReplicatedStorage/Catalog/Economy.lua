@@ -14,7 +14,10 @@
        variants   every skin out of a crate rolls a finish at these percent chances
                   (shown with the odds): Masterwork (gold inlay, a shimmer) and Radiant
                   (its glow shifts through colours, an aura); three copies forge one up
-       trading    who may trade (level), how many items a side, the countdown before confirming ]]
+       trading    who may trade (level), how many items a side, the countdown before confirming
+       starterGift  the recruit's gift, once, back in the Courtyard after the first battle
+                  (the menu tour's end, or straight away if they skip the tour): a reward
+                  like a pass reward ({marks}, {keys}, {crowns}, {egg}…) ]]
 return {
 	earn = {
 		round   = {marks = 60,  xp = 120},   -- played a round to the end
@@ -27,6 +30,8 @@ return {
 		wave    = {marks = 15,  xp = 30},    -- a Horde wave beaten (everyone in the server)
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
+	-- a Key so the first crate opens right away (the gift card sends them to the crates)
+	starterGift = {marks = 500, keys = 1},
 	products = {
 		{crowns = 100,  robux = 99,  id = 0, product = "100 Crowns"},
 		{crowns = 550,  robux = 499, id = 0, product = "550 Crowns", bonus = "+10%"},

@@ -8,9 +8,10 @@
                    none · grave · flat · stone · mound · puddle · garden · crater · bones
        remainsAt   seconds into the effect when the remains take the body's place
      WHERE IT COMES FROM: free = true · crate = "Relic" · pass (Catalog ▸ Pass
-     names it) · unlock = {...} (earned) ]]
+     names it) · unlock = {...} (earned). Nobody starts with one: a new player's
+     kills are plain falls until they earn an effect. ]]
 return {
-	{id = "Shatter",       name = "Shatter",        rarity = "Common",    free = true,     description = "The body bursts into blocks of its own colours.", remains = "rubble", remainsAt = 1.0},
+	{id = "Shatter",       name = "Shatter",        rarity = "Common",    crate = "Relic", description = "The body bursts into blocks of its own colours.", remains = "rubble", remainsAt = 1.0},
 	{id = "Confetti",      name = "Confetti Pop",   rarity = "Rare",      crate = "Relic", description = "A pop and a cloud of spinning confetti. Party's over.", remains = "confetti", remainsAt = 1.2},
 	{id = "GoldRush",      name = "Gold Rush",      rarity = "Rare",      crate = "Relic", description = "Out spill the coins. They were worth it.", remains = "coins", remainsAt = 1.2},
 	{id = "CrowSwarm",     name = "Crow Swarm",     rarity = "Epic",      crate = "Relic", description = "A burst of black feathers drifting down.", remains = "skeleton", remainsAt = 1.6},

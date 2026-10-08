@@ -77,6 +77,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
+| `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `StarterPlayerScripts/NameTags.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NameTags` | LocalScript |
 | `StarterPlayerScripts/SkinFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SkinFX` | LocalScript |
@@ -116,20 +117,43 @@ you'll spawn with two.
 ## A newcomer's first minutes
 
 A brand-new player (profile `tutorial` 0; the player attribute `Tutorial` mirrors it) never sees
-a menu first:
-1. **The Courtyard sends them straight to BASIC TRAINING** (`HubServer`, a Tiltyard server of
-   their own). They spawn at once as the Footman (no class screen: `LoadoutServer` spawns anyone
-   with tutorial < 2) and walk a seven-step course (`Catalog ▸ Drills`, `basic = true`): swing,
-   stab, overhead, block, parry, kick, then beat a Squire in the ring. For each step they're
-   **placed right in front of its dummy, facing it** (`Training`, `FaceYaw` / `FaceTick` turn the
-   camera with them). The lesson dummies' blows are **harmless** (attribute `Harmless`): they land
-   and flinch, and a block or parry works, but they don't hurt. The card up top says STEP n / 7;
-   **SKIP TRAINING** (top right) goes straight to battle.
-2. **Trained (or skipped): tutorial 1, straight into a battle** (`_G.HubTravel` → a Warfront
-   server with room, or a new one in Team Deathmatch). Bots fill it (below), and a server with
-   a newcomer in it fields only Squires.
-3. **The first battle's round ends: tutorial 2**, a FIRST BATTLE DONE note, and back to the
-   Courtyard after the results, where the full menu (classes, loadouts, shop…) is theirs.
+a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (**Steel & Glory**).
+1. **The welcome** (`Intro`): a ~12 s cinematic over the Courtyard (letterbox, the map's own camera
+   shots as slow dollies with a line each, then the name with a horn and a boom; any key skips),
+   to its own score (`MusicConfig` `Intro`). Then the card: **WELCOME, SOLDIER!** with **BEGIN
+   TRAINING** (recommended; Enter) or **SKIP TO BATTLE**, which asks *ARE YOU SURE?* first. The
+   answer goes to `HubServer` (`"Intro"` op) and the travel screen comes up at once. While it runs
+   the menu stays shut and its camera holds off (`_G.IntroActive` / `_G.IntroCamera`). A client
+   that never shows the card is sent to training after 30 s.
+2. **Basic training** (a Tiltyard server of their own): they spawn at once as a **Knight with a
+   Greatsword** (`GameConfig.DEFAULT_CLASS`; no class screen: `LoadoutServer` spawns anyone with
+   tutorial < 2) and walk an eight-step course (`Catalog ▸ Drills`, `basic = true`): **Find Your
+   Feet** first (a checklist of the camera, sprint, crouch, hop, dodge and freeing the mouse, in
+   their own binds, ticking as they press each), then swing, stab, overhead, block, parry, kick, and
+   a Squire in the ring. For each step they're **placed right in front of its dummy, facing it**
+   (`Training`, `FaceYaw` / `FaceTick` turn the camera with them). The lesson dummies' blows are
+   **harmless** (attribute `Harmless`). The card up top says STEP n / 8; **SKIP TRAINING · M**: the
+   button, or the menu key (a newcomer may not know how to free the mouse yet), asks *SKIP
+   TRAINING?* first (`_G.MenuKeyOverride`).
+3. **Trained (or skipped): tutorial 1, straight into a battle** (`_G.HubTravel` → a Warfront
+   server with room in Team Deathmatch, Free-for-All or King of the Hill, never a siege first; or
+   a new Team Deathmatch). Bots fill it, and a server with a newcomer in it fields only Squires.
+   `Intro` shows a briefing card as they arrive and a few tips, once each, as things happen: the
+   first wound (block / parry), running out of breath, the first kill (FIRST KILL!), the first fall.
+4. **The first battle's round ends: tutorial 2.** The travel screen comes up **at once** with how
+   it went (FIRST BATTLE COMPLETE · kills · deaths · Marks · XP) instead of the vote, and the trip
+   to the Courtyard follows 5.5 s later.
+5. **Back in the Courtyard** (`MenuTour`, profile `menuTour`): *WELCOME TO THE COURTYARD* offers a
+   half-minute tour of the menu: a spotlight on PLAY, the dock (loadout, armory, shop, tasks,
+   trade), the wallet, friends and **Settings (every key rebinds there)**, then the menu key. Either
+   way the **recruit's gift** follows once (`Catalog ▸ Economy ▸ starterGift`: 500 Marks and a Key)
+   with **OPEN A CRATE**, straight to the crates. (Studio: the player attribute `TourAutoplay`
+   clicks through the tour for a test.)
+
+Someone with no body (the menu, the intro) still sees the map: `GameServer` points their
+`ReplicationFocus` at the map's middle (`MapLoader.focus`), and the map carries its camera shots,
+middle and size as attributes (`Shot1…`, `Centre`, `Radius`) for scripts that need them before its
+parts have streamed in.
 
 Anyone who played before (level above 1, or asked about training already) starts at 2. Studio
 can't load saved profiles, so there every Play counts as a returning player unless
@@ -525,7 +549,8 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   once per swing: it starts as the tip passes 26 studs/s and can't start again until the tip
   has stayed under 12 studs/s for 0.3 s (a windup turning into its release is one swing), and a
   sound with a `cut` fades out over 0.18 s instead of snapping off.
-- **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): `Scoreboard` (and the training dummies) call
+- **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): nobody starts with one (profile `killfx` "" = a
+  plain fall; ARMORY ▸ KILL FX ▸ *No effect* goes back to it). `Scoreboard` (and the training dummies) call
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
   effect and fires `FxEvent "Kill"` to everyone **1.2 s after the death** (`KILL_FX_DELAY`), so the
   body falls first and a head that came off rolls away. **Everyone sees everyone's effect**: the

@@ -18,9 +18,13 @@
        receipts    {[receiptId] = true}       lastWinDay
        pass        {season, xp, premium, claimed = {free = {["3"] = true}, premium = {}}}
        login       {streak, claimed = "YYYY-MM-DD"}
-       killfx      the equipped kill effect id     emotes   the emote wheel (up to 6 ids)
-       tutorial    0 = brand new (training next) · 1 = trained or skipped (first match
-                   next) · 2 = done (the full menu). Player attribute Tutorial mirrors it.
+       killfx      the equipped kill effect id ("" = none: a plain fall; everyone starts so)
+       emotes      the emote wheel (up to 6 ids)
+       tutorial    0 = brand new (the intro: train or straight to battle) · 1 = trained or
+                   skipped (first match next) · 2 = done (the full menu). Player attribute
+                   Tutorial mirrors it.
+       menuTour    the menu tour was offered (back in the Courtyard after the first battle);
+                   attribute MenuTour mirrors it   starterGift  the recruit's gift was given
        play        {day = "YYYY-MM-DD", seconds, claimed = {["1"] = true}}   today's playtime gifts
        eggs        {[eggId] = count}  waiting to be set in a nest
        nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
@@ -75,10 +79,10 @@ local function default()
 		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}, companions = {}},
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
-		pass = {}, login = {}, killfx = "Shatter", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
+		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, copies = {}, tally = {}, claims = {}, copySeq = 0,
-		tutorial = 0, loadoutV = 2}
+		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 2}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -107,6 +111,16 @@ end
 local function fill(p)
 	-- someone who has played before isn't sent through the newcomer's path
 	if p.tutorial == nil then p.tutorial = (((p.level or 1) > 1) or p.askedTraining == true) and 2 or 0 end
+	-- (the menu tour and the recruit's gift are for newcomers: not for anyone already through)
+	if p.menuTour == nil then p.menuTour = (p.tutorial or 0) >= 2 end
+	if p.starterGift == nil then p.starterGift = (p.tutorial or 0) >= 2 end
+	-- Shatter used to be everyone's free kill effect: whoever has it on keeps it
+	if p.killfx == "Shatter" and type(p.owned) == "table" then
+		p.owned.killfx = p.owned.killfx or {}
+		p.owned.killfx.Shatter = true
+	end
+	-- a newcomer who never picked a class starts as the new default (a Knight)
+	if (p.tutorial or 0) == 0 and p.active == "Footman" then p.active = GameConfig.DEFAULT_CLASS end
 	-- every class used to start with the same lone sword: an untouched one gets its class's pair
 	if p.loadoutV == nil and type(p.classes) == "table" then
 		for id, lo in pairs(p.classes) do
@@ -141,9 +155,12 @@ local function load(plr)
 		elseif not ok and not warned then warned = true; warn("[Profile] load failed:", v) end
 	end
 	data = data or default()
-	if game:GetService("RunService"):IsStudio() and not GameConfig.STUDIO_NEWCOMER then data.tutorial = 2 end
+	if game:GetService("RunService"):IsStudio() and not GameConfig.STUDIO_NEWCOMER then
+		data.tutorial, data.menuTour, data.starterGift = 2, true, true
+	end
 	cache[plr] = data
 	plr:SetAttribute("Tutorial", data.tutorial or 2)
+	plr:SetAttribute("MenuTour", data.menuTour == true)
 	return data
 end
 
@@ -325,7 +342,7 @@ function Profile.summary(plr)
 	local p = Profile.get(plr)
 	return {wallet = p.wallet, level = p.level, xp = p.xp, appearance = p.appearance, owned = p.owned,
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
-		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial,
+		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial, menuTour = p.menuTour,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
 		gauntlet = p.gauntlet, askedTraining = p.askedTraining,
 	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder,

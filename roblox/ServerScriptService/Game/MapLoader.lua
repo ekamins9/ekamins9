@@ -140,6 +140,42 @@ function MapLoader.load(name)
 			if c:IsA("BasePart") then c.Transparency, c.CanCollide, c.CanQuery, c.CanTouch, c.Anchored = 1, false, false, false, true end
 		end
 	end
+	-- what a client with no body needs before the world has streamed in (the intro, the
+	-- menu's cinematic): the camera shots, the middle and size, as attributes on the Map
+	-- (the Model itself always replicates; its parts stream). And a part at the middle:
+	-- the streaming focus of anyone without a body (MapLoader.focus, GameServer)
+	do
+		local shots = {}
+		for _, c in ipairs(cams and cams:GetChildren() or {}) do if c:IsA("BasePart") then table.insert(shots, c) end end
+		table.sort(shots, function(a, b) return a.Name < b.Name end)
+		for i, c in ipairs(shots) do m:SetAttribute("Shot" .. i, c.CFrame) end
+		local ok, cf, size = pcall(function()
+			local parts = {}
+			for _, d in ipairs(m:GetDescendants()) do
+				if d:IsA("BasePart") and d.CanCollide and d.Parent and d.Parent.Name ~= "Spawns" then table.insert(parts, d) end
+			end
+			local lo, hi
+			for _, d in ipairs(parts) do
+				local half = d.Size / 2
+				local p = d.Position
+				lo = lo and lo:Min(p - half) or p - half
+				hi = hi and hi:Max(p + half) or p + half
+			end
+			if not lo then return CFrame.new(), Vector3.new(80, 10, 80) end
+			return CFrame.new((lo + hi) / 2), hi - lo
+		end)
+		if ok then
+			m:SetAttribute("Centre", cf.Position)
+			m:SetAttribute("Radius", math.clamp(math.max(size.X, size.Z) / 2, 30, 300))
+		end
+		local focus = Instance.new("Part")
+		focus.Name = "StreamFocus"
+		focus.Anchored, focus.CanCollide, focus.CanQuery, focus.CanTouch, focus.Transparency = true, false, false, false, 1
+		focus.Size = Vector3.new(1, 1, 1)
+		focus.Position = ok and (cf.Position + Vector3.new(0, 4, 0)) or Vector3.new(0, 6, 0)
+		focus.Parent = m
+		MapLoader.focus = focus
+	end
 	m.Parent = workspace
 	pasteTerrain(m)
 	applyTerrainColors(m)

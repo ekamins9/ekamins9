@@ -42,6 +42,7 @@ local function bossAlive()
 end
 
 local function moodNow()
+	if _G.IntroMusic then return "Intro" end   -- (a newcomer's welcome: Intro)
 	local mode, state = round:GetAttribute("Mode"), round:GetAttribute("State")
 	if mode == nil or mode == "Hub" or mode == "Tiltyard" then return "Hub" end
 	if state ~= "Round" then return "Intermission" end
@@ -100,7 +101,7 @@ local function play(m)
 			if token ~= playToken then s:Destroy(); return end
 			if s.IsLoaded and s.TimeLength > 1 then
 				s:Play()
-				TweenService:Create(s, TweenInfo.new(Config.FADE, Enum.EasingStyle.Sine), {Volume = Config.VOLUME}):Play()
+				TweenService:Create(s, TweenInfo.new(Config.FADE, Enum.EasingStyle.Sine), {Volume = (Config.MOOD_VOLUME or {})[m] or Config.VOLUME}):Play()
 				current = {sound = s, mood = m}
 				-- at the end: the next track of the same mood
 				s.Ended:Once(function()

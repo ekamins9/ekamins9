@@ -449,6 +449,21 @@ its own (tradable) and rolls a finish: Golden (4%) or Spectral (1%) — `Catalog
 Mythic companions (one per event egg) are numbered. New body styles: `bat` (a drake), `pumpkin`
 and `kraken` (wisps), `bones`, `tusks`, `reindeer`, `round` (beasts).
 
+## 10b. The newcomer's intro
+
+- **The name and the line** on the intro's title card: `GameConfig.GAME_NAME`, `GameConfig.TAGLINE`.
+- **The class a new player starts as**: `GameConfig.DEFAULT_CLASS` (its `primary` is their weapon).
+- **The recruit's gift** (once, after the menu tour): `Catalog ▸ Economy ▸ starterGift`, a reward like
+  a pass reward. Keep a Key in it: the gift card sends them straight to the crates.
+- **The cinematic's lines, the welcome's words, the first battle's tips**: `StarterPlayerScripts ▸
+  Intro` (`LINES`, `showWelcome`, `BRIEF`, the `tip(...)` calls). Its shots are the Courtyard map's
+  own camera shots (`K.camera` in `Build ▸ MapCourtyard`).
+- **The menu tour's stops**: `StarterPlayerScripts ▸ MenuTour ▸ STEPS` (a target is a name inside the
+  HubMenu: `Play`, `Dock_<TILE>`, `Wallet`, `ProfileChip`, `LobbyLeft`, `LobbyRight`).
+- **Find Your Feet's controls**: `Catalog ▸ Drills` (the `basics` lesson's `controls`), the words for
+  each in `Training.client` (`FEET`).
+- **The intro's score**: `MusicConfig ▸ TRACKS.Intro` (and `MOOD_VOLUME`).
+
 ## 11. Maps, modes, doors
 
 - **A themed map in one line (`Build ▸ MapForge`):** add a row to `F.MAPS`:

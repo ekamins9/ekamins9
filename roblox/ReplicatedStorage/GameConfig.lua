@@ -180,7 +180,12 @@ GameConfig.CLASSES = {
 		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
 }
 GameConfig.CLASS_ORDER = {"Knight", "Footman", "Vanguard", "Archer"}
-GameConfig.DEFAULT_CLASS = "Footman"
+-- a new player's class (the intro, their training and their first battle are fought in it)
+GameConfig.DEFAULT_CLASS = "Knight"
+
+-- the game's name and line, wherever the game introduces itself (the intro's title card)
+GameConfig.GAME_NAME = "Steel & Glory"
+GameConfig.TAGLINE = "Every swing is yours to aim."
 
 -- Studio can't load saved profiles, so every Play would be a brand-new player
 -- sent through basic training: there, only when this is true (test the path)

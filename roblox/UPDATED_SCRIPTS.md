@@ -1,4 +1,43 @@
-# Updated scripts: the vote's cursor, bots that climb and hop, maps sized to the numbers
+# Updated scripts: the newcomer's intro, no starting kill effect, the vote's cursor for good
+
+- **The game has a name: Steel & Glory** (`GameConfig.GAME_NAME`).
+- **The welcome** (new `Intro`):
+  - A ~12 s cinematic over the Courtyard (any key skips), to its own heroic score.
+  - Then WELCOME, SOLDIER! with BEGIN TRAINING (recommended) or SKIP TO BATTLE, which asks ARE YOU SURE? first.
+  - The travel screen comes up the moment they choose.
+- **Training:**
+  - New players are a **Knight with a Greatsword**.
+  - Training starts with **Find Your Feet**: a checklist of the camera (Z), sprint, crouch, hop, dodge and freeing the mouse (T), in their own binds, ticking as they press each.
+  - **M** (or the button) asks SKIP TRAINING? first.
+- **The first battle:**
+  - It's always Team Deathmatch, Free-for-All or King of the Hill, never a siege.
+  - A briefing card on arrival, then one-time tips: the first wound (block / parry), out of breath, FIRST KILL!, the first fall.
+  - When the round ends, the travel screen appears **at once** with how it went (kills, deaths, Marks, XP), instead of a few seconds of the vote.
+- **Back in the Courtyard** (new `MenuTour`):
+  - A spotlight tour of the menu that ends on Settings (rebind any key) and the menu key.
+  - Then the **recruit's gift** (500 Marks + a Key) with OPEN A CRATE, straight to the crates.
+- **No kill effect to start with:** plain falls. Shatter moves to the Relic crate (whoever has it on keeps it), and ARMORY ▸ KILL FX has a *No effect* choice.
+- **The vote's cursor:** forced on and free every frame of the vote, after everything else that touches the mouse.
+- **No body, still a world:** players without a character stream the map's middle, so the menu's and the intro's camera see the Courtyard (it was empty haze before).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Intro.client.lua](StarterPlayerScripts/Intro.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Intro | LocalScript | **new**: the welcome, the first battle's briefing and tips |
+| [MenuTour.client.lua](StarterPlayerScripts/MenuTour.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ MenuTour | LocalScript | **new**: the Courtyard welcome, the tour, the gift |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Training | LocalScript | Find Your Feet, the skip question, M |
+| [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ TravelScreen | LocalScript | `_G.ShowTravel`, the first battle's summary |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | intro hooks, tour names, `_G.HubMenuGo`, *No effect* |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Scoreboard | LocalScript | the vote's cursor, bound last |
+| [Music.client.lua](StarterPlayerScripts/Music.client.lua), [MusicConfig.lua](ReplicatedStorage/MusicConfig.lua) | StarterPlayerScripts ▸ Music · ReplicatedStorage ▸ MusicConfig | LocalScript · ModuleScript | the Intro mood |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | the Intro and TourDone ops, first-battle modes, the trip home sooner, equip no kill effect |
+| [Training.lua](ServerScriptService/Game/Training.lua), [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ServerScriptService ▸ Game ▸ Training · ReplicatedStorage ▸ Catalog ▸ Drills | ModuleScript | Find Your Feet |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | `menuTour`, `starterGift`, no starting kill effect, Knight |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua), [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | Script · ModuleScript | streaming focus for the bodiless, map shot attributes |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua), [Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua), [Catalog/KillFX.lua](ReplicatedStorage/Catalog/KillFX.lua) | ReplicatedStorage | ModuleScript | name, Knight default, the gift, Shatter in the Relic crate |
+
+---
+
+## Before that: the vote's cursor, bots that climb and hop, maps sized to the numbers
 
 - **The cursor is back on the vote screen.** Players stay alive through the intermission and the camera kept locking and hiding the mouse every frame; it lets go while the vote is up, and the board keeps the cursor on for the dead and the spectating too.
 - **Bots:**

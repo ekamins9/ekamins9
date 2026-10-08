@@ -17,6 +17,21 @@ local MapLoader  = Game.MapLoader
 -- Warfront matches are filled up with bots while players are few (Game ▸ BotFill)
 require(script.Parent:WaitForChild("BotFill")).start()
 
+-- someone with no body (the menu, the intro, the class screen) still sees the map: the
+-- world streams in around its middle (MapLoader.focus) instead of around nothing
+task.spawn(function()
+	while true do
+		for _, p in ipairs(Players:GetPlayers()) do
+			local c = p.Character
+			local h = c and c:FindFirstChildOfClass("Humanoid")
+			local want = not (h and h.Health > 0 and c:FindFirstChild("HumanoidRootPart")) and MapLoader.focus or nil
+			if want and not want.Parent then want = nil end
+			if p.ReplicationFocus ~= want then p.ReplicationFocus = want end
+		end
+		task.wait(0.5)
+	end
+end)
+
 local node = Game.node
 local function log(...) DebugFlags.log("Game", ...) end
 

@@ -703,6 +703,7 @@ do
 	profileChip.BackgroundTransparency = 0.12
 	profileChip.Position = UDim2.fromOffset(24, 18)
 	profileChip.Size = UDim2.fromOffset(340, 68)
+	profileChip.Name = "ProfileChip"
 	border(profileChip, WHITE, 1.5, 0.85)
 	local avatar = Instance.new("ImageLabel")
 	avatar.BackgroundColor3 = COL.GLASS2
@@ -736,6 +737,7 @@ do
 	wallet.Position = UDim2.new(0.5, 0, 0, 20)
 	wallet.AutomaticSize = Enum.AutomaticSize.X
 	wallet.Size = UDim2.fromOffset(0, 46)
+	wallet.Name = "Wallet"
 	do local l = hlist(wallet, 14); l.VerticalAlignment = Enum.VerticalAlignment.Center end
 	local crownsPill; crownsPill, crownsText, crownsPlus = currencyPill(wallet, "Crowns", true)
 	crownsPill.LayoutOrder = 1
@@ -2001,6 +2003,7 @@ do
 	local left = clearFrame(lobby)
 	left.Position = UDim2.fromOffset(24, 104)
 	left.Size = UDim2.new(0, 330, 1, -104 - 196)
+	left.Name = "LobbyLeft"
 	local leftList = scroll(left, 12)
 
 	local function taskRow(parent, ct, big)
@@ -2140,6 +2143,7 @@ do
 	right.AnchorPoint = Vector2.new(1, 0)
 	right.Position = UDim2.new(1, -24, 0, 104)
 	right.Size = UDim2.new(0, 340, 1, -104 - 232)
+	right.Name = "LobbyRight"
 	local rightList = scroll(right, 12)
 
 	local MEDAL = {Color3.fromRGB(255, 196, 40), Color3.fromRGB(200, 210, 224), Color3.fromRGB(214, 140, 80)}
@@ -2379,6 +2383,7 @@ do
 	playArea.AnchorPoint = Vector2.new(1, 1)
 	playArea.Position = UDim2.new(1, -24, 1, -22)
 	playArea.Size = UDim2.fromOffset(384, 220)
+	playArea.Name = "PlayArea"
 	local playHolder, playFace = fatButton(playArea, "PLAY", COL.GREEN, 56)
 	playHolder.Name = "Play"
 	playHolder.AnchorPoint = Vector2.new(1, 1)
@@ -3700,14 +3705,40 @@ do
 	end
 	local function killfx()
 		local items, hidden = filtered(sortedItems(Catalog.KILLFX), "killfx")
-		local equippedId = state.profile and state.profile.killfx or "Shatter"
-		if #items == 0 then nothingOwned(body, "kill effects"); return end
-		local inList = false
+		local equippedId = state.profile and state.profile.killfx or ""
+		local inList = ui.fxSel == ""
 		for _, f in ipairs(items) do if f.id == ui.fxSel then inList = true end end
-		if not Catalog.KILLFX_BY[ui.fxSel or ""] or not inList then ui.fxSel = Catalog.KILLFX_BY[equippedId] and equippedId or items[1].id end
+		if not (ui.fxSel == "" or Catalog.KILLFX_BY[ui.fxSel or ""]) or not inList then ui.fxSel = Catalog.KILLFX_BY[equippedId] and equippedId or "" end
 		local left = clearFrame(body); left.Size = UDim2.new(0, 290, 1, 0)
 		local leftList = scroll(left, 6)
 		heading(leftList, "KILL EFFECTS")
+		row(leftList, "No effect", equippedId == "" and "EQUIPPED ★" or "", ui.fxSel == "", function() ui.fxSel = ""; render.ARMORY() end, equippedId == "" and COL.GOOD or COL.DIM)
+		if ui.fxSel == "" then
+			-- a plain fall: nothing to preview, one button
+			local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306, 1, 0)
+			local ml = scroll(mid, 10)
+			local t = title(ml, "NO EFFECT", 30); t.Size = UDim2.new(1, 0, 0, 36); t.LayoutOrder = nextOrder()
+			dim(ml, "They just fall where they stand. Crates (the Relic and Grim crates), the season pass and tasks have kill effects to earn.", 15)
+			if equippedId == "" then
+				local e = title(ml, "★ EQUIPPED", 20, COL.GOOD); e.Size = UDim2.new(1, 0, 0, 26); e.LayoutOrder = nextOrder()
+			else
+				local h, b = fatButton(ml, "EQUIP", COL.GREEN, 20); h.Size = UDim2.fromOffset(320, 56); h.LayoutOrder = nextOrder()
+				b.Activated:Connect(function()
+					local r = call("Equip", "killfx", "")
+					toast(r.ok and "No kill effect" or (r.msg or ""), r.ok and COL.GOOD or COL.BAD)
+					if r.profile then state.profile = r.profile end
+					render.ARMORY()
+				end)
+			end
+			for _, f in ipairs(items) do
+				local have = owns("killfx", f.id)
+				row(leftList, (have and "" or "🔒 ") .. f.name, have and string.upper(f.rarity) or "", false,
+					function() ui.fxSel = f.id; render.ARMORY() end, RARITY_COL[f.rarity] or COL.DIM)
+			end
+			dim(leftList, "Plays on whoever you finish off, for everyone to see. Looks only.", 12)
+			if hidden > 0 then dim(leftList, string.format("%d more to get: tap  ✔ OWNED ONLY  to see them.", hidden), 12) end
+			return
+		end
 		for _, f in ipairs(items) do
 			local have = owns("killfx", f.id)
 			local r = row(leftList, (have and "" or "🔒 ") .. f.name, f.id == equippedId and "EQUIPPED ★" or (have and string.upper(f.rarity) or ""), f.id == ui.fxSel,
@@ -5974,7 +6005,7 @@ do
 	RunService.RenderStepped:Connect(function(dt)
 		local cam = workspace.CurrentCamera
 		if not cam then return end
-		local wantCine = not alive() and not deathFadeUp() and not _G.SpectateActive
+		local wantCine = not alive() and not deathFadeUp() and not _G.SpectateActive and not _G.IntroCamera
 		if wantCine then
 			cam.CameraType = Enum.CameraType.Scriptable
 			local target = cinematicCFrame(os.clock())
@@ -6014,7 +6045,7 @@ show = function(tab)
 	end
 	selectTab(tab or "PLAY")
 	local day = storeDay()
-	if state.login and not state.login.claimed and day and loginShownDay ~= day then
+	if state.login and not state.login.claimed and day and loginShownDay ~= day and not _G.IntroActive and not _G.TourActive then
 		loginShownDay = day
 		task.delay(0.4, loginPopup)
 	end
@@ -6036,6 +6067,9 @@ topClose.Activated:Connect(function() hide() end)
 -- M (or the MENU button on a touch screen: _G.HubMenuToggle): a pop-up closes
 -- first, then a screen (back to the lobby), then the menu
 local function menuKey()
+	if _G.IntroActive then return end
+	-- basic training asks "skip it?" instead (Training)
+	if not open and _G.MenuKeyOverride and _G.MenuKeyOverride() then return end
 	if open then
 		if modalBack.Visible then closeModal()
 		elseif currentTab ~= "PLAY" then selectTab("PLAY")
@@ -6044,6 +6078,11 @@ local function menuKey()
 end
 _G.HubMenuToggle = menuKey
 _G.HubMenuOpen = function() return open end
+-- open the menu on a screen (the menu tour, the recruit's gift): shopTab picks the shop's page
+_G.HubMenuGo = function(tab, shopTab)
+	if shopTab then ui.shopTab = shopTab; ui.crate = nil; ui.crateItem = nil end
+	show(tab or "PLAY")
+end
 UserInputService.InputBegan:Connect(function(input)
 	if input.KeyCode ~= MENU_KEY or listening then return end
 	if UserInputService:GetFocusedTextBox() then return end
@@ -6226,10 +6265,7 @@ do
 end
 
 hubEvent.OnClientEvent:Connect(function(what, a, b, c)
-	if what == "FirstBattleDone" then
-		toast("FIRST BATTLE DONE!  Off to the Courtyard: pick your class, gear and more in the menu.", COL.GOOD)
-		return
-	end
+	if what == "FirstBattleDone" then return end
 	if what == "Toast" then
 		toast(a)
 	elseif what == "TradeInvite" and type(a) == "table" then
@@ -6325,6 +6361,6 @@ task.spawn(function()
 		local a = alive()
 		if a and not wasAlive then autoOpen = true end
 		wasAlive = a
-		if autoOpen and not a and not open and inHub() and not deathFadeUp() and not classScreenUp() then show("PLAY") end
+		if autoOpen and not a and not open and inHub() and not deathFadeUp() and not classScreenUp() and not _G.IntroActive then show("PLAY") end
 	end
 end)

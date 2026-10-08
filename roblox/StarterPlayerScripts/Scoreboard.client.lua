@@ -584,10 +584,16 @@ RunService.RenderStepped:Connect(function(dt)
 		gui.DisplayOrder = intermission() and 2100 or 30
 		if show then refreshBoard() end
 	end
-	-- the vote needs a cursor (alive, dead or spectating, whoever had the mouse last)
-	if board.Visible and intermission() and not hubMenuUp() then
+end)
+-- THE VOTE NEEDS A CURSOR: alive, dead or spectating, a weapon in hand or not.
+-- Bound after everything else that touches the mouse each frame (the camera, the
+-- weapon, the menus), so whoever had it last can't keep it hidden or locked
+RunService:BindToRenderStep("VoteCursor", Enum.RenderPriority.Last.Value + 50, function()
+	local mode = roundNode:GetAttribute("Mode")
+	if intermission() and mode ~= "Hub" and mode ~= "Tiltyard" and not hubMenuUp() then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 		UserInputService.MouseIconEnabled = true
+		if UserInputService.MouseIcon ~= "" then UserInputService.MouseIcon = "" end
 	end
 end)
 refreshRound()

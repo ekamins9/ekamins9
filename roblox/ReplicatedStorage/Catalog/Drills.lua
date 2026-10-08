@@ -5,7 +5,9 @@
                    hit (kind = "Swing" / "Stab" / "Overhead": an attack of
                    that kind lands on a dummy) · sides (a hit from each side)
                    · guard · parry · riposte · feint · morph · kick · dodge ·
-                   chamber · spar (skill = a win in the ring at that level)
+                   chamber · spar (skill = a win in the ring at that level) ·
+                   basics (each of `controls` tried once: the client reports the
+                   key presses, Training.client; goal = how many)
                  setup: "attacker" (a drill dummy swings at you) or "blocker"
                  (a dummy that never drops its guard)
                  basic: part of BASIC TRAINING, the short course every newcomer
@@ -17,6 +19,9 @@
        gauntlet  perWave (Marks for each wave past your best), payTo (no pay past this wave) ]]
 return {
 	lessons = {
+		{id = "basics", title = "Find Your Feet", goal = 6, event = "basics", basic = true,
+			controls = {"View", "Sprint", "Crouch", "Jump", "Dodge", "Cursor"},
+			text = "Before the steel, your feet. Try each control on the list: the camera, a sprint, a crouch, a hop, a dodge, and freeing your mouse."},
 		{id = "swing", title = "The Swing", goal = 3, event = "hit", kind = "Swing", basic = true,
 			text = "Every fight starts with a good swing. Strike a straw dummy with {Swing}. Three times!"},
 		{id = "stab", title = "The Stab", goal = 2, event = "hit", kind = "Stab", basic = true,

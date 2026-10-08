@@ -32,7 +32,7 @@
      Remote: ReplicatedStorage ▸ TrainingRemote
        client → server  "Lesson", id · "Restart" · "Spar", skill · "Leave" ·
                         "Practice", skill, count · "ClearPractice" · "Gauntlet" ·
-                        "SkipTraining"
+                        "Basic", control (Find Your Feet) · "SkipTraining"
        server → client  "Menu", info · "Ring", records · "Progress" · "Done", id, line ·
                         "Course" (basic training begins) · "Graduated", skipped ·
                         "Spar", what, … · "Gauntlet", what, … · "Practice", what, … ]]
@@ -167,7 +167,7 @@ local function setLesson(plr, id)
 	if not l then return end
 	learners[plr] = learners[plr] or {conns = {}}
 	local L = learners[plr]
-	L.id, L.n, L.sides = id, 0, {}
+	L.id, L.n, L.sides, L.tried = id, 0, {}, {}
 	if l.setup then ensureDrill(l.setup) end
 	publish(plr)
 	tell(plr, "Progress")
@@ -640,6 +640,7 @@ local function targetFor(plr)
 	local L = learners[plr]
 	local l = L and LESSON[L.id or ""]
 	if not l then return masterPos, "DRILL MASTER" end
+	if l.event == "basics" then return nil end   -- (right where you stand)
 	if l.event == "spar" then
 		local c = spot("Ring")
 		return c and c.Position, "THE RING"
@@ -756,6 +757,18 @@ function Training.start(map)
 		elseif what == "Practice" and type(a) == "string" then startPractice(plr, a, b)
 		elseif what == "ClearPractice" then clearPractice(plr)
 		elseif what == "Leave" and ring and ring.player == plr then endRing("left")
+		elseif what == "Basic" and type(a) == "string" then
+			-- Find Your Feet: a control tried (once each; it's only practice, so the client's word will do)
+			local L = learners[plr]
+			local l = L and LESSON[L.id or ""]
+			if l and l.event == "basics" and table.find(l.controls or {}, a) and not (L.tried or {})[a] then
+				L.tried = L.tried or {}
+				L.tried[a] = true
+				L.n = 0
+				for _ in pairs(L.tried) do L.n += 1 end
+				publish(plr)
+				if L.n >= l.goal then complete(plr) end
+			end
 		elseif what == "SkipTraining" and (Profile.get(plr).tutorial or 2) < 2 then
 			if ring and ring.player == plr then endRing("left") end
 			graduate(plr, true)

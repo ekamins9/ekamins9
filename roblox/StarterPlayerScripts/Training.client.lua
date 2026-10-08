@@ -13,7 +13,10 @@
        • banners: 3-2-1, VICTORY / DEFEATED / FORFEIT, LESSON DONE, gauntlet
          waves
        • BASIC TRAINING (a newcomer's first visit): the card up top with the
-         step (1 / 7 …), a SKIP TRAINING button, a welcome and a send-off ]]
+         step (1 / 8 …), a welcome and a send-off; FIND YOUR FEET's checklist
+         of controls (each ticks the moment you press it, in your own binds);
+         SKIP (the button, or M: the menu key asks "are you sure?" here, since
+         a newcomer may not know how to free the mouse yet) ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -206,15 +209,17 @@ Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 8)
 local barText = text(barBack, "", 13); barText.Size = UDim2.fromScale(1, 1); barText.TextXAlignment = Enum.TextXAlignment.Center
 local menuB = button(card, "MENU", Theme.BLUE, UDim2.fromOffset(92, 30), UDim2.new(1, -104, 1, -46))
 -- basic training: skip it and go straight to battle
-local skipB = button(gui, "SKIP TRAINING  ›", Theme.GLASS2, UDim2.fromOffset(190, 40), UDim2.new(1, -206, 0, 64))
+local skipB = button(gui, "SKIP TRAINING  ·  M", Theme.GLASS2, UDim2.fromOffset(210, 40), UDim2.new(1, -226, 0, 64))
 skipB.Visible = false
 local skipping = false
-skipB.MouseButton1Click:Connect(function()
+local skipConfirm   -- (below, with the boards)
+local function skipNow()
 	if skipping then return end
 	skipping = true
 	skipB.Text = "OFF TO BATTLE…"
 	remote:FireServer("SkipTraining")
-end)
+end
+skipB.MouseButton1Click:Connect(function() if skipConfirm then skipConfirm() end end)
 
 -- the Drill Master's bubble (local: he tells each of you your own lesson)
 local bubble = Instance.new("BillboardGui")
@@ -277,6 +282,83 @@ round:GetAttributeChangedSignal("Mode"):Connect(refreshCard)
 task.spawn(function() while true do task.wait(1); refreshCard() end end)
 
 --------------------------------------------------------------------
+--  FIND YOUR FEET: each control on the list ticks the moment you press it
+--  (in your own binds); the server counts them (Drills ▸ basics)
+--------------------------------------------------------------------
+local FEET = {
+	View = "Switch first / third person", Sprint = "Sprint (hold it while you run)", Crouch = "Crouch",
+	Jump = "Hop", Dodge = "Dodge (with a direction)", Cursor = "Free the mouse (and again to lock it)",
+}
+local feet = panel(gui, UDim2.fromOffset(330, 0), UDim2.new(0, 16, 0.5, -150))
+feet.AutomaticSize = Enum.AutomaticSize.Y
+feet.Visible = false
+do
+	local pad = Instance.new("UIPadding", feet)
+	pad.PaddingTop, pad.PaddingBottom, pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 12), UDim.new(0, 12), UDim.new(0, 14), UDim.new(0, 14)
+	local lay = Instance.new("UIListLayout", feet); lay.Padding = UDim.new(0, 6); lay.SortOrder = Enum.SortOrder.LayoutOrder
+end
+local feetHead = text(feet, "THE BASICS  ·  TRY EACH ONE", 13, GUIDE); feetHead.Size = UDim2.new(1, 0, 0, 16); feetHead.LayoutOrder = 0
+local feetRows, tried = {}, {}
+local feetFoot = text(feet, "", 12, Theme.DIM, Theme.FONT); feetFoot.Size = UDim2.new(1, 0, 0, 30); feetFoot.LayoutOrder = 100
+local gotIt = button(feet, "GOT IT  ›", Theme.GREEN, UDim2.new(1, 0, 0, 40)); gotIt.LayoutOrder = 101; gotIt.Visible = false
+local function feetControls()
+	local l = LESSON.basics
+	return l and l.controls or {}
+end
+local function buildFeet()
+	for _, r in pairs(feetRows) do r.row:Destroy() end
+	feetRows = {}
+	for i, action in ipairs(feetControls()) do
+		local row = Instance.new("Frame")
+		row.BackgroundColor3 = Theme.GLASS2; row.BackgroundTransparency = 0.25; row.Size = UDim2.new(1, 0, 0, 34); row.LayoutOrder = i; row.Parent = feet
+		Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
+		local key = text(row, keyName(action):gsub("[%[%]]", ""), 13, WHITE)
+		key.BackgroundTransparency = 0; key.BackgroundColor3 = Color3.fromRGB(16, 20, 32)
+		key.Position = UDim2.fromOffset(6, 5); key.Size = UDim2.fromOffset(96, 24); key.TextXAlignment = Enum.TextXAlignment.Center; key.TextScaled = false
+		Instance.new("UICorner", key).CornerRadius = UDim.new(0, 6)
+		local what = text(row, FEET[action] or action, 13, WHITE, Theme.FONT); what.Position = UDim2.fromOffset(110, 0); what.Size = UDim2.new(1, -146, 1, 0)
+		local tick = text(row, "", 20, Theme.GOOD); tick.AnchorPoint = Vector2.new(1, 0.5); tick.Position = UDim2.new(1, -8, 0.5, 0); tick.Size = UDim2.fromOffset(26, 26)
+		tick.TextXAlignment = Enum.TextXAlignment.Center
+		feetRows[action] = {row = row, tick = tick, what = what}
+	end
+	feetFoot.Text = "Anytime: M opens the menu (Settings has every key), Tab holds the scoreboard."
+	gotIt.Visible = touchOnly()
+end
+local function markFeet(action)
+	local r = feetRows[action]
+	if not r or tried[action] then return end
+	tried[action] = true
+	r.tick.Text = "✔"
+	r.row.BackgroundColor3 = Color3.fromRGB(40, 90, 50)
+	local sc = r.tick:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", r.tick)
+	sc.Scale = 1.8
+	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	pcall(function() require(ReplicatedStorage:WaitForChild("UIFX")).play("Click") end)
+	remote:FireServer("Basic", action)
+end
+local function refreshFeet()
+	local on = inYard() and player:GetAttribute("Drill") == "basics" and not hubMenuUp()
+	if on and not feet.Visible then tried = {}; buildFeet() end
+	feet.Visible = on
+end
+UserInputService.InputBegan:Connect(function(input)
+	if not feet.Visible or UserInputService:GetFocusedTextBox() then return end
+	local action = ClientSettings.actionForInput(input)
+	if action and FEET[action] then markFeet(action) end
+end)
+-- (on a touch screen the moves are buttons: a hop and a dodge show for themselves, the rest on GOT IT)
+gotIt.MouseButton1Click:Connect(function() for _, a in ipairs(feetControls()) do markFeet(a) end end)
+local function watchFeet(c)
+	local hum = c:WaitForChild("Humanoid", 10)
+	if hum then hum.Jumping:Connect(function(on) if on and feet.Visible then markFeet("Jump") end end) end
+	c:GetAttributeChangedSignal("LocalDodgeAt"):Connect(function() if feet.Visible then markFeet("Dodge") end end)
+end
+if player.Character then task.spawn(watchFeet, player.Character) end
+player.CharacterAdded:Connect(watchFeet)
+for _, a in ipairs({"Drill", "Course"}) do player:GetAttributeChangedSignal(a):Connect(refreshFeet) end
+task.spawn(function() while true do task.wait(0.5); refreshFeet() end end)
+
+--------------------------------------------------------------------
 --  BOARDS (a centred pop-up)
 --------------------------------------------------------------------
 local shade = Instance.new("TextButton"); shade.Text = ""; shade.AutoButtonColor = false; shade.BackgroundColor3 = Theme.BACK; shade.BackgroundTransparency = 0.45
@@ -287,6 +369,8 @@ local function closeBoard() shade.Visible = false; for _, c in ipairs(board:GetC
 shade.MouseButton1Click:Connect(closeBoard)
 local function openBoard(titleText)
 	closeBoard()
+	board.Size = UDim2.fromOffset(640, 540)
+	board.Position = UDim2.new(0.5, -320, 0.5, -270)
 	shade.Visible = true
 	local t = text(board, titleText, 28); t.Position = UDim2.fromOffset(20, 14); t.Size = UDim2.new(1, -120, 0, 34); t.ZIndex = 7
 	local x = button(board, "X", Theme.RED, UDim2.fromOffset(44, 40), UDim2.new(1, -58, 0, 12)); x.ZIndex = 7
@@ -299,6 +383,30 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local lastInfo = {}
+
+-- "are you sure?": a newcomer leaving basic training early
+skipConfirm = function()
+	if skipping then return end
+	local b = openBoard("SKIP TRAINING?")
+	b.Size = UDim2.fromOffset(600, 340)
+	b.Position = UDim2.new(0.5, -300, 0.5, -170)
+	local step, steps = player:GetAttribute("CourseStep") or 1, player:GetAttribute("CourseSteps") or 8
+	local left = math.max(steps - step + 1, 1)
+	local t = text(b, string.format("Combat here is different. Every swing follows your mouse, and blocks, parries and kicks decide who walks away. "
+		.. "You're on step %d of %d: about %d minute%s to go, and every step pays Marks.\n\nYou can always come back later: the Training Yard is in the PLAY menu.",
+		step, steps, math.max(1, math.ceil(left * 0.3)), left > 3 and "s" or ""), 16, WHITE, Theme.FONT)
+	t.Position = UDim2.fromOffset(22, 58); t.Size = UDim2.new(1, -44, 0, 150); t.TextYAlignment = Enum.TextYAlignment.Top; t.ZIndex = 7
+	local keep = button(b, "KEEP TRAINING", Theme.GREEN, UDim2.new(0.5, -28, 0, 58), UDim2.new(0, 22, 1, -80)); keep.ZIndex = 7; keep.TextSize = 20
+	keep.MouseButton1Click:Connect(closeBoard)
+	local go = button(b, "SKIP TO BATTLE", Theme.GLASS2, UDim2.new(0.5, -28, 0, 58), UDim2.new(0.5, 6, 1, -80)); go.ZIndex = 7; go.TextSize = 20
+	go.MouseButton1Click:Connect(function() closeBoard(); skipNow() end)
+end
+-- M in basic training: the question (not the menu)
+_G.MenuKeyOverride = function()
+	if not (inYard() and player:GetAttribute("Course") == "basic") or skipping then return false end
+	if shade.Visible then closeBoard() else skipConfirm() end
+	return true
+end
 
 local function lessonBoard()
 	local b = openBoard("THE DRILL MASTER'S LESSONS")
@@ -447,8 +555,8 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	elseif what == "Progress" then refreshCard()
 	elseif what == "Course" then
 		skipping = false
-		skipB.Text = "SKIP TRAINING  ›"
-		show("WELCOME, RECRUIT!", "A one-minute lesson, then your first battle. (Or skip it, top right.)", Theme.ACCENT, 4.5)
+		skipB.Text = "SKIP TRAINING  ·  M"
+		show("WELCOME, RECRUIT!", "A few quick steps, then your first battle.", Theme.ACCENT, 4.5)
 	elseif what == "Graduated" then
 		skipB.Visible = false
 		if a then
@@ -456,6 +564,10 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 		else
 			show("TRAINING COMPLETE!", "well fought, recruit  ·  your first battle is loading…", Theme.GOLD, 6)
 		end
+		-- the travel screen comes up straight away (the trip itself starts on the server)
+		task.delay(a and 0.5 or 2.2, function()
+			if _G.ShowTravel then _G.ShowTravel(a and "TO BATTLE" or "TRAINING COMPLETE", "YOUR FIRST BATTLE") end
+		end)
 	elseif what == "Done" then
 		local l = LESSON[a]
 		show("LESSON DONE!", (l and l.title or "") .. ((b and b:find("Marks")) and ("  ·  " .. (b:match("%+%d+ Marks.*") or "")) or ""), Theme.GOOD, 3)

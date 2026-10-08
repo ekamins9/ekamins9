@@ -4,8 +4,16 @@
      registered as the teleport GUI, so Roblox keeps showing it during the
      load on the other side, and on arrival this script fades that copy out.
 
-       ReplicatedStorage.HubEvent  server -> "Travel", destinationText
-       Players.LocalPlayer.OnTeleport / TeleportService.TeleportInitFailed ]]
+       ReplicatedStorage.HubEvent  server -> "Travel", destinationText ·
+                                   "FirstBattleDone" (a newcomer's first battle is
+                                   over: the screen comes up AT ONCE with how it
+                                   went, "Rewards" fills it in, and the trip home
+                                   follows a few seconds later)
+       _G.ShowTravel(title, dest)  other scripts put it up early (the intro's
+                                   answer, graduating from training)
+       Players.LocalPlayer.OnTeleport / TeleportService.TeleportInitFailed
+     In Studio nothing teleports (the server switches mode): the screen goes
+     when the mode changes. ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -94,6 +102,30 @@ local function build(name)
 	dest.Text = ""
 	dest.Parent = back
 
+	local stats = Instance.new("TextLabel")
+	stats.Name = "Stats"
+	stats.AnchorPoint = Vector2.new(0.5, 0.5)
+	stats.Position = UDim2.fromScale(0.5, 0.42 + 0.115)
+	stats.Size = UDim2.new(0.8, 0, 0, 30)
+	stats.BackgroundTransparency = 1
+	stats.Font = FONT_BLACK
+	stats.TextSize = 22
+	stats.TextColor3 = Color3.fromRGB(255, 214, 90)
+	stats.Text = ""
+	stats.Parent = back
+	local note = Instance.new("TextLabel")
+	note.Name = "Note"
+	note.AnchorPoint = Vector2.new(0.5, 0.5)
+	note.Position = UDim2.fromScale(0.5, 0.42 + 0.16)
+	note.Size = UDim2.new(0.7, 0, 0, 40)
+	note.BackgroundTransparency = 1
+	note.Font = FONT_BODY
+	note.TextSize = 16
+	note.TextWrapped = true
+	note.TextColor3 = COL_TEXT
+	note.Text = ""
+	note.Parent = back
+
 	local track = Instance.new("Frame")
 	track.Name = "Track"
 	track.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -154,6 +186,9 @@ local back  = gui.Back
 local bar   = back.Track.Bar
 local hint  = back.Hint
 local dest  = back.Dest
+local titleL = back.Title
+local statsL = back.Stats
+local noteL  = back.Note
 
 local showing = false
 local hintIdx = math.random(#HINTS)
@@ -168,8 +203,10 @@ local function setHint()
 	end)
 end
 
-local function show(where)
+local studioWatch   -- (Studio: the mode change that stands in for the trip)
+local function show(where, titleText)
 	dest.Text = where or ""
+	if titleText then titleL.Text = titleText end
 	if showing then return end
 	showing = true
 	gui.Enabled = true
@@ -204,9 +241,15 @@ end
 local function hide(reason)
 	if not showing then return end
 	showing = false
+	if studioWatch then studioWatch:Disconnect(); studioWatch = nil end
 	if mouseConn then mouseConn:Disconnect(); mouseConn = nil end
 	TweenService:Create(back, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-	task.delay(0.3, function() if not showing then gui.Enabled = false end end)
+	task.delay(0.3, function()
+		if not showing then
+			gui.Enabled = false
+			titleL.Text, statsL.Text, noteL.Text = "TRAVELLING", "", ""
+		end
+	end)
 	for _, name in ipairs({"HubToasts", "Scoreboard", "HUD"}) do
 		local g = playerGui:FindFirstChild(name)
 		if g and g:IsA("ScreenGui") then g.Enabled = true end
@@ -219,11 +262,61 @@ local function hide(reason)
 	if hm and _G.MenuBus then _G.MenuBus:Fire("HubClosed") end
 end
 
+-- Studio: nothing teleports, the server switches mode in place; the screen
+-- goes a moment after the new mode is up (a live trip ends on the other side)
+local function watchStudio()
+	if not RunService:IsStudio() or studioWatch then return end
+	local round = ReplicatedStorage:FindFirstChild("Round")
+	if not round then return end
+	local was = round:GetAttribute("Mode")
+	studioWatch = round:GetAttributeChangedSignal("Mode"):Connect(function()
+		if round:GetAttribute("Mode") ~= was then task.delay(1.2, function() hide("arrived") end) end
+	end)
+	task.delay(25, function() if showing then hide("timeout") end end)
+end
+
+-- other scripts put it up the moment the trip is decided
+_G.ShowTravel = function(titleText, where)
+	show(where or "", titleText or "TRAVELLING")
+	watchStudio()
+end
+_G.HideTravel = function() hide("failed") end
+
+-- a newcomer's first battle is over: how it went, then home
+local lastRewards, firstDone = nil, false
+local function fillFirst()
+	local r = lastRewards
+	local ls = player:FindFirstChild("leaderstats")
+	local kills = (r and r.kills) or (ls and ls:FindFirstChild("Kills") and ls.Kills.Value) or 0
+	local deaths = ls and ls:FindFirstChild("Deaths") and ls.Deaths.Value or 0
+	local bits = {string.format("%d KILL%s", kills, kills == 1 and "" or "S"), string.format("%d DEATH%s", deaths, deaths == 1 and "" or "S")}
+	if r then
+		if (r.marks or 0) > 0 then table.insert(bits, string.format("+%d MARKS", r.marks)) end
+		if (r.xp or 0) > 0 then table.insert(bits, string.format("+%d XP", r.xp)) end
+		if (r.levels or 0) > 0 then table.insert(bits, "LEVEL UP!") end
+	end
+	statsL.Text = table.concat(bits, "   ·   ")
+	if r and r.won ~= nil then titleL.Text = r.won and "VICTORY  ·  FIRST BATTLE WON" or "FIRST BATTLE FOUGHT" end
+end
+
 -- the server tells us before it teleports; Roblox tells us as it goes
 local hubEvent = ReplicatedStorage:WaitForChild("HubEvent", 10)
 if hubEvent then
 	hubEvent.OnClientEvent:Connect(function(what, a)
-		if what == "Travel" then show(a) elseif what == "TravelFailed" then hide("failed") end
+		if what == "Travel" then
+			show(a)
+			if firstDone then dest.Text = "Next: THE COURTYARD" end
+		elseif what == "TravelFailed" then hide("failed")
+		elseif what == "Rewards" then
+			lastRewards = a
+			if firstDone then fillFirst() end
+		elseif what == "FirstBattleDone" then
+			firstDone = true
+			show("Next: THE COURTYARD", "FIRST BATTLE COMPLETE")
+			noteL.Text = "Your home between battles: pick your class, open crates, gear up, and meet friends."
+			fillFirst()
+			watchStudio()
+		end
 	end)
 end
 player.OnTeleport:Connect(function(state)
