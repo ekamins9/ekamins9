@@ -3651,7 +3651,7 @@ do
 			end
 			if not Catalog.classOpen(id, state.profile) then
 				-- (the Archer and the Mage open at level 5: a veil and the level)
-				local veil = frame(b, Color3.fromRGB(6, 8, 16), 10); veil.Size = UDim2.fromScale(1, 1); veil.BackgroundTransparency = 0.45; veil.ZIndex = 5
+				local veil = frame(b, Color3.fromRGB(6, 8, 16), 10); veil.Size = UDim2.fromScale(1, 1); veil.BackgroundTransparency = 0.12; veil.ZIndex = 5   -- (opaque enough that the stats under it don't show through the lock)
 				local lt = title(veil, "🔒  " .. string.upper(Catalog.unlockText(def.unlock)), 18); lt.Size = UDim2.new(1, 0, 0, 24); lt.Position = UDim2.new(0, 0, 0.5, -12)
 				lt.TextXAlignment = Enum.TextXAlignment.Center; lt.ZIndex = 6
 			end

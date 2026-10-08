@@ -213,7 +213,7 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	end)
 	-- (locked: a veil and the level it opens at — GameConfig.CLASSES unlock)
 	if def.unlock then
-		local veil = Instance.new("Frame"); veil.Name = "Locked"; veil.BackgroundColor3 = Color3.fromRGB(8, 10, 18); veil.BackgroundTransparency = 0.35
+		local veil = Instance.new("Frame"); veil.Name = "Locked"; veil.BackgroundColor3 = Color3.fromRGB(8, 10, 18); veil.BackgroundTransparency = 0.12
 		veil.Size = UDim2.fromScale(1, 1); veil.ZIndex = 20; veil.Visible = false; veil.Parent = b
 		Instance.new("UICorner", veil).CornerRadius = UDim.new(0, 10)
 		local lt = label(veil, "🔒  LEVEL " .. tostring(def.unlock.level or "?"), 18, FONT, COL_TEXT)
