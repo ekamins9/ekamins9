@@ -87,6 +87,20 @@ return {
 	 description = "Bright steel and burning gold, and a king's light all round you. The crowd stands up when you walk in.",
 	 look = {metal = C(214, 218, 226), accent = C(255, 190, 70), glow = true, pulse = true, aura = "sovereign", light = C(255, 210, 120)}},
 
+	-- THE ARCANA CRATE (made for robes: the cloth takes `robe`, plate its metal)
+	{id = "Spellwoven", name = "Spellwoven", rarity = "Rare", crate = "Arcana",
+	 description = "Cloth dyed the violet of a spellbook's cover, edged in gold thread.",
+	 look = {robe = C(104, 58, 170), metal = C(120, 96, 170), accent = C(232, 190, 90)}},
+	{id = "Moonthread", name = "Moonthread", rarity = "Epic", crate = "Arcana",
+	 description = "Woven by moonlight: pale silver-blue, its trims glowing softly, frost on the air.",
+	 look = {robe = C(176, 192, 228), metal = C(196, 208, 236), accent = C(220, 236, 255), glow = true, pulse = true, aura = "frost", light = C(180, 210, 255)}},
+	{id = "Hexweave", name = "Hexweave", rarity = "Epic", crate = "Arcana",
+	 description = "Black-green cloth with a witch's light flickering in the seams.",
+	 look = {robe = C(34, 52, 30), metal = C(44, 56, 40), accent = C(150, 255, 120), glow = true, flicker = true, aura = "toxic", light = C(140, 255, 120)}},
+	{id = "Starweave", name = "Starweave", rarity = "Legendary", crate = "Arcana",
+	 description = "Midnight cloth with the stars still in it. They glow, and light drifts up round you.",
+	 look = {robe = C(26, 22, 70), metal = C(40, 36, 90), accent = C(255, 236, 170), glow = true, pulse = true, aura = "holy", light = C(255, 230, 170)}},
+
 	-- ONE IN EVERY DROP CRATE (armor in the weapon crates, in the crate's own colours)
 	{id = "Bonewhite", name = "Bonewhite", rarity = "Epic", crate = "Ossuary",
 	 description = "Plate bleached the colour of the ossuary's walls, and candlelight in every seam.",

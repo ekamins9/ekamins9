@@ -68,7 +68,7 @@ return {
 	},
 	-- the Mage's crate: spell skins (Catalog ▸ SpellSkins), a look of their own for every spell
 	Arcana = {
-		name = "Arcana Crate", description = "Spell skins: your Firebolt a dragon's head, a phoenix or a burning skull; golden lightning, a falling moon, crystal novas. Mythic: Wyrmfall.",
+		name = "Arcana Crate", description = "Everything a Mage wears: spell skins (a dragon's head for your Firebolt, golden lightning, a falling moon), seven robes a piece at a time, and finishes made for cloth. Mythic: Wyrmfall, the Star Sage.",
 		cost = 85, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(170, 90, 255),
 	},

@@ -88,8 +88,11 @@ local function handle(plr, text)
 		if skill == "clear" then for _, b in ipairs(Bots.list()) do b:destroy() end; return end
 		local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 		if not hrp then return end
-		local at = hrp.CFrame * CFrame.new(0, 0, -12)
-		Bots.spawn({at = CFrame.lookAt(at.Position, hrp.Position), skill = (skill ~= "" and skill) or "Squire", weapon = (weapon ~= "" and weapon) or "Longsword", target = plr.Character})
+		-- (/bot Knight Archer · /bot Champion Mage: a class instead of a weapon, further off)
+		local cls = (weapon == "Archer" or weapon == "Mage") and weapon or nil
+		local at = hrp.CFrame * CFrame.new(0, 0, cls and -30 or -12)
+		Bots.spawn({at = CFrame.lookAt(at.Position, hrp.Position), skill = (skill ~= "" and skill) or "Squire", class = cls,
+			weapon = (not cls) and ((weapon ~= "" and weapon) or "Longsword") or nil, target = plr.Character})
 		return
 	end
 	if cmd == "egg" or cmd == "ripen" or cmd == "playtime" then

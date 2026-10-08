@@ -130,7 +130,7 @@ local COL = {
 	BLUE = Theme.BLUE, RED = Theme.RED, YELLOW = Theme.YELLOW, PURPLE = Theme.PURPLE,
 }
 local WHITE       = Color3.new(1, 1, 1)
-local TYPE_COL    = {Light = Color3.fromRGB(96, 190, 110), Medium = Color3.fromRGB(230, 180, 60), Heavy = Color3.fromRGB(230, 90, 80)}
+local TYPE_COL    = {Light = Color3.fromRGB(96, 190, 110), Medium = Color3.fromRGB(230, 180, 60), Heavy = Color3.fromRGB(230, 90, 80), Robe = Color3.fromRGB(170, 120, 255)}
 -- what an armor weight gives and costs, in one line (Catalog ▸ Weights)
 local function weightLine(weight)
 	local w = Catalog.WEIGHTS[weight] or {}
@@ -5245,11 +5245,17 @@ function HX.spellsPanel(list, lo, classId, cardGrid, itemCard)
 		or "Mana comes back only when you meditate: hold " .. HX.Hints.name("Reload") .. " standing still. Mages don't hold the line.", 12)
 	-- LOOKS: a skin for each spell you carry (Catalog ▸ SpellSkins, out of the Arcana Crate)
 	local looks = type(lo.spellSkins) == "table" and lo.spellSkins or {}
+	-- (the spells you carry: the weapon's, then the wand's)
+	local carried = table.clone(cur)
+	local wandW = lo.secondary and Catalog.WEAPON[lo.secondary]
+	if wandW and wandW.wand then
+		for _, x in ipairs(type(lo.wandSpells) == "table" and lo.wandSpells or Spells.WAND_DEFAULT) do if Spells[x] and Spells[x].wand then table.insert(carried, x) end end
+	end
 	local any = false
-	for _, x in ipairs(cur) do if #Catalog.spellSkinsFor(x) > 0 then any = true end end
+	for _, x in ipairs(carried) do if #Catalog.spellSkinsFor(x) > 0 then any = true end end
 	if any then
 		heading(mp, "LOOKS  ·  SPELL SKINS")
-		for _, x in ipairs(cur) do
+		for _, x in ipairs(carried) do
 			local skins = Catalog.spellSkinsFor(x)
 			if #skins > 0 then
 				local spx = Spells[x]

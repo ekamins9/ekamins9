@@ -15,7 +15,10 @@
      aura's particles come off the shoulders, the arms and the legs, the light
      sits on the chest. Glowing trims are tagged "ArmorGlow" (attribute Mode =
      pulse | flicker | radiant) and StarterPlayerScripts ▸ ArmorFX makes them
-     breathe. Looks only. ]]
+     breathe. Looks only.
+     ROBES (no metal at all: a Mage's) wear it in their cloth instead: the robe takes the
+     finish's `robe` colour (else its metal), the lining a deeper shade of it, the trims
+     its accent (glowing, if it glows). ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
@@ -46,6 +49,7 @@ function ArmorFX.apply(container, char, id, preview, builtIn)
 	local L = def.look or {}
 	if builtIn then L = {accent = L.accent, glow = L.glow, pulse = L.pulse, flicker = L.flicker, radiant = L.radiant, aura = L.aura, light = L.light} end
 	local metals, accents = {}, {}
+	local cloths = {}
 	for _, p in ipairs(container:GetDescendants()) do
 		if p:IsA("BasePart") and p.Transparency < 1 and p.Name ~= "Middle" then
 			local slot = p:GetAttribute("ColorSlot")
@@ -54,9 +58,18 @@ function ArmorFX.apply(container, char, id, preview, builtIn)
 			elseif slot == "Metal" or (not slot and METAL[p.Material]) then
 				table.insert(metals, p)
 			elseif (slot == "Primary" or slot == "Secondary" or not slot) then
+				if slot then table.insert(cloths, p) end
 				if L.tint then p.Color = p.Color:Lerp(L.tint[1], L.tint[2]) end
 				if L.body and (slot == "Primary" or slot == "Secondary") then p.Material = Enum.Material[L.body] end
 			end
+		end
+	end
+	-- a robe (cloth, no metal): the finish goes into the cloth
+	local robeCol = L.robe or L.metal
+	if #metals == 0 and robeCol and not builtIn then
+		for _, p in ipairs(cloths) do
+			local slot = p:GetAttribute("ColorSlot")
+			p.Color = slot == "Primary" and p.Color:Lerp(robeCol, 0.85) or p.Color:Lerp(robeCol:Lerp(Color3.new(0, 0, 0), 0.45), 0.75)
 		end
 	end
 	-- (a set with no trims at all: its smallest metal bits — rivets, studs, edges — become them)

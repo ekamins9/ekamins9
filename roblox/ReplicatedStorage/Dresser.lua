@@ -542,7 +542,13 @@ function Dresser.applySkin(tool, skinId, variant)
 		if p:IsA("BasePart") then
 			local part = p:GetAttribute("SkinPart")
 			if part == "Blade" and skin.blade then p.Color = skin.blade; n += 1
-			elseif part == "Grip" and skin.grip then p.Color = skin.grip; n += 1 end
+			elseif part == "Grip" and skin.grip then p.Color = skin.grip; n += 1
+			-- (a magic weapon's fittings — a staff's claws, a book's corners: skin.metal, else its accent)
+			elseif part == "Metal" and (skin.metal or skin.accent) then
+				p.Color = skin.metal or skin.accent
+				if skin.metalMaterial then p.Material = Enum.Material[skin.metalMaterial] end
+				n += 1
+			end
 		end
 	end
 	if SkinTrims.apply(tool, skin) then n += 1 end

@@ -136,7 +136,16 @@ each, where (a Map ▸ Spots name) and the class it's fought as.
 `MANA_MULT`, `WALK`, `WARD`, `STANCE`, `ORB`, `CAST_FROM`, `TWIN`, or `FIXED` for a wand), a
 blueprint in `Build ▸ Weapons`, and a `magic = true, slots = N` line in `Catalog ▸ Weapons`.
 
-**An armor finish** (`Catalog ▸ ArmorFX`): `{id, name, rarity, crate, description, look = {metal,
+**A Mage's robe set**: like any armor set, with `Type = "Robe"` (only a Mage wears it) and, out of
+the Arcana Crate, `Pack = "Arcana"`, `Crate = "Arcana"` (and its own `Finish`, `Colors`). Its
+blueprint in `Build ▸ Armor` (the robe helpers: `robeBody`, `robeArm`, `robeLeg`, `hood`, `tallHat`,
+`moon`); the bake as for any set.
+
+**A skin for a staff, a grimoire or a wand** (`scripts/skins_handmade.part`, then
+`python scripts/gen_content.py --skins`): `blade` (the orb, the rune, the crystal), `grip` (the
+wood, the cover), `metal` (+ `metalMaterial`: the fittings), `fx`; `crate = "Arcana"` or `marks`.
+
+**An armor finish** (`Catalog ▸ ArmorFX`; `look.robe` is the colour a robe takes): `{id, name, rarity, crate, description, look = {metal,
 metalMaterial, accent, glow, tint, body, aura, light, pulse | flicker | radiant}}`: the plates
 recoloured, the trims lit, an aura from `SkinFX` off the shoulders, arms and legs. It goes on any
 set of any weight, one per class (LOADOUT › FINISH), looks only, a tradable copy

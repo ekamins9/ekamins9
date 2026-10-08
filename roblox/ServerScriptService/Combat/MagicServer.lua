@@ -537,17 +537,18 @@ function MagicServer.attach(tool, cfg)
 		-- (a spell gone off, for whoever's watching: the training yard's lessons)
 		c:SetAttribute("LastCast", id)
 		c:SetAttribute("CastTick", (c:GetAttribute("CastTick") or 0) + 1)
-		remote:FireClient(playerOf(c), "Cast", id, cooldown[id] - os.clock())
+		local who = playerOf(c)
+		if who then remote:FireClient(who, "Cast", id, cooldown[id] - os.clock()) end
 	end
 
-	remote.OnServerEvent:Connect(function(plr, what, a)
-		local c = holder()
-		if not c or playerOf(c) ~= plr then return end
+	-- an action: a player's (the remote, below) or a bot's (the controller's npc): the same rules
+	local function act(c, what, a)
+		local plr = playerOf(c)
 		if what == "Cast" then
 			local sp = type(a) == "string" and book()[a] and Spells[a]
 			if not sp or casting or incapacitated(c) or c:GetAttribute("Warded") then return end
 			if os.clock() < (cooldown[a] or 0) then return end
-			if (c:GetAttribute("Mana") or 0) < (sp.mana or 0) * manaMult then remote:FireClient(plr, "NoMana", a); return end
+			if (c:GetAttribute("Mana") or 0) < (sp.mana or 0) * manaMult then if plr then remote:FireClient(plr, "NoMana", a) end; return end
 			stopMeditating(c)
 			token += 1
 			local myToken = token
@@ -600,9 +601,39 @@ function MagicServer.attach(tool, cfg)
 			lastKick = t
 			stopMeditating(c)
 			local kcfg = setmetatable({}, {__index = CombatServer.DEFAULTS})
-			CombatServer.resolveKick(c, kcfg, {weaponName = tool.Name, tell = function(...) remote:FireClient(plr, ...) end})
+			CombatServer.resolveKick(c, kcfg, {weaponName = tool.Name, tell = function(...) if plr then remote:FireClient(plr, ...) end end})
 		end
+	end
+	remote.OnServerEvent:Connect(function(plr, what, a)
+		local c = holder()
+		if not c or playerOf(c) ~= plr then return end
+		act(c, what, a)
 	end)
+
+	-- a bot's hands on it (Combat ▸ Bots): npc("Cast", id) · ("Release", aimPoint) · ("Cancel") ·
+	-- ("Ward", on) · ("Meditate", on); state() says what it carries and what's ready
+	local IDLE = {phase = "idle", windupStart = -1, windupEnd = -1, releaseEnd = -1}
+	CombatServer.controllers[tool] = {
+		tool = tool, magic = true, cfg = cfg,
+		npc = function(what, a)
+			local c = holder()
+			if c and not playerOf(c) then act(c, what, a) end
+		end,
+		state = function()
+			local c = holder()
+			local list = {}
+			for id in pairs(book()) do table.insert(list, id) end
+			local ready = {}
+			local mana = c and c:GetAttribute("Mana") or 0
+			for _, id in ipairs(list) do ready[id] = os.clock() >= (cooldown[id] or 0) and mana >= (Spells[id].mana or 0) * manaMult end
+			return {book = list, ready = ready, mana = mana, casting = casting and casting.id or nil, charged = casting and casting.ready == true,
+				castMult = castMult, ward = cfg.WARD == true}
+		end,
+		snapshot = function() return IDLE end,
+		interrupt = function() end, attack = function() end, cycle = function() end, feint = function() end,
+		blockStart = function() end, blockStop = function() end, kick = function() end, chambered = function() end,
+	}
+	tool.Destroying:Connect(function() CombatServer.controllers[tool] = nil end)
 
 	-- put away, dropped, dead: nothing stays raised, half-cast or sat down
 	local owner = nil

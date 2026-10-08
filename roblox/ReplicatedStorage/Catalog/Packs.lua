@@ -18,10 +18,13 @@ return {
 	Starter_Light  = {name = "Peasant",         weight = "Light",  free = true, color = Color3.fromRGB(90, 75, 60)},
 	Starter_Medium = {name = "Mail & Gambeson", weight = "Medium", free = true, color = Color3.fromRGB(70, 65, 58)},
 	Starter_Heavy  = {name = "Plate & Mail",    weight = "Heavy",  free = true, color = Color3.fromRGB(80, 80, 85)},
+	Starter_Robe   = {name = "The Apprentice",  weight = "Robe",   free = true, color = Color3.fromRGB(70, 60, 120)},
 	Earned         = {name = "Earned in battle", free = true, earned = true, color = Color3.fromRGB(60, 50, 40)},
 	-- crate-only sets (never sold: their pieces come out of the Forge Crate, one at a time)
 	Forge          = {name = "The Forge", crate = true, color = Color3.fromRGB(150, 70, 30)},
 	WarChest       = {name = "The War Chest", crate = true, color = Color3.fromRGB(150, 40, 34)},
+	-- (the Mage's robes out of the Arcana Crate, one piece at a time)
+	Arcana         = {name = "The Arcana", crate = true, color = Color3.fromRGB(110, 60, 180)},
 
 	-- LIGHT (Vanguard)
 	RoadLevy      = {name = "Road Levy",            weight = "Light",  bundle = 0.15, color = Color3.fromRGB(104, 92, 70)},

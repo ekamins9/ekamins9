@@ -34,6 +34,8 @@ BotFill.CONFIG = {
 	PER_TICK = 2,           -- at most this many bots come in a second (no wall of spawns)
 	MIX = {{"Squire", 0.6}, {"Knight", 0.33}, {"Champion", 0.07}},
 	NEWCOMER_MIX = {{"Squire", 1}},
+	-- some fight as Archers and Mages (Combat ▸ Bots: opts.class); never against a newcomer
+	CLASS_MIX = {{false, 0.75}, {"Archer", 0.15}, {"Mage", 0.10}},
 	WEAPONS = {"Longsword", "ArmingSword", "Mace", "Falchion", "Spear", "BattleAxe", "Shortsword", "Greatsword",
 		"Hammer", "Halberd", "WarAxe", "Messer", "MorningStar", "Glaive"},
 	NAMES = {"Aldo", "Bertram", "Cuthbert", "Drogo", "Edric", "Fulk", "Godwin", "Hamon", "Ivo", "Jocelin", "Kenric",
@@ -145,8 +147,9 @@ local function spawnOne(team)
 	local myRound = roundId
 	local seat = takeSeat(team, nextName())
 	local entry = {team = team, seat = seat}
+	local cls = not newcomerHere() and pick(C.CLASS_MIX) or nil
 	local ok, bot = pcall(bots().spawn, {
-		at = at, skill = skill, weapon = list[math.random(#list)], team = team,
+		at = at, skill = skill, weapon = (not cls) and list[math.random(#list)] or nil, team = team, class = cls or nil,
 		name = seat:GetAttribute("Name"), fightBots = true, goal = objective, corpseTime = 6,
 		startDelay = 0.5,
 		onDeath = function(_, killer)

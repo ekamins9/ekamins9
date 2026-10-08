@@ -408,8 +408,9 @@ local function kindSound(fx, which, at)
 		end)
 	end
 
-	table.insert(conns, remote.OnServerEvent:Connect(function(who, action, a, b, c)
-		if not character or who ~= player then return end
+	-- an action: a player's (the remote, below) or a bot's (controller.npc): the same rules
+	local function act(action, a, b, c)
+		if not character then return end
 		local now = os.clock()
 		local hum = character:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health <= 0 then return end
@@ -474,8 +475,12 @@ local function kindSound(fx, which, at)
 			if stunned or drawStart or now - lastKick < cfg.KICK_COOLDOWN then return end
 			lastKick = now
 			local kcfg = setmetatable({}, {__index = CombatServer.DEFAULTS})
-			CombatServer.resolveKick(character, kcfg, {weaponName = weaponName, tell = function(...) remote:FireClient(player, ...) end})
+			CombatServer.resolveKick(character, kcfg, {weaponName = weaponName, tell = function(...) if player then remote:FireClient(player, ...) end end})
 		end
+	end
+	table.insert(conns, remote.OnServerEvent:Connect(function(who, action, a, b, c)
+		if not character or who ~= player then return end
+		act(action, a, b, c)
 	end))
 
 	-- the held draw: its weight on your stamina, and the pose everyone sees
@@ -503,7 +508,14 @@ local function kindSound(fx, which, at)
 	-- a hit breaks the draw (CombatServer.interrupt finds us here); bots read us as idle
 	local IDLE = {phase = "idle", windupStart = -1, windupEnd = -1, releaseEnd = -1}
 	local controller = {
-		tool = Tool, ranged = true,
+		tool = Tool, ranged = true, cfg = cfg, isBow = isBow,
+		-- a bot's hands on it (Combat ▸ Bots): "Draw" · "Loose", dir, nil, aimPoint · "Reload" · "Cancel"
+		npc = function(action, a, b, c) if character and not player then act(action, a, b, c) end end,
+		state = function()
+			local now = os.clock()
+			return {drawing = drawStart ~= nil, drawn = drawStart and math.clamp((now - drawStart) / cfg.DRAW_TIME, 0, 1) or 0,
+				ammo = ammo, loaded = loaded, reloading = now < reloadUntil, ready = now - lastShot >= cfg.COOLDOWN and now >= reloadUntil}
+		end,
 		interrupt = function(reason) if reason ~= "executed" then cancelDraw() end end,
 		snapshot = function() return IDLE end,
 		attack = function() end, cycle = function() end, feint = function() end,

@@ -221,7 +221,15 @@ A Warfront match is never empty: while a round runs, bots make up the numbers to
 KOTH 10, Siege 12. A player who joins takes a bot's place (the one farthest from any player
 leaves); a fallen bot's place fills again after 5 s (Last Team Standing: one life a round, bots
 too, all in at the start). Skills: 60% Squire, 33% Knight, 7% Champion (Squires only with a
-newcomer on the server). Bots carry a team (`Team`, tabard, team colours) and the attribute
+newcomer on the server). One in seven fights as an **Archer** and one in ten as a **Mage**
+(`CLASS_MIX`; never against a newcomer): `Combat ▸ Bots` `opts.class`. An archer bot keeps its
+distance, draws (a good one to the full), leads you and looses — a Champion goes for the head — and,
+caught close, draws the sword on its hip and goes back to the bow at range. A mage bot, in robes
+for its rank, keeps back and casts what fits (Mend when hurt, Frost Nova up close, lightning, a
+meteor, fire), holds a spell charged until it has you, wards a blow coming in and meditates when
+nobody's near. Both work the weapon through its controller's `npc()` (RangedServer, MagicServer),
+by the players' rules. Horde sends archers from wave 3 and mages from wave 5. Studio:
+`/bot <rank> Archer` · `/bot <rank> Mage` (chat); the admin panel's bots take a `class`. Bots carry a team (`Team`, tabard, team colours) and the attribute
 `FillBot`. Never more than the map suits (`GameConfig.MAP_FIGHTERS`: Rose Court 6, the arenas
 12, Sandpit 16, Highbridge 20, the baileys and bridges 24, the open fields 32, the sieges 40);
 the map vote offers maps sized to who's there and the bots the mode brings, and a public
@@ -442,6 +450,13 @@ open in the hand (MagicFX: the grip's C0), and Roblox's own "holding a tool" arm
 (`RigPose` MAGIC_STEADY), so what you hold doesn't wobble. Put away, the staff hangs down your
 back, a grimoire at the hip, the wand at the right hip; a staff and its melee self are one weapon
 on you (`Holsters`). Bots never play Mage.
+
+**The Mage's weapon skins** (the Arcana Crate; Commons on the WEAPONS shelf): fourteen staffs
+(Emberwood, Stormcaller, Bonecaller, Dragonbone, Voidstaff… the Mythic Staff of the Cosmos), ten
+grimoires (Necronomicon, Book of Flames, Celestial Atlas… the Mythic Burning Book) and ten wands
+(Phoenix Feather, Unicorn Hair, Thunderrod… the Mythic Starfall Wand). A skin colours the orb /
+rune / crystal (`blade`), the wood or the cover (`grip`) and the brass and silver fittings
+(`metal`, SkinPart "Metal": Dresser.applySkin), with an aura from Epic up.
 
 **Spell skins** (`Catalog ▸ SpellSkins`, the **Arcana Crate**: always in the shop): a look for one
 spell, never its numbers. One Mage's Firebolt is a ball of fire, another's a **dragon's head**
@@ -917,6 +932,17 @@ credit and reads TEAMKILLED in the feed.
 - **four crate-only sets**, one piece at a time: Dragonscale (Heavy, Legendary), Frostwarden
   (Medium, Legendary), Shadowveil (Light, Legendary), Seraph (Medium, Mythic). Each wears its own
   finish.
+
+**Mage robes** (weight **"Robe"**, `Catalog ▸ Weights`: only a Mage wears them, and a Mage wears
+nothing else). The free Apprentice Robes, and seven more out of the **Arcana Crate**, a piece at a
+time: Druid (Rare: antlers and leaves), Necromancer (Epic: a skull-crowned hood, ribs of bone,
+rags), Pyromancer (Epic: a crest of flame, flames up every hem), Frost Witch (Epic: icicles, fur
+and ice), Archmage (Legendary: a towering starred hat, a silver moon), Battlemage (Legendary: steel
+and runes over the robe) and the Star Sage (Mythic: a robe of night with glowing constellations
+and a crescent moon over the hood); each but the Druid wears its own finish. **A finish on a robe**
+(no metal to take it) goes into the cloth: the robe takes its `robe` colour (else its metal), the
+lining a deeper shade, the trims its accent, glowing (`ArmorFX.apply`). The Arcana Crate's own
+finishes are made for cloth: Spellwoven, Moonthread, Hexweave, Starweave.
 
 The **War Chest** (always in rotation too) is the second armor crate: six more crate-only sets,
 Ranger (Light, Rare), Berserker (Light, Epic: a bear for a hood), Corsair (Medium, Epic: a

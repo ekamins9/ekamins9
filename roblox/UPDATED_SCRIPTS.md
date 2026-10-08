@@ -1,4 +1,34 @@
-# Updated scripts: the Archer and the Mage open at level 5, with teachers; a wand of little spells; spells you hold charged
+# Updated scripts: Mage robes and every mage cosmetic; Archer and Mage bots
+
+- **Mage robes are their own category** (weight "Robe"): only a Mage wears them, and a Mage wears nothing else. Light classes no longer see the Apprentice Robes.
+- **Seven new robe sets in the Arcana Crate**, a piece at a time: Druid, Necromancer, Pyromancer, Frost Witch, Archmage, Battlemage, and the Mythic Star Sage (a robe of glowing constellations under a crescent moon).
+- **Finishes now show on robes.** On cloth, a finish recolours the robe and lights its trims. Four new cloth finishes: Spellwoven, Moonthread, Hexweave, Starweave.
+- **34 weapon skins for the Mage:** 14 staffs, 10 grimoires and 10 wands. Skins now colour the orb, the wood and the brass fittings separately; Epic and up get auras, and each weapon has a Mythic.
+- **Seven wand spell skins:** Pixie Dust, Firefly, Red Zap, Glass Dart, Will-o'-the-Wisp, Hellspark, Petal Storm. LOADOUT ▸ SPELLS ▸ LOOKS now lists the wand's spells too.
+- **Archer and Mage bots.**
+  - Archer: keeps its distance, draws, leads you and looses (a Champion goes for the head). Up close it draws its sword, then goes back to the bow at range.
+  - Mage: in robes for its rank, it casts what fits, holds a spell charged until it has you, wards, and meditates when safe.
+  - Where they appear: fill bots in matches (about 15% Archers, 10% Mages) and Horde (archers from wave 3, mages from wave 5).
+  - In Studio, spawn them with `/bot Knight Archer` or `/bot Champion Mage`.
+- **Studio:** the robe meshes are baked; run `blender/out/armor/assemble_armor.lua` in Studio (edit mode), then save. Until then the robes build from parts.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Weights.lua](ReplicatedStorage/Catalog/Weights.lua), [Catalog/Packs.lua](ReplicatedStorage/Catalog/Packs.lua), [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the Robe weight; the Arcana and Apprentice packs; the Mage wears robes |
+| [Build/Armor.lua](ServerScriptService/Build/Armor.lua) | ServerScriptService ▸ Build ▸ Armor | ModuleScript | seven robe blueprints |
+| [ServerStorage/Armor/{Archmage,Battlemage,Necromancer,Pyromancer,FrostWitch,Druid,StarSage}](ServerStorage/Armor), [ApprenticeRobes](ServerStorage/Armor/ApprenticeRobes/Config.lua) | ServerStorage ▸ Armor | Model + Config | the new sets (new); the Apprentice is a Robe |
+| [ArmorFX.lua](ReplicatedStorage/ArmorFX.lua), [Catalog/ArmorFX.lua](ReplicatedStorage/Catalog/ArmorFX.lua) | ReplicatedStorage | ModuleScript | finishes in a robe's cloth; four cloth finishes |
+| [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) (from [scripts/skins_handmade.part](../scripts/skins_handmade.part)), [Dresser.lua](ReplicatedStorage/Dresser.lua), [Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | ReplicatedStorage · Build | ModuleScript | 34 staff / grimoire / wand skins; the "Metal" skin part |
+| [Catalog/SpellSkins.lua](ReplicatedStorage/Catalog/SpellSkins.lua), [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | wand spell skins; the Arcana Crate's description |
+| [Combat/Bots.lua](ServerScriptService/Combat/Bots.lua), [Combat/RangedServer.lua](ServerScriptService/Combat/RangedServer.lua), [Combat/MagicServer.lua](ServerScriptService/Combat/MagicServer.lua) | ServerScriptService ▸ Combat | ModuleScript | the archer's and the mage's minds; their weapons' `npc()` controllers |
+| [Game/BotFill.lua](ServerScriptService/Game/BotFill.lua), [Game/Modes/Horde.lua](ServerScriptService/Game/Modes/Horde.lua), [Game/Training.lua](ServerScriptService/Game/Training.lua) | ServerScriptService ▸ Game | ModuleScript | archers and mages in matches and the horde; the Magister in robes |
+| [Hub/Cheats.server.lua](ServerScriptService/Hub/Cheats.server.lua), [Admin/AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService | Script | bots of a class |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | the Robe colour; the wand's spells in LOOKS |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | robes, the mage's skins, the bots |
+
+---
+
+## Before that: the Archer and the Mage open at level 5, with teachers; a wand of little spells; spells you hold charged
 
 - **Archer and Mage unlock at level 5.**
   - Before that the class is locked: veiled on the class screens, refused by the server, and your spawn falls back to the default class.

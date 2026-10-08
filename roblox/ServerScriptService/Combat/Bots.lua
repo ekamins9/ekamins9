@@ -21,6 +21,8 @@
            opts.invulnerable  never dies (a drill dummy)
            opts.spare     a secondary it draws when disarmed (a weapon name; false = none;
                           default: by skill, a random secondary)
+           opts.class     "Archer" | "Mage": it fights as one (GameConfig.CLASSES: its health,
+                          its look; a bow or a crossbow and a sidearm, or a staff and spells)
        bot:destroy()      bot.model  bot.hum  bot.alive
        Bots.SKILLS        Bots.list()
 
@@ -36,6 +38,12 @@
          around, a swing that landed it chains into a combo;
        • it keeps stamina in reserve and backs off to get it back when low;
        • disarmed, it draws its spare or goes and picks a weapon up.
+     AN ARCHER keeps its distance, draws (a good one to the full), leads you and looses
+     (a Champion goes for the head); too close, it draws its sidearm, and steps back out
+     to the bow. A MAGE keeps back, casts what fits (Mend when hurt, Frost Nova up close,
+     lightning, a meteor, fire), holds it charged till it has you, wards a blow coming in
+     and meditates when nobody's near. Both work their weapon through its controller's
+     npc() (RangedServer / MagicServer): the players' own rules.
      Movement is server-side; clients animate its legs (NpcAnimator). ]]
 
 local Players = game:GetService("Players")
@@ -50,6 +58,8 @@ local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local MC = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Modifiers = require(ReplicatedStorage:WaitForChild("Modifiers"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local Spells = require(ReplicatedStorage:WaitForChild("MagicSpells"))
 
 local Bots = {}
 -- react     seconds from a foe's windup before it can answer it at all
@@ -148,6 +158,15 @@ local LOOKS = {
 	Champion = {sets = {"Blackguard", "IronCrow", "SunKnights", "TourneyKnight"}, colors = {Primary = "Jet", Secondary = "Blood", Accent = "Gold", Metal = "Steel"}},
 }
 local SLOT_SUFFIX = {helmet = "Helm", top = "Top", bottom = "Legs"}
+-- ARCHERS AND MAGES (opts.class): how far off it aims (studs, at forty paces), the gap between
+-- its shots / casts, what a Mage carries, and the robes it wears by rank
+local CASTER = {
+	aim  = {Squire = 2.8, Knight = 1.4, Champion = 0.6},
+	gap  = {Squire = {1.8, 3.0}, Knight = {1.1, 2.0}, Champion = {0.7, 1.3}},
+	book = {Squire = "Firebolt,FrostNova,Mend,ChainLightning", Knight = "Firebolt,IceLance,ChainLightning,FrostNova",
+		Champion = "Firebolt,ChainLightning,Meteor,FrostNova"},
+	robes = {Squire = {"ApprenticeRobes"}, Knight = {"Druid", "Pyromancer", "FrostWitch", "Necromancer"}, Champion = {"Archmage", "Battlemage", "Necromancer"}},
+}
 
 -- a bot's pieces: its rank's look when it has one (and the pieces exist at this
 -- weight), else the weight's free starter pieces; in its rank's colours
@@ -353,8 +372,34 @@ function Bot:adopt(tool)
 		if self.ctrl or not self.alive then break end
 		task.wait(0.05)
 	end
-	if #self.attacks == 0 then self.ctrl = nil end
+	if #self.attacks == 0 and not (self.ctrl and (self.ctrl.ranged or self.ctrl.magic)) then self.ctrl = nil end
 	self.arming = false
+end
+-- (an archer's bow and sidearm: the one not in hand waits in its Stash, worn on the body — a
+-- loose tool would fall through the world)
+local STASH_AT = {Bow = CFrame.new(-0.2, 0.1, 0.62) * CFrame.Angles(0, 0, math.rad(-28)), Crossbow = CFrame.new(0, 0.2, 0.7) * CFrame.Angles(math.rad(-90), 0, math.rad(35))}
+local function stashTool(model, tool)
+	local stash = model:FindFirstChild("Stash")
+	if not stash then stash = Instance.new("Folder"); stash.Name = "Stash"; stash.Parent = model end
+	tool.Parent = stash
+	local torso, handle = model:FindFirstChild("Torso"), tool:FindFirstChild("Handle")
+	if torso and handle then
+		local w = Instance.new("Weld")
+		w.Name = "StashWeld"; w.Part0, w.Part1 = torso, handle
+		w.C0 = STASH_AT[tool.Name] or (CFrame.new(-1.12, -0.85, -0.15) * CFrame.Angles(math.rad(150), 0, math.rad(-8)))
+		w.Parent = handle
+	end
+end
+local function unstash(tool)
+	local h = tool:FindFirstChild("Handle")
+	local w = h and h:FindFirstChild("StashWeld")
+	if w then w:Destroy() end
+end
+function Bot:swapTo(tool)
+	if self.arming or not tool or tool == self.tool or not tool.Parent then return end
+	if self.tool and self.tool.Parent == self.model then stashTool(self.model, self.tool) end
+	unstash(tool)
+	task.spawn(self.adopt, self, tool)
 end
 
 -- disarmed: draw the spare, or go and get a weapon off the floor. Returns
@@ -459,6 +504,7 @@ end
 function Bot:reflex()
 	local sk, ctrl, model = self.skill, self.ctrl, self.model
 	if not (self.alive and ctrl) or sk.dummy or self.arming then return end
+	if ctrl.ranged or ctrl.magic then return end
 	local foe = self.foe
 	if not (foe and foe.Parent) or self.hum.Health <= 0 or model:GetAttribute("Ragdolled") then return end
 	local now = os.clock()
@@ -775,12 +821,19 @@ function Bot:think()
 		return
 	end
 
+	if ctrl and (ctrl.ranged or ctrl.magic) then return self:thinkCaster(target, thrp, now) end
+
 	local to = thrp.Position - hrp.Position
 	local flat = Vector3.new(to.X, 0, to.Z)
 	local dist = flat.Magnitude
 	self.dist = dist
 	local dir = dist > 0.01 and flat.Unit or Vector3.new(0, 0, -1)
 	local me = ctrl and ctrl.snapshot() or IDLE
+	-- an archer with its sidearm out: back to the bow once there's room
+	if self.bowTool and self.tool ~= self.bowTool and self.bowTool.Parent and dist > 15 and me.phase == "idle" and not self.arming then
+		self:swapTo(self.bowTool)
+		return
+	end
 	local busy = me.phase ~= "idle"
 	local blocking = model:GetAttribute("Blocking") == true
 	local fc = controllerOf(target)
@@ -918,6 +971,159 @@ function Bot:think()
 	self:armTricks(st > 45 and sk.feint or 0, st > 30 and sk.morph or 0, sk.combo)
 end
 
+--------------------------------------------------------------------
+--  AN ARCHER'S, A MAGE'S MIND
+--------------------------------------------------------------------
+local sightParams = RaycastParams.new()
+sightParams.FilterType = Enum.RaycastFilterType.Exclude
+local function clearShot(from, to, me, foe)
+	local ignore = {me, foe}
+	for _, n in ipairs({"MagicFX", "StuckArrows", "DroppedWeapons"}) do local f = workspace:FindFirstChild(n); if f then table.insert(ignore, f) end end
+	sightParams.FilterDescendantsInstances = ignore
+	return workspace:Raycast(from, to - from, sightParams) == nil
+end
+-- where to send it: the body (a Champion's, half the time, the head), led by how they're moving
+function Bot:aimAt(target, speed, ground)
+	local thrp = target:FindFirstChild("HumanoidRootPart")
+	local head = target:FindFirstChild("Head")
+	local rank = self.model:GetAttribute("BotSkill") or "Squire"
+	local spot = ground and (thrp.Position - Vector3.new(0, 2.6, 0))
+		or ((rank == "Champion" and head and math.random() < 0.5) and head.Position or (thrp.Position + Vector3.new(0, 0.5, 0)))
+	local d = (spot - self.hrp.Position).Magnitude
+	local t = (speed and speed > 0) and d / speed or 0.6
+	local v = thrp.AssemblyLinearVelocity * Vector3.new(1, 0, 1)
+	local err = (CASTER.aim[rank] or 2) * math.clamp(d / 40, 0.4, 1.6)
+	local off = Vector3.new(math.random() - 0.5, (math.random() - 0.5) * 0.6, math.random() - 0.5) * 2 * err
+	return spot + v * t * (self.skill.read and 1 or 0.6) + off
+end
+function Bot:thinkCaster(target, thrp, now)
+	local hum, hrp, ctrl, model = self.hum, self.hrp, self.ctrl, self.model
+	local st = ctrl.state()
+	local to = thrp.Position - hrp.Position
+	local flat = Vector3.new(to.X, 0, to.Z)
+	local dist = flat.Magnitude
+	self.dist = dist
+	local dir = dist > 0.01 and flat.Unit or Vector3.new(0, 0, -1)
+	local side = Vector3.new(-dir.Z, 0, dir.X)
+	local rank = model:GetAttribute("BotSkill") or "Squire"
+	-- too close for a bow: the sidearm, and it fights like anyone (back to the bow at range)
+	if ctrl.ranged and dist < 8 and self.spareTool and self.spareTool.Parent and not st.drawing then
+		self:swapTo(self.spareTool)
+		return
+	end
+	-- footwork: keep its distance, circling; still while it meditates
+	local near, far = ctrl.magic and 15 or 13, ctrl.magic and 34 or 42
+	if now > self.strafeUntil then
+		self.strafe = math.random() < 0.5 and -1 or 1
+		self.strafeUntil = now + 1 + math.random() * 2
+	end
+	local busy = st.drawing or st.casting ~= nil
+	local want
+	if dist < near then want = -dir + side * self.strafe * 0.3
+	elseif dist > far then want = dir
+	else want = side * self.strafe * 0.6 + dir * math.clamp((dist - (near + far) / 2) / 10, -0.5, 0.5) end
+	if self.arena then
+		local off = hrp.Position - self.arena.centre
+		off = Vector3.new(off.X, 0, off.Z)
+		if off.Magnitude > self.arena.radius - 2.5 then want = -off.Unit end
+	end
+	if dist > far and (dist > 22 or now < (self.pathUntil or 0)) and not self.arena then
+		local pd = self:pathDir(thrp.Position, now)
+		if pd then want = pd end
+	end
+	if want.Magnitude > 0.3 then want = self:unstick(self:steer(want, now), now) end
+	if self.meditating or (self.skill.pace or 0) <= 0 then want = Vector3.zero end
+	local w = want.Magnitude > 1 and want.Unit or want
+	self.mv = self.mv and self.mv:Lerp(w, 0.4) or w
+	local mag = math.min(self.mv.Magnitude, 1)
+	local mv = mag > 0.05 and self.mv.Unit or Vector3.zero
+	hum.WalkSpeed = self:speedFor(mv, dist > far + 10, busy) * math.max(mag, 0.35) * (busy and 0.35 or 1)
+	hum:Move(mv)
+	if now < self.startAt then return end
+	local head = model:FindFirstChild("Head")
+	local foeHead = target:FindFirstChild("Head")
+	if not (head and foeHead) then return end
+	local seen = clearShot(head.Position, foeHead.Position, model, target)
+	local gap = CASTER.gap[rank] or CASTER.gap.Squire
+
+	if ctrl.ranged then
+		local cfg = ctrl.cfg
+		if ctrl.isBow then
+			if st.drawing then
+				if not seen then
+					if now - (self.drawAt or now) > 2.5 then ctrl.npc("Cancel") end
+				elseif now - (self.drawAt or now) >= (self.drawFor or cfg.DRAW_TIME) then
+					local aim = self:aimAt(target, cfg.SPEED_MAX)
+					ctrl.npc("Loose", (aim - head.Position).Unit, nil, aim)
+					self.nextShot = now + rand(gap)
+				end
+			elseif seen and st.ready and st.ammo > 0 and now >= (self.nextShot or 0) and dist < 110 then
+				ctrl.npc("Draw")
+				self.drawAt = now
+				-- (a good archer draws to the full; a green one lets fly early)
+				self.drawFor = cfg.DRAW_TIME * (self.skill.read and (1 + math.random() * 0.2) or (0.7 + math.random() * 0.35))
+			end
+		else
+			if not st.loaded and not st.reloading and st.ammo > 0 then ctrl.npc("Reload")
+			elseif st.loaded and seen and now >= (self.nextShot or 0) and dist < 120 then
+				local aim = self:aimAt(target, cfg.SPEED_MAX)
+				ctrl.npc("Loose", (aim - head.Position).Unit, nil, aim)
+				self.nextShot = now + rand(gap)
+			end
+		end
+		return
+	end
+
+	-- A MAGE
+	local hp = hum.Health / math.max(hum.MaxHealth, 1)
+	local mana = st.mana or 0
+	if self.meditating then
+		if mana > 85 or dist < 20 or hp < 0.3 then ctrl.npc("Meditate", false); self.meditating = false end
+		return
+	end
+	if st.casting then
+		if st.charged then
+			-- held, charged: let go once it has a shot (or it's held too long)
+			self.chargedAt = self.chargedAt or now
+			local sp = Spells[st.casting] or {}
+			local aim
+			if sp.kind == "heal" or sp.kind == "buff" or sp.target == "self" then aim = hrp.Position
+			elseif sp.target == "ground" then aim = self:aimAt(target, nil, true)
+			else aim = self:aimAt(target, sp.speed) end
+			if seen or sp.target ~= "aim" or now - self.chargedAt > 1.4 then
+				ctrl.npc("Release", aim)
+				self.chargedAt = nil
+			end
+		end
+		return
+	end
+	if mana < 25 and dist > 26 then ctrl.npc("Meditate", true); self.meditating = true; return end
+	-- a staff's ward against a blow on its way in
+	if st.ward then
+		local fc = controllerOf(target)
+		local f = fc and fc.snapshot() or IDLE
+		local threat = (f.phase == "windup" or f.phase == "release") and dist < reachOf(target) + 3
+		if threat and mana > 15 and not self.warding then ctrl.npc("Ward", true); self.warding = true
+		elseif self.warding and not threat then ctrl.npc("Ward", false); self.warding = false end
+		if self.warding then return end
+	end
+	if now < (self.nextCast or 0) then return end
+	local can = st.ready
+	local pick
+	if hp < 0.5 and can.Mend then pick = "Mend"
+	elseif dist < 10 and can.FrostNova then pick = "FrostNova"
+	elseif seen and dist < 40 and can.ChainLightning and math.random() < 0.5 then pick = "ChainLightning"
+	elseif seen and dist > 14 and dist < 60 and can.Meteor then pick = "Meteor"
+	elseif seen then
+		for _, id in ipairs({"Firebolt", "IceLance", "ArcaneMissiles", "ChainLightning"}) do if can[id] then pick = id; break end end
+	end
+	if pick then
+		ctrl.npc("Cast", pick)
+		self.nextCast = now + rand(gap)
+		self.chargedAt = nil
+	end
+end
+
 function Bots.spawn(opts)
 	opts = opts or {}
 	local skill = Bots.SKILLS[opts.skill or "Squire"] or Bots.SKILLS.Squire
@@ -931,8 +1137,28 @@ function Bots.spawn(opts)
 	model:SetAttribute("Bot", true)
 	model:PivotTo(opts.at or CFrame.new(0, 3, 0))
 	model.Parent = folder
-	local weight = opts.weight or skill.weight or "Medium"
-	pcall(Dresser.dress, model, {loadout = opts.loadout or Bots.loadoutFor(weight, nil, opts.skill or "Squire"), appearance = opts.appearance or Catalog.BODY.defaults, weight = weight, team = opts.team})
+	local cls = opts.class and GameConfig.CLASSES[opts.class]
+	local rank = opts.skill or "Squire"
+	local weight = opts.weight or (cls and cls.weight) or skill.weight or "Medium"
+	local lo = opts.loadout
+	if not lo and cls and cls.magic then
+		-- a Mage in robes for its rank
+		local sets = CASTER.robes[rank] or CASTER.robes.Squire
+		local set = sets[math.random(#sets)]
+		lo = Bots.loadoutFor(weight, nil, rank)
+		for _, slot in ipairs(Catalog.SLOTS) do
+			local pc = Catalog.PIECE[set .. "_" .. SLOT_SUFFIX[slot]] or Catalog.defaultPiece(slot, weight)
+			lo[slot] = pc and pc.id or nil
+		end
+	end
+	pcall(Dresser.dress, model, {loadout = lo or Bots.loadoutFor(weight, nil, rank), appearance = opts.appearance or Catalog.BODY.defaults, weight = weight, team = opts.team})
+	if cls then
+		model:SetAttribute("Class", opts.class)
+		if cls.health then hum.MaxHealth = math.max(10, hum.MaxHealth + cls.health); hum.Health = hum.MaxHealth end
+		if cls.magic then model:SetAttribute("MaxMana", Spells.MAX_MANA); model:SetAttribute("Mana", Spells.MAX_MANA) end
+		if not opts.weapon then opts.weapon = cls.magic and "Staff" or (math.random() < 0.25 and "Crossbow" or "Bow") end
+		if cls.ranged and opts.spare == nil then opts.spare = "Shortsword" end
+	end
 	hum.AutoRotate = false
 	-- it turns to face its opponent through a soft constraint (no teleporting the root),
 	-- no faster than a player can (the heartbeat below steps the goal)
@@ -969,7 +1195,18 @@ function Bots.spawn(opts)
 	if tool then
 		tool = tool:Clone()
 		if opts.skin then pcall(Dresser.applySkin, tool, opts.skin) end
+		-- a Mage's arsenal, by rank
+		if cls and cls.magic then tool:SetAttribute("Spells", CASTER.book[rank] or CASTER.book.Squire) end
 		bot:adopt(tool)
+		-- an archer's sidearm waits in its stash (drawn when you close in)
+		if cls and cls.ranged and bot.spare then
+			local side = findWeapon(bot.spare)
+			if side then
+				bot.spareTool = side:Clone()
+				stashTool(model, bot.spareTool)
+				bot.bowTool = tool
+			end
+		end
 	end
 	bot.parryTick = model:GetAttribute("ParryTick") or 0
 

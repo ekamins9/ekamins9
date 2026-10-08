@@ -181,11 +181,11 @@ GameConfig.CLASSES = {
 	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any", primary = "ArmingSword", secondary = "Shortsword",
 		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
 	-- the Mage: a staff (MagicSpells: fire, lightning, frost, mending; a ward of mana) and a
-	-- wand at the hip (little free spells: no blade — a staff's weak melee self is all the
-	-- steel a Mage has). Robes, not armor: far
+	-- wand at the hip (little spells: no blade — a staff's weak melee self is all the steel a
+	-- Mage has). Robes, not armor (weight "Robe": only a Mage wears them, and nothing else): far
 	-- less than the Archer (65 health, nothing to stop a blade),
 	-- and a mana bar beside the stamina. Starts in the Apprentice's robes (starter = a set).
-	Mage     = {name = "Mage",     weight = "Light",  armorType = "Light",  weapons = "any", primary = "Staff", secondary = "Wand",
+	Mage     = {name = "Mage",     weight = "Robe",   armorType = "Light",  weapons = "any", primary = "Staff", secondary = "Wand",
 		magic = true, health = -35, prot = 0, speed = 1.0, starter = "ApprenticeRobes", unlock = {level = 5}, tutor = "mage",
 		description = "A staff of fire, lightning, frost and mending, and a ward that turns blows into lost mana. The least health of anyone (65, no armor), and only a wand at the hip: keep your distance, cast, and never let them close."},
 }

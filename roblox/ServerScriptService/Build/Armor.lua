@@ -1974,6 +1974,303 @@ A_.ApprenticeRobes = set(wizardHat(), robeTorso(),
 		tbox("Hem", v(1.24, 0.3, 1.24), cf(0, -0.62, 0), 0.9, C.CLOTH, M.FABRIC, P, 0.1),
 		rbox("HemTrim", v(1.26, 0.07, 1.26), cf(0, -0.77, 0), C.GOLD, M.FABRIC, A, 0.08)}, boot(C.DARKLEATHER, -0.66)) end)
 
+--------------------------------------------------------------------
+--  MAGE ROBES (weight "Robe": only a Mage wears them; the Arcana Crate's, one
+--  piece at a time). Each its own hat or hood, its own shoulders, sleeves and hem.
+--------------------------------------------------------------------
+do
+	local SILVER, NAVY = Color3.fromRGB(222, 228, 240), Color3.fromRGB(30, 34, 84)
+	local CHAR, EMBER, FLAME = Color3.fromRGB(42, 32, 30), Color3.fromRGB(255, 140, 40), Color3.fromRGB(255, 214, 90)
+	local ICE, SNOW, FROST = Color3.fromRGB(150, 214, 255), Color3.fromRGB(236, 244, 255), Color3.fromRGB(200, 226, 246)
+	local SHROUD, BILE = Color3.fromRGB(30, 28, 34), Color3.fromRGB(150, 255, 140)
+	local BARK, LEAF, LEAF2 = Color3.fromRGB(96, 72, 46), Color3.fromRGB(96, 160, 64), Color3.fromRGB(150, 196, 80)
+	local NIGHT, VOID, STAR = Color3.fromRGB(26, 22, 64), Color3.fromRGB(12, 10, 34), Color3.fromRGB(255, 240, 180)
+	local RUNE = Color3.fromRGB(140, 200, 255)
+
+	-- the robe's body: the long robe, the front panel with its trims, the skirt front and back
+	local function robeBody(lining, trim, o)
+		o = o or {}
+		local out = {middle(TORSO),
+			rbox("Robe", v(2.16, 2.1, 1.16), cf(), C.CLOTH, M.FABRIC, P, 0.24),
+			box("Panel", v(0.72, 2.02, 0.06), cf(0, -0.02, -0.6), lining, M.FABRIC, S),
+			box("PanelTrim", v(0.07, 2.02, 0.07), cf(-0.37, -0.02, -0.61), trim, M.FABRIC, A),
+			box("PanelTrim", v(0.07, 2.02, 0.07), cf(0.37, -0.02, -0.61), trim, M.FABRIC, A),
+			box("Skirt", v(2.12, 0.86, 0.08), cf(0, -1.38, 0.6, 6, 0, 0), C.CLOTH, M.FABRIC, P),
+			box("SkirtFront", v(0.74, 0.86, 0.07), cf(0, -1.38, -0.62, -6, 0, 0), lining, M.FABRIC, S),
+			box("SkirtTrim", v(0.76, 0.07, 0.09), cf(0, -1.78, -0.67, -6, 0, 0), trim, M.FABRIC, A),
+			box("SkirtTrim", v(2.14, 0.07, 0.09), cf(0, -1.78, 0.65, 6, 0, 0), trim, M.FABRIC, A),
+		}
+		if o.collar ~= false then
+			local h = o.collarH or 0.42
+			out[#out + 1] = tbox("Collar", v(1.7, h, 1.34), cf(0, 0.8 + h / 2, 0.04), o.collarTop or 0.86, lining, M.FABRIC, S, 0.16)
+		end
+		return out
+	end
+	-- a bell sleeve (or a straight one), its trim at the cuff
+	local function robeArm(trim, o)
+		o = o or {}
+		local w = o.bell or 1.36
+		return {rbox("Sleeve", v(1.12, 1.3, 1.12), cf(0, 0.35, 0), C.CLOTH, M.FABRIC, P, 0.18),
+			tbox("Bell", v(w, 0.66, w), cf(0, -0.56, 0.06), 0.8, C.CLOTH, M.FABRIC, P, 0.12),
+			rbox("BellTrim", v(w + 0.1, 0.08, w + 0.1), cf(0, -0.88, 0.06), trim, M.FABRIC, A, 0.1)}
+	end
+	-- the robe's hem to the ankle, its trim, and soft shoes
+	local function robeLeg(trim, shoe, o)
+		o = o or {}
+		local out = {rbox("Robe", v(1.12, 1.6, 1.14), cf(0, 0.2, 0), C.CLOTH, M.FABRIC, P, 0.16),
+			tbox("Hem", v(1.3, 0.34, 1.3), cf(0, -0.62, 0), 0.88, C.CLOTH, M.FABRIC, P, 0.1),
+			rbox("HemTrim", v(1.32, 0.07, 1.32), cf(0, -0.79, 0), trim, M.FABRIC, A, 0.08),
+			egg("Shoe", v(0.92, 0.3, 1.2), cf(0, -0.88, -0.16), shoe or C.DARKLEATHER, M.LEATHER)}
+		if o.curl then out[#out + 1] = egg("Curl", v(0.26, 0.26, 0.3), cf(0, -0.74, -0.74, -30, 0, 0), shoe or C.DARKLEATHER, M.LEATHER) end
+		return out
+	end
+	-- a deep hood round the head (covers the hair)
+	local function hood(color, slot, o)
+		o = o or {}
+		local out = {middle(HEAD),
+			egg("Hood", v(1.72, 1.74, 1.84), cf(0, 0.16, 0.32), color, M.FABRIC, slot),
+			cone("Drape", v(2.06, 0.5, 2.06), cf(0, -0.52, 0.14), color, M.FABRIC, slot, 0.8),
+			torus("HoodRim", v(1.5, 0.16, 1.2), cf(0, 0.12, -0.56, 90, 0, 0), o.rim or color, M.FABRIC, o.rim and A or slot)}
+		if o.peak then out[#out + 1] = cone("Peak", v(0.8, 0.6, 0.8), cf(0, 0.98, 0.62, -42, 0, 0), color, M.FABRIC, slot) end
+		return out
+	end
+	-- a tall pointed hat: brim, band and a cone in tiers (bend = how far the tip leans back).
+	-- Returns the parts, the tip, and onHat(y): the point on its front at height y (for a moon,
+	-- a star: laid on the cloth, not floating in front of it)
+	local function tallHat(color, band, h, bend, brim)
+		local out = {middle(HEAD),
+			egg("Cap", v(1.36, 0.6, 1.4), cf(0, 0.52, 0.04), color, M.FABRIC, P),
+			cyl("Brim", brim or 2.7, 0.08, cf(0, 0.56, 0.04), color, M.FABRIC, P),
+			torus("BrimRoll", v(brim or 2.7, 0.12, brim or 2.7), cf(0, 0.57, 0.04), color, M.FABRIC, P),
+			cyl("Band", 1.3, 0.22, cf(0, 0.72, 0.04), band, M.FABRIC, A)}
+		local a = v(0, 0.66, 0.04)
+		local b = a + v(0, h * 0.62, 0.06)
+		local c = b + v(0, h * 0.38, bend or 0.1)
+		local f1, l1 = span(a, b)
+		local f2, l2 = span(b, c)
+		B.join(out, {cone("Cone", v(1.26, l1, 1.26), f1, color, M.FABRIC, P, 0.5),
+			ball("Bend", 0.64, CFrame.new(b), color, M.FABRIC, P),
+			cone("Tip", v(0.64, l2, 0.64), f2, color, M.FABRIC, P, 0)})
+		local function onHat(y)
+			if y <= b.Y then
+				local t = math.clamp((y - a.Y) / (b.Y - a.Y), 0, 1)
+				return v(0, y, a.Z + (b.Z - a.Z) * t - (0.63 - 0.315 * t) - 0.03)
+			end
+			local t = math.clamp((y - b.Y) / (c.Y - b.Y), 0, 1)
+			return v(0, y, b.Z + (c.Z - b.Z) * t - 0.32 * (1 - t) - 0.03)
+		end
+		return out, c, onHat
+	end
+	-- a crescent moon facing front at `at`, d across: a curve of beads, fat in the middle and
+	-- thinning to two points (glowing, with glow = true)
+	local function moon(name, at, d, color, glow)
+		local out = {}
+		for i = -4, 4 do
+			local a = math.rad(i * 19)
+			local r = d * 0.42
+			local th = d * 0.2 * (1 - (math.abs(i) / 5) ^ 1.6)
+			out[#out + 1] = ball(name, th, CFrame.new(at + v(-math.cos(a) * r * 0.55 + r * 0.25, math.sin(a) * r, 0)), color, glow and M.NEON or M.FABRIC, A)
+		end
+		return out
+	end
+
+	-- ARCHMAGE (Legendary): a towering starred hat with a silver moon, a stiff high collar,
+	-- a navy mantle over the shoulders, wide bell sleeves, slippers that curl
+	do
+		local hat, tip, onHat = tallHat(C.CLOTH, SILVER, 2.2, 0.36, 2.9)
+		B.join(hat, moon("Moon", onHat(1.16), 0.44, SILVER),
+			star("Star", onHat(1.6) + v(-0.16, 0, 0.05), 0.2, SILVER, A), star("Star", onHat(1.92) + v(0.1, 0, 0.03), 0.16, SILVER, A),
+			{ball("TipStar", 0.2, CFrame.new(tip), SILVER, M.FABRIC, A)})
+		local torso = robeBody(NAVY, SILVER, {collarH = 0.76, collarTop = 1.12})
+		B.join(torso, {egg("Mantle", v(2.56, 0.62, 1.52), cf(0, 0.86, 0.02), NAVY, M.FABRIC, S),
+			torus("MantleTrim", v(2.5, 0.08, 1.46), cf(0, 0.66, 0.02), SILVER, M.FABRIC, A)},
+			moon("Moon", v(0, 0.36, -0.66), 0.46, SILVER),
+			star("Star", v(0, -0.36, -0.66), 0.22, SILVER, A), star("Star", v(0, -0.86, -0.66), 0.16, SILVER, A))
+		A_.Archmage = set(hat, torso,
+			function() return arm(robeArm(SILVER, {bell = 1.56}), star("Star", v(0, -0.55, -0.74), 0.18, SILVER, A)) end,
+			function() return leg(robeLeg(SILVER, NAVY, {curl = true})) end)
+	end
+
+	-- NECROMANCER (Epic): a black hood crowned with a little skull, ribs of bone over the
+	-- chest, skull shoulders, everything below the knee in tatters
+	do
+		local function skull(at, s)
+			return {ball("Skull", 0.5 * s, CFrame.new(at), BONE, M.PLASTIC),
+				rbox("Jaw", v(0.32 * s, 0.16 * s, 0.26 * s), CFrame.new(at + v(0, -0.22 * s, -0.08 * s)), BONE, M.PLASTIC, nil, 0.04),
+				ball("Socket", 0.13 * s, CFrame.new(at + v(-0.1 * s, 0.02 * s, -0.2 * s)), C.BLACK, M.PLASTIC),
+				ball("Socket", 0.13 * s, CFrame.new(at + v(0.1 * s, 0.02 * s, -0.2 * s)), C.BLACK, M.PLASTIC),
+				ball("SocketGlow", 0.05 * s, CFrame.new(at + v(-0.1 * s, 0.02 * s, -0.26 * s)), BILE, M.NEON, A),
+				ball("SocketGlow", 0.05 * s, CFrame.new(at + v(0.1 * s, 0.02 * s, -0.26 * s)), BILE, M.NEON, A)}
+		end
+		local head = hood(SHROUD, S, {peak = true})
+		B.join(head, skull(v(0, 0.86, -0.66), 0.8))
+		local torso = robeBody(SHROUD, BILE, {collar = false})
+		for i = 0, 3 do   -- the ribs, curving round the chest
+			local y = 0.56 - i * 0.24
+			for _, sx in ipairs({-1, 1}) do
+				B.join(torso, {rod("Rib", v(sx * 0.08, y, -0.66), v(sx * 0.62, y - 0.12, -0.6), 0.08, BONE, M.PLASTIC)})
+			end
+		end
+		torso[#torso + 1] = rod("Spine", v(0, 0.72, -0.67), v(0, -0.34, -0.67), 0.1, BONE, M.PLASTIC)
+		B.join(torso, skull(v(-1.24, 1.02, 0), 1.1), skull(v(1.24, 1.02, 0), 1.1))
+		for i = -3, 3 do   -- the rags of the skirt, front and back
+			local len = 0.5 + ((i * 7) % 3) * 0.14
+			torso[#torso + 1] = box("Tatter", v(0.24, len, 0.05), cf(i * 0.29, -1.78 - len / 2, 0.64, 6, 0, (i % 2 == 0) and 6 or -6), SHROUD, M.FABRIC, S)
+			if math.abs(i) <= 1 then torso[#torso + 1] = box("Tatter", v(0.22, len * 0.8, 0.05), cf(i * 0.24, -1.78 - len * 0.4, -0.67, -6, 0, (i % 2 == 0) and -6 or 6), SHROUD, M.FABRIC, S) end
+		end
+		A_.Necromancer = set(head, torso,
+			function() return arm(robeArm(BILE, {bell = 1.3}),
+				{box("Tatter", v(0.26, 0.5, 0.05), cf(0, -1.12, 0.62, 8, 0, 4), SHROUD, M.FABRIC, S),
+				 box("Tatter", v(0.22, 0.38, 0.05), cf(0.6, -1.06, 0.2, 0, 90, -5), SHROUD, M.FABRIC, S),
+				 torus("Bones", v(1.2, 0.12, 1.2), cf(0, -0.3, 0), BONE, M.PLASTIC)}) end,
+			function() local out = leg(robeLeg(BILE, SHROUD))
+				for i = -1, 1 do out[#out + 1] = box("Tatter", v(0.26, 0.3 + (i + 1) * 0.06, 0.05), cf(i * 0.36, -0.9, -0.66, 0, 0, i * 5), SHROUD, M.FABRIC, S) end
+				return out end)
+	end
+
+	-- PYROMANCER (Epic): a cowl with a crest of flame, ember gems, flames licking up the hem
+	do
+		local function flames(y, z, w, n, up)
+			local out = {}
+			local dz = z < 0 and -0.03 or 0.03
+			for i = 0, n - 1 do
+				local x = -w / 2 + (i + 0.5) * w / n
+				local h = (i % 2 == 0) and 0.56 or 0.4
+				local sway = ((i % 3) - 1) * 0.06
+				local tipAt = v(x + sway, y + (up and h or -h), z)
+				out[#out + 1] = spike("Flame", v(x, y, z), tipAt, w / n * 1.15, EMBER, M.NEON, A)
+				out[#out + 1] = spike("FlameHeart", v(x, y, z + dz), v(x + sway * 0.6, y + (up and h * 0.6 or -h * 0.6), z + dz), w / n * 0.55, FLAME, M.NEON)
+			end
+			return out
+		end
+		local head = hood(CHAR, S)
+		for i = -1, 1 do   -- the crest: flames rising off the crown, a hot heart in each
+			local foot, tipAt = v(i * 0.3, 0.86 - math.abs(i) * 0.1, 0.1), v(i * 0.46, 1.56 - math.abs(i) * 0.32, 0.34)
+			head[#head + 1] = spike("Crest", foot, tipAt, 0.44, EMBER, M.NEON, A)
+			head[#head + 1] = spike("CrestHeart", foot + v(0, 0, -0.06), foot:Lerp(tipAt, 0.62) + v(0, 0, -0.06), 0.24, FLAME, M.NEON)
+		end
+		head[#head + 1] = egg("Gem", v(0.22, 0.28, 0.12), cf(0, 0.5, -0.82), EMBER, M.NEON, A)
+		local torso = robeBody(CHAR, EMBER)
+		B.join(torso, flames(-1.74, -0.7, 0.72, 3, true), flames(-1.74, 0.68, 2.0, 6, true),
+			{rbox("Sash", v(2.28, 0.24, 1.28), cf(0, -0.5, 0), C.BLACK, M.FABRIC, nil, 0.1),
+			 egg("Gem", v(0.26, 0.32, 0.14), cf(0, 0.4, -0.68), EMBER, M.NEON, A),
+			 egg("Gem", v(0.18, 0.22, 0.12), cf(-0.5, 0.62, -0.62), FLAME, M.NEON, A),
+			 egg("Gem", v(0.18, 0.22, 0.12), cf(0.5, 0.62, -0.62), FLAME, M.NEON, A)})
+		A_.Pyromancer = set(head, torso,
+			function() return arm(robeArm(EMBER, {bell = 1.3}), flames(-0.94, -0.7, 1.0, 3, false)) end,
+			function() return leg(robeLeg(EMBER, C.BLACK), flames(-0.74, -0.68, 1.0, 3, true)) end)
+	end
+
+	-- FROST WITCH (Epic): a pale pointed hat hung with icicles, a white fur collar, shards of
+	-- ice at the shoulders, fur at the cuffs and the hem
+	do
+		local hat, _, onHat = tallHat(C.CLOTH, ICE, 1.8, 0.2, 2.5)
+		for i = 0, 9 do   -- icicles off the brim
+			local a = i / 10 * math.pi * 2
+			local at = v(math.cos(a) * 1.2, 0.5, 0.04 + math.sin(a) * 1.2)
+			hat[#hat + 1] = spike("Icicle", at, at - v(0, (i % 2 == 0) and 0.4 or 0.26, 0), 0.12, ICE, M.GLASS or Enum.Material.Glass, A)
+		end
+		B.join(hat, star("Flake", onHat(1.2), 0.28, SNOW, A))
+		local torso = robeBody(FROST, ICE, {collar = false})
+		B.join(torso, {egg("Fur", v(2.3, 0.58, 1.5), cf(0, 0.96, 0.02), SNOW, M.FABRIC),
+			egg("Fur", v(1.0, 0.5, 0.5), cf(0, 0.8, -0.62), SNOW, M.FABRIC)},
+			star("Flake", v(0, 0.1, -0.66), 0.36, ICE, A))
+		for _, sx in ipairs({-1, 1}) do   -- ice growing off the shoulders
+			for i = 0, 2 do
+				local foot = v(sx * (0.96 + i * 0.12), 1.0, -0.2 + i * 0.22)
+				torso[#torso + 1] = spike("Shard", foot, foot + v(sx * 0.2, 0.5 - i * 0.1, 0.06), 0.2, ICE, Enum.Material.Glass, A)
+			end
+		end
+		A_.FrostWitch = set(hat, torso,
+			function() return arm(robeArm(ICE, {bell = 1.3}), {rbox("FurCuff", v(1.5, 0.24, 1.5), cf(0, -0.76, 0.06), SNOW, M.FABRIC, nil, 0.12)}) end,
+			function() return leg(robeLeg(ICE, SNOW), {rbox("FurHem", v(1.42, 0.2, 1.42), cf(0, -0.68, 0), SNOW, M.FABRIC, nil, 0.1)}) end)
+	end
+
+	-- BATTLEMAGE (Legendary): a circlet with a glowing stone and the hood thrown back; steel
+	-- over the robe (a breastplate, pauldrons, bracers, greaves) cut with runes
+	do
+		local head = {middle(HEAD),
+			egg("HoodDown", v(1.6, 0.8, 0.9), cf(0, -0.4, 0.62), C.CLOTH, M.FABRIC, P),
+			torus("Circlet", v(1.36, 0.12, 1.4), cf(0, 0.32, 0.02), C.STEEL, M.METAL, MT),
+			egg("Stone", v(0.2, 0.26, 0.1), cf(0, 0.36, -0.7), RUNE, M.NEON, A),
+			spike("CircletPeak", v(0, 0.36, -0.68), v(0, 0.66, -0.66), 0.14, C.STEEL, M.METAL, MT)}
+		local torso = robeBody(C.CLOTH2, RUNE)
+		B.join(torso, {rbox("Breastplate", v(2.26, 1.2, 1.26), cf(0, 0.36, 0), C.STEEL, M.METAL, MT, 0.3),
+			rbox("Plackart", v(1.4, 0.4, 1.28), cf(0, -0.36, -0.02), C.STEEL, M.METAL, MT, 0.16)},
+			pauldron(-1, C.STEEL, M.METAL, MT, nil, C.GOLD), pauldron(1, C.STEEL, M.METAL, MT, nil, C.GOLD))
+		for i = -1, 1 do   -- runes glowing in the steel
+			torso[#torso + 1] = box("Rune", v(0.07, 0.34, 0.04), cf(i * 0.32, 0.4 - math.abs(i) * 0.08, -0.65), RUNE, M.NEON, A)
+			torso[#torso + 1] = box("Rune", v(0.2, 0.06, 0.04), cf(i * 0.32, 0.5 - math.abs(i) * 0.08, -0.65), RUNE, M.NEON, A)
+		end
+		A_.Battlemage = set(head, torso,
+			function() return arm(robeArm(RUNE, {bell = 1.24}),
+				{rbox("Vambrace", v(1.18, 0.5, 1.18), cf(0, -0.36, 0), C.STEEL, M.METAL, MT, 0.12),
+				 box("Rune", v(0.06, 0.3, 0.04), cf(0, -0.36, -0.6), RUNE, M.NEON, A)}) end,
+			function() return leg(robeLeg(RUNE, C.DARKLEATHER),
+				{rbox("Greave", v(1.18, 0.66, 1.18), cf(0, -0.3, -0.02), C.STEEL, M.METAL, MT, 0.16),
+				 egg("Knee", v(0.66, 0.5, 0.36), cf(0, 0.12, -0.52), C.STEEL, M.METAL, MT)}) end)
+	end
+
+	-- DRUID (Rare): a bark-brown hood with antlers and a crown of leaves, a mantle of leaves,
+	-- a living vine for a belt
+	do
+		local head = hood(BARK, S)
+		for _, sx in ipairs({-1, 1}) do   -- the antlers, branching
+			local base = v(sx * 0.42, 0.9, 0.12)
+			local top = base + v(sx * 0.5, 0.86, 0.1)
+			B.join(head, {rod("Antler", base, top, 0.1, HORN, M.WOOD),
+				rod("Tine", base + v(sx * 0.2, 0.34, 0.04), base + v(sx * 0.62, 0.52, -0.06), 0.08, HORN, M.WOOD),
+				rod("Tine", base + v(sx * 0.36, 0.62, 0.07), base + v(sx * 0.4, 1.06, 0.2), 0.07, HORN, M.WOOD)})
+		end
+		for i = 0, 6 do   -- a crown of leaves round the face
+			local a = math.rad(-70 + i * 23)
+			head[#head + 1] = egg("Leaf", v(0.3, 0.12, 0.2), cf(math.sin(a) * 0.74, 0.5 + math.cos(a) * 0.14, -0.6 + (1 - math.cos(a)) * 0.3, 0, 0, -math.deg(a)), i % 2 == 0 and LEAF or LEAF2, M.FABRIC, A)
+		end
+		local torso = robeBody(BARK, LEAF, {collar = false})
+		for _, sx in ipairs({-1, 1}) do   -- a mantle of leaves fanned over each shoulder
+			for i = 0, 4 do
+				local z = -0.5 + i * 0.25
+				torso[#torso + 1] = egg("Leaf", v(0.78, 0.14, 0.4), cf(sx * 1.22, 1.0 - math.abs(i - 2) * 0.05, z, 0, 0, -sx * (14 + math.abs(i - 2) * 6)), i % 2 == 0 and LEAF or LEAF2, M.FABRIC, A)
+			end
+			torso[#torso + 1] = egg("Leaf", v(0.6, 0.12, 0.36), cf(sx * 1.5, 0.84, -0.1, 0, 30, -sx * 38), LEAF2, M.FABRIC, A)
+		end
+		B.join(torso, tube("Vine", {v(-1.1, -0.5, -0.6), v(-0.4, -0.58, -0.66), v(0.3, -0.48, -0.66), v(1.1, -0.56, -0.6)}, 0.09, LEAF, M.FABRIC),
+			{ball("Acorn", 0.22, cf(0.3, -0.62, -0.72), BARK, M.WOOD), egg("AcornCap", v(0.24, 0.12, 0.24), cf(0.3, -0.52, -0.72), HORN, M.WOOD)})
+		A_.Druid = set(head, torso,
+			function() return arm(robeArm(LEAF, {bell = 1.2}),
+				{rbox("Bark", v(1.18, 0.4, 1.18), cf(0, -0.3, 0), BARK, M.WOOD, nil, 0.12),
+				 egg("Leaf", v(0.4, 0.12, 0.26), cf(0, -0.3, -0.62), LEAF, M.FABRIC, A)}) end,
+			function() return leg(robeLeg(LEAF, BARK), wraps(BARK, 2, -0.66, 0.18)) end)
+	end
+
+	-- STAR SAGE (Mythic): a hood of night with a crescent moon hung over it, constellations
+	-- glowing across the robe, stars at the cuffs and the hem
+	do
+		local head = hood(NIGHT, S, {rim = STAR})
+		B.join(head, moon("Halo", v(0, 1.42, 0.1), 0.9, STAR, true))
+		for i, p in ipairs({v(-0.5, 0.8, -0.5), v(0.46, 0.96, -0.36), v(-0.2, 1.06, 0.2)}) do head[#head + 1] = ball("Star", 0.1 + (i % 2) * 0.04, CFrame.new(p), STAR, M.NEON, A) end
+		local torso = robeBody(VOID, STAR, {collarH = 0.6, collarTop = 1.06})
+		-- the constellations: stars joined by faint lines, front and back
+		local function constellation(pts, z)
+			local out = {}
+			for i, p in ipairs(pts) do
+				out[#out + 1] = ball("Star", (i % 3 == 0) and 0.16 or 0.11, CFrame.new(v(p.X, p.Y, z)), STAR, M.NEON, A)
+				if i > 1 then out[#out + 1] = rod("Line", v(pts[i - 1].X, pts[i - 1].Y, z), v(p.X, p.Y, z), 0.025, STAR, M.NEON, A) end
+			end
+			return out
+		end
+		B.join(torso, constellation({v(-0.8, 0.7, 0), v(-0.62, 0.3, 0), v(-0.86, -0.06, 0), v(-0.56, -0.5, 0)}, -0.6),
+			constellation({v(0.6, 0.74, 0), v(0.84, 0.46, 0), v(0.6, 0.1, 0), v(0.82, -0.3, 0), v(0.62, -0.7, 0)}, -0.6),
+			constellation({v(-0.6, 0.6, 0), v(0, 0.3, 0), v(0.62, 0.56, 0), v(0.3, -0.3, 0), v(-0.4, -0.6, 0)}, 0.6))
+		A_.StarSage = set(head, torso,
+			function() return arm(robeArm(STAR, {bell = 1.46}),
+				{ball("Star", 0.12, cf(-0.3, -0.5, -0.74), STAR, M.NEON, A), ball("Star", 0.1, cf(0.26, -0.3, -0.72), STAR, M.NEON, A),
+				 ball("Star", 0.14, cf(0, 0.3, -0.6), STAR, M.NEON, A)}) end,
+			function() return leg(robeLeg(STAR, VOID, {curl = true}),
+				{ball("Star", 0.12, cf(-0.2, 0.2, -0.6), STAR, M.NEON, A), ball("Star", 0.1, cf(0.24, -0.3, -0.6), STAR, M.NEON, A)}) end)
+	end
+end
+
 -- the three starter sets (the free kit of each weight)
 A_.KnightSkin = set(closeHelm(), knightTorso(),
 	function(s) return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.6), plateArm(s, C.STEEL)) end,

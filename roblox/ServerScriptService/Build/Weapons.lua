@@ -370,6 +370,10 @@ W.Staff = function()
 		out[#out + 1] = B.ball("ClawTip", 0.11, CFrame.new(p2), C.BRASS, M.METAL, {SkinPart = "Grip"})
 	end
 	out[#out + 1] = B.ball("Orb", 0.56, cf(0, 3.55, 0), Color3.fromRGB(140, 200, 255), M.NEON, {SkinPart = "Blade"})
+	-- (the brass — claws, collar, band, the iron shoe — is a skin's "Metal": the wood its "Grip")
+	for _, p in ipairs(out) do
+		if p.name == "Claw" or p.name == "ClawTip" or p.name == "Collar" or p.name == "Band" or p.name == "Cap" then p.attrs = {SkinPart = "Metal"} end
+	end
 	return out
 end
 -- the staff swung (Tools ▸ StaffMelee, its melee self): the same body, a hitbox along the top
@@ -388,8 +392,8 @@ W.Tome = function()
 	for _, s in ipairs({-1, 1}) do
 		out[#out + 1] = B.box("Cover", v(0.64, 1.34, 0.06), cf(s * 0.34, 0.66, -0.07, 0, s * -8, 0), cover, M.LEATHER, {SkinPart = "Grip"})
 		out[#out + 1] = B.box("Pages", v(0.58, 1.24, 0.1), cf(s * 0.31, 0.66, 0.0, 0, s * -8, 0), page, M.FABRIC)
-		for _, y in ipairs({0.06, 1.26}) do   -- brass corners
-			out[#out + 1] = B.box("Corner", v(0.14, 0.14, 0.08), cf(s * 0.6, y, -0.07, 0, s * -8, 0), brass, M.METAL, {SkinPart = "Grip"})
+		for _, y in ipairs({0.06, 1.26}) do   -- brass corners (a skin's "Metal")
+			out[#out + 1] = B.box("Corner", v(0.14, 0.14, 0.08), cf(s * 0.6, y, -0.07, 0, s * -8, 0), brass, M.METAL, {SkinPart = "Metal"})
 		end
 		for i = 1, 4 do   -- lines of script across the pages
 			out[#out + 1] = B.box("Script", v(0.4, 0.035, 0.012), cf(s * 0.31, 0.3 + i * 0.2, 0.056, 0, s * -8, 0), Color3.fromRGB(60, 40, 30), M.PLASTIC)
@@ -407,8 +411,8 @@ end
 W.Wand = function()
 	local out = {grip(0.42, 0.14, C.DARKLEATHER, M.LEATHER)}
 	out[#out + 1] = B.cyl("Rod", 0.1, 0.8, cf(0, 0.6, 0), Color3.fromRGB(214, 196, 160), M.WOOD, {SkinPart = "Grip"})
-	out[#out + 1] = B.cyl("Collar", 0.16, 0.08, cf(0, 0.22, 0), C.STEEL, M.METAL, {SkinPart = "Grip"})
-	out[#out + 1] = B.ball("Pommel", 0.16, cf(0, -0.24, 0), C.STEEL, M.METAL, {SkinPart = "Grip"})
+	out[#out + 1] = B.cyl("Collar", 0.16, 0.08, cf(0, 0.22, 0), C.STEEL, M.METAL, {SkinPart = "Metal"})
+	out[#out + 1] = B.ball("Pommel", 0.16, cf(0, -0.24, 0), C.STEEL, M.METAL, {SkinPart = "Metal"})
 	out[#out + 1] = B.box("Crystal", v(0.12, 0.26, 0.12), cf(0, 1.06, 0, 0, 45, 0), Color3.fromRGB(255, 230, 150), M.NEON, {SkinPart = "Blade"})
 	return out
 end

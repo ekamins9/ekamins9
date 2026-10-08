@@ -113,12 +113,16 @@ end
 function Horde:spawnOne(skill, at)
 	local Bots = bots()
 	local warlord = skill == "Warlord"
+	-- archers in the horde from wave 3, mages from wave 5 (Combat ▸ Bots: opts.class)
+	local r = math.random()
+	local cls = not warlord and ((self.wave >= 3 and r < 0.16) and "Archer" or ((self.wave >= 5 and r < 0.26) and "Mage" or nil)) or nil
 	local bot = Bots.spawn({
 		at = at * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3)),
 		skill = warlord and "Champion" or skill,
-		weapon = warlord and "Zweihander" or WEAPONS[math.random(#WEAPONS)],
+		class = cls,
+		weapon = warlord and "Zweihander" or ((not cls) and WEAPONS[math.random(#WEAPONS)] or nil),
 		weight = warlord and "Heavy" or nil,
-		name = warlord and "The Warlord" or skill,
+		name = warlord and "The Warlord" or (cls and (skill .. " " .. cls)) or skill,
 		team = "B", startDelay = 0.6, corpseTime = 4,
 		onDeath = function(b, killer)
 			self.live[b] = nil

@@ -448,7 +448,7 @@ end
 local TEACHERS = {
 	knight = {rig = "Sir Aldric", weight = "Heavy", weapon = "Longsword", colors = {Primary = "Royal", Secondary = "Bone", Accent = "Gold", Metal = "Steel"}},
 	archer = {rig = "Wren", weight = "Light", weapon = "Bow", colors = {Primary = "Forest", Secondary = "Bone", Accent = "Ochre", Metal = "Ash"}},
-	mage   = {rig = "Orrin", weight = "Light", weapon = "Staff", set = "ApprenticeRobes", colors = {Primary = "Royal", Secondary = "Bone", Accent = "Gold", Metal = "Ash"}},
+	mage   = {rig = "Orrin", weight = "Robe", weapon = "Staff", set = "ApprenticeRobes", colors = {Primary = "Royal", Secondary = "Bone", Accent = "Gold", Metal = "Ash"}},
 }
 local teacherPos = {}   -- track → where they stand
 local function teacher(track)

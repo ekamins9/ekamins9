@@ -413,7 +413,10 @@ local function act(plr, action, a)
 		local weapons = {"Longsword", "ArmingSword", "Mace", "Spear", "WarAxe", "Halberd"}
 		for i = 1, count do
 			local ang = (i / count) * math.pi * 2
-			Bots.spawn({at = hrp.CFrame * CFrame.new(math.cos(ang) * 12, 0, math.sin(ang) * 12 - 6), skill = skill, weapon = weapons[math.random(#weapons)], name = skill, startDelay = 1.5})
+			-- (a.class "Archer" / "Mage": they fight as one)
+			local cls = (a.class == "Archer" or a.class == "Mage") and a.class or nil
+			Bots.spawn({at = hrp.CFrame * CFrame.new(math.cos(ang) * (cls and 26 or 12), 0, math.sin(ang) * (cls and 26 or 12) - 6), skill = skill, class = cls,
+				weapon = (not cls) and weapons[math.random(#weapons)] or nil, name = cls and (skill .. " " .. cls) or skill, startDelay = 1.5})
 		end
 		logAction(plr, "bots", nil, nil, count .. " " .. skill)
 		return true, string.format("%d %s%s", count, skill, count > 1 and "s" or "")
