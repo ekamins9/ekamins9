@@ -103,11 +103,17 @@ function PreviewRig.poseRig(rig, pose)
 	end
 end
 
--- dress a fresh rig: {loadout, appearance, weight, team, weapon = bool, pose}
+-- dress a fresh rig: {loadout, appearance, weight, team, weapon = bool, pose,
+-- armor = false (bare), helmet = false (the armor without its helmet: the face shows)}
 function PreviewRig.dressedRig(o)
 	local m = PreviewRig.makeRig()
 	local lo = o.loadout or {}
-	if o.armor == false then lo = {colors = lo.colors} end
+	if o.armor == false then lo = {colors = lo.colors}
+	elseif o.helmet == false then
+		local c = {}
+		for k, v in pairs(lo) do if k ~= "helmet" then c[k] = v end end
+		lo = c
+	end
 	pcall(Dresser.dress, m, {loadout = lo, appearance = o.appearance, weight = o.weight, team = o.team, preview = true})
 	if o.weapon ~= false and (o.loadout or {}).weapon then pcall(Dresser.attachWeapon, m, o.loadout.weapon, o.loadout.weaponSkin) end
 	PreviewRig.poseRig(m, o.pose)

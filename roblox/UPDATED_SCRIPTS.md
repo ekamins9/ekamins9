@@ -1,4 +1,16 @@
-# Updated scripts: emotes, 10× — the rarer the cooler, and two Mythics
+# Updated scripts: no more bare dummy in the previews
+
+- **Wardrobe:** you stand in your active class's armor with only the helmet off, so the face and hair you're editing show (WITH HELMET still puts it on).
+- **Every little preview window** (kill effects, emotes, the inventory, inspect) shows you as you are: your active class's armor and look, not a bare body. The dressed figure is built once per look and copied, so a screen full of looping thumbnails stays cheap.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [PreviewRig.lua](ReplicatedStorage/PreviewRig.lua) | ReplicatedStorage ▸ PreviewRig | ModuleScript | `helmet = false`: the armor without its helmet |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ HubMenu | LocalScript | previews dressed (cached); the wardrobe's helmet off |
+
+---
+
+## Before that: emotes, 10× — the rarer the cooler, and two Mythics
 
 - **Every emote moves with weight now:** a small move the other way first, a hair past the pose and back, a held beat, a follow-through. The Bow sweeps a hand out first, the Cheer dips and pumps, the Kneel drops heavily, the Laugh throws the head back and slaps the knee, the Jig twirls and leaps, the War Cry gathers in and roars, the Windmill lifts off, the Champion raises the blade and drives it into the ground.
 - **The rarer, the more it does (EmoteFX):**

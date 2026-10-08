@@ -1463,10 +1463,26 @@ function Preview.box(parent, size)
 	return holder, world, cam
 end
 -- you in your active class (light = no armor: the small cards)
+-- (you, as you are: your active class's armor and look. Dressed once per look and
+-- copied after, so a screenful of looping thumbnails stays cheap; `light` = no weapon)
+Preview.rigCache = {}
 function Preview.rig(world, weapon, light)
 	local lo = {}
 	for k, v in pairs(classLoadout(state.activeClass)) do lo[k] = v end
-	local rig = dressedRig({loadout = lo, appearance = state.profile and state.profile.appearance, weight = weightOf(state.activeClass), weapon = weapon, armor = not light})
+	local ok, key = pcall(function()
+		return game:GetService("HttpService"):JSONEncode({lo, state.profile and state.profile.appearance or false, state.activeClass, weapon == true})
+	end)
+	local tpl = ok and Preview.rigCache[key]
+	if not (tpl and tpl.Parent == nil and tpl:FindFirstChild("Torso")) then
+		tpl = dressedRig({loadout = lo, appearance = state.profile and state.profile.appearance, weight = weightOf(state.activeClass), weapon = weapon})
+		if ok then
+			local n = 0
+			for _ in pairs(Preview.rigCache) do n += 1 end
+			if n > 12 then for k, v in pairs(Preview.rigCache) do v:Destroy(); Preview.rigCache[k] = nil end end
+			Preview.rigCache[key] = tpl
+		end
+	end
+	local rig = tpl:Clone()
 	rig.Parent = world
 	return rig
 end
@@ -4938,8 +4954,8 @@ do
 			stage:set({{loadout = lo, appearance = a, weight = weightOf(state.activeClass), weapon = false, tag = player.DisplayName, sub = className(state.activeClass) .. "'s helmet on"}})
 			stageHint.Text = "THE ACTIVE CLASS'S HELMET SHOWS WHAT IT HIDES"
 		else
-			stage:set({{loadout = lo, appearance = a, armor = false, weapon = false, tag = player.DisplayName, sub = a.title or ""}})
-			stageHint.Text = "ARMOR AND WEAPON COME OFF WHILE YOU EDIT  ·  DRAG TO TURN, SCROLL TO ZOOM"
+			stage:set({{loadout = lo, appearance = a, helmet = false, weight = weightOf(state.activeClass), weapon = false, tag = player.DisplayName, sub = a.title or ""}})
+			stageHint.Text = "YOUR HELMET COMES OFF WHILE YOU EDIT  ·  DRAG TO TURN, SCROLL TO ZOOM"
 		end
 	end
 	local function set(k, v, buyKind, price)
