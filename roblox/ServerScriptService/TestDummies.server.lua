@@ -16,7 +16,8 @@
      parry you. The server doesn't render RigPose, so dummies see your
      un-leaned body (the HipHeight crouch IS physical, so ducking works).
 
-     Every step logs under [TestDummies] while Debug.Logs is on. ]]
+     Every step logs under [TestDummies] while Debug.Logs is on.
+     Only in Studio, or for the host of a custom server with cheats on. ]]
 
 local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -234,9 +235,19 @@ end
 local MODES = {idle = true, block = true, parry = true, attack = true}
 local lastCommand = {}   -- [player] = os.clock(), to dedupe the two chat hooks
 
+-- who may: Studio, or the host of a custom server with cheats on (like Hub ▸ Cheats).
+-- Never on a public or match server: an attack dummy dropped in a battle is griefing.
+local function allowed(player)
+	if RunService:IsStudio() then return true end
+	local ok, Game = pcall(function() return require(ServerScriptService:WaitForChild("Game", 5):WaitForChild("Game", 5)) end)
+	local sv = ok and Game and Game.server
+	return sv ~= nil and sv.custom == true and sv.settings ~= nil and sv.settings.cheats == true and sv.hostId == player.UserId
+end
+
 local function handle(player, text)
 	local cmd, rest = text:match("^/(%a+)%s*(.*)$")
 	if not cmd or cmd:lower() ~= "spawn" then return end
+	if not allowed(player) then return end
 	if os.clock() - (lastCommand[player] or -1e9) < 0.3 then return end
 	lastCommand[player] = os.clock()
 	log("command from", player.Name .. ":", text)

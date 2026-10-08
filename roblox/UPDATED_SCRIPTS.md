@@ -1,4 +1,27 @@
-# Updated scripts: 25 new maps, every mode has 10 or more
+# Updated scripts: maps verified, ready to publish
+
+- **Every map checked:**
+  - All 36 maps exist, and every mode has 10 or more.
+  - Each map has what its modes need.
+  - All 25 new maps have vote pictures.
+- **Map fixes found while checking:**
+  - Redgorge's gorge floor sat below its stored terrain and showed the void.
+  - The forest clearings' ponds had no water.
+  - Round fills thinner than a voxel row wrote nothing: the arena floors and the village squares.
+  - Bots couldn't climb the 1-stud temple steps, so nobody ever reached the KOTH hill on the ruins maps. Invisible ramps now run along all four sides, and the arena dais and village platform are a low step.
+  - The obelisk tips rendered as forked V shapes.
+- **Played:** Siege on Emberkeep, KOTH on Cinderfall, TDM on Moonring, with no script errors.
+- **Before publishing:** test rigs left in the place were removed. `/spawn` test dummies no longer work on live servers (only in Studio, or for the host of a cheat server).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build ▸ MapForge | ModuleScript | the fixes above |
+| [TestDummies.server.lua](ServerScriptService/TestDummies.server.lua) | ServerScriptService ▸ TestDummies | Script | Studio / cheat-server host only |
+| [../docs/HANDOFF.md](../docs/HANDOFF.md) | (docs) | | publishing checklist |
+
+---
+
+## Before that: 25 new maps, every mode has 10 or more
 
 - **A map forge:** each new map is one line, a layout in a theme.
   - **Layouts:** arena, castle courtyard, village, bridge, ruins, forest clearing, siege castle.

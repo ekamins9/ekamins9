@@ -432,7 +432,7 @@ end
 local function arena(ctx, T, r)
 	local A = 46
 	ground(ctx, T, r, 120, function(B)
-		B:FillCylinder(CFrame.new(0, -1, 0), 2, A, T.path)
+		B:FillCylinder(CFrame.new(0, -2, 0), 4, A, T.path)   -- (a whole voxel row: a thinner fill writes nothing)
 	end)
 	local stone, dark, sm = T.stone, T.stoneDark, T.stoneMat
 	local SEG = 28
@@ -464,8 +464,8 @@ local function arena(ctx, T, r)
 		K.torchPost(ctx, V3(-8, 0, z * (A + 7)), 6); K.torchPost(ctx, V3(8, 0, z * (A + 7)), 6)
 	end
 	-- the dais in the middle (the hill), braziers round it
-	K.cyl(ctx, "Dais", 18, 1.2, V3(0, 0.6, 0), dark, sm)
-	K.cyl(ctx, "DaisTop", 16, 0.3, V3(0, 1.35, 0), stone, sm)
+	K.cyl(ctx, "Dais", 18, 0.5, V3(0, 0.25, 0), dark, sm)          -- (low enough to walk onto)
+	K.cyl(ctx, "DaisTop", 16, 0.2, V3(0, 0.6, 0), stone, sm)
 	for i = 0, 3 do
 		local a = i / 4 * 2 * math.pi + math.pi / 4
 		K.torchPost(ctx, V3(math.cos(a) * 11, 0, math.sin(a) * 11), 4)
@@ -490,7 +490,7 @@ local function arena(ctx, T, r)
 	weather(ctx, T, 260, 260)
 	markers(ctx, {
 		a = line(-10, 10, -36, 5), b = line(-10, 10, 36, 5), free = ring(8, 32, 1, math.pi / 8),
-		hill = {V3(0, 1.2, 0), 9}, gates = {V3(0, 3, -(A - 4)), V3(0, 3, A - 4), V3(-(A - 4), 3, 0), V3(A - 4, 3, 0),
+		hill = {V3(0, 0.7, 0), 9}, gates = {V3(0, 3, -(A - 4)), V3(0, 3, A - 4), V3(-(A - 4), 3, 0), V3(A - 4, 3, 0),
 			V3(-30, 3, -30), V3(30, 3, 30), V3(-30, 3, 30), V3(30, 3, -30)},
 		cams = {{V3(-60, 34, 60), V3(0, 4, 0)}, {V3(20, 8, -30), V3(-6, 4, 10)}, {V3(0, 70, 0.1), V3(0, 0, 0)}},
 	})
@@ -567,13 +567,13 @@ local function village(ctx, T, r)
 	ground(ctx, T, r, 120, function(B)
 		B:FillBlock(CFrame.new(0, -2, 0), V3(200, 4, 10), T.path)
 		B:FillBlock(CFrame.new(0, -2, 0), V3(10, 4, 200), T.path)
-		B:FillCylinder(CFrame.new(0, -1, 0), 2, 18, T.floor)
+		B:FillCylinder(CFrame.new(0, -2, 0), 4, 18, T.floor)
 	end)
 	-- the square: a raised market platform (the hill), a market cross
-	K.cyl(ctx, "Platform", 22, 1.4, V3(0, 0.7, 0), T.stoneDark, T.stoneMat)
-	K.cyl(ctx, "PlatformTop", 20, 0.3, V3(0, 1.55, 0), T.stone, T.stoneMat)
-	K.cyl(ctx, "Cross", 1.2, 12, V3(0, 7.4, 0), T.stone, T.stoneMat)
-	K.box(ctx, "CrossArm", V3(4.4, 1, 1), V3(0, 11, 0), T.stone, T.stoneMat)
+	K.cyl(ctx, "Platform", 22, 0.5, V3(0, 0.25, 0), T.stoneDark, T.stoneMat)
+	K.cyl(ctx, "PlatformTop", 20, 0.2, V3(0, 0.6, 0), T.stone, T.stoneMat)
+	K.cyl(ctx, "Cross", 1.2, 12, V3(0, 6.7, 0), T.stone, T.stoneMat)
+	K.box(ctx, "CrossArm", V3(4.4, 1, 1), V3(0, 10.3, 0), T.stone, T.stoneMat)
 	for i = 0, 3 do
 		local a = i / 4 * 2 * math.pi
 		K.awning(ctx, V3(math.cos(a) * 20, 0, math.sin(a) * 20), 6, 7, 6, i % 2 == 0 and T.house or T.house2)
@@ -617,7 +617,7 @@ local function village(ctx, T, r)
 	weather(ctx, T, 260, 260)
 	markers(ctx, {
 		a = lineX(-92, -12, 12, 5), b = lineX(92, -12, 12, 5), free = ring(10, 60, 1, 0.1), center = V3(0, 1, 0),
-		hill = {V3(0, 1.4, 0), 10}, gates = ring(8, 100, 3, 0.2),
+		hill = {V3(0, 0.7, 0), 10}, gates = ring(8, 100, 3, 0.2),
 		cams = {{V3(-90, 44, 90), V3(0, 6, 0)}, {V3(30, 10, 24), V3(-10, 6, -10)}, {V3(0, 60, 110), V3(0, 4, -20)}},
 	})
 	finishLook(ctx, T)
@@ -628,7 +628,7 @@ end
 --------------------------------------------------------------------
 local function bridge(ctx, T, r, def)
 	local HALF = 40               -- the river runs along X, |z| < HALF
-	local floorY = def.dry and -60 or -40
+	local floorY = def.dry and -46 or -40   -- (inside the terrain region, whose foot is at -64)
 	ground(ctx, T, r, 120, function(B)
 		B:FillBlock(CFrame.new(0, (floorY - 6) / 2, 0), V3(408, -floorY + 6, HALF * 2), Mat.Air)
 		B:FillBlock(CFrame.new(0, floorY - 4, 0), V3(408, 8, HALF * 2 + 8), def.dry and T.cliff or Mat.Rock)
@@ -722,6 +722,11 @@ local function ruins(ctx, T, r)
 	local slab = K.box(ctx, "RoofSlab", V3(20, 1.4, 8), CFrame.new(-6, Y + 6, 4) * CFrame.Angles(DEG(14), DEG(20), DEG(28)), stone, sm)
 	snowOn(ctx, T, slab, 0.4)
 	for _, s in ipairs({-1, 1}) do K.stairs(ctx, CFrame.new(0, 0, s * 20) * CFrame.Angles(0, s > 0 and 0 or math.pi, 0), 8, 3, 1, 1.4, stone, sm) end
+	-- an invisible ramp along every side, so the steps never stop anyone (bots included)
+	for i = 0, 3 do
+		local w = K.wedge(ctx, "StepRamp", V3(36, 3, 9), CFrame.Angles(0, i * math.pi / 2, 0) * CFrame.new(0, 1.5, 19.5) * CFrame.Angles(0, math.pi, 0), stone, sm)
+		w.Transparency, w.CastShadow = 1, false
+	end
 	-- broken walls (L-shapes) and obelisks scattered round
 	for i = 1, 11 do
 		local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(34, 86)
@@ -734,7 +739,8 @@ local function ruins(ctx, T, r)
 		local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(40, 80)
 		local p = V3(math.cos(a) * d, 0, math.sin(a) * d)
 		K.box(ctx, "Obelisk", V3(3, 16, 3), V3(p.X, 8, p.Z), dark, sm)
-		K.cone(ctx, "ObeliskTip", V3(p.X, 16, p.Z), 2.1, 3, dark, sm, nil, false, 4)
+		K.box(ctx, "ObeliskCap", V3(2.2, 1.2, 2.2), V3(p.X, 16.6, p.Z), dark, sm)
+		K.box(ctx, "ObeliskTip", V3(1.2, 1, 1.2), V3(p.X, 17.7, p.Z), T.stone, sm)
 	end
 	do
 		local p = V3(0, 0, 60)
@@ -762,7 +768,8 @@ local function clearing(ctx, T, r)
 	ground(ctx, T, r, 120, function(B)
 		B:FillBlock(CFrame.new(0, -2, 0), V3(8, 4, 240), T.path)
 		B:FillBlock(CFrame.new(0, -2, 0), V3(240, 4, 8), T.path)
-		B:FillCylinder(CFrame.new(-28, -1.4, 34), 2, 9, Mat.Water)
+		B:FillCylinder(CFrame.new(-28, -4, 34), 8, 10, Mat.Air)
+		B:FillCylinder(CFrame.new(-28, -5, 34), 8, 10, Mat.Water)
 	end)
 	local stone, dark, sm = T.stone, T.stoneDark, T.stoneMat
 	-- the stone circle and its altar (the hill)
@@ -780,7 +787,7 @@ local function clearing(ctx, T, r)
 	campfire(ctx, T, V3(-20, 0, -20))
 	for _, p in ipairs({V3(-26, 0, -26), V3(-14, 0, -28)}) do K.box(ctx, "LogSeat", V3(6, 1.2, 1.4), CFrame.new(p + V3(0, 0.6, 0)) * CFrame.Angles(0, DEG(r:NextNumber(0, 60)), 0), T.wood, M.Wood) end
 	-- stepping stones over the pond
-	for i = -2, 2 do K.cyl(ctx, "SteppingStone", 2.6, 0.6, V3(-28 + i * 3.2, 0.1, 34 + (i % 2) * 1.4), dark, sm) end
+	for i = -2, 2 do K.cyl(ctx, "SteppingStone", 2.6, 1.6, V3(-28 + i * 3.2, -0.5, 34 + (i % 2) * 1.4), dark, sm) end
 	-- fallen trunks for cover, rocks
 	for i = 1, 6 do
 		local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(24, CR - 6)

@@ -167,6 +167,25 @@ The loop that made it possible, worth reusing for any new look:
 - **Uploads are slow** (~3 a minute through Open Cloud); `build_armor.py --upload-only`
   resumes and `--reverse` lets a second uploader work from the other end.
 
+## 4e. Publishing (checked 2026-10-08)
+
+Verified in Studio before the first publish:
+- **Maps:**
+  - All 36 maps are in `ServerStorage ▸ Maps`, and every mode lists 10 or more (Siege 10, Lists 10, Duel 11, FFA 12, TDM 12, LTS 12, KOTH 11, Horde 10).
+  - Every map passes the structural check: spawns for its modes, a hill, Horde gates, Siege stages, menu cameras, terrain.
+  - Every map voted on has its picture in `ReplicatedStorage ▸ MapShots` (Decal ids in `blender/out/mapshots/decals.txt`).
+- **Played:** Siege on Emberkeep (bots push the ram), KOTH on Cinderfall (the hill gets taken), TDM on Moonring. No script errors.
+- **Test leftovers removed:** `workspace.PoseTest` and `ReplicatedStorage.FxTmp`. Workspace is empty (maps are cloned in at runtime). `/spawn` dummies only work in Studio or for the host of a cheat server.
+
+Left to the owner:
+1. **Save, then File ▸ Publish to Roblox.** The maps and pictures live only in the place.
+2. **Game settings:**
+   - avatar type R6
+   - genre, age rating, thumbnails and icon
+   - Developer Products: the 4 Crown bundles are already linked by name
+3. **Persistence:** test it once in a private server (or turn on Studio API access). Nothing persistent can be checked in Studio with API access off: profiles, settings, boards, season grants, the admin queue.
+4. **Season 1 ends 2026-11-17** (`Catalog ▸ Pass ends`). Before then, plan Season 2: a new `season` id gives fresh boards and payouts.
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.
