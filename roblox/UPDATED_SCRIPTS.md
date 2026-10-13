@@ -1,4 +1,25 @@
-# Updated scripts: launch-safe saving, analytics, badges, kill cam, weekend events
+# Updated scripts: store art (thumbnails, icon, badge pictures)
+
+No game scripts changed. **Pictures for the store page and the badges, rendered in Blender from the game's own armor sets, weapons and staffs** (in `store_art/`, ready to upload: see [docs/LAUNCH.md](../docs/LAUNCH.md) sections 2 and 3):
+- **Five thumbnails** (1920×1080):
+  - the class line-up ("5 CLASSES / PICK YOUR FIGHTER");
+  - the clash ("STEEL & GLORY");
+  - the siege ("STORM THE CASTLE / 6 BATTLE MODES");
+  - the mage ("MASTER MAGIC");
+  - the archer ("HEADSHOT!").
+- **The icon** (512×512).
+- **Ten badge medallions** (512×512, one per key in `ServerStorage ▸ BadgeIds`).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [../blender/art_kit.py](../blender/art_kit.py) (new) | | Blender script | the toolkit:<br>• posed R6 fighters in any armor set, weapons, staffs, bows;<br>• fire (a hot core in a ragged rim), blazes, sparks, embers;<br>• castles, skies, haze;<br>• Cycles setup, bloom, colour grade;<br>• titles as a crisp layer laid over the render;<br>• `--layout` quick renders |
+| [../blender/store_art.py](../blender/store_art.py) (new) | | Blender script | the scenes: clash, mage, archer, lineup, siege, icon, `badge:<Key>`, `badges` |
+| `../store_art/*.png`, `../store_art/badges/*.png` (new) | | images | the finished pictures (the `work/` folders: the renders before titles, not kept in git) |
+| [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | which picture goes where, the thumbnails' order |
+
+---
+
+## Before that: launch-safe saving, analytics, badges, kill cam, weekend events
 
 - **Saving is one server at a time (no more duplicates).** Before, a profile was read on join and written over on leave with nothing stopping two servers at once. Hop servers quickly after a trade and an item could exist in both places. Now:
   - A profile is claimed when it loads and let go when you leave.

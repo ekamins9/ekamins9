@@ -8,3 +8,6 @@ blender/out/
 
 # asset ids for Studio-only assembly (scripts/skin_entries.py)
 roblox/ServerScriptService/Build/_SkinUploads.lua
+
+# store art: the renders before their titles (blender/store_art.py rebuilds them)
+store_art/**/work/

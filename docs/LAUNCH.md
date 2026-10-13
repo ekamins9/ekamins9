@@ -14,31 +14,35 @@ What's left before launch is for you: things in the Creator Dashboard, and thing
 
 ## 2. Badges (Creator Dashboard ▸ your experience ▸ Monetization ▸ Badges)
 
-Create these (an icon each; 512×512 works). Then put each badge's id into Studio: **ServerStorage ▸ BadgeIds ▸ \<key\>**, in the IntValue's Value. A badge left at 0 is simply skipped. Players who already earned one get it the next time they join.
+Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** (512×512; Roblox shows badges in a circle, and the medallions are drawn for that). Then put each badge's id into Studio: **ServerStorage ▸ BadgeIds ▸ \<key\>**, in the IntValue's Value. A badge left at 0 is simply skipped. Players who already earned one get it the next time they join.
 
-| Key (IntValue) | Badge name | Description |
-|---|---|---|
-| Welcome | Welcome to Steel & Glory | You came to fight. |
-| Graduate | Graduate | Finished basic training with Sir Aldric. |
-| FirstBlood | First Blood | Your first kill in battle. |
-| FirstWin | First Victory | Your first round won. |
-| Level5 | Bow and Staff | Reached level 5: the Archer and the Mage are yours. |
-| Level25 | Veteran | Reached level 25. |
-| Champion | Champion Slayer | Beat a Champion in the sparring ring. |
-| Gauntlet10 | Iron Will | Survived ten waves of the Gauntlet. |
-| Mythic | Touched by Legend | Pulled a Mythic out of a crate. |
-| BetaTester | Beta Tester | Played Steel & Glory before the gates opened. |
+| Key (IntValue) | Badge name | Description | Picture |
+|---|---|---|---|
+| Welcome | Welcome to Steel & Glory | You came to fight. | a keep flying a flag (bronze) |
+| Graduate | Graduate | Finished basic training with Sir Aldric. | sword and round shield (bronze) |
+| FirstBlood | First Blood | Your first kill in battle. | a sword striking down, red sparks (silver) |
+| FirstWin | First Victory | Your first round won. | a gold trophy (gold) |
+| Level5 | Bow and Staff | Reached level 5: the Archer and the Mage are yours. | a bow and the Stormcaller staff (silver) |
+| Level25 | Veteran | Reached level 25. | the Lionheart helm, "25" (gold) |
+| Champion | Champion Slayer | Beat a Champion in the sparring ring. | a crown run through by a sword (gold) |
+| Gauntlet10 | Iron Will | Survived ten waves of the Gauntlet. | an iron shield, "10", in flames (iron) |
+| Mythic | Touched by Legend | Pulled a Mythic out of a crate. | a burning red crystal (mythic red) |
+| BetaTester | Beta Tester | Played Steel & Glory before the gates opened. | a war hammer, "BETA" (silver) |
 
 ## 3. Store page
 
 - [ ] **Maturity & compliance questionnaire** (Creator Dashboard ▸ your experience ▸ Audience). Answer it honestly:
   - Violence: melee combat and blood; heads come off.
   - Paid random items: crates for Crowns, with odds shown. In regions that bar them, crates open only with Keys earned by play.
-- [ ] **Icon** (512×512) and **thumbnails** (1920×1080). Take Studio screenshots, for example:
-  - a clash in the Colosseum;
-  - a Mage with the Staff of the Cosmos;
-  - an archer in Phoenixborn;
-  - the Courtyard full of players.
+- [ ] **Icon** (512×512): `store_art/icon.png` (the Lionheart helm, eyes burning in the visor, swords crossed behind).
+- [ ] **Thumbnails** (1920×1080), in this order (the first one is what most people see):
+  1. `store_art/thumb4_classes.png`: "5 CLASSES / PICK YOUR FIGHTER", the line-up, each class named.
+  2. `store_art/thumb1_clash.png`: "STEEL & GLORY / EVERY SWING IS YOURS", two knights' blades locked at sunset.
+  3. `store_art/thumb5_siege.png`: "STORM THE CASTLE / 6 BATTLE MODES", the Crown's charge, the castle burning.
+  4. `store_art/thumb2_mage.png`: "MASTER MAGIC / FIRE • LIGHTNING • FROST", the Star Sage's fireball.
+  5. `store_art/thumb3_archer.png`: "HEADSHOT! / BOWS • CROSSBOWS", Phoenixborn drawing a burning arrow.
+
+  They're rendered in Blender from the game's own armor sets, weapons and staffs (`blender/store_art.py`, see its header to re-render one or change a title). Once real players are in, a screenshot of a packed Courtyard or Siege makes a good sixth.
 - [ ] **Genre**: Fighting. Max players to match your servers.
 
 **Title:** Steel & Glory
