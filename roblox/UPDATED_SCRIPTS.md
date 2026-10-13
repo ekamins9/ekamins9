@@ -1,4 +1,43 @@
-# Updated scripts: up to code (rules posted, text filtered, data erasable)
+# Updated scripts: SHOWCASE mode (film the game with a camera that directs itself)
+
+- **Admin panel (F2) › SHOWCASE**, for Owner and Admin. Seven showcases:
+  - **siege**: two bot armies storm a castle;
+  - **field battle**: Team Deathmatch;
+  - **free for all**;
+  - **bows & spells**: Archers and Mages;
+  - **champion duel**;
+  - **courtyard tour**;
+  - **armor parade**: the 12 rarest sets on mannequins.
+
+  A battle turns the server into a bot match on a real map, chosen or random. It's set up like a custom server with cheats: a better bot mix (fewer Squires), nobody earns anything, and no clock.
+- **While it runs:**
+  - your menus hide and you have no body (you can't spawn, and bots have nobody to chase);
+  - the world streams in around the camera;
+  - the camera directs itself: every 4-7 s it cuts to where the fighting is thickest, in orbit, hero, follow and aerial shots;
+  - a new map opens with its establishing shots, and the camera never films through a wall.
+- **Keys:** 1-5 pick a style (1 = auto), Q / E switch fighter, Ctrl+Shift+X stops (so does STOP in the panel). After a stop the match goes on, so you can spawn and play in it.
+- It only runs in Studio or a custom/private server: it takes over the whole server.
+- The footage is real gameplay, which is what Roblox wants for the game page's video.
+- Checked in Play:
+  - field battle on the Rose Court: bots filled both teams; follow and hero shots, no UI;
+  - stop: the menus and the spawn screen came back;
+  - armor parade: 12 mannequins, a push-in on each;
+  - champion duel on the Sandpit: two Champions, the camera circling them;
+  - the parade's mannequins were cleared on switching.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Game/Showcase.lua](ServerScriptService/Game/Showcase.lua) (new) | ServerScriptService ▸ Game | ModuleScript | the kinds, staging, the parade, stop |
+| [Showcase.client.lua](StarterPlayerScripts/Showcase.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the director's camera |
+| [Game/BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | `BotFill.override` (a showcase's mix); the one filming takes no bot's place |
+| [Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua), [Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService | Script | their streaming focus left alone; no spawning while filming |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [CleanView.client.lua](StarterPlayerScripts/CleanView.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the menu camera holds off; `_G.SetCleanView` |
+| [Admin/AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua), [Admin/Roles.lua](ServerScriptService/Admin/Roles.lua), [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | ServerScriptService ▸ Admin; StarterPlayerScripts | Script, ModuleScript, LocalScript | `showcase` / `showcase_stop`, the perm, the SHOWCASE tab |
+| [README.md](README.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | showcases; recording the game page's video; sending footage to edit |
+
+---
+
+## Before that: up to code (rules posted, text filtered, data erasable)
 
 - **The game's rules are posted, as Roblox's Terms require.** A game that enforces its own rules (this one kicks, bans and takes back items) must post them "and any consequences for violating them… clearly and conspicuously". The six rules:
   - be a good sport;

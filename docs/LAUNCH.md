@@ -69,8 +69,26 @@ Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** 
   - Roblox's rules: show the real game ("representative of the actual in-game visuals"), nothing important at the bottom edge (the name and rating cover it), and no "best", "#1", prices or offers. These follow them.
 - [ ] **Video on the game page** (the first thing people see there): Roblox wants **real gameplay** here, not a rendered trailer. Up to 60 s, 1080p, 100 MB; 3 uploads a month, free.
   - No voice-over and no songs with lyrics; music from Roblox's own library is fine.
-  - Record it yourself: in a live server press **Ctrl+H** (all UI hides; again to bring it back) and record with **Win+Alt+R** (Windows Game Bar) or OBS.
-  - Good moments to get: a Siege charge, a duel full of parries, a Mage's fireball, a crate opening.
+  - **The easy way: SHOWCASE mode** (admin panel, F2 › SHOWCASE). The server stages a real bot match, your menus hide, and the camera directs itself. Press **Win+Alt+R** to start and stop recording (or use OBS). Seven showcases:
+
+    | Showcase | What it films |
+    |---|---|
+    | SIEGE ASSAULT | two bot armies storming a castle |
+    | FIELD BATTLE | a big Team Deathmatch fight |
+    | FREE FOR ALL | every bot for itself |
+    | BOWS & SPELLS | Archers and Mages; the camera favours them |
+    | CHAMPION DUEL | two Champions up close |
+    | COURTYARD TOUR | a slow flight round the hub |
+    | ARMOR PARADE | the rarest sets on mannequins |
+
+    Pick a map or leave it on ANY. Keys while it runs:
+    - **1** auto, **2** orbit, **3** hero (low, in front), **4** follow, **5** aerial;
+    - **Q / E** switch fighter;
+    - **Ctrl+Shift+X** stop.
+
+    It only runs in Studio or your own custom/private server, because it takes over the whole server. Recording in Studio's Play is simplest.
+  - Or by hand: in a live server press **Ctrl+H** (all UI hides; again to bring it back) and record yourself playing, ideally with friends.
+  - **Send me the clips** and I'll edit them: drop them in a `footage/` folder in the project (git ignores it). I'll cut them to the best 30-60 seconds and add titles and your game logo. For music, use a track from Roblox's own library.
 - [ ] **Genre**: Fighting. Max players to match your servers.
 
 **Title:** Steel & Glory

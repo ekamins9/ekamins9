@@ -16,3 +16,6 @@ store_art/video/frames/
 store_art/video/frames_preview/
 store_art/video/titles/
 store_art/video/trailer_preview.mp4
+
+# your gameplay clips for me to edit (big videos stay out of git)
+footage/

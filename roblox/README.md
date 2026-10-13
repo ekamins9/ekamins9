@@ -93,6 +93,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/LoadoutMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LoadoutMenu` | LocalScript |
 | `StarterPlayerScripts/Spectate.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Spectate` (watch the fight while dead) | LocalScript |
 | `StarterPlayerScripts/CleanView.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `CleanView` (Ctrl+H hides all UI, the game's and Roblox's, for filming; again to bring it back) | LocalScript |
+| `ServerScriptService/Game/Showcase.lua`, `StarterPlayerScripts/Showcase.client.lua` | `ServerScriptService` → `Game` → `Showcase` (staff stage bot matches, the Courtyard tour, the armor parade for filming); `StarterPlayerScripts` → `Showcase` (the director's camera) | ModuleScript, LocalScript |
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |

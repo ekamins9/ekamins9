@@ -254,6 +254,7 @@ end
 spawnAs = function(plr, classId, opts)
 	opts = opts or {}
 	if spawning[plr] then return end
+	if plr:GetAttribute("Showcase") then return end   -- (filming a showcase: no body until it stops)
 	if isAlive(plr) and not opts.again then return end
 	if not GameConfig.CLASSES[classId] then classId = Profile.get(plr).active end
 	if not Catalog.classOpen(classId, Profile.get(plr)) then classId = GameConfig.DEFAULT_CLASS end

@@ -6,6 +6,8 @@
                 wipe their data
        SERVER   end the round, pick the next mode and map, announce (this
                 server or every server), spawn / clear bots, shut down
+       SHOWCASE stage the game for filming: bot battles, the Courtyard, an armor
+                parade, with a camera that directs itself (Game ▸ Showcase)
        STAFF    who has which role; give and take roles below your own
        BANS     who's banned, until when, why; unban
        LOG      every staff action
@@ -461,6 +463,59 @@ tabs.SERVER = function()
 end
 
 --------------------------------------------------------------------
+--  SHOWCASE: stage the game for filming (Game ▸ Showcase; the camera: Showcase.client)
+--------------------------------------------------------------------
+local SHOWCASES = {
+	{"siege", "SIEGE ASSAULT", "Two armies of bots storm a castle.", "Siege"},
+	{"battle", "FIELD BATTLE", "Team Deathmatch: a big brawl of blades.", "TDM"},
+	{"brawl", "FREE FOR ALL", "Every bot for itself.", "FFA"},
+	{"magic", "BOWS & SPELLS", "Archers and Mages among the swords.", "TDM"},
+	{"duel", "CHAMPION DUEL", "Two Champions in an arena, up close.", "FFA"},
+	{"courtyard", "COURTYARD TOUR", "A slow flight round the Courtyard.", nil},
+	{"armory", "ARMOR PARADE", "The rarest armor sets, one by one.", nil},
+}
+tabs.SHOWCASE = function()
+	local s = scroller(body)
+	vlist(s, 8)
+	local function act(action, args) local res = call("Act", action, args or {}); say(res); return res end
+	local intro = label(s, "Stage the game for filming. A battle turns this server into a bot match on a real map (or the Courtyard); "
+		.. "your menus hide, you have no body, and the camera directs itself, cutting to wherever the fighting is. "
+		.. "It's real gameplay, so it's fine for the game page's video. Record with Win+Alt+R (or OBS). "
+		.. "Only in Studio, or a custom or private server: it takes over the whole server.", 14, WHITE, Theme.FONT_BODY)
+	intro.Size = UDim2.new(1, -10, 0, 64); intro.LayoutOrder = 1
+	local keys = label(s, "WHILE IT RUNS:  1 auto · 2 orbit · 3 hero · 4 follow · 5 aerial  ·  Q / E the previous / next fighter  ·  Ctrl+Shift+X stop", 13, Theme.ACCENT, Theme.FONT)
+	keys.Size = UDim2.new(1, -10, 0, 22); keys.LayoutOrder = 2
+	local map = ""
+	local h = heading(s, "MAP (FOR A BATTLE; ANY = ONE THAT SUITS IT)"); h.LayoutOrder = 3
+	local maps = flow(s); maps.LayoutOrder = 4
+	local chips = {}
+	local list, seen = {"ANY"}, {}
+	for _, id in ipairs({"Siege", "TDM", "FFA"}) do
+		for _, m in ipairs((GameConfig.MODES[id] or {}).maps or {}) do if not seen[m] then seen[m] = true; table.insert(list, m) end end
+	end
+	for i, m in ipairs(list) do
+		local b = button(maps, m == "ANY" and "ANY" or string.upper(GameConfig.mapTitle(m)), m == "ANY" and Theme.BLUE or Theme.GLASS2); b.LayoutOrder = i; b.TextSize = 12
+		chips[m] = b
+		b.Activated:Connect(function()
+			map = m == "ANY" and "" or m
+			for n, c in pairs(chips) do c.BackgroundColor3 = (n == m) and Theme.BLUE or Theme.GLASS2 end
+		end)
+	end
+	local h2 = heading(s, "SHOWCASES"); h2.LayoutOrder = 5
+	for i, sc in ipairs(SHOWCASES) do
+		local r = hrow(s, 36); r.LayoutOrder = 5 + i
+		button(r, sc[2], Theme.GREEN, 190).Activated:Connect(function()
+			local okMap = map ~= "" and sc[4] and table.find((GameConfig.MODES[sc[4]] or {}).maps or {}, map) and map or ""
+			act("showcase", {kind = sc[1], map = okMap})
+			if panel.Visible then panel.Visible = false end   -- (out of the shot)
+		end)
+		label(r, sc[3], 13, Theme.DIM, Theme.FONT_BODY).Size = UDim2.fromOffset(520, 30)
+	end
+	local r = hrow(s, 40); r.LayoutOrder = 50
+	button(r, "STOP THE SHOWCASE", Theme.RED, 220).Activated:Connect(function() act("showcase_stop") end)
+end
+
+--------------------------------------------------------------------
 --  STAFF
 --------------------------------------------------------------------
 tabs.STAFF = function()
@@ -555,6 +610,7 @@ local function setOpen(on)
 		for _, b in pairs(tabButtons) do b:Destroy() end
 		tabButtons = {}
 		local names = {"PLAYERS", "SERVER", "STAFF"}
+		if can("showcase") then table.insert(names, "SHOWCASE") end
 		if can("ban") or can("tempban") then table.insert(names, "BANS") end
 		if can("log") then table.insert(names, "LOG") end
 		for i, n in ipairs(names) do

@@ -44,6 +44,9 @@ BotFill.CONFIG = {
 }
 local C = BotFill.CONFIG
 
+-- (a staff showcase's own mix: Game ▸ Showcase sets {mix = {{skill, share}…}, classMix = …})
+BotFill.override = nil
+
 local Bots   -- (lazily: Combat ▸ Bots)
 local function bots()
 	if not Bots then Bots = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Bots")) end
@@ -96,6 +99,7 @@ local function wanted(def)
 end
 -- the skills bots come in: a custom server's choice, else the usual mix
 local function mixHere()
+	if BotFill.override and BotFill.override.mix then return BotFill.override.mix end
 	local s = Game.server.custom and Game.server.settings
 	local skill = s and s.botSkill
 	if skill and skill ~= "Mixed" and bots().SKILLS[skill] then return {{skill, 1}} end
@@ -105,7 +109,7 @@ end
 local function newcomerHere()
 	for _, p in ipairs(Players:GetPlayers()) do
 		local t = p:GetAttribute("Tutorial")
-		if t ~= nil and t < 2 then return true end
+		if t ~= nil and t < 2 and not p:GetAttribute("Showcase") then return true end
 	end
 	return false
 end
@@ -147,7 +151,7 @@ local function spawnOne(team)
 	local myRound = roundId
 	local seat = takeSeat(team, nextName())
 	local entry = {team = team, seat = seat}
-	local cls = not newcomerHere() and pick(C.CLASS_MIX) or nil
+	local cls = not newcomerHere() and pick((BotFill.override and BotFill.override.classMix) or C.CLASS_MIX) or nil
 	local ok, bot = pcall(bots().spawn, {
 		at = at, skill = skill, weapon = (not cls) and list[math.random(#list)] or nil, team = team, class = cls or nil,
 		name = seat:GetAttribute("Name"), fightBots = true, goal = objective, corpseTime = 6,
@@ -224,7 +228,8 @@ local function tick()
 		local key = side or nil
 		local players = 0
 		for _, p in ipairs(Players:GetPlayers()) do
-			if key == nil or Teams.keyOf(p) == key then players += 1 end
+			-- (someone filming a showcase has no body and takes no bot's place)
+			if (key == nil or Teams.keyOf(p) == key) and not p:GetAttribute("Showcase") then players += 1 end
 		end
 		local held = 0
 		for _, e in ipairs(fill) do if e.team == key then held += 1 end end

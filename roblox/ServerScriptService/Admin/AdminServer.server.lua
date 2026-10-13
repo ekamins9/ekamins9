@@ -19,6 +19,7 @@
                                             refused if somebody already has it)
            reset {userId}                   setrole {userId, name, role ("" takes it away)}
            erase {userId}                   a right-to-erasure request: every trace of them (Safety ▸ Erasure)
+           showcase {kind, map}             stage the game for filming (Game ▸ Showcase)   showcase_stop {}
            shutdown {reason}
        AdminEvent (RemoteEvent)  server → client: "Announce", text, byName, roleName
 
@@ -99,7 +100,7 @@ local function permsOf(role)
 	local r = role and Roles.roles[role]
 	if not r then return {} end
 	if r.perms == "*" then
-		return {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "currency", "items", "unlock", "progress", "reset", "staff", "shutdown", "log", "drops", "erase"}
+		return {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "currency", "items", "unlock", "progress", "reset", "staff", "shutdown", "log", "drops", "erase", "showcase"}
 	end
 	return r.perms
 end
@@ -279,7 +280,8 @@ end
 
 local NEEDS = {kick = "kick", unban = "ban", ["goto"] = "teleport", bring = "teleport", freeze = "teleport", heal = "health", kill = "health",
 	endround = "rounds", nextmode = "rounds", nextmap = "rounds", bots = "bots", clearbots = "bots", currency = "currency", item = "items",
-	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops", erase = "erase"}
+	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops", erase = "erase",
+	showcase = "showcase", showcase_stop = "showcase"}
 -- actions done to another player: you must outrank them (on yourself it's fine)
 local ON_PLAYER = {kick = true, ban = true, ["goto"] = false, bring = true, freeze = true, heal = false, kill = true, currency = true, item = true,
 	unlockall = true, level = true, reset = true, setrole = true, erase = true}
@@ -491,6 +493,13 @@ local function act(plr, action, a)
 		publish({kind = "staff"})
 		logAction(plr, "setrole", targetId, tname, newRole or "none")
 		return true, (newRole and (tname .. " is now " .. newRole) or (tname .. " is no longer staff")) .. note
+	elseif action == "showcase" or action == "showcase_stop" then
+		local Showcase = require(ServerScriptService:WaitForChild("Game"):WaitForChild("Showcase"))
+		local ok, msg
+		if action == "showcase" then ok, msg = Showcase.start(plr, tostring(a.kind or ""), a.map ~= "" and a.map or nil)
+		else ok, msg = Showcase.stop(plr) end
+		if ok then logAction(plr, action, nil, nil, tostring(a.kind or "")) end
+		return ok, msg
 	elseif action == "erase" then
 		-- a right-to-erasure request (Safety ▸ Erasure): the log keeps that it happened, not who
 		if isOwner(targetId) then return false, "not the owner" end

@@ -25,6 +25,8 @@
          staff         give and take roles (below your own)
          shutdown      close this server
          log           read the action log
+         showcase      stage the game for filming: bot matches, a flying camera, no menus
+                       (Game ▸ Showcase; in Studio, a custom or a private server)
          erase         a right-to-erasure request from Roblox: delete every trace of a
                        player (Owner only: it isn't in any other role's list) ]]
 return {
@@ -35,7 +37,7 @@ return {
 		Owner     = {rank = 100, color = Color3.fromRGB(255, 196, 60), perms = "*"},
 		Admin     = {rank = 60, color = Color3.fromRGB(235, 84, 72),
 			perms = {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "drops",
-				"currency", "items", "unlock", "progress", "staff", "log"}},
+				"currency", "items", "unlock", "progress", "staff", "log", "showcase"}},
 		Moderator = {rank = 40, color = Color3.fromRGB(84, 150, 245),
 			perms = {"view", "kick", "tempban", "teleport", "health", "announce", "rounds", "log"}},
 		Helper    = {rank = 20, color = Color3.fromRGB(110, 205, 120),

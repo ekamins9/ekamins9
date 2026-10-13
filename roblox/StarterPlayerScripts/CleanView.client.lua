@@ -52,6 +52,9 @@ local function setClean(on)
 	end
 end
 
+-- (a staff showcase turns it on and off: Showcase.client)
+_G.SetCleanView = function(on) if on ~= clean then setClean(on) end end
+
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or input.KeyCode ~= Enum.KeyCode.H then return end
 	if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) then
