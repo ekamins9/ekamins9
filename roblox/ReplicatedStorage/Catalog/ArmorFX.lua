@@ -77,6 +77,14 @@ return {
 	 description = "Black rock and molten seams: armor that came up out of a volcano with you still inside it. You burn as you walk.",
 	 look = {metal = C(34, 26, 24), metalMaterial = "Basalt", accent = C(255, 96, 20), glow = true, pulse = true, body = "CrackedLava", aura = "inferno", light = C(255, 110, 40)}},
 
+	-- THE FLETCHER'S CRATE (its archers' sets wear these built in)
+	{id = "Moonlit", name = "Moonlit", rarity = "Legendary", crate = "Fletcher",
+	 description = "Silver that drinks the moonlight and gives it back: your trims glow pale blue and a cold mist of light drifts off you.",
+	 look = {metal = C(214, 222, 236), metalMaterial = "Foil", accent = C(190, 225, 255), glow = true, pulse = true, aura = "frost", light = C(170, 210, 255), tint = {C(26, 30, 64), 0.25}}},
+	{id = "Phoenixfire", name = "Phoenixfire", rarity = "Mythic", crate = "Fletcher",
+	 description = "You burn and are not burned. Gold that glows like a forge, feathers of fire falling off you, a light round you like sunrise.",
+	 look = {metal = C(236, 190, 80), metalMaterial = "Foil", accent = C(255, 170, 60), glow = true, pulse = true, aura = "phoenix", light = C(255, 150, 50), tint = {C(170, 40, 24), 0.2}}},
+
 	-- THE WAR CHEST (its six sets wear some of these built in)
 	{id = "Moonsilver", name = "Moonsilver", rarity = "Rare", crate = "WarChest",
 	 description = "Pale silver that holds the moonlight. Polished every night, whether it needs it or not.",

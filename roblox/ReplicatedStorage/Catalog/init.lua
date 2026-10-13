@@ -144,6 +144,8 @@ local function autoPieces()
 					-- (its own colours: these slots ignore the player's picks, so the set looks like itself)
 					colors = type(cfg.Colors) == "table" and cfg.Colors or nil,
 					classStarter = cfg.ClassStarter,   -- (a class's own starter: never another's default)
+					-- (earned, not bought: the Archer's Bowman comes with the class, level 5)
+					unlock = type(cfg.Unlock) == "table" and cfg.Unlock or nil,
 				})
 			end
 		end
@@ -286,7 +288,7 @@ end
 -- the first free piece for a slot and weight (what a new player wears)
 function Catalog.defaultPiece(slot, weight, set)
 	-- (a class with a starter set of its own: GameConfig.CLASSES starter, the Mage's robes)
-	if set then for _, p in ipairs(Catalog.piecesFor(slot, weight)) do if p.set == set and Catalog.isFree(p) then return p end end end
+	if set then for _, p in ipairs(Catalog.piecesFor(slot, weight)) do if p.set == set and (Catalog.isFree(p) or p.classStarter) then return p end end end
 	for _, p in ipairs(Catalog.piecesFor(slot, weight)) do if Catalog.isFree(p) and not p.classStarter then return p end end
 	return Catalog.piecesFor(slot, weight)[1]
 end

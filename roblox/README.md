@@ -1021,6 +1021,19 @@ and a crescent moon over the hood); each but the Druid wears its own finish. **A
 lining a deeper shade, the trims its accent, glowing (`ArmorFX.apply`). The Arcana Crate's own
 finishes are made for cloth: Spellwoven, Moonthread, Hexweave, Starweave.
 
+**Archers' outfits** (Light: any Light class may wear them). **The Bowman** is the Archer's own
+(the class's `starter`, Config `ClassStarter` + `Unlock = {level = 5}`): a hood with a long tail and
+a dagged capelet in your colours, a leather jerkin, a quiver over the right shoulder, a bracer on
+the bow arm and a shooting glove; it comes with the class at level 5 (the unlock pop-up says so),
+an Archer starts out in it, and the Armory lists it under CLASS OUTFITS ("WITH THE ARCHER") with
+the Apprentice's robes. Old saves: an Archer still in the plain Light defaults was dressed in it
+(Profile `loadoutV` 3). Four more come out of the **Fletcher's Crate**, a piece at a time: the
+Greenwood Outlaws (Rare: a feathered cap, Lincoln green, a hunting horn), the Falcon Wardens (Epic:
+a beaked hood, a feather mantle, a falcon on the shoulder), Moonshadow (Legendary: a crescent on
+the brow, a cloak edged in silver leaves, glowing fletchings; its finish Moonlit) and Phoenixborn
+(Mythic: a golden mask under a crest of burning feathers, folded wings of fire; its finish
+Phoenixfire). The Fletcher's own finishes, Moonlit and Phoenixfire, drop on their own too.
+
 The **War Chest** (always in rotation too) is the second armor crate: six more crate-only sets,
 Ranger (Light, Rare), Berserker (Light, Epic: a bear for a hood), Corsair (Medium, Epic: a
 tricorn and a captain's coat), Deathless (Medium, Legendary: a skull helm, a ribcage), Lionheart

@@ -86,7 +86,7 @@ local function default()
 		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, unlockSeen = false, dropSeen = "", copies = {}, tally = {}, claims = {}, copySeq = 0,
-		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 2}
+		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -134,7 +134,16 @@ local function fill(p)
 			end
 		end
 	end
-	p.loadoutV = 2
+	-- v3: the Archer got an outfit of its own (the Bowman); an Archer still in the plain Light
+	-- defaults (never changed) is dressed in it, piece by piece
+	if (p.loadoutV or 2) < 3 and type(p.classes) == "table" and type(p.classes.Archer) == "table" then
+		local lo, st = p.classes.Archer, GameConfig.CLASSES.Archer and GameConfig.CLASSES.Archer.starter
+		for _, slot in ipairs(Catalog.SLOTS) do
+			local was, now = Catalog.defaultPiece(slot, "Light"), Catalog.defaultPiece(slot, "Light", st)
+			if was and now and was ~= now and lo[slot] == was.id then lo[slot] = now.id end
+		end
+	end
+	p.loadoutV = 3
 	-- new fields on old v2 saves
 	local d = default()
 	for k, v in pairs(d) do if p[k] == nil then p[k] = v end end

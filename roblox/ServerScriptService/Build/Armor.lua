@@ -2307,6 +2307,393 @@ do
 	end
 end
 
+do   -- (its own scope: the main chunk's locals are near Luau's 200)
+--------------------------------------------------------------------
+--  THE ARCHER'S OUTFITS: the Bowman (the Archer's own, theirs with the class at
+--  level 5) and the four of the Fletcher's Crate (Rare → Mythic, a piece at a time,
+--  each a tradable copy). Light: hoods, leathers, quivers; the bow arm bracered.
+--------------------------------------------------------------------
+local TAWNY, CREAM, DUSK = Color3.fromRGB(150, 104, 60), Color3.fromRGB(236, 222, 190), Color3.fromRGB(92, 62, 40)
+local MIDNIGHT, SILVER, MOONGLOW = Color3.fromRGB(30, 34, 64), Color3.fromRGB(214, 222, 236), Color3.fromRGB(200, 230, 255)
+local FLAME1, FLAME2, FLAME3 = Color3.fromRGB(255, 214, 96), Color3.fromRGB(255, 132, 40), Color3.fromRGB(196, 40, 30)
+local LINCOLN = Color3.fromRGB(58, 98, 50)
+
+-- a quiver hung from `bottom` up to `top` (torso space) with `n` arrows standing out of it:
+-- shafts and two crossed vanes each (fletch: their colour or {colours…}; fmat: Neon to burn)
+local function quiver(bottom, top, d, col, rim, fletch, n, fmat, fslot)
+	local fr, len = span(bottom, top)
+	local out = {rod("Quiver", bottom, top, d, col, M.LEATHER),
+		torus("QuiverRim", v(d + 0.08, 0.07, d + 0.08), fr * CFrame.new(0, len / 2, 0), rim, M.METAL, A),
+		torus("QuiverRim", v(d + 0.06, 0.06, d + 0.06), fr * CFrame.new(0, -len / 2 + 0.12, 0), rim, M.METAL, A)}
+	local dir = (top - bottom).Unit
+	for i = 0, n - 1 do
+		local off = fr.RightVector * ((i % 3 - 1) * d * 0.24) + fr.LookVector * ((i // 3 - 0.5) * d * 0.3)
+		local base = top + off - dir * 0.1
+		local tip = base + (dir + fr.RightVector * ((i % 3 - 1) * 0.1)).Unit * 0.62
+		out[#out + 1] = rod("Arrow", base, tip, 0.04, C.WOOD, M.WOOD)
+		local ff = span(tip - dir * 0.24, tip)
+		local fc = type(fletch) == "table" and fletch[i % #fletch + 1] or fletch
+		out[#out + 1] = egg("Fletch", v(0.03, 0.26, 0.14), ff, fc, fmat or M.FABRIC, fslot)
+		out[#out + 1] = egg("Fletch", v(0.03, 0.26, 0.14), ff * CFrame.Angles(0, math.pi / 2, 0), fc, fmat or M.FABRIC, fslot)
+	end
+	return out
+end
+-- a feather (or a leaf) laid at `pos`: its length down `dir`, its face toward `face`
+local function quill(name, pos, dir, face, len, w, color, mat, attrs)
+	local y = dir.Unit
+	local z = (face - y * face:Dot(y)).Unit
+	local x = y:Cross(z)
+	return egg(name, v(w, len, 0.07), CFrame.fromMatrix(pos + y * (len / 2), x, y, z), color, mat, attrs)
+end
+-- a cape of feathers: rows of feathers round the neck on an ellipse (rx × rz), hanging and
+-- flaring out; colours per row (the last row's can glow)
+local function featherMantle(y0, rx, rz, rows, perRow, len, w, cols, mats, flare)
+	local out = {}
+	for r = 0, rows - 1 do
+		local y = y0 - r * len * 0.42
+		local k = 1 + r * 0.12
+		for i = 0, perRow - 1 do
+			local a = (i + (r % 2) * 0.5) / perRow * math.pi * 2
+			local outward = Vector3.new(math.sin(a), 0, math.cos(a))
+			local pos = Vector3.new(math.sin(a) * rx * k, y, math.cos(a) * rz * k)
+			local down = (Vector3.new(0, -1, 0) + outward * (flare or 0.45)).Unit
+			out[#out + 1] = quill("Feather", pos, down, outward, len, w, cols[r + 1] or cols[#cols], mats and mats[r + 1] or M.FABRIC)
+		end
+	end
+	return out
+end
+
+-- THE BOWMAN (the Archer's own): a hood with a long tail and a dagged capelet in your
+-- colours, a leather jerkin, a quiver over the right shoulder, a bracer on the bow arm,
+-- a shooting glove on the draw hand, wrapped calves and soft boots
+local function bowmanHood()
+	local hood, rim = openHood("Hood", C.CLOTH, M.FABRIC, P, {size = v(1.8, 1.92, 1.94)})
+	local out = J({middle(HEAD)}, hood, {
+		egg("HoodPeak", v(0.6, 0.58, 0.9), cf(0, 0.5, 0.86, -40, 0, 0), C.CLOTH, M.FABRIC, P),
+		spike("Liripipe", v(0, 0.36, 0.98), v(0, -0.95, 1.22), 0.4, C.CLOTH, M.FABRIC, P),
+		cone("Capelet", v(2.2, 0.42, 2.06), cf(0, -0.7, 0.1), C.CLOTH, M.FABRIC, P, 0.74),
+		cyl("Brooch", 0.22, 0.06, cf(0.34, -0.64, -0.9, 80, 0, 0), C.BRASS, M.METAL, A),
+	}, tube("HoodRim", rim(0.0, 20), 0.07, C.CLOTH2, M.FABRIC, S, true))
+	for i = 0, 15 do   -- the capelet's dagged hem
+		local a = i / 16 * math.pi * 2
+		out[#out + 1] = egg("Dag", v(0.28, 0.28, 0.08), CFrame.new(math.sin(a) * 1.06, -0.92, math.cos(a) * 0.99 + 0.1) * CFrame.Angles(0, a, 0), C.CLOTH, M.FABRIC, P)
+	end
+	return out
+end
+local function bowmanTorso()
+	local out = {middle(TORSO),
+		rbox("Shirt", v(2.1, 2.04, 1.1), cf(), C.LINEN, M.FABRIC, nil, 0.2),
+		rbox("Jerkin", v(2.2, 1.6, 1.18), cf(0, -0.1, 0), C.LEATHER, M.LEATHER, nil, 0.22),
+		tbox("JerkinSkirt", v(2.3, 0.5, 1.28), cf(0, -1.1, 0), 0.95, C.LEATHER, M.LEATHER, nil, 0.2),
+		box("Opening", v(0.2, 1.3, 0.04), cf(0, 0.1, -0.6), C.LINEN, M.FABRIC),
+		tbox("Mantle", v(2.6, 0.48, 1.56), cf(0, 0.88, 0.04), 0.78, C.CLOTH, M.FABRIC, P, 0.24),
+		plate("QuiverStrap", v(-0.88, 0.86, -0.6), v(0.84, -0.6, -0.6), 0.17, 0.05, C.DARKLEATHER, M.LEATHER),
+		plate("QuiverStrap", v(-0.88, 0.86, 0.6), v(0.84, -0.6, 0.6), 0.17, 0.05, C.DARKLEATHER, M.LEATHER, nil, -X),
+		rbox("KnifeSheath", v(0.16, 0.56, 0.12), cf(-0.74, -0.98, -0.62, 0, 0, -12), C.DARKLEATHER, M.LEATHER, nil, 0.04),
+		rod("KnifeHilt", v(-0.8, -0.7, -0.62), v(-0.84, -0.48, -0.62), 0.08, C.WOOD, M.WOOD),
+	}
+	for i = 0, 3 do   -- laces down the jerkin
+		out[#out + 1] = box("Lace", v(0.34, 0.04, 0.03), cf(0, 0.5 - i * 0.2, -0.62, 0, 0, i % 2 == 0 and 22 or -22), C.LINEN, M.FABRIC)
+	end
+	return J(out, quiver(v(-0.3, -0.62, 0.82), v(0.52, 1.0, 0.82), 0.46, C.DARKLEATHER, C.BRASS, {C.LINEN, C.CLOTH2}, 6, nil, nil), belt(-0.62, C.BRASS, true))
+end
+A_.Bowman = set(bowmanHood(), bowmanTorso(),
+	function(s)
+		if s < 0 then   -- the bow arm: a long bracer, wrist to elbow
+			return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.2), bracer(C.DARKLEATHER, 0.02, -0.66, true), glove(C.LEATHER),
+				{rbox("BracerStrap", v(1.22, 0.06, 1.22), cf(0, -0.16, 0), C.BRASS, M.METAL, A, 0.2)})
+		end
+		-- the draw hand: a shooting glove, three finger tabs
+		local out = arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.56), {cuffBand(-0.5, C.LEATHER, nil, 0.16, M.LEATHER)}, glove(C.LEATHER))
+		for i = -1, 1 do out[#out + 1] = rbox("Tab", v(0.22, 0.26, 0.07), cf(i * 0.28, -0.86, -0.59), C.DARKLEATHER, M.LEATHER, nil, 0.03) end
+		return out
+	end,
+	function() return leg(hose(C.CLOTH2, S, 1.0, -0.4), wraps(C.LINEN, 3, -0.32, 0.18), boot(C.LEATHER, -0.46, true),
+		{rbox("Garter", v(1.16, 0.08, 1.16), cf(0, 0.12, 0), C.DARKLEATHER, M.LEATHER, nil, 0.18)}) end)
+
+-- GREENWOOD OUTLAWS (Rare): a pointed cap with a long red feather, the hood down round the
+-- neck, a dagged Lincoln-green tunic under an open jerkin, a broad buckled belt, a hunting
+-- horn, a quiver slung behind the hip, tall boots with turned cuffs
+local function outlawCap()
+	local out = {middle(HEAD),
+		skullcap("Cap", 0.16, 0.05, C.CLOTH, M.FABRIC, P),
+		cone("Crown", v(1.3, 0.66, 1.42), cf(0, 0.92, 0.1, -10, 0, 0), C.CLOTH, M.FABRIC, P, 0.22),
+		egg("Brim", v(1.58, 0.14, 1.74), cf(0, 0.56, 0.02, 4, 0, 0), C.CLOTH, M.FABRIC, P),
+		egg("BrimBack", v(1.36, 0.44, 0.3), cf(0, 0.7, 0.76, -58, 0, 0), C.CLOTH, M.FABRIC, P),
+		egg("BrimPeak", v(0.7, 0.12, 0.5), cf(0, 0.5, -0.86, 14, 0, 0), C.CLOTH, M.FABRIC, P),
+		torus("Band", v(1.32, 0.1, 1.4), cf(0, 0.66, 0.06, -6, 0, 0), C.DARKLEATHER, M.LEATHER),
+		egg("Feather", v(0.14, 1.36, 0.3), cf(0.52, 1.12, 0.46, -42, 0, -32), C.RED, M.FABRIC, A),
+		egg("FeatherVane", v(0.06, 1.0, 0.18), cf(0.6, 1.02, 0.5, -44, 0, -26), Color3.fromRGB(240, 220, 200), M.FABRIC),
+		torus("Cowl", v(1.92, 0.38, 1.88), cf(0, -0.64, 0.12, 8, 0, 0), C.CLOTH2, M.FABRIC, S),
+		egg("HoodDown", v(1.36, 0.5, 0.66), cf(0, -0.56, 0.74, 22, 0, 0), C.CLOTH2, M.FABRIC, S),
+	}
+	return out
+end
+local function outlawTorso()
+	local out = {middle(TORSO),
+		rbox("Tunic", v(2.1, 2.04, 1.12), cf(), C.CLOTH, M.FABRIC, P, 0.2),
+		box("Jerkin", v(0.64, 1.66, 0.06), cf(-0.74, 0.1, -0.59), C.LEATHER, M.LEATHER),
+		box("Jerkin", v(0.64, 1.66, 0.06), cf(0.74, 0.1, -0.59), C.LEATHER, M.LEATHER),
+		box("Jerkin", v(2.0, 1.66, 0.06), cf(0, 0.1, 0.59), C.LEATHER, M.LEATHER),
+		box("Jerkin", v(0.06, 1.66, 0.74), cf(-1.08, 0.1, 0), C.LEATHER, M.LEATHER),
+		box("Jerkin", v(0.06, 1.66, 0.74), cf(1.08, 0.1, 0), C.LEATHER, M.LEATHER),
+		rbox("Belt", v(2.3, 0.34, 1.3), cf(0, -0.7, 0), C.DARKLEATHER, M.LEATHER, nil, 0.12),
+		rbox("Buckle", v(0.48, 0.42, 0.07), cf(0, -0.7, -0.67), C.GOLD, M.METAL, A, 0.04),
+		box("Tongue", v(0.08, 0.14, 0.05), cf(0.06, -0.7, -0.71), C.DARKLEATHER, M.LEATHER),
+		plate("HornCord", v(-0.92, 0.92, -0.6), v(0.66, -0.46, -0.62), 0.07, 0.03, C.ROPE, M.FABRIC),
+		spike("Horn", v(0.6, -0.42, -0.74), v(1.08, -0.2, -0.58), 0.3, HORN, M.PLASTIC),
+		torus("HornBand", v(0.3, 0.05, 0.3), CFrame.new(0.68, -0.38, -0.71) * CFrame.Angles(0, 0, math.rad(64)), C.GOLD, M.METAL, A),
+	}
+	for i = -3, 3 do   -- the dagged hem, front and back: points hanging below the tunic
+		for _, z in ipairs({-0.55, 0.55}) do
+			out[#out + 1] = spike("Dag", v(i * 0.3, -0.94, z), v(i * 0.3, -1.4, z * 1.04), 0.3, C.CLOTH, M.FABRIC, P)
+		end
+	end
+	return J(out, quiver(v(0.6, -1.5, 0.92), v(0.86, -0.3, 0.72), 0.4, C.LEATHER, C.GOLD, {Color3.fromRGB(240, 230, 210), C.RED}, 5))
+end
+A_.Greenwood = set(outlawCap(), outlawTorso(),
+	function(s) return arm(sleeve(C.CLOTH, P, nil, 1.0, -0.3),
+		{tbox("Cuff", v(1.3, 0.3, 1.3), cf(0, -0.28, 0), 1.18, C.CLOTH, M.FABRIC, P, 0.2)},
+		s < 0 and bracer(C.LEATHER, -0.4, -0.66, true) or {}, glove(C.DARKLEATHER)) end,
+	function() return leg(hose(C.CLOTH2, S, 1.0, 0.0),
+		{rbox("Boot", v(1.16, 1.04, 1.18), cf(0, -0.48, -0.02), C.DARKLEATHER, M.LEATHER, nil, 0.2),
+		 tbox("BootCuff", v(1.22, 0.4, 1.24), cf(0, 0.06, -0.02), 1.16, C.LEATHER, M.LEATHER, nil, 0.2),
+		 egg("Toe", v(0.94, 0.34, 0.64), cf(0, -0.83, -0.44), C.DARKLEATHER, M.LEATHER),
+		 rbox("Sole", v(1.16, 0.08, 1.36), cf(0, -0.96, -0.14), C.BLACK, M.PLASTIC, nil, 0.03)}) end)
+
+-- FALCON WARDENS (Epic): a tawny hood with a golden beak over the brow, amber eyes and a
+-- crest of feathers, a feather ruff; a feather mantle with a falcon perched on the left
+-- shoulder; a falconer's gauntlet on the bow arm; feather tassets, talon-toed boots
+local function falconHood()
+	local hood = openHood("Hood", TAWNY, M.FABRIC, nil, {size = v(1.82, 1.94, 1.96)})
+	local out = J({middle(HEAD)}, hood, {
+		egg("Brow", v(0.96, 0.24, 0.42), cf(0, 0.56, -0.78, -12, 0, 0), C.GOLD, M.METAL, A),
+		spike("Beak", v(0, 0.58, -0.92), v(0, 0.2, -1.2), 0.34, C.GOLD, M.METAL, A),
+	})
+	for i = 0, 6 do   -- the crest, brow to nape
+		local a = math.rad(-30 + i * 22)
+		local pos = Vector3.new(0, 0.62 + math.cos(a) * 0.36, math.sin(a) * 0.9)
+		out[#out + 1] = quill("Crest", pos, Vector3.new(0, 0.5, 1 + i * 0.1), Vector3.xAxis, 0.62 - i * 0.03, 0.28, i % 2 == 0 and TAWNY or CREAM, M.FABRIC)
+	end
+	for _, s in ipairs({-1, 1}) do
+		for i = 0, 2 do   -- feathers swept back from the temples
+			out[#out + 1] = quill("Swept", Vector3.new(s * 0.86, 0.36 + i * 0.12, 0.1 + i * 0.1), Vector3.new(s * 0.5, 0.25, 1), Vector3.new(s, 0, 0), 0.62 - i * 0.08, 0.24, i == 1 and CREAM or TAWNY, M.FABRIC)
+		end
+		out[#out + 1] = egg("Eye", v(0.16, 0.12, 0.06), cf(s * 0.5, 0.6, -0.86, 0, 0, s * 10), AMBER, M.NEON, A)
+	end
+	return J(out, featherMantle(-0.5, 0.98, 0.94, 1, 16, 0.5, 0.3, {TAWNY}))
+end
+local function falconTorso()
+	local out = {middle(TORSO),
+		rbox("Jerkin", v(2.14, 2.06, 1.14), cf(), DUSK, M.LEATHER, nil, 0.22),
+		tbox("Skirt", v(2.3, 0.46, 1.28), cf(0, -1.14, 0), 0.95, DUSK, M.LEATHER, nil, 0.2),
+		rbox("Breast", v(1.4, 1.0, 0.08), cf(0, 0.2, -0.6), CREAM, M.FABRIC, nil, 0.05),
+	}
+	for i = 0, 2 do   -- the breast's barring, and buckled straps
+		out[#out + 1] = box("Bar", v(1.1 - i * 0.2, 0.05, 0.03), cf(0, 0.5 - i * 0.28, -0.65), TAWNY, M.FABRIC)
+		out[#out + 1] = box("Strap", v(0.12, 0.08, 0.05), cf(-0.62, 0.5 - i * 0.28, -0.66), C.DARKLEATHER, M.LEATHER)
+		out[#out + 1] = rbox("Buckle", v(0.14, 0.14, 0.05), cf(0.62, 0.5 - i * 0.28, -0.67), C.GOLD, M.METAL, A, 0.02)
+	end
+	B.join(out, featherMantle(1.02, 1.22, 0.74, 3, 18, 0.56, 0.32, {CREAM, TAWNY, DUSK}, nil, 0.5))
+	-- the falcon on the left shoulder, facing forward (k: its size)
+	local k = 1.35
+	local f = Vector3.new(-1.42, 1.0 + 0.42 * k, 0.08)
+	local function at(x, y, z) return f + Vector3.new(x, y, z) * k end
+	B.join(out, {
+		egg("FalconBody", v(0.42, 0.62, 0.48) * k, CFrame.new(f) * CFrame.Angles(math.rad(-12), 0, 0), TAWNY, M.FABRIC),
+		egg("FalconBreast", v(0.34, 0.46, 0.2) * k, CFrame.new(at(0, 0.02, -0.18)), CREAM, M.FABRIC),
+		ball("FalconHead", 0.32 * k, CFrame.new(at(0, 0.44, -0.06)), TAWNY, M.FABRIC),
+		egg("FalconMask", v(0.3, 0.16, 0.2) * k, CFrame.new(at(0, 0.42, -0.14)), DUSK, M.FABRIC),
+		spike("FalconBeak", at(0, 0.44, -0.2), at(0, 0.38, -0.36), 0.1 * k, C.GOLD, M.METAL, A),
+		egg("FalconEye", v(0.06, 0.06, 0.04) * k, CFrame.new(at(-0.11, 0.48, -0.16)), AMBER, M.NEON, A),
+		egg("FalconEye", v(0.06, 0.06, 0.04) * k, CFrame.new(at(0.11, 0.48, -0.16)), AMBER, M.NEON, A),
+		egg("FalconTail", v(0.26, 0.6, 0.1) * k, CFrame.new(at(0, -0.42, 0.26)) * CFrame.Angles(math.rad(28), 0, 0), DUSK, M.FABRIC),
+	})
+	for _, s in ipairs({-1, 1}) do
+		out[#out + 1] = egg("FalconWing", v(0.12, 0.62, 0.46) * k, CFrame.new(at(s * 0.22, -0.04, 0.06)) * CFrame.Angles(math.rad(-18), 0, math.rad(s * 6)), DUSK, M.FABRIC)
+		out[#out + 1] = spike("FalconTalon", at(s * 0.1, -0.3, -0.08), at(s * 0.12, -0.42, -0.2), 0.06 * k, C.BLACK, M.PLASTIC)
+	end
+	return J(out, quiver(v(-0.3, -0.62, 0.84), v(0.52, 1.0, 0.84), 0.46, DUSK, C.GOLD, {CREAM, TAWNY}, 6), belt(-0.66, C.GOLD, true, C.DARKLEATHER))
+end
+A_.FalconWardens = set(falconHood(), falconTorso(),
+	function(s)
+		if s < 0 then   -- the falconer's gauntlet: heavy leather to the elbow, fringed
+			local out = arm(sleeve(CREAM, nil, nil, 1.0, 0.0),
+				{tbox("Gauntlet", v(1.3, 1.08, 1.3), cf(0, -0.48, 0), 1.2, DUSK, M.LEATHER, nil, 0.2),
+				 rbox("GauntletHand", v(1.16, 0.46, 1.18), cf(0, -0.8, 0), DUSK, M.LEATHER, nil, 0.16),
+				 rbox("GauntletBand", v(1.36, 0.08, 1.36), cf(0, 0.02, 0), C.GOLD, M.METAL, A, 0.2)})
+			for i = 0, 7 do
+				local a = i / 8 * math.pi * 2
+				out[#out + 1] = box("Fringe", v(0.08, 0.26, 0.04), CFrame.new(math.cos(a) * 0.67, -0.04, math.sin(a) * 0.67) * CFrame.Angles(0, -a, 0), TAWNY, M.LEATHER)
+			end
+			return out
+		end
+		local out = arm(sleeve(CREAM, nil, nil, 1.0, -0.4), bracer(DUSK, -0.06, -0.66, false), glove(C.LEATHER))
+		for i = 0, 3 do   -- feathers along the bracer, swept back to the elbow
+			out[#out + 1] = quill("ArmFeather", Vector3.new(0.58, -0.62 + i * 0.16, 0.0), Vector3.new(0.3, 1, 0.3), Vector3.xAxis, 0.42, 0.2, i % 2 == 0 and TAWNY or CREAM, M.FABRIC)
+		end
+		return out
+	end,
+	function(s)
+		local out = leg(hose(DUSK, nil, 1.0, -0.4, M.LEATHER), boot(DUSK, -0.42, true))
+		for i = -1, 1 do   -- talons over the toe, and a spur
+			out[#out + 1] = spike("Talon", v(i * 0.26, -0.9, -0.62), v(i * 0.32, -0.98, -0.9), 0.13, C.BLACK, M.PLASTIC)
+		end
+		out[#out + 1] = spike("Spur", v(0, -0.82, 0.56), v(0, -0.9, 0.82), 0.1, C.BLACK, M.PLASTIC)
+		for i = 0, 2 do   -- feather tassets over the hip
+			out[#out + 1] = quill("Tasset", Vector3.new(s * 0.36 + (i - 1) * 0.2, 0.98, -0.36), Vector3.new(s * 0.15, -1, -0.15), Vector3.new(0, 0, -1), 0.6, 0.26, i == 1 and CREAM or TAWNY, M.FABRIC)
+		end
+		return out
+	end)
+
+-- MOONSHADOW (Legendary): a deep midnight hood with a silver circlet and a crescent moon on
+-- the brow; a long cloak edged in silver leaves, a leaf pauldron, a moon brooch, filigree on
+-- a slim cuirass, arrows fletched with moonlight; leaf-scale bracers and silver-leaf greaves
+local function crescent(name, pos, r, glow, under, attrs)   -- a moon: a glowing disc half hidden by a dark one
+	return {cyl(name, r * 2, 0.04, CFrame.new(pos) * CFrame.Angles(math.rad(90), 0, 0), glow, M.NEON, attrs),
+		cyl(name .. "Shadow", r * 1.7, 0.05, CFrame.new(pos + Vector3.new(r * 0.38, r * 0.2, -0.012)) * CFrame.Angles(math.rad(90), 0, 0), under, M.FABRIC)}
+end
+local function moonHood()
+	local hood, rim = openHood("Hood", MIDNIGHT, M.FABRIC, nil, {size = v(1.84, 2.0, 2.0), openX = 38, openY = 34})
+	local out = J({middle(HEAD)}, hood, {
+		egg("HoodPeak", v(0.6, 0.7, 1.1), cf(0, 0.6, 0.86, -46, 0, 0), MIDNIGHT, M.FABRIC),
+		spike("HoodTail", v(0, 0.4, 1.0), v(0, -1.15, 1.24), 0.42, MIDNIGHT, M.FABRIC),
+		cone("Drape", v(2.2, 0.4, 2.06), cf(0, -0.7, 0.12), MIDNIGHT, M.FABRIC, nil, 0.76),
+	}, tube("Circlet", rim(0.02, 22), 0.06, SILVER, M.METAL, MT, true))
+	B.join(out, crescent("Moon", Vector3.new(0, 0.66, -0.98), 0.14, MOONGLOW, MIDNIGHT, A))
+	for _, s in ipairs({-1, 1}) do   -- silver leaves up the circlet from the moon
+		for i = 0, 1 do
+			out[#out + 1] = quill("CircletLeaf", Vector3.new(s * (0.2 + i * 0.16), 0.58 - i * 0.06, -0.96 + i * 0.06), Vector3.new(s, 0.6, 0.2), Vector3.new(0, 0, -1), 0.24, 0.12, SILVER, M.METAL, MT)
+		end
+	end
+	return out
+end
+local function moonTorso()
+	local out = {middle(TORSO),
+		rbox("Tunic", v(2.1, 2.04, 1.1), cf(), MIDNIGHT, M.FABRIC, nil, 0.2),
+		rbox("Cuirass", v(2.16, 1.52, 1.16), cf(0, 0.2, 0), C.DARKLEATHER, M.LEATHER, nil, 0.24),
+		plate("Cloak", v(0, 1.0, 0.66), v(0, -1.75, 0.92), 2.2, 0.08, MIDNIGHT, M.FABRIC, nil, -X, 0.03),
+		egg("CloakFold", v(2.2, 0.32, 0.44), cf(0, 0.98, 0.58), MIDNIGHT, M.FABRIC),
+		rbox("Sash", v(2.24, 0.24, 1.24), cf(0, -0.62, 0), SILVER, M.FABRIC, MT, 0.1),
+	}
+	for i = 0, 6 do   -- silver leaves down both edges of the cloak and across its hem
+		local t = i / 6
+		for _, s in ipairs({-1, 1}) do
+			out[#out + 1] = quill("CloakLeaf", Vector3.new(s * 1.08, 0.9 - t * 2.5, 0.72 + t * 0.2), Vector3.new(0, -1, 0.1), Vector3.new(0, 0, 1), 0.28, 0.14, SILVER, M.METAL, MT)
+		end
+		out[#out + 1] = quill("HemLeaf", Vector3.new(-0.9 + t * 1.8, -1.68, 0.98), Vector3.new(0, -1, 0.12), Vector3.new(0, 0, 1), 0.3, 0.16, SILVER, M.METAL, MT)
+	end
+	-- the leaf pauldron: a leather cop over the left shoulder, silver leaves laid on it in rows
+	out[#out + 1] = egg("PauldronBase", v(1.26, 0.74, 1.34), cf(-1.44, 0.96, 0, 0, 0, 12), C.DARKLEATHER, M.LEATHER)
+	for i = 0, 3 do
+		local a = math.rad(10 + i * 24)
+		local pos = Vector3.new(-1.44 - math.sin(a) * 0.62, 0.92 + math.cos(a) * 0.36, 0)
+		local dir = Vector3.new(-math.cos(a) * 0.62, -math.sin(a) * 0.36, 0)
+		local nrm = Vector3.new(-math.sin(a) * 0.36, math.cos(a) * 0.62, 0).Unit
+		for j = -1, 1 do
+			out[#out + 1] = quill("Pauldron", pos + nrm * 0.03 + Vector3.new(0, 0, j * 0.34) - dir.Unit * 0.1, dir, nrm, 0.52, 0.42, (i + j) % 2 == 0 and SILVER or Color3.fromRGB(170, 180, 200), M.METAL, MT)
+		end
+	end
+	for _, s in ipairs({-1, 1}) do   -- filigree: silver vines climbing the cuirass
+		out[#out + 1] = box("Filigree", v(0.04, 1.1, 0.03), cf(s * 0.5, 0.25, -0.6, 0, 0, s * 12), SILVER, M.METAL, MT)
+		out[#out + 1] = box("Filigree", v(0.04, 0.4, 0.03), cf(s * 0.62, 0.62, -0.6, 0, 0, -s * 36), SILVER, M.METAL, MT)
+		out[#out + 1] = box("Filigree", v(0.04, 0.34, 0.03), cf(s * 0.4, -0.08, -0.6, 0, 0, s * 40), SILVER, M.METAL, MT)
+	end
+	B.join(out, crescent("Brooch", Vector3.new(0.62, 0.86, -0.64), 0.16, MOONGLOW, C.DARKLEATHER, A))
+	return J(out, quiver(v(-0.3, -0.62, 0.92), v(0.52, 1.0, 0.92), 0.44, C.DARKLEATHER, SILVER, MOONGLOW, 6, M.NEON, A))
+end
+A_.Moonshadow = set(moonHood(), moonTorso(),
+	function()
+		local out = arm(sleeve(MIDNIGHT, nil, nil, 1.0, -0.1), glove(C.DARKLEATHER))
+		for i = 0, 3 do   -- leaf scales down the forearm
+			for j = 0, 2 do
+				local a = math.rad(-70 + j * 70)
+				out[#out + 1] = quill("Scale", Vector3.new(math.sin(a) * 0.6, -0.04 - i * 0.16, -math.cos(a) * 0.6), Vector3.new(0, -1, 0), Vector3.new(math.sin(a), 0.2, -math.cos(a)), 0.3, 0.2, SILVER, M.METAL, MT)
+			end
+		end
+		return out
+	end,
+	function()
+		local out = leg(hose(MIDNIGHT), boot(C.DARKLEATHER, 0.04, false))
+		out[#out + 1] = quill("Greave", Vector3.new(0, 0.12, -0.62), Vector3.new(0, -1, -0.12), Vector3.new(0, 0, -1), 0.86, 0.5, SILVER, M.METAL, MT)
+		out[#out + 1] = quill("Greave", Vector3.new(0, 0.26, -0.64), Vector3.new(0, 1, -0.3), Vector3.new(0, 0, -1), 0.3, 0.3, SILVER, M.METAL, MT)
+		out[#out + 1] = rbox("BootTrim", v(1.2, 0.06, 1.22), cf(0, 0.02, -0.02), SILVER, M.METAL, MT, 0.2)
+		return out
+	end)
+
+-- PHOENIXBORN (Mythic): a golden mask under a crest of flame-feathers that burn at the tips;
+-- a mantle of fire, folded wings of flame on the back, a sun on the breast, a quiver of
+-- burning arrows; feathered bracers, golden greaves, flames at the ankles
+local function phoenixHood()
+	local hood = openHood("Hood", FLAME3, M.FABRIC, nil, {size = v(1.82, 1.94, 1.96)})
+	local out = J({middle(HEAD)}, hood, {
+		egg("Mask", v(1.12, 0.3, 0.46), cf(0, 0.5, -0.76, -10, 0, 0), C.GOLD, M.METAL, A),
+		spike("MaskBeak", v(0, 0.52, -0.96), v(0, 0.26, -1.16), 0.2, C.GOLD, M.METAL, A),
+	})
+	for _, s in ipairs({-1, 1}) do
+		out[#out + 1] = egg("Eye", v(0.2, 0.08, 0.06), cf(s * 0.26, 0.5, -0.99, 0, 0, s * 12), FLAME1, M.NEON, A)
+		out[#out + 1] = quill("MaskWing", Vector3.new(s * 0.5, 0.56, -0.82), Vector3.new(s, 0.6, 0.4), Vector3.new(0, 0, -1), 0.46, 0.18, C.GOLD, M.METAL, A)
+	end
+	for i = 0, 8 do   -- the crest: a fan of flame-feathers rising off the crown and back
+		local a = math.rad(-60 + i * 15)
+		local base = Vector3.new(math.sin(a) * 0.3, 0.86, 0.1 + math.cos(a) * 0.2)
+		local dir = Vector3.new(math.sin(a) * 0.6, 1, 0.55 + math.abs(math.sin(a)) * 0.2)
+		local len = 1.0 - math.abs(i - 4) * 0.1
+		out[#out + 1] = quill("Crest", base, dir, Vector3.new(-math.cos(a), 0, math.sin(a)), len, 0.3, i % 2 == 0 and FLAME2 or FLAME3, M.FABRIC)
+		out[#out + 1] = quill("CrestFlame", base + dir.Unit * len * 0.7, dir, Vector3.new(-math.cos(a), 0, math.sin(a)), len * 0.42, 0.2, FLAME1, M.NEON, A)
+	end
+	return J(out, featherMantle(-0.5, 0.98, 0.94, 1, 16, 0.5, 0.3, {FLAME2}))
+end
+local function phoenixTorso()
+	local out = {middle(TORSO),
+		rbox("Jerkin", v(2.14, 2.06, 1.14), cf(), FLAME3, M.FABRIC, nil, 0.22),
+		tbox("Skirt", v(2.3, 0.5, 1.28), cf(0, -1.12, 0), 0.95, C.DARKLEATHER, M.LEATHER, nil, 0.2),
+		cyl("Sun", 0.6, 0.06, cf(0, 0.24, -0.6, 90, 0, 0), C.GOLD, M.METAL, A),
+		cyl("SunCore", 0.34, 0.07, cf(0, 0.24, -0.62, 90, 0, 0), FLAME1, M.NEON, A),
+	}
+	for i = 0, 11 do   -- the sun's rays
+		local a = i / 12 * math.pi * 2
+		local p0 = Vector3.new(math.cos(a) * 0.3, 0.24 + math.sin(a) * 0.3, -0.62)
+		out[#out + 1] = spike("SunRay", p0, p0 + Vector3.new(math.cos(a), math.sin(a), 0) * (i % 2 == 0 and 0.28 or 0.18), 0.1, C.GOLD, M.METAL, A)
+	end
+	B.join(out, featherMantle(1.02, 1.22, 0.74, 3, 18, 0.56, 0.32, {FLAME3, FLAME2, FLAME1}, {M.FABRIC, M.FABRIC, M.NEON}, 0.5))
+	for _, s in ipairs({-1, 1}) do   -- the wings, folded down the back: long feathers, burning at the ends
+		local base = Vector3.new(s * 0.4, 0.8, 0.66)
+		for i = 0, 5 do
+			local a = math.rad(8 + i * 9)
+			local dir = Vector3.new(s * math.sin(a), -math.cos(a), 0.18)
+			local len = 1.5 + i * 0.12
+			out[#out + 1] = quill("Wing", base + Vector3.new(0, 0, i * 0.03), dir, Vector3.new(0, 0, 1), len, 0.34, i % 2 == 0 and FLAME3 or FLAME2, M.FABRIC)
+			out[#out + 1] = quill("WingFlame", base + Vector3.new(0, 0, i * 0.03 + 0.02) + dir.Unit * len * 0.7, dir, Vector3.new(0, 0, 1), len * 0.38, 0.26, FLAME1, M.NEON, A)
+		end
+	end
+	return J(out, quiver(v(-0.3, -0.62, 0.98), v(0.52, 1.0, 0.98), 0.44, C.DARKLEATHER, C.GOLD, {FLAME1, FLAME2}, 6, M.NEON, A),
+		belt(-0.66, C.GOLD, false, C.DARKLEATHER))
+end
+A_.Phoenix = set(phoenixHood(), phoenixTorso(),
+	function(s)
+		local out = arm(sleeve(FLAME3, nil, nil, 1.0, -0.2), bracer(C.DARKLEATHER, 0.0, -0.66, false), glove(C.DARKLEATHER),
+			{rbox("Cuff", v(1.24, 0.12, 1.24), cf(0, -0.62, 0), C.GOLD, M.METAL, A, 0.2), rbox("Cuff", v(1.24, 0.12, 1.24), cf(0, -0.02, 0), C.GOLD, M.METAL, A, 0.2)})
+		for i = 0, 2 do   -- feathers off the bracer, burning at the tips
+			local p0 = Vector3.new(s * 0.56, -0.56 + i * 0.2, 0.1)
+			out[#out + 1] = quill("ArmFeather", p0, Vector3.new(s * 0.4, 1, 0.4), Vector3.new(s, 0, 0), 0.5, 0.2, FLAME2, M.FABRIC)
+			out[#out + 1] = quill("ArmFlame", p0 + Vector3.new(s * 0.4, 1, 0.4).Unit * 0.36, Vector3.new(s * 0.4, 1, 0.4), Vector3.new(s, 0, 0), 0.22, 0.14, FLAME1, M.NEON, A)
+		end
+		return out
+	end,
+	function(s)
+		local out = leg(hose(C.DARKLEATHER, nil, 1.0, -1.0, M.LEATHER), kneeGreave(C.GOLD, C.GOLD, A), boot(C.DARKLEATHER, -0.6, false))
+		for i = 0, 4 do   -- flames round the ankle
+			local a = i / 5 * math.pi * 2
+			out[#out + 1] = quill("AnkleFlame", Vector3.new(math.sin(a) * 0.6, -0.62, math.cos(a) * 0.6), Vector3.new(math.sin(a) * 0.5, 1, math.cos(a) * 0.5), Vector3.new(math.sin(a), 0, math.cos(a)), 0.36, 0.2, i % 2 == 0 and FLAME1 or FLAME2, M.NEON, A)
+		end
+		for i = 0, 2 do   -- feather tassets
+			out[#out + 1] = quill("Tasset", Vector3.new(s * 0.36 + (i - 1) * 0.2, 0.98, -0.36), Vector3.new(s * 0.15, -1, -0.15), Vector3.new(0, 0, -1), 0.6, 0.26, i == 1 and FLAME2 or FLAME3, M.FABRIC)
+		end
+		return out
+	end)
+end
+
 -- the three starter sets (the free kit of each weight)
 A_.KnightSkin = set(closeHelm(), knightTorso(),
 	function(s) return arm(sleeve(C.CLOTH2, S, nil, 1.0, -0.6), plateArm(s, C.STEEL)) end,

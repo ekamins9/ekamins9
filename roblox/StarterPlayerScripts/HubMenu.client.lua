@@ -3752,6 +3752,7 @@ do
 				local cr = Catalog.CRATES[pc.crate]
 				how = string.format("Only out of the %s, one piece at a time (a tradable copy).", cr and cr.name or "crate")
 				if cr then table.insert(buys, {"OPEN THE " .. string.upper(cr.name), COL.GOLD, function() ui.shopTab, ui.crate, ui.crateItem = "crates", pc.crate, "piece|" .. pc.id; selectTab("SHOP") end}) end
+			elseif pc and pc.classStarter and pc.unlock then how = "Comes with the " .. className(pc.classStarter) .. ": yours when the class opens (" .. Catalog.unlockText(pc.unlock) .. ")."
 			elseif pc and pc.unlock then how = "Earn it: " .. Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)
 			elseif pc then
 				local pk = Catalog.PACKS[pc.pack]
@@ -4122,7 +4123,8 @@ local function armorSets()
 		local s = byKey[key]
 		if not s then
 			local pk = Catalog.PACKS[pc.pack]
-			s = {key = key, name = pc.setName or (pc.unlock and pc.name) or (pk and pk.name) or pc.pack, weight = pc.weight, pack = pc.pack, pieces = {}, rarity = "Common", description = pc.description, earned = pc.unlock ~= nil}
+			s = {key = key, name = pc.setName or (pc.unlock and pc.name) or (pk and pk.name) or pc.pack, weight = pc.weight, pack = pc.pack, pieces = {}, rarity = "Common", description = pc.description,
+				earned = pc.unlock ~= nil and not pc.classStarter, classStarter = pc.classStarter}
 			byKey[key] = s
 			table.insert(list, s)
 		end
@@ -4132,6 +4134,8 @@ local function armorSets()
 	end
 	local W = {Light = 1, Medium = 2, Heavy = 3}
 	table.sort(list, function(a, b)
+		-- (a class's own outfits first: the Bowman, the Apprentice's robes; earned pieces last)
+		if (a.classStarter ~= nil) ~= (b.classStarter ~= nil) then return a.classStarter ~= nil end
 		if a.earned ~= b.earned then return not a.earned end
 		if (W[a.weight] or 9) ~= (W[b.weight] or 9) then return (W[a.weight] or 9) < (W[b.weight] or 9) end
 		if (RARITY_ORDER[a.rarity] or 1) ~= (RARITY_ORDER[b.rarity] or 1) then return (RARITY_ORDER[a.rarity] or 1) < (RARITY_ORDER[b.rarity] or 1) end
@@ -4440,11 +4444,12 @@ do
 		local leftList = scroll(left, 6)
 		local lastW
 		for _, s in ipairs(sets) do
-			local group = s.earned and "EARNED IN BATTLE" or (string.upper(s.weight) .. " ARMOR")
+			local group = s.classStarter and "CLASS OUTFITS" or (s.earned and "EARNED IN BATTLE" or (string.upper(s.weight) .. " ARMOR"))
 			if group ~= lastW then heading(leftList, group); lastW = group end
 			local have, total = 0, 0
 			for _, pc in pairs(s.pieces) do total += 1; if owns("pieces", pc.id) then have += 1 end end
-			local right = have == total and "OWNED" or (s.earned and "EARN" or (Catalog.onSale(s.pack, storeDay()) and "IN SHOP" or string.format("%d / %d", have, total)))
+			local right = have == total and "OWNED" or (s.classStarter and ("WITH THE " .. string.upper(className(s.classStarter)))
+				or (s.earned and "EARN" or (Catalog.onSale(s.pack, storeDay()) and "IN SHOP" or string.format("%d / %d", have, total))))
 			local r = row(leftList, s.name, right, s.key == ui.armorSet, function() ui.armorSet = s.key; ui.armorSlots = {helmet = true, top = true, bottom = true}; render.ARMORY() end,
 				have == total and COL.GOOD or (right == "IN SHOP" and COL.ACCENT or COL.DIM))
 			local bar = frame(r, RARITY_COL[s.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
@@ -4496,7 +4501,8 @@ do
 			if pc then
 				local have = owns("pieces", pc.id)
 				if not have then allOwned = false end
-				local rightText = have and "OWNED ✔" or (pc.unlock and (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)) or priceText(pc.marks, pc.crowns))
+				local rightText = have and "OWNED ✔" or ((pc.classStarter and pc.unlock) and ("comes with the " .. className(pc.classStarter) .. "  ·  " .. Catalog.unlockText(pc.unlock))
+					or (pc.unlock and (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)) or priceText(pc.marks, pc.crowns)))
 				row(p, pc.name, rightText, false, nil, have and COL.GOOD or (pc.unlock and COL.PURPLE or COL.DIM))
 			end
 		end
@@ -6213,7 +6219,7 @@ function HX.unlockPopup()
 	if not p or p.unlockSeen or (p.level or 1) < 5 or not inHub() or _G.IntroActive or _G.TourActive or modalBack.Visible then return end
 	p.unlockSeen = true
 	task.spawn(call, "UnlockSeen")
-	modal("ARCHER & MAGE UNLOCKED!", "Level 5! The ARCHER shoots from afar; the MAGE casts fire, lightning and frost. "
+	modal("ARCHER & MAGE UNLOCKED!", "Level 5! The ARCHER shoots from afar, in the Bowman's hood and quiver (yours now); the MAGE casts fire, lightning and frost in the Apprentice's robes. "
 		.. "Go to the Training Yard: their teachers show you how in a few minutes, and every lesson pays.",
 		{{"LEARN THE ARCHER  ·  TRAINING YARD", COL.GREEN, function() HX.learn("archer") end},
 		 {"LEARN THE MAGE  ·  TRAINING YARD", COL.PURPLE, function() HX.learn("mage") end}})

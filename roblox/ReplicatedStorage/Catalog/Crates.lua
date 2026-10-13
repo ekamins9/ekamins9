@@ -39,7 +39,7 @@ return {
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(150, 120, 255),
 	},
 	Fletcher = {
-		name = "Fletcher's Crate", description = "Bow and crossbow skins. The Epics and Legendaries change the arrows: fire, frost, shadow, sunlight.",
+		name = "Fletcher's Crate", description = "Bow and crossbow skins (the Epics and Legendaries change the arrows: fire, frost, shadow, sunlight), and archers' outfits a piece at a time: the Greenwood Outlaws, the Falcon Wardens, Moonshadow, and the Mythic Phoenixborn.",
 		cost = 70, odds = {Common = 55, Rare = 31, Epic = 11, Legendary = 2.7, Mythic = 0.3}, pity = 40,
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(120, 170, 80),
 	},

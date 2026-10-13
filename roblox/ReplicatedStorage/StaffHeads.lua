@@ -98,6 +98,19 @@ end
 local function leaf(out, pos, dir, len, width, color, mat, extra)
 	thorn(out, along(pos, dir), len, width, 0.03, color, mat or M.SmoothPlastic, extra)
 end
+-- a flat triangle a-b-c (two right-angled wedges, the classic way): a wing's skin, a sail
+local function tri(out, a, b, c, th, color, mat, extra)
+	local ab, ac, bc = b - a, c - a, c - b
+	local abd, acd, bcd = ab:Dot(ab), ac:Dot(ac), bc:Dot(bc)
+	if abd > acd and abd > bcd then c, a = a, c elseif acd > bcd and acd > abd then a, b = b, a end
+	ab, ac, bc = b - a, c - a, c - b
+	local right = ac:Cross(ab).Unit
+	local up = bc:Cross(right).Unit
+	local back = bc.Unit
+	local height = math.abs(ab:Dot(up))
+	table.insert(out, spec("Wedge", V(th, height, math.abs(ab:Dot(back))), CFrame.fromMatrix((a + b) / 2, right, up, back), color, mat, extra))
+	table.insert(out, spec("Wedge", V(th, height, math.abs(ac:Dot(back))), CFrame.fromMatrix((a + c) / 2, -right, up, -back), color, mat, extra))
+end
 -- a ring of `n` segments round `centre`, in the plane of `frame` (its Y is the ring's axis)
 local function ring(out, centre, frame, radius, n, thick, color, mat, extra)
 	local seg = 2 * PI * radius / n * 1.12
@@ -455,9 +468,10 @@ D.dragonbone = function(G, P)
 	local dark = P.metal or C(140, 30, 20)
 	local s = o + V(0, 0.15, 0)
 	-- the skull: a long snout reaching forward (-Z), brow ridges, horns
-	table.insert(out, egg(V(0.52, 0.44, 0.6), CFrame.new(s + V(0, 0.08, 0.08)), bone, M.SmoothPlastic, {name = "Skull"}))
-	table.insert(out, egg(V(0.34, 0.26, 0.62), CFrame.new(s + V(0, 0.1, -0.38)), bone, M.SmoothPlastic))
-	table.insert(out, egg(V(0.3, 0.12, 0.56), CFrame.new(s + V(0, -0.2, -0.32)) * CFrame.Angles(math.rad(-14), 0, 0), bone, M.SmoothPlastic))
+	table.insert(out, egg(V(0.62, 0.52, 0.66), CFrame.new(s + V(0, 0.08, 0.08)), bone, M.SmoothPlastic, {name = "Skull"}))
+	table.insert(out, egg(V(0.4, 0.3, 0.66), CFrame.new(s + V(0, 0.1, -0.4)), bone, M.SmoothPlastic))
+	table.insert(out, egg(V(0.36, 0.14, 0.6), CFrame.new(s + V(0, -0.2, -0.34)) * CFrame.Angles(math.rad(-14), 0, 0), bone, M.SmoothPlastic))
+	for _, x in ipairs({-1, 1}) do table.insert(out, egg(V(0.18, 0.12, 0.3), CFrame.new(s + V(x * 0.18, 0.28, -0.1)), bone, M.SmoothPlastic)) end   -- brow ridges
 	for _, x in ipairs({-1, 1}) do
 		for i = 0, 2 do thorn(out, along(s + V(x * 0.08, 0.02, -0.52 + i * 0.1), V(0, -1, -0.2)), 0.12, 0.05, 0.04, C(250, 244, 226), M.SmoothPlastic) end
 		local e = #out + 1
@@ -476,15 +490,15 @@ D.dragonbone = function(G, P)
 	for _, x in ipairs({-1, 1}) do
 		local w0 = #out + 1
 		local base = V(x * 0.12, G.c + 0.15, 0.1)
-		for j = 0, 2 do
-			local tip = base + V(x * (0.7 + j * 0.15), 0.55 - j * 0.35, 0.25)
+		local tips = {}
+		for j = 0, 3 do
+			local tip = base + V(x * (0.75 + j * 0.12), 0.7 - j * 0.38, 0.22 + j * 0.04)
 			table.insert(out, rod(base, tip, 0.05, bone, M.SmoothPlastic))
-			table.insert(out, ball(0.07, tip, bone, M.SmoothPlastic))
-			if j < 2 then
-				local nxt = base + V(x * (0.85 + j * 0.15), 0.2 - j * 0.35, 0.25)
-				local mid = (base + tip + nxt) / 3
-				table.insert(out, block(V(0.02, (tip - nxt).Magnitude * 0.9, (mid - base).Magnitude * 1.6), along(mid, tip - nxt) * CFrame.Angles(0, PI / 2, 0), C(150, 40, 30), M.SmoothPlastic, {transparency = 0.25}))
-			end
+			table.insert(out, ball(0.08, tip, bone, M.SmoothPlastic))
+			tips[j + 1] = tip
+		end
+		for j = 1, 3 do   -- the skin between the spars, sagging a little toward the base
+			tri(out, base, tips[j], tips[j + 1], 0.03, C(150, 40, 30), M.SmoothPlastic, {transparency = 0.15})
 		end
 		animate(out, w0, {osc = {c = base, axis = V(0, 1, 0), amp = x * 0.35, speed = 2.2}})
 	end

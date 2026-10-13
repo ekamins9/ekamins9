@@ -1,4 +1,37 @@
-# Updated scripts: epic staffs, spells you can see, no weapon-swap cheese, no bot farming
+# Updated scripts: archers' outfits
+
+- **The Bowman: the Archer's own outfit.**
+  - A hood with a long tail and a dagged capelet in your colours.
+  - A leather jerkin, and a quiver over the right shoulder with arrows standing out.
+  - A bracer on the bow arm and a shooting glove on the draw hand.
+  - Wrapped calves and soft boots.
+  - It comes with the Archer at level 5, and the unlock pop-up says so.
+  - An Archer starts out in it, and any Light class may wear it once it's yours.
+  - Saved Archers still in the old default outfit are moved into it.
+- **Four more in the Fletcher's Crate**, a piece at a time, each a tradable copy:
+  - **Greenwood Outlaws** (Rare): a feathered cap, Lincoln green with a pointed dagged hem, a hunting horn, a quiver behind the hip.
+  - **Falcon Wardens** (Epic): a hood with a golden beak, amber eyes and a feather crest, a feather mantle, a falconer's gauntlet, talon boots, and a falcon perched on your shoulder.
+  - **Moonshadow** (Legendary): a crescent moon on a silver circlet, a cloak edged in silver leaves, a leaf pauldron, arrows fletched with light. Wears the new **Moonlit** finish.
+  - **Phoenixborn** (Mythic): a golden mask under a crest of burning feathers, folded wings of fire, a sun on the breast, burning arrows. Wears the new **Phoenixfire** finish.
+  - Both finishes also drop from the crate on their own.
+- **Armory:** the class outfits (the Bowman, the Apprentice's robes) have their own CLASS OUTFITS group that says which class they come with.
+- **Dragonbone staff:** its wings now have real skin between the bones (they read as sticks before), and the skull is bigger.
+- **Studio:** the outfits' meshes were uploaded and assembled into ServerStorage ▸ Armor ▸ \<set\> (Studio only). **Save the place.** Until it's saved, the sets build from their blueprints at server start, so they work either way.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Armor.lua](ServerScriptService/Build/Armor.lua) | ServerScriptService ▸ Build ▸ Armor | ModuleScript | the five outfits' blueprints |
+| [Bowman](ServerStorage/Armor/Bowman/Config.lua), [Greenwood](ServerStorage/Armor/Greenwood/Config.lua), [FalconWardens](ServerStorage/Armor/FalconWardens/Config.lua), [Moonshadow](ServerStorage/Armor/Moonshadow/Config.lua), [Phoenix](ServerStorage/Armor/Phoenix/Config.lua) (new) | ServerStorage ▸ Armor ▸ \<set\> ▸ Config | ModuleScript | the sets |
+| [init.lua](ReplicatedStorage/Catalog/init.lua) (Catalog), [Packs.lua](ReplicatedStorage/Catalog/Packs.lua), [ArmorFX.lua](ReplicatedStorage/Catalog/ArmorFX.lua), [Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | a set's `Unlock`; a class starter as a default; the Bowman and Fletcher packs; Moonlit and Phoenixfire; the crate's line |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua), [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ReplicatedStorage; ServerScriptService ▸ Loadout | ModuleScript | the Archer's starter; old Archers dressed in it (loadoutV 3) |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | CLASS OUTFITS in the Armory, "comes with the Archer", the unlock pop-up |
+| [StaffHeads.lua](ReplicatedStorage/StaffHeads.lua) | ReplicatedStorage ▸ StaffHeads | ModuleScript | triangles (`tri`), Dragonbone's wings |
+| [skins_handmade.part](../scripts/skins_handmade.part) | (tool) | | the staff skins' `head`, so a regeneration keeps them |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | all of the above |
+
+---
+
+## Before that: epic staffs, spells you can see, no weapon-swap cheese, no bot farming
 
 - **Spells were invisible.** Your screen listened for spell effects for only 30 seconds after you joined, and the game sets that channel up only when someone first holds a staff. Pick the Mage later than that and no bolt, circle or blast was ever drawn. Now it waits as long as it takes. Siege and Horde banners had the same limit; fixed too.
 - **Staff skins are whole new heads, not recolours.** The rarer, the wilder:

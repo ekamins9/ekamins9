@@ -150,6 +150,15 @@ blueprint in `Build ▸ Armor` (the robe helpers: `robeBody`, `robeArm`, `robeLe
 **A skin for a staff, a grimoire or a wand** (`scripts/skins_handmade.part`, then
 `python scripts/gen_content.py --skins`): `blade` (the orb, the rune, the crystal), `grip` (the
 wood, the cover), `metal` (+ `metalMaterial`: the fittings), `fx`; `crate = "Arcana"` or `marks`.
+A **staff** skin also names its head, `head = "<design>"`: a builder in `ReplicatedStorage ▸
+StaffHeads` (`D.<design> = function(G, P)` → `{parts, hide, tip, fx}`; parts are trim specs, any
+with `anim = {rot = {{c, axis, speed}…}, osc, bob, pulse}` turns on every client, `TrimAnim`). The
+rarer, the more of it moves, glows and throws off: a Common its own shape, a Mythic a small world.
+
+**An outfit that comes with a class** (the Archer's Bowman, the Mage's Apprentice Robes): a set
+whose Config says `ClassStarter = "<class>"`, named as the class's `starter` in `GameConfig.CLASSES`;
+give it the class's own `Unlock` (`{level = 5}`) when the class opens later, so it's earned with
+it (the Armory lists it under CLASS OUTFITS).
 
 **Embers and sparks on a screen**: `UIFX.embers(frame, {colors = "fire" | "gold" | "ash" | "blood" |
 "frost" | "holy", rate})` returns stop(); `UIFX.sparks(frame, Vector2.new(0.5, 0.4), {colors})`. A

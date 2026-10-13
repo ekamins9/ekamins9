@@ -175,8 +175,9 @@ GameConfig.CLASSES = {
 	-- (Light pieces, then health / prot / speed on top: LoadoutServer)
 	-- (unlock: the Archer and the Mage open at level 5; the Training Yard teaches each:
 	-- Catalog ▸ Drills, the Bowmaster's and the Magister's lessons)
+	-- (starter: the Bowman, ServerStorage ▸ Armor ▸ Bowman: theirs with the class)
 	Archer   = {name = "Archer",   weight = "Light",  armorType = "Light",  weapons = "any", primary = "Bow", secondary = "Shortsword",
-		ranged = true, health = -15, prot = 0, speed = 1.04, unlock = {level = 5}, tutor = "archer",
+		ranged = true, health = -15, prot = 0, speed = 1.04, starter = "Bowman", unlock = {level = 5}, tutor = "archer",
 		description = "A bow or a crossbow, and a sidearm for when they get close. The lightest armor of all (85 health, nothing to stop a blade): stay back, aim for the head."},
 	Vanguard = {name = "Vanguard", weight = "Light",  armorType = "Light",  weapons = "any", primary = "ArmingSword", secondary = "Shortsword",
 		description = "No armor to speak of: the fastest on their feet, the most stamina and the quickest to get it back, long cheap dodges. One mistake from death."},
