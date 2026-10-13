@@ -172,6 +172,7 @@ function CombatServer.credit(target, attacker, weaponName, kind)
 	target:SetAttribute("LastHitBy", plr and plr.UserId or 0)
 	target:SetAttribute("LastHitByName", attacker and attacker.Name or "")
 	target:SetAttribute("LastHitBySeat", attacker and attacker:GetAttribute("BotSeat") or "")   -- a fill bot's place on the board
+	target:SetAttribute("LastHitByTeam", attacker and attacker:GetAttribute("Team") or "")     -- the kill feed's colour
 	target:SetAttribute("LastHitWith", weaponName or "")
 	target:SetAttribute("LastHitKind", kind or "")
 	target:SetAttribute("LastHitAt", os.clock())

@@ -277,7 +277,7 @@ spawnAs = function(plr, classId, opts)
 
 	if Game.current and Game.current.def.teams == 2 and not Game.teamOf(plr) then Game.Teams.assign(plr) end
 
-	Avatars.ensure(plr, 4)   -- (you, under the armor: your avatar's hair, face and skin)
+	Avatars.ensure(plr, 2)   -- (you, under the armor: your avatar's hair, face and skin; built since you joined)
 	plr:LoadCharacter()
 	local char = plr.Character or plr.CharacterAdded:Wait()
 	local hum  = char:WaitForChild("Humanoid", 10)

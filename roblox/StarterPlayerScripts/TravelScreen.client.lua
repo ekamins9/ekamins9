@@ -336,7 +336,8 @@ end)
 -- ARRIVAL: Roblox parents its copy under CoreGui; we show our own briefly while
 -- the world streams in, then let it go
 pcall(function()
-	local arriving = TeleportService:GetArrivingTeleportGui()
+	-- (ReplicatedFirst ▸ Loading put it up from the first frame: _G.ArrivingTravelGui)
+	local arriving = _G.ArrivingTravelGui or TeleportService:GetArrivingTeleportGui()
 	if arriving then
 		arriving.Parent = playerGui
 		show("")
@@ -347,7 +348,19 @@ pcall(function()
 				while os.clock() - t0 < 10 and (round:GetAttribute("Mode") or "") == "" do task.wait(0.1) end
 				dest.Text = (round:GetAttribute("ModeName") or "") .. ((round:GetAttribute("Map") or "") ~= "" and ("  ·  " .. (round:GetAttribute("MapName") or round:GetAttribute("Map"))) or "")
 			end
-			task.wait(0.6)
+			-- (until there's something to look at: your body, or the class screen / the menu)
+			local function ready()
+				local c = player.Character
+				if c and c:FindFirstChild("HumanoidRootPart") then return true end
+				for _, n in ipairs({"LoadoutMenu", "HubMenu"}) do
+					local g = playerGui:FindFirstChild(n)
+					if g and g:IsA("ScreenGui") and g.Enabled then return true end
+				end
+				return false
+			end
+			local t1 = os.clock()
+			while os.clock() - t1 < 8 and not ready() do task.wait(0.1) end
+			task.wait(0.4)
 			hide("arrived")
 			task.delay(0.4, function() if arriving.Parent then arriving:Destroy() end end)
 		end)

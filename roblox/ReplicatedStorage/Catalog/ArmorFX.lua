@@ -18,11 +18,18 @@
          pulse = true · flicker = true · radiant = true   the glowing trims breathe, crackle or walk the rainbow
        }
      A set can wear one built in: Finish = "Infernal" in its Config (worn with its TOP,
-     unless the class picked another finish). ]]
+     unless the class picked another finish).
+     beta = true: the Beta Testers' own (Calendar.beta), in no crate, never sold. ]]
 
 local C = Color3.fromRGB
 
 return {
+	-- THE BETA TESTERS' OWN: nobody else, ever
+	{id = "Trailblazer", name = "Trailblazer", rarity = "Mythic", beta = true,
+	 description = "Worn only by the Beta Testers, who were here before the gates opened. White-hot steel, trims that walk the rainbow, a trail of starlight. Never sold, never in a crate, never again.",
+	 look = {metal = C(236, 242, 255), metalMaterial = "Foil", accent = C(140, 230, 255), glow = true, radiant = true,
+	         tint = {C(200, 230, 255), 0.25}, aura = "celestial", light = C(150, 210, 255)}},
+
 	-- RARE: a new metal
 	{id = "Gilded", name = "Gilded", rarity = "Rare", crate = "Forge",
 	 description = "Every plate gilt, every rivet bright. Worth a king's ransom, and you'll be asked for one.",

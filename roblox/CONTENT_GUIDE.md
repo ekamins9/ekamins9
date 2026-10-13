@@ -13,7 +13,7 @@ ReplicatedStorage
 │  ├─ Weapons            which Tools exist and how each unlocks
 │  ├─ Skins              weapon skins (crate / earned / task / pack / daily shelf), generated
 │  ├─ Body               hair, beards, faces, skin tones, hair colors, titles
-│  ├─ Palette            armor colors (premium ones cost Crowns)
+│  ├─ Palette            armor colors (all free)
 │  ├─ Crates             loot tables, odds, pity, duplicate refunds
 │  ├─ Economy            earn table, Robux products, Crowns→Marks, levels, ranks
 │  └─ Contracts          daily / weekly goals that pay Marks
@@ -136,6 +136,12 @@ each, where (a Map ▸ Spots name) and the class it's fought as.
 `MANA_MULT`, `WALK`, `WARD`, `STANCE`, `ORB`, `CAST_FROM`, `TWIN`, or `FIXED` for a wand), a
 blueprint in `Build ▸ Weapons`, and a `magic = true, slots = N` line in `Catalog ▸ Weapons`.
 
+**A hood, a coif, a pelt over the head**: use `openHood(name, color, mat, slot, {size, y, z, pitch,
+openX, openY, lining})` in `Build ▸ Armor` — never a solid egg round the head (the face pokes
+through it). It returns the specs and `rim(inset, n)`, the points round the face opening for a
+trim. A bandana / arming cap: `skullcap(name, y0, lift, color, mat, slot)`. Then run
+`blender/audit_heads.py` (README ▸ Armor sets) before baking.
+
 **A Mage's robe set**: like any armor set, with `Type = "Robe"` (only a Mage wears it) and, out of
 the Arcana Crate, `Pack = "Arcana"`, `Crate = "Arcana"` (and its own `Finish`, `Colors`). Its
 blueprint in `Build ▸ Armor` (the robe helpers: `robeBody`, `robeArm`, `robeLeg`, `hood`, `tallHat`,
@@ -144,6 +150,9 @@ blueprint in `Build ▸ Armor` (the robe helpers: `robeBody`, `robeArm`, `robeLe
 **A skin for a staff, a grimoire or a wand** (`scripts/skins_handmade.part`, then
 `python scripts/gen_content.py --skins`): `blade` (the orb, the rune, the crystal), `grip` (the
 wood, the cover), `metal` (+ `metalMaterial`: the fittings), `fx`; `crate = "Arcana"` or `marks`.
+
+**A drop with no date yet**: leave out its `at` (Calendar): it waits, and the board says "at
+launch". An event or a claim that belongs to it: `after = "<drop id>"`.
 
 **An armor finish** (`Catalog ▸ ArmorFX`; `look.robe` is the colour a robe takes): `{id, name, rarity, crate, description, look = {metal,
 metalMaterial, accent, glow, tint, body, aura, light, pulse | flicker | radiant}}`: the plates
@@ -469,8 +478,9 @@ Body/Hair/<id>` (Blender → meshes → upload → `assemble_armor.lua`, run in 
 
 ## 8. Colors
 
-`Catalog ▸ Palette`: `{name, color}` is free; add `crowns = 60` for a premium color (bought
-once, usable on every slot of every class). Order = menu order.
+`Catalog ▸ Palette`: `{name, color}`, every one free for every slot of every class. Order =
+menu order. (The premium look is an armor finish, `Catalog ▸ ArmorFX`; there's no COLORS shop
+tab any more.)
 
 ## 9. Money: products, exchange, pay, levels, ranks
 

@@ -12,6 +12,8 @@ Input JSON (scripts/export_blueprints.lua writes it):
           tp: a cone's (or a box's) top width as a share of its foot (0 = a point), bv: a box's bevel}
   k = torus: a ring in the spec's XZ plane, s = (outer width, tube thickness, outer depth).
   k = lathe: pf = [[radius, y], …] spun round the spec's Y (cf sits at the middle of its y range).
+  k = cowl: a hollow egg (s = its outside), wall th deep, open at its front (-Z) ox × oy degrees
+         round from the front: a hood the head sits in.
   Specs are in the LIMB frame (Middle = the limb box at the origin), studs.
 
 Output per model (e.g. RoadLevy/HeadClothing): one FBX per REGION, where a
@@ -125,6 +127,48 @@ def lathe_mesh(profile, sy):
     return bm
 
 
+def cowl_mesh(sx, sy, sz, ox, oy, th):
+    """a hood's shell: an egg's skin `th` thick with an opening at its front (-Z), an
+    ellipse ox degrees round from the front across and oy up and down. Closed (outer
+    skin, inner skin, the lip between) so it shades from inside and out."""
+    bm = bmesh.new()
+    rx, ry, rz = sx / 2, sy / 2, sz / 2
+    ix, iy, iz = max(rx - th, 0.05), max(ry - th, 0.05), max(rz - th, 0.05)
+    nphi, nth = 40, 18
+    ox, oy = math.radians(ox), math.radians(oy)
+
+    def edge(phi):   # the opening's angle from the front, round the ellipse
+        c, s = math.cos(phi), math.sin(phi)
+        return 1 / math.sqrt((c / ox) ** 2 + (s / oy) ** 2)
+
+    def ring(i, r3):
+        out = []
+        for j in range(nphi):
+            phi = 2 * math.pi * j / nphi
+            t0 = edge(phi)
+            th_ = t0 + (math.pi - t0) * i / nth
+            d = (math.sin(th_) * math.cos(phi), math.sin(th_) * math.sin(phi), -math.cos(th_))
+            out.append(bm.verts.new((r3[0] * d[0], r3[1] * d[1], r3[2] * d[2])))
+        return out
+    outer = [ring(i, (rx, ry, rz)) for i in range(nth)]
+    inner = [ring(i, (ix, iy, iz)) for i in range(nth)]
+    back_o = bm.verts.new((0, 0, rz))
+    back_i = bm.verts.new((0, 0, iz))
+    for rings, back in ((outer, back_o), (inner, back_i)):
+        for a, b in zip(rings, rings[1:]):
+            for j in range(nphi):
+                k = (j + 1) % nphi
+                bm.faces.new((a[j], a[k], b[k], b[j]))
+        last = rings[-1]
+        for j in range(nphi):
+            bm.faces.new((last[j], last[(j + 1) % nphi], back))
+    for j in range(nphi):   # the lip round the opening
+        k = (j + 1) % nphi
+        bm.faces.new((outer[0][j], inner[0][j], inner[0][k], outer[0][k]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return bm
+
+
 def ball_mesh(sx, sy, sz):
     bm = bmesh.new()
     d = max(sx, sy, sz)
@@ -174,6 +218,8 @@ def part_mesh(spec):
         bm = torus_mesh(sx, sy, sz)
     elif k == "lathe":
         bm = lathe_mesh(spec["pf"], sy)
+    elif k == "cowl":
+        bm = cowl_mesh(sx, sy, sz, spec.get("ox") or 40, spec.get("oy") or 35, spec.get("th") or 0.07)
     elif k == "wedge":
         bm = wedge_mesh(sx, sy, sz)
     elif k == "cwedge":

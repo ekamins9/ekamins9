@@ -6,6 +6,7 @@
                    its own COPY: duplicates are kept (trade, scrap or forge them)
        tally       {[skinId] = kills with it}
        claims      {[claimId] = time claimed}   founder  Founder number (nil = not a Founder)
+       beta        Beta Tester number (nil = not a Beta Tester)
        level, xp   account level (Catalog.ECONOMY.levels)
        appearance  {skin, hair, hairColor, beard, face, title}
        owned       {pieces = {id=true}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}}
@@ -409,7 +410,7 @@ function Profile.summary(plr)
 		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial, menuTour = p.menuTour,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
 		gauntlet = p.gauntlet, askedTraining = p.askedTraining, unlockSeen = p.unlockSeen,
-	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder,
+	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder, beta = p.beta,
 	trading = Profile.tradingHook and Profile.tradingHook(plr) or nil,
 	restricted = Profile.restrictedHook and Profile.restrictedHook(plr) or false,
 	armoury = Profile.ratingHook and Profile.ratingHook(p) or 0}

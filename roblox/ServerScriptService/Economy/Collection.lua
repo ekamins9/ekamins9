@@ -17,7 +17,8 @@
                                          finish (Standard → Masterwork → Radiant): no luck involved
        Collection.scrap(plr, copyId)     a spare copy melted down for Marks
        Collection.tally(plr, skinId)     one more kill on that skin (shown on its card)
-       Collection.checkClaims(plr)       hands out open Calendar claims and the Founder's Oath
+       Collection.checkClaims(plr)       hands out open Calendar claims, the Founder's Oath and the
+                                         Beta Tester's kit (numbered: the title, the Trailblazer finish)
        Collection.rating(p)              the Armoury rating: what a collection is worth
 
      Numbered (serial) things: every Mythic, every Unique (#1 of 1: there is only
@@ -252,9 +253,9 @@ local function toast(plr, text)
 	local ev = ReplicatedStorage:FindFirstChild("HubEvent")
 	if ev and plr.Parent then ev:FireClient(plr, "Toast", text) end
 end
-local function gift(plr, title, text, skinId, serial)
+local function gift(plr, title, text, skinId, serial, finishId)
 	local ev = ReplicatedStorage:FindFirstChild("HubEvent")
-	if ev and plr.Parent then ev:FireClient(plr, "Gift", {title = title, text = text, skin = skinId, serial = serial}) end
+	if ev and plr.Parent then ev:FireClient(plr, "Gift", {title = title, text = text, skin = skinId, serial = serial, finish = finishId}) end
 end
 
 function Collection.checkClaims(plr)
@@ -271,6 +272,17 @@ function Collection.checkClaims(plr)
 		if f.title then Profile.grant(plr, "titles", f.title) end
 		changed = true
 		gift(plr, "FOUNDER #" .. p.founder, "You were here at the start. The Founder's Oath is yours, numbered for ever.", f.skin, p.founder)
+	end
+	-- the Beta Testers: everyone who plays before the launch, numbered in the order they came
+	local b = Drops.beta()
+	if b and Drops.betaOpen() and not p.beta then
+		p.beta = Collection.serial("BetaTester") or 0
+		local fx = b.finish and Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[b.finish]
+		if fx then Profile.addCopy(plr, "finish:" .. b.finish, {n = p.beta, from = "Beta Tester", bound = true}) end
+		if b.title then Profile.grant(plr, "titles", b.title) end
+		changed = true
+		gift(plr, "BETA TESTER #" .. p.beta, "You were here before the gates opened. The title is yours, and "
+			.. (fx and fx.name or "a finish") .. ": an armor finish nobody else will ever wear, on every class, numbered for ever.", nil, p.beta, b.finish)
 	end
 	for _, c in ipairs(Drops.claimsOpen()) do
 		if not p.claims[c.id] then

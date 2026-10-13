@@ -15,7 +15,7 @@
        ARMORY     WEAPONS (every weapon on a stage, its skins and where each comes
                   from) · ARMOR (every set worn by you, piece by piece, buy / equip)
        SHOP       DAILY (packs + the WEAPONS shelf, rotating) · CRATES (the drum)
-                  · CROWNS (Robux bundles, Crowns › Marks) · COLORS
+                  · CROWNS (Robux bundles, Crowns › Marks)
        TASKS      daily + weekly contracts, the task-skin track, mastery
        (no wardrobe: you're yourself under the armor, your avatar's hair, face and skin,
         Loadout ▸ Avatars; tap the player card to pick a title: HX.titlePicker)
@@ -356,6 +356,7 @@ local function swatches(parent, items, isOn, isLocked, onClick, cell)
 		b.BorderSizePixel = 0
 		b.AutoButtonColor = false
 		b.Text = isLocked(it) and "🔒" or ""
+		b.Visible = not (ClientSettings.get("ShowLocked") == "Hide" and isLocked(it) and not isOn(it))
 		b.TextSize = 12
 		b.TextColor3 = COL.TEXT
 		b.Parent = holder
@@ -646,6 +647,9 @@ do
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 2050
 	gui.Enabled = false
+	-- (an English-speaking player: no automatic translation to do, and every label is
+	-- several times cheaper to build without it; anyone else keeps it: LocaleText)
+	gui.AutoLocalize = not (_G.EnglishText == true or (string.sub(game:GetService("LocalizationService").RobloxLocaleId, 1, 2) == "en" and string.sub(player.LocaleId, 1, 2) == "en"))
 	gui.Parent = playerGui
 
 	root = clearFrame(gui)
@@ -894,7 +898,7 @@ local ui = {bracket = "1v1", ranked = false, lbTab = "Warfront", editing = GameC
 	classEdit = {}, dirty = {}, team = nil, tryOn = nil,
 	shopTab = "daily", crate = nil, crateItem = nil, rolling = false, pulls = {},
 	armoryTab = "weapons", shopWeapon = "Longsword", shopSkin = nil, armorSet = nil, armorSlots = {helmet = true, top = true, bottom = true},
-	ownedOnly = true,   -- the Armory shows what you have; the filter off shows everything you can get
+	-- (the Armory's "owned only" is the ShowLocked setting now: HX.hideLocked)
 	filters = {hideEmpty = true, hideFull = false, customOnly = false, door = nil},
 	customOpen = false, custom = nil, facing = 0, zoom = 1, shopSeen = nil}
 ui.custom = {}
@@ -951,6 +955,47 @@ function HX.best(key)
 	return best
 end
 
+-- is it on screen right now? (the menu up and every frame above it visible: a preview
+-- on a hidden tab, or under a closed panel, needn't animate)
+function HX.onScreen(obj)
+	if not gui.Enabled then return false end
+	local o = obj
+	while o and o ~= gui do
+		if o:IsA("GuiObject") and not o.Visible then return false end
+		o = o.Parent
+	end
+	return o == gui
+end
+-- A BIG LIST, BUILT IN SLICES: off screen (the old one stays up), a few milliseconds a
+-- frame, then swapped in whole. HX.draw(key) starts a draw and returns its number;
+-- HX.slice(key, n) between pieces yields when the frame's budget is spent and says
+-- whether a newer draw took over (then the old one stops).
+HX.gen, HX.sliceT = {}, 0
+function HX.draw(key)
+	HX.gen[key] = (HX.gen[key] or 0) + 1
+	HX.sliceT = os.clock()
+	return HX.gen[key]
+end
+function HX.slice(key, n)
+	if os.clock() - HX.sliceT > 0.008 then
+		RunService.Heartbeat:Wait()
+		HX.sliceT = os.clock()
+	end
+	return HX.gen[key] ~= n
+end
+-- a tab you leave lets go of what it built (its previews and their 3D); it's drawn
+-- again when you come back. Each tab puts its own here: HX.sleep[TAB] = function
+HX.sleep = {}
+-- LOCKED ITEMS: shown (the default) or hidden, in every list at once (Settings ▸ Locked
+-- items in menus; the 🔒 switch in the Loadout and the Armory flips the same setting)
+function HX.hideLocked() return ClientSettings.get("ShowLocked") == "Hide" end
+function HX.lockSwitch(parent, w, h)
+	local hide = HX.hideLocked()
+	local hf, b = fatButton(parent, hide and "🔒 LOCKED: HIDDEN" or "🔒 LOCKED: SHOWN", hide and COL.GLASS2 or COL.GREEN, 16)
+	hf.Size = UDim2.fromOffset(w or 220, h or 40)
+	b.Activated:Connect(function() ClientSettings.set("ShowLocked", HX.hideLocked() and "Show" or "Hide") end)
+	return hf, b
+end
 local open = false
 local listening = nil
 local currentTab = "PLAY"   -- "PLAY" is the lobby; the rest are screens
@@ -1175,16 +1220,17 @@ function Stage.new(parent, opts)
 	overlay.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true; lastX = input.Position.X end
 	end)
-	UserInputService.InputChanged:Connect(function(input)
+	local moved = UserInputService.InputChanged:Connect(function(input)
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			ui.facing += (input.Position.X - lastX) * 0.6
 			lastX = input.Position.X
 			self:place()
 		end
 	end)
-	UserInputService.InputEnded:Connect(function(input)
+	local ended = UserInputService.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
 	end)
+	vp.Destroying:Connect(function() moved:Disconnect(); ended:Disconnect() end)
 	overlay.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseWheel then
 			ui.zoom = math.clamp(ui.zoom - input.Position.Z * 0.08, 0.7, 1.5)
@@ -1194,7 +1240,7 @@ function Stage.new(parent, opts)
 	if self.sway then
 		task.spawn(function()
 			while vp.Parent do
-				if gui.Enabled and vp.Visible and #self.rigs > 0 and self.sway() then self:place() end
+				if #self.rigs > 0 and HX.onScreen(vp) and self.sway() then self:place() end
 				task.wait(1 / 30)
 			end
 		end)
@@ -1321,9 +1367,17 @@ end
 
 -- the Tool-like display copy of a weapon wearing a skin, anchored, laid with
 -- its longest side along `axisTo` (the card's diagonal) — or nil
+HX.displays = {}   -- ["weapon|skin|variant"] = the finished display model (never parented; on HX: the main chunk is at its locals limit)
 local function weaponDisplay(world, weaponId, skinId)
 	local t = weaponId and Catalog.weaponModel(weaponId)
 	if not t then return nil end
+	local best = skinId and Catalog.SKIN[skinId] and HX.best(skinId)
+	local key = tostring(weaponId) .. "|" .. tostring(skinId) .. "|" .. tostring(best and best.v or "")
+	if HX.displays[key] then
+		local c = HX.displays[key]:Clone()
+		c.Parent = world
+		return c
+	end
 	local m = t:Clone()
 	for _, d in ipairs(m:GetDescendants()) do if d:IsA("LuaSourceContainer") then d:Destroy() end end
 	m.Parent = world
@@ -1333,6 +1387,7 @@ local function weaponDisplay(world, weaponId, skinId)
 	end
 	settle(m)
 	for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
+	HX.displays[key] = m:Clone()
 	return m
 end
 
@@ -1437,7 +1492,7 @@ local function weaponStage(parent, weaponId, skinId, size)
 	local pivot0 = m:GetPivot()
 	task.spawn(function()
 		while holder.Parent do
-			if gui.Enabled then
+			if HX.onScreen(holder) then
 				local a = (os.clock() - t0) * 0.5
 				m:PivotTo(base * CFrame.Angles(0, a, 0) * base:Inverse() * pivot0)
 			end
@@ -1532,7 +1587,7 @@ function Preview.killFx(parent, id, size, still, light)
 	task.spawn(function()
 		local first = true   -- the first play is heard; the loop after it is silent
 		while holder.Parent do
-			if gui.Enabled then
+			if HX.onScreen(holder) then
 				local d = once(nil, first)
 				first = false
 				task.wait((d or 2) + 0.9)
@@ -1561,7 +1616,7 @@ function Preview.emote(parent, id, size, still, light)
 	local t0 = os.clock()
 	task.spawn(function()
 		while holder.Parent do
-			if gui.Enabled then
+			if HX.onScreen(holder) then
 				local t = (os.clock() - t0) % (dur + 0.8)
 				Preview.Emotes.poseRig(rig, id, math.min(t, dur), origins)
 				settle(rig)
@@ -1586,7 +1641,7 @@ function Preview.egg(parent, eggId, size, wobble, still)
 	local t0 = os.clock()
 	task.spawn(function()
 		while holder.Parent do
-			if gui.Enabled then
+			if HX.onScreen(holder) then
 				local t = os.clock() - t0
 				Preview.Comp.poseEgg(e, CFrame.Angles(0, t * 0.6, 0), t, wobble and wobble() or 0.05)
 			end
@@ -1667,7 +1722,7 @@ function Preview.companion(parent, id, size, still, stars, dark)
 	local t0 = os.clock()
 	task.spawn(function()
 		while holder.Parent do
-			if gui.Enabled then
+			if HX.onScreen(holder) then
 				local t = os.clock() - t0
 				Preview.Comp.pose(rig, CFrame.new(0, y, 0) * CFrame.Angles(0, math.rad(200) + math.sin(t * 0.5) * 0.6, 0), t, 0.45 + 0.35 * math.sin(t * 0.7))
 			end
@@ -2256,7 +2311,10 @@ function HX.spellView(parent, spellId, skinId, size, spin)
 	if spin then
 		task.spawn(function()
 			local t0 = os.clock()
-			while vp.Parent do place(math.sin((os.clock() - t0) * 0.7) * 0.9); RunService.RenderStepped:Wait() end
+			while vp.Parent do
+				if HX.onScreen(vp) then place(math.sin((os.clock() - t0) * 0.7) * 0.9) end
+				RunService.RenderStepped:Wait()
+			end
 		end)
 	end
 	return vp
@@ -2336,7 +2394,7 @@ function HX.crateView(parent, crateId, size, opts)
 	local dist = opts.dist or 13
 	task.spawn(function()
 		while vp.Parent do
-			if gui.Enabled then
+			if HX.onScreen(vp) then
 				local t = os.clock() - t0
 				local yaw = (opts.yaw or -0.55) + 0.4 * math.sin(t * 0.6)
 				local bob = 0.12 * math.sin(t * 1.9)
@@ -3108,7 +3166,7 @@ do
 			for _, e in ipairs(HX.Drops.events()) do table.insert(evs, e.name .. " ends in " .. HX.span(HX.Drops.time(e.to) - HX.Drops.now())) end
 			local nxt, at = HX.Drops.next()
 			task.defer(modal, string.upper(cur.tag or "NEW") .. "  ·  " .. string.upper(cur.name),
-				(cur.blurb or "") .. (#evs > 0 and ("\n" .. table.concat(evs, "  ·  ")) or "") .. (nxt and ("\nNext drop in " .. HX.span(at - HX.Drops.now()) .. ": ???") or ""),
+				(cur.blurb or "") .. (#evs > 0 and ("\n" .. table.concat(evs, "  ·  ")) or "") .. (nxt and (at and ("\nNext drop in " .. HX.span(at - HX.Drops.now()) .. ": ???") or "\nNext: " .. nxt.name .. ", at launch") or ""),
 				{{"SEE IT IN THE SHOP", cur.color or COL.GOLD, function()
 					closeModal()
 					ui.shopTab = cur.crate and "crates" or "daily"; ui.crate = cur.crate or ui.crate; ui.crateItem = nil
@@ -3527,6 +3585,7 @@ do
 	screenFoot.CLASSES = foot
 	local right = clearFrame(f); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 380, 1, 0)
 	local list = scroll(right, 10)
+	HX.sleep.CLASSES = function() clear(list) end
 
 	local function edit()
 		local id = ui.editing
@@ -3611,7 +3670,9 @@ do
 	end
 	-- class cards: a 3D thumbnail of that class's saved look, the name, the
 	-- weight, and the three stats the weight gives (Catalog ▸ Weights)
+	local cardThumbs = {}   -- [classId] = {sig, holder}: a card's mannequin, kept while its look holds
 	local function renderClassRow()
+		for _, c in pairs(cardThumbs) do c.holder.Parent = nil end
 		clear(classRow)
 		local maxHp, minSpeed, maxSpeed, maxProt, minSta, maxSta = 0, 1, 1, 0, 1, 1
 		for _, ww in pairs(Catalog.WEIGHTS) do
@@ -3631,7 +3692,16 @@ do
 			b.BackgroundTransparency = on and 0 or 0.1
 			border(b, TYPE_COL[def.weight] or COL.DIM, on and 3 or 2, on and 0 or 0.5)
 			local lo = ui.classEdit[id] or classLoadout(id)
-			local th = mannequinThumb(b, lo, def.weight, UDim2.fromOffset(88, 106), lo.colors, {dist = 8.4})
+			local okSig, sig = pcall(function() return game:GetService("HttpService"):JSONEncode({lo, def.weight}) end)
+			local cached = cardThumbs[id]
+			local th
+			if okSig and cached and cached.sig == sig then
+				th = cached.holder; th.Parent = b
+			else
+				if cached then cached.holder:Destroy() end
+				th = mannequinThumb(b, lo, def.weight, UDim2.fromOffset(88, 106), lo.colors, {dist = 8.4})
+				cardThumbs[id] = okSig and {sig = sig, holder = th} or nil
+			end
 			th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
 			local n = title(b, string.upper(def.name), 22); n.Size = UDim2.new(1, -110, 0, 26); n.Position = UDim2.new(0, 100, 0, 8)
 			local w = title(b, string.upper(def.weight) .. (ui.dirty[id] and "  ·  UNSAVED" or ""), 13, TYPE_COL[def.weight] or COL.DIM); w.Size = UDim2.new(1, -110, 0, 16); w.Position = UDim2.new(0, 100, 0, 34)
@@ -3692,6 +3762,7 @@ do
 		local b = button(parent, "", 13, on and COL.BLUE or COL.GLASS2)
 		b.LayoutOrder = order
 		b.AutoButtonColor = true
+		b.Visible = have or on or trying or not HX.hideLocked()   -- (a grid skips it when hidden)
 		b.BackgroundTransparency = have and 0 or 0.35
 		if trying then border(b, COL.ACCENT, 2.5, 0) elseif accent then border(b, accent, 2, on and 0 or 0.45) end
 		local t = title(b, (have and "" or "🔒 ") .. text, 13, have and COL.TEXT or COL.DIM)
@@ -3702,13 +3773,22 @@ do
 		return b
 	end
 	render.CLASSES = function()
+		local drawN = HX.draw("CLASSES")
 		local id = ui.editing
 		local cls = GameConfig.CLASSES[id]
 		local lo = edit()
 		renderClassRow()
 		renderStage()
-		clear(list)
+		-- (the lists are drawn on a page off screen, the old page still up, and swapped in whole)
+		local live = list
+		local list = clearFrame(nil); list.AutomaticSize = Enum.AutomaticSize.Y; list.Size = UDim2.new(1, 0, 0, 0)
+		vlist(list, 10)
+		local function stale() if HX.slice("CLASSES", drawN) then list:Destroy(); return true end return false end
 		local t = ui.tryOn and ui.tryOn.class == id and ui.tryOn or nil
+		do   -- the 🔒 switch: everything there is, or only what you own
+			local bar = clearFrame(list); bar.Size = UDim2.new(1, 0, 0, 40); bar.LayoutOrder = nextOrder()
+			local sw = HX.lockSwitch(bar, 230, 38); sw.AnchorPoint = Vector2.new(1, 0); sw.Position = UDim2.new(1, 0, 0, 0)
+		end
 		local p = panel(list, "ARMOR  ·  " .. string.upper(cls.weight))
 		for _, slot in ipairs(Catalog.SLOTS) do
 			heading(p, slot == "bottom" and "LEGS" or string.upper(slot))
@@ -3731,6 +3811,7 @@ do
 			end
 			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet.") end
 		end
+		if stale() then return end
 		-- THE FINISH (Catalog ▸ ArmorFX): looks only, on any set
 		do
 			local fp = panel(list, "FINISH  ·  LOOKS ONLY")
@@ -3748,6 +3829,7 @@ do
 				end, t and t.slot == "armorFx" and t.id == f.id)
 			end
 		end
+		if stale() then return end
 		local cp = panel(list, "COLORS")
 		for _, slot in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
 			dim(cp, slot .. (slot == "Primary" and "  ·  your team's colour in team modes" or ""), 12)
@@ -3758,6 +3840,7 @@ do
 				else lo.colors[slot] = it.name; ui.dirty[id] = true; render.CLASSES() end
 			end, 28)
 		end
+		if stale() then return end
 		local function allowed(w, slot) return Catalog.weaponFits(cls, w, slot or "primary") end
 		local wp = panel(list, "PRIMARY WEAPON")
 		local g = cardGrid(wp, 40)
@@ -3789,7 +3872,9 @@ do
 				end, t and t.slot == "weaponSkin" and t.id == s.id)
 			end
 		end
+		if stale() then return end
 		if cls.magic then HX.spellsPanel(list, lo, id, cardGrid, itemCard) end
+		if stale() then return end
 		local sp = panel(list, "SECONDARY")
 		local sg2 = cardGrid(sp, 40)
 		itemCard(sg2, 0, "None", "", lo.secondary == nil, true, nil, function() choose("secondary", nil) end)
@@ -3812,6 +3897,8 @@ do
 			end
 		end
 		dim(list, string.format("%s.  Weight %s:  %s. Looks never change stats.", cls.description or "", cls.weight, weightLine(cls.weight)), 12)
+		if stale() then return end
+		clear(live); list.Parent = live
 		renderSide()
 	end
 	render.CLASSES_save = function()
@@ -4023,6 +4110,7 @@ do
 	local tabs = clearFrame(f); tabs.Size = UDim2.new(1, 0, 0, 46)
 	hlist(tabs, 10)
 	local body = clearFrame(f); body.Position = UDim2.new(0, 0, 0, 58); body.Size = UDim2.new(1, 0, 1, -58)
+	HX.sleep.ARMORY = function() clear(body) end
 	local TABS = {{"weapons", "WEAPONS"}, {"armor", "ARMOR"}, {"killfx", "KILL FX"}, {"emotes", "EMOTES"}}
 
 	local function renderTabs()
@@ -4034,15 +4122,13 @@ do
 			if not on then b.TextColor3 = COL.DIM end
 			b.Activated:Connect(function() ui.armoryTab = t[1]; render.ARMORY() end)
 		end
-		-- the filter: what you own (the default), or everything there is to get
+		-- the filter: everything there is to get (the default), or only what you own
 		local gap = clearFrame(tabs); gap.Size = UDim2.fromOffset(24, 46); gap.LayoutOrder = 50
-		local h, b = fatButton(tabs, ui.ownedOnly and "✔ OWNED ONLY" or "SHOWING ALL", ui.ownedOnly and COL.GREEN or COL.GLASS2, 18)
-		h.Size = UDim2.fromOffset(230, 46); h.LayoutOrder = 51
-		b.Activated:Connect(function() ui.ownedOnly = not ui.ownedOnly; render.ARMORY() end)
+		local h = HX.lockSwitch(tabs, 230, 46); h.LayoutOrder = 51
 	end
 	-- the filter's empty state
 	local function nothingOwned(parent, what)
-		local d = dim(parent, string.format("No %s unlocked yet. Tap  ✔ OWNED ONLY  to see everything you can get, and how.", what), 14)
+		local d = dim(parent, string.format("No %s unlocked yet. Tap  🔒 LOCKED: HIDDEN  to see everything you can get, and how.", what), 14)
 		return d
 	end
 
@@ -4077,7 +4163,7 @@ do
 		local leftList = scroll(left, 6)
 		local right = clearFrame(body); right.Position = UDim2.new(0, 286, 0, 0); right.Size = UDim2.new(1, -286, 1, 0)
 		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}, {"Ranged", "RANGED  ·  ARCHER"}}
-		local function shown(w) return not ui.ownedOnly or owns("weapons", w.id) end
+		local function shown(w) return not HX.hideLocked() or owns("weapons", w.id) end
 		if not Catalog.WEAPON[ui.shopWeapon] or not shown(Catalog.WEAPON[ui.shopWeapon]) then
 			ui.shopWeapon = nil
 			for _, w in ipairs(Catalog.WEAPONS) do if shown(w) then ui.shopWeapon = w.id; break end end
@@ -4095,13 +4181,13 @@ do
 					function() ui.shopWeapon = w.id; ui.shopSkin = nil; render.ARMORY() end, have and COL.DIM or COL.BAD)
 			end
 		end
-		if ui.ownedOnly then dim(leftList, "Showing the weapons you own. Tap  ✔ OWNED ONLY  to see every weapon and how to unlock it.", 12) end
+		if HX.hideLocked() then dim(leftList, "Showing the weapons you own. Tap  🔒 LOCKED: HIDDEN  to see every weapon and how to unlock it.", 12) end
 		local w = Catalog.WEAPON[ui.shopWeapon]
 		if not w then return end
 		local have = owns("weapons", w.id)
 		local all = Catalog.skinsFor(w.id)
 		local pool = {}
-		for _, s in ipairs(all) do if not ui.ownedOnly or owns("skins", s.id) then table.insert(pool, s) end end
+		for _, s in ipairs(all) do if not HX.hideLocked() or owns("skins", s.id) then table.insert(pool, s) end end
 		local hidden = #all - #pool
 		table.sort(pool, function(a, b)
 			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) < (RARITY_ORDER[b.rarity] or 0) end
@@ -4228,7 +4314,7 @@ do
 		for _, s in ipairs(allSets) do
 			local any = false
 			for _, pc in pairs(s.pieces) do if owns("pieces", pc.id) then any = true; break end end
-			if any or not ui.ownedOnly then table.insert(sets, s) end
+			if any or not HX.hideLocked() then table.insert(sets, s) end
 		end
 		local function listed(key) for _, s in ipairs(sets) do if s.key == key then return true end end return false end
 		if not ui.armorSet or not byKey[ui.armorSet] or not listed(ui.armorSet) then
@@ -4252,7 +4338,7 @@ do
 				have == total and COL.GOOD or (right == "IN SHOP" and COL.ACCENT or COL.DIM))
 			local bar = frame(r, RARITY_COL[s.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
 		end
-		if ui.ownedOnly then dim(leftList, string.format("Showing the sets you own a piece of. %d more to get: tap  ✔ OWNED ONLY  to see them.", #allSets - #sets), 12) end
+		if HX.hideLocked() then dim(leftList, string.format("Showing the sets you own a piece of. %d more to get: tap  🔒 LOCKED: HIDDEN  to see them.", #allSets - #sets), 12) end
 		if not set then nothingOwned(body, "armor"); return end
 		-- the stage: you, wearing the set (the slots you toggle off keep your class's pieces)
 		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
@@ -4376,7 +4462,7 @@ do
 
 	-- the filter: just what you own (or everything there is)
 	local function filtered(items, kind)
-		if not ui.ownedOnly then return items, 0 end
+		if not HX.hideLocked() then return items, 0 end
 		local out = {}
 		for _, it in ipairs(items) do if owns(kind, it.id) then table.insert(out, it) end end
 		return out, #items - #out
@@ -4414,7 +4500,7 @@ do
 					function() ui.fxSel = f.id; render.ARMORY() end, RARITY_COL[f.rarity] or COL.DIM)
 			end
 			dim(leftList, "Plays on whoever you finish off, for everyone to see. Looks only.", 12)
-			if hidden > 0 then dim(leftList, string.format("%d more to get: tap  ✔ OWNED ONLY  to see them.", hidden), 12) end
+			if hidden > 0 then dim(leftList, string.format("%d more to get: tap  🔒 LOCKED: HIDDEN  to see them.", hidden), 12) end
 			return
 		end
 		for _, f in ipairs(items) do
@@ -4424,7 +4510,7 @@ do
 			local bar = frame(r, RARITY_COL[f.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
 		end
 		dim(leftList, "Plays on whoever you finish off, for everyone to see. Looks only.", 12)
-		if hidden > 0 then dim(leftList, string.format("%d more to get: tap  ✔ OWNED ONLY  to see them.", hidden), 12) end
+		if hidden > 0 then dim(leftList, string.format("%d more to get: tap  🔒 LOCKED: HIDDEN  to see them.", hidden), 12) end
 		local f = Catalog.KILLFX_BY[ui.fxSel]
 		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
 		Preview.killFx(mid, f.id, UDim2.fromScale(1, 1))
@@ -4469,7 +4555,7 @@ do
 				function() ui.emoteSel = e.id; render.ARMORY() end, inWheel[e.id] and COL.GOOD or (RARITY_COL[e.rarity] or COL.DIM))
 			local bar = frame(r, RARITY_COL[e.rarity] or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 22); bar.Position = UDim2.new(0, -8, 0.5, -11)
 		end
-		if hidden > 0 then dim(leftList, string.format("%d more to get: tap  ✔ OWNED ONLY  to see them.", hidden), 12) end
+		if hidden > 0 then dim(leftList, string.format("%d more to get: tap  🔒 LOCKED: HIDDEN  to see them.", hidden), 12) end
 		local e = Catalog.EMOTE[ui.emoteSel]
 		local mid = clearFrame(body); mid.Position = UDim2.new(0, 306, 0, 0); mid.Size = UDim2.new(1, -306 - 400, 1, 0)
 		Preview.emote(mid, e.id, UDim2.fromScale(1, 1))
@@ -4501,8 +4587,11 @@ do
 
 	render.ARMORY = function()
 		renderTabs()
-		clear(body)
+		-- (drawn off screen and swapped in whole: cheaper than building on screen; nothing in it waits)
+		local shown = body
+		body = clearFrame(nil); body.Position, body.Size = shown.Position, shown.Size
 		if ui.armoryTab == "armor" then armor() elseif ui.armoryTab == "killfx" then killfx() elseif ui.armoryTab == "emotes" then emotes() else weapons() end
+		shown:Destroy(); body.Parent = f
 		renderSide()
 	end
 	gui:GetAttributeChangedSignal("ArmoryTab"):Connect(function() local t = gui:GetAttribute("ArmoryTab"); if t then ui.armoryTab = t; if currentTab == "ARMORY" then task.spawn(render.ARMORY) end end end)
@@ -4518,8 +4607,9 @@ do
 	local tabs = clearFrame(f); tabs.Size = UDim2.new(1, 0, 0, 46)
 	hlist(tabs, 10)
 	local body = clearFrame(f); body.Position = UDim2.new(0, 0, 0, 58); body.Size = UDim2.new(1, 0, 1, -58)
-	local SHOP_TABS = {{"daily", "DAILY", COL.GOLD}, {"crates", "CRATES", COL.PURPLE}, {"crowns", "CROWNS", COL.GREEN}, {"colors", "COLORS", COL.BLUE}}
-	local ALIASES = {store = "daily", weapons = "daily"}
+	HX.sleep.SHOP = function() if not ui.rolling then clear(body) end end
+	local SHOP_TABS = {{"daily", "DAILY", COL.GOLD}, {"crates", "CRATES", COL.PURPLE}, {"crowns", "CROWNS", COL.GREEN}}
+	local ALIASES = {store = "daily", weapons = "daily", colors = "daily"}   -- (no COLORS tab: every armor colour is free)
 
 	local function renderTabs()
 		clear(tabs)
@@ -4609,7 +4699,7 @@ do
 			local evs = {}
 			for _, e in ipairs(HX.Drops.events()) do table.insert(evs, string.upper(e.name) .. " ENDS IN " .. HX.span(HX.Drops.time(e.to) - HX.Drops.now())) end
 			local nxt, at = HX.Drops.next()
-			local foot = title(banner, (#evs > 0 and (table.concat(evs, "  ·  ") .. "     ") or "") .. (nxt and ("NEXT DROP IN " .. HX.span(at - HX.Drops.now()) .. "  ·  ???") or ""), 14, COL.ACCENT)
+			local foot = title(banner, (#evs > 0 and (table.concat(evs, "  ·  ") .. "     ") or "") .. (nxt and (at and ("NEXT DROP IN " .. HX.span(at - HX.Drops.now()) .. "  ·  ???") or ("NEXT: " .. string.upper(nxt.name) .. ", AT LAUNCH")) or ""), 14, COL.ACCENT)
 			foot.Position = UDim2.new(0, 18, 1, -32); foot.Size = UDim2.new(0.66, 0, 0, 20)
 			if cur.crate and Catalog.CRATES[cur.crate] then
 				local gh, gb = fatButton(banner, "OPEN THE " .. string.upper(Catalog.CRATES[cur.crate].name), cur.color or COL.GOLD, 16)
@@ -4953,48 +5043,20 @@ do
 		end
 	end
 
-	local function colors()
-		local list = scroll(body, 10)
-		local two = clearFrame(list); two.AutomaticSize = Enum.AutomaticSize.Y; two.Size = UDim2.new(1, 0, 0, 0); two.LayoutOrder = nextOrder()
-		hlist(two, 12)
-		local a = panel(two, "PREMIUM ARMOR COLOURS"); a.Size = UDim2.new(0.5, -6, 0, 0)
-		local n = 0
-		for _, c in ipairs(Catalog.PALETTE) do
-			if c.crowns then
-				n += 1
-				local have = owns("colors", c.name)
-				local r = row(a, "        " .. c.name, have and "owned ✔" or (tostring(c.crowns) .. " CROWNS"), false, (not have) and function() afterBuy(call("Buy", "color", c.name, "crowns"), render.SHOP) end or nil, have and COL.GOOD or COL.CROWNS)
-				local sw = frame(r, c.color, 6); sw.Size = UDim2.fromOffset(24, 24); sw.Position = UDim2.new(0, 0, 0.5, -12)
-			end
-		end
-		if n == 0 then dim(a, "No premium colours (Catalog › Palette, crowns = …).") end
-		dim(a, "Bought once, usable on every slot of every class.")
-		local b = panel(two, "PREMIUM HAIR COLOURS & BEARDS"); b.Size = UDim2.new(0.5, -6, 0, 0)
-		n = 0
-		for _, h in ipairs(Catalog.BODY.hairColors) do
-			if h.crowns then
-				n += 1
-				local have = owns("hairColors", h.name)
-				local r = row(b, "        " .. h.name .. " hair", have and "owned ✔" or (tostring(h.crowns) .. " CROWNS"), false, (not have) and function() afterBuy(call("Buy", "hairColor", h.name, "crowns"), render.SHOP) end or nil, have and COL.GOOD or COL.CROWNS)
-				local sw = frame(r, h.color, 6); sw.Size = UDim2.fromOffset(24, 24); sw.Position = UDim2.new(0, 0, 0.5, -12)
-			end
-		end
-		for _, bd in ipairs(Catalog.BODY.beards) do
-			if bd.crowns then
-				n += 1
-				local have = owns("beards", bd.id)
-				row(b, bd.name .. " beard", have and "owned ✔" or (tostring(bd.crowns) .. " CROWNS"), false, (not have) and function() afterBuy(call("Buy", "beard", bd.id, "crowns"), render.SHOP) end or nil, have and COL.GOOD or COL.CROWNS)
-			end
-		end
-		if n == 0 then dim(b, "Nothing premium here yet (Catalog › Body).") end
-	end
-
 	render.SHOP = function()
 		ui.shopTab = ALIASES[ui.shopTab] or ui.shopTab
 		renderTabs()
-		clear(body)
 		HX.fitScreen(ui.shopTab == "crates" and not ui.crate)
-		if ui.shopTab == "crates" then crates() elseif ui.shopTab == "crowns" then crowns() elseif ui.shopTab == "colors" then colors() else ui.shopTab = "daily"; daily() end
+		if ui.shopTab == "crates" then clear(body); crates()
+		elseif ui.shopTab == "crowns" then clear(body); crowns()   -- (asks the server for the bundles: built on screen)
+		else
+			-- (the daily page: drawn off screen and swapped in whole; nothing in it waits)
+			ui.shopTab = "daily"
+			local shown = body
+			body = clearFrame(nil); body.Position, body.Size = shown.Position, shown.Size
+			daily()
+			shown:Destroy(); body.Parent = f
+		end
 		renderSide()
 	end
 	openCrowns = function() ui.shopTab = "crowns"; selectTab("SHOP") end
@@ -5013,6 +5075,7 @@ do
 	local leftList = scroll(left, 12)
 	local right = clearFrame(f); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0.6, -8, 1, 0)
 	local rightList = scroll(right, 12)
+	HX.sleep.TASKS = function() clear(leftList); clear(rightList) end
 
 	local function taskCard(parent, ct)
 		local r = frame(parent, ct.weekly and Color3.fromRGB(56, 36, 90) or COL.GLASS2, 14)
@@ -5318,7 +5381,7 @@ function HX.titlePicker()
 			b.Activated:Connect(function() pick(t) end)
 		end
 		local locked = {}
-		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do if not owns("titles", et.title) then table.insert(locked, et) end end
+		for _, et in ipairs(Catalog.BODY.earnedTitles or {}) do if not owns("titles", et.title) and not HX.hideLocked() then table.insert(locked, et) end end
 		if #locked > 0 then
 			local h = dim(box, "EARN MORE", 13); h.LayoutOrder = 4
 			for i, et in ipairs(locked) do
@@ -5429,6 +5492,7 @@ do
 	local f = tabFrame.PASS
 	local head = clearFrame(f); head.Size = UDim2.new(1, 0, 0, 132)
 	local track = clearFrame(f); track.Position = UDim2.new(0, 0, 0, 144); track.Size = UDim2.new(1, 0, 1, -144)
+	HX.sleep.PASS = function() clear(head); clear(track) end
 	local claiming = false
 
 	local function claim(tier, kind)
@@ -5518,6 +5582,7 @@ do
 			end)
 		end
 		-- the track: one column per tier, free on top, premium below
+		local drawN = HX.draw("PASS")
 		local labels = clearFrame(track); labels.Size = UDim2.new(0, 96, 1, 0)
 		local fl = title(labels, "FREE", 18); fl.Position = UDim2.fromOffset(0, 66); fl.Size = UDim2.new(1, -8, 0, 24)
 		local pl = title(labels, "PREMIUM", 18, COL.GOLD); pl.Position = UDim2.fromOffset(0, 66 + 214); pl.Size = UDim2.new(1, -8, 0, 24)
@@ -5526,10 +5591,10 @@ do
 		sf.Position = UDim2.new(0, 100, 0, 0); sf.Size = UDim2.new(1, -100, 1, 0)
 		sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.X; sf.ScrollingDirection = Enum.ScrollingDirection.X
 		sf.ScrollBarThickness = 8; sf.ScrollBarImageColor3 = COL.DIM
-		sf.Parent = track
 		hlist(sf, 12)
 		padding(sf, 4, 4, 4, 12)
 		for i, t in ipairs(P.tiers) do
+			if i % 4 == 0 and HX.slice("PASS", drawN) then sf:Destroy(); return end
 			local col = clearFrame(sf); col.Size = UDim2.fromOffset(158, 444); col.LayoutOrder = i
 			local reached = (ps.tier or 0) >= i
 			local num = title(col, tostring(i), 22, reached and COL.ACCENT or COL.DIM)
@@ -5550,6 +5615,8 @@ do
 				c.Position = UDim2.fromOffset(0, 54 + 194); c.Size = UDim2.new(1, 0, 0, 180)
 			end
 		end
+		if HX.gen.PASS ~= drawN then sf:Destroy(); return end
+		sf.Parent = track   -- (built off screen: in whole, at once)
 		-- open on your tier
 		task.defer(function()
 			-- the first unclaimed reward, or a little before your tier
@@ -5577,6 +5644,7 @@ do
 	local tabs = clearFrame(f); tabs.Size = UDim2.new(1, 0, 0, 46)
 	hlist(tabs, 10)
 	local body = clearFrame(f); body.Position = UDim2.new(0, 0, 0, 58); body.Size = UDim2.new(1, 0, 1, -58)
+	HX.sleep.HATCHERY = function() if not busy then clear(body) end end
 	local TABS = {{"shop", "EGG SHOP"}, {"nests", "MY NESTS"}, {"companions", "MY PETS"}}
 	local E = Catalog.EGGS
 	local busy = false
@@ -6762,6 +6830,8 @@ selectTab = function(name)
 	lobbyShade.Visible = isLobby
 	screenLayer.Visible = not isLobby
 	for n, fr in pairs(tabFrame) do if n ~= "PLAY" then fr.Visible = n == name end end
+	-- (a moment later, not on the frame the new tab draws; not if you came straight back)
+	if was ~= name and HX.sleep[was] then task.delay(0.6, function() if currentTab ~= was then pcall(HX.sleep[was]) end end) end
 	if open then setBlur(isLobby and 0 or 18) end
 	refreshHeader()
 	-- (a phone: back to the top, the full height; the screen's render may fit it)
@@ -6790,6 +6860,10 @@ end)
 gui:GetAttributeChangedSignal("Burst"):Connect(function()
 	local id = gui:GetAttribute("Burst")
 	if type(id) == "string" and Catalog.CRATES[id] then task.spawn(HX.crateBurst, content, id) end
+end)
+-- the 🔒 switch (or Settings) flipped: the open screen redraws with it
+ClientSettings.onChanged(function(key)
+	if key == "ShowLocked" and open and currentTab ~= "SETTINGS" and render[currentTab] then task.spawn(render[currentTab]) end
 end)
 -- ("kind|id", e.g. "skin|Longsword:Starforged": inspect it)
 gui:GetAttributeChangedSignal("Inspect"):Connect(function()
@@ -7055,7 +7129,7 @@ function HX.inspect(kind, id, copy, theirs)
 		wl.Size = UDim2.new(1, 0, 0, d.crate and 18 or 0); wl.LayoutOrder = nextOrder()
 	elseif kind == "armorfx" then
 		dim(head, "Looks only: it goes on any set, of any weight (LOADOUT › FINISH). The world shows its aura and glow.", 13)
-		local wl = title(head, "OUT OF THE " .. string.upper((Catalog.CRATES[d.crate or ""] or {}).name or "FORGE CRATE"), 13, COL.DIM); wl.Size = UDim2.new(1, 0, 0, 18); wl.LayoutOrder = nextOrder()
+		local wl = title(head, d.beta and "THE BETA TESTERS' OWN: NEVER SOLD, NEVER IN A CRATE" or ("OUT OF THE " .. string.upper((Catalog.CRATES[d.crate or ""] or {}).name or "FORGE CRATE")), 13, d.beta and COL.ACCENT or COL.DIM); wl.Size = UDim2.new(1, 0, 0, 18); wl.LayoutOrder = nextOrder()
 	elseif kind == "spellfx" then
 		local sp = Catalog.SPELLS[d.spell] or {}
 		dim(head, "Looks only: your " .. (sp.name or "spell") .. " flies, hits and costs the same, and everyone sees it. Wear it on your Mage (LOADOUT › SPELLS › LOOKS).", 13)
@@ -7176,6 +7250,7 @@ HX.INV_KINDS = {{text = "ALL", k = nil}, {text = "SKINS", k = "skin"}, {text = "
 HX.INV_SORTS = {"RARITY", "NEWEST", "NAME", "MOST COPIES"}
 HX.INV_PAGE = 40
 
+HX.sleep.INVENTORY = function() clear(tabFrame.INVENTORY) end
 render.INVENTORY = function()
 	HX.fitScreen(true)
 	local f = tabFrame.INVENTORY
@@ -7565,9 +7640,11 @@ hubEvent.OnClientEvent:Connect(function(what, a, b, c)
 		elseif currentTab == "TRADE" then render.TRADE() end
 	elseif what == "Gift" and type(a) == "table" then
 		local s = a.skin and Catalog.SKIN[a.skin]
+		local fx = a.finish and Catalog.ARMORFX_BY[a.finish]
 		modal(a.title or "A GIFT", a.text or "", {{"SEE IT", COL.GREEN, function()
 			closeModal()
-			if s then ui.armoryTab = "weapons"; ui.shopWeapon = s.weapon; ui.shopSkin = s.id; selectTab("ARMORY") end
+			if s then ui.armoryTab = "weapons"; ui.shopWeapon = s.weapon; ui.shopSkin = s.id; selectTab("ARMORY")
+			elseif fx then HX.inspect("armorfx", fx.id) end
 		end}}, s and function(box)
 			local th = weaponStage(box, s.weapon, s.id, UDim2.new(1, 0, 0, 260)); th.LayoutOrder = 5
 			border(th, RARITY_COL[s.rarity] or COL.DIM, 3, 0)

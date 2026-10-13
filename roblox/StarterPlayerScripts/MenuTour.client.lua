@@ -40,7 +40,7 @@ local STEPS = {
 	{target = "Play", title = "PLAY",
 		text = "Your way into a fight. The Warfront's battles never stop, the Lists are duels (ranked too), and the Training Yard is always open."},
 	{target = "Dock_LOADOUT", title = "LOADOUT",
-		text = "Four classes: Knight, Footman, Vanguard and Archer. Pick each one's weapons and armor: heavier armor takes more hits, lighter armor moves faster."},
+		text = "Five classes: Knight, Footman and Vanguard up close, Archer and Mage (from level 5) at range. Pick each one's weapons and armor, or a Mage's spells and robes: heavier armor takes more hits, lighter moves faster."},
 	{target = "Dock_ARMORY", title = "ARMORY",
 		text = "Every weapon skin, kill effect and emote you own. Skins change how a weapon looks, never how it fights."},
 	{target = "Dock_INVENTORY", title = "INVENTORY",

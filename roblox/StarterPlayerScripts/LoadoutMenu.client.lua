@@ -244,10 +244,18 @@ local function buildPreviews()
 		end
 	end
 end
+-- (only while the card is on screen: the class screen up and nothing above it hidden)
+local function onScreen(obj)
+	local o = obj
+	while o and not o:IsA("LayerCollector") do
+		if o:IsA("GuiObject") and not o.Visible then return false end
+		o = o.Parent
+	end
+	return o ~= nil and o.Enabled
+end
 RunService.RenderStepped:Connect(function(dt)
 	local c = cards[selected]
-	if not (c and c.rig and c.vp.Parent and c.vp:IsDescendantOf(game)) then return end
-	if not (c.vp:FindFirstAncestorOfClass("ScreenGui") and c.vp:FindFirstAncestorOfClass("ScreenGui").Enabled) then return end
+	if not (c and c.rig and c.vp.Parent and onScreen(c.vp)) then return end
 	c.yaw = (c.yaw or -25) + SPIN * dt
 	c.rig:PivotTo(CFrame.Angles(0, math.rad(c.yaw), 0))
 end)

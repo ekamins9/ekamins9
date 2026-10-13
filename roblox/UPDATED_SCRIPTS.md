@@ -1,4 +1,38 @@
-# Updated scripts: nobody gets stuck in the tutorial
+# Updated scripts: first join, hoods that fit, team kill feed, the beta, a quicker menu
+
+- **First join: no black screen.** The welcome cinematic was failing behind its black cover (a script loaded too late), so nothing showed until the 30-second fallback. Fixed. It also lets go of the screen if it ever fails again.
+- **A loading screen from the first frame:** the game's name, embers and a sweeping bar. Arriving by teleport, the travel screen stays up until you have a body. The welcome film is louder too: bars slide in, embers drift, and the title slams down with a flash and a shake.
+- **Hoods that fit.** A hood is now hollow and open at the front: the head sits inside with the face in its shadow, and nothing pokes through. Fixed on 15 head pieces: the four mage hoods, Shadowveil, Ranger, Marsh Wardens, the starter Gambeson coif, Road Levy, River Guard, Gilded Court, Corsair, Deathless, Berserker and the Wolf Pelt. New check tool: `blender/audit_heads.py`.
+- **The kill feed shows team colours,** for players and bots alike. Your name is underlined, and rows you're in have a gold edge.
+- **The beta:** everyone who plays before launch is a numbered **Beta Tester** and gets a title plus **Trailblazer**, a Mythic armor finish nobody else will ever have. The Founders' Forge and every drop after it are **TBD**: no dates until launch. When it launches, the founder window runs 30 days.
+- **SHOP ▸ COLORS is gone.** Every armor colour is free now (finishes are the premium look), and hair and beards no longer exist.
+- **🔒 LOCKED: SHOWN / HIDDEN** switch in the Loadout and the Armory, also in Settings and saved. It shows everything there is to get (the default) or only what you own, in every list at once.
+- **The menu tour** says five classes, Mage included.
+- **A quicker menu:**
+  - Hidden tabs no longer pile up 3D previews (it went from 14 to 73 as you browsed; now it stays flat).
+  - Loadout clicks and opening Pass, Loadout and Armory hitch about 60% less.
+  - Mannequins and weapons are built once and copied after.
+  - Previews and finish effects only animate on screen.
+  - English readers skip automatic translation.
+- **Studio:** the 15 rebaked head pieces are assembled. **Save the place.**
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ReplicatedFirst/Loading.client.lua](ReplicatedFirst/Loading.client.lua) (new), [default.project.json](../default.project.json) | ReplicatedFirst ▸ Loading | LocalScript | the first-frame loading screen; ReplicatedFirst synced |
+| [Intro.client.lua](StarterPlayerScripts/Intro.client.lua), [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the welcome fixed and louder; the travel screen holds till you're in |
+| [Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua), [Loadout/Avatars.lua](ServerScriptService/Loadout/Avatars.lua) | ServerScriptService ▸ Loadout | Script / ModuleScript | a shorter wait for the avatar kit; re-dress only in the Courtyard |
+| [Build/Armor.lua](ServerScriptService/Build/Armor.lua), [Build/Builder.lua](ServerScriptService/Build/Builder.lua) | ServerScriptService ▸ Build | ModuleScript | `openHood` / `skullcap`; the `"cowl"` shape; 15 head pieces |
+| [blender/parts2mesh.py](../blender/parts2mesh.py), [blender/preview_armor.py](../blender/preview_armor.py), [blender/audit_heads.py](../blender/audit_heads.py) (new), [scripts/export_blueprints.lua](../scripts/export_blueprints.lua) | (tools) | Python / Lua | the cowl mesh; `--heads` close-ups; the clipping audit |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua), [Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua), [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | ServerScriptService · StarterPlayerScripts | Script / ModuleScript / LocalScript | team colours in the kill feed |
+| [Catalog/Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua), [Drops.lua](ReplicatedStorage/Drops.lua), [Catalog/ArmorFX.lua](ReplicatedStorage/Catalog/ArmorFX.lua), [Economy/Collection.lua](ServerScriptService/Economy/Collection.lua), [Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | ReplicatedStorage · ServerScriptService | ModuleScript | the Beta Tester gift; TBD drops; Trailblazer |
+| [Catalog/Palette.lua](ReplicatedStorage/Catalog/Palette.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | every colour free |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua), [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [MenuTour.client.lua](StarterPlayerScripts/MenuTour.client.lua) | ReplicatedStorage · StarterPlayerScripts | ModuleScript / LocalScript | the 🔒 switch; no COLORS tab; the tour's five classes; the menu's speed work |
+| [PreviewRig.lua](ReplicatedStorage/PreviewRig.lua), [ArmorFX.client.lua](StarterPlayerScripts/ArmorFX.client.lua), [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua), [LocaleText.client.lua](StarterPlayerScripts/LocaleText.client.lua) (new) | ReplicatedStorage · StarterPlayerScripts | ModuleScript / LocalScript | dressed once per look; FX only on screen; no hidden spin; no translation work for English readers |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | all of the above |
+
+---
+
+## Before that: nobody gets stuck in the tutorial
 
 A report of players stuck in the tutorial. The whole newcomer path works in Studio: the welcome, all eight basic-training steps, graduation and spawning in the first battle. These are the ways a real player could still get stuck there, now fixed:
 

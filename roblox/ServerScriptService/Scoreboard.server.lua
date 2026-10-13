@@ -10,7 +10,8 @@
      a TEAMMATE is a teamkill: no credit, marked in the feed.
 
        ReplicatedStorage.KillFeedRemote (RemoteEvent, created here)
-         server -> all: "Kill", {killer=, victim=, weapon=, kind=, killerId=, victimId=, teamkill=}
+         server -> all: "Kill", {killer=, victim=, weapon=, kind=, killerId=, victimId=, teamkill=,
+                                  killerTeam=, victimTeam=}   (team keys, "" with no teams: the feed's colours)
        ReplicatedStorage.HubEvent "Rewards", {marks, xp, level, levels, firstWin, blocked, won, kills, parries, result, rating, delta}
 
      Test dummies appear in the feed but never on the board, never pay. A match's
@@ -140,6 +141,10 @@ local function onDied(char)
 		weapon   = weapon,
 		kind     = recent and char:GetAttribute("LastHitKind") or "",
 		teamkill = teamkill,
+		-- each side's team (GameConfig.TEAMS key), players and bots alike
+		victimTeam = char:GetAttribute("Team") or "",
+		killerTeam = recent and (killerPlr and killerPlr.Character and killerPlr.Character:GetAttribute("Team")
+			or char:GetAttribute("LastHitByTeam")) or "",
 	}
 	remote:FireAllClients("Kill", entry)
 	log(entry.killer or "(nobody)", teamkill and "TEAMKILLED" or "killed", entry.victim, entry.kind)

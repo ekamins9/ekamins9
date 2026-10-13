@@ -29,6 +29,7 @@ local Lighting = game:GetService("Lighting")
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -159,6 +160,37 @@ local function welcome()
 	cover.Size = UDim2.fromScale(1, 1)
 	cover.ZIndex = 50
 	cover.Parent = gui
+	-- (while the realm streams in behind it: the name and a line, never a blank black screen)
+	local loadTitle = label(cover, string.upper(GameConfig.GAME_NAME or ""), 72, GOLD)
+	loadTitle.AnchorPoint = Vector2.new(0.5, 0.5); loadTitle.Position = UDim2.fromScale(0.5, 0.45); loadTitle.Size = UDim2.new(0.9, 0, 0, 90)
+	loadTitle.ZIndex = 51
+	local loadLine = label(cover, "THE REALM AWAITS…", 18, Theme.DIM, Theme.FONT)
+	loadLine.AnchorPoint = Vector2.new(0.5, 0.5); loadLine.Position = UDim2.fromScale(0.5, 0.55); loadLine.Size = UDim2.new(0.9, 0, 0, 24)
+	loadLine.ZIndex = 51
+	-- EMBERS drifting up across the whole cinematic (an atmosphere, behind the words)
+	local embers = Instance.new("Frame")
+	embers.BackgroundTransparency = 1; embers.Size = UDim2.fromScale(1, 1); embers.ZIndex = 41; embers.Parent = gui
+	local emberRng = Random.new()
+	task.spawn(function()
+		while embers.Parent do
+			local e = Instance.new("Frame")
+			local s = emberRng:NextInteger(3, 7)
+			e.Size = UDim2.fromOffset(s, s); e.AnchorPoint = Vector2.new(0.5, 0.5)
+			e.Position = UDim2.fromScale(emberRng:NextNumber(0.05, 0.95), 1.02)
+			e.BackgroundColor3 = Color3.fromRGB(255, emberRng:NextInteger(120, 200), 60); e.BorderSizePixel = 0
+			e.BackgroundTransparency = 0.15; e.ZIndex = 41; e.Parent = embers
+			Instance.new("UICorner", e).CornerRadius = UDim.new(1, 0)
+			local dur = emberRng:NextNumber(4, 7)
+			TweenService:Create(e, TweenInfo.new(dur, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+				{Position = UDim2.fromScale(e.Position.X.Scale + emberRng:NextNumber(-0.12, 0.12), emberRng:NextNumber(0.15, 0.55)), BackgroundTransparency = 1}):Play()
+			task.delay(dur, function() e:Destroy() end)
+			task.wait(emberRng:NextNumber(0.06, 0.16))
+		end
+	end)
+	-- a white flash for the title's slam
+	local flash = Instance.new("Frame")
+	flash.BackgroundColor3 = Color3.new(1, 1, 1); flash.BackgroundTransparency = 1; flash.BorderSizePixel = 0
+	flash.Size = UDim2.fromScale(1, 1); flash.ZIndex = 55; flash.Parent = gui
 	local bars = {}
 	for i, y in ipairs({0, 1}) do
 		local b = Instance.new("Frame")
@@ -171,6 +203,8 @@ local function welcome()
 		b.Parent = gui
 		bars[i] = b
 	end
+	-- (the bars slide in from the edges as the film begins)
+	for _, b in ipairs(bars) do b.Size = UDim2.fromScale(1, 0.5) end
 	local caption = label(gui, "", 40)
 	caption.AnchorPoint = Vector2.new(0.5, 0.5)
 	caption.Position = UDim2.fromScale(0.5, 0.8)
@@ -221,7 +255,7 @@ local function welcome()
 	end)
 	-- the map's shots (MapLoader puts them on the Map as attributes: with no body
 	-- yet, its parts haven't streamed in), or three round its middle
-	local map = workspace:WaitForChild("Map", 10)
+	local map = workspace:WaitForChild("Map", 8)
 	local centre = map and map:GetAttribute("Centre") or Vector3.new(0, 6, 0)
 	local radius = math.clamp(map and map:GetAttribute("Radius") or 70, 30, 160)
 	local height = 20
@@ -247,7 +281,7 @@ local function welcome()
 			end)
 		end
 		local t0 = os.clock()
-		while pending > 0 and os.clock() - t0 < 3.5 do task.wait(0.1) end
+		while pending > 0 and os.clock() - t0 < 2.5 do task.wait(0.1) end
 	end
 	local function dolly(cf, t0, dur, side)
 		return function(now)
@@ -284,6 +318,7 @@ local function welcome()
 		if done then return end
 		done = true
 		pcall(function() RunService:UnbindFromRenderStep("IntroCam") end)
+		pcall(function() RunService:UnbindFromRenderStep("IntroShake") end)
 		if mouseConn then mouseConn:Disconnect() end
 		blur:Destroy()
 		gui:Destroy()
@@ -317,7 +352,21 @@ local function welcome()
 	task.spawn(function() pcall(function() hubRemote:InvokeServer("Intro", "Shown") end) end)
 
 	local LINES = {"THE REALM IS AT WAR.", "EVERY SWING IS YOURS TO AIM.", "BLOCK.  PARRY.  FEINT.  STRIKE."}
+	-- a moment of camera shake (the title's slam)
+	local shakeUntil, shakeMag = 0, 0
+	local function shake(secs, mag) shakeUntil, shakeMag = os.clock() + secs, mag end
+	RunService:BindToRenderStep("IntroShake", Enum.RenderPriority.Camera.Value + 6, function()
+		local cam = workspace.CurrentCamera
+		local now = os.clock()
+		if cam and now < shakeUntil then
+			local k = (shakeUntil - now) * shakeMag
+			cam.CFrame = cam.CFrame * CFrame.Angles(math.rad((math.random() - 0.5) * k), math.rad((math.random() - 0.5) * k), 0)
+		end
+	end)
 	local function cinematic()
+		_G.IntroCinematic = true   -- (the first-frame loading screen hands over: ReplicatedFirst ▸ Loading)
+		fadeText(loadTitle, 1, 0.5); fadeText(loadLine, 1, 0.5)
+		for _, b in ipairs(bars) do TweenService:Create(b, TweenInfo.new(1.2, Enum.EasingStyle.Quint), {Size = UDim2.fromScale(1, 0.11)}):Play() end
 		sfx("horn", 6)
 		for i = 1, 3 do
 			local dur = 3.1
@@ -340,13 +389,18 @@ local function welcome()
 				if not hold(0.2) then return end
 			end
 		end
-		-- the name
+		-- the name: it slams down with a flash and the camera shakes
 		camFn = orbit(os.clock())
 		TweenService:Create(blur, TweenInfo.new(0.6), {Size = 10}):Play()
 		sfx("boom", 5); sfx("draw", 3)
-		titleScale.Scale = 1.5
-		TweenService:Create(titleScale, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Scale = 1}):Play()
-		fadeText(titleBig, 0, 0.3)
+		titleScale.Scale = 2.4
+		TweenService:Create(titleScale, TweenInfo.new(0.32, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale = 1}):Play()
+		fadeText(titleBig, 0, 0.2)
+		task.delay(0.3, function()
+			flash.BackgroundTransparency = 0.25
+			TweenService:Create(flash, TweenInfo.new(0.7), {BackgroundTransparency = 1}):Play()
+			shake(0.6, 9)
+		end)
 		if not hold(0.5) then return end
 		fadeText(tagline, 0, 0.6)
 		if not hold(2.2) then return end
@@ -491,7 +545,6 @@ local BRIEF = {
 	KOTH = "Take the hill and hold it: points tick for the side standing on it.",
 }
 -- a control's name for what the player holds (keys, a controller, a touch screen)
-local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local function keyOf(action) return InputHints.name(action) end
 
 local function firstBattle()
@@ -647,7 +700,21 @@ local function decide()
 			for _ = 1, 3 do if _G.HubMenuOpen() then _G.HubMenuToggle() end end
 		end
 		_G.IntroActive = true
-		task.spawn(function() welcome(); welcoming = false end)
+		task.spawn(function()
+			local ok, err = pcall(welcome)
+			welcoming = false
+			if not ok then
+				-- (something broke: let go of the screen — the menu and the trip to training carry on)
+				warn("[Intro] the welcome failed:", err)
+				local g = playerGui:FindFirstChild("Intro"); if g then g:Destroy() end
+				local blur = game:GetService("Lighting"):FindFirstChild("IntroBlur"); if blur then blur:Destroy() end
+				pcall(function() RunService:UnbindFromRenderStep("IntroCam") end)
+				pcall(function() RunService:UnbindFromRenderStep("IntroShake") end)
+				_G.IntroCamera, _G.IntroMusic, _G.IntroActive, _G.IntroCinematic = nil, nil, nil, true
+				local cam = workspace.CurrentCamera
+				if cam then cam.CameraType = Enum.CameraType.Custom end
+			end
+		end)
 		return
 	end
 	if not welcoming then _G.IntroActive = nil end

@@ -300,6 +300,21 @@ task.spawn(function()
 	end)
 end)
 
+-- a mannequin in a menu: is its ViewportFrame on screen? (a hidden tab's, or a closed
+-- menu's, is left alone; asked a few times a second, not every frame)
+local function previewShown(model)
+	local o = model and model.Parent
+	while o and not o:IsA("LayerCollector") do
+		if o:IsA("GuiObject") and not o.Visible then return false end
+		o = o.Parent
+	end
+	return o ~= nil and o.Enabled
+end
+local function shownNow(st, model, now)
+	if now >= (st.visAt or 0) then st.vis = previewShown(model); st.visAt = now + 0.25 end
+	return st.vis
+end
+
 --------------------------------------------------------------------
 --  EVERY FRAME
 --------------------------------------------------------------------
@@ -316,6 +331,7 @@ RunService.RenderStepped:Connect(function(dt)
 		if not (cont.Parent == char and char.Parent) then dropWearer(cont); continue end
 		local root = char:FindFirstChild("HumanoidRootPart")
 		if not root then continue end
+		if st.preview and not shownNow(st, char, now) then continue end
 		local near = st.preview or (eye ~= nil and (root.Position - eye).Magnitude < FAR)
 		if not near then
 			if st.motes then dropMotes(st) end
@@ -400,8 +416,10 @@ RunService.RenderStepped:Connect(function(dt)
 	for p, g in pairs(parts) do
 		if not p.Parent then parts[p] = nil; continue end
 		if g.model and g.model:GetAttribute("Off") then continue end   -- (a helmet thrown off: Dresser.setHelmet)
-		-- (far away in the world: left as it is)
-		if eye and p:IsDescendantOf(workspace) and (p.Position - eye).Magnitude > 160 then continue end
+		-- (far away in the world, or on a menu mannequin nobody can see: left as it is)
+		local inWorld = p:IsDescendantOf(workspace)
+		if eye and inWorld and (p.Position - eye).Magnitude > 160 then continue end
+		if not inWorld and g.model and not shownNow(g, g.model, now) then continue end
 		local w = g.cont and wearers[g.cont]
 		local flash = w and math.clamp(1 - (now - w.flash) / 0.6, 0, 1) or 0
 		local c

@@ -11,7 +11,8 @@
 
      spec = {k = kind, n = name, s = size, cf = 12 CFrame components,
              c = color (0..1), m = material, t = transparency, a = attrs,
-             tp = a cone's top ratio, bv = a box's bevel, pf = a lathe's profile} ]]
+             tp = a cone's top ratio, bv = a box's bevel, pf = a lathe's profile,
+             ox / oy / th = a cowl's opening (degrees across, up) and wall} ]]
 
 local HttpService = game:GetService("HttpService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -34,6 +35,7 @@ local function ser(s)
 		tp = s.top,
 		bv = s.bevel,
 		pf = s.profile,
+		ox = s.openX, oy = s.openY, th = s.thick,
 	}
 end
 local function serList(list)

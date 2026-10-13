@@ -1,5 +1,6 @@
--- PALETTE — the colors a player may paint color blocks with. crowns > 0 =
--- premium, bought once for every slot of every class. Order = menu order.
+-- PALETTE — the colors a player may paint color blocks with, every one free (the
+-- premium look is an armor finish now: Catalog ▸ ArmorFX). Order = menu order.
+-- (crowns = N still makes one a Crowns buy, but nothing sells them: no shop tab.)
 return {
 	{name = "Navy",     color = Color3.fromRGB(47, 63, 110)},
 	{name = "Royal",    color = Color3.fromRGB(74, 98, 168)},
@@ -19,12 +20,12 @@ return {
 	{name = "Plum",     color = Color3.fromRGB(90, 42, 90)},
 	{name = "Teal",     color = Color3.fromRGB(42, 90, 90)},
 	{name = "Midnight", color = Color3.fromRGB(28, 30, 44)},
-	-- premium
-	{name = "Gold",         color = Color3.fromRGB(232, 184, 74),  crowns = 60},
-	{name = "White",        color = Color3.fromRGB(244, 244, 244), crowns = 60},
-	{name = "Jet",          color = Color3.fromRGB(17, 17, 17),    crowns = 60},
-	{name = "Royal Purple", color = Color3.fromRGB(96, 40, 140),   crowns = 60},
-	{name = "Blood",        color = Color3.fromRGB(150, 20, 24),   crowns = 60},
-	{name = "Verdigris",    color = Color3.fromRGB(70, 150, 130),  crowns = 60},
-	{name = "Rose Gold",    color = Color3.fromRGB(220, 150, 130), crowns = 90},
+	-- (once premium, now everyone's)
+	{name = "Gold",         color = Color3.fromRGB(232, 184, 74)},
+	{name = "White",        color = Color3.fromRGB(244, 244, 244)},
+	{name = "Jet",          color = Color3.fromRGB(17, 17, 17)},
+	{name = "Royal Purple", color = Color3.fromRGB(96, 40, 140)},
+	{name = "Blood",        color = Color3.fromRGB(150, 20, 24)},
+	{name = "Verdigris",    color = Color3.fromRGB(70, 150, 130)},
+	{name = "Rose Gold",    color = Color3.fromRGB(220, 150, 130)},
 }

@@ -77,6 +77,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
+| `ReplicatedFirst/Loading.client.lua` | `ReplicatedFirst` → `Loading` (the first thing anyone sees: the name while the game loads, or the travel screen carried over) | LocalScript |
+| `StarterPlayerScripts/LocaleText.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LocaleText` (English readers skip automatic translation: cheaper screens) | LocalScript |
 | `ReplicatedStorage/Ballistics.lua` | `ReplicatedStorage` → `Ballistics` (the arc that lands an arrow on its aim) | ModuleScript |
 | `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
@@ -119,12 +121,19 @@ you'll spawn with two.
 
 A brand-new player (profile `tutorial` 0; the player attribute `Tutorial` mirrors it) never sees
 a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (**Steel & Glory**).
-1. **The welcome** (`Intro`): a ~12 s cinematic over the Courtyard (letterbox, the map's own camera
-   shots as slow dollies with a line each, then the name with a horn and a boom; any key skips),
+0. **Loading** (`ReplicatedFirst ▸ Loading`): from the very first frame, the game's name on a dark
+   field with embers and a sweeping bar (never Roblox's blank screen) until there's something to
+   show — the welcome film (`_G.IntroCinematic`), a menu or a body. Arriving by teleport, the
+   travel screen you left on stays up instead (`_G.ArrivingTravelGui`) until you have a body or
+   the class screen (`TravelScreen`).
+1. **The welcome** (`Intro`): a ~12 s cinematic over the Courtyard (letterbox bars sliding in,
+   embers, the map's own camera shots as slow dollies with a line each, then the name slamming
+   down with a flash, a shake, a horn and a boom; any key skips),
    to its own score (`MusicConfig` `Intro`). Then the card: **WELCOME, SOLDIER!** with **BEGIN
    TRAINING** (recommended; Enter) or **SKIP TO BATTLE**, which asks *ARE YOU SURE?* first. The
    answer goes to `HubServer` (`"Intro"` op) and the travel screen comes up at once. While it runs
-   the menu stays shut and its camera holds off (`_G.IntroActive` / `_G.IntroCamera`). A client
+   the menu stays shut and its camera holds off (`_G.IntroActive` / `_G.IntroCamera`). If the
+   welcome ever fails it lets go of the screen at once (the menu and the trip carry on); a client
    that never shows the card is sent to training after 30 s.
 2. **Basic training** (a Tiltyard server of their own): they spawn at once as a **Knight with a
    Greatsword** (`GameConfig.DEFAULT_CLASS`; no class screen: `LoadoutServer` spawns anyone with
@@ -547,8 +556,11 @@ and a UIScale fits it to any screen.
 - **LOADOUT**: one loadout per class (weight → stats), with a live mannequin and TEAM PREVIEW.
   **Anything locked can be tried on**: it shows on you, with where it comes from and a buy
   button when it is in today's shop.
-- **ARMORY**: a **✔ OWNED ONLY** filter (on by default) shows what you have in every tab; tap it
-  to see everything there is to get and how. **WEAPONS** shows every weapon turning on a stage with
+- **🔒 LOCKED: SHOWN / HIDDEN** (the Loadout and the Armory; Settings ▸ *Locked items in menus*,
+  saved): everything there is to get with how to get it (the default), or only what you own —
+  every list at once (armor, finishes, weapons, skins, spells and their looks, kill effects,
+  emotes, titles still to earn). Something you're wearing or trying on always shows.
+- **ARMORY**: everything there is (or only yours, with the 🔒 switch). **WEAPONS** shows every weapon turning on a stage with
   its skin strip, a **STATS** card (reach, damage and head damage, stab, wind-up, stamina a swing,
   guard break, armor pierce, walk speed: bars against every other weapon, from
   `ReplicatedStorage ▸ WeaponStats`), and for
@@ -566,7 +578,7 @@ and a UIScale fits it to any screen.
   (a big ?), a long strip of cards (filler drawn by the crate's own odds) rushes under a gold
   marker ticking card by card, creeps the last stretch, stops somewhere on the winner and bursts. The **Relic Crate** holds kill effects and emotes; the **Grim Crate** only kill effects (a
   serpent from the ground, a hand from the sky, an anvil, a black hole and more). **CROWNS** has the Robux bundles and Crowns →
-  Marks. **COLORS** has the premium colours.
+  Marks. (No COLORS tab: every armor colour is free; the premium look is a finish.)
 - **TASKS**: today's three, the weekly, the **task-skin track** (skins earned by finishing
   tasks), and **mastery** (kill-count skins, earned armor, earned titles) with progress bars.
 - **PASS**: the season pass (`Catalog ▸ Pass`), 30 tiers climbed with every round's XP plus a
@@ -618,6 +630,16 @@ and a UIScale fits it to any screen.
   round length, who may join, friendly fire, respawns, ground weapons, and cheats. A cheat
   server gives the host `/god /heal /speed /tp /bring /give /kick` and pays nobody.
 - **SETTINGS**: camera feel, attack side, keybinds.
+
+**Keeping the menu quick.** A tab you leave lets go of what it built (its 3D previews and their
+loops) a moment later (`HX.sleep`); the Loadout list and the Pass track are drawn off screen a few
+milliseconds a frame and swapped in whole (`HX.draw` / `HX.slice`: the old one stays up, no
+half-drawn frame); the Armory and the daily shop are drawn off screen too. A dressed mannequin
+is dressed once per look and copied after (`PreviewRig`), a weapon on display built once per
+skin, the class cards keep their mannequin while the look holds. Previews, spinning weapons and a
+finish's glow only animate on screen (`HX.onScreen`; `ArmorFX` skips mannequins nobody can see).
+An English-reading player's screens skip Roblox's automatic translation (`LocaleText`: building a
+label is several times cheaper); everyone else's are translated as before.
 
 Every teleport puts up the **travel screen** (`TravelScreen`). `HubServer` answers all of it
 (`HubRemote` / `HubEvent`), heartbeats this server into a MemoryStore `Servers` map for the
@@ -794,13 +816,17 @@ edges, guards, pommels, grips, ornaments, painted patterns, Neon inlays), welded
 `blender/forge.py → scripts/upload_skins.py → scripts/skin_entries.py → Build ▸ SkinModels`
 (see CONTENT_GUIDE §5). Without the model a skin falls back to its tints + trim.
 
-**The calendar.** `Catalog ▸ Calendar` holds 13 weekly drops (10 Oct 2026 → 2 Jan 2027: the
-Founders' Forge, Bonewright, the Hollow Night, All Hallows' Eve, Ironclad, the Wild Hunt,
-Northmen, Sea-Wolves, Frostfall, Yuletide, Twelfth Night, Midwinter, Black Sails), the events
-(Halloween, a double-XP weekend, a Horde raid weekend, Yuletide), which crates and eggs are in
-rotation when, free numbered claims (Jack's Grin on Halloween, First Light at New Year, a Yule
-gift a day 13–24 Dec) and the Founders' window (everyone who plays before 9 Nov gets the
-Founder's Oath, numbered in the order they came, and the title Founder). `ReplicatedStorage ▸
+**The calendar.** `Catalog ▸ Calendar`: **the Beta is on now** (the drop "The Proving Grounds"):
+everyone who plays before the launch is a **Beta Tester**, numbered in the order they came — the
+title *Beta Tester* and **Trailblazer**, a Mythic armor finish nobody else will ever have (white-hot
+steel, trims that walk the rainbow, starlight; bound, never sold, in no crate; `Calendar.beta`,
+`Collection.checkClaims`). Everything after it is **TBD, waiting for the launch date**: the
+Founders' Forge and the 12 weekly drops after it (Bonewright, the Hollow Night, All Hallows' Eve,
+Ironclad, the Wild Hunt, Northmen, Sea-Wolves, Frostfall, Yuletide, Twelfth Night, Midwinter, Black
+Sails) have no `at`, so they never come out by themselves (the board says "at launch"; staff can
+still force one). Their events and claims carry `after = <drop>` and wait for it too. When the
+date's known: give the Founders' Forge its `at` (the beta closes, and the Founders' window opens
+for 30 days: the Founder's Oath, numbered, and the title Founder), then the weekly drops theirs. `ReplicatedStorage ▸
 Drops` reads it with the server's clock, so a drop appears on every server at the same second;
 nothing with `drop = "<id>"` shows before then. Staff: F2 ▸ DROPS releases one early or holds
 one back (every server; remembered in DataStore `AdminDrops_v1`). Studio: `/clock 2026-10-31`,
@@ -1046,6 +1072,15 @@ curved surface. The pipeline (Studio MCP + Blender + Open Cloud):
 3. `python scripts/build_armor.py <sets / piece ids>` bakes one mesh per color region and uploads
    it (`--upload-only` resumes); asset ids stay in `blender/out` (gitignored).
 4. Run `blender/out/armor/assemble_armor.lua` in Studio edit mode (`Build ▸ MeshArmor`), then save.
+
+**Hoods and helmets never let the head through.** A solid egg round the head always has the face
+(or a cheek) poking out of it, so a hood is an **open hood** (`openHood` in `Build ▸ Armor`, the
+Builder's `"cowl"`): a hollow egg the head sits *inside*, the face showing through its opening, a
+dark lining in its shadow, and `rim()` points round the opening for a trim, a roll or a crown of
+leaves. A bandana or an arming cap is a `skullcap`, which follows the head with a clean hem. Check
+any head piece before baking: `blender.exe -b --python blender/audit_heads.py -- blender/out/blueprints.json`
+lists every piece where the head shows through (cloth or steel just under the skin), worst first,
+and `preview_armor.py --heads A,B` renders close-ups (front, three-quarter, side, back, from below).
 
 ## Weapons (26) and blueprints
 
@@ -1410,7 +1445,10 @@ each time it hurts it (swings, kicks, thrown heads); a death within `CREDIT_WIND
 the last hit counts for that attacker, a bleed-out included. **Hold Tab** for the board (kills,
 deaths, K/D, sorted by kills, team-coloured in team modes; replaces Roblox's list). Dummies show
 in the feed, not the board. Every player death also goes to `Game.onDeath` (tickets, lives,
-round kills) and into the player's `Profile` stats; the board resets each round.
+round kills) and into the player's `Profile` stats; the board resets each round. **In team modes
+every name in the feed wears its team's colour** — players and bots alike (`killerTeam` /
+`victimTeam`: CombatServer stamps the attacker's team as `LastHitByTeam`); yours is underlined and
+a row you're in has a gold edge; the verb is neutral, a teamkill orange.
 
 ## Low stamina
 

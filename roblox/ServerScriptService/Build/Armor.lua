@@ -110,6 +110,46 @@ local function hoop(name, w, d, b, y, t, color, mat, attrs, zc)
 	}
 end
 
+-- AN OPEN HOOD round the head: a hollow egg the head sits INSIDE, the face showing through
+-- its opening, a dark lining in its shadow (Builder "cowl"; no head pokes through a solid egg).
+-- o: size (outside), y, z (its middle), pitch (the opening tipped down), openX / openY (degrees
+-- round from the front), thick, lining (a colour; false = none: a close coif needs none).
+-- Returns the specs and rim(inset, n): points round the opening's edge, for a trim or a roll.
+local HOOD_LINING = Color3.fromRGB(16, 13, 20)
+local function openHood(name, color, mat, attrs, o)
+	o = o or {}
+	local size = o.size or v(1.82, 1.94, 1.94)
+	local frame = cf(0, o.y or 0.02, o.z or -0.04, o.pitch or -8, 0, 0)
+	local ox, oy, th = o.openX or 40, o.openY or 36, o.thick or 0.07
+	local out = {B.cowl(name, size, frame, color, mat, attrs, ox, oy, th)}
+	if o.lining ~= false then
+		local k = th * 2 + 0.01
+		out[#out + 1] = B.cowl(name .. "Lining", size - v(k, k, k), frame, o.lining or HOOD_LINING, M.FABRIC, nil, ox + 4, oy + 4, 0.03)
+	end
+	local function rim(inset, n)
+		n = n or 24
+		local pts = {}
+		local rx, ry, rz = size.X / 2 - (inset or th / 2), size.Y / 2 - (inset or th / 2), size.Z / 2 - (inset or th / 2)
+		local ax, ay = math.rad(ox), math.rad(oy)
+		for i = 0, n - 1 do
+			local phi = i / n * math.pi * 2
+			local c, s = math.cos(phi), math.sin(phi)
+			local t0 = 1 / math.sqrt((c / ax) ^ 2 + (s / ay) ^ 2)
+			pts[#pts + 1] = frame * Vector3.new(rx * math.sin(t0) * c, ry * math.sin(t0) * s, -rz * math.cos(t0))
+		end
+		return pts
+	end
+	return out, rim
+end
+-- a CAP that follows the head (the R6 head's drum, `lift` off it) from height y0 up: a
+-- bandana, an arming cap; its hem a clean line round the head
+local function skullcap(name, y0, lift, color, mat, attrs)
+	local l = lift or 0.04
+	return B.lathe(name, {{0.625 + l, y0}, {0.625 + l, math.max(y0 + 0.01, 0.35)}, {0.615 + l, 0.43 + l * 0.3},
+		{0.585 + l, 0.5 + l * 0.6}, {0.52 + l, 0.565 + l * 0.85}, {0.42 + l, 0.61 + l}, {0.3 + l * 0.6, 0.625 + l}, {0, 0.625 + l}},
+		cf(), color, mat, attrs)
+end
+
 --------------------------------------------------------------------
 --  ON SURFACES — an egg kept as data (e = {c = centre, s = size}) so trim,
 --  slits, studs and emblems can be laid on it and follow its curve
@@ -463,7 +503,7 @@ local function aventailBascinet()
 	local out = {middle(HEAD),
 		shell("Skull", skull, m, M.METAL, MT),
 		cone("Apex", v(0.66, 0.4, 0.7), cf(0, 0.96, 0.22, 16, 0, 0), m, M.METAL, MT),
-		egg("Aventail", v(1.58, 1.18, 1.38), cf(0, -0.1, 0.18), C.MAIL, M.PLATE),
+		openHood("Aventail", C.MAIL, M.PLATE, nil, {size = v(1.62, 1.56, 1.68), y = -0.1, z = 0.02, pitch = -4, openX = 41, openY = 34, lining = false})[1],
 		egg("Bib", v(1.3, 0.48, 0.8), cf(0, -0.58, -0.3), C.MAIL, M.PLATE),
 		cone("Hem", v(1.9, 0.26, 1.9), cf(0, -0.66, 0.1), C.MAIL, M.PLATE, nil, 0.88),
 	}
@@ -478,7 +518,7 @@ local function burgonet()
 	local skull = {c = v(0, 0.38, 0.06), s = v(1.48, 1.12, 1.54)}
 	local out = {middle(HEAD),
 		shell("Skull", skull, m, M.METAL, MT),
-		egg("Lining", v(1.4, 1.16, 1.06), cf(0, -0.06, 0.26), C.CLOTH2, M.FABRIC, S),
+		openHood("Lining", C.CLOTH2, M.FABRIC, S, {size = v(1.52, 1.44, 1.58), y = -0.14, z = 0.02, pitch = -4, openX = 44, openY = 34, lining = false})[1],
 		egg("Comb", v(0.09, 0.58, 1.44), cf(0, 0.88, 0.06), g, M.METAL, A),
 		egg("Peak", v(1.24, 0.07, 0.56), cf(0, 0.25, -0.68, -12, 0, 0), m, M.METAL, MT),
 		egg("PeakEdge", v(1.28, 0.05, 0.6), cf(0, 0.25, -0.68, -12, 0, 0), g, M.METAL, A),
@@ -528,14 +568,12 @@ local function wolfHelm()
 end
 
 -- the coif under a helmet or worn alone: a crown, a body round the sides and back (the face open), a bib under the chin
-local COIF_CROWN = {c = v(0, 0.36, 0.06), s = v(1.48, 0.92, 1.54)}
-local COIF_BODY = {c = v(0, -0.1, 0.16), s = v(1.66, 1.22, 1.36)}
+local COIF = {size = v(1.68, 1.66, 1.72), y = -0.02, z = 0.02, pitch = -6, openX = 40, openY = 34, lining = false}
 local function coif(color, mat, attrs, roll, rollAttrs)
-	return J({shell("Coif", COIF_CROWN, color, mat, attrs),
-		shell("Coif", COIF_BODY, color, mat, attrs),
-		egg("Bib", v(1.24, 0.46, 0.76), cf(0, -0.58, -0.28), color, mat, attrs),
+	local hood, rim = openHood("Coif", color, mat, attrs, COIF)
+	return J(hood, {egg("Bib", v(1.24, 0.46, 0.76), cf(0, -0.58, -0.28), color, mat, attrs),
 		cone("Cape", v(1.96, 0.28, 1.9), cf(0, -0.62, 0.1), color, mat, attrs, 0.72)},
-		tube("Roll", faceLoop(0.43, 0.48, -0.02, {COIF_CROWN, COIF_BODY}, 0.035), 0.09, roll, M.FABRIC, rollAttrs, true))
+		tube("Roll", rim(nil, 20), 0.1, roll, M.FABRIC, rollAttrs, true))
 end
 -- the starter medium helm: a padded coif under a plain steel cap
 local function cappedCoif()
@@ -560,15 +598,12 @@ end
 -- Marsh Wardens: a hunter's hood with a long liripipe, its face edge rolled, the cowl dagged into leaves
 local function wardenHood()
 	local col = C.GREEN
-	local crown = {c = v(0, 0.4, 0.08), s = v(1.56, 1.0, 1.62)}
-	local body = {c = v(0, -0.08, 0.18), s = v(1.72, 1.26, 1.4)}
-	local out = J({middle(HEAD),
-		shell("Hood", crown, col, M.FABRIC, P),
-		shell("Hood", body, col, M.FABRIC, P),
-		egg("Peak", v(0.5, 0.4, 0.56), cf(0, 0.82, -0.3, -20, 0, 0), col, M.FABRIC, P),
-		cone("Cowl", v(2.1, 0.38, 2.0), cf(0, -0.62, 0.1), col, M.FABRIC, P, 0.7),
-		egg("Feather", v(0.08, 0.62, 0.2), cf(0.8, 0.56, 0.26, 18, 0, -16), C.GOLD, M.FABRIC, A),
-	}, tube("Roll", faceLoop(0.44, 0.5, -0.02, {crown, body}, 0.05), 0.13, col, M.FABRIC, P, true))
+	local hood, rim = openHood("Hood", col, M.FABRIC, P, {size = v(1.8, 1.88, 1.9), y = 0.04})
+	local out = J({middle(HEAD)}, hood, {
+		egg("Peak", v(0.5, 0.4, 0.56), cf(0, 0.86, -0.28, -20, 0, 0), col, M.FABRIC, P),
+		cone("Cowl", v(2.1, 0.38, 2.0), cf(0, -0.64, 0.1), col, M.FABRIC, P, 0.7),
+		egg("Feather", v(0.08, 0.62, 0.2), cf(0.86, 0.56, 0.26, 18, 0, -16), C.GOLD, M.FABRIC, A),
+	}, tube("Roll", rim(nil, 22), 0.14, col, M.FABRIC, P, true))
 	local tail = {v(0, 0.84, 0.56), v(0, 0.56, 0.98), v(0, 0.06, 1.12), v(0, -0.46, 1.06)}
 	for i = 1, #tail - 1 do
 		local d = 0.34 - i * 0.06
@@ -638,7 +673,6 @@ local function wolfPelt()
 		egg("Nose", v(0.26, 0.18, 0.2), cf(0, 0.74, -1.3), C.BLACK, M.PLASTIC),
 		egg("Brow", v(0.4, 0.16, 0.34), cf(-0.27, 0.98, -0.6, 0, 0, -12), f, M.FABRIC),
 		egg("Brow", v(0.4, 0.16, 0.34), cf(0.27, 0.98, -0.6, 0, 0, 12), f, M.FABRIC),
-		egg("Pelt", v(1.72, 1.3, 1.4), cf(0, -0.08, 0.2), f, M.FABRIC),
 		plate("Hide", v(0, 0.5, 0.8), v(0, -0.62, 0.9), 1.3, 0.1, f, M.FABRIC, nil, -X, 0.05),
 		egg("Paw", v(0.26, 0.5, 0.16), cf(-0.5, -0.72, 0.88, 0, 0, -8), f, M.FABRIC),
 		egg("Paw", v(0.26, 0.5, 0.16), cf(0.5, -0.72, 0.88, 0, 0, 8), f, M.FABRIC),
@@ -652,6 +686,7 @@ local function wolfPelt()
 			out[#out + 1] = spike("Fang", v(x, 0.5, z), v(x, 0.33, z - 0.02), 0.08, FANG, M.PLASTIC)
 		end
 	end
+	B.join(out, (openHood("Pelt", f, M.FABRIC, nil, {size = v(1.8, 1.8, 1.86), y = -0.02, z = 0.02, openX = 40, openY = 33, lining = Color3.fromRGB(40, 30, 22)})))
 	return out
 end
 
@@ -1523,14 +1558,13 @@ end
 -- SHADOWVEIL (Light): a deep hood over a black half-mask with two burning eyes, a tattered
 -- cloak and black leathers with glowing runes
 local function veilHood()
-	return {middle(HEAD),
-		egg("Hood", v(1.7, 1.75, 1.82), cf(0, 0.15, 0.32), VEIL, M.FABRIC),
-		cone("Peak", v(0.8, 0.56, 0.8), cf(0, 0.96, 0.62, -42, 0, 0), VEIL, M.FABRIC),
-		cone("Drape", v(2.02, 0.5, 2.02), cf(0, -0.5, 0.14), VEIL, M.FABRIC, nil, 0.8),
-		plate("Mask", v(0, 0.02, -0.66), v(0, -0.5, -0.62), 1.12, 0.06, C.BLACKIRON, M.METAL, MT, X, 0.03),
-		egg("Eye", v(0.26, 0.08, 0.04), cf(-0.22, 0.12, -0.67, 0, 0, -14), VEILGLOW, M.NEON, A),
-		egg("Eye", v(0.26, 0.08, 0.04), cf(0.22, 0.12, -0.67, 0, 0, 14), VEILGLOW, M.NEON, A),
-	}
+	return J({middle(HEAD)}, (openHood("Hood", VEIL, M.FABRIC, nil, {lining = C.BLACK})), {
+		cone("Peak", v(0.8, 0.56, 0.8), cf(0, 0.84, 0.5, -42, 0, 0), VEIL, M.FABRIC),
+		cone("Drape", v(2.1, 0.36, 2.0), cf(0, -0.68, 0.12), VEIL, M.FABRIC, nil, 0.78),
+		plate("Mask", v(0, 0.02, -0.69), v(0, -0.5, -0.66), 1.12, 0.06, C.BLACKIRON, M.METAL, MT, X, 0.03),
+		egg("Eye", v(0.26, 0.08, 0.04), cf(-0.22, 0.12, -0.7, 0, 0, -14), VEILGLOW, M.NEON, A),
+		egg("Eye", v(0.26, 0.08, 0.04), cf(0.22, 0.12, -0.7, 0, 0, 14), VEILGLOW, M.NEON, A),
+	})
 end
 local function veilTorso()
 	local out = {middle(TORSO),
@@ -1622,8 +1656,9 @@ local function bearHood()
 		egg("Snout", v(0.8, 0.5, 0.9), cf(0, 0.52, -0.8, 10, 0, 0), BEAR, M.FABRIC),
 		egg("Muzzle", v(0.56, 0.3, 0.5), cf(0, 0.42, -1.06, 10, 0, 0), BEAR2, M.FABRIC),
 		egg("Nose", v(0.34, 0.2, 0.2), cf(0, 0.58, -1.24), C.BLACK, M.PLASTIC),
-		cone("Drape", v(1.98, 0.9, 1.92), cf(0, -0.3, 0.32), BEAR, M.FABRIC, nil, 0.7),
+		cone("Drape", v(2.1, 0.4, 2.04), cf(0, -0.68, 0.14), BEAR, M.FABRIC, nil, 0.76),
 	}
+	B.join(out, (openHood("Hide", BEAR, M.FABRIC, nil, {size = v(1.8, 1.8, 1.9), y = -0.04, z = 0.04, openX = 40, openY = 32, lining = Color3.fromRGB(34, 22, 16)})))
 	for _, s in ipairs({-1, 1}) do
 		out[#out + 1] = egg("Ear", v(0.36, 0.38, 0.18), cf(s * 0.56, 0.98, 0.16, 0, 0, -s * 18), BEAR, M.FABRIC)
 		out[#out + 1] = egg("EarIn", v(0.2, 0.22, 0.06), cf(s * 0.56, 0.98, 0.06, 0, 0, -s * 18), BEAR2, M.FABRIC)
@@ -1656,14 +1691,13 @@ end
 -- RANGER (Light): a deep forest hood with a long tail and a red feather, a leather
 -- jerkin with a quiver of arrows on the back, bracers and soft boots
 local function rangerHood()
-	return {middle(HEAD),
-		egg("Hood", v(1.64, 1.66, 1.76), cf(0, 0.18, 0.28), RGREEN, M.FABRIC),
+	return J({middle(HEAD)}, (openHood("Hood", RGREEN, M.FABRIC, nil, {size = v(1.8, 1.9, 1.94)})), {
 		egg("HoodTail", v(0.6, 0.6, 1.2), cf(0, 0.56, 1.0, -30, 0, 0), RGREEN, M.FABRIC),
 		cone("Tail", v(0.5, 0.9, 0.5), cf(0, 0.3, 1.6, 120, 0, 0), RGREEN, M.FABRIC),
-		cone("Drape", v(2.04, 0.5, 2.04), cf(0, -0.5, 0.14), RGREEN, M.FABRIC, nil, 0.8),
-		egg("Feather", v(0.12, 0.9, 0.24), cf(0.72, 0.62, 0.34, -24, 0, -32), C.RED, M.FABRIC, A),
-		rod("Quill", v(0.58, 0.28, 0.2), v(0.66, 0.5, 0.28), 0.04, C.LINEN, M.PLASTIC),
-	}
+		cone("Drape", v(2.1, 0.36, 2.0), cf(0, -0.68, 0.12), RGREEN, M.FABRIC, nil, 0.78),
+		egg("Feather", v(0.12, 0.9, 0.24), cf(0.82, 0.62, 0.34, -24, 0, -32), C.RED, M.FABRIC, A),
+		rod("Quill", v(0.7, 0.26, 0.2), v(0.78, 0.48, 0.28), 0.04, C.LINEN, M.PLASTIC),
+	})
 end
 local function rangerTorso()
 	local out = {middle(TORSO),
@@ -1690,7 +1724,7 @@ end
 -- coat in your colours, gold buttons and epaulettes, a baldric, tall boots with turned cuffs
 local function tricorn()
 	local out = {middle(HEAD),
-		egg("Bandana", v(1.34, 0.8, 1.4), cf(0, 0.3, 0.04), C.RED, M.FABRIC, S),
+		skullcap("Bandana", 0.2, 0.04, C.RED, M.FABRIC, S),
 		cyl("Crown", 1.24, 0.46, cf(0, 0.78, 0.04), C.BLACK, M.FABRIC),
 		egg("CrownTop", v(1.24, 0.3, 1.24), cf(0, 1.0, 0.04), C.BLACK, M.FABRIC),
 	}
@@ -1753,16 +1787,16 @@ local function skullHelm()
 	local skull = {c = v(0, 0.22, 0.02), s = v(1.5, 1.44, 1.6)}
 	local out = {middle(HEAD),
 		shell("Skull", skull, BONE, M.PLASTIC),
-		rbox("Cheek", v(1.2, 0.5, 1.08), cf(0, -0.3, -0.08), BONE, M.PLASTIC, nil, 0.2),
-		rbox("Jaw", v(1.0, 0.22, 0.9), cf(0, -0.58, -0.14), BONE, M.PLASTIC, nil, 0.08),
+		rbox("Cheek", v(1.4, 0.64, 1.44), cf(0, -0.26, 0.02), BONE, M.PLASTIC, nil, 0.26),
+		rbox("Jaw", v(1.08, 0.24, 1.0), cf(0, -0.58, -0.2), BONE, M.PLASTIC, nil, 0.08),
 		egg("Socket", v(0.4, 0.36, 0.14), cf(-0.28, 0.1, -0.76), C.BLACK, M.PLASTIC),
 		egg("Socket", v(0.4, 0.36, 0.14), cf(0.28, 0.1, -0.76), C.BLACK, M.PLASTIC),
 		ball("Eye", 0.17, cf(-0.28, 0.1, -0.8), GRAVE, M.NEON, A),
 		ball("Eye", 0.17, cf(0.28, 0.1, -0.8), GRAVE, M.NEON, A),
-		egg("Nose", v(0.16, 0.24, 0.08), cf(0, -0.16, -0.7), C.BLACK, M.PLASTIC),
+		egg("Nose", v(0.16, 0.24, 0.08), cf(0, -0.16, -0.74), C.BLACK, M.PLASTIC),
 		torus("Crown", v(1.3, 0.12, 1.4), cf(0, 0.72, 0.04), C.BLACKIRON, M.METAL, MT),
 	}
-	for i = -3, 3 do out[#out + 1] = box("Tooth", v(0.1, 0.17, 0.06), cf(i * 0.12, -0.42, -0.65), FANG, M.PLASTIC) end
+	for i = -3, 3 do out[#out + 1] = box("Tooth", v(0.1, 0.17, 0.06), cf(i * 0.12, -0.42, -0.72), FANG, M.PLASTIC) end
 	for i = 0, 7 do   -- the crown's rusted points
 		local a = i / 8 * math.pi * 2
 		local base = Vector3.new(math.sin(a) * 0.64, 0.72, 0.04 - math.cos(a) * 0.68)
@@ -2024,15 +2058,15 @@ do
 		if o.curl then out[#out + 1] = egg("Curl", v(0.26, 0.26, 0.3), cf(0, -0.74, -0.74, -30, 0, 0), shoe or C.DARKLEATHER, M.LEATHER) end
 		return out
 	end
-	-- a deep hood round the head (covers the hair)
+	-- a deep hood round the head (covers the hair): the head inside it, the face in its
+	-- shadow (openHood), a trim round the opening (o.rim), a peak at the back (o.peak)
 	local function hood(color, slot, o)
 		o = o or {}
-		local out = {middle(HEAD),
-			egg("Hood", v(1.72, 1.74, 1.84), cf(0, 0.16, 0.32), color, M.FABRIC, slot),
-			cone("Drape", v(2.06, 0.5, 2.06), cf(0, -0.52, 0.14), color, M.FABRIC, slot, 0.8),
-			torus("HoodRim", v(1.5, 0.16, 1.2), cf(0, 0.12, -0.56, 90, 0, 0), o.rim or color, M.FABRIC, o.rim and A or slot)}
-		if o.peak then out[#out + 1] = cone("Peak", v(0.8, 0.6, 0.8), cf(0, 0.98, 0.62, -42, 0, 0), color, M.FABRIC, slot) end
-		return out
+		local shellOut, rim = openHood("Hood", color, M.FABRIC, slot, {lining = o.lining})
+		local out = J({middle(HEAD)}, shellOut, {cone("Drape", v(2.1, 0.36, 2.0), cf(0, -0.68, 0.12), color, M.FABRIC, slot, 0.78)})
+		if o.rim then B.join(out, tube("HoodRim", rim(nil, 24), 0.11, o.rim, M.FABRIC, A, true)) end
+		if o.peak then out[#out + 1] = cone("Peak", v(0.8, 0.6, 0.8), cf(0, 0.86, 0.5, -42, 0, 0), color, M.FABRIC, slot) end
+		return out, rim
 	end
 	-- a tall pointed hat: brim, band and a cone in tiers (bend = how far the tip leans back).
 	-- Returns the parts, the tip, and onHat(y): the point on its front at height y (for a moon,
@@ -2214,7 +2248,7 @@ do
 	-- DRUID (Rare): a bark-brown hood with antlers and a crown of leaves, a mantle of leaves,
 	-- a living vine for a belt
 	do
-		local head = hood(BARK, S)
+		local head, rim = hood(BARK, S)
 		for _, sx in ipairs({-1, 1}) do   -- the antlers, branching
 			local base = v(sx * 0.42, 0.9, 0.12)
 			local top = base + v(sx * 0.5, 0.86, 0.1)
@@ -2222,9 +2256,11 @@ do
 				rod("Tine", base + v(sx * 0.2, 0.34, 0.04), base + v(sx * 0.62, 0.52, -0.06), 0.08, HORN, M.WOOD),
 				rod("Tine", base + v(sx * 0.36, 0.62, 0.07), base + v(sx * 0.4, 1.06, 0.2), 0.07, HORN, M.WOOD)})
 		end
-		for i = 0, 6 do   -- a crown of leaves round the face
-			local a = math.rad(-70 + i * 23)
-			head[#head + 1] = egg("Leaf", v(0.3, 0.12, 0.2), cf(math.sin(a) * 0.74, 0.5 + math.cos(a) * 0.14, -0.6 + (1 - math.cos(a)) * 0.3, 0, 0, -math.deg(a)), i % 2 == 0 and LEAF or LEAF2, M.FABRIC, A)
+		for i, p in ipairs(rim(0, 24)) do   -- a crown of leaves over the face, along the hood's edge
+			local phi = (i - 1) / 24 * math.pi * 2
+			if i >= 2 and i <= 12 then
+				head[#head + 1] = egg("Leaf", v(0.3, 0.12, 0.2), CFrame.new(p + v(0, 0, -0.03)) * CFrame.Angles(0, 0, phi - math.pi / 2), i % 2 == 0 and LEAF or LEAF2, M.FABRIC, A)
+			end
 		end
 		local torso = robeBody(BARK, LEAF, {collar = false})
 		for _, sx in ipairs({-1, 1}) do   -- a mantle of leaves fanned over each shoulder

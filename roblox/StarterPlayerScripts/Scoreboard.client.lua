@@ -32,7 +32,7 @@ local COL_TEXT   = Theme.TEXT
 local COL_DIM    = Theme.DIM
 local COL_ACCENT = Theme.ACCENT
 local COL_ME     = Theme.GOOD
-local COL_KILL   = Theme.BAD
+local COL_KILL   = Color3.fromRGB(226, 226, 232)   -- the verb (the names wear the teams' colours)
 local COL_TK     = Color3.fromRGB(255, 170, 60)
 local COL_GOLD   = Color3.fromRGB(255, 206, 84)    -- season pass holders
 local COL_TITLE  = Color3.fromRGB(255, 226, 168)   -- titles
@@ -115,28 +115,39 @@ local function pushFeed(e)
 	t.RichText = true
 	t.AutomaticSize = Enum.AutomaticSize.X
 	t.Size = UDim2.new(0, 0, 1, 0)
-	-- a name: yours in your colour, a team's in its colour, a pass holder's in gold with a
-	-- crown; the killer's title after it (not the free Recruit)
-	local function name(n, id, withTitle)
-		local col = (id ~= 0 and id == player.UserId) and COL_ME or COL_TEXT
+	-- a name in its TEAM's colour (players and bots alike: who's winning the fight at a
+	-- glance); with no teams, yours in your colour and a pass holder's in gold. Yours is
+	-- underlined and your rows wear a gold edge. A pass holder has a crown; the killer's
+	-- title after it (not the free Recruit)
+	local mine = (e.victimId ~= 0 and e.victimId == player.UserId) or (e.killerId ~= 0 and e.killerId == player.UserId)
+	local function name(n, id, team, withTitle)
+		local me = id ~= 0 and id == player.UserId
 		local plr = id ~= 0 and Players:GetPlayerByUserId(id)
-		local tc = plr and teamColorOf(plr)
-		if tc and not (id == player.UserId) then col = tc end
+		local def = team and team ~= "" and GameConfig.TEAMS[team]
+		local tc = def and def.rgb or (plr and teamColorOf(plr))
+		local col = tc and tc:Lerp(Color3.new(1, 1, 1), 0.3) or (me and COL_ME) or COL_TEXT
 		local pass = plr and plr:GetAttribute("PassHolder") == true
-		if pass and not tc and id ~= player.UserId then col = COL_GOLD end
-		local s = (pass and string.format('<font color="#%s">♛</font> ', COL_GOLD:ToHex()) or "") .. string.format('<font color="#%s"><b>%s</b></font>', col:ToHex(), n)
+		if pass and not tc and not me then col = COL_GOLD end
+		local s = (pass and string.format('<font color="#%s">♛</font> ', COL_GOLD:ToHex()) or "")
+			.. string.format(me and '<font color="#%s"><b><u>%s</u></b></font>' or '<font color="#%s"><b>%s</b></font>', col:ToHex(), n)
 		local title = withTitle and plr and plr:GetAttribute("Title") or ""
 		if title ~= "" and title ~= "Recruit" then s ..= string.format(' <font color="#%s" size="12"><i>%s</i></font>', COL_TITLE:ToHex(), title) end
 		return s
 	end
-	local victim = name(e.victim or "?", e.victimId or 0)
+	if mine then
+		local edge = Instance.new("UIStroke", row)
+		edge.Color = COL_GOLD
+		edge.Thickness = 1.5
+		edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	end
+	local victim = name(e.victim or "?", e.victimId or 0, e.victimTeam)
 	if e.kind == "bleed" and e.killer then
-		t.Text = string.format('%s  <font color="#%s">bled out after</font>  %s%s', victim, COL_DIM:ToHex(), name(e.killer, e.killerId),
+		t.Text = string.format('%s  <font color="#%s">bled out after</font>  %s%s', victim, COL_DIM:ToHex(), name(e.killer, e.killerId, e.killerTeam),
 			e.weapon ~= "" and string.format('  <font color="#%s">(%s)</font>', COL_DIM:ToHex(), e.weapon) or "")
 	elseif e.killer then
 		local verb = VERB[e.kind] or "killed"
 		if e.teamkill then verb = "TEAMKILLED" end
-		t.Text = string.format('%s  <font color="#%s">%s</font>  %s%s', name(e.killer, e.killerId, true), (e.teamkill and COL_TK or COL_KILL):ToHex(), verb, victim,
+		t.Text = string.format('%s  <font color="#%s">%s</font>  %s%s', name(e.killer, e.killerId, e.killerTeam, true), (e.teamkill and COL_TK or COL_KILL):ToHex(), verb, victim,
 			e.weapon ~= "" and string.format('  <font color="#%s">%s</font>', COL_DIM:ToHex(), e.weapon) or "")
 	else
 		t.Text = string.format('%s  <font color="#%s">%s</font>', victim, COL_DIM:ToHex(), e.kind == "bleed" and "bled out" or "died")
@@ -150,6 +161,8 @@ local function pushFeed(e)
 		if not row.Parent then return end
 		TweenService:Create(row, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
 		TweenService:Create(t, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+		local edge = row:FindFirstChildOfClass("UIStroke")
+		if edge then TweenService:Create(edge, TweenInfo.new(0.5), {Transparency = 1}):Play() end
 		task.delay(0.5, function() if row.Parent then row:Destroy() end end)
 	end)
 end

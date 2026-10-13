@@ -7,9 +7,15 @@
                               armor = bool, pose = {rs = {x, y, z}, …}}) -> Model
        PreviewRig.makeRig()          an undressed mannequin
        PreviewRig.poseRig(rig, pose) turn joints (degrees, torso frame); before settle
-       PreviewRig.settle(model)      put every welded part where its weld says ]]
+       PreviewRig.settle(model)      put every welded part where its weld says
+
+     A look is dressed ONCE: dressedRig keeps the finished mannequin (a few dozen, the
+     least used dropped first) and hands out copies, so a menu redrawing the same
+     looks clones instead of dressing again. The key is the whole request plus the
+     avatar kit it found (a kit arriving later is a new look). ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 
@@ -105,7 +111,43 @@ end
 
 -- dress a fresh rig: {loadout, appearance, weight, team, weapon = bool, pose,
 -- armor = false (bare), helmet = false (the armor without its helmet: the face shows)}
+-- the dressed-look cache: key -> finished mannequin (never parented; copies go out)
+local CACHE_MAX = 40
+local cache, used, tick = {}, {}, 0
+local kitTokens, kitN = setmetatable({}, {__mode = "k"}), 0
+local function keyOf(o)
+	local kit = Dresser.kitOf and Dresser.kitOf(o.appearance)
+	local token = 0
+	if kit then
+		if not kitTokens[kit] then kitN += 1; kitTokens[kit] = kitN end
+		token = kitTokens[kit]
+	end
+	local ok, s = pcall(HttpService.JSONEncode, HttpService, {o.loadout or {}, o.appearance or {}, o.weight or "", o.team or "",
+		o.weapon == false, o.armor == false, o.helmet == false, o.pose or {}, token})
+	return ok and s or nil
+end
+local function remember(key, m)
+	tick += 1
+	cache[key], used[key] = m, tick
+	local n, oldest, oldKey = 0, math.huge, nil
+	for k, t in pairs(used) do n += 1; if t < oldest then oldest, oldKey = t, k end end
+	if n > CACHE_MAX and oldKey then cache[oldKey]:Destroy(); cache[oldKey], used[oldKey] = nil, nil end
+end
+
+local dressFresh
 function PreviewRig.dressedRig(o)
+	local key = keyOf(o)
+	local hit = key and cache[key]
+	if hit then
+		tick += 1; used[key] = tick
+		return hit:Clone()
+	end
+	local m = dressFresh(o)
+	if key then remember(key, m:Clone()) end
+	return m
+end
+
+dressFresh = function(o)
 	local m = PreviewRig.makeRig()
 	local lo = o.loadout or {}
 	if o.armor == false then lo = {colors = lo.colors}

@@ -15,6 +15,8 @@
        Drops.skinStatus(skin, profileSummary?) -> status, note
              "unreleased" | "live" | "vaulted" (may come back) | "relic" (never again)
        Drops.foundersOpen()         can new Founders still join?
+       Drops.betaOpen() / beta()    is the beta on (new Beta Testers)? / its config
+     A drop with no `at` is TBD: never out by itself (Drops.next gives it with a nil time).
 
      Staff overrides (ReplicatedStorage attributes, set by the admin panel and
      mirrored to every server): DropsForced = "id,id" (out early),
@@ -38,6 +40,8 @@ end
 --------------------------------------------------------------------
 local parsed = {}
 local function parse(s)
+	if s == nil then return nil end
+	if type(s) == "number" then return s end
 	if parsed[s] then return parsed[s] end
 	local y, mo, d, h, mi = s:match("^(%d+)%-(%d+)%-(%d+)%s+(%d+):(%d+)$")
 	if not y then y, mo, d = s:match("^(%d+)%-(%d+)%-(%d+)$"); h, mi = 0, 0 end
@@ -84,6 +88,7 @@ function Drops.released(id, now)
 	if not d then return true end   -- (an unknown drop id never hides anything)
 	if listAttr("DropsHeld")[id] then return false end
 	if listAttr("DropsForced")[id] then return true end
+	if not d.at then return false end   -- (TBD: no date yet)
 	return (now or Drops.now()) >= (parse(d.at) or 0)
 end
 
@@ -132,13 +137,15 @@ function Drops.event(id)
 	for _, e in ipairs(cal().events or {}) do if e.id == id then return e end end
 	return nil
 end
+-- (an event or a claim with `after` waits for that drop, whatever its dates say)
+local function on(x, now) return inside(x.from, x.to, now) and Drops.released(x.after, now) end
 function Drops.eventLive(id, now)
 	local e = Drops.event(id)
-	return e ~= nil and inside(e.from, e.to, now)
+	return e ~= nil and on(e, now)
 end
 function Drops.events(now)
 	local out = {}
-	for _, e in ipairs(cal().events or {}) do if inside(e.from, e.to, now) then table.insert(out, e) end end
+	for _, e in ipairs(cal().events or {}) do if on(e, now) then table.insert(out, e) end end
 	return out
 end
 function Drops.earnMult(kind, mode)
@@ -163,7 +170,7 @@ local function rotation(rule, now)
 	if not rule or rule.always then return true, nil, rule end
 	if rule.event then
 		local e = Drops.event(rule.event)
-		if e and inside(e.from, e.to, now) then return true, Drops.time(e.to), rule end
+		if e and on(e, now) then return true, Drops.time(e.to), rule end
 		return false, nil, rule
 	end
 	for _, w in ipairs(rule.windows or {}) do
@@ -204,18 +211,29 @@ end
 --------------------------------------------------------------------
 function Drops.claimsOpen(now)
 	local out = {}
-	for _, c in ipairs(cal().claims or {}) do if inside(c.from, c.to, now) then table.insert(out, c) end end
+	for _, c in ipairs(cal().claims or {}) do if on(c, now) then table.insert(out, c) end end
 	return out
 end
 function Drops.claim(id)
 	for _, c in ipairs(cal().claims or {}) do if c.id == id then return c end end
 	return nil
 end
+-- a window's end: its `to`, or `days` after its start (nil = open-ended)
+local function windowEnd(w)
+	if w.to then return w.to end
+	local t0 = w.days and Drops.released(w.from) and Drops.time(w.from)
+	return t0 and (t0 + w.days * 86400) or nil
+end
 function Drops.foundersOpen(now)
 	local f = cal().founders
-	return f ~= nil and inside(f.from, f.to, now)
+	return f ~= nil and inside(f.from, windowEnd(f), now)
 end
 function Drops.founders() return cal().founders end
+function Drops.betaOpen(now)
+	local b = cal().beta
+	return b ~= nil and inside(b.from, windowEnd(b), now)
+end
+function Drops.beta() return cal().beta end
 function Drops.features(now)
 	local out = {}
 	for _, f in ipairs(cal().features or {}) do if inside(f.from, f.to, now) then table.insert(out, f.item) end end
@@ -236,7 +254,7 @@ function Drops.skinStatus(s, now)
 	end
 	if s.claim then
 		local c = Drops.claim(s.claim)
-		if c and inside(c.from, c.to, now) then return "live", "free gift, today only" end
+		if c and on(c, now) then return "live", "free gift, today only" end
 		if c and now < (Drops.time(c.from) or 0) then return "unreleased", "coming soon" end
 		return "relic", c and c.note or "a past gift"
 	end

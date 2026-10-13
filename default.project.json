@@ -1,21 +1,26 @@
 {
   "name": "R6Mordhau",
-  "globIgnorePaths": ["**/*.md", "**/.gitkeep"],
+  "globIgnorePaths": [
+    "**/*.md",
+    "**/.gitkeep"
+  ],
   "tree": {
     "$className": "DataModel",
-
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
+      "$ignoreUnknownInstances": true,
+      "$path": "roblox/ReplicatedFirst"
+    },
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "$ignoreUnknownInstances": true,
       "$path": "roblox/ReplicatedStorage"
     },
-
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "$ignoreUnknownInstances": true,
       "$path": "roblox/ServerScriptService"
     },
-
     "ServerStorage": {
       "$className": "ServerStorage",
       "$ignoreUnknownInstances": true,
@@ -30,7 +35,6 @@
         "$path": "roblox/Tools"
       }
     },
-
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "$ignoreUnknownInstances": true,

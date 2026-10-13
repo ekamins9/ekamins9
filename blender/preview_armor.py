@@ -6,6 +6,8 @@ mesh is uploaded.
     ... --sheet figures | heads | torsos | legs      every set and earned piece in a grid
     ... --sets TourneyKnight,IronCrow                 front / side / back of each set, one row each
     ... --palette bright                               loud slot colors (default: the starter colors)
+    ... --heads Druid,KnightSkin                       close-ups of each head piece on the head: front,
+                                                       three-quarter, side, back-ish and from below
 
 Slots are painted with the player's colors (default Navy / Slate / Ochre / Ash),
 every other part with its own color, as in game.
@@ -64,6 +66,10 @@ def head_mesh(n=28):
 
 def roty(deg):
     return Matrix.Rotation(math.radians(deg), 4, "Y")
+
+
+def rotx(deg):
+    return Matrix.Rotation(math.radians(deg), 4, "X")
 
 
 def at(x, y, z):
@@ -141,6 +147,7 @@ class Sheet:
         aspect = res[0] / res[1]
         cam_data = bpy.data.cameras.new("Cam"); cam_data.type = "ORTHO"
         cam_data.ortho_scale = max(w, h * aspect) * 1.06
+        cam_data.sensor_fit = "HORIZONTAL"   # (ortho_scale spans the width, a tall sheet too)
         cam = bpy.data.objects.new("Cam", cam_data); sc.collection.objects.link(cam); sc.camera = cam
         cam.location = (cx, 60, cz)
         cam.rotation_euler = Vector((0, -1, 0)).to_track_quat("-Z", "Y").to_euler()
@@ -177,6 +184,19 @@ def main():
              "GambesonSkin", "Sellswords", "RiverGuard", "GildedCourt", "WolfCompany",
              "KnightSkin", "TourneyKnight", "IronCrow", "Blackguard", "SunKnights"]
     order = [n for n in order if n in sets] + sorted(n for n in sets if n not in order)
+    if "heads" in opt:   # close-ups: does the head poke through anywhere?
+        names = opt["heads"].split(",")
+        views = ((0, 0), (35, 0), (90, 0), (150, 0), (30, -28))
+        for row, name in enumerate(names):
+            slots = sets.get(name) or pieces.get(name)
+            specs = slots.get("HeadClothing") or []
+            for col, (yaw, pitch) in enumerate(views):
+                frame = at(-col * 3.4, -row * 3.8, 0) @ rotx(pitch) @ roty(yaw) @ at(0, -1.5, 0)
+                sheet.add_body(frame, [0])
+                sheet.add_specs(specs, frame @ at(*LIMB_AT["HeadClothing"]))
+            sheet.label(name, -6.8, -row * 3.8 - 1.9)
+        sheet.render(png, (1700, 430 * len(names)))
+        return
     if "sets" in opt:
         names = opt["sets"].split(",")
         for row, name in enumerate(names):

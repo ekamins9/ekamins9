@@ -7,7 +7,7 @@
      In Studio edit mode you can materialize editable copies from the command
      bar:   require(game.ServerScriptService.Build.Blueprints).ensureAll()
 
-     A spec:  {kind = "box" | "cyl" | "ball" | "wedge" | "cwedge" | "cone" | "torus" | "lathe",
+     A spec:  {kind = "box" | "cyl" | "ball" | "wedge" | "cwedge" | "cone" | "torus" | "lathe" | "cowl",
                name = "Blade", size = Vector3, cf = CFrame (relative to the model origin),
                color = Color3, material = Enum.Material, transparency = 0..1,
                reflectance = 0..1, attrs = {SkinPart = "Blade"}}
@@ -21,6 +21,9 @@
      that share of the bottom's width and depth (plain parts stay square).
      "lathe" spins `profile` ({{radius, y}, …} from bottom to top) round its Y:
      a dome, a bowl of hair, a bun; plain parts make it a cylinder.
+     "cowl" is a hollow egg (size = its outside) with a wall `thick` deep and an
+     opening at its front (-Z) `openX` × `openY` degrees round from the front: a
+     hood the head sits inside, the face showing; plain parts make it a ball.
      Every part comes out anchored, non-colliding, massless; Dresser / the
      Tool code re-weld as they need. ]]
 
@@ -84,7 +87,7 @@ function B.make(spec, origin)
 	else
 		part = Instance.new("Part")
 		if kind == "cyl" or kind == "cone" or kind == "torus" or kind == "lathe" then part.Shape = Enum.PartType.Cylinder
-		elseif kind == "ball" then part.Shape = Enum.PartType.Ball
+		elseif kind == "ball" or kind == "cowl" then part.Shape = Enum.PartType.Ball
 		else part.Shape = Enum.PartType.Block end
 	end
 	local size, cf = spec.size, spec.cf or CFrame.identity
@@ -185,6 +188,12 @@ function B.lathe(name, profile, cf, color, material, attrs)
 	for _, p in ipairs(profile) do r = math.max(r, p[1]); y0 = math.min(y0, p[2]); y1 = math.max(y1, p[2]) end
 	return {kind = "lathe", name = name, profile = profile, size = Vector3.new(r * 2, math.max(0.05, y1 - y0), r * 2),
 		cf = (cf or CFrame.identity) * CFrame.new(0, (y0 + y1) / 2, 0), color = color, material = material, attrs = attrs}
+end
+-- a hood's shell: a hollow egg open at the front (-Z); openX / openY = how far round the
+-- opening reaches (degrees from the front, across and up), thick = the wall
+function B.cowl(name, size, cf, color, material, attrs, openX, openY, thick)
+	return {kind = "cowl", name = name, size = size, cf = cf, color = color, material = material, attrs = attrs,
+		openX = openX or 40, openY = openY or 35, thick = thick or 0.07}
 end
 -- append list b to list a
 function B.join(a, ...)

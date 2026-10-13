@@ -74,6 +74,8 @@ ClientSettings.CHOICES = {
 		hint = "Whose companions you see following them around: everyone's, only yours, or none."},
 	{key = "DodgeTap",   label = "Double-tap dodge", options = {"On", "Off"},
 		hint = "Double-tap A, D or S to dodge that way (the Dodge key works either way)."},
+	{key = "ShowLocked", label = "Locked items in menus", options = {"Show", "Hide"},
+		hint = "Show everything there is to get (with how to get it), or only what you own. The 🔒 switch in the Loadout and the Armory flips it too."},
 	-- PRIVACY: the server checks these (SettingsServer puts them on the player as Priv_<key>)
 	{key = "PartyInvites", label = "Party invites from", options = {"Everyone", "Friends", "Nobody"},
 		hint = "Who can invite you to their party: anyone, only your Roblox friends, or nobody."},
@@ -85,7 +87,7 @@ ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1,
-	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On",
+	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", ShowLocked = "Show",
 	PartyInvites = "Everyone", TradeRequests = "Everyone",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end

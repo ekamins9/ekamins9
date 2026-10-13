@@ -81,7 +81,10 @@ local function build(plr)
 	kit.Parent = folder
 	building[plr] = nil
 	-- (already standing in the Courtyard in the stand-in look: dressed again, as themselves)
-	if plr.Character and _G.CourtyardRedress then task.spawn(_G.CourtyardRedress, plr) end
+	-- (the Courtyard re-dresses you in it at once; elsewhere it's yours from the next spawn — a
+	-- training yard re-dress would be a whole new body mid-lesson)
+	local round = game:GetService("ReplicatedStorage"):FindFirstChild("Round")
+	if plr.Character and _G.CourtyardRedress and round and round:GetAttribute("Mode") == "Hub" then task.spawn(_G.CourtyardRedress, plr) end
 end
 
 function Avatars.ensure(plr, timeout)
