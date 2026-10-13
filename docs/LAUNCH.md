@@ -31,9 +31,28 @@ Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** 
 
 ## 3. Store page
 
-- [ ] **Maturity & compliance questionnaire** (Creator Dashboard ▸ your experience ▸ Audience). Answer it honestly:
-  - Violence: melee combat and blood; heads come off.
-  - Paid random items: crates for Crowns, with odds shown. In regions that bar them, crates open only with Keys earned by play.
+- [ ] **Maturity & compliance questionnaire** (Creator Dashboard ▸ your experience ▸ Audience). The game is built to be **Mild**, which means all ages: Roblox Kids (5-8), Roblox Select (9-15) and everyone older. The honest answers for the game as it is:
+
+  | Question | Answer | Why |
+  |---|---|---|
+  | Violence | **Yes · Mild · Repeated** | Sword fights all round, but nothing comes off, nothing bleeds, nobody is impaled. A body drops and fades in seconds. |
+  | Blood | **No** | A hit flashes white and gold. The "Crimson" items glow like magic, and names like the Bloodpit aren't blood shown. |
+  | Fear | **Yes · Mild · Occasional** | The heartbeat near death, skeleton and reaper kill effects, skull-themed gear. "Repeated" gives the same label if you'd rather. |
+  | Crude humor, strong language, romance, alcohol | **No** | The Courtyard's inn is the Hearth & Hound, a cookhouse. No drink anywhere. |
+  | Unplayable gambling | **No** | No casino pictures. Crates are a separate question. |
+  | Social hangout | **No** | The Courtyard is a lobby; fighting is the game. |
+  | Free-form user creation, media sharing, AI | **No** | |
+  | Paid random items | **Yes** | Crates open for Crowns, which are bought with Robux; the odds are shown. Where Roblox restricts them (PolicyService), crates open only with Keys earned by playing. |
+  | Paid item trading | **Yes** | Items from crates can be traded. Where Roblox restricts it (PolicyService), trading is off. |
+
+  **Never answer Strong.** It makes the game Restricted (age-verified 18+ only), and a Restricted label can never be changed back. If you ever turn `GameConfig.GORE` on, the honest answer becomes Strong, so it has to stay off.
+
+- [ ] **Reach players under 16** (Creator Hub ▸ Audience Reach). A Mild label alone isn't enough: Roblox Kids and Select accounts only see games that passed an extra evaluation. You need:
+  - your account age-checked (government ID if you're 18+, a face age estimate if you're under 18);
+  - 2-Step Verification on;
+  - either a one-time per-game fee, refunded after 90 days, or Roblox Premium/Plus held for 2+ months.
+
+  Then the game runs a trial with age-checked players 16+ and has to reach **250 unique plays from engaged players within 60 days**. A small sponsored campaign (section 5) is a quick way to get there.
 - [ ] **Icon** (512×512): `store_art/icon.png` (the Lionheart helm, eyes burning in the visor, swords crossed behind).
 - [ ] **Thumbnails** (1920×1080), in this order (the first one is what most people see):
   1. `store_art/thumb4_classes.png`: "5 CLASSES / PICK YOUR FIGHTER", the line-up, each class named.

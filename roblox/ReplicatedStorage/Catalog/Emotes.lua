@@ -15,7 +15,7 @@ return {
 	{id = "Beckon",    name = "Beckon",      rarity = "Rare",      crate = "Relic", description = "Come on, then."},
 	{id = "Kneel",     name = "Kneel",       rarity = "Rare",      crate = "Relic", description = "Take a knee, sword planted."},
 	{id = "Laugh",     name = "Laugh",       rarity = "Rare",      crate = "Relic", description = "Doubled over. Was it that funny?"},
-	{id = "Jig",       name = "Jig",         rarity = "Epic",      crate = "Relic", description = "A tavern jig, arms and legs flying."},
+	{id = "Jig",       name = "Jig",         rarity = "Epic",      crate = "Relic", description = "A village jig, arms and legs flying."},
 	{id = "WarCry",    name = "War Cry",     rarity = "Epic",      pass = true,     description = "Arms up, head back, a roar."},
 	{id = "BladeToss", name = "Blade Toss",  rarity = "Epic",      crate = "Relic", needs = "weapon", description = "Toss the blade, let it spin, catch it."},
 	{id = "Windmill",  name = "Windmill",    rarity = "Legendary", pass = true,     needs = "weapon", description = "The blade whirls overhead in a whirlwind, faster and faster, until you lift off."},

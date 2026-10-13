@@ -8,13 +8,18 @@
      Arms and legs: the REAL part stays in the rig (invisible, non-colliding)
      so animations and the camera rig keep working; a clone is flung as
      debris and a bloody stump is welded on. Head: the REAL head comes off —
-     RequiresNeck kills the humanoid and the death camera rides the head. ]]
+     RequiresNeck kills the humanoid and the death camera rides the head.
+
+     All of that is gore, and it only happens with GameConfig.GORE on. The game is rated
+     Mild for all ages, so it ships off: dismember, skewerHead and startBleed do nothing,
+     and bloodBurst is a white-and-gold flash of the hit instead of blood. ]]
 
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local GORE        = require(ReplicatedStorage:WaitForChild("GameConfig")).GORE == true
 local Pickup      = require(script.Parent:WaitForChild("Pickup"))
 local Janitor     = require(script.Parent:WaitForChild("Janitor"))
 local Corpses     = require(script.Parent:WaitForChild("Corpses"))
@@ -121,7 +126,29 @@ local function bloodEmitter(parent, rate, life)
 	return e
 end
 
+-- a clean hit, without gore: a quick white-and-gold star flash where it landed (not the
+-- orange of steel on steel, so a hit never reads as a block)
+local function hitFlash(part, count)
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 226, 140))
+	e.LightEmission = 1
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0)})
+	e.Transparency = NumberSequence.new(0, 1)
+	e.Lifetime = NumberRange.new(0.12, 0.28)
+	e.Speed = NumberRange.new(8, 16)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Drag = 6
+	e.Rate = 0
+	e.Parent = part
+	e:Emit(math.floor((count or 25) * 0.6))
+	Debris:AddItem(e, 1)
+end
+
+Injury.hitFlash = hitFlash
+
 function Injury.bloodBurst(part, count)
+	if not GORE then hitFlash(part, count); return end
 	local e = bloodEmitter(part, 0, nil)
 	e:Emit(count or 25)
 	Debris:AddItem(e, 2)
@@ -168,6 +195,7 @@ end
 --  BLEEDING  (CharacterSystems calls Injury.tick every Heartbeat)
 --------------------------------------------------------------------
 function Injury.startBleed(char)
+	if not GORE then return end
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum or hum.Health <= 0 then return end
 	hum.Health = C.BLEED_HP
@@ -255,6 +283,7 @@ local function bladeAxis(hitbox, towardWorld)
 end
 
 function Injury.skewerHead(char, hitbox, hitPos, bladeDir)
+	if not GORE then return false end
 	local head = char:FindFirstChild("Head")
 	if not (head and hitbox and hitbox.Parent) or char:GetAttribute("HeadSkewered") then return false end
 	if Injury.hasSkewer(hitbox) then return false end   -- one head per blade
@@ -404,6 +433,7 @@ end
 --  survive on BLEED_HP and bleed. Head is always fatal.)
 --------------------------------------------------------------------
 function Injury.dismember(char, partName, dir, fatal)
+	if not GORE then return false end
 	local part  = char:FindFirstChild(partName)
 	local torso = char:FindFirstChild("Torso")
 	local hum   = char:FindFirstChildOfClass("Humanoid")

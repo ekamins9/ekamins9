@@ -16,7 +16,8 @@
      ArrowEvent: "Shot" id, origin, velocity, gravity · "Stop" id, position).
        • a body: damage × power × region (head HEAD_MULT, legs, arms), less
          the armor on that limb (a point: Combat ▸ CombatServer.ARMOR_VS pierce,
-         and the weapon's ARMOR_PEN); the arrow sticks where it went in.
+         and the weapon's ARMOR_PEN). The arrow flashes and is gone (GameConfig.GORE on:
+         it sticks where it went in).
          A hit flinches and interrupts like a blade; credit "arrow" / "headshot".
        • a raised guard facing it: blocked (stamina, a clang), the arrow falls.
        • the world: it sticks there a while (a thunk by material).
@@ -36,6 +37,8 @@ local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundBank = require(ReplicatedStorage:WaitForChild("SoundBank"))
 local ArrowFX = require(ReplicatedStorage:WaitForChild("ArrowFX"))
 local Ballistics = require(ReplicatedStorage:WaitForChild("Ballistics"))
+-- (off, the game is rated Mild: an arrow that hits someone flashes and is gone, never stays in them)
+local GORE = require(ReplicatedStorage:WaitForChild("GameConfig")).GORE == true
 local Armor do
 	local loadout = script.Parent.Parent:FindFirstChild("Loadout")
 	local mod = loadout and loadout:FindFirstChild("Armor")
@@ -334,12 +337,17 @@ local function kindSound(fx, which, at)
 		Sounds.bank("HitStab", part)
 		Sounds.play(SND.flesh, part, {Volume = 0.6, Speed = 1.1, MaxDistance = 70})
 		kindSound(fx, "impact", part)
-		if lethal then Sounds.bank("HitBone", part) else Sounds.voice("Hurt", target:FindFirstChild("Head") or part, {Who = target}) end
+		if lethal then
+			if GORE then Sounds.bank("HitBone", part) end
+		else
+			Sounds.voice("Hurt", target:FindFirstChild("Head") or part, {Who = target})
+		end
 		if region == "head" and shooter and shooter.Parent then
 			shooter:SetAttribute("GuardText", lethal and "HEADSHOT!" or "HEADSHOT")
 			shooter:SetAttribute("GuardTick", (shooter:GetAttribute("GuardTick") or 0) + 1)
 		end
-		stick(shotKind, at * CFrame.new(0, 0, 0.9), part, cfg.STICK_LIFE, fx)
+		if GORE then stick(shotKind, at * CFrame.new(0, 0, 0.9), part, cfg.STICK_LIFE, fx)
+		else Injury.hitFlash(part, 18) end
 		hum:TakeDamage(dmg)
 	end
 

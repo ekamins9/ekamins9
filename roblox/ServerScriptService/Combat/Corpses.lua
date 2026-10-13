@@ -24,11 +24,16 @@
        Corpses.pending(char, kind, inSeconds)   a kill effect's remains are coming ]]
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Janitor = require(script.Parent:WaitForChild("Janitor"))
+local GORE = require(ReplicatedStorage:WaitForChild("GameConfig")).GORE == true
 
 local Corpses = {}
 Corpses.CONFIG = {
 	SETTLE = 2.8,     -- seconds after death a body (no kill effect) is laid out for good
+	BODY_LIFE = 4,    -- …then it lies this long and fades (the game is rated Mild: bodies don't
+	                  --    stay; with GameConfig.GORE on, Janitor's LIFE.Corpse instead). A kill
+	                  --    effect's remains (a statue, a grave, bones…) keep LIFE.Corpse.
 	HOLD = 4.5,       -- the longest a body may wait for its kill effect's remains
 	BONE = Color3.fromRGB(226, 218, 196),
 	CHAR = Color3.fromRGB(36, 30, 27),
@@ -472,7 +477,7 @@ local function build(b, kind)
 			if keepsLimbs then l:Destroy() else Janitor.add(l, "Limb", {life = 0.05, parent = false}) end
 		end
 	end
-	Janitor.add(model, "Corpse")
+	Janitor.add(model, "Corpse", {life = (kind == "body" and not GORE) and C.BODY_LIFE or nil})
 	return model
 end
 

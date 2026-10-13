@@ -1,4 +1,45 @@
-# Updated scripts: store art (thumbnails, icon, badge pictures)
+# Updated scripts: rated Mild (all ages)
+
+**The game now fits Roblox's Mild content label**, so every age can play it: Roblox Kids (5-8), Select (9-15) and everyone older. Before, it had beheading, severed limbs, a head skewered on the blade, blood and bleeding out, plus a tavern. That made the honest questionnaire answer Strong violence and alcohol: Restricted, 18+ only, and that label can never be changed back.
+- **One switch, `GameConfig.GORE = false`.** With it off:
+  - a killing blow just drops them: the hit's flash, the hitstop, the ragdoll;
+  - the body fades about 5 s later (kill-effect remains such as statues, graves and bones keep their time);
+  - no blood: a clean hit flashes white and gold (not orange, so it never reads as a block);
+  - nothing is severed or skewered, and nobody bleeds out screaming;
+  - an arrow that hits someone flashes and is gone (it still sticks in walls);
+  - no bone-crunch sounds.
+- **Clean words:**
+  - the death screen says STRUCK DOWN, HEADSHOT!, KICKED DOWN, OUTFOUGHT, KNOCKED OUT;
+  - the kill feed says struck down, outfought, sniped, kicked down, defeated.
+- **No alcohol:** the Courtyard's tavern is now the Hearth & Hound, an inn (sign, docs; the props in the place were renamed), and the Jig is "a village jig".
+- **Blood-themed cosmetics are crimson magic now.** They keep their keys, so owned items still work:
+  - Blood Arrows → Crimson Arrows: a glowing trail, a ring of light on impact instead of a red splash;
+  - the "blood" weapon aura → Crimson glow: it rises, never drips;
+  - Bloodlance → Crimson Lance;
+  - Seraph's Kiss → Seraph's Grace;
+  - the Bloodrage finish's wording.
+- **Docs:**
+  - `docs/LAUNCH.md` has the whole questionnaire with honest answers (Mild), and how to reach players under 16 (Audience Reach: age check, 2FA, a fee or Premium, 250 engaged plays in 60 days);
+  - `CONTENT_GUIDE.md` has a "Keep it Mild" box for anything new.
+- Checked in Play: no limb or head comes off, no stump, no bleeding, no skewer; a hit flashes white; a body is gone by 6 s.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | `GORE = false` and why |
+| [Injury.lua](ServerScriptService/Combat/Injury.lua) | ServerScriptService ▸ Combat | ModuleScript | dismember / skewer / bleed only with GORE; `hitFlash` instead of blood |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua), [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript, Script | kills just kill; no bone crunch; arrows don't stay in bodies |
+| [Corpses.lua](ServerScriptService/Combat/Corpses.lua) | ServerScriptService ▸ Combat | ModuleScript | `BODY_LIFE` 4 s |
+| [DeathScreen.client.lua](StarterPlayerScripts/DeathScreen.client.lua), [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | clean titles and kill-feed words |
+| [Courtyard.server.lua](ServerScriptService/Hub/Courtyard.server.lua), [MapCourtyard.lua](ServerScriptService/Build/MapCourtyard.lua) | ServerScriptService ▸ Hub; ▸ Build | Script, ModuleScript | the inn, not a tavern |
+| [ArrowFX.lua](ReplicatedStorage/ArrowFX.lua), [SkinFX.lua](ReplicatedStorage/SkinFX.lua), [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage | ModuleScript | crimson, not blood; the village jig |
+| [Catalog/ArmorFX.lua](ReplicatedStorage/Catalog/ArmorFX.lua), [Catalog/SpellSkins.lua](ReplicatedStorage/Catalog/SpellSkins.lua), [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | names and descriptions |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | the above; the questionnaire; Keep it Mild |
+
+**Studio:** the Courtyard's three tankard props were renamed (ServerStorage ▸ Maps ▸ Courtyard). **Save the place.**
+
+---
+
+## Before that: store art (thumbnails, icon, badge pictures)
 
 No game scripts changed. **Pictures for the store page and the badges, rendered in Blender from the game's own armor sets, weapons and staffs** (in `store_art/`, ready to upload: see [docs/LAUNCH.md](../docs/LAUNCH.md) sections 2 and 3):
 - **Five thumbnails** (1920×1080):

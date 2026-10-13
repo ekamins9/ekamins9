@@ -1,8 +1,8 @@
 --[[ DEATH SCREEN — falling is a moment, then the way back: never a black screen.
 
        the fall    the world drains of colour, red closes in at the edges, a low boom,
-                   and the word lands: YOU HAVE FALLEN (BEHEADED, SHOT THROUGH THE HEAD,
-                   YOU BLED OUT, BETRAYED…) with who did it and with what (the kill feed's
+                   and the word lands: YOU HAVE FALLEN (STRUCK DOWN, HEADSHOT!, KICKED DOWN,
+                   BETRAYED…) with who did it and with what (the kill feed's
                    own entry: KillFeedRemote), while CameraRig holds the camera in your head
        the wait    a dark veil with embers rising, and what comes next with a countdown:
                    BACK IN THE FIGHT IN 3 · BACK TO THE COURTYARD · BACK ON YOUR FEET ·
@@ -33,9 +33,12 @@ local RED = Color3.fromRGB(255, 86, 76)
 local GOLD = Color3.fromRGB(255, 206, 90)
 local WHITE = Color3.new(1, 1, 1)
 
--- what the kill was, for the title (the feed's kinds)
-local TITLE = {headslash = "BEHEADED", headshot = "SHOT THROUGH THE HEAD", arrow = "SHOT DOWN", kick = "KICKED TO DEATH",
+-- what the kill was, for the title (the feed's kinds). The game is rated Mild, so the words
+-- stay clean; GameConfig.GORE on brings back the old ones
+local TITLE = GameConfig.GORE and {headslash = "BEHEADED", headshot = "SHOT THROUGH THE HEAD", arrow = "SHOT DOWN", kick = "KICKED TO DEATH",
 	stab = "RUN THROUGH", facestab = "RUN THROUGH", bleed = "YOU BLED OUT", head = "BRAINED"}
+	or {headslash = "STRUCK DOWN", headshot = "HEADSHOT!", arrow = "SHOT DOWN", kick = "KICKED DOWN",
+	stab = "OUTFOUGHT", facestab = "OUTFOUGHT", head = "KNOCKED OUT"}
 
 local current       -- the screen up now
 local lastKill      -- {entry, at}: the feed's entry for our death (it can land a beat before Died)

@@ -230,7 +230,7 @@ DEF.Laugh = {d = 2.6, upper = true, pose = with(track({
 	if t > 1.15 and t < 2.1 then p.ls[1] += 14 * math.max(0, math.sin((t - 1.15) * 9)) end
 end)}
 
--- a tavern jig: one leg kicks at a time, a twirl in the middle, a leap to finish
+-- a village jig: one leg kicks at a time, a twirl in the middle, a leap to finish
 DEF.Jig = {d = 3.6, pose = with(track({
 	{0, {}}, {3.6, {}},
 }), function(t, p)

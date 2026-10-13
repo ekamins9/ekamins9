@@ -747,7 +747,7 @@ the map's `Spots`:
   the rack; E opens the SHOP.
 - **The Notice Board** (where you arrive): your own daily and weekly tasks with progress, the
   next playtime gift and your pass tier, written on the parchment for you; E opens TASKS.
-- **The Hatchery** (west), the stone circle (east), the tavern with a bard (south-east).
+- **The Hatchery** (west), the stone circle (east), the inn (the Hearth & Hound) with a bard (south-east).
 
 ## Name tags and titles
 
@@ -1736,7 +1736,14 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
   (Heavy ×1.35, with sparks), pierce finds the gaps (×0.85–0.9), blunt hits go through plate
   (Heavy ×0.55) and chops sit in between. Light armor takes every type about the same.
 - **Head**: `HEAD_DAMAGE_MULT` × damage (2× by default) — no automatic kill.
-- **Kills**: a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
+- **Rated Mild (all ages): `GameConfig.GORE = false`.** A killing blow just drops them, with
+  the hit's white-and-gold flash, the hitstop and the ragdoll, then the body fades within seconds
+  (`Corpses.BODY_LIFE`; kill-effect remains keep their time). Off, there's no blood, nothing is
+  severed or skewered, nobody bleeds out, arrows don't stay in bodies, there are no bone
+  crunches, and the death screen and kill feed use clean words. The rest of this bullet list is
+  what `GORE = true` brings back, and that makes the honest questionnaire answer Strong:
+  Restricted (18+), which can never be changed back. See docs/LAUNCH.md for the answers.
+- **Kills** (GORE): a lethal **slash** severs the limb it hit (arm, leg, or head → decapitation);
   with `BLEED_OUT_CHANCE` an arm/leg victim survives on `BLEED_HP` and bleeds out instead,
   screaming (`VoiceScream`, every `SCREAM_GAP` seconds, weaker as the blood runs out, gasps at
   the end: `VoiceGasp`), with no health coming back.

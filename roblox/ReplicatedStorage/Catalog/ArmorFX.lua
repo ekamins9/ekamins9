@@ -93,7 +93,7 @@ return {
 	 description = "Plate lacquered the deep red of old leather, edged in brass.",
 	 look = {metal = C(84, 30, 30), accent = C(196, 150, 82), tint = {C(70, 24, 20), 0.3}}},
 	{id = "Bloodrage", name = "Bloodrage", rarity = "Epic", crate = "WarChest",
-	 description = "The red mist, worn. Your trims burn red and the air round you turns to blood.",
+	 description = "Battle rage, worn. Your trims burn red and a crimson glow rises round you.",
 	 look = {metal = C(60, 50, 48), accent = C(230, 40, 40), glow = true, pulse = true, aura = "blood", light = C(255, 60, 60), tint = {C(80, 20, 18), 0.25}}},
 	{id = "Gravelight", name = "Gravelight", rarity = "Legendary", crate = "WarChest",
 	 description = "Green fire out of the grave. It flickers at every seam and the dead come up as mist round your feet.",

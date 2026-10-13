@@ -30,6 +30,18 @@ ReplicatedStorage
 Reload the place (or restart the server) after editing a config module: the server reads
 them once at start.
 
+> **Keep it Mild.** The game is rated Mild so every age can play (docs/LAUNCH.md has the
+> questionnaire answers). Anything you add has to fit that:
+> - no blood, gore or body parts, and nothing that drips or splatters red: red auras glow and
+>   rise like magic (`SkinFX` "blood" = "Crimson glow");
+> - no alcohol: no ale, tavern, beer or drunk anything, not even in a name or a prop;
+> - no romance or kissing, no swearing, no bathroom humour;
+> - spooky is fine at the "mild" level: skeletons, skulls, a reaper, a dark rift. Organs and
+>   realistic wounds are not.
+>
+> Names can be fierce ("Bloodmoon", "Executioner"); pictures and effects stay clean.
+> `GameConfig.GORE` stays false.
+
 ## 0. Blueprints — models you don't have to build (yet)
 
 Nothing in the catalog needs a hand-made model to work. `ServerScriptService ▸ Build` holds

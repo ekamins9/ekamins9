@@ -57,9 +57,11 @@ ArrowFX.KINDS = {
 	gold   = {name = "Gilded Arrows", trail = C(255, 205, 80),  head = C(255, 200, 70),  light = C(255, 200, 90),
 		p = {TEX.spark, C(255, 240, 160), C(255, 180, 40), 0.4, 36, 0.5, Vector3.new(0, -2, 0)}, burst = {34, 10}, impact = "fountain",
 		snd = {release = {S.swish, 1.8, 0.35}, impact = {S.shells, 1.6, 0.6}}},
-	blood  = {name = "Blood Arrows",  trail = C(190, 20, 30),   head = C(150, 10, 20),   light = C(200, 30, 40),
-		p = {TEX.smoke, C(170, 20, 30), C(60, 0, 5), 0.5, 28, 0.55, Vector3.new(0, -4, 0)}, burst = {28, 7}, impact = "splatter",
-		snd = {release = {S.swish, 1.3, 0.4}, impact = {S.chomp, 1.1, 0.5}}},
+	-- (its key is still "blood" so owned ones keep working; it shows as crimson magic, not blood:
+	-- the game is rated Mild)
+	blood  = {name = "Crimson Arrows", trail = C(230, 30, 70),  head = C(255, 70, 110),  light = C(255, 50, 90),
+		p = {TEX.spark, C(255, 140, 170), C(210, 20, 60), 0.45, 34, 0.5, Vector3.new(0, 2, 0)}, burst = {30, 8}, impact = "ring",
+		snd = {release = {S.swish, 1.3, 0.4}, impact = {S.synthRip, 1.5, 0.45}}},
 	void   = {name = "Void Arrows",   trail = C(90, 30, 160),   head = C(20, 0, 40),     light = C(160, 70, 255),
 		p = {TEX.smoke, C(170, 90, 255), C(5, 0, 15), 1.0, 34, 0.6, Vector3.new(0, 0.5, 0)}, burst = {30, 4}, impact = "implode", dark = true,
 		snd = {release = {S.rift, 1.3, 0.5}, impact = {S.rumble, 1.4, 0.6}}},
@@ -243,14 +245,12 @@ IMPACT.implode = function(pos, k, parent)
 	TweenService:Create(b, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = Vector3.one * 0.1}):Play()
 	Debris:AddItem(b, 0.5)
 end
--- a red splash on the ground
-IMPACT.splatter = function(pos, k, parent)
-	for i = 1, 5 do
-		local d = fx(nil, {Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.05, 0.6 + math.random(), 0.6 + math.random()), Color = k.head, Material = Enum.Material.SmoothPlastic,
-			CFrame = CFrame.new(pos + Vector3.new(math.random() * 2 - 1, -0.3, math.random() * 2 - 1)) * CFrame.Angles(0, 0, math.pi / 2)})
-		d.Parent = parent or workspace
-		task.delay(2, function() if d.Parent then fade(d, 1) end end)
-	end
+-- a ring of light flung out flat across the ground
+IMPACT.ring = function(pos, k, parent)
+	local r = fx(nil, {Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, 1, 1), Color = k.light, Transparency = 0.15,
+		CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.pi / 2)})
+	r.Parent = parent or workspace
+	fade(r, 0.5, {Size = Vector3.new(0.05, 7, 7)})
 end
 -- a cloud of poison that hangs there a moment
 IMPACT.cloud = function(pos, k, parent)

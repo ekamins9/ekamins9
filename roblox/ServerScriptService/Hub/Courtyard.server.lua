@@ -10,7 +10,7 @@
        • THE WISHING FOUNTAIN: one wish a day (Economy ▸ Pastimes.wish).
        • THE GATES OF WAR: prompts (the client acts on them) and their signs.
        • THE NOTICE BOARD: a face the client writes your tasks on.
-       • A BARD by the tavern.
+       • A BARD by the inn.
      Remote: ReplicatedStorage ▸ CourtyardEvent (server → clients): "Wish",
      player, line. The client side is StarterPlayerScripts ▸ Courtyard. ]]
 
@@ -334,7 +334,7 @@ local function setup(newMap)
 	sign("GateWarfrontSign", "WARFRONT", "the big battles", nil, Color3.fromRGB(255, 130, 110))
 	sign("GateListsSign", "THE LISTS", "1v1 · 2v2 · 3v3 · ranked", nil, Color3.fromRGB(255, 214, 110))
 	sign("StallSign", "TODAY'S WARES", nil, Vector2.new(8.6, 1.8))
-	sign("TavernSign", "THE RUSTY TANKARD", nil, Vector2.new(5.8, 2.4))
+	sign("TavernSign", "THE HEARTH & HOUND", nil, Vector2.new(5.8, 2.4))   -- (an inn: hot food, a warm fire)
 	-- the gates (the client travels), the stall, the board
 	for name, door in pairs({GateTraining = "Training", GateWarfront = "Warfront", GateLists = "Lists"}) do
 		local at = spot(name)

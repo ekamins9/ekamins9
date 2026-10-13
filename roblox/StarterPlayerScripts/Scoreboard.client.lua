@@ -85,7 +85,8 @@ feedLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 feedLayout.Padding = UDim.new(0, 4)
 feedLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local VERB = {
+-- (the game is rated Mild: clean words, unless GameConfig.GORE is on)
+local VERB = GameConfig.GORE and {
 	facestab  = "ran through",
 	headslash = "beheaded",
 	stab      = "skewered",
@@ -95,6 +96,16 @@ local VERB = {
 	bleed     = "bled out",
 	arrow     = "shot",
 	headshot  = "shot through the head",
+} or {
+	facestab  = "outfought",
+	headslash = "struck down",
+	stab      = "outfought",
+	slash     = "struck down",
+	kick      = "kicked down",
+	head      = "knocked out",
+	bleed     = "took down",
+	arrow     = "shot",
+	headshot  = "sniped",
 }
 
 local feedOrder = 0
@@ -145,7 +156,7 @@ local function pushFeed(e)
 		t.Text = string.format('%s  <font color="#%s">bled out after</font>  %s%s', victim, COL_DIM:ToHex(), name(e.killer, e.killerId, e.killerTeam),
 			e.weapon ~= "" and string.format('  <font color="#%s">(%s)</font>', COL_DIM:ToHex(), e.weapon) or "")
 	elseif e.killer then
-		local verb = VERB[e.kind] or "killed"
+		local verb = VERB[e.kind] or (GameConfig.GORE and "killed" or "defeated")
 		if e.teamkill then verb = "TEAMKILLED" end
 		t.Text = string.format('%s  <font color="#%s">%s</font>  %s%s', name(e.killer, e.killerId, e.killerTeam, true), (e.teamkill and COL_TK or COL_KILL):ToHex(), verb, victim,
 			e.weapon ~= "" and string.format('  <font color="#%s">%s</font>', COL_DIM:ToHex(), e.weapon) or "")

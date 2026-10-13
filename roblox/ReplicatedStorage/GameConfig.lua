@@ -198,6 +198,19 @@ GameConfig.DEFAULT_CLASS = "Knight"
 GameConfig.GAME_NAME = "Steel & Glory"
 GameConfig.TAGLINE = "Every swing is yours to aim."
 
+-- MILD (Roblox's content maturity label for all ages: Roblox Kids 5-8, Select 9-15 and
+-- everyone older). Off, nothing comes off and nothing bleeds:
+--   • a killing blow drops them, never takes off a head or a limb or leaves a blade in them;
+--   • no blood: a clean hit flashes white and gold;
+--   • nobody bleeds out, screaming;
+--   • arrows don't stay in a body;
+--   • a body lies a few seconds and fades.
+-- (docs/LAUNCH.md has the questionnaire answers that go with it.)
+-- On, the old gore comes back, and the honest answers change to Strong violence. That label
+-- is Restricted (age-verified 18+ only), which can't be retaken once given: never ship it on
+-- by accident.
+GameConfig.GORE = false
+
 -- Studio can't load saved profiles, so every Play would be a brand-new player
 -- sent through basic training: there, only when this is true (test the path)
 GameConfig.STUDIO_NEWCOMER = false

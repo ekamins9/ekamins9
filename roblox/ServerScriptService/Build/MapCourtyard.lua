@@ -6,7 +6,7 @@
      Middle: the wishing fountain, benches round it. South: the Gates of War
      (Training Yard · Warfront · The Lists) by the gatehouse. West: the
      Hatchery's place; south-west, the Merchant's Stall. East: the stone
-     circle (the shrine); south-east, the tavern. The Notice Board stands
+     circle (the shrine); south-east, the inn. The Notice Board stands
      between the fountain and the gates, where you arrive.
      Spots (Map ▸ Spots) for Hub ▸ Courtyard and Hub ▸ Pastimes: HatcherySpot,
      ShrineSpot, Statue1..3, Plaque1..3, BoardKills, BoardRanked, NoticeBoard,
@@ -196,7 +196,8 @@ return function(K)
 	end
 
 	----------------------------------------------------------------
-	-- the tavern corner (south-east)
+	-- the inn corner (south-east): a cookhouse, never an alehouse (the game is rated Mild: no
+	-- alcohol anywhere). Its parts keep their old "Tavern" names (Courtyard's sign spot).
 	----------------------------------------------------------------
 	local tav = CFrame.new(78, 0, 52) * CFrame.Angles(0, math.rad(-90), 0)
 	K.box(ctx, "Tavern", V3(26, 12, 14), tav * CFrame.new(0, 6, 0), C.WHITE, M.Concrete)
@@ -221,7 +222,7 @@ return function(K)
 				seat.CFrame = t * CFrame.new(dx, 1.75, s * 2.6) * CFrame.Angles(0, s < 0 and math.pi or 0, 0); seat.Parent = ctx.Props
 			end
 		end
-		K.cyl(ctx, "Tankard", 0.5, 0.7, t * CFrame.new(1, 3.15, 0.4), Color3.fromRGB(120, 90, 60), M.Wood).CanCollide = false
+		K.cyl(ctx, "Cup", 0.5, 0.7, t * CFrame.new(1, 3.15, 0.4), Color3.fromRGB(120, 90, 60), M.Wood).CanCollide = false
 	end
 	K.spot(ctx, "BardSpot", tav * CFrame.new(10, 3, -16) * CFrame.Angles(0, math.rad(200), 0))
 	K.box(ctx, "BardStage", V3(6, 0.8, 5), tav * CFrame.new(10, 0.4, -16), C.WOOD, M.WoodPlanks)

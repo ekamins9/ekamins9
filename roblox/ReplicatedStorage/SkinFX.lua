@@ -5,7 +5,7 @@
          its accent, else the rarity colour); Legendary trails shimmer. A skin can
          opt out with trail = false or in with trail = true.
        • A skin with fx = "<aura>" wears that aura: embers frost holy shadow
-         storm toxic petals gold blood (Legendary skins have one each), and the
+         storm toxic petals gold blood (crimson glow) (Legendary skins have one each), and the
          Mythics' own: celestial inferno sovereign phoenix. An aura is a few
          layers of particles off the blade, a light on it, sparks that fly off the
          tip when it swings, and the sound of the swing.
@@ -174,15 +174,17 @@ local AURAS = {
 		swing = {sound = 9125386714, pitch = 1.4, volume = 0.2, cut = 0.6,
 			burst = {tex = TEX.spark, c0 = C(255, 220, 110), c1 = C(230, 50, 20), size = {{0, 0.36}, {1, 0.1}}, count = 8, life = {0.5, 1}, speed = {4, 9}, accel = Vector3.new(0, -6, 0), spread = 70, light = 1, rot = 180}},
 	},
+	-- (the key is still "blood" for the skins that wear it; it's a crimson glow that rises, never
+	-- drips: the game is rated Mild)
 	blood = {
 		emit = {
-			{tex = TEX.smoke, c0 = C(150, 12, 24), c1 = C(60, 0, 8), size = {{0, 0.26}, {1, 0.7}}, rate = 12, life = {0.6, 1.1}, speed = {0.05, 0.35}, accel = Vector3.new(0, -1.2, 0), spread = 180, light = 0, transp = {{0, 0.4}, {1, 1}}},
-			{tex = TEX.spark, c0 = C(255, 70, 70), c1 = C(160, 0, 20), size = {{0, 0.14}, {1, 0}}, rate = 14, life = {0.4, 0.9}, speed = {0.2, 0.6}, accel = Vector3.new(0, -3, 0), spread = 180, light = 1},
-			{tex = TEX.spark, c0 = C(200, 0, 20), size = {{0, 0.12}, {1, 0.05}}, rate = 8, life = {0.5, 0.9}, speed = {0.3, 0.8}, accel = Vector3.new(0, -14, 0), spread = 20, light = 0.4},
+			{tex = TEX.smoke, c0 = C(220, 30, 70), c1 = C(90, 0, 30), size = {{0, 0.26}, {1, 0.7}}, rate = 12, life = {0.6, 1.1}, speed = {0.05, 0.35}, accel = Vector3.new(0, 1.2, 0), spread = 180, light = 0.4, transp = {{0, 0.45}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(255, 120, 150), c1 = C(220, 20, 70), size = {{0, 0.14}, {1, 0}}, rate = 14, life = {0.4, 0.9}, speed = {0.2, 0.6}, accel = Vector3.new(0, 2.5, 0), spread = 180, light = 1},
+			{tex = TEX.spark, c0 = C(255, 60, 110), size = {{0, 0.12}, {1, 0.03}}, rate = 8, life = {0.5, 0.9}, speed = {0.3, 0.8}, accel = Vector3.new(0, 4, 0), spread = 20, light = 1},
 		},
-		light = C(220, 30, 50),
+		light = C(240, 40, 80),
 		swing = {sound = 9120706422, pitch = 1.3, volume = 0.16, cut = 0.5,
-			burst = {tex = TEX.spark, c0 = C(220, 20, 40), c1 = C(100, 0, 10), size = {{0, 0.26}, {1, 0.05}}, count = 7, life = {0.4, 0.8}, speed = {4, 9}, accel = Vector3.new(0, -22, 0), spread = 50, light = 0.6}},
+			burst = {tex = TEX.spark, c0 = C(255, 90, 130), c1 = C(200, 10, 60), size = {{0, 0.26}, {1, 0.05}}, count = 7, life = {0.4, 0.8}, speed = {4, 9}, accel = Vector3.new(0, -4, 0), spread = 50, light = 1}},
 	},
 }
 -- THE HUM: a quiet loop while it's held (Pro Sound Effects). Never more than a
@@ -201,7 +203,7 @@ SkinFX.SWING = {}
 for k, a in pairs(AURAS) do table.insert(SkinFX.AURAS, k); SkinFX.SWING[k] = a.swing end
 table.sort(SkinFX.AURAS)
 
-local NAME = {embers = "Embers", frost = "Frost", holy = "Holy light", shadow = "Shadow", storm = "Storm", toxic = "Venom", petals = "Petals", gold = "Gold dust", blood = "Blood mist",
+local NAME = {embers = "Embers", frost = "Frost", holy = "Holy light", shadow = "Shadow", storm = "Storm", toxic = "Venom", petals = "Petals", gold = "Gold dust", blood = "Crimson glow",
 	celestial = "Starlight", inferno = "Inferno", sovereign = "Sovereign light", phoenix = "Phoenix fire"}
 
 local function wantsTrail(skin, variant)

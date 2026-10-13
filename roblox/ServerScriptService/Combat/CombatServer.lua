@@ -34,6 +34,8 @@
          attacker is stunned, defender gets a riposte speed buff.
 
      INJURY (see Injury / Ragdoll modules)
+       (Severing, skewering and bleeding out below happen only with GameConfig.GORE on.
+       It ships off, because the game is rated Mild: a killing blow just drops them.)
        • Head hits deal HEAD_DAMAGE_MULT × damage. A LETHAL hit to a limb
          severs that limb (DISMEMBER_ON_KILL); with BLEED_OUT_CHANCE the
          victim survives it on BLEED_HP and bleeds out instead of dying.
@@ -65,6 +67,8 @@ local GameConfig = (function()
 	local ok, t = pcall(function() return require(m) end)
 	return ok and type(t) == "table" and t or {FRIENDLY_FIRE = 0.5}
 end)()
+-- (off: the game is rated Mild: no beheading, severing, skewering, bleeding out or bone crunch)
+local GORE = GameConfig.GORE == true
 local Ragdoll     = require(script.Parent:WaitForChild("Ragdoll"))
 local Ward        = require(script.Parent:WaitForChild("Ward"))
 -- optional: ServerScriptService.Loadout.Armor (damage reduction on armored limbs)
@@ -778,7 +782,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if ownSounds.Hit then sfx("Hit", part)
 		elseif kind == "stab" then Sounds.bank("HitStab", part)
 		else Sounds.bank(soundClass.hit, part) end
-		if soundClass.blunt or lethal then Sounds.bank("HitBone", part, {Chance = lethal and 1 or 0.5}) end
+		if GORE and (soundClass.blunt or lethal) then Sounds.bank("HitBone", part, {Chance = lethal and 1 or 0.5}) end
 		local covered = Armor and limbName and Armor.protectionAt(target, limbName) > 0
 		local weight = target:GetAttribute("ArmorType")
 		if covered and weight == "Heavy" then Sounds.bank("HitPlate", part, {Volume = soundClass.blunt and 1.2 or 1})
@@ -1118,7 +1122,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			CombatServer.refundStamina(character, kgain)
 			character:SetAttribute("GuardText", "KILL  +" .. kgain)
 			character:SetAttribute("GuardTick", (character:GetAttribute("GuardTick") or 0) + 1)
-			if isStab and region == "head" and cfg.IMPALE then
+			if isStab and region == "head" and cfg.IMPALE and GORE then
 				-- kill first so the ragdoll captures a complete rig, then hide the
 				-- real head and hang a clone off the blade (nothing of theirs welds
 				-- into our assembly, so the corpse still flops normally)
@@ -1128,10 +1132,10 @@ function CombatServer.attach(Tool, weaponConfig)
 			elseif isStab then
 				hum:TakeDamage(dmg)
 				dprint("KILLED", target.Name, "with a stab", region)
-			elseif limb == "Head" and cfg.DECAPITATE and Injury.hasLimb(target, "Head") then
+			elseif limb == "Head" and cfg.DECAPITATE and GORE and Injury.hasLimb(target, "Head") then
 				Injury.dismember(target, "Head", dir, true)
 				dprint("DECAPITATED", target.Name)
-			elseif limb and limb ~= "Head" and cfg.DISMEMBER_ON_KILL and Injury.hasLimb(target, limb) then
+			elseif limb and limb ~= "Head" and cfg.DISMEMBER_ON_KILL and GORE and Injury.hasLimb(target, limb) then
 				local survives = target:GetAttribute("Bleeding") ~= true and math.random() < cfg.BLEED_OUT_CHANCE
 				Injury.dismember(target, limb, dir, not survives)
 				dprint(survives and "DISMEMBERED (bleeding out)" or "KILLED, severed", target.Name, limb)
