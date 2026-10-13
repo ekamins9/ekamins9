@@ -47,6 +47,7 @@ local Economy    = require(ServerScriptService:WaitForChild("Economy"):WaitForCh
 local Stats      = require(ServerScriptService.Economy:WaitForChild("Stats"))
 local Pastimes   = require(ServerScriptService.Economy:WaitForChild("Pastimes"))
 local Matchmaker = require(script.Parent:WaitForChild("Matchmaker"))
+local TextFilter = require(ServerScriptService:WaitForChild("Safety"):WaitForChild("TextFilter"))
 
 local STUDIO = RunService:IsStudio()
 local PARTY_MAX = GameConfig.PARTY_MAX or 3
@@ -575,6 +576,8 @@ local function custom(plr, settings)
 	local group, why = groupFor(plr, true)
 	if not group then return false, why end
 	if s.name == "" then s.name = plr.DisplayName .. "'s server" end
+	-- (everyone reads it in the server list: Roblox's filter first, or the plain default)
+	s.name = TextFilter.broadcast(s.name, plr.UserId) or (plr.DisplayName .. "'s server")
 	if STUDIO then
 		return studioSwitch(plr, s.mode, {door = s.door, custom = true, name = s.name, hostId = plr.UserId, settings = s, noRewards = s.cheats})
 	end

@@ -50,6 +50,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Courtyard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Courtyard` | LocalScript |
 | `StarterPlayerScripts/Objectives.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Objectives` | LocalScript |
 | `ServerScriptService/Admin/AdminServer.server.lua`, `Roles.lua` | `ServerScriptService` → `Admin` (Folder) → `AdminServer` (Script), `Roles` (ModuleScript) | Script / ModuleScript |
+| `ServerScriptService/Safety/TextFilter.lua`, `Erasure.lua` | `ServerScriptService` → `Safety` (Folder) → `TextFilter` (Roblox's filter for anything typed that others read: server names, staff text), `Erasure` (a right-to-erasure request: every trace of a player) | ModuleScript each |
+| `ReplicatedStorage/Rules.lua` | `ReplicatedStorage` → `Rules` (the game's own rules and their consequences: the Courtyard board, MENU › SETTINGS › THE RULES, kick and ban messages) | ModuleScript |
 | `StarterPlayerScripts/AdminPanel.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `AdminPanel` | LocalScript |
 | `ReplicatedStorage/Defight.lua` | `ReplicatedStorage` → `Defight` | ModuleScript |
 | `ServerScriptService/Game/Modes/Siege.lua` | `ServerScriptService` → `Game` → `Modes` → `Siege` | ModuleScript |

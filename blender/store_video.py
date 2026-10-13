@@ -4,7 +4,7 @@ title cards and written as an MP4.
 
     blender.exe -b --python blender/store_video.py -- titles
     blender.exe -b --python blender/store_video.py -- shot:<name> [--preview] [--frames a-b] [--every n] [--at 0,30,41]
-    blender.exe -b --python blender/store_video.py -- edit [--preview]
+    blender.exe -b --python blender/store_video.py -- edit [--preview] [--stills 40,300]
     shots: swing · parry · magic · archer · siege · lineup · end   (all: every shot, then the edit)
 
 Frames go to store_art/video/frames/<shot>/####.png, the cards to store_art/video/titles, the film
@@ -598,6 +598,15 @@ def edit():
                 c.transform.keyframe_insert("scale_x", frame=fr)
                 c.transform.keyframe_insert("scale_y", frame=fr)
     sc.frame_start, sc.frame_end = 1, total
+    stills = _arg("--stills")   # (check the cut: write just these frames of it as PNGs)
+    if stills:
+        sc.render.image_settings.file_format = "PNG"
+        for fr in (int(x) for x in stills.split(",")):
+            sc.frame_set(fr)
+            sc.render.filepath = os.path.join(VID, f"still_{fr:04d}.png")
+            bpy.ops.render.render(write_still=True)
+            print("STILL", fr, flush=True)
+        return
     ims = sc.render.image_settings
     ims.media_type = "VIDEO"
     ims.file_format = "FFMPEG"

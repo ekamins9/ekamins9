@@ -1867,10 +1867,11 @@ local SCREEN_DEF = {
 	RANKS      = {title = "LEADERBOARDS", icon = "Ranks"},
 	PROFILE    = {title = "PROFILE",  icon = "Loadout"},
 	INVENTORY  = {title = "INVENTORY", icon = "Inventory"},
+	RULES      = {title = "RULES",    icon = "Settings"},
 }
 -- old tab names and the names other scripts send over the bus
 local ALIAS = {INV = "INVENTORY", COLLECTION = "INVENTORY", LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "PLAY", APPEARANCE = "PLAY", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
-	EGGS = "HATCHERY", PETS = "HATCHERY", EGGSHOP = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS"}
+	EGGS = "HATCHERY", PETS = "HATCHERY", EGGSHOP = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS", RULE = "RULES"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
 	local f = clearFrame(content)
@@ -6710,6 +6711,38 @@ HX.screens = function()
 end
 HX.screens()
 
+--------------------------------------------------------------------
+--  RULES: the game's own rules and what happens to those who break them (Roblox wants them
+--  "clearly and conspicuously posted"; the words: ReplicatedStorage ▸ Rules; also on the board
+--  beside the Courtyard's Notice Board, whose Read opens this)
+--------------------------------------------------------------------
+HX.rules = function()
+	local Rules = require(ReplicatedStorage:WaitForChild("Rules"))
+	local f = tabFrame.RULES
+	local body = frame(f, COL.GLASS, 14); body.BackgroundTransparency = 0.12; body.Size = UDim2.fromScale(1, 1); padding(body, 18, 18, 14, 14)
+	local list = scroll(body, 10)
+	local intro = label(list, "Steel & Glory has a few rules of its own, on top of Roblox's. They keep the fights fair and the game fun for everyone.", 15, FONT_BODY, COL.DIM)
+	intro.Size = UDim2.new(1, -10, 0, 0); intro.AutomaticSize = Enum.AutomaticSize.Y; intro.LayoutOrder = 0
+	for i, r in ipairs(Rules.LIST) do
+		local card = frame(list, COL.GLASS2, 12); card.BackgroundTransparency = 0.15
+		card.Size = UDim2.new(1, -10, 0, 0); card.AutomaticSize = Enum.AutomaticSize.Y; card.LayoutOrder = i
+		padding(card, 16, 16, 10, 12)
+		vlist(card, 4)
+		local h = title(card, string.format("%d.  %s", i, string.upper(r[1])), 20, COL.ACCENT); h.Size = UDim2.new(1, 0, 0, 26); h.LayoutOrder = 1
+		local d = label(card, r[2], 15, FONT_BODY, COL.TEXT); d.Size = UDim2.new(1, 0, 0, 0); d.AutomaticSize = Enum.AutomaticSize.Y; d.LayoutOrder = 2
+	end
+	for k, text in ipairs({{"IF YOU BREAK THEM", Rules.CONSEQUENCES, COL.BAD}, {"APPEALS", Rules.APPEAL, COL.GOOD}}) do
+		local card = frame(list, COL.CARD, 12); card.BackgroundTransparency = 0.1
+		card.Size = UDim2.new(1, -10, 0, 0); card.AutomaticSize = Enum.AutomaticSize.Y; card.LayoutOrder = 100 + k
+		padding(card, 16, 16, 10, 12)
+		vlist(card, 4)
+		local h = title(card, text[1], 18, text[3]); h.Size = UDim2.new(1, 0, 0, 24); h.LayoutOrder = 1
+		local d = label(card, text[2], 15, FONT_BODY, COL.TEXT); d.Size = UDim2.new(1, 0, 0, 0); d.AutomaticSize = Enum.AutomaticSize.Y; d.LayoutOrder = 2
+	end
+	render.RULES = function() renderSide() end
+end
+HX.rules()
+
 -- the Profile key: the player you're looking at (the middle of the screen), their profile
 UserInputService.InputBegan:Connect(function(input, gp)
 	if gp or UserInputService:GetFocusedTextBox() or open then return end
@@ -6736,7 +6769,12 @@ end)
 do
 	local f = tabFrame.SETTINGS
 	local sHint = label(f, "Camera feel is a multiplier on the tuned default (1.0); 0 turns an effect off. Right mouse is always block. Escape belongs to Roblox, so M is the menu key everywhere.", 13, FONT_BODY, COL.DIM)
-	sHint.Size = UDim2.new(1, -170, 0, 32)
+	sHint.Size = UDim2.new(1, -300, 0, 32)
+	local rulesBtn = button(f, "THE RULES", 13, COL.BLUE)
+	rulesBtn.AnchorPoint = Vector2.new(1, 0)
+	rulesBtn.Position = UDim2.new(1, -160, 0, 0)
+	rulesBtn.Size = UDim2.fromOffset(120, 32)
+	rulesBtn.Activated:Connect(function() selectTab("RULES") end)
 	local resetBtn = button(f, "RESET DEFAULTS", 13, COL.CARD)
 	resetBtn.AnchorPoint = Vector2.new(1, 0)
 	resetBtn.Position = UDim2.new(1, 0, 0, 0)

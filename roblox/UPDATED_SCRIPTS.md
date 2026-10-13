@@ -1,4 +1,49 @@
-# Updated scripts: ads, the trailer, clean view
+# Updated scripts: up to code (rules posted, text filtered, data erasable)
+
+- **The game's rules are posted, as Roblox's Terms require.** A game that enforces its own rules (this one kicks, bans and takes back items) must post them "and any consequences for violating them… clearly and conspicuously". The six rules:
+  - be a good sport;
+  - no cheating;
+  - no farming;
+  - trade fair;
+  - play the mode;
+  - respect staff.
+
+  What happens to rule-breakers, and how to appeal, are in `ReplicatedStorage ▸ Rules`. They're shown in three places:
+  - **a rules board beside the Notice Board** in the Courtyard, where everyone arrives (Read opens the menu's page);
+  - **MENU › SETTINGS › THE RULES**;
+  - **the kick and ban messages**, which now say it was for breaking the rules and how to appeal.
+- **Everything typed that others read goes through Roblox's text filter** (`Safety ▸ TextFilter`). There was none before, and Roblox can take a game down for that. Filtered now:
+  - custom server names;
+  - staff announcements;
+  - kick, ban and shutdown reasons;
+  - titles given by staff.
+
+  If the filter can't check something, it isn't shown.
+- **Right to erasure** (Roblox forwards these data-deletion requests to your inbox): **ERASE ALL THEIR DATA** in the admin panel (Owner only). It kicks them everywhere, deletes their profile, queue, ban and leaderboard entries, and scrubs their ID from staff roles, the ban list, the action log and trade logs. `docs/LAUNCH.md` lists the RTBF deletion templates to set up once in Creator Hub, so Roblox deletes the keyed data by itself.
+- **Checked and already fine:**
+  - chat runs on TextChatService;
+  - crate odds show as exact percentages before you open;
+  - crates and trading follow Roblox's per-country rules (PolicyService);
+  - the wishing fountain is free;
+  - no off-platform links;
+  - no personal info asked for.
+- `docs/LAUNCH.md`: the rules, the May 2026 publishing tiers, and a new section 7 (Safety and privacy).
+- Checked in Play: the board is built with all its text, Read opens RULES, the menu page has every rule, Settings links to it, and the filter returns clean text.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Rules.lua](ReplicatedStorage/Rules.lua) (new) | ReplicatedStorage | ModuleScript | the rules, consequences, appeal |
+| [Safety/TextFilter.lua](ServerScriptService/Safety/TextFilter.lua), [Safety/Erasure.lua](ServerScriptService/Safety/Erasure.lua) (new) | ServerScriptService ▸ Safety | ModuleScript | Roblox's filter; the right to erasure |
+| [Courtyard.server.lua](ServerScriptService/Hub/Courtyard.server.lua) | ServerScriptService ▸ Hub | Script | the rules board |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the RULES screen; THE RULES in Settings |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | custom server names filtered |
+| [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua), [Roles.lua](ServerScriptService/Admin/Roles.lua) | ServerScriptService ▸ Admin | Script, ModuleScript | staff text filtered; kick and ban messages; `erase` |
+| [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ERASE ALL THEIR DATA (Owner) |
+| [README.md](README.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | the above |
+
+---
+
+## Before that: ads, the trailer, clean view
 
 - **Three ad pictures** (`store_art/ads/`, 1920×1080), made for Roblox's Sponsored row, where games show as small tiles:
   - **KNIGHT VS MAGE**: a Sun Knight and a Pyromancer split by a blade of light;

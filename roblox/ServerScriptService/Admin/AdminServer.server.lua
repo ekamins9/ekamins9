@@ -18,6 +18,7 @@
                                             (a Unique skin: given as THE one copy, #1 of 1;
                                             refused if somebody already has it)
            reset {userId}                   setrole {userId, name, role ("" takes it away)}
+           erase {userId}                   a right-to-erasure request: every trace of them (Safety ▸ Erasure)
            shutdown {reason}
        AdminEvent (RemoteEvent)  server → client: "Announce", text, byName, roleName
 
@@ -41,6 +42,8 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local Economy = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Economy"))
 local Game = require(ServerScriptService:WaitForChild("Game"):WaitForChild("Game"))
+-- (staff are users too: what they type goes through Roblox's filter before anyone reads it)
+local TextFilter = require(ServerScriptService:WaitForChild("Safety"):WaitForChild("TextFilter"))
 
 local STUDIO = RunService:IsStudio()
 local TOPIC = "Admin"
@@ -96,7 +99,7 @@ local function permsOf(role)
 	local r = role and Roles.roles[role]
 	if not r then return {} end
 	if r.perms == "*" then
-		return {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "currency", "items", "unlock", "progress", "reset", "staff", "shutdown", "log", "drops"}
+		return {"view", "kick", "tempban", "ban", "teleport", "health", "announce", "announce_all", "rounds", "bots", "currency", "items", "unlock", "progress", "reset", "staff", "shutdown", "log", "drops", "erase"}
 	end
 	return r.perms
 end
@@ -243,9 +246,12 @@ local function banOf(userId)
 	if ok and live(b) then return b end
 	return nil
 end
+-- (the game's rules say what a ban is for and how to appeal one: ReplicatedStorage ▸ Rules)
+local Rules = require(ReplicatedStorage:WaitForChild("Rules"))
 local function banText(b)
 	local when = b["until"] == 0 and "for good" or ("until " .. os.date("!%Y-%m-%d %H:%M UTC", b["until"]))
-	return string.format("You're banned %s. Reason: %s", when, b.reason ~= "" and b.reason or "(none given)")
+	return string.format("You're banned from Steel & Glory %s for breaking its rules. Reason: %s\n%s", when,
+		b.reason ~= "" and b.reason or "(none given)", Rules.APPEAL)
 end
 
 local function setBan(userId, name, b)
@@ -273,10 +279,10 @@ end
 
 local NEEDS = {kick = "kick", unban = "ban", ["goto"] = "teleport", bring = "teleport", freeze = "teleport", heal = "health", kill = "health",
 	endround = "rounds", nextmode = "rounds", nextmap = "rounds", bots = "bots", clearbots = "bots", currency = "currency", item = "items",
-	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops"}
+	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops", erase = "erase"}
 -- actions done to another player: you must outrank them (on yourself it's fine)
 local ON_PLAYER = {kick = true, ban = true, ["goto"] = false, bring = true, freeze = true, heal = false, kill = true, currency = true, item = true,
-	unlockall = true, level = true, reset = true, setrole = true}
+	unlockall = true, level = true, reset = true, setrole = true, erase = true}
 
 -- DROPS (Catalog ▸ Calendar): release one early or hold one back, on every
 -- server at once (MessagingService) and for servers that start later (DataStore)
@@ -344,13 +350,16 @@ local function act(plr, action, a)
 
 	if action == "kick" then
 		local reason = tostring(a.reason or ""):sub(1, 200)
-		if target then target:Kick("Kicked by staff. " .. reason) else publish({kind = "kick", userId = targetId, text = "Kicked by staff. " .. reason}) end
+		reason = (target and TextFilter.forUser(reason, plr.UserId, targetId) or TextFilter.broadcast(reason, plr.UserId)) or ""
+		local msg = "Kicked by staff for breaking the game's rules. " .. reason .. "\nThe rules: MENU (M) › SETTINGS › THE RULES."
+		if target then target:Kick(msg) else publish({kind = "kick", userId = targetId, text = msg}) end
 		logAction(plr, "kick", targetId, tname, reason)
 		return true, "kicked " .. tname
 	elseif action == "ban" then
 		if isOwner(targetId) then return false, "the owner can't be banned" end
 		local hours = math.max(0, tonumber(a.hours) or 0)
-		local b = {["until"] = hours > 0 and (os.time() + math.floor(hours * 3600)) or 0, reason = tostring(a.reason or ""):sub(1, 200), by = plr.UserId, byName = plr.Name, at = os.time(), name = tname}
+		local why = TextFilter.broadcast(tostring(a.reason or ""):sub(1, 200), plr.UserId) or ""
+		local b = {["until"] = hours > 0 and (os.time() + math.floor(hours * 3600)) or 0, reason = why, by = plr.UserId, byName = plr.Name, at = os.time(), name = tname}
 		if not setBan(targetId, tname, b) then return false, "couldn't save the ban" end
 		if target then target:Kick(banText(b)) else publish({kind = "kick", userId = targetId, text = banText(b)}) end
 		logAction(plr, "ban", targetId, tname, hours > 0 and (hours .. " h: " .. b.reason) or ("for good: " .. b.reason))
@@ -385,6 +394,8 @@ local function act(plr, action, a)
 	elseif action == "announce" then
 		local text = tostring(a.text or ""):gsub("^%s+", ""):sub(1, 200)
 		if text == "" then return false, "say something" end
+		text = TextFilter.broadcast(text, plr.UserId)
+		if not text then return false, "Roblox's text filter couldn't check that: try again" end
 		if a.all then publish({kind = "announce", text = text, by = plr.Name, role = role}) end
 		event:FireAllClients("Announce", text, plr.Name, role)
 		logAction(plr, a.all and "announce_all" or "announce", nil, nil, text)
@@ -434,6 +445,11 @@ local function act(plr, action, a)
 		return ok, msg
 	elseif action == "item" then
 		local kind, id = tostring(a.kind or ""), tostring(a.id or "")
+		-- (a title is free text everyone sees over that player: filtered)
+		if kind == "title" and id ~= "" then
+			id = TextFilter.broadcast(id:sub(1, 40), plr.UserId)
+			if not id or id:find("#") then return false, "that title didn't pass Roblox's text filter" end
+		end
 		local valid = (kind == "piece" and Catalog.PIECE[id]) or (kind == "skin" and Catalog.SKIN[id]) or (kind == "weapon" and Catalog.WEAPON[id])
 			or (kind == "emote" and Catalog.EMOTE[id]) or (kind == "killfx" and Catalog.KILLFX_BY[id]) or (kind == "companion" and Catalog.COMPANION[id])
 			or (kind == "egg" and Catalog.EGG[id]) or (kind == "color" and Catalog.COLOR[id]) or (kind == "title" and id ~= "")
@@ -475,8 +491,20 @@ local function act(plr, action, a)
 		publish({kind = "staff"})
 		logAction(plr, "setrole", targetId, tname, newRole or "none")
 		return true, (newRole and (tname .. " is now " .. newRole) or (tname .. " is no longer staff")) .. note
+	elseif action == "erase" then
+		-- a right-to-erasure request (Safety ▸ Erasure): the log keeps that it happened, not who
+		if isOwner(targetId) then return false, "not the owner" end
+		local Erasure = require(ServerScriptService:WaitForChild("Safety"):WaitForChild("Erasure"))
+		local ok, report = Erasure.erase(targetId)
+		memBans[targetId], staff[targetId] = nil, nil
+		for i = #memLog, 1, -1 do
+			local e = memLog[i]
+			if e.by == targetId or e.target == targetId then table.remove(memLog, i) end
+		end
+		logAction(plr, "erase", nil, nil, "a right-to-erasure request")
+		return ok, ok and ("erased  ·  " .. table.concat(report, "  ·  ")) or tostring(report)
 	elseif action == "shutdown" then
-		local reason = tostring(a.reason or ""):sub(1, 120)
+		local reason = TextFilter.broadcast(tostring(a.reason or ""):sub(1, 120), plr.UserId) or ""
 		logAction(plr, "shutdown", nil, nil, reason)
 		for _, p in ipairs(Players:GetPlayers()) do p:Kick("This server was closed by staff. " .. reason) end
 		return true, "closing"

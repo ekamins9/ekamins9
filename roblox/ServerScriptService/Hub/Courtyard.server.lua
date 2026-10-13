@@ -283,6 +283,55 @@ local function sign(name, title, sub, size, color)
 	if sub then label(sg, sub, 66, 34, Color3.new(1, 1, 1), Enum.Font.GothamBold) end
 end
 
+-- THE RULES, beside the Notice Board where everyone arrives: Roblox wants a game's own rules
+-- "clearly and conspicuously posted" (the words: ReplicatedStorage ▸ Rules; Read opens them in
+-- the menu, RULES)
+local Rules = require(game:GetService("ReplicatedStorage"):WaitForChild("Rules"))
+local function rulesBoard(nb)
+	local base = nb.CFrame * CFrame.new(12, 0, 0.2) * CFrame.Angles(0, math.rad(15), 0)
+	local function part(name, size, cf, color, mat)
+		local p = Instance.new("Part")
+		p.Name, p.Size, p.CFrame, p.Color, p.Material = name, size, cf, color, mat or Enum.Material.Wood
+		p.Anchored, p.CanQuery, p.CanTouch = true, false, false
+		p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		p.Parent = map
+		return keep(p)
+	end
+	local dark = Color3.fromRGB(70, 48, 30)
+	for _, x in ipairs({-4.3, 4.3}) do part("RulesPost", Vector3.new(0.8, 10.6, 0.8), base * CFrame.new(x, -0.1, 0.3), dark) end
+	part("RulesBoard", Vector3.new(9, 8, 0.4), base * CFrame.new(0, 0.6, 0.35), Color3.fromRGB(120, 84, 52), Enum.Material.WoodPlanks)
+	part("RulesRoof", Vector3.new(10.4, 0.6, 1.8), base * CFrame.new(0, 5.0, 0.3), Color3.fromRGB(40, 70, 150), Enum.Material.Fabric)
+	local p, sg = face({CFrame = base * CFrame.new(0, 0.6, 0.08)}, Vector2.new(8.4, 7.4), Color3.fromRGB(232, 216, 178), "RulesFace")
+	p.Material = Enum.Material.Fabric
+	sg.CanvasSize = Vector2.new(840, 740)   -- (a hundred pixels a stud: small print stays sharp)
+	local INK = Color3.fromRGB(58, 38, 22)
+	local function line(text, y, h, color, font, size, align)
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Position = UDim2.fromOffset(34, y)
+		l.Size = UDim2.new(1, -68, 0, h)
+		l.Font = font or Enum.Font.GothamBold
+		l.TextSize = size
+		l.TextWrapped = true
+		l.TextColor3 = color or INK
+		l.TextXAlignment = align or Enum.TextXAlignment.Left
+		l.TextYAlignment = Enum.TextYAlignment.Top
+		l.Text = text
+		l.Parent = sg
+		return l
+	end
+	line(Rules.TITLE, 14, 70, Color3.fromRGB(150, 30, 30), Enum.Font.FredokaOne, 64, Enum.TextXAlignment.Center)
+	local y = 96
+	for i, r in ipairs(Rules.LIST) do
+		line(string.format("%d.  %s", i, string.upper(r[1])), y, 30, Color3.fromRGB(40, 70, 150), Enum.Font.FredokaOne, 28)
+		line(r[2], y + 30, 44, INK, Enum.Font.Gotham, 19)
+		y += 80
+	end
+	line(Rules.CONSEQUENCES, y + 6, 70, Color3.fromRGB(150, 30, 30), Enum.Font.GothamBold, 17)
+	line("All of it: MENU (M) › SETTINGS › THE RULES", y + 84, 26, INK, Enum.Font.GothamBold, 17, Enum.TextXAlignment.Center)
+	keep(prompt(p, "Read", "The Rules", {Open = "RULES"}, 12))
+end
+
 local function bard()
 	local at = spot("BardSpot")
 	if not at then return end
@@ -348,6 +397,7 @@ local function setup(newMap)
 		p.Material = Enum.Material.Fabric
 		local sg = p:FindFirstChildOfClass("SurfaceGui"); if sg then sg:Destroy() end   -- each player writes their own (client)
 		keep(prompt(nb, "Read", "Notice Board", {Open = "TASKS"}, 12))
+		rulesBoard(nb)
 	end
 	-- the wishing fountain
 	local well = spot("WellSpot")

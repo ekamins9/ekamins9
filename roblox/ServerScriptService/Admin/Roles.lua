@@ -24,7 +24,9 @@
          reset         wipe a player's saved data
          staff         give and take roles (below your own)
          shutdown      close this server
-         log           read the action log ]]
+         log           read the action log
+         erase         a right-to-erasure request from Roblox: delete every trace of a
+                       player (Owner only: it isn't in any other role's list) ]]
 return {
 	TEMPBAN_HOURS = 72,
 	owners = {},        -- more owners, by user id (the creator is one already)

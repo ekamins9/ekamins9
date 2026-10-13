@@ -50,7 +50,9 @@ Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** 
 - [ ] **Reach players under 16** (Creator Hub ▸ Audience Reach). A Mild label alone isn't enough: Roblox Kids and Select accounts only see games that passed an extra evaluation. You need:
   - your account age-checked (government ID if you're 18+, a face age estimate if you're under 18);
   - 2-Step Verification on;
-  - either a one-time per-game fee, refunded after 90 days, or Roblox Premium/Plus held for 2+ months.
+  - either Roblox Plus/Premium, or the one-time refundable fee (1,000 Robux, refunded after 90 days).
+
+  (Since May 19, 2026, Roblox's publishing tiers are: **16+ and trusted friends** for an age-checked account in good standing that's 2+ days old; **all ages** on top of that needs ID verification, 2FA, Plus/Premium or the fee, and the evaluation below.)
 
   Then the game runs a trial with age-checked players 16+ and has to reach **250 unique plays from engaged players within 60 days**. A small sponsored campaign (section 6) is a quick way to get there.
 - [ ] **Icon** (512×512): `store_art/icon.png` (the Lionheart helm, eyes burning in the visor, swords crossed behind).
@@ -84,6 +86,15 @@ Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** 
 > 🔥 Weekend events: Double XP, Armory Roulette, Raid Weekends
 >
 > Learn the basics in two minutes. Spend a lifetime mastering them.
+>
+> 📜 Play fair: the game's rules are on the board beside the Notice Board in the Courtyard, and in MENU › SETTINGS › THE RULES.
+
+- [ ] **The game's own rules are posted** (done in the game). Roblox's Terms: when a game enforces its own rules, as this one does (staff kick, ban and can take back items), those rules "and any consequences for violating them must be clearly and conspicuously posted within an Experience". They're in three places, all written in `ReplicatedStorage ▸ Rules`:
+  - a board beside the Notice Board, where everyone arrives;
+  - MENU › SETTINGS › THE RULES;
+  - the kick and ban messages themselves.
+
+  **Set the appeal line** (`Rules.APPEAL`): right now it says to message you on Roblox. If you make a group or a support page, put it there. Roblox doesn't handle appeals for a game's own bans; you do.
 
 ## 4. Play-test (what I couldn't see)
 
@@ -144,3 +155,30 @@ The ads follow what works on Roblox:
 4. **Early on, aim a small campaign at 16+.** The under-16 evaluation (section 3) needs 250 engaged plays from age-checked 16+ players within 60 days.
 
 New ad pictures: `blender/store_ads.py` (its header says how). The trailer: `blender/store_video.py` (shots, title cards, the edit).
+
+## 7. Safety and privacy (already in the game; what's on you)
+
+**In the game:**
+- **Text filtering.** Everything a person types that someone else reads goes through Roblox's filter first (`Safety ▸ TextFilter`): a custom server's name, staff announcements, kick, ban and shutdown reasons, and a title given by staff. Chat is Roblox's own TextChatService, filtered already. Roblox can take down a game that shows unfiltered text, so any new place players can type (clan names, signs, pet names) must use `TextFilter` too.
+- **Paid random items and trading** respect Roblox's per-country rules (PolicyService): where restricted, crates open only with Keys earned by playing, and trading is off. The odds show before every open.
+- **No off-platform links**, no personal information asked for, and the Mild content rules (section 3).
+
+**On you:**
+- [ ] **Data deletion requests (right to be forgotten).** Roblox sends these to your inbox, naming a user ID, and you must delete that player's data. Two parts:
+  1. **Once:** set up Roblox's automatic deletion (Creator Hub › your game › Configurations › Data stores manager › **RTBF Deletion** › Create Template). Add one template per row:
+
+     | Type | Data store | Key |
+     |---|---|---|
+     | Standard Key | Profiles_v2 | `u{UserId}` |
+     | Standard Key | Profiles_v1 | `u{UserId}` |
+     | Standard Key | AdminQueue_v1 | `u{UserId}` |
+     | Standard Key | Bans_v1 | `u{UserId}` |
+     | Ordered Key | LB_Warfront | `{UserId}` |
+     | Ordered Key | LB_1v1 | `{UserId}` |
+     | Ordered Key | LB_2v2 | `{UserId}` |
+     | Ordered Key | LB_3v3 | `{UserId}` |
+
+     (From Season 2 the boards are `LB_<season>_Warfront` and so on: add those too.)
+  2. **For each request:** their ID also sits inside shared records that no template reaches (staff roles, the ban list, the action log, trade logs). Open the admin panel (F2) › PLAYERS, look up the ID, then **ERASE ALL THEIR DATA**. Only the Owner sees this button. It kicks them everywhere, deletes their keys and scrubs their ID from everything. The log records only that an erasure happened.
+- [ ] **Reports.** Check Creator Hub's Safety dashboard now and then for abuse reports.
+- [ ] Recommended, not required: Roblox's own Ban API (`Players:BanAsync`) also catches alt accounts. The panel's bans are this game's own; say if you want them moved over.

@@ -329,6 +329,15 @@ local function playerCard(area)
 		if can("unlock") then button(r, "UNLOCK EVERYTHING", Theme.GOLD, 190).Activated:Connect(function() confirm("unlock" .. p.userId, function() act("unlockall") end) end) end
 		if can("reset") then button(r, "WIPE SAVED DATA", Color3.fromRGB(150, 30, 30), 190).Activated:Connect(function() confirm("reset" .. p.userId, function() act("reset") end) end) end
 	end
+	-- a right-to-erasure request from Roblox (your inbox names the user id): every trace, for good
+	if can("erase") then
+		section("RIGHT TO ERASURE")
+		local r = hrow(area); r.LayoutOrder = order; order += 1
+		button(r, "ERASE ALL THEIR DATA", Color3.fromRGB(110, 20, 20), 210).Activated:Connect(function()
+			confirm("erase" .. p.userId, function() say({ok = true, msg = "erasing… (about 10 seconds)"}); act("erase") end)
+		end)
+		label(r, "only for a Roblox right-to-erasure request: deletes their profile, bans, ratings and logs everywhere", 12, Theme.DIM, Theme.FONT_BODY).Size = UDim2.fromOffset(560, 30)
+	end
 end
 
 tabs.PLAYERS = function()
