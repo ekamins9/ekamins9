@@ -5,6 +5,8 @@ track (blender/music.py: 140 BPM, 30 bars), every cut on a beat, with:
     titles that slam in (the trailer's cards), punchier colour and a vignette,
     the music loud and the game's own sound low under it.
 
+    blender.exe -b --python blender/hype_edit.py -- titles
+        its own cards (footage/titles: FEEL EVERY HIT)
     blender.exe -b --python blender/hype_edit.py -- edit [--stills 7,21]
         -> footage/edits/hype.mp4 (1080p30 H.264, AAC 256k)
 
@@ -16,6 +18,10 @@ import sys
 
 import bpy
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import art_kit as K  # noqa: E402
+K_rgb = K.rgb
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FOOT = os.path.join(ROOT, "footage")
@@ -32,8 +38,9 @@ BEAT = 60 / BPM
 INTRO = [(48.0, 8, {"slow": 0.5, "quiet": True}), (291.0, 4, {}), (436.0, 4, {"slow": 0.5, "quiet": True})]
 DROP_A = [(t, 2, {}) for t in (3.0, 12.0, 18.0, 21.0, 24.0, 294.0, 300.0, 303.0, 306.0, 309.0, 312.0, 336.0, 338.0, 342.0, 530.0, 533.0)]
 BREAK = [(t, 4, {}) for t in (430.0, 433.0, 448.0, 460.0)]
-DROP_B = [(t, 2, {}) for t in (220.0, 223.0, 226.0, 229.0, 578.0, 580.0, 632.0, 641.0, 644.0, 735.0, 738.0,
-                               741.0, 777.0, 39.0, 42.0, 9.0, 318.0, 321.0, 345.0, 357.0)]
+# (first person, from clip02: the snow siege seen through the knight's eyes, the clashes loud)
+FP = {"clip": "clip02.mp4", "fp": True}
+DROP_B = [(t, 2, {}) for t in (220.0, 223.0, 226.0, 229.0, 578.0, 580.0, 632.0, 641.0, 644.0, 735.0)] +          [(t, 2, FP) for t in (13.0, 14.4, 53.0, 56.0, 59.0, 63.0, 108.0, 113.0, 117.0, 124.5)]
 OUTRO = [(726.0, 16, {"quiet": False})]
 SECTIONS = [("intro", INTRO), ("dropA", DROP_A), ("break", BREAK), ("dropB", DROP_B), ("outro", OUTRO)]
 
@@ -44,10 +51,14 @@ CARDS = [
     ("armor", 48.5, 63.5),      # RARE ARMOR & SKINS over the parade
     ("duels", 64, 71.5),        # DUEL THE BEST
     ("battles", 76, 84),        # EPIC BATTLES
+    ("feel", 84, 91.5),         # FEEL EVERY HIT, over the first person
     ("end", 104, 120),          # STEEL & GLORY at the end
     ("end_sub", 106, 120),      # PLAY NOW
 ]
-SHAKES = [16, 64, 104, 112]     # beats that shake the frame
+SHAKES = [16, 64, 84, 104, 112]     # beats that shake the frame
+NEW_CARDS = {
+    "feel": [{"text": "FEEL EVERY HIT", "y": 3.5, "size": 1.6, "fill": (K_rgb(255, 230, 170), K_rgb(255, 90, 20)), "outline": K_rgb(60, 10, 0)}],
+}
 
 
 def fr(beat): return int(round(beat * BEAT * FPS)) + 1
@@ -108,7 +119,8 @@ def edit(stills=None):
             slow = opt.get("slow", 1.0)
             off = int(round(t0 * FPS))
             ch = 1 + (i % 2) * 3
-            v = S.new_movie(name=f"v{i}", filepath=CLIP, channel=ch, frame_start=f0 - off, fit_method="FILL")
+            src_path = os.path.join(FOOT, opt["clip"]) if opt.get("clip") else CLIP
+            v = S.new_movie(name=f"v{i}", filepath=src_path, channel=ch, frame_start=f0 - off, fit_method="FILL")
             v.frame_offset_start = off
             # (the whole shot long, slow or not: a speed effect lasts as long as its input, and at
             # half speed it plays the first half of it)
@@ -125,14 +137,17 @@ def edit(stills=None):
                 shown = sp
             # the game's own sound, low under the music, eased at the cuts
             if not opt.get("quiet"):
-                a = S.new_sound(name=f"a{i}", filepath=CLIP, channel=20 + (i % 2), frame_start=f0 - off)
+                a = S.new_sound(name=f"a{i}", filepath=src_path, channel=20 + (i % 2), frame_start=f0 - off)
                 a.frame_offset_start = off
                 a.frame_final_duration = n
                 a.frame_start = f0 - off
-                key(a, "volume", [(f0, 0.0), (f0 + 2, 0.13), (f1 - 2, 0.13), (f1, 0.0)])
+                lv = 0.2 if opt.get("fp") else 0.13   # (first person: the clashes up front)
+                key(a, "volume", [(f0, 0.0), (f0 + 2, lv), (f1 - 2, lv), (f1, 0.0)])
             # a zoom punch as it lands (not in the slow intro), a pulse on its other beats; all of
             # it times the strip's own scale (a 720p clip's fill to 1080p is a scale of 1.5)
             k0 = shown.transform.scale_x
+            # (first person: a little closer, so the corners' buttons and notices are out of frame)
+            if opt.get("fp"): k0 *= 1.16
             def zoom(pts):
                 key(shown, "transform.scale_x", [(f, k0 * z) for f, z in pts])
                 key(shown, "transform.scale_y", [(f, k0 * z) for f, z in pts])
@@ -232,9 +247,18 @@ def edit(stills=None):
     print("EDITED", sc.render.filepath, end, "frames", f"{end / FPS:.1f}s", flush=True)
 
 
+def titles():
+    os.makedirs(TITLES, exist_ok=True)
+    for name, items in NEW_CARDS.items():
+        K.overlay(items, RES, os.path.join(TITLES, name + ".png"))
+        print("CARD", name, flush=True)
+
+
 def main():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    if a and a[0] == "edit":
+    if a and a[0] == "titles":
+        titles()
+    elif a and a[0] == "edit":
         st = [float(x) for x in a[a.index("--stills") + 1].split(",")] if "--stills" in a else None
         edit(st)
     else:
