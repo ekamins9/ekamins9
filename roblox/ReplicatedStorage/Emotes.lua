@@ -532,8 +532,16 @@ local function interrupted(char, rec, d, t)
 	return false
 end
 
+-- (the per-frame loop below — the animation dropped from the joints an emote drives,
+-- the weapon's spin — is started by whoever plays or poses an emote, and started
+-- again if it has stopped: a loop started at load time belongs to the script that
+-- loaded this module first, and when that's a character's script it dies with the
+-- body, leaving the walk's or the weapon's animation on top of every emote)
+local ensureLoop
+
 function Emotes.play(char, id, startedAt)
 	if not (char and DEF[id]) or busy(char) then return false end
+	ensureLoop()
 	Emotes.stop(char)
 	active[char] = {id = id, t0 = os.clock() - math.max(0, (startedAt and (workspace:GetServerTimeNow() - startedAt)) or 0),
 		tool = char:FindFirstChildOfClass("Tool") or false, hitTick = char:GetAttribute("HitTick")}
@@ -551,6 +559,7 @@ end
 function Emotes.modify(char, targets)
 	local rec = active[char]
 	if not rec then return nil end
+	ensureLoop()
 	local t = os.clock() - rec.t0
 	local d = DEF[rec.id]
 	if t >= d.d or busy(char) or interrupted(char, rec, d, t) then Emotes.stop(char); return nil end
@@ -565,7 +574,32 @@ end
 local JOINT_PARENT = {["Right Shoulder"] = "Torso", ["Left Shoulder"] = "Torso", ["Right Hip"] = "Torso", ["Left Hip"] = "Torso", Neck = "Torso", RootJoint = "HumanoidRootPart"}
 local UPPER_PARENT = {["Right Shoulder"] = "Torso", ["Left Shoulder"] = "Torso", Neck = "Torso"}
 -- (clients only: the server just poses statues with poseRig)
-if RunService:IsClient() then RunService.RenderStepped:Connect(function()
+-- the animation off the emote's joints: once the Animator has stepped (Stepped: after the
+-- animation, before the body is put together for the frame) — set only before drawing,
+-- the Animator wrote its pose back over it and the weapon's guard turned every salute
+-- and bow over the shoulder — and again before drawing
+local function dropAnimation(char, rec)
+	local d = DEF[rec.id]
+	if not d then return end
+	local t = os.clock() - rec.t0
+	local fade = ease(math.clamp(math.min(t, d.d - t) / 0.2, 0, 1))
+	for joint, parentName in pairs(d.upper and UPPER_PARENT or JOINT_PARENT) do
+		local parent = char:FindFirstChild(parentName)
+		local m = parent and parent:FindFirstChild(joint)
+		if m and m:IsA("Motor6D") then m.Transform = m.Transform:Lerp(CFrame.identity, fade) end
+	end
+	local grip = gripOf(char:FindFirstChild("Right Arm"))
+	if grip and grip:IsA("Motor6D") then grip.Transform = grip.Transform:Lerp(CFrame.identity, fade) end
+end
+local function settle()
+	for char, rec in pairs(active) do
+		if char.Parent then pcall(dropAnimation, char, rec) end
+	end
+end
+
+local stepLoop, settleLoop, lastStep
+local function step()
+	lastStep = os.clock()
 	for char, rec in pairs(active) do
 		if not char.Parent then active[char] = nil; continue end
 		local hum = char:FindFirstChildOfClass("Humanoid")
@@ -607,7 +641,17 @@ if RunService:IsClient() then RunService.RenderStepped:Connect(function()
 			grip.C0 = c0
 		end
 	end
-end) end
+end
+ensureLoop = function()
+	if not RunService:IsClient() then return end
+	if stepLoop and stepLoop.Connected and settleLoop and settleLoop.Connected and lastStep and os.clock() - lastStep < 0.5 then return end
+	if stepLoop then pcall(function() stepLoop:Disconnect() end) end
+	if settleLoop then pcall(function() settleLoop:Disconnect() end) end
+	lastStep = os.clock()
+	stepLoop = RunService.RenderStepped:Connect(step)
+	settleLoop = RunService.Stepped:Connect(settle)
+end
+ensureLoop()
 
 --------------------------------------------------------------------
 --  PREVIEWS (anchored rigs in a ViewportFrame)

@@ -79,15 +79,26 @@ do
 end
 local ev = Instance.new("BindableEvent")
 InputHints.changed = ev.Event
-UserInputService.LastInputTypeChanged:Connect(function(t)
+-- (watched from whoever asks, and watched again if the watch has stopped: a connection
+-- made at load time belongs to the first script to load this module, and a character's
+-- script dies with the body — the hints would stay on the old controls)
+local watch
+local function onType(t)
 	local m = decide(t)
 	-- (a mouse twitch on a touch laptop doesn't flip it; a real key or click does)
 	if m and m ~= mode then mode = m; ev:Fire(mode) end
-end)
+end
+local function ensureWatch()
+	if watch and watch.Connected then return end
+	watch = UserInputService.LastInputTypeChanged:Connect(onType)
+	onType(UserInputService:GetLastInputType())
+end
+ensureWatch()
 
-function InputHints.mode() return mode end
+function InputHints.mode() ensureWatch(); return mode end
 
 function InputHints.name(action)
+	ensureWatch()
 	if mode == "Gamepad" then
 		local names = isPlayStation() and PS or XBOX
 		local code = InputHints.PAD[action]

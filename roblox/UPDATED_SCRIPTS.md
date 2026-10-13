@@ -1,4 +1,19 @@
-# Updated scripts: the death screen, fire on the big moments, a clearer menu
+# Updated scripts: emotes no longer bend backwards
+
+- **The bug:** in the world, every emote had the weapon's own animation (its guard, the walk's arm swing) added on top of the emote's pose. That turned the salute and others back over the shoulder. Menu previews pose the mannequin directly, so they looked fine.
+- **The causes:**
+  - Emotes cleared the animation only just before drawing, but Roblox's Animator writes it back after that, before the body is put together. Now it is also cleared right after the Animator steps (`Stepped`), as the bow pose already did.
+  - The emote loop was started when the module first loaded, which ties it to whichever script loaded it first. If that was a character's script, the loop died with the body. Now whoever plays or poses an emote restarts the loop if it has stopped.
+- **The same restart fix** for arrow flight (arrows could hang in the air after a respawn) and input hints (keyboard vs controller could stop updating).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage ▸ Emotes | ModuleScript | animation dropped after the Animator steps; a loop that restarts itself |
+| [ArrowFlight.lua](ReplicatedStorage/ArrowFlight.lua), [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage | ModuleScript | loops that restart themselves |
+
+---
+
+## Before that: the death screen, fire on the big moments, a clearer menu
 
 - **No more black screen when you die.** First the fall: the world drains of colour, red closes in at the edges, a low boom, and the word lands (BEHEADED, SHOT THROUGH THE HEAD, YOU BLED OUT, BETRAYED…) with who did it and with what. Then a dark veil with rising embers and a countdown bar: BACK IN THE FIGHT IN 3, BACK TO THE COURTYARD, THE NEXT WAVE BRINGS YOU BACK, and so on. A new body lifts it with a golden flash.
 - **FIGHT!** slams in when a match round begins, with a war horn, sparks and a shudder.

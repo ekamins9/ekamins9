@@ -89,8 +89,14 @@ local function place(e)
 	e.fl.CFrame = cf * CFrame.new(0, 0, e.len / 2 - 0.25)
 end
 
+-- (the flight loop is started by whoever looses an arrow, and again if it has stopped:
+-- started at load time it would belong to the first script to load this module, a
+-- bow's own script, and die with it — arrows hanging in the air after a respawn)
+local ensureLoop
+
 function ArrowFlight.fly(id, origin, velocity, gravity, kind, mine, fx)
 	if live[id] then return end
+	ensureLoop()
 	local m, shaft, head, fl, len = model(kind)
 	m.Parent = holder()
 	if fx then ArrowFX.decorate(shaft, head, fx) end
@@ -118,7 +124,9 @@ end
 
 function ArrowFlight.has(id) return live[id] ~= nil end
 
-RunService.RenderStepped:Connect(function(dt)
+local flightLoop, lastFlight
+local function flightStep(dt)
+	lastFlight = os.clock()
 	local cam = workspace.CurrentCamera
 	local ear = cam and cam.CFrame.Position
 	for _, e in pairs(live) do
@@ -132,6 +140,13 @@ RunService.RenderStepped:Connect(function(dt)
 			if d < WHIZ_RANGE then e.whizzed = true; whiz(1 - d / WHIZ_RANGE) end
 		end
 	end
-end)
+end
+ensureLoop = function()
+	if flightLoop and flightLoop.Connected and lastFlight and os.clock() - lastFlight < 0.5 then return end
+	if flightLoop then pcall(function() flightLoop:Disconnect() end) end
+	lastFlight = os.clock()
+	flightLoop = RunService.RenderStepped:Connect(flightStep)
+end
+ensureLoop()
 
 return ArrowFlight
