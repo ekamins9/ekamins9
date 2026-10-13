@@ -16,7 +16,7 @@
        Season.ended() -> bool        Season.endsAt() -> unix time ]]
 
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -38,7 +38,7 @@ end
 local function ended() return os.time() >= endsAt() end
 
 local function store(name)
-	local ok, ds = pcall(DataStoreService.GetDataStore, DataStoreService, name)
+	local ok, ds = pcall(Stores.get, name)
 	return ok and ds or nil
 end
 local function hubEvent() return ReplicatedStorage:FindFirstChild("HubEvent") end
@@ -98,7 +98,7 @@ local function payBoards()
 	end
 	local written = 0
 	for _, b in ipairs(boards) do
-		local ok, ods = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, b.key)
+		local ok, ods = pcall(Stores.ordered, b.key)
 		if ok and ods and b.lines then
 			local okP, pages = pcall(ods.GetSortedAsync, ods, false, 100)
 			local rank = 0

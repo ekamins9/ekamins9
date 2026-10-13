@@ -4,8 +4,10 @@
 
      The keys Roblox can delete by itself if you set up deletion templates (Creator Hub ▸
      Configurations ▸ Data stores manager ▸ RTBF Deletion; docs/LAUNCH.md lists them):
-       Profiles_v2 / Profiles_v1 / AdminQueue_v1 / Bans_v1    key  u{UserId}
-       LB_Warfront / LB_1v1 / LB_2v2 / LB_3v3 (ordered)       key  {UserId}
+       Profiles_v2 / Profiles_v1 / AdminQueue_v1 / Bans_v1 /
+       PlayerSettings_v1 / SeasonGrants_v1                    key  u{UserId}
+       LB_Warfront / LB_1v1 / LB_2v2 / LB_3v3 /
+       RecentPlayers_v1 (ordered)                             key  {UserId}
      What no template can reach, their id INSIDE shared records, this does (and the keys
      too, so one button is enough):
        Staff_v1 "roles" · Bans_v1 "index" · AdminLog_v1 "log" · TradeLog_v1 (each trade's key
@@ -17,26 +19,26 @@
      writes them back. ]]
 
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(script.Parent:WaitForChild("Stores"))
 local MessagingService = game:GetService("MessagingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Erasure = {}
 
 local function store(name)
-	local ok, s = pcall(DataStoreService.GetDataStore, DataStoreService, name)
+	local ok, s = pcall(Stores.get, name)
 	return ok and s or nil
 end
 local function ordered(name)
-	local ok, s = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, name)
+	local ok, s = pcall(Stores.ordered, name)
 	return ok and s or nil
 end
 
-local KEYED = {"Profiles_v2", "Profiles_v1", "AdminQueue_v1", "Bans_v1"}   -- key "u<id>"
+local KEYED = {"Profiles_v2", "Profiles_v1", "AdminQueue_v1", "Bans_v1", "PlayerSettings_v1", "SeasonGrants_v1"}   -- key "u<id>"
 local function boards()
 	local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 	local season = Catalog.PASS and Catalog.PASS.season or "S1"
-	local out = {}
+	local out = {"RecentPlayers_v1"}   -- (when they were last here: Hub ▸ Reminders)
 	for _, which in ipairs({"Warfront", "1v1", "2v2", "3v3"}) do
 		table.insert(out, "LB_" .. which)
 		if season ~= "S1" then table.insert(out, "LB_" .. season .. "_" .. which) end

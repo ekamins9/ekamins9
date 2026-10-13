@@ -30,7 +30,7 @@
      trade it, or scrap it. ]]
 
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local PolicyService = game:GetService("PolicyService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -70,7 +70,7 @@ Players.PlayerRemoving:Connect(function(plr) restricted[plr] = nil end)
 --  SERIAL NUMBERS (global) and LIMITED STOCK
 --------------------------------------------------------------------
 local store
-pcall(function() store = DataStoreService:GetDataStore("Serials_v1") end)
+pcall(function() store = Stores.get("Serials_v1") end)
 local localCounters = {}   -- Studio / no DataStore: counts for this server only
 local function dsKey(key) return (key:gsub("[^%w]", "")):sub(1, 48) end
 

@@ -21,7 +21,7 @@
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
-local DataStoreService  = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local DebugFlags        = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local GameConfig        = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
@@ -178,7 +178,7 @@ end)
 --------------------------------------------------------------------
 --  ROUND END: pay, stats, boards, ratings
 --------------------------------------------------------------------
-local function board(name) local ok, ds = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, name); return ok and ds or nil end
+local function board(name) local ok, ds = pcall(Stores.ordered, name); return ok and ds or nil end
 
 local function wonBy(plr, winner)
 	if winner == "" then return false end

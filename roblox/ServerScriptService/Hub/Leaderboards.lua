@@ -14,7 +14,7 @@
      empty, the players in this server stand in. ]]
 
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
@@ -58,7 +58,7 @@ function Leaderboards.top(which, n)
 	end
 	local rows = {}
 	pcall(function()
-		local ds = DataStoreService:GetOrderedDataStore(key)
+		local ds = Stores.ordered(key)
 		local page = ds:GetSortedAsync(false, math.max(n, 10))
 		for i, it in ipairs(page:GetCurrentPage()) do
 			local id = tonumber(it.key) or 0
@@ -105,7 +105,7 @@ function Leaderboards.profileOf(userId)
 	if c and os.time() - c.at < 300 then return c.p, nil end
 	local p
 	pcall(function()
-		local ds = DataStoreService:GetDataStore("Profiles_v2")
+		local ds = Stores.get("Profiles_v2")
 		p = ds:GetAsync("u" .. userId)
 	end)
 	if type(p) ~= "table" then p = nil end
@@ -120,7 +120,7 @@ function Leaderboards.lookOf(userId)
 	if c and os.time() - c.at < 600 then return c.look end
 	local look
 	pcall(function()
-		local ds = DataStoreService:GetDataStore("Profiles_v2")
+		local ds = Stores.get("Profiles_v2")
 		look = lookFrom(ds:GetAsync("u" .. userId))
 	end)
 	looks[userId] = {at = os.time(), look = look}

@@ -30,7 +30,7 @@
      goes in AdminLog_v1 (the LOG tab). ]]
 
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local MessagingService = game:GetService("MessagingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -53,7 +53,7 @@ local remote = Instance.new("RemoteFunction"); remote.Name = "AdminRemote"; remo
 local event = Instance.new("RemoteEvent"); event.Name = "AdminEvent"; event.Parent = ReplicatedStorage
 
 local function store(name)
-	local ok, s = pcall(DataStoreService.GetDataStore, DataStoreService, name)
+	local ok, s = pcall(Stores.get, name)
 	return ok and s or nil
 end
 local staffStore, banStore, queueStore, logStore = store("Staff_v1"), store("Bans_v1"), store("AdminQueue_v1"), store("AdminLog_v1")
@@ -290,7 +290,7 @@ local ON_PLAYER = {kick = true, ban = true, ["goto"] = false, bring = true, free
 -- server at once (MessagingService) and for servers that start later (DataStore)
 local ReplicatedStorageD = game:GetService("ReplicatedStorage")
 local dropStore
-pcall(function() dropStore = game:GetService("DataStoreService"):GetDataStore("AdminDrops_v1") end)
+pcall(function() dropStore = Stores.get("AdminDrops_v1") end)
 local function setDrops(forced, held)
 	ReplicatedStorageD:SetAttribute("DropsForced", forced or "")
 	ReplicatedStorageD:SetAttribute("DropsHeld", held or "")
@@ -511,6 +511,7 @@ local function act(plr, action, a)
 			if e.by == targetId or e.target == targetId then table.remove(memLog, i) end
 		end
 		logAction(plr, "erase", nil, nil, "a right-to-erasure request")
+		if ok and Stores.TEST then table.insert(report, 1, "STUDIO'S TEST DATA ONLY: do it again from a live server") end
 		return ok, ok and ("erased  ·  " .. table.concat(report, "  ·  ")) or tostring(report)
 	elseif action == "shutdown" then
 		local reason = TextFilter.broadcast(tostring(a.reason or ""):sub(1, 120), plr.UserId) or ""

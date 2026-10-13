@@ -2769,6 +2769,28 @@ do
 
 	local function renderLeft()
 		clear(leftList)
+		-- UPCOMING EVENTS, on top while there are any: Roblox's experience events (made on the
+		-- Creator Dashboard). REMIND ME RSVPs, and Roblox tells them when it starts (the list:
+		-- HX.upcoming, fetched below)
+		if HX.upcoming and #HX.upcoming > 0 then
+			local ep = panel(leftList, nil)
+			local eh = clearFrame(ep); eh.Size = UDim2.new(1, 0, 0, 26); eh.LayoutOrder = 0
+			local et = title(eh, "📅  UPCOMING EVENTS", 18); et.Size = UDim2.new(1, 0, 0, 24)
+			for i, ev in ipairs(HX.upcoming) do
+				if i > 2 then break end
+				local live = ev.start and ev.start <= os.time()
+				row(ep, string.upper(ev.title), live and "LIVE NOW" or (ev.start and ("IN " .. HX.span(ev.start - os.time())) or ""), false, nil, live and COL.GOOD or COL.DIM)
+				if not live then
+					local going = ev.status == Enum.RsvpStatus.Going
+					local rb = bigBtn(ep, going and "✔  YOU'LL BE REMINDED" or "🔔  REMIND ME", going and COL.GLASS2 or COL.PURPLE, function()
+						local ok, st = pcall(function() return game:GetService("SocialService"):PromptRsvpToEventAsync(ev.id) end)
+						if ok and st then ev.status = st; renderLeft() end
+					end)
+					rb.Size = UDim2.new(1, 0, 0, 36)
+				end
+			end
+		end
+
 		local c = panel(leftList, nil)
 		do
 			local h = clearFrame(c); h.Size = UDim2.new(1, 0, 0, 36); h.LayoutOrder = 0
@@ -2872,6 +2894,30 @@ do
 		local inv = bigBtn(f, "+  INVITE PLAYERS", COL.GREEN, inviteModal)
 		inv.Size = UDim2.new(1, 0, 0, 38)
 	end
+	-- Roblox's upcoming events for the card above, every ten minutes (fields read defensively:
+	-- only Id and UserRsvpStatus are documented)
+	task.spawn(function()
+		local SocialService = game:GetService("SocialService")
+		while true do
+			local ok, list = pcall(SocialService.GetUpcomingExperienceEventsAsync, SocialService)
+			if ok and type(list) == "table" then
+				local out = {}
+				for _, e in ipairs(list) do
+					local id = type(e) == "table" and (e.Id or e.id)
+					if id then
+						local t, start = e.StartTime or e.StartsAt or e.startTime, nil
+						if typeof(t) == "DateTime" then start = t.UnixTimestamp
+						elseif type(t) == "string" then local okD, d = pcall(DateTime.fromIsoDate, t); start = okD and d and d.UnixTimestamp or nil
+						elseif type(t) == "number" then start = t > 1e11 and math.floor(t / 1000) or t end
+						table.insert(out, {id = tostring(id), title = tostring(e.Title or e.DisplayTitle or e.Name or "Event"), start = start, status = e.UserRsvpStatus})
+					end
+				end
+				HX.upcoming = out
+				if open and currentTab == "PLAY" then renderLeft() end
+			end
+			task.wait(600)
+		end
+	end)
 
 	----------------------------------------------------------------
 	--  right: leaderboard + today's shop
@@ -6235,6 +6281,20 @@ function HX.offerLesson(classId)
 		{{"LEARN IT  ·  TRAINING YARD", COL.GREEN, function() HX.learn(c.tutor) end}})
 end
 
+-- Roblox's experience notifications (Hub ▸ Reminders sends them) are asked for right after the
+-- day's gift, when "your next gift is waiting" makes sense: once a session, from level 2; Roblox
+-- itself spaces the asks out, and only asks those 13+
+function HX.askReminders()
+	if HX.remindersAsked or _G.IntroActive or _G.TourActive then return end
+	if ((state.profile and state.profile.level) or 1) < 2 then return end
+	HX.remindersAsked = true
+	task.delay(1.2, function()
+		local ENS = game:GetService("ExperienceNotificationService")
+		local ok, can = pcall(ENS.CanPromptOptInAsync, ENS)
+		if ok and can then pcall(ENS.PromptOptIn, ENS) end
+	end)
+end
+
 local loginShownDay = nil
 local function loginPopup()
 	local L = state.login
@@ -6248,7 +6308,7 @@ local function loginPopup()
 			if r.profile then state.profile = r.profile; refreshWallet() end
 			closeModal()
 			renderSide()
-			if r.crate then HX.spinCrate(r.crate) end
+			if r.crate then HX.spinCrate(r.crate) elseif r.ok then HX.askReminders() end
 		end}} or nil, function(box)
 			local row7 = clearFrame(box); row7.Size = UDim2.new(1, 0, 0, 178); row7.LayoutOrder = 5
 			local l = hlist(row7, 8); l.HorizontalAlignment = Enum.HorizontalAlignment.Center

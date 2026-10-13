@@ -211,8 +211,13 @@ GameConfig.TAGLINE = "Every swing is yours to aim."
 -- by accident.
 GameConfig.GORE = false
 
--- Studio can't load saved profiles, so every Play would be a brand-new player
--- sent through basic training: there, only when this is true (test the path)
+-- Studio plays on its own saved data (Safety ▸ Stores: "Studio_" copies of every data store),
+-- so tests and cheats never touch a live save. True points Studio at the live game's stores:
+-- only on purpose (looking at real data), and never leave it on
+GameConfig.STUDIO_LIVE_DATA = false
+
+-- true: every Studio Play is a brand-new player sent through basic training, never saved (test
+-- the newcomer's path); false: Studio's saved test player, with training skipped
 GameConfig.STUDIO_NEWCOMER = false
 
 -- friendly fire: damage dealt to a teammate is multiplied by this (0 = none);

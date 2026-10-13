@@ -55,7 +55,7 @@
      Profile.save returns whether the save landed (a purchase is only granted once it has). ]]
 
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Catalog    = require(ReplicatedStorage:WaitForChild("Catalog"))
@@ -71,8 +71,8 @@ local store, oldStore
 local warned = false
 local function getStore()
 	if store then return store end
-	local ok, s = pcall(DataStoreService.GetDataStore, DataStoreService, STORE)
-	if ok then store = s; pcall(function() oldStore = DataStoreService:GetDataStore(OLD_STORE) end)
+	local ok, s = pcall(Stores.get, STORE)
+	if ok then store = s; pcall(function() oldStore = Stores.get(OLD_STORE) end)
 	elseif not warned then warned = true; warn("[Profile] DataStore unavailable:", s) end
 	return store
 end
@@ -224,6 +224,7 @@ end
 local function load(plr)
 	local data
 	local s = getStore()
+	if game:GetService("RunService"):IsStudio() and GameConfig.STUDIO_NEWCOMER then s = nil end
 	local safe = false
 	if s then
 		local raw, ok = claim(s, plr)

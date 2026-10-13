@@ -10,7 +10,7 @@
      Security) or saving silently no-ops (a warning is printed once). ]]
 
 local Players           = game:GetService("Players")
-local DataStoreService  = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
@@ -29,7 +29,7 @@ local store
 local warned = false
 local function getStore()
 	if store then return store end
-	local ok, s = pcall(DataStoreService.GetDataStore, DataStoreService, STORE_NAME)
+	local ok, s = pcall(Stores.get, STORE_NAME)
 	if ok then store = s else
 		if not warned then warned = true; warn("[Settings] DataStore unavailable:", s) end
 	end

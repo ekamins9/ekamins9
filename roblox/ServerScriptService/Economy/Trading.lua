@@ -24,7 +24,7 @@
 local Players = game:GetService("Players")
 local PolicyService = game:GetService("PolicyService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local DataStoreService = game:GetService("DataStoreService")
+local Stores = require(game:GetService("ServerScriptService"):WaitForChild("Safety"):WaitForChild("Stores"))
 local RunService = game:GetService("RunService")
 
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
@@ -41,7 +41,7 @@ Trading.INVITE_LIFE = 30
 
 local function log(...) DebugFlags.log("Economy", ...) end
 local logStore
-pcall(function() logStore = DataStoreService:GetDataStore("TradeLog_v1") end)
+pcall(function() logStore = Stores.get("TradeLog_v1") end)
 
 local function event() return ReplicatedStorage:FindFirstChild("HubEvent") end
 local function send(plr, ...) local ev = event(); if ev and plr.Parent then ev:FireClient(plr, ...) end end

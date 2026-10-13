@@ -51,6 +51,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Objectives.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Objectives` | LocalScript |
 | `ServerScriptService/Admin/AdminServer.server.lua`, `Roles.lua` | `ServerScriptService` → `Admin` (Folder) → `AdminServer` (Script), `Roles` (ModuleScript) | Script / ModuleScript |
 | `ServerScriptService/Safety/TextFilter.lua`, `Erasure.lua` | `ServerScriptService` → `Safety` (Folder) → `TextFilter` (Roblox's filter for anything typed that others read: server names, staff text), `Erasure` (a right-to-erasure request: every trace of a player) | ModuleScript each |
+| `ServerScriptService/Safety/Stores.lua` | `ServerScriptService` → `Safety` → `Stores` (every data store is opened through it; Studio gets `Studio_` copies so tests never touch live saves) | ModuleScript |
+| `ServerScriptService/Hub/Reminders.server.lua` | `ServerScriptService` → `Hub` → `Reminders` (Roblox notifications: a weekend event starting, the next daily gift; setup in docs/LAUNCH.md §8) | Script |
 | `ReplicatedStorage/Rules.lua` | `ReplicatedStorage` → `Rules` (the game's own rules and their consequences: the Courtyard board, MENU › SETTINGS › THE RULES, kick and ban messages) | ModuleScript |
 | `StarterPlayerScripts/AdminPanel.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `AdminPanel` | LocalScript |
 | `ReplicatedStorage/Defight.lua` | `ReplicatedStorage` → `Defight` | ModuleScript |

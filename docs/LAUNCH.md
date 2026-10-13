@@ -8,8 +8,9 @@ What's left before launch is for you: things in the Creator Dashboard, and thing
   - the archer outfit meshes;
   - the rebuilt training yard;
   - the Ranks icon;
-  - the badge-id slots.
-- [ ] **Game Settings ▸ Security ▸ Allow Studio access to API services: ON**. Without it, Studio can't load or save profiles, so you can't test saving, trading or crates in Studio. Live servers don't need it.
+  - the badge-id slots;
+  - the notification-id slots (ServerStorage ▸ NotifyIds, section 8).
+- [x] **Game Settings ▸ Security ▸ Allow Studio access to API services: ON** (done). Studio now saves between Plays, but to its **own test data**: every data store gets a `Studio_` copy (`Studio_Profiles_v2` and so on), so Studio's cheats and test runs never reach a live save. Live servers don't need this setting. To look at the real data from Studio on purpose, set `GameConfig.STUDIO_LIVE_DATA = true`, and turn it back off afterwards.
 - [ ] Publish.
 
 ## 2. Badges (Creator Dashboard ▸ your experience ▸ Monetization ▸ Badges)
@@ -191,12 +192,40 @@ New ad pictures: `blender/store_ads.py` (its header says how). The trailer: `ble
      | Standard Key | Profiles_v1 | `u{UserId}` |
      | Standard Key | AdminQueue_v1 | `u{UserId}` |
      | Standard Key | Bans_v1 | `u{UserId}` |
+     | Standard Key | PlayerSettings_v1 | `u{UserId}` |
+     | Standard Key | SeasonGrants_v1 | `u{UserId}` |
      | Ordered Key | LB_Warfront | `{UserId}` |
      | Ordered Key | LB_1v1 | `{UserId}` |
      | Ordered Key | LB_2v2 | `{UserId}` |
      | Ordered Key | LB_3v3 | `{UserId}` |
+     | Ordered Key | RecentPlayers_v1 | `{UserId}` |
 
      (From Season 2 the boards are `LB_<season>_Warfront` and so on: add those too.)
   2. **For each request:** their ID also sits inside shared records that no template reaches (staff roles, the ban list, the action log, trade logs). Open the admin panel (F2) › PLAYERS, look up the ID, then **ERASE ALL THEIR DATA**. Only the Owner sees this button. It kicks them everywhere, deletes their keys and scrubs their ID from everything. The log records only that an erasure happened.
 - [ ] **Reports.** Check Creator Hub's Safety dashboard now and then for abuse reports.
 - [ ] Recommended, not required: Roblox's own Ban API (`Players:BanAsync`) also catches alt accounts. The panel's bans are this game's own; say if you want them moved over.
+
+## 8. Bring players back: notifications and events
+
+Both are built into the game. Each needs a few minutes of setup on Roblox's side.
+
+**Notifications** (`Hub ▸ Reminders`). Roblox's own phone and desktop notifications. Players opt in through Roblox's prompt, which the menu shows right after they claim the day's gift (from level 2, once a session). Roblox only asks people 13+ and allows a game at most one notification per player per day. Two kinds:
+
+| Name | Text to make | When it's sent |
+|---|---|---|
+| Weekend | `{event} is on in Steel & Glory: come and fight!` | once, as a weekend event begins, to everyone seen in the last two weeks |
+| Daily | `Your day {day} gift is waiting in the Courtyard.` | about a day after someone's last visit |
+
+- [ ] Creator Dashboard ▸ your experience ▸ **Engagement ▸ Notifications** ▸ create both strings exactly as above (`{event}` and `{day}` are filled in by the game). Copy each one's ID.
+- [ ] In Studio: **ServerStorage ▸ NotifyIds**. Paste each ID into the `Value` of the StringValue with the same name (`Weekend`, `Daily`). The slots are already there.
+- [ ] Creator Hub ▸ **Open Cloud ▸ API Keys ▸ Create API Key**:
+  - add the **user.user-notification** API system;
+  - pick this experience and tick **write**;
+  - Accepted IP addresses: `0.0.0.0/0` (game servers have no fixed address).
+  - Copy the key.
+- [ ] Creator Dashboard ▸ your experience ▸ **Secrets ▸ Create Secret**: name `notifications`, value the key, domain `apis.roblox.com`.
+- [ ] **Game Settings ▸ Security ▸ Allow HTTP Requests: ON**. This is safe now: the counterfeit Studio Build Suite plugin is uninstalled and the place was scanned clean (2026-10-13). If any `require(<number>)` errors ever show up in Output again, turn HTTP off and tell me.
+- [ ] Save and publish. Until all of this is in place, the game sends nothing and nothing breaks: the server's output says what's missing.
+
+**Events** (the **UPCOMING EVENTS** card, top of the lobby's left column). Roblox's experience events: they show on the game page and in Roblox's event listings. Players can tap **Notify me**, and Roblox tells them when the event starts. In the game, the card shows the next two events with a **REMIND ME** button; once an event is live, it shows **LIVE NOW** instead.
+- [ ] Creator Hub ▸ your experience ▸ **Engagement ▸ Events ▸ Create Event**, for every weekend event: a title (e.g. "Siege Weekend"), its start and end, and one of the store thumbnails as its picture. The card shows up by itself; when there are no events, it isn't there.

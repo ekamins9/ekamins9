@@ -1,4 +1,41 @@
-# Updated scripts: SHOWCASE mode (film the game with a camera that directs itself)
+# Updated scripts: bringing players back (notifications, events) and Studio's own test data
+
+- **Notifications** (Roblox's phone and desktop ones; setup in docs/LAUNCH.md §8):
+  - a **Weekend** notification once, as a weekend event begins, to everyone seen in the last two weeks;
+  - a **Daily** one about a day after someone leaves ("your day N gift is waiting").
+  - Players opt in through Roblox's prompt, shown right after they claim the day's gift (from level 2, once a session).
+  - Only one server sends each batch (a MemoryStore lock); never in Studio.
+  - Who to remind: `RecentPlayers_v1` (when each player last left).
+- **Events:** an UPCOMING EVENTS card at the top of the lobby's left column, filled from Roblox's experience events. **REMIND ME** RSVPs, so Roblox notifies them when the event starts. A live event shows LIVE NOW. With no events, there's no card.
+- **Studio's own test data:** with Studio access to API services on, Studio's Play reached the live data stores. Every data store now opens through `Safety ▸ Stores`, which gives Studio `Studio_` copies. Studio saves between Plays, and its cheats never reach a live save.
+  - `GameConfig.STUDIO_LIVE_DATA` points Studio at the live stores, on purpose only.
+  - `STUDIO_NEWCOMER` now means a fresh, never-saved player every Play.
+  - The panel's ERASE says when it only reached Studio's test data.
+- **Erasure covers three more stores** with player data: `PlayerSettings_v1`, `SeasonGrants_v1` and `RecentPlayers_v1` (also added to the RTBF template table).
+- Checked in Play:
+  - Studio saved to `Studio_Profiles_v2`; the live profile was untouched (read only);
+  - the events call answers in Studio (no events yet); the opt-in check answers;
+  - the events card with two test events, one upcoming and one live, at the top of the column (the test events are removed);
+  - the place has no injected scripts, and the counterfeit plugin is uninstalled.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Safety/Stores.lua](ServerScriptService/Safety/Stores.lua) (new) | ServerScriptService ▸ Safety | ModuleScript | every data store; Studio's `Studio_` copies |
+| [Hub/Reminders.server.lua](ServerScriptService/Hub/Reminders.server.lua) (new) | ServerScriptService ▸ Hub | Script | the notifications: who, when, sending |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | UPCOMING EVENTS card and its fetch; the opt-in after the day's gift |
+| [Safety/Erasure.lua](ServerScriptService/Safety/Erasure.lua) | ServerScriptService ▸ Safety | ModuleScript | three more stores; through Stores |
+| [Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | through Stores; `STUDIO_NEWCOMER` never saves |
+| [Admin/AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService ▸ Admin | Script | through Stores; ERASE in Studio says so |
+| [SettingsServer.server.lua](ServerScriptService/SettingsServer.server.lua), [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua), [Economy/Season.server.lua](ServerScriptService/Economy/Season.server.lua) | ServerScriptService | Script | through Stores |
+| [Economy/Trading.lua](ServerScriptService/Economy/Trading.lua), [Economy/Collection.lua](ServerScriptService/Economy/Collection.lua), [Hub/Leaderboards.lua](ServerScriptService/Hub/Leaderboards.lua) | ServerScriptService | ModuleScript | through Stores |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | `STUDIO_LIVE_DATA` |
+| [README.md](README.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | §8 notifications and events setup; Studio's test data; RTBF table |
+
+Studio only (save the place): ServerStorage ▸ **NotifyIds** with empty `Weekend` and `Daily` StringValues for the notification IDs.
+
+---
+
+## Before that: SHOWCASE mode (film the game with a camera that directs itself)
 
 - **Admin panel (F2) › SHOWCASE**, for Owner and Admin. Seven showcases:
   - **siege**: two bot armies storm a castle;
