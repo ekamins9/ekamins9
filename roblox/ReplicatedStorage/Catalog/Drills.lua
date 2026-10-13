@@ -28,7 +28,8 @@
        meditate  that much mana won back meditating (you start low)
        ward      a blow turned by your Ward · chain (one Chain Lightning strikes
                  two targets) · staffhit (a hit with the staff's melee self)
-       spar      per skill: first (Marks for your first win) and again (each win after)
+       spar      per skill: first (Marks for your first win; the wins after pay nothing:
+                 the yard is for learning, not for farming bots)
        gauntlet  perWave (Marks for each wave past your best), payTo (no pay past this wave) ]]
 return {
 	lessons = {
@@ -93,13 +94,15 @@ return {
 	-- the teachers: who teaches each track, where (Map ▸ Spots), and the class it's for
 	tracks = {
 		knight = {master = "Sir Aldric, Drill Master", short = "DRILL MASTER", spot = "DrillMaster"},
-		archer = {master = "Wren, Bowmaster", short = "BOWMASTER", spot = "Bowmaster", class = "Archer", where = "THE ARCHERY RANGE"},
-		mage   = {master = "Magister Orrin", short = "MAGISTER", spot = "Magister", class = "Mage", where = "THE ARCANE CIRCLE"},
+		-- (weapon: what its lessons are fought with; you're handed it for them if your loadout
+		-- carries something else, a crossbow for the Bowmaster, a grimoire for the Magister)
+		archer = {master = "Wren, Bowmaster", short = "BOWMASTER", spot = "Bowmaster", class = "Archer", weapon = "Bow", where = "THE ARCHERY RANGE"},
+		mage   = {master = "Magister Orrin", short = "MAGISTER", spot = "Magister", class = "Mage", weapon = "Staff", where = "THE ARCANE CIRCLE"},
 	},
 	spar = {
-		Squire   = {first = 100, again = 15},
-		Knight   = {first = 250, again = 30},
-		Champion = {first = 600, again = 60},
+		Squire   = {first = 100},
+		Knight   = {first = 250},
+		Champion = {first = 600},
 	},
 	-- the Gauntlet: each wave cleared past your best pays perWave Marks (up to wave payTo)
 	gauntlet = {perWave = 25, payTo = 20},

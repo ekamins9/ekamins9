@@ -190,6 +190,21 @@ local function trackOpen(plr, track)
 	return not (t and t.class) or Catalog.classOpen(t.class, Profile.get(plr))
 end
 local spawnCharger, dropCharger   -- (below, with the ranges)
+-- is this body fit for a track's lessons? Its class, and the weapon they're fought with
+-- (Drills ▸ tracks ▸ weapon: the Bowmaster's need a bow, not a crossbow)
+local function carries(char, wid)
+	if not wid then return true end
+	local plr = Players:GetPlayerFromCharacter(char)
+	for _, holder in ipairs({char, plr and plr:FindFirstChildOfClass("Backpack")}) do
+		for _, t in ipairs(holder and holder:GetChildren() or {}) do
+			if t:IsA("Tool") and (t.Name == wid or t:GetAttribute("Twin") == wid) then return true end
+		end
+	end
+	return false
+end
+local function fitFor(char, t)
+	return char:GetAttribute("Class") == t.class and carries(char, t.weapon)
+end
 local function setLesson(plr, id)
 	local l = LESSON[id]
 	if not l then return end
@@ -210,8 +225,9 @@ local function setLesson(plr, id)
 	local t = D.tracks and D.tracks[l.track]
 	local char = plr.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
-	if t and t.class and char and char:GetAttribute("Class") ~= t.class and _G.Respawn then
-		_G.Respawn(plr, t.class, root and root.CFrame)
+	if t and t.class and char and not fitFor(char, t) and _G.Respawn then
+		if char:GetAttribute("Class") == t.class then toast(plr, "This lesson takes the " .. ((Catalog.WEAPON[t.weapon] or {}).name or t.weapon) .. ": here's one") end
+		_G.Respawn(plr, t.class, root and root.CFrame, {weapon = t.weapon})
 	elseif l.track == "knight" and char and _G.Respawn then
 		-- (Sir Aldric teaches steel: out of a bow or a staff, into your own class, or the default)
 		local cd = GameConfig.CLASSES[char:GetAttribute("Class") or ""]
@@ -475,6 +491,10 @@ local function teacher(track)
 	pcall(Dresser.dress, m, {loadout = lo, appearance = Catalog.BODY.defaults, weight = T.weight, preview = true})
 	pcall(Dresser.attachWeapon, m, T.weapon, T.weapon .. ":Default")
 	hum.DisplayName = tr.master
+	-- (their name over their head is NameTags': the name, and what they teach under it)
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	m:SetAttribute("TagName", (tr.master:match("^([^,]+)")))
+	m:SetAttribute("TagTitle", tr.short or "TEACHER")
 	hum.MaxHealth, hum.Health = 1e6, 1e6
 	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	-- no one cuts the Drill Master: out of the NPC folder, and blades pass through him
@@ -781,7 +801,7 @@ local function targetFor(plr)
 	if (ring and ring.player == plr) or practice[plr] then return nil end   -- you're fighting
 	local L = learners[plr]
 	local l = L and LESSON[L.id or ""]
-	if not l then return masterPos, "DRILL MASTER" end
+	if not l then return nil end   -- (nothing on: no beacon; the Drill Master's bubble says hello)
 	if l.event == "basics" or l.event == "meditate" or l.event == "cast" then return nil end   -- (right where you stand)
 	-- the Bowmaster's: the line to shoot from (the far one for a long shot), then the targets
 	if l.track == "archer" then
@@ -924,7 +944,7 @@ function Training.start(map)
 		elseif wantL then
 			-- straight in as that class, on its first lesson
 			local cls = D.tracks[want].class
-			if cls and _G.Respawn and not alive(plr) then _G.Respawn(plr, cls) end
+			if cls and _G.Respawn and not alive(plr) then _G.Respawn(plr, cls, nil, {weapon = D.tracks[want].weapon}) end
 			task.delay(1.5, function() if learners[plr] == L then setLesson(plr, wantL.id) end end)
 		else
 			local first = firstOpen(p, "knight")
@@ -938,9 +958,9 @@ function Training.start(map)
 			local tr = l and D.tracks[l.track]
 			if tr and tr.class then
 				task.delay(1, function()
-					if plr.Character == c and learners[plr] == L and LESSON[L.id or ""] == l and c:GetAttribute("Class") ~= tr.class and _G.Respawn then
+					if plr.Character == c and learners[plr] == L and LESSON[L.id or ""] == l and not fitFor(c, tr) and _G.Respawn then
 						local root = c:FindFirstChild("HumanoidRootPart")
-						_G.Respawn(plr, tr.class, root and root.CFrame)
+						_G.Respawn(plr, tr.class, root and root.CFrame, {weapon = tr.weapon})
 					end
 				end)
 			end

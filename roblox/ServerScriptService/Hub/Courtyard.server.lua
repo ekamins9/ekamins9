@@ -301,7 +301,11 @@ local function bard()
 	if ls then ls.C0 = ls.C0 * CFrame.Angles(0, 0, math.rad(-80)) end
 	settle(m)
 	local hum = m:FindFirstChildOfClass("Humanoid")
-	if hum then hum.DisplayName = "Wendel the Bard"; hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff end
+	if hum then
+		hum.DisplayName = "Wendel the Bard"; hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None   -- (NameTags draws his)
+	end
+	m:SetAttribute("TagName", "Wendel"); m:SetAttribute("TagTitle", "THE BARD")
 	for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.CanQuery = false end end
 	m.Parent = map
 	local notes = tag(m.Head, "♪", Color3.fromRGB(255, 230, 160))

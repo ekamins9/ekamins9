@@ -96,6 +96,17 @@ function Economy.award(plr, events)
 	marks = math.floor(marks * Drops.earnMult("marks", mode))
 	xp = math.floor(xp * Drops.earnMult("xp", mode))
 	local today = os.date("!%Y-%m-%d")
+	-- a long day's fighting: past E.daily.full Marks today, the rest pays E.daily.rest of it
+	local weary = false
+	if E.daily and marks > 0 then
+		if type(p.dayEarn) ~= "table" or p.dayEarn.day ~= today then p.dayEarn = {day = today, n = 0} end
+		local room = math.max(0, E.daily.full - p.dayEarn.n)
+		if marks > room then
+			marks = room + math.floor((marks - room) * E.daily.rest)
+			weary = true
+		end
+		p.dayEarn.n += marks
+	end
 	local firstWin = false
 	if events and (events.win or 0) > 0 and p.lastWinDay ~= today then
 		p.lastWinDay = today; marks += E.earn.firstWinOfDay.marks; firstWin = true
@@ -106,7 +117,7 @@ function Economy.award(plr, events)
 	addPassXP(plr, xp)
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
-	return {marks = marks, xp = xp, levels = levels, firstWin = firstWin, level = p.level}
+	return {marks = marks, xp = xp, levels = levels, firstWin = firstWin, level = p.level, weary = weary}
 end
 
 function Economy.spend(plr, marks, crowns)

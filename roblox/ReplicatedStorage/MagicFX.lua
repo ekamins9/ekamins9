@@ -792,13 +792,16 @@ local function hold(char)
 end
 
 function MagicFX.start()
-	local fxRemote = ReplicatedStorage:WaitForChild("MagicFXRemote", 30)
-	if fxRemote then
+	-- (the remote is made by Combat ▸ MagicServer the first time anyone holds a staff, which
+	-- can be long after you joined: wait for it as long as it takes, not holding up the rest.
+	-- A 30 s wait here once meant no spell was ever drawn for anyone who picked the Mage late)
+	task.spawn(function()
+		local fxRemote = ReplicatedStorage:WaitForChild("MagicFXRemote", math.huge)
 		fxRemote.OnClientEvent:Connect(function(what, ...)
 			local fn = EVENTS[what]
 			if fn then local ok, err = pcall(fn, ...); if not ok then warn("[MagicFX]", what, err) end end
 		end)
-	end
+	end)
 	local scan = 0
 	RunService.RenderStepped:Connect(function(dt)
 		local now = os.clock()

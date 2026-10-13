@@ -123,7 +123,10 @@ local function track(plr, char)
 			end
 		end
 	end
+	local watched = {}
 	local function watch(container)
+		if watched[container] then return end
+		watched[container] = true
 		container.ChildAdded:Connect(function(c)
 			if isWeapon(c) and container == char then c:SetAttribute("WasHeld", true) end
 			task.defer(sync)
@@ -131,9 +134,19 @@ local function track(plr, char)
 		container.ChildRemoved:Connect(function() task.defer(sync) end)
 	end
 	watch(char)
-	local backpack = plr:WaitForChild("Backpack", 10)
-	if backpack then watch(backpack) end
+	-- the Backpack: a body is handed a NEW one as it spawns, sometimes after this runs (the
+	-- old one, about to go, is what a WaitForChild would find), so every Backpack the player
+	-- gets is watched: the weapons handed out at spawn hang on you from the first moment
+	for _, c in ipairs(plr:GetChildren()) do if c:IsA("Backpack") then watch(c) end end
+	local bpConn
+	bpConn = plr.ChildAdded:Connect(function(c)
+		if not char.Parent then bpConn:Disconnect(); return end
+		if c:IsA("Backpack") then watch(c); task.defer(sync) end
+	end)
+	char.AncestryChanged:Connect(function() if not char.Parent and bpConn then bpConn:Disconnect() end end)
 	task.defer(sync)
+	-- (and a look a moment later, once the spawn has handed everything out and dressed you)
+	for _, t in ipairs({0.3, 1, 2.5}) do task.delay(t, sync) end
 end
 
 Players.PlayerAdded:Connect(function(plr)

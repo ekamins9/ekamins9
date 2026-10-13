@@ -1,6 +1,11 @@
 --[[ ECONOMY — the two currencies and what feeds them.
      Marks: earned by playing, or bought with Crowns.  Crowns: Robux only.
-       earn       Marks and XP per event (server-paid at round end; never trusted from a client)
+       earn       Marks and XP per event (server-paid at round end; never trusted from a client).
+                  A kill is a PLAYER's; a match's bot pays by its rank (kill_Squire …), far
+                  less, so a lobby of easy bots is no farm. The training yard pays only
+                  firsts (a lesson, a rank beaten in the ring, a best Gauntlet wave).
+       daily      battle Marks a day (UTC) at full pay; past `full`, rounds pay `rest` of it
+                  (the first win of the day's bonus always pays in full)
        products   Robux bundles. Make a Developer Product on the Creator Dashboard
                   (Monetization ▸ Developer Products) named exactly `product`; the
                   server links it by name at start (or paste its id as `id`)
@@ -20,9 +25,12 @@
                   like a pass reward ({marks}, {keys}, {crowns}, {egg}…) ]]
 return {
 	earn = {
-		round   = {marks = 60,  xp = 120},   -- played a round to the end
-		win     = {marks = 60,  xp = 120},   -- your side won / top of FFA
-		kill    = {marks = 10,  xp = 30},
+		round   = {marks = 50,  xp = 120},   -- played a round to the end
+		win     = {marks = 50,  xp = 120},   -- your side won / top of FFA
+		kill    = {marks = 8,   xp = 30},    -- a player
+		kill_Squire   = {marks = 1, xp = 8},    -- a bot (a match's fill bots, the Horde)
+		kill_Knight   = {marks = 2, xp = 12},
+		kill_Champion = {marks = 4, xp = 18},
 		parry   = {marks = 2,   xp = 5},
 		chamber = {marks = 3,   xp = 8},
 		drill   = {marks = 50,  xp = 60},    -- Tiltyard drill finished (once each)
@@ -30,6 +38,7 @@ return {
 		wave    = {marks = 15,  xp = 30},    -- a Horde wave beaten (everyone in the server)
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
+	daily = {full = 2500, rest = 0.4},
 	-- a Key so the first crate opens right away (the gift card sends them to the crates)
 	starterGift = {marks = 500, keys = 1},
 	products = {

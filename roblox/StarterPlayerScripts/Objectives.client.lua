@@ -159,8 +159,9 @@ local function fmtTime(s)
 	return string.format("%d:%02d", s // 60, s % 60)
 end
 
-local ok, objEvent = pcall(function() return ReplicatedStorage:WaitForChild("ObjectiveEvent", 30) end)
-if ok and objEvent then
+-- (made by the mode, Siege or Horde, whenever it comes up: waited for as long as it takes)
+task.spawn(function()
+	local objEvent = ReplicatedStorage:WaitForChild("ObjectiveEvent", math.huge)
 	objEvent.OnClientEvent:Connect(function(what, info)
 		if what ~= "Stage" or type(info) ~= "table" then return end
 		bannerToken += 1
@@ -195,7 +196,7 @@ if ok and objEvent then
 			task.delay(0.65, function() if bannerToken == token then banner.Visible = false end end)
 		end)
 	end)
-end
+end)
 
 --------------------------------------------------------------------
 --  EVERY FRAME

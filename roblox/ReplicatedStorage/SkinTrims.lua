@@ -17,6 +17,9 @@
      Add a trim: write a builder below (frame, palette → specs) and name it in
      a skin. ]]
 
+local CollectionService = game:GetService("CollectionService")
+local StaffHeads = require(script.Parent:WaitForChild("StaffHeads"))
+
 local SkinTrims = {}
 
 local GOLD    = Color3.fromRGB(232, 184, 74)
@@ -767,10 +770,78 @@ SkinTrims.RANGED = RT   -- (bows and crossbows: their own trim set)
 function SkinTrims.clear(tool)
 	local old = tool:FindFirstChild("Trim")
 	if old then old:Destroy() end
+	local h = tool:FindFirstChild("Handle")
+	if h then h:SetAttribute("HeadTip", nil) end
+end
+
+-- the parts of a spec list, welded to the Handle, in a Folder "Trim" (a spec may carry a
+-- name, a SkinPart, a transparency and an anim: ReplicatedStorage ▸ StaffHeads)
+local function build(tool, handle, specs)
+	local folder = Instance.new("Folder")
+	folder.Name = "Trim"
+	local anchoredTool = handle.Anchored
+	local moving = false
+	for i, s in ipairs(specs) do
+		local p = Instance.new("Part")
+		p.Name = s.name or ("Trim" .. i)
+		p.Shape = Enum.PartType[s.shape] or Enum.PartType.Block
+		p.Size = s.size
+		p.Color = s.color or STEEL
+		p.Material = s.material or M.SmoothPlastic
+		p.Transparency = s.transparency or 0
+		p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
+		p.Massless = true
+		p.CastShadow = false
+		p.Anchored = anchoredTool
+		p.CFrame = handle.CFrame * s.cf
+		p:SetAttribute("TrimPart", true)
+		if s.SkinPart then p:SetAttribute("SkinPart", s.SkinPart) end
+		local a = s.anim
+		if a then
+			-- (turned by the client: StarterPlayerScripts ▸ TrimAnim)
+			moving = true
+			p:SetAttribute("Anim", true)
+			p:SetAttribute("BaseC0", s.cf)
+			for k, r in ipairs(a.rot or {}) do
+				p:SetAttribute("AnimC" .. k, r.c); p:SetAttribute("AnimA" .. k, r.axis.Unit); p:SetAttribute("AnimS" .. k, r.speed)
+			end
+			if a.osc then p:SetAttribute("AnimOscC", a.osc.c); p:SetAttribute("AnimOscA", a.osc.axis.Unit); p:SetAttribute("AnimOsc", Vector3.new(a.osc.amp, a.osc.speed, 0)) end
+			if a.bob then p:SetAttribute("AnimBob", Vector3.new(a.bob[1], a.bob[2], a.bob[3] or 0)) end
+			if a.pulse then p:SetAttribute("AnimPulse", Vector3.new(a.pulse[1], a.pulse[2], a.pulse[3])) end
+		end
+		local w = Instance.new("Weld")
+		w.Part0, w.Part1, w.C0 = handle, p, s.cf
+		w.Parent = p
+		p.Parent = folder
+	end
+	folder.Parent = tool
+	if moving then CollectionService:AddTag(folder, "TrimAnim") end
+	return folder
+end
+
+-- A STAFF'S HEAD (StaffHeads): the plain claws and orb hidden (Dresser shows them again on
+-- the next skin), the design's head built, the spell's tip moved to its core
+local function applyHead(tool, skin)
+	local G = StaffHeads.frame(tool)
+	local d = G and StaffHeads.design(skin, G)
+	if not d then return false end
+	local hide = {}
+	for _, n in ipairs(d.hide or {}) do hide[n] = true end
+	for _, p in ipairs(tool:GetDescendants()) do
+		if p:IsA("BasePart") and hide[p.Name] and not p:GetAttribute("TrimPart") and p.Transparency < 1 then
+			p.Transparency = 1
+			p:SetAttribute("SkinHidden", true)
+		end
+	end
+	build(tool, G.handle, d.parts)
+	if d.tip then G.handle:SetAttribute("HeadTip", d.tip) end
+	return true
 end
 
 function SkinTrims.apply(tool, skin)
 	SkinTrims.clear(tool)
+	if StaffHeads.has(skin) then return applyHead(tool, skin) end
 	if not (skin and skin.trim) then return false end
 	local P = {blade = skin.blade or STEEL, grip = skin.grip or LEATHER, accent = rarityAccent(skin), glow = skin.glow}
 	local ok, specs, F
@@ -798,31 +869,7 @@ function SkinTrims.apply(tool, skin)
 		end
 	end
 	if not ok or type(specs) ~= "table" then warn("[SkinTrims]", skin.trim, specs); return false end
-	local folder = Instance.new("Folder")
-	folder.Name = "Trim"
-	local handle = F.handle
-	local anchoredTool = handle.Anchored
-	for i, s in ipairs(specs) do
-		local p = Instance.new("Part")
-		p.Name = "Trim" .. i
-		p.Shape = Enum.PartType[s.shape] or Enum.PartType.Block
-		p.Size = s.size
-		p.Color = s.color or STEEL
-		p.Material = s.material or M.SmoothPlastic
-		p.Transparency = s.transparency or 0
-		p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
-		p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
-		p.Massless = true
-		p.CastShadow = false
-		p.Anchored = anchoredTool
-		p.CFrame = handle.CFrame * s.cf
-		p:SetAttribute("TrimPart", true)
-		local w = Instance.new("Weld")
-		w.Part0, w.Part1, w.C0 = handle, p, s.cf
-		w.Parent = p
-		p.Parent = folder
-	end
-	folder.Parent = tool
+	build(tool, F.handle, specs)
 	return true
 end
 

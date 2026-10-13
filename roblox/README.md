@@ -71,7 +71,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts`, `Store`, `Pass`, `Login`, `KillFX`, `Emotes` (children of the Catalog ModuleScript) | ModuleScript each |
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
 | `ReplicatedStorage/PreviewRig.lua` | `ReplicatedStorage` → `PreviewRig` (a dressed mannequin for menus) | ModuleScript |
-| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX` (a skin's trim parts; its trail and aura) | ModuleScript each |
+| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads` (a skin's trim parts; its trail and aura; a staff skin's head) | ModuleScript each |
 | `ReplicatedStorage/KillFX.lua`, `Emotes.lua` | `ReplicatedStorage` → `KillFX`, `Emotes` (the effects and motions) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
@@ -84,7 +84,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
 | `StarterPlayerScripts/Scoreboard.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scoreboard` | LocalScript |
 | `StarterPlayerScripts/NameTags.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NameTags` | LocalScript |
-| `StarterPlayerScripts/SkinFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SkinFX` | LocalScript |
+| `StarterPlayerScripts/SkinFX.client.lua`, `TrimAnim.client.lua`, `DrawFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SkinFX`, `TrimAnim`, `DrawFX` | LocalScript each |
 | `ServerScriptService/Loadout/Armor.lua` | `ServerScriptService` → `Loadout` (Folder) → `Armor` | ModuleScript |
 | `ServerScriptService/Loadout/LoadoutServer.server.lua` | `ServerScriptService` → `Loadout` → `LoadoutServer` | Script |
 | `ServerStorage/Armor/<Set>/Config.lua` | `ServerStorage` → `Armor` (Folder) → each set → `Config` | ModuleScript |
@@ -393,7 +393,9 @@ carries `Skin` and `ArrowFx` attributes (`LoadoutServer`); the server passes the
 Heartseeker and Glacier are earned by kills; Stormcaller and Thunderbolt come from the Royal crate;
 the Gilded Longbow is on the shelf. The reticle shows the shake and closes as you draw; full
 draw zooms a little. On a touch screen, hold a SWING button to draw, BLOCK lets down. Bows hang
-across the back when not in hand (`Holsters`). Tuning: each Tool's `Config` over
+across the back when not in hand (`Holsters`: every weapon you carry is on you from the moment you
+spawn; the script watches every Backpack the player is given, since a respawn hands out a new one
+after the body arrives). Tuning: each Tool's `Config` over
 `RangedServer.DEFAULTS` / `RangedClient.DEFAULTS`.
 
 ## The Mage: staffs, grimoires, wands, an arsenal of spells (`Combat ▸ MagicServer`, `Combat ▸ MagicClient`, `MagicSpells`)
@@ -666,7 +668,11 @@ browser shows only this server and PLAY switches this server's mode locally.
 
 **Money.** Marks are earned (`Catalog ▸ Economy ▸ earn`: round, win, kills, parries, chambers,
 drills, first win of the day; paid by `Scoreboard` at round end through `Economy.award`, with a
-pay card on screen) or exchanged from Crowns; Crowns come from Robux Developer Products
+pay card on screen) or exchanged from Crowns. **No farming bots:** a player's kill pays 8 Marks, a
+match's bot only 1 / 2 / 4 by its rank (`kill_Squire` / `kill_Knight` / `kill_Champion`; the Horde's
+too), the training yard pays only firsts (a lesson, a rank beaten in the ring, a best Gauntlet
+wave), and past 2500 battle Marks in a day (UTC) the rest of the day's rounds pay 40% (`daily`;
+the pay card says A LONG DAY; the first win of the day's bonus always pays in full); Crowns come from Robux Developer Products
 (`EconomyServer` handles receipts once each). Contracts (`Catalog ▸ Contracts`, three dailies
 + one weekly drawn per date) and weapon unlocks (level or kill counts) come from `Stats`.
 **Ranked.** The Lists queue is a MemoryStore ticket per party and bracket; one server at a time
@@ -721,13 +727,16 @@ the map's `Spots`:
 
 ## Name tags and titles
 
-Roblox's own overhead names are off (players: `LoadoutServer`; bots: `Bots`). `NameTags` (client)
+Roblox's own overhead names are off (players: `LoadoutServer`; bots: `Bots`; the map's characters:
+the training yard's teachers, the Courtyard's bard). `NameTags` (client)
 draws ours, and only when it makes sense: someone within 9 studs, or your aim (the middle of the
 screen, or the mouse when it's free) on their body within 45 studs with a clear line of sight;
 in the Courtyard everyone within 24 studs shows too. Names fade in fast and out slowly.
 - **The look:** a level badge, a staff badge (OWNER · ADMIN · MOD · HELPER in their role's colour),
   a gold crown and a gold shimmering name for **season pass** holders; team colours in team modes;
-  bots in their rank's colour with their rank under the name (a Warlord in gold).
+  bots in their rank's colour with their rank under the name (a Warlord in gold); a map's
+  character (a Model in `workspace ▸ Map` with `TagName`) in gold with what they do under it
+  (`TagTitle`: DRILL MASTER, BOWMASTER, MAGISTER, THE BARD).
 - **Titles** (picked in APPEARANCE; free, earned in battle or from the pass) show under your name
   tag, after your name on the Tab board, and after yours in the kill feed when you get a kill (the
   free *Recruit* is left out). The board and the feed crown pass holders too.
@@ -779,6 +788,27 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   all an aura **hums** (`SkinFX.HUM`, Pro Sound Effects loops): a crackle of fire, an electric hum, a
   shimmer, a low pulse, only heard up close and swelling a little as it swings (a windup turning into its release is one swing), and a
   sound with a `cut` fades out over 0.18 s instead of snapping off.
+- **Staff heads** (`StaffHeads`): a Mage's staff skin is a whole new head, never a recolour. Each
+  staff skin names a design (`Catalog ▸ Skins head = "…"`); `SkinTrims` hides the plain claws and
+  orb (`SkinHidden`, shown again on the next skin) and builds the head, `SkinFX` adds its lights,
+  particles, lightning beams and trails and moves the spell's tip (`TrailTip`) to the head's core
+  (`HeadTip`). The rarer, the wilder: Commons get their own shape and a breathing stone (Ashwood's
+  crook, Oaken's amber); Rares an aura and something moving (Emberwood's coal and circling embers,
+  Frostbranch's ice burst, Gilt Spire's floating gem, Bloodroot's beating heart); Epics machinery
+  (Verdant Bough's turning leaves round a flower, Stormcaller's lightning between the prongs,
+  Bonecaller's skull with circling ghosts, Sunspire's wheeling rays); Legendaries a living head
+  (the Archmage's gyroscope of three rings, Dragonbone's skull with fire in its jaws and beating
+  wings, the Voidstaff's black hole drawing light in); the Mythic Staff of the Cosmos a star with
+  three worlds in orbit, a moon round the ringed one, dust paths and a wheel of constellations.
+  The moving parts carry `Anim` attributes (rotations about a centre, innermost first; `osc`,
+  `bob`, `pulse`) and the Trim folder the tag `TrimAnim`; `StarterPlayerScripts ▸ TrimAnim` turns
+  them on every client (weld C0s in the world, CFrames in previews; still past 140 studs) and makes
+  the heads' lights breathe, flicker or walk the rainbow and their lightning jump.
+- **Drawing a weapon** (`DrawFX`, client): taking a weapon in hand, the arm reaches to where it
+  hangs (over the right shoulder for a two-hander, a bow or a staff; across to the left hip for a
+  one-hander or a grimoire; the right hip for a dagger or a wand) and sweeps it out into the
+  weapon's idle, laid over the animation for 0.4 s (two-handers 0.52 s) on everyone's screen
+  (players and bots); a staff turning into its melee self doesn't count. Settings ▸ Draw animation.
 - **Kill effects** (`KillFX` + `Catalog ▸ KillFX`): nobody starts with one (profile `killfx` "" = a
   plain fall; ARMORY ▸ KILL FX ▸ *No effect* goes back to it). `Scoreboard` (and the training dummies) call
   `_G.KillFxHook(killer, victimCharacter)`; `Hub ▸ Cosmetics` checks the killer owns the equipped
@@ -1186,6 +1216,11 @@ side you get is a setting (⚙ → Keybinds → *Attack side*):
 
 ## Attack animations, timing, morphs and combos
 
+**Drawing takes a moment** (`CombatServer` `DRAW_TIME` 0.35 s, `DRAW_TIME_2H` 0.5 s): a weapon just
+taken in hand can't strike until it's out, and the recovery a swing owes follows you to the next
+weapon (the character's `ActionLock`, set as a weapon leaves the hand), so switching weapons is
+never a way round a recovery. A press in a draw's last 0.3 s goes off the moment it's out.
+
 Every attack is `<Side><Type>` (Left/Right × Swing/Stab/Overhead/Underhand) with **one clip**:
 `anim`, the swing. Its first frame is the loaded pose. **The windup is a blend**: the clip fades
 in frozen on that first frame over `WINDUP` seconds — from idle, from a block, from another
@@ -1531,7 +1566,11 @@ it from the map's `Spots`:
   straw butts, a near line and a far line) and **Magister Orrin** (the arcane circle in the yard's
   east end, open ground of its own past the ring: rune stones, banners, torches, three dummies
   standing close beyond it): each class's own lessons (`Catalog ▸ Drills`,
-  `track = "archer"` / `"mage"`), fought dressed as that class (`_G.Respawn`, in place). The
+  `track = "archer"` / `"mage"`), fought dressed as that class (`_G.Respawn`, in place) and with
+  the weapon they're taught with (`Drills ▸ tracks ▸ weapon`: a Bow for the Bowmaster even if your
+  Archer carries a crossbow, the Arcane Staff for the Magister instead of a grimoire; your own skin
+  for it if a loadout of yours has one; for that body only). No lesson on, no beacon: the guide's
+  pillar of light used to stand on Sir Aldric for good once you'd finished. The
   Bowmaster's: loose, full draw (`LastHitPower`), a headshot, a hit from the far line, then a Squire
   charging down the range. The Magister's: a spell on a dummy, three different spells cast
   (`CastTick`), forty mana won back meditating, two blows warded (`WardHit`), one Chain Lightning
@@ -1551,8 +1590,8 @@ it from the map's `Spots`:
   bot. After a 3-2-1 it's a fight to the death; leaving the ring forfeits. **The countdown holds
   you on your mark** (`Training` `hold`: `SpeedMult_Hold` = 0, `HoldUntil` for the client,
   `StunnedUntil` for the server) with a full stamina bar, and the bots start on the same tick as
-  FIGHT (the client counts to the server time it's sent). A first win at each
-  level pays (`Catalog ▸ Drills ▸ spar`); wins are kept per level. The last lesson's Squire
+  FIGHT (the client counts to the server time it's sent). The first win at each
+  level pays (`Catalog ▸ Drills ▸ spar`), once; the wins after are for the glory (kept per level). The last lesson's Squire
   comes out the moment you step into the ring.
 - **The Gauntlet** (in the ring): waves of bots, each harder (Squire, two Squires, a Knight… then
   Champions), a breath, some health and all your stamina back between waves (and you're put back

@@ -1,4 +1,58 @@
-# Updated scripts: armor in sets, previews that breathe, room for the Mage
+# Updated scripts: epic staffs, spells you can see, no weapon-swap cheese, no bot farming
+
+- **Spells were invisible.** Your screen listened for spell effects for only 30 seconds after you joined, and the game sets that channel up only when someone first holds a staff. Pick the Mage later than that and no bolt, circle or blast was ever drawn. Now it waits as long as it takes. Siege and Horde banners had the same limit; fixed too.
+- **Staff skins are whole new heads, not recolours.** The rarer, the wilder:
+  - **Common:** Ashwood's pale crook over a breathing crystal; Oaken's gnarled branches round a turning amber.
+  - **Rare:**
+    - Emberwood: a burning coal in charred prongs, with embers circling it.
+    - Frostbranch: a burst of ice round a spinning frost crystal.
+    - Gilt Spire: a floating gem over a turning halo.
+    - Bloodroot: a heart that beats in thorned roots and drips.
+  - **Epic:**
+    - Verdant Bough: leaves wheeling round a flower in bloom, with fireflies.
+    - Stormcaller: real lightning crackling between the prongs of a fork, rune rings whirling.
+    - Bonecaller: a skull with burning eyes and ghosts circling it.
+    - Sunspire: a wheel of rays turning round a white sun.
+  - **Legendary:**
+    - Archmage's Rod: a crystal inside a gyroscope of three rings, each turning on its own axis.
+    - Dragonbone: a dragon skull with fire in its jaws and bone wings that beat.
+    - Voidstaff: a black hole with a whirling disc, orbiting shards, and light pulled in.
+  - **Mythic:** the Staff of the Cosmos. A star on a golden astrolabe, three worlds in orbit (a moon going round the ringed one), their paths in dust, a wheel of constellations, a nebula, and light that walks the rainbow.
+  - Spells now leave from the head's core.
+- **Weapon swap exploit fixed.** Each weapon kept its own swing timer, so swapping and stabbing skipped the recovery. Now:
+  - A drawn weapon can't strike for 0.35 s (two-handers 0.5 s).
+  - The recovery you owe follows you to the next weapon.
+  - The server decides this; a press in the last moment of the draw still goes off.
+- **A draw animation.** Your arm reaches over your shoulder or to your hip and pulls the weapon out. Everyone sees it on players and bots. Settings ▸ Draw animation turns it off.
+- **Holstered weapons show from the moment you spawn.** Before, they appeared only after you had equipped and put one away: the holster script was watching the old backpack.
+- **Training yard:**
+  - The Bowmaster's lessons hand you a bow even if your Archer carries a crossbow; the Magister's hand you the staff.
+  - Sir Aldric no longer wears a pillar of light forever (the guide beacon pointed at him whenever no lesson was on).
+  - The teachers and the Courtyard's bard wear our gold name tags (name, and what they do under it) instead of Roblox's.
+- **Marks: no farming bots.**
+  - Sparring wins in the ring pay only the first time per rank.
+  - A match's bots pay 1 / 2 / 4 Marks by rank (a player pays 8).
+  - Round pay is down a little (50 / 50).
+  - Past 2500 Marks of battle pay in a day, rounds pay 40% for the rest of it ("A LONG DAY" on the pay card).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [StaffHeads.lua](ReplicatedStorage/StaffHeads.lua) (new) | ReplicatedStorage ▸ StaffHeads | ModuleScript | the 14 staff heads and their effects |
+| [SkinTrims.lua](ReplicatedStorage/SkinTrims.lua), [SkinFX.lua](ReplicatedStorage/SkinFX.lua), [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | heads built, plain head hidden, spell tip moved; hidden parts restored first |
+| [Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage ▸ Catalog ▸ Skins | ModuleScript | `head` on every staff skin |
+| [TrimAnim.client.lua](StarterPlayerScripts/TrimAnim.client.lua) (new), [DrawFX.client.lua](StarterPlayerScripts/DrawFX.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the heads' motion, lights, lightning; the draw |
+| [MagicFX.lua](ReplicatedStorage/MagicFX.lua), [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua) | ReplicatedStorage; StarterPlayerScripts | ModuleScript; LocalScript | wait for their remotes without a time limit |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | the draw time and the carried-over recovery |
+| [Holsters.server.lua](ServerScriptService/Loadout/Holsters.server.lua) | ServerScriptService ▸ Loadout | Script | every Backpack watched |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua), [Training.lua](ServerScriptService/Game/Training.lua), [Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ServerScriptService; ReplicatedStorage ▸ Catalog | Script; ModuleScript | a lesson's weapon; no idle beacon; teachers' tags; spar pays once |
+| [NameTags.client.lua](StarterPlayerScripts/NameTags.client.lua), [Courtyard.server.lua](ServerScriptService/Hub/Courtyard.server.lua) | StarterPlayerScripts; ServerScriptService ▸ Hub | LocalScript; Script | map characters' tags |
+| [Economy.lua](ReplicatedStorage/Catalog/Economy.lua) (catalog), [Economy.lua](ServerScriptService/Economy/Economy.lua), [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua), [Horde.lua](ServerScriptService/Game/Modes/Horde.lua), [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua), [Training.client.lua](StarterPlayerScripts/Training.client.lua) | | | bot kills by rank, the daily cap, the pay card |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage ▸ ClientSettings | ModuleScript | Draw animation On / Off |
+| [README.md](README.md) | | doc | all of the above |
+
+---
+
+## Before that: armor in sets, previews that breathe, room for the Mage
 
 - **Inventory shows armor as sets.** One card per set ("complete" or "1 of 3 pieces"), never a lone piece; a set's card opens the Armory on that set.
 - **A quicker Inventory.** All the cards appear at once, and each 3D thumbnail is built only as it scrolls into view (a few a frame). A big collection opens without the hitch.

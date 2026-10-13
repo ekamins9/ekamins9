@@ -29,6 +29,7 @@
 
 local CollectionService = game:GetService("CollectionService")
 local SkinTrims = require(script.Parent:WaitForChild("SkinTrims"))
+local StaffHeads = require(script.Parent:WaitForChild("StaffHeads"))
 
 local SkinFX = {}
 
@@ -236,7 +237,7 @@ function SkinFX.clear(tool)
 		for _, k in ipairs({"SkinAura", "SkinRarity", "SkinVariant"}) do h:SetAttribute(k, nil) end
 	end
 	for _, d in ipairs(tool:GetDescendants()) do
-		if (d:IsA("ParticleEmitter") or d:IsA("PointLight")) and d:GetAttribute("SkinFX") then d:Destroy() end
+		if (d:IsA("ParticleEmitter") or d:IsA("PointLight") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Attachment")) and d.Parent and d:GetAttribute("SkinFX") then d:Destroy() end
 	end
 end
 
@@ -299,6 +300,9 @@ function SkinFX.apply(tool, skin, variant)
 	-- the blade's line, guard to tip, in the Handle's space
 	local base = Vector3.new(F.bX, F.guard + math.min(0.25, F.bLen * 0.15), 0)
 	local tipPos = Vector3.new(F.bX, F.tip - 0.05, 0)
+	-- (a staff's head: the spell leaves from its core, wherever the design put it)
+	local headTip = handle:GetAttribute("HeadTip")
+	if typeof(headTip) == "Vector3" then tipPos = headTip end
 	local tip = attachment(handle, "TrailTip", tipPos)
 	if wantsTrail(skin, variant) then
 		local a0 = attachment(handle, "TrailBase", base)
@@ -360,6 +364,8 @@ function SkinFX.apply(tool, skin, variant)
 		handle:SetAttribute("SkinAura", skin.fx)
 		any = true
 	end
+	-- A STAFF'S HEAD: its own lights, particles, lightning and trails (StaffHeads)
+	if StaffHeads.has(skin) and StaffHeads.fx(tool, skin, emitter) then any = true end
 	-- MYTHIC and UNIQUE: stars twinkle along the blade in its glow; a Unique's glow,
 	-- trails and a shimmer walk through the rainbow, always (the client driver turns them)
 	if mythic then

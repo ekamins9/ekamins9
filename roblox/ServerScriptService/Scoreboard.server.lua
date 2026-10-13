@@ -112,9 +112,10 @@ local function onDied(char)
 			if Stats then Stats.weaponKill(killerPlr, weapon) elseif Profile then Profile.addStat(killerPlr, "kill", 1) end
 		elseif char:GetAttribute("FillBot") and (char:GetAttribute("Team") == nil
 			or char:GetAttribute("Team") ~= (killerPlr.Character and killerPlr.Character:GetAttribute("Team"))) then
-			-- a match's fill bot (Game ▸ BotFill): it pays like a kill this round, but stays
-			-- off the lifetime kill count and the leaderboard
-			bump(killerPlr, "kill")
+			-- a match's fill bot (Game ▸ BotFill): it pays this round by its rank (far less
+			-- than a player: Catalog ▸ Economy kill_<rank>), and stays off the lifetime kill
+			-- count and the leaderboard
+			bump(killerPlr, "kill_" .. (char:GetAttribute("BotSkill") or "Squire"))
 		end
 		-- the killer's kill effect on the body (Hub ▸ Cosmetics)
 		if _G.KillFxHook then task.spawn(_G.KillFxHook, killerPlr, char) end
@@ -245,7 +246,8 @@ if Game then
 		for _, p in ipairs(Players:GetPlayers()) do
 			local c = roundCount[p] or {}
 			local won = wonBy(p, winner)
-			local events = {round = 1, win = won and 1 or 0, kill = c.kill or 0, parry = c.parry or 0, chamber = c.chamber or 0, objective = c.objective or 0, wave = c.wave or 0}
+			local events = {round = 1, win = won and 1 or 0, kill = c.kill or 0, parry = c.parry or 0, chamber = c.chamber or 0, objective = c.objective or 0, wave = c.wave or 0,
+				kill_Squire = c.kill_Squire or 0, kill_Knight = c.kill_Knight or 0, kill_Champion = c.kill_Champion or 0}
 			local pay = Economy and Economy.award(p, events) or {marks = 0, xp = 0, levels = 0}
 			if Stats and not (Economy and pay.blocked) then
 				Stats.add(p, "round", 1)
@@ -264,7 +266,8 @@ if Game then
 			if ev then
 				local r = ranked[p]
 				ev:FireClient(p, "Rewards", {marks = pay.marks or 0, xp = pay.xp or 0, level = pay.level, levels = pay.levels or 0,
-					firstWin = pay.firstWin == true, blocked = pay.blocked == true, won = won, kills = events.kill, parries = events.parry,
+					firstWin = pay.firstWin == true, blocked = pay.blocked == true, weary = pay.weary == true, won = won,
+					kills = events.kill + events.kill_Squire + events.kill_Knight + events.kill_Champion, parries = events.parry,
 					result = result, rating = r and r.rating or nil, delta = r and r.delta or nil, matchOver = Game.node:GetAttribute("MatchOver") == true})
 			end
 		end

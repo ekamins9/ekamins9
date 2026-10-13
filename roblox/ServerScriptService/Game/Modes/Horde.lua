@@ -127,7 +127,7 @@ function Horde:spawnOne(skill, at)
 		onDeath = function(b, killer)
 			self.live[b] = nil
 			self.killed += 1
-			if killer and _G.RoundBump then _G.RoundBump(killer, "kill") end
+			if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (warlord and "Champion" or skill or "Squire")) end
 		end,
 	})
 	if warlord then

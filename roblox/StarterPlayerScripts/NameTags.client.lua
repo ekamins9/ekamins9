@@ -14,6 +14,8 @@
        the title     under the name: the title they wear (player attribute Title,
                      the free "Recruit" left out); a bot shows its rank
        the level     a small badge before the name (player attribute Level)
+     Characters of the map (the training yard's teachers, the Courtyard's bard) get one
+     too: any Model in workspace ▸ Map with a TagName attribute (TagTitle under it).
      Player attributes come from Hub ▸ Pastimes (Title, Level, PassHolder) and
      Admin ▸ AdminServer (StaffRole). ]]
 
@@ -122,6 +124,8 @@ local function paint(tag)
 		local rank = model:GetAttribute("BotSkill")
 		title = rank and string.upper(rank) or ""
 		color = RANK[rank or ""] or Color3.fromRGB(220, 220, 220)
+		-- (a character of the map: a teacher, the bard; gold, what they do under the name)
+		if model:GetAttribute("TagTitle") then title = model:GetAttribute("TagTitle"); color = GOLD end
 		if model:GetAttribute("Boss") then gold = true; color = GOLD; title = "WARLORD" end
 	end
 	if tc then color = tc end
@@ -139,7 +143,7 @@ local function paint(tag)
 	end
 	tag.titleLabel.Text = title
 	tag.titleLabel.Visible = title ~= ""
-	tag.titleLabel.TextColor3 = plr and TITLE_COL or Color3.fromRGB(200, 200, 210)
+	tag.titleLabel.TextColor3 = (plr or model:GetAttribute("TagTitle")) and TITLE_COL or Color3.fromRGB(200, 200, 210)
 end
 
 local function makeTag(model, plr)
@@ -231,11 +235,37 @@ local function watchNpc(m)
 		if m.Parent and m:GetAttribute("Bot") and not tags[m] then makeTag(m, nil) end
 	end)
 end
+-- the map's characters (a TagName on a Model in workspace ▸ Map), whichever map is up
+local function watchMap(map)
+	if not (map:IsA("Model") or map:IsA("Folder")) or map.Name ~= "Map" then return end
+	local function maybe(m)
+		if m:IsA("Model") and m:GetAttribute("TagName") and not tags[m] then
+			task.spawn(function()
+				m:WaitForChild("Head", 5)
+				if m.Parent and not tags[m] then
+					makeTag(m, nil)
+					-- (gone with its map, however it goes)
+					local c; c = m.AncestryChanged:Connect(function()
+						if not m:IsDescendantOf(workspace) then c:Disconnect(); dropTag(m) end
+					end)
+				end
+			end)
+		end
+	end
+	map.ChildAdded:Connect(maybe)
+	map.ChildRemoved:Connect(dropTag)
+	for _, m in ipairs(map:GetChildren()) do maybe(m) end
+end
+workspace.ChildAdded:Connect(watchMap)
+for _, c in ipairs(workspace:GetChildren()) do watchMap(c) end
 task.spawn(function()
 	local npcs = workspace:WaitForChild("NPCs", 60)
 	if not npcs then return end
 	npcs.ChildAdded:Connect(watchNpc)
-	npcs.ChildRemoved:Connect(dropTag)
+	-- (a map's character starts out here and moves onto the map: its tag stays)
+	npcs.ChildRemoved:Connect(function(m)
+		if not (m:GetAttribute("TagName") and m:IsDescendantOf(workspace)) then dropTag(m) end
+	end)
 	for _, m in ipairs(npcs:GetChildren()) do watchNpc(m) end
 end)
 

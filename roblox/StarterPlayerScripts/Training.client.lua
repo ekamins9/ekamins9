@@ -466,7 +466,7 @@ local function ringBoard(rec)
 		local t1 = text(c, string.upper(f.skill), 24, col); t1.Position = UDim2.fromOffset(12, 12); t1.Size = UDim2.new(1, -24, 0, 30); t1.ZIndex = 8
 		local t2 = text(c, f.blurb, 14, WHITE, Theme.FONT); t2.Position = UDim2.fromOffset(12, 48); t2.Size = UDim2.new(1, -24, 0, 110); t2.TextYAlignment = Enum.TextYAlignment.Top; t2.ZIndex = 8
 		local t3 = text(c, string.format("YOUR WINS: %d", wins), 15, Theme.ACCENT); t3.Position = UDim2.fromOffset(12, 168); t3.Size = UDim2.new(1, -24, 0, 20); t3.ZIndex = 8
-		local t4 = text(c, wins == 0 and string.format("first win: %d Marks", pay.first or 0) or string.format("a win: %d Marks", pay.again or 0), 13, Theme.DIM, Theme.FONT)
+		local t4 = text(c, wins == 0 and string.format("first win: %d Marks", pay.first or 0) or "beaten: for the glory now", 13, Theme.DIM, Theme.FONT)
 		t4.Position = UDim2.fromOffset(12, 192); t4.Size = UDim2.new(1, -24, 0, 18); t4.ZIndex = 8
 		local go = button(c, "FIGHT", col, UDim2.new(1, -24, 0, 50), UDim2.new(0, 12, 1, -62)); go.ZIndex = 8
 		go.MouseButton1Click:Connect(function() remote:FireServer("Spar", f.skill); closeBoard() end)

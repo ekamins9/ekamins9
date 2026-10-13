@@ -429,6 +429,11 @@ CombatServer.DEFAULTS = {
 	                     --    counts (client→server latency), as long as the blade hit nothing yet
 	REACH       = 8.0,   -- studs from attacker root to a valid hit point
 	TWO_HANDED  = false, -- needs both arms to wield (losing the left arm drops it too)
+	-- DRAWING: a weapon just taken in hand can't strike until it's out (seconds; a two-hander
+	-- longer), and a swing's recovery follows you to the next weapon (the character's
+	-- ActionLock), so swapping weapons is never a way round the recovery
+	DRAW_TIME   = 0.35,
+	DRAW_TIME_2H = 0.5,
 	SpeedMult   = 1.0,   -- weight: WalkSpeed multiplier while equipped (published as SpeedMult_Weapon)
 	ClunkMult   = 1.0,   -- weight: footstep clunk multiplier while equipped (published as ClunkMult_Weapon)
 	ARMOR_PEN   = 0,     -- the share of the target's armor protection this weapon ignores
@@ -1617,9 +1622,25 @@ function CombatServer.attach(Tool, weaponConfig)
 		return false
 	end
 
+	local drawQueued = 0
 	local function doAttack(name)
 		if not character or not usable(name) then dprint("attack denied: no such attack / no clip:", tostring(name)); return end
 		if isIncapacitated() then dprint("attack denied: incapacitated"); return end
+		-- still drawing (or the last weapon's recovery isn't over): a press in its last moments
+		-- goes off the instant it's out, anything earlier is dropped
+		local lock = math.max(attr("ActionLock") or 0, state.drawnUntil or 0) - os.clock()
+		if lock > 0 then
+			if lock <= 0.3 and drawQueued == 0 then
+				drawQueued = 1
+				local tok = state.token
+				task.delay(lock, function()
+					drawQueued = 0
+					if character and state.token == tok and state.phase == "idle" then doAttack(name) end
+				end)
+			end
+			dprint("attack denied: drawing")
+			return
+		end
 		if attr("Blocking")   then dprint("attack denied: blocking");      return end
 		if (attr("ReelUntil") or 0) > os.clock() then dprint("attack denied: reeling from a hit"); return end
 		if not inWindup() and not canAfford(name) then return end
@@ -1851,6 +1872,9 @@ function CombatServer.attach(Tool, weaponConfig)
 		character:SetAttribute("SpeedMult_Weapon", cfg.SpeedMult)
 		character:SetAttribute("ClunkMult_Weapon", cfg.ClunkMult)
 		sfx("Equip")
+		-- (drawing it: no blow until it's out; a little slack for the round trip)
+		state.drawnUntil = os.clock() + (cfg.TWO_HANDED and cfg.DRAW_TIME_2H or cfg.DRAW_TIME) - 0.08
+		character:SetAttribute("DrawnAt", workspace:GetServerTimeNow())
 		if cfg.ANIMATED_GRIP then task.spawn(installToolGrip, character) end
 		-- losing an arm mid-fight drops the weapon
 		for _, c in ipairs(limbConns) do c:Disconnect() end
@@ -1885,6 +1909,12 @@ function CombatServer.attach(Tool, weaponConfig)
 
 	table.insert(conns, Tool.Unequipped:Connect(function()
 		dprint("unequipped")
+		-- the recovery owed goes with you to the next weapon (a swing cut short owes its rest)
+		if character then
+			local owe = state.nextActionTime
+			if state.phase ~= "idle" then owe = math.max(owe, os.clock() + 0.3) end
+			if owe > os.clock() then character:SetAttribute("ActionLock", math.max(character:GetAttribute("ActionLock") or 0, owe)) end
+		end
 		npcStopAll()
 		removeToolGrip(character)
 		if state.phase ~= "idle" then cancelSwing("unequipped") end

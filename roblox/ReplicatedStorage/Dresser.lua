@@ -506,14 +506,15 @@ function Dresser.applySkin(tool, skinId, variant)
 	local skin = skinId and Catalog.SKIN[skinId]
 	SkinTrims.clear(tool)
 	SkinFX.clear(tool)
+	-- (whatever the last skin hid, a staff's plain claws and orb, comes back first)
+	for _, p in ipairs(tool:GetDescendants()) do
+		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
+	end
 	if not skin or skin.name == "Default" then return false end
 	tool:SetAttribute("Skin", skin.name)   -- the HUD's weapon chip shows it
 	tool:SetAttribute("SkinVariant", variant)
 	local old = tool:FindFirstChild("Skin")
 	if old and old:IsA("Model") then old:Destroy() end
-	for _, p in ipairs(tool:GetDescendants()) do
-		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
-	end
 	local handle = tool:FindFirstChild("Handle")
 	local model = Catalog.skinModel(skinId)
 	if model and handle then

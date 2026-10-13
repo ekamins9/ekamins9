@@ -271,6 +271,20 @@ spawnAs = function(plr, classId, opts)
 	end
 	local p = Profile.get(plr)
 	local lo = Profile.validateLoadout(plr, classId, p.classes[classId])
+	-- (handed a weapon for this body only: the training yard's lessons, a bow for the
+	-- Bowmaster's; your own skin for it if a loadout of yours carries one)
+	if opts.weapon and Catalog.WEAPON[opts.weapon] and lo.weapon ~= opts.weapon then
+		if lo.secondary == opts.weapon then
+			lo.weapon, lo.weaponSkin, lo.secondary, lo.secondarySkin = lo.secondary, lo.secondarySkin, lo.weapon, lo.weaponSkin
+		else
+			local skin = opts.weapon .. ":Default"
+			for _, other in pairs(p.classes) do
+				if type(other) == "table" and other.weapon == opts.weapon and other.weaponSkin and Profile.has(plr, "skins", other.weaponSkin) then skin = other.weaponSkin end
+			end
+			lo.weapon, lo.weaponSkin = opts.weapon, skin
+		end
+		if lo.secondary == lo.weapon then lo.secondary, lo.secondarySkin = nil, nil end
+	end
 	Profile.setActive(plr, classId)
 	spawning[plr] = true
 	log(plr.Name, "spawning as", classId, "-", lo.helmet, lo.top, lo.bottom, "+", tostring(lo.weapon), "/", tostring(lo.secondary))
@@ -371,10 +385,11 @@ _G.AutoSpawn = function(plr)
 	if not plr.Parent or isAlive(plr) or spawning[plr] then return end
 	task.spawn(spawnAs, plr, picked[plr] or Profile.get(plr).active)
 end
--- dressed as a class where you stand (the training yard's class lessons: Game ▸ Training)
-_G.Respawn = function(plr, classId, at)
+-- dressed as a class where you stand (the training yard's class lessons: Game ▸ Training;
+-- o.weapon: the one their lessons need in your hands, for this body only)
+_G.Respawn = function(plr, classId, at, o)
 	if not plr.Parent or spawning[plr] then return end
-	task.spawn(spawnAs, plr, classId, {again = true, at = at})
+	task.spawn(spawnAs, plr, classId, {again = true, at = at, weapon = type(o) == "table" and o.weapon or nil})
 end
 -- WHOLE AGAIN where you stand (Horde, between waves): health, wind and mana back, and a body
 -- that lost a limb, is bleeding or had its weapon knocked away is rebuilt in place as the

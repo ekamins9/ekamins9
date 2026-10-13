@@ -252,7 +252,7 @@ if hubEvent then
 		else
 			local bits = {}
 			if r.won then table.insert(bits, r.firstWin and "VICTORY · FIRST WIN OF THE DAY" or "VICTORY") end
-			table.insert(bits, string.format("+%d MARKS", r.marks or 0))
+			table.insert(bits, string.format("+%d MARKS", r.marks or 0) .. (r.weary and " (A LONG DAY: LESS PAY)" or ""))
 			table.insert(bits, string.format("+%d XP", r.xp or 0))
 			if (r.levels or 0) > 0 then table.insert(bits, "LEVEL " .. tostring(r.level) .. "!") end
 			if r.delta then table.insert(bits, string.format("RATING %s%d", r.delta >= 0 and "+" or "", r.delta)) end
