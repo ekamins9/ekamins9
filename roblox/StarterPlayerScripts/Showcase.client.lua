@@ -225,8 +225,9 @@ local function unblock(look, pos, dt, snap)
 	local d = pos - look
 	local len = d.Magnitude
 	if len < 0.1 then return pos end
-	local hit = workspace:Raycast(look, d, rayParams)
-	local want = hit and math.clamp(((hit.Position - look).Magnitude - 0.8) / len, 0.15, 1) or 1
+	-- (a ball, not a thin ray: hedges, railings and the edge of a pillar count)
+	local hit = workspace:Spherecast(look, 0.7, d, rayParams)
+	local want = hit and math.clamp((hit.Distance - 0.8) / len, 0.15, 1) or 1
 	if snap then reach = want
 	elseif want < reach then reach += (want - reach) * damp(12, dt)
 	else reach += (want - reach) * damp(1.6, dt) end
@@ -288,6 +289,15 @@ local function step(dt)
 	local kl = cut and 1 or damp(gliding and 2 or 3.4, dt)
 	camPos = camPos and camPos:Lerp(tp, kp) or tp
 	camLook = camLook and camLook:Lerp(tl, kl) or tl
+	-- (where the camera really is after the smoothing: a glide never passes through a wall, a
+	-- pillar or a hedge; it's brought out in front of it)
+	do
+		local d = camPos - camLook
+		if d.Magnitude > 0.5 then
+			local hit = workspace:Spherecast(camLook, 0.6, d, rayParams)
+			if hit then camPos = camLook + d.Unit * math.max(1.5, hit.Distance - 0.4) end
+		end
+	end
 	fov = fov + (tf - fov) * damp(1.5, dt)
 	cut = false
 	cam.CameraType = Enum.CameraType.Scriptable
