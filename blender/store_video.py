@@ -552,6 +552,11 @@ FLASH_INTO = {"parry", "magic", "siege", "end"}
 def edit():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
+    # (the frames are finished pictures, AgX already applied: "Standard" passes them through
+    # untouched; the factory default, AgX, would grade them a second time, grey and flat)
+    sc.view_settings.view_transform = "Standard"
+    sc.view_settings.look = "None"
+    sc.view_settings.exposure, sc.view_settings.gamma = 0.0, 1.0
     res = (RES[0] // 2, RES[1] // 2) if PREVIEW else RES
     sc.render.resolution_x, sc.render.resolution_y = res
     sc.render.resolution_percentage = 100
