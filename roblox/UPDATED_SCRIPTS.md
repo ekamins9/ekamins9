@@ -1,4 +1,47 @@
-# Updated scripts: showcase fixes, the Magister's lessons, bots that stop hopping, and new wands and grimoires
+# Updated scripts: the Showcase Director (one screen to film the game), GENERATE, custom battles, bots that look like players
+
+- **The Showcase Director** (F4, or F2 › SHOWCASE › OPEN THE SHOWCASE DIRECTOR): one screen.
+  1. **What to film**: GENERATE, CUSTOM BATTLE, the five ready-made battles, the Courtyard tour, the armor parade.
+  2. **Set it up**: only the maps that showcase plays on (the old panel listed every map, and a map that didn't suit the showcase was quietly swapped for a random one). For a custom battle: the mode, the map, and a + / − for each of Squire, Knight, Champion, Archer and Mage (40 at most). For GENERATE: how long each battle lasts.
+  3. **START FILMING.**
+  - **TAB** while filming shows the control bar: camera style, fighter, next map (GENERATE: next battle), pick a map to stay on or rotate, menu, stop. TAB hides it again. The bar shows the map, how long until the next map, and who's being filmed.
+- **GENERATE · AUTOPILOT**: a new battle every 2 / 3 / 5 minutes from a playlist of ten (siege assault, shield wall, bows & spells, champions' clash, king of the hill, last team standing, free for all, champion duel, mages at war, the levy), each on a map not played lately, never the same battle twice running.
+- **Exact rosters**: BotFill's showcase override takes `roster` (so many of each kind, split evenly between the sides, the map's usual cap aside).
+- **Bots that look like real players** (on unless switched off): an armor set of their weight (rarer ones less often), random colours, a skin on the weapon (staffs get their designed heads), and a kill effect that plays on whoever they bring down. About one kill in three, the killer stands and emotes. Name tags hide while filming. New hooks: `_G.KillFxPlay` and `_G.BotEmote` (Cosmetics), `FxEvent "EmoteModel"` (Cosmetics.client), NpcAnimator poses an emoting bot, and a bot stands still while it emotes.
+- **A smoother camera**:
+  - shots last 7-11 s;
+  - a new shot nearby glides there instead of cutting (it only cuts when it's far);
+  - the fighter's facing is smoothed, so hero and follow shots don't swing when they turn;
+  - walls push the camera in quickly and let it ease back out (no jumping past posts);
+  - when its fighter falls, it stays on them for 2 s;
+  - it prefers action near where it already is.
+- **Live game**: from a public server a battle opens a locked filming server of your own (HubServer `_G.HubReserveShowcase`, the trip's TeleportData `showcase`), and it starts by itself when you arrive. The Courtyard tour and the armor parade run in the live Courtyard.
+- **Clean footage**: prompts ("Pick up", "Talk") and markers over the world hide too (CleanView). The director's own screen stays (`CleanViewKeep`). While filming, Ctrl+H does nothing.
+- **Shorter breaks**: 4 s between rounds while filming (`Game.intermissionOverride`), not 15. STOP closes the Courtyard menu if you're in a battle, so the spawn screen shows.
+- Checked in Play:
+  - the director menu;
+  - a custom TDM on Millfield with 2 Squires, 4 Knights, 4 Champions, 3 Archers and 3 Mages: exactly that, 8 a side, skins on the weapons (staffs with their heads), 12 of 16 bots with a kill effect;
+  - picking Abbeyfield loaded it in 5 s; N twice changed the map each time;
+  - GENERATE opened with Bows & Spells on Frosthollow, and N went to Shield Wall (14 Knights, 6 Champions) on Mistbridge;
+  - in 25 s of fighting: 6 kill effects and a bot emote;
+  - a field battle on ANY ran with a 4-minute clock;
+  - STOP gave the screen back.
+  - Not re-run after its last fix: STOP closing the Courtyard menu when it had already closed itself.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Game/Showcase.lua](ServerScriptService/Game/Showcase.lua) | ServerScriptService ▸ Game | ModuleScript | GENERATE, CUSTOM, rosters, the bots' looks, filming servers, ShowcaseInfo, map history |
+| [Showcase.client.lua](StarterPlayerScripts/Showcase.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Director menu, the TAB bar, F4, the smoother camera |
+| [Game/BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | `roster`, `dress`, `onKill` |
+| [Game/GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua), [Game/Game.lua](ServerScriptService/Game/Game.lua) | ServerScriptService ▸ Game | Script, ModuleScript | the short break; a filming server's TeleportData |
+| [Hub/Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua), [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua), [NpcAnimator.client.lua](StarterPlayerScripts/NpcAnimator.client.lua), [Combat/Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService, StarterPlayerScripts | Script, LocalScript, ModuleScript | bots' kill effects and emotes |
+| [Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua), [Admin/AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService | Script | the filming server; the showcase loaded at start; the menu's options passed on |
+| [CleanView.client.lua](StarterPlayerScripts/CleanView.client.lua), [NameTags.client.lua](StarterPlayerScripts/NameTags.client.lua), [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua), [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | prompts and markers hide; no name tags while filming; the tab opens the Director; CloseHub |
+| [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | the Director, recording |
+
+---
+
+## Before that: showcase fixes, the Magister's lessons, bots that stop hopping, and new wands and grimoires
 
 - **Showcase fixes:**
   - **The director's camera never started** if a showcase began more than a minute after you joined. The server only makes the showcase's remote on the first SHOWCASE action, and the client waited 60 s for it then quit, so no camera, no keys and no hidden screens. It now waits however long it takes.

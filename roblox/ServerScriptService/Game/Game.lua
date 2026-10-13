@@ -90,6 +90,8 @@ function Game.identify(plr)
 			for k, v in pairs(GameConfig.CUSTOM_DEFAULTS) do sv.settings[k] = td.settings[k] ~= nil and td.settings[k] or v end
 			sv.noRewards = sv.settings.cheats == true
 		end
+		-- a filming server (Game ▸ Showcase): the showcase its opener starts on arrival
+		if type(td.showcase) == "table" then sv.showcase = td.showcase end
 	else
 		sv.mode = (STUDIO and GameConfig.MODES[GameConfig.STUDIO_MODE]) and GameConfig.STUDIO_MODE or "Hub"
 	end

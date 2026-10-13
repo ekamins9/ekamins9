@@ -298,7 +298,8 @@ RunService.RenderStepped:Connect(function(dt)
 		local head = tag.bb.Adornee
 		local hum = model:FindFirstChildOfClass("Humanoid")
 		local want = false
-		if head and head.Parent and hum and hum.Health > 0 and model.Parent then
+		-- (filming a showcase: no names over anyone, they'd give the bots away)
+		if not _G.ShowcaseActive and head and head.Parent and hum and hum.Health > 0 and model.Parent then
 			local dist = (head.Position - from).Magnitude
 			if dist <= RANGE then
 				want = dist <= NEAR or (hub and dist <= HUB_RANGE)

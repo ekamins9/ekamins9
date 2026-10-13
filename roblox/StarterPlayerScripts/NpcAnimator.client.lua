@@ -73,6 +73,9 @@ end)
 --------------------------------------------------------------------
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RigPose = require(ReplicatedStorage:WaitForChild("RigPose"))
+-- (a bot's emote: a showcase's bots emote over the fallen, Hub ▸ Cosmetics. Emotes are drawn
+-- through RigPose, so an emoting bot is posed here like a ranged one, sword or not)
+local Emotes = require(ReplicatedStorage:WaitForChild("Emotes"))
 local posed = setmetatable({}, {__mode = "k"})   -- [model] = {joints, origins, cur = inputs}
 
 local function stanceOf(m)
@@ -120,9 +123,11 @@ RunService.RenderStepped:Connect(function(dt)
 	for _, m in ipairs(folder:GetChildren()) do
 		if not m:GetAttribute("Bot") then continue end
 		local hum = m:FindFirstChildOfClass("Humanoid")
-		local stance = (hum and hum.Health > 0 and not m:GetAttribute("Ragdolled")) and stanceOf(m) or 0
+		local up = hum and hum.Health > 0 and not m:GetAttribute("Ragdolled")
+		local stance = up and stanceOf(m) or 0
+		local emoting = up and Emotes.playing(m) ~= nil
 		local e = posed[m]
-		if stance > 0 then
+		if stance > 0 or emoting then
 			if not e then
 				local j = RigPose.joints(m)
 				if not j then continue end

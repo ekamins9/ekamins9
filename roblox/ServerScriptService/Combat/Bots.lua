@@ -779,6 +779,8 @@ end
 function Bot:think()
 	local hum, hrp, sk, model = self.hum, self.hrp, self.skill, self.model
 	if not self.alive or hum.Health <= 0 or model:GetAttribute("Ragdolled") then hum:Move(Vector3.zero); return end
+	-- an emote (a showcase's bots, over the fallen: Hub ▸ Cosmetics): it stands for it
+	if (model:GetAttribute("EmoteUntil") or 0) > workspace:GetServerTimeNow() then hum:Move(Vector3.zero); return end
 	local target = self.target
 	local foeDist = 0
 	if not (target and target.Parent) then

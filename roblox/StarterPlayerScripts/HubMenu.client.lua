@@ -8069,6 +8069,10 @@ end)
 
 bus.Event:Connect(function(what, tab)
 	if what == "OpenHub" then show(tab)
+	elseif what == "CloseHub" then
+		-- (a showcase over, mid-battle: the spawn screen, not this; CleanView may have turned the
+		-- screen back on after the menu had closed itself)
+		if open then hide() else gui.Enabled = false; bus:Fire("HubClosed") end
 	elseif what == "PlayDoor" then goDoor(tab) end   -- the Courtyard's gates
 end)
 

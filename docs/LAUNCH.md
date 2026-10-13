@@ -70,27 +70,19 @@ Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** 
   - Roblox's rules: show the real game ("representative of the actual in-game visuals"), nothing important at the bottom edge (the name and rating cover it), and no "best", "#1", prices or offers. These follow them.
 - [ ] **Video on the game page** (the first thing people see there): Roblox wants **real gameplay** here, not a rendered trailer. Up to 60 s, 1080p, 100 MB; 3 uploads a month, free.
   - No voice-over and no songs with lyrics; music from Roblox's own library is fine.
-  - **The easy way: SHOWCASE mode** (admin panel, F2 › SHOWCASE). The server stages a real bot match, your menus hide, and the camera directs itself. Press **Win+Alt+R** to start and stop recording (or use OBS). Seven showcases:
+  - **The easy way: the SHOWCASE DIRECTOR** (press **F4**, or F2 › SHOWCASE). Bots fight a real match and the camera films it by itself; your menus, the prompts and the name tags hide. One screen:
+    1. **What to film:**
+       - **GENERATE · AUTOPILOT**: a new battle every 2, 3 or 5 minutes on a new map (sieges, shield walls, bows & spells, champions' clashes, king of the hill, duels…), never the same twice running. Start it and leave it recording.
+       - **CUSTOM BATTLE**: pick the mode, the map, and exactly how many Squires, Knights, Champions, Archers and Mages (40 at most).
+       - the ready-made ones: SIEGE ASSAULT, FIELD BATTLE, FREE FOR ALL, BOWS & SPELLS, CHAMPION DUEL, COURTYARD TOUR, ARMOR PARADE.
+    2. **Set it up:** the map (only maps that showcase plays on; ANY = a new map every 4 minutes) and **LOOK LIKE REAL PLAYERS** (on: the bots wear rare armor and weapon skins, play kill effects, sometimes emote after a kill, and have no name tags).
+    3. **START FILMING**, then start your recorder: **Win+Alt+R** (Windows), or OBS.
 
-    | Showcase | What it films |
-    |---|---|
-    | SIEGE ASSAULT | two bot armies storming a castle |
-    | FIELD BATTLE | a big Team Deathmatch fight |
-    | FREE FOR ALL | every bot for itself |
-    | BOWS & SPELLS | Archers and Mages; the camera favours them |
-    | CHAMPION DUEL | two Champions up close |
-    | COURTYARD TOUR | a slow flight round the hub |
-    | ARMOR PARADE | the rarest sets on mannequins |
+    While it runs, **TAB** shows the control bar (and hides it again for a clean shot): camera style, previous / next fighter, next map (GENERATE: next battle), pick a map to stay on or ROTATE, MENU, STOP. The keys work without the bar: **1** auto · **2** orbit · **3** hero · **4** follow · **5** aerial · **Q / E** fighter · **N** next · **Ctrl+Shift+X** stop. After STOP you get the spawn screen and can join the match.
 
-    Pick a map, or leave it on ANY to get a new map every 4 minutes. A picked map stays until you press N. Keys while it runs:
-    - **1** auto, **2** orbit, **3** hero (low, in front), **4** follow, **5** aerial;
-    - **Q / E** switch fighter;
-    - **N** next map now;
-    - **Ctrl+Shift+X** stop. You then get the spawn screen, so you can join the match.
+    In the live game, a battle started from a public server takes you to a **private filming server** of your own and starts there by itself (nobody else can join). The Courtyard tour and the armor parade run in the Courtyard as it is.
 
-    You don't need to click SPECTATE or spawn: while a showcase runs you have no body and no spawn screen, and every screen hides by itself (no Ctrl+H needed).
-
-    It only runs in Studio or your own custom/private server, because it takes over the whole server. Recording in Studio's Play is simplest.
+    **Recording:** Roblox has no recorder of its own. Use **Win+Alt+R** (Xbox Game Bar: videos land in `Videos\Captures`; set 60 fps in Windows Settings › Gaming › Captures) or OBS Studio (free; a "Game Capture" source on Roblox, 1080p 60 fps). Before recording: Roblox full screen (F11) and graphics at max (Esc › Settings › Graphics Mode: Manual, slider all the way up).
   - Or by hand: in a live server press **Ctrl+H** (all UI hides; again to bring it back) and record yourself playing, ideally with friends.
   - **Send me the clips** and I'll edit them: drop them in a `footage/` folder in the project (git ignores it). I'll cut them to the best 30-60 seconds and add titles and your game logo. For music, use a track from Roblox's own library.
 - [ ] **Genre**: Fighting. Max players to match your servers.

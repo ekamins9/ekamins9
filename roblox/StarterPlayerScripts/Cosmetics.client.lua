@@ -93,6 +93,11 @@ fx.OnClientEvent:Connect(function(what, a, b, c, d)
 		-- our own emote already started the moment we pressed it
 		if plr == player and Emotes.playing(plr.Character) == id then return end
 		if Emotes.play(plr.Character, id, startedAt) then EmoteFX.attach(plr.Character, id) end
+	elseif what == "EmoteModel" then
+		-- a bot's (a staff showcase's bots emote over the fallen)
+		local model, id, startedAt = a, b, c
+		if typeof(model) ~= "Instance" or not model.Parent then return end
+		if Emotes.play(model, id, startedAt) then EmoteFX.attach(model, id) end
 	elseif what == "EmoteStop" then
 		-- b = the refused emote's id (the server said no): ours stops only then
 		local plr = a

@@ -55,12 +55,8 @@ local function coloursOf(char)
 	return out
 end
 
--- the killer's kill effect on the victim's body, for everyone
-_G.KillFxHook = function(killer, victimChar)
-	if not (killer and victimChar and victimChar.Parent) then return end
-	local p = Profile.get(killer)
-	local id = p and p.killfx
-	if type(id) ~= "string" or not Catalog.KILLFX_BY[id] or not Profile.has(killer, "killfx", id) then return end
+-- a kill effect on a fallen body, for everyone
+local function playKillFx(id, victimChar)
 	-- what it leaves (Combat ▸ Corpses): booked now, laid when the effect hides the body
 	local def = Catalog.KILLFX_BY[id]
 	if Corpses then Corpses.pending(victimChar, def.remains or "body", KILL_FX_DELAY + (def.remainsAt or 1.5)) end
@@ -70,6 +66,26 @@ _G.KillFxHook = function(killer, victimChar)
 	if not origin then return end
 	-- (not the body itself: a client that hasn't streamed it in would get nil)
 	fx:FireAllClients("Kill", id, Corpses and Corpses.idOf(victimChar) or victimChar:GetAttribute("CorpseId") or 0, origin, coloursOf(victimChar))
+end
+
+-- the killer's kill effect on the victim's body (only one they own)
+_G.KillFxHook = function(killer, victimChar)
+	if not (killer and victimChar and victimChar.Parent) then return end
+	local p = Profile.get(killer)
+	local id = p and p.killfx
+	if type(id) ~= "string" or not Catalog.KILLFX_BY[id] or not Profile.has(killer, "killfx", id) then return end
+	playKillFx(id, victimChar)
+end
+-- a bot's (a staff showcase dresses its bots like players: Game ▸ Showcase)
+_G.KillFxPlay = function(id, victimChar)
+	if type(id) == "string" and Catalog.KILLFX_BY[id] and victimChar and victimChar.Parent then playKillFx(id, victimChar) end
+end
+-- a bot's emote: it stands still for it (Combat ▸ Bots reads EmoteUntil), every client plays it
+_G.BotEmote = function(model, id)
+	local hum = model and model:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0 and Catalog.EMOTE[id]) then return end
+	model:SetAttribute("EmoteUntil", workspace:GetServerTimeNow() + 2.6)
+	fx:FireAllClients("EmoteModel", model, id, workspace:GetServerTimeNow())
 end
 
 --------------------------------------------------------------------

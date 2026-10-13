@@ -44,8 +44,27 @@ BotFill.CONFIG = {
 }
 local C = BotFill.CONFIG
 
--- (a staff showcase's own mix: Game ▸ Showcase sets {mix = {{skill, share}…}, classMix = …})
+-- A STAFF SHOWCASE's own bots (Game ▸ Showcase sets BotFill.override):
+--   mix = {{skill, share}…}, classMix = …       the shares, as a match's are
+--   roster = {Squire = n, Knight = n, Champion = n, Archer = n, Mage = n}
+--                                               exactly so many, each kind split between
+--                                               the two sides (the map's usual cap aside, 40 at most)
+--   dress(opts, kind)                           dresses each bot as it comes in (Bots.spawn's opts;
+--                                               opts.attrs = attributes for its model)
+--   onKill(killerModel, victimModel)            one fill bot brought another down
 BotFill.override = nil
+local KINDS = {"Squire", "Knight", "Champion", "Archer", "Mage"}
+local MOST = 40
+local function rosterOf() return BotFill.override and BotFill.override.roster end
+local function count(r, k) return math.max(0, math.floor(tonumber(r[k]) or 0)) end
+local function rosterTotal(r) local n = 0; for _, k in ipairs(KINDS) do n += count(r, k) end; return math.min(n, MOST) end
+-- how many of a kind one side fields (an odd one goes to A for one kind, B for the next)
+local function rosterWant(r, k, i, team, twoSides)
+	local n = count(r, k)
+	if not twoSides then return n end
+	local a = (i % 2 == 1) and math.ceil(n / 2) or math.floor(n / 2)
+	return team == "A" and a or (n - a)
+end
 
 local Bots   -- (lazily: Combat ▸ Bots)
 local function bots()
@@ -89,6 +108,7 @@ local function wanted(def)
 	local sv = Game.server
 	if sv.ranked or sv.door ~= "Warfront" then return nil end
 	def = def or (Game.current and Game.current.def)
+	if rosterOf() then local n = rosterTotal(rosterOf()); return n > 0 and n or nil end
 	if sv.custom then
 		local s = sv.settings
 		if not (s and s.bots ~= false) then return nil end
@@ -142,17 +162,38 @@ local function objective()
 	return typeof(p) == "Vector3" and p or nil
 end
 
+-- (an exact roster: the kind this side is shortest of, or nil when it's full)
+local function rosterPick(team)
+	local r = rosterOf()
+	local two = Game.current and Game.current.def.teams == 2
+	local best, bestGap
+	for i, k in ipairs(KINDS) do
+		local have = 0
+		for _, e in ipairs(fill) do if e.team == team and e.kind == k then have += 1 end end
+		local gap = rosterWant(r, k, i, team, two) - have
+		if gap > 0 and (not bestGap or gap > bestGap) then best, bestGap = k, gap end
+	end
+	return best
+end
+
 local function spawnOne(team)
-	local skill = pick(newcomerHere() and C.NEWCOMER_MIX or mixHere())
+	local kind, skill, cls
+	if rosterOf() then
+		kind = rosterPick(team)
+		if not kind then return end
+		if kind == "Archer" or kind == "Mage" then cls, skill = kind, "Knight" else skill = kind end
+	else
+		skill = pick(newcomerHere() and C.NEWCOMER_MIX or mixHere())
+		cls = not newcomerHere() and pick((BotFill.override and BotFill.override.classMix) or C.CLASS_MIX) or nil
+	end
 	local list = weaponList()
 	local cf = Game.spawnCFrameForTeam(team)
 	if not cf then return end
 	local at = CFrame.new(cf.Position + Vector3.new(math.random(-3, 3), 3, math.random(-3, 3))) * (cf - cf.Position)
 	local myRound = roundId
 	local seat = takeSeat(team, nextName())
-	local entry = {team = team, seat = seat}
-	local cls = not newcomerHere() and pick((BotFill.override and BotFill.override.classMix) or C.CLASS_MIX) or nil
-	local ok, bot = pcall(bots().spawn, {
+	local entry = {team = team, seat = seat, kind = kind}
+	local opts = {
 		at = at, skill = skill, weapon = (not cls) and list[math.random(#list)] or nil, team = team, class = cls or nil,
 		name = seat:GetAttribute("Name"), fightBots = true, goal = objective, corpseTime = 6,
 		startDelay = 0.5,
@@ -163,10 +204,24 @@ local function spawnOne(team)
 			local kt = killer and killer.Character and killer.Character:GetAttribute("Team")
 			if killer and team and kt == team then killer = nil end
 			Game.onBotDeath(entry.bot.model, killer)
+			-- (a showcase's: another fill bot brought it down)
+			local o = BotFill.override
+			local by = entry.bot.model:GetAttribute("LastHitBySeat")
+			if o and o.onKill and type(by) == "string" and by ~= "" then
+				for _, e in ipairs(fill) do
+					if e.seat and e.seat.Name == by and e.bot and e.bot.alive then task.spawn(o.onKill, e.bot.model, entry.bot.model); break end
+				end
+			end
 		end,
-	})
+	}
+	if BotFill.override and BotFill.override.dress then
+		local okD, err = pcall(BotFill.override.dress, opts, kind or cls or skill)
+		if not okD then warn("[BotFill] dress:", err) end
+	end
+	local ok, bot = pcall(bots().spawn, opts)
 	if not ok or not bot then warn("[BotFill] spawn failed:", bot); table.insert(vacant, seat); return end
 	entry.bot = bot
+	for k, v in pairs(opts.attrs or {}) do bot.model:SetAttribute(k, v) end
 	bot.model:SetAttribute("FillBot", true)
 	bot.model:SetAttribute("BotSeat", seat.Name)
 	if team then Teams.mark(bot.model, team) end
@@ -204,9 +259,9 @@ BotFill.wanted = wanted
 local function tick()
 	local target = wanted()
 	if not target then return end
-	-- never more fighters than the map suits (GameConfig.MAP_FIGHTERS)
+	-- never more fighters than the map suits (GameConfig.MAP_FIGHTERS), but a showcase's roster is exact
 	local _, most = GameConfig.mapFighters(Game.node:GetAttribute("Map") or "")
-	target = math.min(target, most)
+	target = rosterOf() and math.min(target, MOST) or math.min(target, most)
 	local def = Game.current.def
 	local now = os.clock()
 	-- forget the fallen whose place has come round again (or, no respawns, keep them)
@@ -223,6 +278,7 @@ local function tick()
 
 	local sides = def.teams == 2 and {"A", "B"} or {false}
 	local per = def.teams == 2 and math.ceil(target / 2) or target
+	local r = rosterOf()
 	local spawned = 0
 	for _, side in ipairs(sides) do
 		local key = side or nil
@@ -234,6 +290,12 @@ local function tick()
 		local held = 0
 		for _, e in ipairs(fill) do if e.team == key then held += 1 end end
 		local want = math.max(0, per - players)
+		if r then
+			-- (an exact roster: this side's share of it)
+			local n = 0
+			for i, k in ipairs(KINDS) do n += rosterWant(r, k, i, key, def.teams == 2) end
+			want = math.max(0, n - players)
+		end
 		if held > want then
 			for _ = 1, held - want do if not retireOne(key) then break end end
 		elseif held < want then

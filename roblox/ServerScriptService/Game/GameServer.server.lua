@@ -230,6 +230,8 @@ task.spawn(function()
 		node:SetAttribute("State", "Intermission")
 		local inter = def.intermission or 0
 		if modeId == "Hub" or modeId == "Tiltyard" then inter = 3 end
+		-- (a staff showcase keeps the break short: Game ▸ Showcase)
+		if Game.intermissionOverride then inter = math.min(inter, Game.intermissionOverride) end
 		Game.intermissionStarted:Fire(inter)
 		-- a finished Lists match stays on its result; HubServer sends everyone home
 		if node:GetAttribute("MatchOver") == true then

@@ -454,7 +454,7 @@ local function whereOf(e)
 	return ((e.name or "") ~= "" and (e.name .. "  ·  ") or "") .. (e.modeName or e.mode or "") .. ((e.map or "") ~= "" and ("  ·  " .. e.map) or "")
 end
 
-local function reserve(group, modeId, access, name, custom, door, settings, where)
+local function reserve(group, modeId, access, name, custom, door, settings, where, extra)
 	local ok, code = pcall(TeleportService.ReserveServer, TeleportService, game.PlaceId)
 	if not ok then warn("[Hub] ReserveServer failed:", code); return false, "could not reserve a server" end
 	local def = GameConfig.MODES[modeId]
@@ -462,7 +462,9 @@ local function reserve(group, modeId, access, name, custom, door, settings, wher
 	for _, p in ipairs(group) do table.insert(ids, p.UserId) end
 	local data = {mode = modeId, access = access, name = name or "", custom = custom == true, host = group[1].UserId,
 		allowed = access ~= "Public" and ids or nil, door = door, settings = settings}
-	if registry then
+	-- (extra: more for the new server to read on arrival, e.g. a showcase to start)
+	for k, v in pairs(extra or {}) do data[k] = v end
+	if registry and not (extra and extra.showcase) then
 		pcall(function()
 			registry:SetAsync("pending:" .. code:sub(1, 24), {
 				jobId = "pending:" .. code:sub(1, 24), placeId = game.PlaceId, reserved = true, pending = true,
@@ -1002,6 +1004,12 @@ end
 --  the menu tour: MenuTour).
 --------------------------------------------------------------------
 _G.HubTravel = function(plr, doorId, opts) return play(plr, doorId, opts) end
+-- a locked server of their own to film a showcase in (Game ▸ Showcase, from a public server):
+-- it isn't listed, nobody else can join, and the showcase starts as they arrive
+_G.HubReserveShowcase = function(plr, modeId, settings, showcase)
+	if STUDIO then return false, "Studio runs showcases right here" end
+	return reserve({plr}, modeId, "Locked", "Showcase", true, "Warfront", settings, "a filming server", {showcase = showcase})
+end
 
 local function routeNewcomer(plr)
 	if Game.server.mode ~= "Hub" then return end

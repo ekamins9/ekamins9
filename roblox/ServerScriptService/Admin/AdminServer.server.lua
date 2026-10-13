@@ -496,7 +496,7 @@ local function act(plr, action, a)
 	elseif action == "showcase" or action == "showcase_stop" then
 		local Showcase = require(ServerScriptService:WaitForChild("Game"):WaitForChild("Showcase"))
 		local ok, msg
-		if action == "showcase" then ok, msg = Showcase.start(plr, tostring(a.kind or ""), a.map ~= "" and a.map or nil)
+		if action == "showcase" then ok, msg = Showcase.start(plr, tostring(a.kind or ""), (type(a.map) == "string" and a.map ~= "") and a.map or nil, a)
 		else ok, msg = Showcase.stop(plr) end
 		if ok then logAction(plr, action, nil, nil, tostring(a.kind or "")) end
 		return ok, msg
@@ -648,3 +648,7 @@ task.spawn(function()
 		for _, p in ipairs(Players:GetPlayers()) do markPlayer(p) end
 	end
 end)
+
+-- the showcase from the start: its menu's remotes up, and a filming server starts its showcase
+-- as its opener arrives (Game ▸ Showcase)
+task.defer(function() require(ServerScriptService:WaitForChild("Game"):WaitForChild("Showcase")) end)
