@@ -1,4 +1,34 @@
-# Updated scripts: emotes no longer bend backwards
+# Updated scripts: armor in sets, previews that breathe, room for the Mage
+
+- **Inventory shows armor as sets.** One card per set ("complete" or "1 of 3 pieces"), never a lone piece; a set's card opens the Armory on that set.
+- **A quicker Inventory.** All the cards appear at once, and each 3D thumbnail is built only as it scrolls into view (a few a frame). A big collection opens without the hitch.
+- **Armor trades only as a full set.** The server refuses an offer that has part of a set: every piece of it, one copy each, together. A set counts as one item toward the 8. The trade screen shows each set as one FULL SET card, and clicking it puts up or takes back every piece. Sets you only partly hold stay out of the picker, and its header says how many.
+- **Previews breathe.** The knight on the inspect and Loadout stages breathes and glances about. This only runs while the stage is on screen.
+- **SHOWING: PRIMARY ⇄** on those stages swaps the weapon in their hands for the loadout's secondary.
+- **The Mage has room in the training yard.** The yard runs on east past the ring. Magister Orrin's arcane circle now stands there in open ground, with its three dummies beyond it, banners and two torches. No trees inside the new stretch.
+- **From the commit before this one** (the ward, the steady staff, the bots):
+  - The Mage's ward stops a frontal blow outright, like a block, paid in mana. Without the mana it breaks and the rest gets through.
+  - The staff and the wand are held still on the walk again.
+  - Archer, crossbow and Mage bots stand like players: the bow drawn, the crossbow shouldered, the staff in its stance.
+  - A drop's announcement shows once per player, ever. The Beta's button opens your Trailblazer.
+  - Clicks on the inspect panel no longer reach the cards behind it.
+- **Studio:** the TrainingYard map was rebuilt (ServerStorage ▸ Maps, Studio only). **Save the place.**
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Inventory set cards and lazy thumbnails; trade full-set cards and picker; stage idle and PRIMARY / SECONDARY; (before) the crier once, the inspect click catcher |
+| [Trading.lua](ServerScriptService/Economy/Trading.lua) | ServerScriptService ▸ Economy ▸ Trading | ModuleScript | armor only as full sets |
+| [MapTraining.lua](ServerScriptService/Build/MapTraining.lua) | ServerScriptService ▸ Build ▸ MapTraining | ModuleScript | the yard's east end, the arcane circle moved there |
+| [Ward.lua](ServerScriptService/Combat/Ward.lua), [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | (before) the ward stops a frontal blow like a block |
+| [MagicSpells.lua](ReplicatedStorage/MagicSpells.lua), [MagicFX.lua](ReplicatedStorage/MagicFX.lua) | ReplicatedStorage | ModuleScript | (before) the ward's numbers; its pane of light |
+| [RangedFX.client.lua](StarterPlayerScripts/RangedFX.client.lua), [NpcAnimator.client.lua](StarterPlayerScripts/NpcAnimator.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | (before) still arms on the walk; bots posed like players |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua), [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | (before) the draw and aim published for the pose |
+| [Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua), [Profile.lua](ServerScriptService/Loadout/Profile.lua), [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | | | (before) `dropSeen`, the drop's `see` button |
+| [README.md](README.md) | | doc | all of the above |
+
+---
+
+## Before that: emotes no longer bend backwards
 
 - **The bug:** in the world, every emote had the weapon's own animation (its guard, the walk's arm swing) added on top of the emote's pose. That turned the salute and others back over the shoulder. Menu previews pose the mannequin directly, so they looked fine.
 - **The causes:**

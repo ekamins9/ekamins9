@@ -8,7 +8,9 @@
        profiles at once.
 
      What can be traded: copies of crate and shop skins, hatched companions
-     (Collection.tradable). Never: Founder gifts, claims, pass rewards, earned
+     (Collection.tradable). ARMOR only as a FULL SET: one copy of every piece of
+     its set, together (a set counts as one item), so a trade never leaves anyone
+     holding half a set. Never: Founder gifts, claims, pass rewards, earned
      and pack skins (bound to whoever got them), Marks or Crowns.
      Who can trade: level MIN_LEVEL and up, and only where Roblox allows trading
      paid items (PolicyService IsPaidItemTradingAllowed).
@@ -159,15 +161,39 @@ function Trading.offer(plr, uids)
 	if type(uids) ~= "table" then return false, "bad offer" end
 	local p = Profile.get(plr)
 	local list, seen = {}, {}
+	local sets, others = {}, 0
+	if #uids > Trading.MAX * 6 then return false, "too much at once" end
 	for _, uid in ipairs(uids) do
 		if type(uid) ~= "string" or seen[uid] then continue end
 		local key, c = Profile.findCopy(p, uid)
 		if not key then return false, "you don't have that any more" end
 		if c.b or not Collection.tradable(key) then return false, "that one can't be traded" end
-		if #list >= Trading.MAX then return false, "at most " .. Trading.MAX .. " items a side" end
+		-- (armor: gathered by its set, checked whole below)
+		local pieceId = key:match("^armor:(.+)$")
+		if pieceId then
+			local pc = Catalog.PIECE[pieceId]
+			local set = pc and (pc.set or ("pack:" .. tostring(pc.pack)))
+			if not set then return false, "that one can't be traded" end
+			sets[set] = sets[set] or {}
+			if sets[set][pieceId] then return false, "one copy of each piece of a set" end
+			sets[set][pieceId] = true
+		else
+			others += 1
+		end
 		seen[uid] = true
 		table.insert(list, uid)
 	end
+	-- a set goes whole or not at all
+	local setCount = 0
+	for set, have in pairs(sets) do
+		setCount += 1
+		for _, pc in ipairs(Catalog.PIECES) do
+			if (pc.set or ("pack:" .. tostring(pc.pack))) == set and not Catalog.isFree(pc) and not have[pc.id] then
+				return false, "armor trades as a full set: put up every piece of " .. tostring(pc.setName or set)
+			end
+		end
+	end
+	if others + setCount > Trading.MAX then return false, "at most " .. Trading.MAX .. " items a side" end
 	s.offer[plr] = list
 	unready(s)
 	push(s)

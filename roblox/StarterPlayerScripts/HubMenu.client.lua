@@ -1265,7 +1265,50 @@ function Stage.new(parent, opts)
 			end
 		end)
 	end
+	-- the IDLE: whoever stands here breathes and glances about (the shoulders and the neck,
+	-- a few degrees, on top of their pose; only while it's on screen)
+	task.spawn(function()
+		local t0 = os.clock()
+		while vp.Parent do
+			if opts.idle ~= false and #self.rigs > 0 and HX.onScreen(vp) then
+				local t = os.clock() - t0
+				for _, r in ipairs(self.rigs) do pcall(Stage.idle, r, t) end
+			end
+			task.wait(1 / 20)
+		end
+	end)
+	-- PRIMARY / SECONDARY: which weapon the one up front holds (their loadout's two)
+	if opts.weaponToggle then
+		local hb = button(parent, "", 12, COL.GLASS2)
+		hb.AnchorPoint = Vector2.new(1, 0); hb.Position = UDim2.new(1, -12, 0, 12); hb.Size = UDim2.fromOffset(190, 30); hb.ZIndex = 6
+		hb.Visible = false
+		self.holdButton = hb
+		hb.Activated:Connect(function()
+			self.hold = self.hold == "secondary" and "primary" or "secondary"
+			if self.lastSlots then self:set(self.lastSlots) end
+		end)
+	end
 	return self
+end
+
+-- a rig's idle: the shoulders and the neck turned a little from their pose, then every
+-- welded part put back where its weld says (PreviewRig.settle)
+function Stage.idle(r, t)
+	local m = r.model
+	local torso = m and m:FindFirstChild("Torso")
+	if not torso then return end
+	if not r.base then
+		r.base, r.seed = {}, math.random() * 6
+		for _, name in ipairs({"Right Shoulder", "Left Shoulder", "Neck"}) do
+			local j = torso:FindFirstChild(name)
+			if j then r.base[j] = j.C0 end
+		end
+	end
+	for j, c0 in pairs(r.base) do j.C0 = c0 end
+	local b = math.sin(t * 1.7 + r.seed)
+	local look = math.sin(t * 0.45 + r.seed) * 0.7 + math.sin(t * 1.1 + r.seed * 2) * 0.3
+	poseRig(m, {rs = {b * 2.2, 0, 1 + b * 1.2}, ls = {b * 2.2, 0, -1 - b * 1.2}, neck = {b * 1.5, look * 9, 0}})
+	settle(m)
 end
 
 -- slot i stands left to right; `back` slots stand a step behind, turned
@@ -1304,6 +1347,22 @@ end
 --   onInvite = fn                   a big + on the (ghost) body
 --   onKick = fn                     an X over the head }
 function Stage:set(slots)
+	self.lastSlots = slots
+	-- (PRIMARY / SECONDARY: the one up front holds their secondary when asked)
+	if self.holdButton then
+		local lo = slots[1] and slots[1].loadout
+		local two = lo and lo.secondary ~= nil
+		self.holdButton.Visible = two == true
+		if two then
+			self.holdButton.Text = self.hold == "secondary" and "SHOWING: SECONDARY  ⇄" or "SHOWING: PRIMARY  ⇄"
+			if self.hold == "secondary" then
+				local swapped = table.clone(lo)
+				swapped.weapon, swapped.weaponSkin = lo.secondary, lo.secondarySkin
+				local first = table.clone(slots[1]); first.loadout = swapped
+				slots = table.clone(slots); slots[1] = first
+			end
+		end
+	end
 	for _, r in ipairs(self.rigs) do r.model:Destroy(); for _, p in ipairs(r.props or {}) do p.part:Destroy() end end
 	self.rigs = {}
 	clear(self.overlay)
@@ -2303,7 +2362,7 @@ function HX.armorThumb(parent, kind, id, size)
 end
 function HX.armorStage(parent, kind, id, size)
 	local holder = clearFrame(parent); holder.Size = size or UDim2.fromScale(1, 1); holder.ClipsDescendants = true
-	local st = Stage.new(holder, {dist = 10.5, fov = 40, platform = COL.BLUE})
+	local st = Stage.new(holder, {dist = 10.5, fov = 40, platform = COL.BLUE, weaponToggle = true})
 	local lo, w = HX.armorLook(kind, id)
 	st:set({{loadout = lo or {}, appearance = HX.myLook(), weight = w}})
 	return holder
@@ -3623,7 +3682,7 @@ do
 	local classRow = clearFrame(left); classRow.Size = UDim2.new(1, 0, 0, 118)
 	hlist(classRow, 10)
 	local stageHolder = clearFrame(left); stageHolder.Position = UDim2.new(0, 0, 0, 128); stageHolder.Size = UDim2.new(1, 0, 1, -128 - 72)
-	local _, stage, stageHint = stageBlock(stageHolder, "", {dist = 10, platform = COL.BLUE})
+	local _, stage, stageHint = stageBlock(stageHolder, "", {dist = 10, platform = COL.BLUE, weaponToggle = true})
 	local tryBanner = frame(stageHolder, COL.GLASS, 14)
 	tryBanner.BackgroundTransparency = 0.08
 	tryBanner.Position = UDim2.fromOffset(14, 14)
@@ -7081,6 +7140,7 @@ function HX.thumb(parent, kind, d, size)
 	if kind == "emote" then return Preview.emote(parent, d.id, size, 0.45, true) end
 	if kind == "companion" then return Preview.companion(parent, d.id, size, true) end
 	if kind == "piece" or kind == "armorfx" then return HX.armorThumb(parent, kind, d.id, size) end
+	if kind == "armorset" then return HX.armorThumb(parent, "piece", d.top, size) end
 	if kind == "spellfx" then return HX.spellThumb(parent, d.id, size) end
 	local holder = clearFrame(parent); holder.Size = size
 	local img = iconImage(holder, "Wardrobe", 72); img.AnchorPoint = Vector2.new(0.5, 0.5); img.Position = UDim2.fromScale(0.5, 0.5)
@@ -7309,8 +7369,36 @@ function HX.inventory()
 	for _, f in ipairs(Catalog.KILLFX) do if owns("killfx", f.id) then add("killfx", f, "Kill effect") end end
 	for _, e in ipairs(Catalog.EMOTES) do if owns("emotes", e.id) then add("emote", e, "Emote") end end
 	for _, c in ipairs(Catalog.COMPANIONS) do if owns("companions", c.id) then add("companion", c, "Companion") end end
-	for _, pc in ipairs(Catalog.PIECES) do
-		if not Catalog.isFree(pc) and owns("pieces", pc.id) then add("piece", pc, "Armor") end
+	-- armor: one card per SET (how many of its pieces are yours); a piece is never shown alone
+	do
+		local sets, order = {}, {}
+		for _, pc in ipairs(Catalog.PIECES) do
+			if not Catalog.isFree(pc) then
+				local key = pc.set or ("pack:" .. tostring(pc.pack))
+				local s = sets[key]
+				if not s then s = {key = key, name = pc.setName or pc.name, pieces = {}, rarity = pc.rarity or "Common"}; sets[key] = s; table.insert(order, s) end
+				table.insert(s.pieces, pc)
+				if (RARITY_ORDER[pc.rarity] or 0) > (RARITY_ORDER[s.rarity] or 0) then s.rarity = pc.rarity end
+			end
+		end
+		for _, s in ipairs(order) do
+			local have, top, copies, at = 0, nil, math.huge, 0
+			for _, pc in ipairs(s.pieces) do
+				if owns("pieces", pc.id) then
+					have += 1
+					local list = HX.copies(HX.copyKey("piece", pc.id))
+					copies = math.min(copies, math.max(#list, 1))
+					for _, c in ipairs(list) do at = math.max(at, c.at or 0) end
+					if pc.slot == "top" or not top then top = pc end
+				end
+			end
+			if have > 0 then
+				local whole = have == #s.pieces
+				table.insert(out, {kind = "armorset", id = s.key, d = {id = s.key, name = s.name, rarity = s.rarity, top = top.id}, name = s.name,
+					sub = whole and "Armor set  ·  complete" or string.format("Armor set  ·  %d of %d pieces", have, #s.pieces),
+					rarity = s.rarity, count = whole and copies or 1, at = at})
+			end
+		end
 	end
 	for _, f in ipairs(Catalog.ARMORFX or {}) do if owns("armorfx", f.id) then add("armorfx", f, "Armor finish") end end
 	for _, s in ipairs(Catalog.SPELLSKINS or {}) do if owns("spellfx", s.id) then add("spellfx", s, ((Catalog.SPELLS[s.spell] or {}).name or "Spell") .. " skin") end end
@@ -7321,7 +7409,7 @@ function HX.inventory()
 end
 
 HX.INV_KINDS = {{text = "ALL", k = nil}, {text = "SKINS", k = "skin"}, {text = "KILL FX", k = "killfx"}, {text = "EMOTES", k = "emote"},
-	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "piece"}, {text = "FINISHES", k = "armorfx"}, {text = "SPELLS", k = "spellfx"}, {text = "TITLES", k = "title"}}
+	{text = "COMPANIONS", k = "companion"}, {text = "ARMOR", k = "armorset"}, {text = "FINISHES", k = "armorfx"}, {text = "SPELLS", k = "spellfx"}, {text = "TITLES", k = "title"}}
 HX.INV_SORTS = {"RARITY", "NEWEST", "NAME", "MOST COPIES"}
 HX.INV_PAGE = 40
 
@@ -7378,6 +7466,7 @@ render.INVENTORY = function()
 	sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.Y; sf.ScrollBarThickness = 6; sf.ScrollBarImageColor3 = COL.DIM
 	sf.Parent = f
 	local gl = Instance.new("UIGridLayout", sf); gl.CellSize = UDim2.fromOffset(150, 186); gl.CellPadding = UDim2.fromOffset(10, 10); gl.SortOrder = Enum.SortOrder.LayoutOrder
+	local pendingThumbs = {}
 	if #list == 0 then
 		local e = dim(sf, #all == 0 and "Nothing here yet: crates, the pass, tasks and the Hatchery fill it up." or "Nothing matches.", 15)
 		e.Size = UDim2.fromOffset(600, 40)
@@ -7394,7 +7483,9 @@ render.INVENTORY = function()
 		c.LayoutOrder = i
 		local rc = RARITY_COL[it.rarity] or COL.DIM
 		border(c, rc, 2, it.rarity == "Common" and 0.6 or 0.15)
-		local th = HX.thumb(c, it.kind, it.d, UDim2.new(1, -8, 0, 112)); th.Position = UDim2.fromOffset(4, 4)
+		-- (its 3D thumbnail comes as it scrolls into view: below)
+		local ph = clearFrame(c); ph.Size = UDim2.new(1, -8, 0, 112); ph.Position = UDim2.fromOffset(4, 4)
+		table.insert(pendingThumbs, {holder = ph, kind = it.kind, d = it.d})
 		local n1 = title(c, it.name, 13, it.rarity == "Common" and COL.TEXT or rc); n1.Position = UDim2.fromOffset(8, 120); n1.Size = UDim2.new(1, -16, 0, 16); n1.TextTruncate = Enum.TextTruncate.AtEnd
 		local n2 = title(c, string.upper(it.sub or ""), 10, COL.DIM); n2.Position = UDim2.fromOffset(8, 138); n2.Size = UDim2.new(1, -16, 0, 14); n2.TextTruncate = Enum.TextTruncate.AtEnd
 		local b = it.best
@@ -7406,8 +7497,33 @@ render.INVENTORY = function()
 			Instance.new("UICorner", x).CornerRadius = UDim.new(0, 7)
 		end
 		hoverScale(c, c, 1.05)
-		c.Activated:Connect(function() HX.inspect(it.kind, it.id) end)
+		if it.kind == "armorset" then
+			-- (a set: the Armory's ARMOR page on it, every piece and how to get the rest)
+			c.Activated:Connect(function() ui.armoryTab = "armor"; ui.armorSet = it.id; ui.armorSlots = {helmet = true, top = true, bottom = true}; selectTab("ARMORY") end)
+		else
+			c.Activated:Connect(function() HX.inspect(it.kind, it.id) end)
+		end
 	end
+	-- the thumbnails: the cards on screen (and just past it) first, a few a frame, while you scroll
+	task.spawn(function()
+		while sf.Parent and #pendingThumbs > 0 do
+			local top, h = sf.AbsolutePosition.Y, sf.AbsoluteSize.Y
+			local built = 0
+			for i = #pendingThumbs, 1, -1 do
+				local e = pendingThumbs[i]
+				local y = e.holder.AbsolutePosition.Y
+				if not e.holder.Parent then table.remove(pendingThumbs, i)
+				elseif y > top - 260 and y < top + h + 260 then
+					table.remove(pendingThumbs, i)
+					local th = HX.thumb(e.holder, e.kind, e.d, UDim2.fromScale(1, 1))
+					th.BackgroundTransparency = 1
+					built += 1
+					if built >= 4 then break end
+				end
+			end
+			task.wait(built > 0 and 0 or 0.15)
+		end
+	end)
 	-- (typing re-filters after a beat)
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		ui.invQuery = box.Text
@@ -7550,8 +7666,8 @@ do
 				th = pet and Preview.companion(b, d.id, UDim2.new(1, -8, 0, 88), true) or weaponThumb(b, d.weapon, c.key, UDim2.new(1, -8, 0, 88), 1.5)
 			end
 			th.Position = UDim2.fromOffset(4, 4); th.BackgroundTransparency = 1
-			local nm = title(b, d.name, 12); nm.Position = UDim2.fromOffset(6, 94); nm.Size = UDim2.new(1, -12, 0, 14); nm.TextTruncate = Enum.TextTruncate.AtEnd
-			local sub = (c.v and (string.upper(c.v) .. " ") or "") .. (c.n and ("#" .. c.n) or string.upper(d.rarity))
+			local nm = title(b, c.label or d.name, 12); nm.Position = UDim2.fromOffset(6, 94); nm.Size = UDim2.new(1, -12, 0, 14); nm.TextTruncate = Enum.TextTruncate.AtEnd
+			local sub = c.subLabel or ((c.v and (string.upper(c.v) .. " ") or "") .. (c.n and ("#" .. c.n) or string.upper(d.rarity)))
 			local sl = title(b, sub, 11, HX.VARIANT_COL[c.v] or RARITY_COL[d.rarity] or COL.DIM); sl.Position = UDim2.fromOffset(6, 110); sl.Size = UDim2.new(1, -12, 0, 13); sl.TextTruncate = Enum.TextTruncate.AtEnd
 		end
 		if onClick then b.Activated:Connect(onClick) end
@@ -7612,12 +7728,42 @@ do
 			if n == 0 then dim(inv, "None right now.", 13) end
 			local rules = panel(rl, "HOW TRADING WORKS")
 			dim(rules, string.format("Both of you put up what you want to swap (up to %d each), both press READY, wait %s, then both CONFIRM. Any change un-readies both of you, so nothing can be swapped out at the last second.", can.max or 8, "5 seconds"), 13)
-			dim(rules, "Crate and shop skins, Uniques, kill effects and emotes out of crates, and hatched companions trade, with their number, finish and story. Founder gifts, free gifts, the pass and earned skins stay with whoever got them. Marks and Crowns never trade.", 13)
+			dim(rules, "Crate and shop skins, Uniques, kill effects and emotes out of crates, armor (always as a full set) and hatched companions trade, with their number, finish and story. Founder gifts, free gifts, the pass and earned skins stay with whoever got them. Marks and Crowns never trade.", 13)
 			dim(rules, "Trading opens at level " .. tostring(can.minLevel or 5) .. ". Nobody from staff will ever ask you to trade.", 13)
 			return
 		end
 		-- the trade: their side, your side, your things to pick from
 		local you, them = T.you, T.them
+		-- ARMOR goes as full sets (Economy ▸ Trading): a set is one card for all its pieces
+		local function setOf(key)
+			local pieceId = type(key) == "string" and key:match("^armor:(.+)$")
+			local pc = pieceId and Catalog.PIECE[pieceId]
+			return pc and (pc.set or ("pack:" .. tostring(pc.pack))), pc
+		end
+		local function piecesOf(set)
+			local out = {}
+			for _, pc in ipairs(Catalog.PIECES) do if (pc.set or ("pack:" .. tostring(pc.pack))) == set and not Catalog.isFree(pc) then table.insert(out, pc) end end
+			return out
+		end
+		-- copies → cards: armor of one set folded into one card (units = every copy in it)
+		local function fold(items)
+			local out, bySet = {}, {}
+			for _, c in ipairs(items) do
+				local set, pc = setOf(c.key)
+				if set then
+					local e = bySet[set]
+					if not e then
+						e = {u = c.u, units = {}, key = c.key, label = pc.setName or set, subLabel = "FULL SET", theirs = c.theirs}
+						bySet[set] = e; table.insert(out, e)
+					end
+					table.insert(e.units, c.u)
+					if pc.slot == "top" then e.key = c.key end
+				else
+					table.insert(out, c)
+				end
+			end
+			return out
+		end
 		local top = clearFrame(f); top.Size = UDim2.new(1, 0, 0, 300)
 		local function side(x, w, s, heading, mine)
 			local h = clearFrame(top); h.Position = UDim2.new(x, 0, 0, 0); h.Size = UDim2.new(w, -10, 1, 0)
@@ -7626,11 +7772,13 @@ do
 			local hd = title(h, heading .. "  ·  WORTH " .. fmt(total) .. (s.confirmed and "  ·  CONFIRMED" or (s.ready and "  ·  READY" or "")), 18, s.confirmed and COL.GOOD or (s.ready and COL.ACCENT or COL.TEXT))
 			hd.Size = UDim2.new(1, 0, 0, 24)
 			local g = grid(h, 270); g.Position = UDim2.fromOffset(0, 28)
-			for i, c in ipairs(s.items) do
-				c.theirs = not mine
+			for _, c in ipairs(s.items) do c.theirs = not mine end
+			for i, c in ipairs(fold(s.items)) do
 				local cb = card(g, c, mine and function()
+					local drop = {}
+					for _, u in ipairs(c.units or {c.u}) do drop[u] = true end
 					local keep = {}
-					for _, c2 in ipairs(you.items) do if c2.u ~= c.u then table.insert(keep, c2.u) end end
+					for _, c2 in ipairs(you.items) do if not drop[c2.u] then table.insert(keep, c2.u) end end
 					local r = call("TradeOffer", keep); if not r.ok then toast(r.msg or "", COL.BAD) end
 				end or nil)
 				cb.LayoutOrder = i
@@ -7646,22 +7794,61 @@ do
 		local offered = {}
 		for _, c in ipairs(you.items) do offered[c.u] = true end
 		local mine = {}
+		local armorBySet = {}   -- set → pieceId → your unbound copies
 		for key, list in pairs(P.copies or {}) do
+			local set, pc = setOf(key)
 			for _, c in ipairs(list) do
-				if not c.b then table.insert(mine, {u = c.u, key = key, n = c.n, v = c.v}) end
+				if not c.b then
+					if set then
+						armorBySet[set] = armorBySet[set] or {}
+						armorBySet[set][pc.id] = armorBySet[set][pc.id] or {}
+						table.insert(armorBySet[set][pc.id], c)
+					else
+						table.insert(mine, {u = c.u, key = key, n = c.n, v = c.v})
+					end
+				end
+			end
+		end
+		-- a set you hold every piece of: one card (the copies already up, else the first of each)
+		local partial = 0
+		for set, byPiece in pairs(armorBySet) do
+			local units, key, name, whole = {}, nil, set, true
+			for _, pc in ipairs(piecesOf(set)) do
+				local cs = byPiece[pc.id]
+				if not cs or #cs == 0 then whole = false; break end
+				local pick = cs[1]
+				for _, c in ipairs(cs) do if offered[c.u] then pick = c end end
+				table.insert(units, pick.u)
+				if pc.slot == "top" or not key then key = "armor:" .. pc.id end
+				name = pc.setName or name
+			end
+			if whole and #units > 0 then
+				table.insert(mine, {u = units[1], units = units, key = key, label = name, subLabel = "FULL SET  ·  " .. #units .. " PIECES"})
+			else
+				partial += 1
 			end
 		end
 		table.sort(mine, function(a, b) return worth(a) > worth(b) end)
 		for i, c in ipairs(mine) do
+			local units = c.units or {c.u}
+			local up = true
+			for _, u in ipairs(units) do if not offered[u] then up = false end end
 			local cb = card(pg, c, function()
 				local ids = {}
 				for _, c2 in ipairs(you.items) do table.insert(ids, c2.u) end
-				if offered[c.u] then
-					for k = #ids, 1, -1 do if ids[k] == c.u then table.remove(ids, k) end end
-				else table.insert(ids, c.u) end
+				if up then
+					local drop = {}
+					for _, u in ipairs(units) do drop[u] = true end
+					for k = #ids, 1, -1 do if drop[ids[k]] then table.remove(ids, k) end end
+				else
+					for _, u in ipairs(units) do if not offered[u] then table.insert(ids, u) end end
+				end
 				local r = call("TradeOffer", ids); if not r.ok then toast(r.msg or "", COL.BAD) end
-			end, offered[c.u])
+			end, up)
 			cb.LayoutOrder = i
+		end
+		if partial > 0 then
+			ph.Text = ph.Text .. string.format("   ·   ARMOR GOES AS FULL SETS (%d PARTIAL SET%s KEPT)", partial, partial == 1 and "" or "S")
 		end
 		if #mine == 0 then dim(pg, "Nothing tradable yet: crate and shop skins, kill effects and emotes out of crates, and hatched companions can be traded.", 13) end
 		-- ready / confirm / cancel

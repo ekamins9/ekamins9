@@ -449,7 +449,10 @@ until you **let go** ("Release"), and only then goes off and is paid for; a quic
 moment it's ready. You walk at a crawl and can't sprint the whole time, and **a hit breaks it**
 (the server tells your screen: "Cancelled"). The aim is the crosshair as you let go; the crosshair says what the spell wants (someone, the
 ground, an ally, nothing) and turns red past its reach. **The Ward** (a staff, right mouse):
-frontal blows within 70° lose 60% of their damage, paid 1.3 mana a point; out of mana it breaks.
+a blow from the front (within 75°) is **stopped outright**, like a block (the clang, sparks,
+WARDED, the swing cancelled), paid half a mana a point of damage (`MagicSpells.WARD`); without
+the mana it breaks and the rest gets through. It is asked before a head-stab finisher. The ward
+shows a soft pane of light.
 Every blow — blades, arrows, spells — asks `Combat ▸ Ward` (wards, **barriers** soak first,
 **hexes** weaken the attacker and open the target).
 
@@ -611,11 +614,17 @@ and a UIScale fits it to any screen.
 - **INVENTORY** (dock tile): everything you own in one grid (skins, kill effects, emotes,
   companions, armor, titles), with SEARCH, the kinds as chips, SORT (rarity · newest · name · most
   copies), ×N for copies and the best copy's finish and number. Any card opens **INSPECT**.
+  **Armor shows as sets**, never a lone piece: one card per set ("complete" or "2 of 3 pieces"),
+  which opens the Armory on that set. The cards come at once and each 3D thumbnail is built as it
+  scrolls into view (a few a frame), so a big collection opens without a hitch.
 - **INSPECT** (`HX.inspect`, anywhere: the inventory, pass and login rewards, both sides of a
   trade, an egg's contents): the thing big and alive (the weapon turning, the effect playing, the
   creature walking), its rarity (a Unique's frame walks the rainbow), effects, where it comes
   from, THIS COPY (from a trade) and YOUR COPIES (number, finish, story, times traded, kills), and
   EQUIP · OPEN THE CRATE · TRADE IT. The little round **i** on a card opens it; M closes it.
+  Clicks on it never reach the cards behind (a full-size catcher button). **Stages** (inspect,
+  the Loadout): the knight breathes and glances about (`Stage.idle`, only while on screen), and
+  **SHOWING: PRIMARY ⇄** swaps the weapon in their hands for the loadout's secondary.
 - **The Courtyard is for showing off**: change your active class, a piece, a colour, a skin, your
   title or your look in the menu and the body you're standing in changes at once, no respawn
   (`_G.CourtyardRedress`, LoadoutServer; a match waits for your next spawn).
@@ -878,7 +887,10 @@ bundles (one click buys) or the Crowns › Marks exchange right there (`HX.short
 hatching is off, and crates or eggs inside a purchase (the premium pass) become Marks.
 
 **Trading** (TRADE in the dock). Same server, level 5 and up, only where Roblox allows trading paid
-items (`IsPaidItemTradingAllowed`). Both sides put up to 8 copies up, both press READY, a
+items (`IsPaidItemTradingAllowed`). **Armor goes only as a full set**: one copy of every piece of
+its set, together, counting as one item (`Trading.offer` refuses anything less), so nobody is
+ever left holding half a set; the picker shows only the sets you hold whole, each as one card.
+Both sides put up to 8 items up, both press READY, a
 5-second countdown runs (any change un-readies both), both CONFIRM; the server re-checks every
 copy, swaps them in one step and saves both profiles at once. Each side shows its worth (rating
 points). Logged in DataStore `TradeLog_v1`.
@@ -1516,8 +1528,9 @@ it from the map's `Spots`:
   (`earn.drill`, the drill stat for tasks and the Drill Master title). A card on the right shows
   the lesson in your own key binds, and he says it over his head.
 - **Wren, the Bowmaster** (the archery range down the north-west wall: straw targets before
-  straw butts, a near line and a far line) and **Magister Orrin** (the arcane circle in the north:
-  rune stones, three dummies standing close): each class's own lessons (`Catalog ▸ Drills`,
+  straw butts, a near line and a far line) and **Magister Orrin** (the arcane circle in the yard's
+  east end, open ground of its own past the ring: rune stones, banners, torches, three dummies
+  standing close beyond it): each class's own lessons (`Catalog ▸ Drills`,
   `track = "archer"` / `"mage"`), fought dressed as that class (`_G.Respawn`, in place). The
   Bowmaster's: loose, full draw (`LastHitPower`), a headshot, a hit from the far line, then a Squire
   charging down the range. The Magister's: a spell on a dummy, three different spells cast
@@ -1587,6 +1600,10 @@ controller runs in NPC mode.
   velocity, or the distance it covered over 0.15 s — frame-to-frame jumps made a sprinting bot
   read as standing still) and play their footsteps. The swing is written on `PreSimulation`,
   after the Animator: written any earlier, the weapon's idle pose wiped it before the legs moved.
+  **Archer and Mage bots stand like players**: `NpcAnimator` poses them with `RigPose` from what
+  the server publishes on the bot (`DrawAt` / `DrawTime` from `RangedServer`, `Aiming`, `AimPitch`,
+  `Reloading`, the casts, `Warded`, `Meditating`), the bow drawn, the crossbow shouldered, the
+  staff held in its stance.
 - `Combat ▸ R6` builds a plain R6 rig from parts for bots, dummies and NPCs.
 - Studio: `/bot Knight Longsword`, `/bot clear`.
 

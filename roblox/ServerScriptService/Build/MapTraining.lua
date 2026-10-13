@@ -7,7 +7,8 @@
      platform under a blue awning, the lesson circle in front of it; the
      straw dummies down the west side; the sparring ring on the east, with
      its challenge sign; the archery range along the north-west wall (Wren
-     the Bowmaster); the arcane circle in the north (Magister Orrin); tents,
+     the Bowmaster); the arcane circle in the yard's east end, open ground of its
+     own past the ring (Magister Orrin); tents,
      racks, hay and torches by the south gate, where you arrive.
      Spots (Map ▸ Spots, for Game ▸ Training): DrillMaster, LessonAttacker,
      LessonBlocker, Dummy1..6, Ring (Radius), RingPlayer, RingBot, RingSign,
@@ -22,19 +23,23 @@ return function(K)
 		T:FillBlock(CFrame.new(0, -6, 0), V3(380, 12, 380), Enum.Material.Grass)
 		-- the yard: packed sand inside the palisade, a dirt road out of the gate
 		T:FillBlock(CFrame.new(0, -2, 0), V3(158, 4, 128), Enum.Material.Sand)
+		-- (the east end, the arcane circle's: the yard goes on past the ring)
+		T:FillBlock(CFrame.new(95, -2, 0), V3(36, 4, 128), Enum.Material.Sand)
 		T:FillBlock(CFrame.new(0, -2, 110), V3(16, 4, 100), Enum.Material.Ground)
 		-- hills behind the castle
 		for i = -3, 3 do T:FillBall(V3(i * 50, -20, -170 - (i % 2) * 12), 48, Enum.Material.Grass) end
 	end)
 	K.terrainColors(ctx, {Grass = Color3.fromRGB(98, 150, 70), Sand = Color3.fromRGB(206, 182, 128), Ground = Color3.fromRGB(122, 98, 70)})
 
-	-- the palisade (a gate gap on the south side)
+	-- the palisade (a gate gap on the south side; the east side further out: the
+	-- arcane circle's ground past the ring)
 	local X, Z = 80, 65
-	K.palisade(ctx, V3(-X, 0, -Z), V3(X, 0, -Z))
+	local XE = 112
+	K.palisade(ctx, V3(-X, 0, -Z), V3(XE, 0, -Z))
 	K.palisade(ctx, V3(-X, 0, -Z), V3(-X, 0, Z))
-	K.palisade(ctx, V3(X, 0, -Z), V3(X, 0, Z))
+	K.palisade(ctx, V3(XE, 0, -Z), V3(XE, 0, Z))
 	K.palisade(ctx, V3(-X, 0, Z), V3(-8, 0, Z))
-	K.palisade(ctx, V3(8, 0, Z), V3(X, 0, Z))
+	K.palisade(ctx, V3(8, 0, Z), V3(XE, 0, Z))
 	-- gate towers: four posts, a platform, a little roof
 	for _, sx in ipairs({-1, 1}) do
 		local base = V3(sx * 11, 0, Z)
@@ -189,9 +194,10 @@ return function(K)
 	end
 
 	-- THE ARCANE CIRCLE (Magister Orrin's): a ring of rune stones glowing on the
-	-- sand, three straw dummies standing close together beyond it
+	-- sand in the yard's east end, room all round it, three straw dummies standing
+	-- close together well beyond it (east), the Magister on its yard side
 	do
-		local ctr = V3(21, 0, -47)
+		local ctr = V3(90, 0, -8)
 		local RUNE = Color3.fromRGB(150, 100, 255)
 		K.cyl(ctx, "CircleFloor", 15, 0.2, ctr + V3(0, 0.12, 0), Color3.fromRGB(70, 60, 96), M.Slate).CanCollide = false
 		K.cyl(ctx, "CircleGlow", 13.4, 0.24, ctr + V3(0, 0.13, 0), RUNE, M.Neon).CanCollide = false
@@ -203,14 +209,17 @@ return function(K)
 			K.box(ctx, "RuneMark", V3(0.2, 0.9, 0.74), CFrame.new(p + V3(0, 1.7, 0)) * CFrame.Angles(0, -a, 0) * CFrame.new(-0.45, 0, 0), RUNE, M.Neon).CanCollide = false
 		end
 		K.spot(ctx, "MageCircle", CFrame.new(ctr + V3(0, 1, 0)), {Radius = 7})
-		for i, x in ipairs({16.5, 21, 25.5}) do
-			K.cyl(ctx, "TargetPad", 4, 0.2, V3(x, 0.15, -59 + (i == 2 and -1.5 or 0)), Color3.fromRGB(186, 160, 110), M.Sand).CanCollide = false
-			K.spot(ctx, "MageTarget" .. i, CFrame.lookAt(V3(x, 3, -59 + (i == 2 and -1.5 or 0)), V3(21, 3, -40)))
+		for i, z in ipairs({-14, -8, -2}) do
+			local x = ctr.X + 15 + (i == 2 and 1.5 or 0)
+			K.cyl(ctx, "TargetPad", 4, 0.2, V3(x, 0.15, z), Color3.fromRGB(186, 160, 110), M.Sand).CanCollide = false
+			K.spot(ctx, "MageTarget" .. i, CFrame.lookAt(V3(x, 3, z), ctr + V3(-6, 3, 0)))
 		end
-		K.spot(ctx, "MageCharge", CFrame.lookAt(V3(28, 3, -62), V3(21, 3, -45)))
-		K.spot(ctx, "Magister", CFrame.lookAt(V3(21, 3, -35.5), V3(21, 3, 0)))
-		K.banner(ctx, ctr + V3(-9.5, 0, 9), 9, Color3.fromRGB(96, 56, 170))
-		K.banner(ctx, ctr + V3(9.5, 0, 9), 9, Color3.fromRGB(96, 56, 170))
+		K.spot(ctx, "MageCharge", CFrame.lookAt(ctr + V3(18, 3, -26), ctr + V3(0, 3, 0)))
+		K.spot(ctx, "Magister", CFrame.lookAt(ctr + V3(-12, 3, 0), V3(0, 3, -8)))
+		K.banner(ctx, ctr + V3(-10, 0, -9.5), 9, Color3.fromRGB(96, 56, 170))
+		K.banner(ctx, ctr + V3(-10, 0, 9.5), 9, Color3.fromRGB(96, 56, 170))
+		K.torchPost(ctx, ctr + V3(6, 0, -13))
+		K.torchPost(ctx, ctr + V3(6, 0, 13))
 	end
 
 	-- the camp by the gate
@@ -232,7 +241,9 @@ return function(K)
 		local a = r:NextNumber(0, math.pi * 2)
 		local d = r:NextNumber(110, 175)
 		local p = V3(math.cos(a) * d, 0, math.sin(a) * d)
-		if p.Z > -80 then K.tree(ctx, p, r:NextNumber(11, 19)) end
+		-- (none inside the yard's east end, or hard against its palisade)
+		local inYard = p.X > X and p.X < XE + 16 and math.abs(p.Z) < Z + 16
+		if p.Z > -80 and not inYard then K.tree(ctx, p, r:NextNumber(11, 19)) end
 	end
 
 	-- arrive by the gate, facing in
