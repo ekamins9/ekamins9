@@ -34,6 +34,9 @@
          and end with a Squire charging at you. A player sent here to learn one
          (the PLAY menu's "learn it" after level 5: profile trainTrack, or
          _G.TrainingTrack when already here) starts on its first open lesson.
+       • NOBODY IS HELD BACK: basic training lets you on past a step you've been at for
+         ASSIST seconds, and past the ring after two lost fights; the trip to the first
+         battle is tried again if it fails (HubServer).
        • BASIC TRAINING: a newcomer (profile tutorial 0) gets the short course
          (Catalog ▸ Drills, basic = true) and is put right in front of each
          step's dummy, facing it. Finished — or skipped — they're on their way
@@ -71,6 +74,8 @@ for i, l in ipairs(D.lessons) do
 	l.step = #TRACK[l.track]
 end
 local SKILL_ORDER = {Squire = 1, Knight = 2, Champion = 3}
+local ASSIST = 75          -- seconds on one basic-training step before Sir Aldric waves you on
+local ASSIST_SPARS = 2     -- lost fights in the ring before the last step counts anyway
 local WEAPONS = {"Longsword", "ArmingSword", "Mace", "Falchion", "Spear", "BattleAxe"}
 
 local remote = ReplicatedStorage:FindFirstChild("TrainingRemote")
@@ -199,6 +204,7 @@ local function setLesson(plr, id)
 	dropCharger(plr)
 	L.id, L.n, L.sides, L.tried = id, 0, {}, {}
 	L.casts, L.chain, L.medFrom = {}, {}, nil
+	L.since, L.lost = os.clock(), 0
 	if l.setup then ensureDrill(l.setup) end
 	-- a track's lessons are fought as its class: dressed as one where you stand
 	local t = D.tracks and D.tracks[l.track]
@@ -534,6 +540,18 @@ local function endSpar(result)
 		end
 	else
 		tell(plr, "Spar", result, r.skill)
+		-- basic training's last step: two lost fights and it counts anyway (on to battle)
+		local L = learners[plr]
+		local l = L and LESSON[L.id or ""]
+		if L and L.course == "basic" and l and l.event == "spar" and result ~= "left" then
+			L.lost = (L.lost or 0) + 1
+			if L.lost >= ASSIST_SPARS then
+				toast(plr, "Sir Aldric: \"You've the heart for it. The rest comes in battle!\"")
+				L.n = l.goal
+				publish(plr)
+				task.delay(1.5, function() if learners[plr] == L and L.id == l.id then complete(plr) end end)
+			end
+		end
 	end
 end
 
@@ -986,6 +1004,19 @@ function Training.start(map)
 			beat += 1
 			guide()
 			if beat % 4 == 0 then tidyDrills() end
+			-- basic training: a step you've been at too long, Sir Aldric waves you past
+			if beat % 4 == 0 then
+				for plr, L in pairs(learners) do
+					local l = LESSON[L.id or ""]
+					if L.course == "basic" and l and l.event ~= "spar" and L.since and os.clock() - L.since > ASSIST and not (ring and ring.player == plr) then
+						L.since = os.clock()
+						toast(plr, "Sir Aldric: \"Close enough! You'll get the hang of it. On to the next.\"")
+						L.n = l.goal
+						publish(plr)
+						complete(plr)
+					end
+				end
+			end
 			local centre = spot("Ring")
 			local radius = centre and (centre:GetAttribute("Radius") or 14) or 14
 			local r = ring

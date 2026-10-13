@@ -416,6 +416,36 @@ function teleport(players, placeId, data, jobId, code, where)
 	return ok, ok and "travelling…" or "teleport failed (published game only)"
 end
 
+-- A TELEPORT THAT FAILS ON ITS WAY (a full server, a hiccup: TeleportInitFailed comes after
+-- TeleportAsync said yes): tried again twice, a moment apart. A newcomer on their way from
+-- training to their first battle who still can't get there is sent again (a new server)
+-- rather than left in the yard with nothing to do.
+local travelRetries = {}
+Players.PlayerRemoving:Connect(function(plr) travelRetries[plr] = nil end)
+TeleportService.TeleportInitFailed:Connect(function(plr, result, msg, placeId, opts)
+	warn("[Hub] teleport init failed:", plr.Name, tostring(result), tostring(msg))
+	local n = (travelRetries[plr] or 0) + 1
+	travelRetries[plr] = n
+	if n <= 2 and placeId and opts and plr.Parent then
+		task.delay(1.5 * n, function()
+			if not plr.Parent then return end
+			event:FireClient(plr, "Travel", "")
+			local ok, err = pcall(TeleportService.TeleportAsync, TeleportService, placeId, {plr}, opts)
+			if not ok then warn("[Hub] teleport retry failed:", err); event:FireClient(plr, "TravelFailed") end
+		end)
+		return
+	end
+	travelRetries[plr] = nil
+	event:FireClient(plr, "TravelFailed")
+	if (Profile.get(plr).tutorial or 2) == 1 and Game.server.mode == "Tiltyard" and not plr:GetAttribute("FirstTripAgain") then
+		plr:SetAttribute("FirstTripAgain", true)
+		event:FireClient(plr, "Toast", "Couldn't reach the battle: trying another one…")
+		task.delay(6, function() if plr.Parent and _G.HubTravel then _G.HubTravel(plr, "Warfront", {mode = "TDM", first = true}) end end)
+	else
+		event:FireClient(plr, "Toast", "Couldn't get there: try again from PLAY (M)")
+	end
+end)
+
 function identityOf(e)
 	return {mode = e.mode, access = e.access, name = e.name, custom = e.custom, host = e.hostId, door = e.door}
 end

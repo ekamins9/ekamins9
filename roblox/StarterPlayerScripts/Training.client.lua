@@ -329,7 +329,8 @@ local function buildFeet()
 		feetRows[action] = {row = row, tick = tick, what = what}
 	end
 	feetFoot.Text = InputHints.fill("Anytime: {Menu} opens the menu (Settings has every control), {Board} shows the scoreboard.")
-	gotIt.Visible = touchOnly()
+	-- (a touch screen or a controller may not have every one of these: GOT IT ticks the rest)
+	gotIt.Visible = InputHints.mode() ~= "Keyboard"
 	-- (a controller or a touch screen has no mouse to set free: that one ticks itself)
 	if InputHints.mode() ~= "Keyboard" then task.delay(0.6, function() markFeet("Cursor") end) end
 end

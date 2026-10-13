@@ -1,4 +1,22 @@
-# Updated scripts: Mage robes and every mage cosmetic; Archer and Mage bots
+# Updated scripts: nobody gets stuck in the tutorial
+
+A report of players stuck in the tutorial. The whole newcomer path works in Studio: the welcome, all eight basic-training steps, graduation and spawning in the first battle. These are the ways a real player could still get stuck there, now fixed:
+
+- **A step you can't manage** (the parry, say): after 75 seconds on a basic-training step, Sir Aldric waves you past it.
+- **The last fight:** lose to the Squire in the ring twice and it counts anyway, and you're off to battle (before, you fought him again forever).
+- **Find Your Feet on a controller:** the GOT IT button shows for controllers too, not only touch screens, so a control with no button can't hold you up.
+- **The trip to the first battle failing on its way** (a live-server teleport hiccup): it's tried again twice, then sent to a fresh server, instead of leaving you in the yard with nothing to do. Any failed trip now says so ("try again from PLAY").
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Game/Training.lua](ServerScriptService/Game/Training.lua) | ServerScriptService ▸ Game ▸ Training | ModuleScript | `ASSIST` (75 s), `ASSIST_SPARS` (2) |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts ▸ Training | LocalScript | GOT IT for controllers |
+| [Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub ▸ HubServer | Script | TeleportInitFailed: retried, then a fresh trip for a newcomer |
+| [README.md](README.md) | | doc | the training yard |
+
+---
+
+## Before that: Mage robes and every mage cosmetic; Archer and Mage bots
 
 - **Mage robes are their own category** (weight "Robe"): only a Mage wears them, and a Mage wears nothing else. Light classes no longer see the Apprentice Robes.
 - **Seven new robe sets in the Arcana Crate**, a piece at a time: Druid, Necromancer, Pyromancer, Frost Witch, Archmage, Battlemage, and the Mythic Star Sage (a robe of glowing constellations under a crescent moon).

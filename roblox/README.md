@@ -1456,6 +1456,11 @@ it from the map's `Spots`:
   (`CastTick`), forty mana won back meditating, two blows warded (`WardHit`), one Chain Lightning
   striking two, two hits with the staff's melee self, then a charging Squire. A class still locked
   gets "come back at level 5".
+- **Nobody gets stuck in basic training:** a step you've been at for 75 seconds, Sir Aldric
+  waves you past (`ASSIST`); two lost fights in the ring and the last step counts anyway
+  (`ASSIST_SPARS`); on a controller or a touch screen Find Your Feet has a GOT IT button. The trip
+  to the first battle is tried again if the teleport fails on its way (HubServer:
+  TeleportInitFailed, twice), then sent to a fresh server rather than leaving you in the yard.
 - **Changes apply at once**, as in the Courtyard: save a loadout or pick a class in the menu and
   you're rebuilt where you stand (`_G.CourtyardRedress`).
 - **Drill dummies** for the guard lessons (and footwork): one swings slowly at you, the other
