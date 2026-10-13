@@ -1073,6 +1073,23 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 		end
 		local isStab = info.kind == "stab"
+		-- a Mage's ward (Combat ▸ Ward): a blow from the front stops dead on it, paid in
+		-- mana, like a block (asked before the finisher: a warded face isn't stabbed through)
+		do
+			local through, stopped = Ward.scale(target, character, dmg)
+			if stopped then
+				markCombat(character); markCombat(target)
+				sfx("Block", part)
+				Injury.sparks(hitPos, 1)
+				cancelSwing("blocked")
+				target:SetAttribute("GuardText", "WARDED")
+				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
+				tell("Blocked", false)
+				dprint("warded by", target.Name)
+				return
+			end
+			dmg = through
+		end
 		-- a stab through the face is a finisher, not a damage roll
 		if isStab and region == "head" and cfg.STAB_HEAD_EXECUTE then
 			dmg = math.max(dmg, hum.Health)
@@ -1083,8 +1100,6 @@ function CombatServer.attach(Tool, weaponConfig)
 			dmg = dmg * friendly
 			dprint("friendly fire x" .. tostring(friendly), "on", target.Name)
 		end
-		-- a Mage's ward (Combat ▸ Ward): a blow from the front soaks into their mana
-		dmg = Ward.scale(target, character, dmg)
 		local lethal = hum.Health - dmg <= 0
 		CombatServer.showDamage(character, target, dmg, region, lethal, friendly < 1)
 		hitSounds(part, target, info.kind, (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name

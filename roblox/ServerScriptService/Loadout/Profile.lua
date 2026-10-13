@@ -35,6 +35,7 @@
        gauntlet    the best Gauntlet wave you cleared in the training yard
        askedTraining  a new player was offered the training once (before their first battle)
        unlockSeen     the "Archer and Mage unlocked" pop-up was shown (level 5)
+       dropSeen       the drop whose announcement was last shown (each drop once, ever)
        trainTrack     sent to the training yard to learn a class ("archer" / "mage"): read there once
      Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
      A v1 profile (classes with armor = set id) is migrated on first load. ]]
@@ -84,7 +85,7 @@ local function default()
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
 		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
-		gauntlet = 0, askedTraining = false, unlockSeen = false, copies = {}, tally = {}, claims = {}, copySeq = 0,
+		gauntlet = 0, askedTraining = false, unlockSeen = false, dropSeen = "", copies = {}, tally = {}, claims = {}, copySeq = 0,
 		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 2}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
@@ -409,7 +410,7 @@ function Profile.summary(plr)
 		classes = p.classes, active = p.active, stats = p.stats, rating = p.rating, placements = p.placements, crates = p.crates, contracts = p.contracts,
 		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial, menuTour = p.menuTour,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
-		gauntlet = p.gauntlet, askedTraining = p.askedTraining, unlockSeen = p.unlockSeen,
+		gauntlet = p.gauntlet, askedTraining = p.askedTraining, unlockSeen = p.unlockSeen, dropSeen = p.dropSeen,
 	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder, beta = p.beta,
 	trading = Profile.tradingHook and Profile.tradingHook(plr) or nil,
 	restricted = Profile.restrictedHook and Profile.restrictedHook(plr) or false,

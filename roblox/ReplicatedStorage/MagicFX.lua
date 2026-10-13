@@ -667,11 +667,14 @@ end
 local function makeWard()
 	local disc = part(Vector3.new(0.12, 6, 6), Color3.fromRGB(160, 200, 255), Enum.PartType.Cylinder, Enum.Material.ForceField)
 	disc.Transparency = 0.1
+	-- (a soft pane of light behind the shimmer: it reads as a shield from any angle)
+	local pane = part(Vector3.new(0.06, 5.4, 5.4), Color3.fromRGB(150, 195, 255), Enum.PartType.Cylinder, Enum.Material.Neon)
+	pane.Transparency = 0.82
 	local rim = {}
 	for i = 1, 18 do rim[i] = part(Vector3.new(0.12, 0.12, 1.1), Color3.fromRGB(190, 220, 255)) end
 	local hum = sound(SND.hum, disc, 0.12, 1.5, 999)
 	hum.Looped = true
-	return {disc = disc, rim = rim, hum = hum}
+	return {disc = disc, pane = pane, rim = rim, hum = hum}
 end
 local function dropWard(w, broke)
 	if not w then return end
@@ -680,6 +683,7 @@ local function dropWard(w, broke)
 		sound(SND.ice, w.disc.Position, 0.6, 1.3, 1)
 	end
 	w.disc:Destroy()
+	if w.pane then w.pane:Destroy() end
 	for _, r in ipairs(w.rim) do r:Destroy() end
 end
 -- meditation: a circle of runes turning on the ground, light rising into you
@@ -882,6 +886,9 @@ function MagicFX.start()
 					L.ward.disc.CFrame = c * CFrame.Angles(0, math.pi / 2, 0)
 					L.ward.disc.Size = Vector3.new(0.12, 5.6 + pulse * 1.2, 5.6 + pulse * 1.2)
 					L.ward.disc.Color = Color3.fromRGB(160, 200, 255):Lerp(WHITE, pulse)
+					L.ward.pane.CFrame = L.ward.disc.CFrame
+					L.ward.pane.Size = Vector3.new(0.06, 5.2 + pulse * 1.2, 5.2 + pulse * 1.2)
+					L.ward.pane.Transparency = 0.82 - 0.45 * pulse
 					for i, s in ipairs(L.ward.rim) do
 						local a = i / #L.ward.rim * math.pi * 2 + now
 						local rr = 2.8 + pulse * 0.6

@@ -234,6 +234,7 @@ function RangedServer.attach(Tool, cfgIn)
 		if creak then creak:Destroy(); creak = nil end
 		drawStart, holdCostFrom = nil, nil
 		setAttr("Drawing", nil)
+		setAttr("DrawAt", nil)
 		-- (a crossbow being wound stays slow till it's done)
 		if os.clock() >= reloadUntil then setAttr("SpeedMult_Draw", nil) end
 	end
@@ -421,6 +422,10 @@ local function kindSound(fx, which, at)
 			CombatServer.drainStamina(character, cfg.DRAW_COST, nil)
 			drawStart = now
 			setAttr("Drawing", 0.01)
+			-- (when it began and how long a full draw takes: a bot's arms follow it on every
+			-- client, NpcAnimator; a player's come from their own client)
+			setAttr("DrawAt", workspace:GetServerTimeNow())
+			setAttr("DrawTime", cfg.DRAW_TIME)
 			-- the bow creaks as it bends (stopped when it's loosed or let down)
 			local head = character:FindFirstChild("Head")
 			if head then creak = Sounds.play(SND.creak, head, {Volume = 0.45, Speed = 3.2 / cfg.DRAW_TIME * 0.6, MaxDistance = 35, Ttl = cfg.DRAW_TIME + 3}) end

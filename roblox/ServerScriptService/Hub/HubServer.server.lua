@@ -964,6 +964,9 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 		Profile.get(plr).unlockSeen = true
 		Profile.markDirty(plr)
 		return {ok = true}
+	elseif op == "DropSeen" then   -- (a drop's announcement shown: not again)
+		if type(a) == "string" and #a <= 40 then Profile.get(plr).dropSeen = a; Profile.markDirty(plr) end
+		return {ok = true}
 	elseif op == "AskedTraining" then
 		Profile.get(plr).askedTraining = true
 		Profile.markDirty(plr)

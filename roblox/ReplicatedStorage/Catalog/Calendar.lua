@@ -12,7 +12,10 @@
        In Studio, /clock 2026-10-31 (or /clock +3d) pretends it is another day.
 
      drops    {id, at = "YYYY-MM-DD HH:MM" (UTC), name, tag, blurb, color = {r, g, b},
-              headline = "<skin id>" (the picture on the board), crate, egg}
+              headline = "<skin id>" (the picture on the board), crate, egg,
+              see = {text, inspect = "kind|id"} (the announcement's button: by default
+              SEE IT IN THE SHOP, to its crate)}
+              Its announcement shows once per player, ever (profile dropSeen).
               A drop is the newest one from its `at` until the next drop's `at`.
               No `at` = TBD: it never comes out by itself (staff can still force it);
               the board says "at launch" instead of a countdown.
@@ -42,7 +45,7 @@ local C = Color3.fromRGB
 local drops = {
 	{id = "Beta", at = "2026-10-01 00:00", name = "The Proving Grounds", tag = "BETA", color = C(140, 230, 255),
 		blurb = "You're here before the gates open. Everyone who plays in the beta is a Beta Tester, numbered for ever: the title, and Trailblazer, an armor finish nobody else will ever wear.",
-		crate = "Royal"},
+		crate = "Royal", see = {text = "SEE YOUR TRAILBLAZER", inspect = "armorfx|Trailblazer"}},
 	{id = "Founders", name = "The Founders' Forge", tag = "LAUNCH", color = C(255, 214, 140),
 		blurb = "Every skin re-forged: new blades, new guards, glowing runes. Play in the first month and the Founder's Oath is yours, numbered for ever.",
 		headline = "Longsword:Founder's Oath", crate = "Royal"},

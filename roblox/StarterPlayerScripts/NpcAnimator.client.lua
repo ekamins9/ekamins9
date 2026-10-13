@@ -62,3 +62,81 @@ RunService.PreSimulation:Connect(function(dt)
 		end
 	end
 end)
+
+--------------------------------------------------------------------
+--  A BOT WITH A BOW, A CROSSBOW OR A STAFF: the stance players have (RigPose: the bow
+--  raised and drawn to the face, the crossbow shouldered and wound, the staff planted
+--  and lifted to cast), from what the server publishes on the bot — Drawing / DrawAt /
+--  DrawTime, Loaded / Aiming, Reloading / ReloadAt, Casting / CastStart / CastTime /
+--  CastReady, Warded, Meditating, and AimPitch. Without it a bot held its bow out stiff
+--  like any tool. A melee bot is left to its animations.
+--------------------------------------------------------------------
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RigPose = require(ReplicatedStorage:WaitForChild("RigPose"))
+local posed = setmetatable({}, {__mode = "k"})   -- [model] = {joints, origins, cur = inputs}
+
+local function stanceOf(m)
+	local tool = m:FindFirstChildOfClass("Tool")
+	if not tool then return 0 end
+	local kind = tool:GetAttribute("Ranged")
+	if kind then return kind == "crossbow" and 2 or 1 end
+	if tool:GetAttribute("Magic") then return tool:GetAttribute("Stance") or 3 end
+	return 0
+end
+local function clamp01(x) return math.clamp(x, 0, 1) end
+local function inputsFor(m, stance)
+	local now = workspace:GetServerTimeNow()
+	local pitch = m:GetAttribute("AimPitch") or 0
+	local i = {pitch = pitch, arm = pitch * RigPose.CONFIG.ARM_PITCH, ranged = stance, aim = 0, draw = 0, reload = 0,
+		bob = 0, leanX = 0, leanZ = 0, kick = 0, crouch = 0, swayX = 0, swayY = 0, hitX = 0, hitZ = 0}
+	if stance == 1 then
+		local at = m:GetAttribute("DrawAt")
+		if m:GetAttribute("Drawing") and at then
+			i.aim = 1
+			i.draw = clamp01((now - at) / math.max(0.2, m:GetAttribute("DrawTime") or 1.6))
+		end
+		local r, rat = m:GetAttribute("Reloading"), m:GetAttribute("ReloadAt")
+		if r and rat then i.reload = clamp01((now - rat) / math.max(0.2, r)) end
+	elseif stance == 2 then
+		i.aim = m:GetAttribute("Aiming") == true and 1 or 0
+		local r, rat = m:GetAttribute("Reloading"), m:GetAttribute("ReloadAt")
+		if r and rat then i.reload = clamp01((now - rat) / math.max(0.2, r)); i.aim = 0 end
+	else
+		local casting = m:GetAttribute("Casting") ~= nil
+		if casting then
+			i.aim = 1
+			i.draw = m:GetAttribute("CastReady") and 1 or clamp01((now - (m:GetAttribute("CastStart") or now)) / math.max(0.1, m:GetAttribute("CastTime") or 1))
+		elseif m:GetAttribute("Warded") or m:GetAttribute("Meditating") then
+			i.aim = 1
+		end
+	end
+	return i
+end
+
+RunService.RenderStepped:Connect(function(dt)
+	local folder = workspace:FindFirstChild("NPCs")
+	if not folder then return end
+	local k = math.clamp(dt * 12, 0, 1)
+	for _, m in ipairs(folder:GetChildren()) do
+		if not m:GetAttribute("Bot") then continue end
+		local hum = m:FindFirstChildOfClass("Humanoid")
+		local stance = (hum and hum.Health > 0 and not m:GetAttribute("Ragdolled")) and stanceOf(m) or 0
+		local e = posed[m]
+		if stance > 0 then
+			if not e then
+				local j = RigPose.joints(m)
+				if not j then continue end
+				e = {joints = j, origins = RigPose.origins(m)}
+				posed[m] = e
+			end
+			local want = inputsFor(m, stance)
+			e.cur = e.cur and RigPose.lerpInputs and RigPose.lerpInputs(e.cur, want, k) or want
+			e.cur.ranged = stance
+			pcall(RigPose.apply, e.joints, RigPose.compute(e.cur, e.origins), 1)
+		elseif e then
+			-- (the bow put away, a sword drawn: the joints back to rest for its animations)
+			for name, m6 in pairs(e.joints) do if m6.Parent and e.origins[name] then m6.C0 = e.origins[name] end end
+			posed[m] = nil
+		end
+	end
+end)

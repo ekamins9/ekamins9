@@ -7,11 +7,12 @@
        BARRIER   a shell of light (Shield = points left, ShieldUntil) soaks a blow first,
                  point for point, until it's spent (ShieldHit for the look)
        THE WARD  a Mage's staff raised (Warded): a blow from the front (within WARD.cone)
-                 loses WARD.absorb of its damage, paid from the Mage's mana
-                 (manaPerDamage a point); out of mana it breaks (WardBroke) and the
-                 rest gets through. Blows from behind or the side land clean.
+                 is STOPPED, like a block, paid from the Mage's mana (manaPerDamage a
+                 point); without the mana for it the ward breaks (WardBroke) and what
+                 the mana couldn't cover gets through. From behind or the side: clean.
 
-       local dmg = Ward.scale(target, attackerCharacterOrPosition, dmg) ]]
+       local dmg, stopped = Ward.scale(target, attackerCharacterOrPosition, dmg)
+       (stopped: the ward took all of it — a melee blow bounces off: CombatServer) ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Spells = require(ReplicatedStorage:WaitForChild("MagicSpells"))
@@ -46,19 +47,18 @@ function Ward.scale(target, from, dmg)
 		if to.Magnitude > 1e-3 and root.CFrame.LookVector:Dot(to.Unit) < math.cos(math.rad(Spells.WARD.cone)) then return dmg end
 	end
 	local mana = target:GetAttribute("Mana") or 0
-	local soak = dmg * Spells.WARD.absorb
-	local cost = soak * Spells.WARD.manaPerDamage
+	local cost = dmg * Spells.WARD.manaPerDamage
+	target:SetAttribute("WardHit", os.clock())
 	if cost > mana then
 		-- the ward breaks: it soaks what the mana covers, the rest gets through
-		soak = mana / Spells.WARD.manaPerDamage
+		local soak = mana / Spells.WARD.manaPerDamage
 		target:SetAttribute("Mana", 0)
 		target:SetAttribute("Warded", false)
 		target:SetAttribute("WardBroke", os.clock())
-	else
-		target:SetAttribute("Mana", mana - cost)
+		return dmg - soak, false
 	end
-	target:SetAttribute("WardHit", os.clock())
-	return dmg - soak
+	target:SetAttribute("Mana", mana - cost)
+	return 0, true
 end
 
 return Ward

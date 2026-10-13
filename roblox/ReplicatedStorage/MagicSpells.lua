@@ -25,7 +25,10 @@ local S = {}
 S.MAX_MANA = 100
 S.MANA_REGEN = 0           -- (none: meditate)
 S.CAST_WALK = 0.2          -- WalkSpeed while casting, × the weapon's (a Tome walks faster)
-S.WARD = {absorb = 0.6, cone = 70, manaPerDamage = 1.3, walk = 0.5}   -- the Staff's Ward (right mouse): frontal hits
+-- the Staff's Ward (right mouse): a blow from the front (within `cone` degrees) is STOPPED, like
+-- a block, for manaPerDamage mana a point of the blow; without the mana for it the ward breaks
+-- and what the mana couldn't cover gets through
+S.WARD = {cone = 75, manaPerDamage = 0.5, walk = 0.5}
 -- MEDITATE (every magic weapon, hold R / Y): stand still and breathe; after `windup` mana
 -- comes back `rate` a second. Moving (faster than `still` studs/s), casting, warding, a hit:
 -- it ends. Everyone sees you sit and glow.

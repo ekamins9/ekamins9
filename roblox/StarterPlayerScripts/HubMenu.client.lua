@@ -3205,18 +3205,22 @@ do
 	end
 
 	render.PLAY = function()
-		-- the town crier: once a session, this week's drop (and any event running)
+		-- the town crier: each drop once (ever: profile dropSeen), and any event running
 		local cur = HX.Drops.current()
-		if cur and ui.crierSeen ~= cur.id and state.profile then
+		if cur and ui.crierSeen ~= cur.id and state.profile and state.profile.dropSeen ~= cur.id then
 			ui.crierSeen = cur.id
+			state.profile.dropSeen = cur.id
+			task.spawn(call, "DropSeen", cur.id)
 			local hs = cur.headline and Catalog.SKIN[cur.headline]
 			local evs = {}
 			for _, e in ipairs(HX.Drops.events()) do table.insert(evs, e.name .. " ends in " .. HX.span(HX.Drops.time(e.to) - HX.Drops.now())) end
 			local nxt, at = HX.Drops.next()
 			task.defer(modal, string.upper(cur.tag or "NEW") .. "  ·  " .. string.upper(cur.name),
 				(cur.blurb or "") .. (#evs > 0 and ("\n" .. table.concat(evs, "  ·  ")) or "") .. (nxt and (at and ("\nNext drop in " .. HX.span(at - HX.Drops.now()) .. ": ???") or "\nNext: " .. nxt.name .. ", at launch") or ""),
-				{{"SEE IT IN THE SHOP", cur.color or COL.GOLD, function()
+				{{cur.see and cur.see.text or "SEE IT IN THE SHOP", cur.color or COL.GOLD, function()
 					closeModal()
+					local k, id = tostring(cur.see and cur.see.inspect or ""):match("^(%w+)|(.+)$")
+					if k then HX.inspect(k, id); return end
 					ui.shopTab = cur.crate and "crates" or "daily"; ui.crate = cur.crate or ui.crate; ui.crateItem = nil
 					selectTab("SHOP")
 				end}},
@@ -7132,6 +7136,13 @@ function HX.inspect(kind, id, copy, theirs)
 	o.BackgroundTransparency = 0
 	o.Active = true
 	o.ZIndex = 60
+	-- (a frame doesn't stop a click reaching the buttons under it — the items behind — so
+	-- an empty button across it all takes the clicks the panel's own buttons don't)
+	do
+		local catch = Instance.new("TextButton")
+		catch.Name = "Catch"; catch.Text = ""; catch.AutoButtonColor = false; catch.BackgroundTransparency = 1
+		catch.Size = UDim2.fromScale(1, 1); catch.ZIndex = 0; catch.Parent = o
+	end
 	HX.inspectFrame = o
 	-- (below Roblox's own buttons along the top)
 	local top = clearFrame(o); top.Position = UDim2.fromOffset(40, 70); top.Size = UDim2.new(1, -80, 0, 50)

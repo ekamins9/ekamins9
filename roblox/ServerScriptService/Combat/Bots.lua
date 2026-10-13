@@ -1045,6 +1045,15 @@ function Bot:thinkCaster(target, thrp, now)
 	if not (head and foeHead) then return end
 	local seen = clearShot(head.Position, foeHead.Position, model, target)
 	local gap = CASTER.gap[rank] or CASTER.gap.Squire
+	-- (where it looks, up or down, for its arms and head on every client: NpcAnimator; a
+	-- loaded crossbow comes up to the shoulder while it has you in sight)
+	do
+		local look = foeHead.Position - head.Position
+		local pitch = look.Magnitude > 0.1 and math.asin(math.clamp(look.Unit.Y, -1, 1)) or 0
+		if math.abs(pitch - (model:GetAttribute("AimPitch") or 0)) > 0.04 then model:SetAttribute("AimPitch", pitch) end
+		local up = ctrl.ranged and not ctrl.isBow and st.loaded and seen or false
+		if model:GetAttribute("Aiming") ~= up then model:SetAttribute("Aiming", up) end
+	end
 
 	if ctrl.ranged then
 		local cfg = ctrl.cfg

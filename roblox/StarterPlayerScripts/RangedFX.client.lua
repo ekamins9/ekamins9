@@ -12,17 +12,22 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ArrowFlight = require(ReplicatedStorage:WaitForChild("ArrowFlight"))
-local arrowEvent = ReplicatedStorage:WaitForChild("ArrowEvent", math.huge)   -- (made when the first bow comes out: wait quietly)
 local player = Players.LocalPlayer
 
-arrowEvent.OnClientEvent:Connect(function(what, id, a, b, c, kind, shooterId, fx)
-	if what == "Shot" then
-		-- (our own shot flies already)
-		if ArrowFlight.has(id) then return end
-		ArrowFlight.fly(id, a, b, c, kind, false, fx)
-	elseif what == "Stop" then
-		ArrowFlight.stop(id, a)
-	end
+-- (the arrows' remote is made when the first bow comes out: waited for on its own thread —
+-- waiting here held up the whole script, the still arms below included, and a Mage's
+-- staff swung with the walk wherever no bow had been drawn yet)
+task.spawn(function()
+	local arrowEvent = ReplicatedStorage:WaitForChild("ArrowEvent", math.huge)
+	arrowEvent.OnClientEvent:Connect(function(what, id, a, b, c, kind, shooterId, fx)
+		if what == "Shot" then
+			-- (our own shot flies already)
+			if ArrowFlight.has(id) then return end
+			ArrowFlight.fly(id, a, b, c, kind, false, fx)
+		elseif what == "Stop" then
+			ArrowFlight.stop(id, a)
+		end
+	end)
 end)
 
 --------------------------------------------------------------------
@@ -114,11 +119,14 @@ local function stillArms(c)
 	end
 end
 
--- (and again once the animations have stepped, whichever comes last before the frame draws)
+-- (and again once the animations have stepped, whichever comes last before the frame draws;
+-- a bot with a bow or a staff too: its arms are RigPose's, NpcAnimator)
 RunService.Stepped:Connect(function()
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p.Character then pcall(stillArms, p.Character) end
 	end
+	local npcs = workspace:FindFirstChild("NPCs")
+	if npcs then for _, m in ipairs(npcs:GetChildren()) do if m:GetAttribute("Bot") then pcall(stillArms, m) end end end
 end)
 
 local acc = 0
