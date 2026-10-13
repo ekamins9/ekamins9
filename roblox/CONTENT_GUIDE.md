@@ -151,6 +151,10 @@ blueprint in `Build ▸ Armor` (the robe helpers: `robeBody`, `robeArm`, `robeLe
 `python scripts/gen_content.py --skins`): `blade` (the orb, the rune, the crystal), `grip` (the
 wood, the cover), `metal` (+ `metalMaterial`: the fittings), `fx`; `crate = "Arcana"` or `marks`.
 
+**Embers and sparks on a screen**: `UIFX.embers(frame, {colors = "fire" | "gold" | "ash" | "blood" |
+"frost" | "holy", rate})` returns stop(); `UIFX.sparks(frame, Vector2.new(0.5, 0.4), {colors})`. A
+hidden frame spawns nothing.
+
 **A drop with no date yet**: leave out its `at` (Calendar): it waits, and the board says "at
 launch". An event or a claim that belongs to it: `after = "<drop id>"`.
 

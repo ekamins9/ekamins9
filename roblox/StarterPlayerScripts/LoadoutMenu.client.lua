@@ -103,6 +103,16 @@ backdrop.BorderSizePixel = 0
 backdrop.Active = true
 backdrop.Parent = gui
 
+-- embers drifting up behind the panel while the screen is up (UIFX)
+do
+	local embers = Instance.new("Frame")
+	embers.BackgroundTransparency = 1
+	embers.Size = UDim2.fromScale(1, 1)
+	embers.ZIndex = 0
+	embers.Parent = backdrop
+	require(ReplicatedStorage:WaitForChild("UIFX")).embers(embers, {colors = "fire", rate = 0.14, z = 0, alpha = 0.3})
+end
+
 local panel = Instance.new("Frame")
 panel.AnchorPoint = Vector2.new(0.5, 0.5)
 panel.Position = UDim2.fromScale(0.5, 0.5)
@@ -187,7 +197,7 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	local p = Instance.new("UIPadding", b)
 	p.PaddingLeft, p.PaddingRight, p.PaddingTop, p.PaddingBottom = UDim.new(0, 16), UDim.new(0, 16), UDim.new(0, 14), UDim.new(0, 14)
 	local n = label(b, string.upper(def.name), 24, FONT_BLACK, COL_TEXT); n.Size = UDim2.new(1, 0, 0, 30)
-	local tag = label(b, string.upper(def.armorType) .. " ARMOR", 12, FONT, TYPE_COL[def.armorType] or COL_DIM); tag.Position = UDim2.new(0, 0, 0, 32); tag.Size = UDim2.new(1, 0, 0, 16)
+	local tag = label(b, def.weight == "Robe" and "MAGE ROBES" or (string.upper(def.armorType) .. " ARMOR"), 12, FONT, TYPE_COL[def.armorType] or COL_DIM); tag.Position = UDim2.new(0, 0, 0, 32); tag.Size = UDim2.new(1, 0, 0, 16)
 	-- your fighter in this class's loadout
 	local vp = Instance.new("ViewportFrame")
 	vp.Name = "Preview"
@@ -202,7 +212,7 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	cam.FieldOfView = 30
 	cam.Parent = vp
 	vp.CurrentCamera = cam
-	local d = label(b, def.description or "", 13, FONT_BODY, COL_DIM); d.AnchorPoint = Vector2.new(0, 1); d.Position = UDim2.new(0, 0, 1, -62); d.Size = UDim2.new(1, 0, 0, 54); d.TextYAlignment = Enum.TextYAlignment.Top
+	local d = label(b, def.description or "", 13, FONT_BODY, COL_DIM); d.AnchorPoint = Vector2.new(0, 1); d.Position = UDim2.new(0, 0, 1, -62); d.Size = UDim2.new(1, 0, 0, 54); d.TextYAlignment = Enum.TextYAlignment.Top; d.TextTruncate = Enum.TextTruncate.AtEnd   -- (a long one ends in "…", never mid-word under the loadout)
 	local lh = label(b, "LOADOUT", 11, FONT, COL_DIM); lh.AnchorPoint = Vector2.new(0, 1); lh.Position = UDim2.new(0, 0, 1, -44); lh.Size = UDim2.new(1, 0, 0, 14)
 	local sum = label(b, "…", 14, FONT, COL_TEXT); sum.AnchorPoint = Vector2.new(0, 1); sum.Position = UDim2.new(0, 0, 1, 0); sum.Size = UDim2.new(1, 0, 0, 44); sum.TextYAlignment = Enum.TextYAlignment.Top
 	b.MouseEnter:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD:Lerp(COL_CARD_ON, 0.35) end end)
@@ -275,7 +285,7 @@ waitLine.AnchorPoint = Vector2.new(0.5, 1)
 waitLine.Position = UDim2.new(0.5, 0, 1, 0)
 waitLine.Size = UDim2.new(1, 0, 0, 22)
 waitLine.TextXAlignment = Enum.TextXAlignment.Center
-local editHint = label(panel, "Change a class's armor and weapons in ARMORY  ·  " .. require(ReplicatedStorage:WaitForChild("InputHints")).name("Menu") .. " opens the menu any time", 12, FONT_BODY, COL_DIM)
+local editHint = label(panel, "Change a class's armor and weapons in LOADOUT (up top)  ·  " .. require(ReplicatedStorage:WaitForChild("InputHints")).name("Menu") .. " opens the menu any time", 12, FONT_BODY, COL_DIM)
 editHint.AnchorPoint = Vector2.new(0.5, 1)
 editHint.Position = UDim2.new(0.5, 0, 1, -90)
 editHint.Size = UDim2.new(1, 0, 0, 18)
@@ -332,7 +342,9 @@ local function clearDeathFade()
 		cam.CameraType = Enum.CameraType.Custom
 		cam.FieldOfView = 70
 	end
-	if fade then
+	if fade and fade:GetAttribute("DeathScreen") then
+		fade:SetAttribute("Lift", true)   -- (DeathScreen lifts its veil and goes)
+	elseif fade then
 		local black = fade:FindFirstChildOfClass("Frame")
 		if black then TweenService:Create(black, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play() end
 		task.delay(0.7, function() if fade.Parent then fade:Destroy() end end)
@@ -364,6 +376,10 @@ local function present()
 end
 
 local function show(active, reason)
+	-- (you just fell: the fall is seen first — DeathScreen's HoldUntil — then the screen comes)
+	local fade = playerGui:FindFirstChild("DeathFade")
+	local hold = fade and fade:GetAttribute("HoldUntil")
+	if hold and os.clock() < hold then task.delay(hold - os.clock(), show, active, reason); return end
 	clearDeathFade()
 	waitReason = reason
 	if inCourtyard() then

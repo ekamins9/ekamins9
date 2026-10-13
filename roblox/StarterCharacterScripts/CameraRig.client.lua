@@ -21,7 +21,7 @@
        HitTick / HitDir    (server) we got hit, and from which direction
 
      On death the camera rides the head (first person, wherever it rolls),
-     holds, then fades to black until respawn.
+     holds while StarterPlayerScripts ▸ DeathScreen shows the fall and the way back.
 
      DEBUG (ReplicatedStorage.Debug attributes, live): TurnCap ]]
 
@@ -845,30 +845,16 @@ local function onDied()
 	Camera.CameraType  = Enum.CameraType.Scriptable
 	Camera.FieldOfView = FP_FOV
 
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "DeathFade"
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000
-	gui.ResetOnSpawn = true
-	local black = Instance.new("Frame")
-	black.Size = UDim2.fromScale(1, 1)
-	black.BackgroundColor3 = Color3.new(0, 0, 0)
-	black.BackgroundTransparency = 1
-	black.BorderSizePixel = 0
-	black.Parent = gui
-	gui.Parent = player:WaitForChild("PlayerGui")
-
+	-- (the screen itself — the fall, the veil, the way back — is StarterPlayerScripts ▸
+	-- DeathScreen; here only the camera, held in the head while the body falls)
 	local t0 = os.clock()
 	RunService:BindToRenderStep("DeathCam", CAM, function()
 		if Head.Parent then
 			Camera.CFrame = Head.CFrame * CFrame.new(0, 0.15, -0.25)
 		end
 		local t = os.clock() - t0 - DEATH_HOLD
-		if t > 0 then
-			black.BackgroundTransparency = 1 - math.clamp(t / DEATH_FADE, 0, 1)
-		end
-		-- fully black: stop steering the camera so the loadout menu can take
-		-- it over (LoadoutMenu clears DeathFade when it opens)
+		-- under the veil: stop steering the camera so the loadout menu can take
+		-- it over (LoadoutMenu lifts DeathFade when it opens)
 		if t > DEATH_FADE then
 			pcall(function() RunService:UnbindFromRenderStep("DeathCam") end)
 		end

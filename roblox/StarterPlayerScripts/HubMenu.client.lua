@@ -18,7 +18,7 @@
                   · CROWNS (Robux bundles, Crowns › Marks)
        TASKS      daily + weekly contracts, the task-skin track, mastery
        (no wardrobe: you're yourself under the armor, your avatar's hair, face and skin,
-        Loadout ▸ Avatars; tap the player card to pick a title: HX.titlePicker)
+        Loadout ▸ Avatars; the player card opens your profile: CHANGE TITLE there, HX.titlePicker)
        SERVERS    the browser with filters, and CREATE CUSTOM
        SETTINGS   camera feel, keybinds, attack side (ClientSettings)
 
@@ -685,6 +685,12 @@ do
 			NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(0.2, 0.78), NumberSequenceKeypoint.new(0.62, 0.8),
 			NumberSequenceKeypoint.new(1, 0.2)})
 	end
+	-- a few embers drifting up over the Courtyard, behind the panels (UIFX: none while hidden)
+	do
+		local embers = clearFrame(lobbyShade)
+		embers.Size = UDim2.fromScale(1, 1)
+		require(ReplicatedStorage:WaitForChild("UIFX")).embers(embers, {colors = "fire", rate = 0.22, alpha = 0.35, size = {2, 5}})
+	end
 	lobby = clearFrame(root)
 	lobby.Size = UDim2.fromScale(1, 1)
 
@@ -773,7 +779,21 @@ do
 	local chipBtn = Instance.new("TextButton")
 	chipBtn.Name = "TitleButton"; chipBtn.Text = ""; chipBtn.BackgroundTransparency = 1; chipBtn.Size = UDim2.fromScale(1, 1); chipBtn.ZIndex = 5
 	chipBtn.Parent = profileChip
-	chipBtn.Activated:Connect(function() if HX.titlePicker then HX.titlePicker() end end)
+	chipBtn.Activated:Connect(function() if HX.openProfile then HX.openProfile(player.UserId) end end)
+	do   -- (pointing at it: VIEW PROFILE where your title sits, the edge lights)
+		local edge = profileChip:FindFirstChildOfClass("UIStroke")
+		local saved
+		chipBtn.MouseEnter:Connect(function()
+			saved = {tLbl.Text, tLbl.TextColor3}
+			tLbl.Text = "VIEW PROFILE  ›"; tLbl.TextColor3 = COL.TEXT
+			if edge then edge.Transparency = 0.35 end
+		end)
+		chipBtn.MouseLeave:Connect(function()
+			if saved and tLbl.Text == "VIEW PROFILE  ›" then tLbl.Text, tLbl.TextColor3 = saved[1], saved[2] end
+			saved = nil
+			if edge then edge.Transparency = 0.85 end
+		end)
+	end
 	lvlBadge = title(profileChip, "LVL 1", 14)
 	lvlBadge.BackgroundTransparency = 0
 	lvlBadge.BackgroundColor3 = COL.BLUE
@@ -1785,7 +1805,7 @@ local SCREEN_DEF = {
 	PASS       = {title = "SEASON PASS", icon = "Pass"},
 	HATCHERY   = {title = "PETS",     icon = "Hatchery"},
 	TRADE      = {title = "TRADE",    icon = "Trade"},
-	RANKS      = {title = "LEADERBOARDS", icon = "Tasks"},
+	RANKS      = {title = "LEADERBOARDS", icon = "Ranks"},
 	PROFILE    = {title = "PROFILE",  icon = "Loadout"},
 	INVENTORY  = {title = "INVENTORY", icon = "Inventory"},
 }
@@ -2811,7 +2831,12 @@ do
 	local function renderBoard(parent)
 		local which = ui.lbTab
 		local p = panel(parent, nil)
-		local h = title(p, "LEADERBOARD", 20); h.Size = UDim2.new(1, 0, 0, 24); h.LayoutOrder = 0
+		do   -- the header: the title, and VIEW ALL (the full leaderboards)
+			local hd = clearFrame(p); hd.Size = UDim2.new(1, 0, 0, 26); hd.LayoutOrder = 0
+			local h = title(hd, "LEADERBOARD", 20); h.Size = UDim2.new(0.6, 0, 1, 0)
+			local va = button(hd, "VIEW ALL  ›", 12, COL.BLUE); va.AnchorPoint = Vector2.new(1, 0.5); va.Position = UDim2.new(1, 0, 0.5, 0); va.Size = UDim2.fromOffset(96, 24)
+			va.Activated:Connect(function() ui.rankBoard = which; selectTab("RANKS") end)
+		end
 		local tabs = {{text = "Warfront"}}
 		for _, b in ipairs(GameConfig.DOORS.Lists.brackets or {"1v1", "2v2", "3v3"}) do table.insert(tabs, {text = b}) end
 		chips(p, tabs, function(it) return it.text == ui.lbTab end, function(it) ui.lbTab = it.text; renderRight() end, 28)
@@ -2826,7 +2851,7 @@ do
 			if i > 5 then break end
 			local mine = rw.id == player.UserId
 			if mine then meIn = true end
-			local r = row(p, string.format("%d    %s", rw.rank, mine and "You" or rw.name), fmt(rw.value), mine, function() HX.openProfile(rw.id) end, COL.TEXT)
+			local r = row(p, string.format("%d    %s", rw.rank, mine and "You" or rw.name), fmt(rw.value) .. "   ›", mine, function() HX.openProfile(rw.id) end, COL.TEXT)
 			if MEDAL[rw.rank] then
 				local m = frame(r, MEDAL[rw.rank], 4); m.Size = UDim2.fromOffset(6, 22); m.Position = UDim2.new(0, -8, 0.5, -11)
 			end
@@ -2836,8 +2861,8 @@ do
 			local mine = which == "Warfront" and (state.profile and state.profile.stats and state.profile.stats.kill or 0) or rating(which)
 			row(p, "You", fmt(mine), true, nil, COL.TEXT)
 		end
-		dim(p, which == "Warfront" and "Kills this season." or (string.upper(rankOf(rating(which))) .. "  ·  rating this season."), 12)
-		local all = bigBtn(p, "TOP 100  ·  SEASON REWARDS  ›", COL.BLUE, function() ui.rankBoard = which; selectTab("RANKS") end)
+		dim(p, (which == "Warfront" and "Kills this season." or (string.upper(rankOf(rating(which))) .. "  ·  rating this season.")) .. "  Tap a name to see their profile.", 12)
+		local all = bigBtn(p, "FULL LEADERBOARD  ·  TOP 100  ›", COL.BLUE, function() ui.rankBoard = which; selectTab("RANKS") end)
 		all.Size = UDim2.new(1, 0, 0, 34)
 	end
 
@@ -3033,8 +3058,15 @@ do
 	else
 		hlist(dock, 12)
 	end
+	HX.DOCK_TIPS = {
+		CLASSES = "Your classes: armor, finish, colours, weapons, spells", ARMORY = "Every weapon and its skins, armor sets, kill effects, emotes",
+		INVENTORY = "Everything you own, in one place", SHOP = "Today's packs and skins, the crates, Crowns",
+		PASS = "The season pass: rewards as you level", HATCHERY = "Eggs, nests and the pets that follow you",
+		TRADE = "Swap skins with other players", TASKS = "Daily and weekly tasks: they pay Marks by themselves",
+		RANKS = "Leaderboards, season rewards and player profiles", SETTINGS = "Controls, camera, sound, privacy",
+	}
 	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"INVENTORY", "Inventory", "INVENTORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
-		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"SETTINGS", "Settings", "SETTINGS"}}
+		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"RANKS", "Ranks", "RANKS"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
 		b.Size = UDim2.fromOffset(100, 100)
@@ -3048,6 +3080,20 @@ do
 		b.LayoutOrder = i
 		b.Activated:Connect(function() selectTab(d[3]) end)
 		dockBadges[d[3]] = badge
+		-- (pointing at a tile: what's behind it, in a line above it)
+		local what = HX.DOCK_TIPS[d[3]]
+		if what and not LAYOUT.compact then
+			local tip = label(b, what, 13, FONT, COL.TEXT)
+			tip.AnchorPoint = Vector2.new(0.5, 1); tip.Position = UDim2.new(0.5, 0, 0, -34)
+			tip.AutomaticSize = Enum.AutomaticSize.X; tip.Size = UDim2.fromOffset(0, 26); tip.TextWrapped = false
+			tip.TextXAlignment = Enum.TextXAlignment.Center
+			tip.BackgroundTransparency = 0.05; tip.BackgroundColor3 = COL.PANEL; tip.ZIndex = 20; tip.Visible = false
+			Instance.new("UICorner", tip).CornerRadius = UDim.new(0, 8)
+			padding(tip, 10, 10, 0, 0)
+			border(tip, WHITE, 1.2, 0.7)
+			b.MouseEnter:Connect(function() tip.Visible = true end)
+			b.MouseLeave:Connect(function() tip.Visible = false end)
+		end
 	end
 
 	----------------------------------------------------------------
@@ -3148,9 +3194,11 @@ do
 		if pb and passClaimable then local n = passClaimable(); pb.Visible = n > 0; pb.Text = tostring(n) end
 		local tb = dockBadges.TASKS
 		if tb then
-			local left = 0
-			for _, ct in ipairs(state.contracts or {}) do if not ct.done and not ct.weekly then left += 1 end end
-			tb.Visible = left > 0; tb.Text = tostring(left)
+			local done = 0
+			for _, ct in ipairs(state.contracts or {}) do if ct.done then done += 1 end end
+			local fresh = done - (ui.tasksSeenDone or done)
+			if ui.tasksSeenDone == nil and state.contracts then ui.tasksSeenDone = done end
+			tb.Visible = fresh > 0; tb.Text = "+" .. tostring(fresh); tb.BackgroundColor3 = COL.GOOD
 		end
 		local hb = dockBadges.HATCHERY
 		if hb then local n = Preview.readyEggs(); hb.Visible = n > 0; hb.Text = tostring(n) end
@@ -5213,6 +5261,10 @@ do
 
 	render.TASKS = function()
 		loadState()
+		-- (seen: the dock's +N for finished tasks goes)
+		local done = 0
+		for _, ct in ipairs(state.contracts or {}) do if ct.done then done += 1 end end
+		ui.tasksSeenDone = done
 		renderLeft()
 		renderRight()
 		renderSide()
@@ -6373,6 +6425,10 @@ HX.screens = function()
 				dim(leftList, string.format("Placements: %d of %d ranked matches played. You show on the board once they're done.", me.placements or 0, ECON.placementMatches or 10), 12)
 			end
 
+			do   -- (what a row does, before the rows)
+				local hint = label(leftList, "👤  Tap anyone to see their profile: their classes, finest skins and stats.", 13, FONT, COL.ACCENT)
+				hint.Size = UDim2.new(1, 0, 0, 18); hint.LayoutOrder = nextOrder(); hint.TextWrapped = false; hint.TextTruncate = Enum.TextTruncate.AtEnd
+			end
 			-- search
 			local box = Instance.new("TextBox")
 			box.PlaceholderText = "Search the top 100 by name…"; box.Text = ui.rankSearch; box.ClearTextOnFocus = false
@@ -6394,7 +6450,7 @@ HX.screens = function()
 					if q == "" or string.find(string.lower(tostring(rw.name)), q, 1, true) then
 						shown += 1
 						local mine = rw.id == player.UserId
-						local b = row(holder, string.format("#%d      %s%s", rw.rank, tostring(rw.name), mine and "  (you)" or ""), valueText(which, rw.value), mine,
+						local b = row(holder, string.format("#%d      %s%s", rw.rank, tostring(rw.name), mine and "  (you)" or ""), valueText(which, rw.value) .. "   ›", mine,
 							function() HX.openProfile(rw.id) end, COL.TEXT)
 						if MEDAL[rw.rank] then
 							local m = frame(b, MEDAL[rw.rank], 4); m.Size = UDim2.fromOffset(6, 22); m.Position = UDim2.new(0, -8, 0.5, -11)
@@ -6407,7 +6463,6 @@ HX.screens = function()
 			end
 			drawRows()
 			box:GetPropertyChangedSignal("Text"):Connect(function() ui.rankSearch = box.Text; drawRows() end)
-			dim(leftList, "Click anyone to see their profile.", 12)
 
 			-- the season and its rewards
 			local P = Catalog.PASS
@@ -6479,6 +6534,15 @@ HX.screens = function()
 			local st = label(top, mine and "THIS IS YOU" or (d.here and "●  IN THIS SERVER" or "○  NOT IN THIS SERVER"), 13, FONT, d.here and COL.GOOD or COL.DIM)
 			st.Position = UDim2.fromOffset(120, 70); st.Size = UDim2.new(1, -120, 0, 18)
 
+			-- YOURS: your title, the leaderboards
+			if mine then
+				local acts = clearFrame(head); acts.Size = UDim2.new(1, 0, 0, 44); acts.LayoutOrder = nextOrder()
+				hlist(acts, 8)
+				local t = button(acts, "CHANGE TITLE", 15, COL.GOLD); t.Size = UDim2.fromOffset(190, 42); t.LayoutOrder = 1
+				t.Activated:Connect(function() if HX.titlePicker then HX.titlePicker() end end)
+				local l = button(acts, "LEADERBOARDS  ›", 15, COL.BLUE); l.Size = UDim2.fromOffset(190, 42); l.LayoutOrder = 2
+				l.Activated:Connect(function() selectTab("RANKS") end)
+			end
 			-- WHAT YOU CAN DO WITH THEM
 			if not mine then
 				local acts = clearFrame(head); acts.Size = UDim2.new(1, 0, 0, 44); acts.LayoutOrder = nextOrder()

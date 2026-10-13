@@ -23,6 +23,7 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local player = Players.LocalPlayer
 local roundNode = ReplicatedStorage:WaitForChild("Round")
@@ -146,7 +147,7 @@ local function makeTag(model, plr)
 	if not head then return end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "NameTag"
-	bb.Size = UDim2.fromOffset(300, 46)
+	bb.Size = UDim2.fromOffset(300, 62)
 	bb.StudsOffsetWorldSpace = Vector3.new(0, 2.7, 0)
 	bb.AlwaysOnTop = true
 	bb.LightInfluence = 0
@@ -171,8 +172,17 @@ local function makeTag(model, plr)
 	rl.Padding = UDim.new(0, 5)
 	local tl, ts = text(bb, 13, Enum.Font.GothamMedium)
 	tl.LayoutOrder = 2
+	-- (a player you're looking straight at: the key that opens their profile)
+	local hl, hs
+	if plr then
+		hl, hs = text(bb, 11, Theme.FONT_TITLE)
+		hl.LayoutOrder = 3
+		hl.TextColor3 = Color3.fromRGB(150, 200, 255)
+		hl.TextTransparency, hs.Transparency = 1, 1
+	end
 	bb.Parent = pgui
-	local tag = {model = model, plr = plr, bb = bb, row = row, titleLabel = tl, titleStroke = ts, alpha = 0, want = false, sightAt = 0, sight = false}
+	local tag = {model = model, plr = plr, bb = bb, row = row, titleLabel = tl, titleStroke = ts, hintLabel = hl, hintStroke = hs, hint = 0,
+		alpha = 0, want = false, sightAt = 0, sight = false}
 	tags[model] = tag
 	paint(tag)
 	-- what changes the look
@@ -251,6 +261,9 @@ RunService.RenderStepped:Connect(function(dt)
 	local aim = aimPoint(cam)
 	local tanHalf = math.tan(math.rad(cam.FieldOfView) / 2)
 	local now = os.clock()
+	-- the player in the middle of the screen (what the Profile key opens): their tag says so
+	local centre = cam.ViewportSize / 2
+	local pointed, pointedOff = nil, math.huge
 	for model, tag in pairs(tags) do
 		local head = tag.bb.Adornee
 		local hum = model:FindFirstChildOfClass("Humanoid")
@@ -282,6 +295,15 @@ RunService.RenderStepped:Connect(function(dt)
 				end
 			end
 		end
+		-- (the profile hint: a player whose tag shows, nearest the middle of the screen)
+		if want and tag.plr and tag.hintLabel then
+			local sp, onScreen = cam:WorldToViewportPoint(head.Position - Vector3.new(0, 1.2, 0))
+			if onScreen and sp.Z > 0 then
+				local off = (Vector2.new(sp.X, sp.Y) - centre).Magnitude / cam.ViewportSize.Y
+				local size = 2.8 / (2 * sp.Z * tanHalf)
+				if off <= size + AIM_BASE and off < pointedOff then pointed, pointedOff = tag, off end
+			end
+		end
 		-- fade
 		local goal = want and 1 or 0
 		if tag.alpha ~= goal then
@@ -304,6 +326,20 @@ RunService.RenderStepped:Connect(function(dt)
 		if tag.gradient and tag.bb.Enabled then
 			-- the shimmer: a bright band sweeping along the name every two seconds
 			tag.gradient.Offset = Vector2.new(((now * 0.5) % 2) - 1, 0)
+		end
+	end
+	-- the profile hint on the one you're looking at (a keyboard: a controller or a touch
+	-- screen opens profiles from the menu)
+	local keyboard = InputHints.mode() == "Keyboard"
+	for _, tag in pairs(tags) do
+		if tag.hintLabel then
+			local goal = (keyboard and tag == pointed) and math.min(tag.alpha, 1) or 0
+			if tag.hint ~= goal then
+				tag.hint = goal > tag.hint and math.min(goal, tag.hint + dt / 0.2) or math.max(goal, tag.hint - dt / 0.2)
+				if goal > 0 then tag.hintLabel.Text = string.format("[%s]  PROFILE", InputHints.name("Profile")) end
+				tag.hintLabel.TextTransparency = 1 - tag.hint * 0.9
+				tag.hintStroke.Transparency = 1 - tag.hint * 0.8
+			end
 		end
 	end
 end)

@@ -14,6 +14,7 @@ local TweenService      = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
+local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
 
 local player = Players.LocalPlayer
 local round = ReplicatedStorage:WaitForChild("Round")
@@ -38,8 +39,16 @@ wash.BackgroundTransparency = 1
 wash.BorderSizePixel = 0
 wash.Parent = gui
 
+-- embers rising behind the band (gold for a win, ash for a loss: UIFX)
+local emberLayer = Instance.new("Frame")
+emberLayer.BackgroundTransparency = 1
+emberLayer.Size = UDim2.fromScale(1, 1)
+emberLayer.ZIndex = 2
+emberLayer.Parent = gui
+
 -- the band across the middle, in the winners' colour, fading at both ends
 local band = Instance.new("Frame")
+band.ZIndex = 3
 band.AnchorPoint = Vector2.new(0.5, 0.5)
 band.Position = UDim2.fromScale(0.5, 0.42)
 band.Size = UDim2.new(1, 0, 0, 190)
@@ -141,6 +150,15 @@ local function show()
 		TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back), {Scale = 1}):Play()
 		TweenService:Create(big, TweenInfo.new(0.25), {TextTransparency = 0, TextStrokeTransparency = 0.2}):Play()
 	end)
+	-- the word lands: sparks in its colour, a flash and a shudder for a win
+	local palette = verdict == "VICTORY" and "gold" or (verdict == "DEFEAT" and "ash" or "holy")
+	task.delay(0.35, function()
+		if showing ~= me then return end
+		UIFX.sparks(gui, Vector2.new(0.5, 0.42), {n = verdict == "VICTORY" and 32 or 18, colors = verdict == "DEFEAT" and "blood" or palette, radius = 340, z = 6})
+		if verdict == "VICTORY" then UIFX.flash(gui, Color3.fromRGB(255, 226, 150), 0.3, 0.6); UIFX.camShake(0.4, 3) end
+	end)
+	local stopEmbers = UIFX.embers(emberLayer, {colors = palette, rate = verdict == "VICTORY" and 0.035 or 0.08, z = 2})
+	task.delay(HOLD, stopEmbers)
 	task.delay(0.55, function()
 		for _, t in ipairs({who, why}) do TweenService:Create(t, TweenInfo.new(0.4), {TextTransparency = 0, TextStrokeTransparency = 0.3}):Play() end
 	end)

@@ -7,7 +7,8 @@ names (default all): loadout (a great helm), armory (crossed longswords),
 shop (a treasure chest), tasks (a sealed scroll), wardrobe (a tabard on a
 hanger), settings (a gear), pass (a crowned banner), hatchery (a straw nest
 with two eggs: the PETS tile), trade (two arrows chasing round a coin and a gem),
-inventory (a buckled satchel with a sword hilt). Output: 512x512 RGBA
+inventory (a buckled satchel with a sword hilt), ranks (a gold trophy cup with a
+gem, on a stepped dark base: the LEADERBOARDS tile). Output: 512x512 RGBA
 PNGs in blender/out/ui/.
 """
 import bpy, bmesh, math, os, random, sys
@@ -388,10 +389,55 @@ def satchel():
     return objs
 
 
+def trophy():
+    """the leaderboards: a gold cup on a stem, two handles, a blue gem, a stepped base"""
+    m = I.mats()
+    wood = I.material("Base", (0.12, 0.07, 0.05), rough=0.5)
+    objs = []
+    # the cup: a solid of revolution (outside up to the rim, inside back down)
+    prof = [(0.0, 0.0), (0.26, 0.02), (0.48, 0.16), (0.62, 0.42), (0.7, 0.74), (0.74, 1.02), (0.68, 1.04),
+            (0.63, 0.78), (0.55, 0.48), (0.4, 0.26), (0.0, 0.2)]
+    bm = bmesh.new()
+    n = 48
+    rings = []
+    for r, z in prof:
+        rings.append([bm.verts.new((max(r, 0.001) * math.cos(2 * math.pi * k / n), max(r, 0.001) * math.sin(2 * math.pi * k / n), z)) for k in range(n)])
+    for a, b in zip(rings, rings[1:]):
+        for k in range(n):
+            bm.faces.new((a[k], a[(k + 1) % n], b[(k + 1) % n], b[k]))
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    cup = I.mesh_obj("Cup", bm); cup.location = (0, 0, 0.05)
+    I.link(cup, m["gold"]); smooth(cup); objs.append(cup)
+    # a band of gold round the rim, a little proud
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.72, minor_radius=0.045, major_segments=48, minor_segments=10, location=(0, 0, 1.08))
+    rim = bpy.context.active_object; rim.name = "Rim"; I.link(rim, m["gold"]); smooth(rim); objs.append(rim)
+    # the handles: half rings on each side
+    for sx in (-1, 1):
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.27, minor_radius=0.06, major_segments=40, minor_segments=10,
+                                         location=(sx * 0.68, 0, 0.66), rotation=(math.pi / 2, 0, 0))
+        h = bpy.context.active_object; h.name = "Handle"
+        bmh = bmesh.new(); bmh.from_mesh(h.data)
+        bmesh.ops.delete(bmh, geom=[v for v in bmh.verts if v.co.x * sx < -0.02], context="VERTS")
+        bmh.to_mesh(h.data); bmh.free()
+        I.link(h, m["gold"]); smooth(h); objs.append(h)
+    # the stem, a knot, the foot
+    objs.append(cyl("Stem", 0.09, 0.42, (0, 0, -0.16), m["gold"], verts=24))
+    objs.append(sphere("Knot", 0.16, (0, 0, -0.12), m["gold"], scale=(1, 1, 0.7)))
+    objs.append(cyl("Foot", 0.4, 0.12, (0, 0, -0.42), m["gold"], verts=40, bevel=0.03))
+    # the base: two dark steps with a gold plate
+    objs.append(box("Base", (1.0, 0.72, 0.24), (0, 0, -0.6), wood, bevel=0.05))
+    objs.append(box("Base2", (1.22, 0.86, 0.18), (0, 0, -0.8), wood, bevel=0.05))
+    objs.append(box("Plate", (0.56, 0.06, 0.13), (0, -0.37, -0.6), m["gold"], bevel=0.02))
+    # a gem on the front of the cup
+    objs.append(sphere("Gem", 0.13, (0, -0.6, 0.62), m["gem_blue"], scale=(1, 0.55, 1.2)))
+    return objs
+
+
 MODELS = {"loadout": (helmet, 0.92, 0.0), "armory": (crossed_swords, 0.9, -0.55), "shop": (chest, 0.92, -0.55),
           "tasks": (scroll, 0.92, -0.3), "wardrobe": (wardrobe, 0.92, -0.3), "settings": (gear, 0.95, -0.4),
           "pass": (pass_banner, 0.92, -0.25), "hatchery": (hatchery_nest, 0.86, -0.5),
-          "trade": (trade_arrows, 0.9, -0.2), "inventory": (satchel, 0.9, -0.45)}
+          "trade": (trade_arrows, 0.9, -0.2), "inventory": (satchel, 0.9, -0.45), "ranks": (trophy, 0.9, -0.35)}
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []

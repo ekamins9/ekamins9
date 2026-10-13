@@ -186,6 +186,16 @@ end)
 
 local back  = gui.Back
 local bar   = back.Track.Bar
+-- embers rising while it's up (the live screen only; UIFX spawns none while it's off)
+do
+	local embers = Instance.new("Frame")
+	embers.Name = "Embers"
+	embers.BackgroundTransparency = 1
+	embers.Size = UDim2.fromScale(1, 1)
+	embers.ZIndex = 0
+	embers.Parent = back
+	require(ReplicatedStorage:WaitForChild("UIFX")).embers(embers, {colors = "fire", rate = 0.08, z = 0})
+end
 local hint  = back.Hint
 local dest  = back.Dest
 local titleL = back.Title

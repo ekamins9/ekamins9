@@ -78,6 +78,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
 | `ReplicatedFirst/Loading.client.lua` | `ReplicatedFirst` → `Loading` (the first thing anyone sees: the name while the game loads, or the travel screen carried over) | LocalScript |
+| `StarterPlayerScripts/DeathScreen.client.lua`, `Celebrate.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `DeathScreen` (the fall and the way back), `Celebrate` (FIGHT!, LEVEL UP, spawn embers) | LocalScript each |
 | `StarterPlayerScripts/LocaleText.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LocaleText` (English readers skip automatic translation: cheaper screens) | LocalScript |
 | `ReplicatedStorage/Ballistics.lua` | `ReplicatedStorage` → `Ballistics` (the arc that lands an arrow on its aim) | ModuleScript |
 | `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
@@ -176,11 +177,16 @@ pair (profile `loadoutV`).
 
 ## Leaderboards, the season, profiles, privacy
 
-**LEADERBOARDS** (menu: the lobby board's "TOP 100 · SEASON REWARDS", or the screen `RANKS`):
+**LEADERBOARDS** (menu: the **RANKS** tile in the dock, the lobby board's **VIEW ALL** / **FULL
+LEADERBOARD · TOP 100**, the LEADERBOARDS button on your own profile; the screen `RANKS`):
 the Warfront (kills this season) and the three ranked brackets (rating), top 100 each
 (`HubRemote "Board"` → `Leaderboards.top(which, 100)`). It shows where you stand (or "not in the
 top 100 yet", with your value), a search over the top 100 by name, and the season: its name, the
-time left, and every reward line (yours lit up). Click anyone for their profile.
+time left, and every reward line (yours lit up). It says up front that **tapping anyone opens
+their profile**, and every row ends in "›". **Profiles**: tap a name on a board, your own card
+(top left: pointing at it says VIEW PROFILE), PROFILE beside someone in PLAYERS HERE, or look at
+a player and press the Profile key (P) — their name tag shows **[P] PROFILE** when you're looking
+straight at them (a keyboard). Your own profile has **CHANGE TITLE** and **LEADERBOARDS**.
 
 **Season rewards** (`Catalog ▸ Economy ▸ seasonRewards`; `Economy ▸ Season`): when the season ends
 (00:00 UTC on `Catalog ▸ Pass` `ends`), one server takes the payout job (a lease in `Season_v1`),
@@ -541,8 +547,11 @@ and a UIScale fits it to any screen.
   and open slots (shadows with a green **+**) stand around you, and the leader's red **X** over
   a teammate removes them. **Daily tasks** and **friends** are on the left; the **leaderboard**
   and **today's shop** are on the right. Along the bottom runs the **dock** of 3D icons: LOADOUT,
-  ARMORY, INVENTORY, SHOP (a NEW badge when the day turns), PASS, PETS, TRADE, TASKS (open
-  tasks counted), SETTINGS. Tap the **player card** (top left) to pick your **title**. The big green **PLAY** opens the MODES board. Party members get **READY UP**
+  ARMORY, INVENTORY, SHOP (a NEW badge when the day turns), PASS, PETS, TRADE, TASKS (a green
+  **+N** for tasks finished since you last looked: tasks pay by themselves, nothing waits to be
+  claimed), **RANKS** (the leaderboards; a trophy), SETTINGS. Pointing at a tile says what's behind
+  it (`HX.DOCK_TIPS`). Tap the **player card** (top left) for **your profile** (CHANGE TITLE is
+  there). The big green **PLAY** opens the MODES board. Party members get **READY UP**
   instead. A search shows **SEARCHING 0:42** with CANCEL. With no body in the Courtyard, a blue
   **ENTER COURTYARD** spawns you.
 - **MODES** (`GameConfig.DOORS`): big tiles, each with a small 3D scene of posed, dressed
@@ -618,7 +627,7 @@ and a UIScale fits it to any screen.
   menu mannequin of you (`appearance.avatar`; the HubMenu's `HX.myLook`). Hats and anything worn
   on the body stay off (armor goes there). A helmet hides what it covers. Bots and NPCs keep the
   made-up looks of `Catalog ▸ Body`. There is no wardrobe any more; the **title** is picked on
-  the player card (`HX.titlePicker`).
+  your profile (CHANGE TITLE: `HX.titlePicker`).
 - **Bareheaded**: LOADOUT ▸ HELMET ▸ "No helmet" shows your face and hair in battle; your head has
   no armor then (a helmet's protection only covers the head when you wear one). What a helmet
   hides stays on, hidden (`Covered`), so taking it off shows it (`Dresser.setHelmet`).
@@ -1435,7 +1444,28 @@ The moment a round ends: **VICTORY** (gold), **DEFEAT** (red) or **DRAW** big ac
 on a band in the winning side's colour, then who won ("IRON WINS", or the FFA winner and their
 kills) and why (the mode's result line: "FROSTGATE HAS FALLEN"; "THE MATCH IS YOURS" when a
 match is over). Five seconds, then the board and the vote. It remembers the side you fought on
-(teams can clear as the round ends). Not in the Courtyard, the Tiltyard or Horde.
+(teams can clear as the round ends). Not in the Courtyard, the Tiltyard or Horde. Embers rise
+behind it (gold for a win, ash for a loss) and sparks fly off the word as it lands; a win flashes.
+
+## The big moments (`DeathScreen`, `Celebrate`, `UIFX`)
+
+The intro's fire, wherever a moment deserves it (`UIFX.embers` / `sparks` / `vignette` /
+`camShake` / `fadeOut`; the sounds `Fallen`, `Rise`, `Horn`, `LevelUp` from licensed ids):
+- **Dying** (`DeathScreen`; the ScreenGui is still `DeathFade`): the world drains of colour, red
+  closes in at the edges, a low boom, and the word lands — YOU HAVE FALLEN, or BEHEADED, SHOT
+  THROUGH THE HEAD, YOU BLED OUT, BETRAYED! — with who and with what (the kill feed's own entry).
+  After 2.2 s a dark veil with embers and what comes next, with a countdown bar: BACK IN THE
+  FIGHT IN 3 (the mode's respawn delay) · BACK TO THE COURTYARD · BACK ON YOUR FEET · THE NEXT
+  WAVE BRINGS YOU BACK · OUT FOR THIS ROUND. A new body lifts it with a golden flash and a blade
+  drawn; the class screen or the menu opening lifts it too (LoadoutMenu sets `Lift`, and waits
+  for `HoldUntil` so the fall is always seen). CameraRig only holds the camera in the head now.
+- **The round begins** (`Celebrate`): FIGHT! slams down under the round's number (or the mode and
+  the map), a war horn, sparks, a shudder. Not in the Courtyard or the training yard.
+- **Level up**: LEVEL 7 lands in gold on a dark band, a brass flourish, sparks and embers — after
+  the round's result and any travel screen.
+- **Spawning** in a match: a burst of embers and a flash of light at the feet (everyone sees it).
+- **Embers** also drift behind the class screen, across the travel screen, and gently over the
+  lobby; objective banners (a gate falls, a wave comes) throw sparks.
 
 ## Kill feed + leaderboard
 

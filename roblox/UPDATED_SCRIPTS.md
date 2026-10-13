@@ -1,4 +1,38 @@
-# Updated scripts: first join, hoods that fit, team kill feed, the beta, a quicker menu
+# Updated scripts: the death screen, fire on the big moments, a clearer menu
+
+- **No more black screen when you die.** First the fall: the world drains of colour, red closes in at the edges, a low boom, and the word lands (BEHEADED, SHOT THROUGH THE HEAD, YOU BLED OUT, BETRAYED…) with who did it and with what. Then a dark veil with rising embers and a countdown bar: BACK IN THE FIGHT IN 3, BACK TO THE COURTYARD, THE NEXT WAVE BRINGS YOU BACK, and so on. A new body lifts it with a golden flash.
+- **FIGHT!** slams in when a match round begins, with a war horn, sparks and a shudder.
+- **LEVEL UP** gets a gold moment of its own after the round's result.
+- **Spawning in a match** throws a burst of embers at your feet.
+- **More embers:** gold or ash behind VICTORY / DEFEAT, sparks off objective banners, and embers behind the class screen, across the travel screen and gently over the lobby.
+- **TASKS badge:** it counted unfinished tasks in red, which read as "claim me", but tasks pay by themselves. It now shows a green **+N** for tasks finished since you last looked.
+- **Leaderboards:**
+  - A **RANKS** tile (a trophy) in the dock.
+  - The lobby board has **VIEW ALL** and **FULL LEADERBOARD · TOP 100** buttons.
+  - Rows end in "›", and the screen says up front that tapping a name opens a profile.
+- **Profiles:**
+  - Your card (top left) opens your profile and says VIEW PROFILE when you point at it.
+  - Your profile has **CHANGE TITLE** and **LEADERBOARDS**.
+  - The player you look at shows **[P] PROFILE** on their name tag.
+- **Dock tooltips:** point at a tile and it says what's inside.
+- **Class screen:** the hint said to change loadouts in ARMORY (it's LOADOUT); long descriptions end in "…" instead of being cut; the Mage card says MAGE ROBES.
+- **Studio:** the new trophy icon is in Cosmetics ▸ Icons (Studio only). **Save the place.**
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DeathScreen.client.lua](StarterPlayerScripts/DeathScreen.client.lua) (new), [Celebrate.client.lua](StarterPlayerScripts/Celebrate.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the fall and the way back; FIGHT!, LEVEL UP, spawn embers |
+| [UIFX.lua](ReplicatedStorage/UIFX.lua) | ReplicatedStorage ▸ UIFX | ModuleScript | embers, sparks, vignette, camera shake, fade-out; four new sounds |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | only the death camera now (the screen is DeathScreen) |
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | waits for the fall, lifts the death screen; embers; the LOADOUT hint; MAGE ROBES |
+| [RoundResult.client.lua](StarterPlayerScripts/RoundResult.client.lua), [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua), [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | embers and sparks |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | RANKS tile, dock tooltips, tasks badge, leaderboard and profile entry points, lobby embers |
+| [NameTags.client.lua](StarterPlayerScripts/NameTags.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | [P] PROFILE on the player you look at |
+| [blender/ui_icons.py](../blender/ui_icons.py) | (tool) | Python | the trophy icon |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | all of the above |
+
+---
+
+## Before that: first join, hoods that fit, team kill feed, the beta, a quicker menu
 
 - **First join: no black screen.** The welcome cinematic was failing behind its black cover (a script loaded too late), so nothing showed until the 30-second fallback. Fixed. It also lets go of the screen if it ever fails again.
 - **A loading screen from the first frame:** the game's name, embers and a sweeping bar. Arriving by teleport, the travel screen stays up until you have a body. The welcome film is louder too: bars slide in, embers drift, and the title slams down with a flash and a shake.

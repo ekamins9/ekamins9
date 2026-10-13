@@ -13,6 +13,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
+local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
 
 local player = Players.LocalPlayer
 local round = ReplicatedStorage:WaitForChild("Round")
@@ -182,6 +183,10 @@ if ok and objEvent then
 		banner.Visible = true
 		banner.Size = UDim2.fromOffset(560, 76)
 		TweenService:Create(banner, TweenInfo.new(0.35, Enum.EasingStyle.Back), {Size = UDim2.fromOffset(640, 86)}):Play()
+		-- (sparks off it in the colour of the news: a wave coming is fire, the rest its side's)
+		local palette = info.horde and (info.team == "B" and "fire" or "gold") or (mine and "gold" or "blood")
+		task.delay(0.1, function() UIFX.sparks(gui, Vector2.new(0.5, 0.3), {n = info.final and 30 or 18, colors = palette, radius = info.final and 320 or 240, z = 6}) end)
+		if info.final then UIFX.flash(gui, Color3.fromRGB(255, 230, 170), 0.25, 0.5) end
 		bannerText.TextTransparency, bannerSub.TextTransparency = 0, 0
 		task.delay(3.4, function()
 			if bannerToken ~= token then return end
