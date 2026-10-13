@@ -11,15 +11,18 @@
 
      Keys while it runs (no buttons on screen: it's being filmed):
        1 auto · 2 orbit · 3 hero · 4 follow · 5 aerial     Q / E  the previous / next fighter
-       Ctrl+Shift+X  stop (the panel's STOP too) ]]
+       N  the next map now (a battle)      Ctrl+Shift+X  stop (the panel's STOP too)
+     They're taken ahead of everything else while it runs (the weapon bar's 1 and 2, E's
+     prompts): the one filming has no body to use them. ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 
-local remote = ReplicatedStorage:WaitForChild("ShowcaseRemote", 60)
-if not remote then return end
+-- (the server makes it the first time staff open a showcase: however long that takes)
+local remote = ReplicatedStorage:WaitForChild("ShowcaseRemote", math.huge)
 local player = Players.LocalPlayer
 local round = ReplicatedStorage:WaitForChild("Round")
 
@@ -242,8 +245,27 @@ local function step(dt)
 	cam.CameraType = Enum.CameraType.Scriptable
 	cam.CFrame = CFrame.lookAt(camPos, camLook)
 	cam.FieldOfView = fov
+	UserInputService.MouseIconEnabled = false   -- (no cursor in the footage)
 	-- (the world streams in round the camera)
 	if now - lastSend > 0.4 then lastSend = now; remote:FireServer("Cam", camPos) end
+end
+
+-- THE KEYS (taken first, ahead of the weapon bar and the prompts)
+local STYLE = {[Enum.KeyCode.One] = "auto", [Enum.KeyCode.Two] = "orbit", [Enum.KeyCode.Three] = "hero", [Enum.KeyCode.Four] = "follow", [Enum.KeyCode.Five] = "aerial"}
+local KEYS = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five, Enum.KeyCode.Q, Enum.KeyCode.E, Enum.KeyCode.N, Enum.KeyCode.X}
+local function onKey(_, inputState, input)
+	if inputState ~= Enum.UserInputState.Begin or UserInputService:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end
+	local k = input.KeyCode
+	local ctrl = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)
+	local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)
+	if k == Enum.KeyCode.X then
+		if not (ctrl and shift) then return Enum.ContextActionResult.Pass end
+		remote:FireServer("Stop")
+	elseif STYLE[k] then style = STYLE[k]; newShot(); estUntil = 0
+	elseif k == Enum.KeyCode.Q then pickSubject(-1)
+	elseif k == Enum.KeyCode.E then pickSubject(1)
+	elseif k == Enum.KeyCode.N then remote:FireServer("NextMap") end
+	return Enum.ContextActionResult.Sink
 end
 
 local function start(i)
@@ -255,31 +277,22 @@ local function start(i)
 	if _G.SetCleanView then _G.SetCleanView(true) end
 	pcall(function() RunService:UnbindFromRenderStep(BIND) end)
 	RunService:BindToRenderStep(BIND, Enum.RenderPriority.Last.Value + 10, step)
+	ContextActionService:BindActionAtPriority("ShowcaseKeys", onKey, false, 4000, table.unpack(KEYS))
 end
 local function stop()
 	if not active then return end
 	active = false
 	pcall(function() RunService:UnbindFromRenderStep(BIND) end)
+	ContextActionService:UnbindAction("ShowcaseKeys")
 	_G.ShowcaseActive = false
 	if _G.SetCleanView then _G.SetCleanView(false) end
 	local cam = workspace.CurrentCamera
 	if cam then cam.CameraType = Enum.CameraType.Custom; cam.FieldOfView = 70 end
+	UserInputService.MouseIconEnabled = true
 end
 
 remote.OnClientEvent:Connect(function(what, data)
 	if what == "Start" and type(data) == "table" then start(data)
 	elseif what == "Parade" and type(data) == "table" then parade = data; started = os.clock(); cut = true
 	elseif what == "Stop" then stop() end
-end)
-
-local STYLE = {[Enum.KeyCode.One] = "auto", [Enum.KeyCode.Two] = "orbit", [Enum.KeyCode.Three] = "hero", [Enum.KeyCode.Four] = "follow", [Enum.KeyCode.Five] = "aerial"}
-UserInputService.InputBegan:Connect(function(input, processed)
-	if not active or processed or UserInputService:GetFocusedTextBox() then return end
-	local k = input.KeyCode
-	local ctrl = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)
-	local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)
-	if k == Enum.KeyCode.X and ctrl and shift then remote:FireServer("Stop")
-	elseif STYLE[k] then style = STYLE[k]; newShot()
-	elseif k == Enum.KeyCode.Q then pickSubject(-1)
-	elseif k == Enum.KeyCode.E then pickSubject(1) end
 end)

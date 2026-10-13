@@ -1,4 +1,42 @@
-# Updated scripts: bringing players back (notifications, events) and Studio's own test data
+# Updated scripts: showcase fixes, the Magister's lessons, bots that stop hopping, and new wands and grimoires
+
+- **Showcase fixes:**
+  - **The director's camera never started** if a showcase began more than a minute after you joined. The server only makes the showcase's remote on the first SHOWCASE action, and the client waited 60 s for it then quit, so no camera, no keys and no hidden screens. It now waits however long it takes.
+  - **1-5, Q, E did nothing:** the weapon bar takes 1 and 2 (and E is the prompts' key), and Roblox marks those presses as handled, which the showcase ignored. The showcase now takes its keys ahead of everything (ContextActionService, priority 4000) while it runs.
+  - **The spawn screen showed** while you were filming. The server no longer sends it during a showcase, and sends it again when you stop, so you can join the match. It also stopped forcing the cursor on while hidden. The cursor is off in the footage.
+  - **The map never changed:** a showcase on ANY now has 4-minute rounds and a different map each round. A picked map stays (no clock). **N** goes to the next map at once.
+- **The Magister's lessons:**
+  - Each lesson hands you the Staff carrying the spells it teaches (Firebolt, Chain Lightning, Frost Nova, Mend). The spell it's about is in slot 1 and picked, so "Lightning Leaps" has Chain Lightning ready. This is for that body only: your own Mage loadout and arsenal are untouched. It works for a Mage whose loadout is a Grimoire or a custom arsenal.
+  - Switching lessons re-arms you in place, with the right weapon in hand.
+  - **A lesson popup:** every lesson outside basic training opens with a big card in the middle for 7 s: the teacher, the lesson, what to do, and what's in your hand. The yard's banner now names all three teachers.
+- **Bots:**
+  - Archers and Mages hopped at random, mostly while reloading or meditating: the stuck check read standing still on purpose as stuck. Slowed or still on purpose no longer counts.
+  - A Mage that lost sight of its target released its spell into the wall after 1.4 s. It now cancels it, and a caster or archer that hasn't seen its target for 1.5 s walks the path toward it until it has a shot.
+- **Wands and grimoires:** every wand and grimoire skin is a new shape, built like the staff heads (StaffHeads designs, `head =` on the skin), with moving parts, lights and particles. The rarer, the more alive:
+  - wands: Birch's moonstone, Holly's vine and turning gem, Ebony's diamond, Coral's pearl, Phoenix Feather's beating flame wings, Unicorn Hair's horn and rainbow halo, Willow Wisp's orbiting wisps, Elder Branch's star in a gyroscope, Thunderrod's lightning fork, Starfall's star, moon and comets;
+  - grimoires: tooled covers and corners on all of them, plus Leatherbound's sigil, Blue Folio's orbiting pages, Herbarium's seedling, Ledger's circling coins and padlocked chain, Necronomicon's skull and watching eye, Book of Flames' burning pages, Frost Codex's ice and snowflake, Celestial Atlas's armillary sphere, Codex of Storms' storm cloud striking the pages, and The Burning Book's flame wings and self-turning pages of fire.
+- Checked in Play:
+  - showcase started 66 s after joining: camera on, no screens, no cursor; TDM with 24 bots and a 4-minute clock; N ended the round onto a new map (the map N names is now the one that loads);
+  - the Magister's lessons with a Mage set to a Grimoire carrying Mend and Frost Nova: Staff with the lesson's arsenal, Chain Lightning picked for Lightning Leaps, the popup each time, out to a Knight lesson and back;
+  - all 20 wand and grimoire designs built on a bench in edit mode, no errors.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Showcase.client.lua](StarterPlayerScripts/Showcase.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | waits for its remote; keys via ContextActionService; N; no cursor |
+| [Game/Showcase.lua](ServerScriptService/Game/Showcase.lua) | ServerScriptService ▸ Game | ModuleScript | ANY rotates maps (4-minute rounds); `nextMap`; spawn screen on stop |
+| [Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | no spawn screen while filming; `_G.ShowSpawnScreen`; a lesson's spells (`opts.spells`) |
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | frees the cursor only while it's really up |
+| [Game/Training.lua](ServerScriptService/Game/Training.lua), [Training.client.lua](StarterPlayerScripts/Training.client.lua) | ServerScriptService ▸ Game; StarterPlayerScripts | ModuleScript, LocalScript | lesson arsenal and weapon in hand; the lesson popup |
+| [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `tracks.mage.spells`, a lesson's `spell` |
+| [Combat/MagicClient.lua](ReplicatedStorage/Combat/MagicClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | a new arsenal picks its first spell |
+| [Game/Modes/Tiltyard.lua](ServerScriptService/Game/Modes/Tiltyard.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the banner names the three teachers |
+| [Combat/Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | no hop when still on purpose; no casting into walls; finding a line of sight |
+| [StaffHeads.lua](ReplicatedStorage/StaffHeads.lua), [Catalog/Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage | ModuleScript | 20 wand and grimoire designs; `head =` on their skins |
+| [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | the showcase's keys and maps |
+
+---
+
+## Before that: bringing players back (notifications, events) and Studio's own test data
 
 - **Notifications** (Roblox's phone and desktop ones; setup in docs/LAUNCH.md §8):
   - a **Weekend** notification once, as a weekend event begins, to everyone seen in the last two weeks;

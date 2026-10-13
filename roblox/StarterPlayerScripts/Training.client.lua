@@ -286,6 +286,49 @@ for _, a in ipairs({"Drill", "DrillProgress", "DrillGoal", "DrillsDone", "DrillT
 round:GetAttributeChangedSignal("Mode"):Connect(refreshCard)
 task.spawn(function() while true do task.wait(1); refreshCard() end end)
 
+-- A LESSON STARTING (outside basic training, which has its card up top): a big card in the
+-- middle for a few seconds so it can't be missed: who teaches it, what to do, and what's in
+-- your hand for it (a Magister's lesson: the Staff, and the spell it teaches picked)
+local intro = panel(gui, UDim2.fromOffset(580, 172), UDim2.new(0.5, -290, 0, 96))
+intro.Visible = false
+local introHead = text(intro, "", 13, Theme.ACCENT); introHead.Position = UDim2.fromOffset(20, 12); introHead.Size = UDim2.new(1, -40, 0, 16)
+local introTitle = text(intro, "", 30); introTitle.Position = UDim2.fromOffset(20, 30); introTitle.Size = UDim2.new(1, -40, 0, 34)
+local introText = text(intro, "", 16, WHITE, Theme.FONT); introText.Position = UDim2.fromOffset(20, 68); introText.Size = UDim2.new(1, -40, 0, 64); introText.TextYAlignment = Enum.TextYAlignment.Top
+local introNote = text(intro, "", 14, GUIDE); introNote.Position = UDim2.new(0, 20, 1, -30); introNote.Size = UDim2.new(1, -40, 0, 18)
+local introAt = 0
+local function lessonIntro(l)
+	local t = teacherOf(l.track)
+	introHead.Text = string.format("%s  ·  LESSON %d / %d", string.upper(t.master or "Drill Master"), l.step, #TRACK[l.track])
+	introTitle.Text = string.upper(l.title)
+	introText.Text = say(l.text)
+	local wname = t.weapon and string.upper((Catalog.WEAPON[t.weapon] or {}).name or t.weapon)
+	local note = ""
+	if t.spells then
+		local first = l.spell or t.spells[1]
+		local sp = Catalog.SPELLS[first] or {}
+		note = string.format("IN YOUR HAND: THE %s  ·  %s%s READY", wname or "STAFF", sp.glyph and (sp.glyph .. " ") or "", string.upper(sp.name or first))
+	elseif wname then
+		note = "IN YOUR HAND: THE " .. wname
+	end
+	introNote.Text = note
+	intro.Visible = true
+	local mine = os.clock()
+	introAt = mine
+	local sc = intro:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", intro)
+	sc.Scale = 0.85
+	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	task.delay(7, function() if introAt == mine then intro.Visible = false end end)
+end
+local lastDrill = player:GetAttribute("Drill")
+player:GetAttributeChangedSignal("Drill"):Connect(function()
+	local id = player:GetAttribute("Drill")
+	if id == lastDrill then return end
+	lastDrill = id
+	local l = LESSON[id or ""]
+	if l and inYard() and player:GetAttribute("Course") ~= "basic" and not hubMenuUp() then lessonIntro(l)
+	else intro.Visible = false end
+end)
+
 --------------------------------------------------------------------
 --  FIND YOUR FEET: each control on the list ticks the moment you press it
 --  (in your own binds); the server counts them (Drills ▸ basics)

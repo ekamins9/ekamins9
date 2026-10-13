@@ -224,6 +224,8 @@ end
 local spawnAs   -- (below)
 local function show(plr, reason)
 	if not plr.Parent then return end
+	-- (filming a showcase: no body, and no spawn screen; Game ▸ Showcase shows it when it stops)
+	if plr:GetAttribute("Showcase") then return end
 	-- a newcomer (training, their first battle) doesn't pick a class yet: in they go
 	if reason == nil and (Profile.get(plr).tutorial or 2) < 2 and Game.modeId ~= "Hub" then
 		task.defer(function() spawnAs(plr, Profile.get(plr).active) end)
@@ -287,6 +289,8 @@ spawnAs = function(plr, classId, opts)
 		end
 		if lo.secondary == lo.weapon then lo.secondary, lo.secondarySkin = nil, nil end
 	end
+	-- (and the spells a lesson is taught with: the Magister's, for this body only)
+	if type(opts.spells) == "table" and #opts.spells > 0 then lo.spells = table.clone(opts.spells) end
 	-- ARMORY ROULETTE (a weekend's rule, Catalog ▸ Calendar weekends): in battle, every
 	-- spawn hands you a random pair your class can carry (your own skin for it if you have one)
 	if not opts.weapon and Drops.rule("roulette") and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" and not Game.server.ranked then
@@ -417,10 +421,16 @@ _G.AutoSpawn = function(plr)
 	task.spawn(spawnAs, plr, picked[plr] or Profile.get(plr).active)
 end
 -- dressed as a class where you stand (the training yard's class lessons: Game ▸ Training;
--- o.weapon: the one their lessons need in your hands, for this body only)
+-- o.weapon: the one their lessons need in your hands, o.spells: the arsenal it carries; both
+-- for this body only)
+-- the spawn screen for someone with no body (a showcase over: Game ▸ Showcase)
+_G.ShowSpawnScreen = function(plr)
+	if plr.Parent and not isAlive(plr) then show(plr) end
+end
 _G.Respawn = function(plr, classId, at, o)
 	if not plr.Parent or spawning[plr] then return end
-	task.spawn(spawnAs, plr, classId, {again = true, at = at, weapon = type(o) == "table" and o.weapon or nil})
+	o = type(o) == "table" and o or {}
+	task.spawn(spawnAs, plr, classId, {again = true, at = at, weapon = o.weapon, spells = o.spells})
 end
 -- WHOLE AGAIN where you stand (Horde, between waves): health, wind and mana back, and a body
 -- that lost a limb, is bleeding or had its weapon knocked away is rebuilt in place as the

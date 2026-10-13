@@ -15,7 +15,7 @@ function Tiltyard:stop()
 	Training.stop()
 	Hub.stop(self)
 end
-function Tiltyard:objective() return "TRAINING YARD  ·  E at the Drill Master for lessons  ·  E at the ring sign to spar" end
+function Tiltyard:objective() return "TRAINING YARD  ·  E at a teacher for lessons: Sir Aldric (steel), Wren (the bow), Orrin (magic)  ·  E at the ring sign to spar" end
 -- (Studio has no teleports: it ends the moment another mode is asked for, like the Hub)
 function Tiltyard:isOver()
 	local nxt = Game.node:GetAttribute("NextMode")

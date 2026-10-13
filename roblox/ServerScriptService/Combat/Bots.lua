@@ -750,10 +750,11 @@ end
 -- STUCK: told to walk but it's hardly moved for a second (snagged on a corner, a
 -- prop the steering missed). First it hops; still stuck, it steps off to one side
 -- for a moment and works out a fresh path, and keeps to paths a while even for a
--- foe close by
-function Bot:unstick(want, now)
+-- foe close by. Slow on purpose isn't stuck (slow = drawing, reloading, casting: an
+-- archer or a mage barely moves then), nor is a crawl it was slowed to: no hop
+function Bot:unstick(want, now, slow)
 	local p = self.hrp.Position
-	if want.Magnitude < 0.3 then self.stuckAt, self.stuckN = nil, 0; return want end
+	if want.Magnitude < 0.3 or slow or self.hum.WalkSpeed < 5 then self.stuckAt, self.stuckN = nil, 0; return want end
 	if not self.stuckAt or (p - self.stuckFrom).Magnitude > 1.5 then
 		self.stuckAt, self.stuckFrom, self.stuckN = now, p, 0
 	elseif now - self.stuckAt > 0.9 then
@@ -1018,21 +1019,26 @@ function Bot:thinkCaster(target, thrp, now)
 		self.strafeUntil = now + 1 + math.random() * 2
 	end
 	local busy = st.drawing or st.casting ~= nil
+	-- lost sight of them (round a wall, a corner) a while: it closes in along the path till
+	-- it has a shot again, instead of loosing into the wall
+	self.seenAt = self.seenAt or now
+	local blind = now - self.seenAt > 1.5 and not self.arena
 	local want
-	if dist < near then want = -dir + side * self.strafe * 0.3
-	elseif dist > far then want = dir
+	if dist < near and not blind then want = -dir + side * self.strafe * 0.3
+	elseif dist > far or blind then want = dir
 	else want = side * self.strafe * 0.6 + dir * math.clamp((dist - (near + far) / 2) / 10, -0.5, 0.5) end
 	if self.arena then
 		local off = hrp.Position - self.arena.centre
 		off = Vector3.new(off.X, 0, off.Z)
 		if off.Magnitude > self.arena.radius - 2.5 then want = -off.Unit end
 	end
-	if dist > far and (dist > 22 or now < (self.pathUntil or 0)) and not self.arena then
+	if (dist > far or blind) and (dist > 22 or blind or now < (self.pathUntil or 0)) and not self.arena then
 		local pd = self:pathDir(thrp.Position, now)
 		if pd then want = pd end
 	end
-	if want.Magnitude > 0.3 then want = self:unstick(self:steer(want, now), now) end
-	if self.meditating or (self.skill.pace or 0) <= 0 then want = Vector3.zero end
+	local still = self.meditating or (self.skill.pace or 0) <= 0
+	if still then want = Vector3.zero; self.stuckAt = nil
+	elseif want.Magnitude > 0.3 then want = self:unstick(self:steer(want, now), now, busy or st.reloading) end
 	local w = want.Magnitude > 1 and want.Unit or want
 	self.mv = self.mv and self.mv:Lerp(w, 0.4) or w
 	local mag = math.min(self.mv.Magnitude, 1)
@@ -1044,6 +1050,7 @@ function Bot:thinkCaster(target, thrp, now)
 	local foeHead = target:FindFirstChild("Head")
 	if not (head and foeHead) then return end
 	local seen = clearShot(head.Position, foeHead.Position, model, target)
+	if seen then self.seenAt = now end
 	local gap = CASTER.gap[rank] or CASTER.gap.Squire
 	-- (where it looks, up or down, for its arms and head on every client: NpcAnimator; a
 	-- loaded crossbow comes up to the shoulder while it has you in sight)
@@ -1095,12 +1102,17 @@ function Bot:thinkCaster(target, thrp, now)
 			-- held, charged: let go once it has a shot (or it's held too long)
 			self.chargedAt = self.chargedAt or now
 			local sp = Spells[st.casting] or {}
+			local mine = sp.kind == "heal" or sp.kind == "buff" or sp.target == "self"
 			local aim
-			if sp.kind == "heal" or sp.kind == "buff" or sp.target == "self" then aim = hrp.Position
+			if mine then aim = hrp.Position
 			elseif sp.target == "ground" then aim = self:aimAt(target, nil, true)
 			else aim = self:aimAt(target, sp.speed) end
-			if seen or sp.target ~= "aim" or now - self.chargedAt > 1.4 then
+			if seen or mine then
 				ctrl.npc("Release", aim)
+				self.chargedAt = nil
+			elseif now - self.chargedAt > 1.4 then
+				-- (no shot at them: let it go rather than spend it on a wall)
+				ctrl.npc("Cancel")
 				self.chargedAt = nil
 			end
 		end

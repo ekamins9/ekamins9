@@ -28,6 +28,8 @@
        meditate  that much mana won back meditating (you start low)
        ward      a blow turned by your Ward · chain (one Chain Lightning strikes
                  two targets) · staffhit (a hit with the staff's melee self)
+                 A Magister's lesson hands you the Staff carrying tracks ▸ mage ▸ spells
+                 (for that body only: your own arsenal is untouched), its `spell` picked
        spar      per skill: first (Marks for your first win; the wins after pay nothing:
                  the yard is for learning, not for farming bots)
        gauntlet  perWave (Marks for each wave past your best), payTo (no pay past this wave) ]]
@@ -84,8 +86,8 @@ return {
 			text = "Mana only comes back when you meditate. Stand still and hold {Reload}. Win back forty mana."},
 		{id = "ward", track = "mage", title = "The Ward", goal = 2, event = "ward", setup = "attacker",
 			text = "Your staff can shield you: hold {Block} to raise a Ward. It turns blows from the front, for mana. Ward off two of the drill dummy's blows."},
-		{id = "leap", track = "mage", title = "Lightning Leaps", goal = 1, event = "chain",
-			text = "Chain Lightning jumps from one foe to the next. Strike one of the dummies standing together so it leaps to another."},
+		{id = "leap", track = "mage", title = "Lightning Leaps", goal = 1, event = "chain", spell = "ChainLightning",
+			text = "Chain Lightning is in your hand now: it jumps from one foe to the next. Strike one of the dummies standing together so it leaps to another."},
 		{id = "bonk", track = "mage", title = "Staff and Steel", goal = 2, event = "staffhit",
 			text = "Too close for spells? Press {Stance}: your staff fights like a quarterstaff. Hit a straw dummy twice with it, then {Stance} back."},
 		{id = "spellbound", track = "mage", title = "Spellbound", goal = 1, event = "charge", skill = "Squire",
@@ -97,7 +99,10 @@ return {
 		-- (weapon: what its lessons are fought with; you're handed it for them if your loadout
 		-- carries something else, a crossbow for the Bowmaster, a grimoire for the Magister)
 		archer = {master = "Wren, Bowmaster", short = "BOWMASTER", spot = "Bowmaster", class = "Archer", weapon = "Bow", where = "THE ARCHERY RANGE"},
-		mage   = {master = "Magister Orrin", short = "MAGISTER", spot = "Magister", class = "Mage", weapon = "Staff", where = "THE ARCANE CIRCLE"},
+		-- (spells: the arsenal its lessons are taught with, whatever yours is; a lesson's own
+		-- `spell` goes first, so it's the one in your hand)
+		mage   = {master = "Magister Orrin", short = "MAGISTER", spot = "Magister", class = "Mage", weapon = "Staff", where = "THE ARCANE CIRCLE",
+			spells = {"Firebolt", "ChainLightning", "FrostNova", "Mend"}},
 	},
 	spar = {
 		Squire   = {first = 100},

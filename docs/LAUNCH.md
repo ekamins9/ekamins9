@@ -82,10 +82,13 @@ Create these, each with its picture from **`store_art/badges/badge_<Key>.png`** 
     | COURTYARD TOUR | a slow flight round the hub |
     | ARMOR PARADE | the rarest sets on mannequins |
 
-    Pick a map or leave it on ANY. Keys while it runs:
+    Pick a map, or leave it on ANY to get a new map every 4 minutes. A picked map stays until you press N. Keys while it runs:
     - **1** auto, **2** orbit, **3** hero (low, in front), **4** follow, **5** aerial;
     - **Q / E** switch fighter;
-    - **Ctrl+Shift+X** stop.
+    - **N** next map now;
+    - **Ctrl+Shift+X** stop. You then get the spawn screen, so you can join the match.
+
+    You don't need to click SPECTATE or spawn: while a showcase runs you have no body and no spawn screen, and every screen hides by itself (no Ctrl+H needed).
 
     It only runs in Studio or your own custom/private server, because it takes over the whole server. Recording in Studio's Play is simplest.
   - Or by hand: in a live server press **Ctrl+H** (all UI hides; again to bring it back) and record yourself playing, ideally with friends.

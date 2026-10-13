@@ -367,6 +367,8 @@ local function present()
 	end
 	if gui.Enabled and not mouseConn then
 		mouseConn = RunService.RenderStepped:Connect(function()
+			-- (only while it's really up: Ctrl+H or a showcase can hide it with this still connected)
+			if not gui.Enabled then return end
 			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 			UserInputService.MouseIconEnabled = true
 		end)

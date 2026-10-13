@@ -205,6 +205,32 @@ end
 local function fitFor(char, t)
 	return char:GetAttribute("Class") == t.class and carries(char, t.weapon)
 end
+-- the spells a lesson is taught with (Drills ▸ tracks ▸ spells), its own `spell` first so it's
+-- the one picked; nil for a track without (the bow, steel)
+local function lessonArsenal(l, t)
+	if not (l and t and t.spells) then return nil end
+	local list = {l.spell}
+	for _, id in ipairs(t.spells) do if id ~= l.spell then table.insert(list, id) end end
+	return list
+end
+-- the lesson's weapon in your hands, carrying its spells (this body only: your loadout's arsenal
+-- is untouched). Its melee twin in hand counts as holding it (the staff fought as a quarterstaff)
+local function armFor(plr, l, t)
+	local char = plr.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0 and t and t.weapon) then return end
+	local tool
+	for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
+		for _, x in ipairs(holder and holder:GetChildren() or {}) do
+			if x:IsA("Tool") and x.Name == t.weapon then tool = x end
+		end
+	end
+	if not tool then return end
+	local arsenal = lessonArsenal(l, t)
+	if arsenal then tool:SetAttribute("Spells", table.concat(arsenal, ",")) end
+	local held = char:FindFirstChildOfClass("Tool")
+	if held ~= tool and not (held and held:GetAttribute("Twin") == tool.Name) then hum:EquipTool(tool) end
+end
 local function setLesson(plr, id)
 	local l = LESSON[id]
 	if not l then return end
@@ -227,7 +253,12 @@ local function setLesson(plr, id)
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if t and t.class and char and not fitFor(char, t) and _G.Respawn then
 		if char:GetAttribute("Class") == t.class then toast(plr, "This lesson takes the " .. ((Catalog.WEAPON[t.weapon] or {}).name or t.weapon) .. ": here's one") end
-		_G.Respawn(plr, t.class, root and root.CFrame, {weapon = t.weapon})
+		_G.Respawn(plr, t.class, root and root.CFrame, {weapon = t.weapon, spells = lessonArsenal(l, t)})
+		-- (once the new body's up: the weapon in hand, its spell picked)
+		task.delay(1.6, function() if learners[plr] == L and L.id == id then armFor(plr, l, t) end end)
+	elseif t and t.class and char then
+		-- already the right body: the lesson's spells, and the weapon in hand
+		armFor(plr, l, t)
 	elseif l.track == "knight" and char and _G.Respawn then
 		-- (Sir Aldric teaches steel: out of a bow or a staff, into your own class, or the default)
 		local cd = GameConfig.CLASSES[char:GetAttribute("Class") or ""]
@@ -955,7 +986,7 @@ function Training.start(map)
 		elseif wantL then
 			-- straight in as that class, on its first lesson
 			local cls = D.tracks[want].class
-			if cls and _G.Respawn and not alive(plr) then _G.Respawn(plr, cls, nil, {weapon = D.tracks[want].weapon}) end
+			if cls and _G.Respawn and not alive(plr) then _G.Respawn(plr, cls, nil, {weapon = D.tracks[want].weapon, spells = lessonArsenal(wantL, D.tracks[want])}) end
 			task.delay(1.5, function() if learners[plr] == L then setLesson(plr, wantL.id) end end)
 		else
 			local first = firstOpen(p, "knight")
@@ -971,7 +1002,9 @@ function Training.start(map)
 				task.delay(1, function()
 					if plr.Character == c and learners[plr] == L and LESSON[L.id or ""] == l and not fitFor(c, tr) and _G.Respawn then
 						local root = c:FindFirstChild("HumanoidRootPart")
-						_G.Respawn(plr, tr.class, root and root.CFrame, {weapon = tr.weapon})
+						_G.Respawn(plr, tr.class, root and root.CFrame, {weapon = tr.weapon, spells = lessonArsenal(l, tr)})
+					elseif plr.Character == c and learners[plr] == L and LESSON[L.id or ""] == l then
+						armFor(plr, l, tr)
 					end
 				end)
 			end

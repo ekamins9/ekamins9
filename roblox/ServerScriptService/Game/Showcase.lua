@@ -95,15 +95,28 @@ local function restore()
 	state.saved = nil
 end
 
-local function pickMap(k, map)
+-- the maps a showcase can fight on (its own list, else its mode's; only those in this place)
+local function poolFor(k)
 	local def = GameConfig.MODES[k.mode]
 	local pool = {}
 	for _, m in ipairs(k.maps or (def and def.maps) or {}) do
 		if Game.MapLoader.exists(m) and (not def or table.find(def.maps or {}, m)) then table.insert(pool, m) end
 	end
+	return pool
+end
+local function pickMap(k, map)
+	local pool = poolFor(k)
 	if map and table.find(pool, map) then return map end
 	return pool[1] and pool[math.random(#pool)] or nil
 end
+-- another map than the one up now (the footage wants every map)
+local function otherMap(k)
+	local pool, now = poolFor(k), Game.node:GetAttribute("Map")
+	local others = {}
+	for _, m in ipairs(pool) do if m ~= now then table.insert(others, m) end end
+	return others[1] and others[math.random(#others)] or pool[1]
+end
+local ROUND = 4 * 60   -- a battle on ANY map: each round this long, then the next map
 
 -- the round under way ends now and the next is this mode on this map
 local function switchTo(modeId, map)
@@ -199,13 +212,16 @@ function Showcase.start(plr, kindId, map)
 		if Game.modeId ~= "Hub" then switchTo("Hub", "Courtyard") end
 	else
 		local def = GameConfig.MODES[k.mode]
+		-- a map picked: that one, the round never running out; ANY: a new map every few minutes
+		local fixed = map ~= nil and table.find(poolFor(k), map) ~= nil
 		map = pickMap(k, map)
 		if not (def and map) then return false, "no map for " .. k.mode .. " in this place" end
-		-- a custom server with cheats: bots fill it, nobody earns, and the round never runs out
+		state.fixed = fixed
+		-- a custom server with cheats: bots fill it, nobody earns
 		local st = {}
 		for key, v in pairs(GameConfig.CUSTOM_DEFAULTS) do st[key] = v end
-		st.mode, st.map, st.bots, st.botCount, st.botSkill = k.mode, map, true, k.bots, "Mixed"
-		st.roundLength, st.respawns, st.friendlyFire, st.cheats, st.limit = 0, true, false, true, 24
+		st.mode, st.map, st.bots, st.botCount, st.botSkill = k.mode, fixed and map or "", true, k.bots, "Mixed"
+		st.roundLength, st.respawns, st.friendlyFire, st.cheats, st.limit = fixed and 0 or ROUND, true, false, true, 24
 		sv.door, sv.custom, sv.settings, sv.noRewards = "Warfront", true, st, true
 		BotFill.override = {mix = k.mix or SHOW_MIX, classMix = k.classMix}
 		switchTo(k.mode, map)
@@ -225,8 +241,27 @@ function Showcase.start(plr, kindId, map)
 			if state.by == plr and plr.Parent then remote:FireClient(plr, "Parade", list) end
 		end)
 	end
-	return true, k.label .. (info.map and ("  ·  " .. GameConfig.mapTitle(info.map)) or "") .. "  ·  Ctrl+Shift+X or STOP to end"
+	return true, k.label .. (info.map and ("  ·  " .. GameConfig.mapTitle(info.map)) or "") .. "  ·  1-5 camera · Q/E fighter · N next map · Ctrl+Shift+X or STOP to end"
 end
+
+-- N while filming a battle: the round ends and the next is on another map (a picked map moves too)
+function Showcase.nextMap(plr)
+	local k = Showcase.KINDS[state.kind or ""]
+	if plr ~= state.by or not k or k.mode == "Hub" then return false end
+	local m = otherMap(k)
+	if not m then return false end
+	if state.fixed and Game.server.settings then Game.server.settings.map = m end
+	Game.adminNextMap = m
+	if Game.node:GetAttribute("State") == "Round" then Game.adminEnd = "NEXT: " .. string.upper(GameConfig.mapTitle(m)) end
+	return true
+end
+
+-- a battle on ANY map: every round's end, the next is on another map (unless one's already
+-- picked: the showcase's first, or N's)
+Game.roundEnded.Event:Connect(function()
+	local k = Showcase.KINDS[state.kind or ""]
+	if state.by and k and k.mode ~= "Hub" and not state.fixed and not Game.adminNextMap then Game.adminNextMap = otherMap(k) end
+end)
 
 function Showcase.stop(plr)
 	local who = state.by
@@ -240,17 +275,23 @@ function Showcase.stop(plr)
 		remote:FireClient(who, "Stop")
 	end
 	if state.focus then state.focus:Destroy(); state.focus = nil end
-	state.by, state.kind = nil, nil
+	state.by, state.kind, state.fixed = nil, nil, nil
+	-- (their spawn screen, held back while they filmed)
+	if who.Parent and _G.ShowSpawnScreen then task.defer(_G.ShowSpawnScreen, who) end
 	return true, "showcase over: the match goes on (spawn to join it)"
 end
 
 -- the camera reports where it is: the world streams in round it
+local lastNext = 0
 remote.OnServerEvent:Connect(function(plr, what, pos)
 	if plr ~= state.by then return end
 	if what == "Cam" and typeof(pos) == "Vector3" and state.focus and pos.Magnitude < 1e5 then
 		state.focus.Position = pos
 	elseif what == "Stop" then
 		Showcase.stop(plr)
+	elseif what == "NextMap" and os.clock() - lastNext > 3 then
+		lastNext = os.clock()
+		Showcase.nextMap(plr)
 	end
 end)
 Players.PlayerRemoving:Connect(function(plr) if plr == state.by then Showcase.stop(plr) end end)

@@ -169,7 +169,9 @@ function MagicClient.attach(Tool, cfg)
 		return out
 	end
 	local book = bookNow()
-	Tool:GetAttributeChangedSignal("Spells"):Connect(function() book = bookNow() end)
+	local chosen = 1
+	-- (a new arsenal, a lesson's: its first spell is the one picked)
+	Tool:GetAttributeChangedSignal("Spells"):Connect(function() book = bookNow(); chosen = 1 end)
 	-- your spell skins' colours on the bar and the crosshair (the Tool's SpellSkins)
 	local function looksNow()
 		local t = {}
@@ -179,7 +181,6 @@ function MagicClient.attach(Tool, cfg)
 	end
 	local looks = looksNow()
 	Tool:GetAttributeChangedSignal("SpellSkins"):Connect(function() looks = looksNow() end)
-	local chosen = 1
 	local equipped = false
 	local castUntil, castFrom, castId = 0, 0, nil
 	local warding, meditating = false, false
