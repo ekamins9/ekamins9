@@ -11,3 +11,8 @@ roblox/ServerScriptService/Build/_SkinUploads.lua
 
 # store art: the renders before their titles (blender/store_art.py rebuilds them)
 store_art/**/work/
+# the trailer's frames, cards and previews (blender/store_video.py rebuilds them); trailer.mp4 is the keeper
+store_art/video/frames/
+store_art/video/frames_preview/
+store_art/video/titles/
+store_art/video/trailer_preview.mp4

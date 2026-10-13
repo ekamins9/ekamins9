@@ -1,4 +1,33 @@
-# Updated scripts: rated Mild (all ages)
+# Updated scripts: ads, the trailer, clean view
+
+- **Three ad pictures** (`store_art/ads/`, 1920×1080), made for Roblox's Sponsored row, where games show as small tiles:
+  - **KNIGHT VS MAGE**: a Sun Knight and a Pyromancer split by a blade of light;
+  - **PARRY!**: two blades meeting in a white-gold burst;
+  - **35+ ARMOR SETS**: the Star Sage, the Phoenixborn and Obsidian, each in its rarity's light.
+- **A 24-second trailer** (`store_art/video/trailer.mp4`, 1080p, silent, the words on screen) in seven shots:
+  - aim every swing;
+  - a parry;
+  - a fireball;
+  - a burning arrow;
+  - the castle charge;
+  - the five classes;
+  - the end card.
+
+  It's for video ads, YouTube and TikTok. The game page's own video has to be real gameplay, hence clean view.
+- **Clean view: Ctrl+H** hides all UI (the game's and Roblox's: chat, the top bar), so anyone can film clean gameplay. Ctrl+H again restores exactly what was there (Roblox's player list stays replaced by ours).
+- **docs/LAUNCH.md, section 6 (Ads):** what Roblox offers, what to upload, how to run a campaign (start small, read the CTR, fix the funnel before scaling), plus the game-page video rules.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CleanView.client.lua](StarterPlayerScripts/CleanView.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Ctrl+H: all UI off / back |
+| [../blender/store_ads.py](../blender/store_ads.py) (new) | | Blender script | the ad scenes: versus, parry, armory |
+| [../blender/store_video.py](../blender/store_video.py) (new) | | Blender script | the trailer: seven animated shots, title cards, the edit to MP4 |
+| [../blender/art_kit.py](../blender/art_kit.py) | | Blender script | `Rig` (a figure that moves), `blend_pose`, `ease`, `look` |
+| [README.md](README.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | clean view; ads; the game-page video; Mild play-test |
+
+---
+
+## Before that: rated Mild (all ages)
 
 **The game now fits Roblox's Mild content label**, so every age can play it: Roblox Kids (5-8), Select (9-15) and everyone older. Before, it had beheading, severed limbs, a head skewered on the blade, blood and bleeding out, plus a tavern. That made the honest questionnaire answer Strong violence and alcohol: Restricted, 18+ only, and that label can never be changed back.
 - **One switch, `GameConfig.GORE = false`.** With it off:

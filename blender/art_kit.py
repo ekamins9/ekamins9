@@ -263,8 +263,72 @@ def figure(set_name=None, at=(0, 0, 0), yaw=0.0, pose=None, colors=None, face="f
             slot = a.get("ColorSlot")
             paint(bm, pal[slot] if slot and slot in pal else tuple(s.get("c", (0.8, 0.8, 0.8))))
             kinds[mclass(s.get("m", ""))].append(bm)
-        objs += group(f"{set_name}_{limb}", kinds, frames[limb], neon)
+        made = group(f"{set_name}_{limb}", kinds, frames[limb], neon)
+        for o in made:
+            o["limb"] = limb   # (Rig moves it with its limb)
+        objs += made
     return frames, objs
+
+
+class Rig:
+    """a figure that moves: build it once, then set(pose, at, yaw) before each frame is rendered
+    (the limbs' matrices are set straight, no keyframes); attach(objects, fn) keeps things
+    (a weapon, a staff) on it: fn(frames) gives their matrix, e.g. lambda f: hand(f) @ R(...)"""
+    def __init__(self, set_name, at=(0, 0, 0), yaw=0.0, pose=None, colors=None, neon=6.0, face="fierce"):
+        self.at, self.yaw, self.pose = Vector(at), yaw, dict(pose or {})
+        self.frames, self.objs = figure(set_name, at=at, yaw=yaw, pose=pose, colors=colors, neon=neon, face=face)
+        self.attached = []
+
+    def attach(self, objs, fn):
+        self.attached.append((list(objs), fn))
+        self._place_attached()
+
+    def _place_attached(self):
+        for objs, fn in self.attached:
+            M = fn(self.frames)
+            for o in objs:
+                o.matrix_world = M
+
+    def set(self, pose=None, at=None, yaw=None):
+        if pose is not None:
+            self.pose = dict(pose)
+        if at is not None:
+            self.at = Vector(at)
+        if yaw is not None:
+            self.yaw = yaw
+        self.frames = limb_frames(place(tuple(self.at), self.yaw), self.pose)
+        for o in self.objs:
+            o.matrix_world = self.frames[o["limb"]]
+        self._place_attached()
+        return self.frames
+
+
+def blend_pose(a, b, t):
+    """a pose part-way from a to b (t 0..1), joint by joint"""
+    out = {}
+    for k in set(a) | set(b):
+        va, vb = a.get(k, (0, 0, 0) if k != "drop" else 0), b.get(k, (0, 0, 0) if k != "drop" else 0)
+        if isinstance(va, (int, float)):
+            out[k] = va + (vb - va) * t
+        else:
+            out[k] = tuple(x + (y - x) * t for x, y in zip(va, vb))
+    return out
+
+
+def ease(t, kind="inout"):
+    t = max(0.0, min(1.0, t))
+    if kind == "in":
+        return t * t
+    if kind == "out":
+        return 1 - (1 - t) * (1 - t)
+    return t * t * (3 - 2 * t)
+
+
+def look(cam, loc, target):
+    """point the camera from loc at target (for moving cameras)"""
+    cam.location = loc
+    d = Vector(target) - Vector(loc)
+    cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
 
 
 def hand(frames, side="R"):
