@@ -550,6 +550,11 @@ local function endSpar(result)
 		Profile.markDirty(plr)
 		Economy.changed:Fire(plr)
 		pcall(Stats.add, plr, "spar", 1)
+		pcall(function()
+			local Econ = ServerScriptService:WaitForChild("Economy")
+			require(Econ:WaitForChild("Analytics")).source(plr, "Marks", marks, p.wallet.marks, "Gameplay", "Spar")
+			if r.skill == "Champion" then require(Econ:WaitForChild("Badges")).award(plr, "Champion") end
+		end)
 		tell(plr, "Spar", "win", r.skill, marks, first)
 		note(plr, "spar", {skill = r.skill})
 		-- the ring lesson: a win at its skill or above counts
@@ -673,6 +678,11 @@ local function endGauntlet(result)
 		p.wallet.marks += marks
 		Profile.markDirty(plr)
 		Economy.changed:Fire(plr)
+		pcall(function()
+			local Econ = ServerScriptService:WaitForChild("Economy")
+			require(Econ:WaitForChild("Analytics")).source(plr, "Marks", marks, p.wallet.marks, "Gameplay", "Gauntlet")
+			if cleared >= 10 then require(Econ:WaitForChild("Badges")).award(plr, "Gauntlet10") end
+		end)
 	end
 	tell(plr, "Gauntlet", "over", cleared, p.gauntlet, marks, result)
 end
@@ -939,6 +949,7 @@ function Training.start(map)
 		if (p.tutorial or 2) < 1 then
 			-- a newcomer: basic training, from the first step
 			L.course = "basic"
+			pcall(function() require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Analytics")).onboard(plr, 2) end)
 			tell(plr, "Course")
 			setLesson(plr, basicAfter(nil).id)
 		elseif wantL then

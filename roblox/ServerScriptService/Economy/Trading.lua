@@ -244,6 +244,10 @@ local function execute(s)
 	end
 	task.spawn(Profile.save, s.a)
 	task.spawn(Profile.save, s.b)
+	pcall(function()
+		local A = require(script.Parent:WaitForChild("Analytics"))
+		A.event(s.a, "Trade", #moved); A.event(s.b, "Trade", #moved)
+	end)
 	if logStore then
 		task.spawn(function()
 			pcall(logStore.SetAsync, logStore, string.format("t%d_%d_%d", os.time(), s.a.UserId, s.b.UserId), {at = os.time(), a = s.a.UserId, b = s.b.UserId, moved = moved})

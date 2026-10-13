@@ -7,7 +7,8 @@
        Drops.time(idOrTime)         unix time of a drop id or a "YYYY-MM-DD HH:MM" (UTC)
        Drops.released(dropId)       is that drop out? (forced / held by staff count)
        Drops.current() / next()     the newest drop that is out / the next one coming
-       Drops.events()               the events running now
+       Drops.events()               the events running now (the dated ones, else this weekend's)
+       Drops.rule(name)             is a play rule on now? ("roulette": Armory Roulette)
        Drops.earnMult(kind, mode)   the event bonus on "marks" / "xp" (1 = none)
        Drops.crateLive(id)          is that crate in rotation? (+ when it leaves)
        Drops.eggLive(id)            the same for an egg
@@ -143,10 +144,42 @@ function Drops.eventLive(id, now)
 	local e = Drops.event(id)
 	return e ~= nil and on(e, now)
 end
+-- THE WEEKENDS (Calendar weekends): Friday 16:00 to Monday 08:00 UTC, the rotation in turn
+local WEEK = 7 * 86400
+local weekendCache = {}
+local function weekendEvent(now)
+	local W = cal().weekends
+	if not (W and W.rotation and #W.rotation > 0) or not Drops.released(W.from, now) then return nil end
+	local t = os.date("!*t", now)
+	local fri = now - ((t.wday - 6) % 7) * 86400 - (t.hour * 3600 + t.min * 60 + t.sec) + 16 * 3600
+	if fri > now then fri -= WEEK end
+	local monday = fri + 2 * 86400 + 16 * 3600
+	if now >= monday then return nil end
+	local idx = math.floor(fri / WEEK) % #W.rotation + 1
+	local key = fri .. ":" .. idx
+	if weekendCache.key ~= key then
+		local e = table.clone(W.rotation[idx])
+		e.id = "Weekend:" .. tostring(e.id)
+		e.from, e.to = os.date("!%Y-%m-%d %H:%M", fri), os.date("!%Y-%m-%d %H:%M", monday)
+		e.weekend = true
+		weekendCache.key, weekendCache.e = key, e
+	end
+	return weekendCache.e
+end
 function Drops.events(now)
+	now = now or Drops.now()
 	local out = {}
 	for _, e in ipairs(cal().events or {}) do if on(e, now) then table.insert(out, e) end end
+	-- (the weekend's own, unless a dated event has the weekend already)
+	if #out == 0 then
+		local w = weekendEvent(now)
+		if w then table.insert(out, w) end
+	end
 	return out
+end
+function Drops.rule(name, now)
+	for _, e in ipairs(Drops.events(now)) do if e.rule == name then return true end end
+	return false
 end
 function Drops.earnMult(kind, mode)
 	local m = 1

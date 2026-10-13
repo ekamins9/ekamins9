@@ -74,6 +74,8 @@ ClientSettings.CHOICES = {
 		hint = "Whose companions you see following them around: everyone's, only yours, or none."},
 	{key = "DodgeTap",   label = "Double-tap dodge", options = {"On", "Off"},
 		hint = "Double-tap A, D or S to dodge that way (the Dodge key works either way)."},
+	{key = "KillCam",    label = "Kill cam", options = {"On", "Off"},
+		hint = "When you fall, the view turns to whoever got you and closes in on them for a moment."},
 	{key = "DrawAnim",   label = "Draw animation", options = {"On", "Off"},
 		hint = "Taking a weapon in hand: the arm reaches over the shoulder or to the hip and pulls it out. Off: it simply appears (the moment it takes to draw stays the same)."},
 	{key = "ShowLocked", label = "Locked items in menus", options = {"Show", "Hide"},
@@ -89,7 +91,7 @@ ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1,
-	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", DrawAnim = "On", ShowLocked = "Show",
+	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
 	PartyInvites = "Everyone", TradeRequests = "Everyone",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end

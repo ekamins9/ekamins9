@@ -62,6 +62,16 @@ function Economy.addXP(plr, xp)
 	end
 	-- a Key per level, earned only
 	if leveled > 0 then p.wallet.keys = (p.wallet.keys or 0) + leveled * ((E.keys or {}).levelUp or 0) end
+	if leveled > 0 then
+		Analytics.source(plr, "Marks", leveled * E.levelMarks, p.wallet.marks, "Gameplay", "LevelUp")
+		Analytics.source(plr, "Keys", leveled * ((E.keys or {}).levelUp or 0), p.wallet.keys, "Gameplay", "LevelUp")
+		-- (the newcomer's path, and the badges, at the levels that matter)
+		for lvl, step in pairs({[2] = 6, [5] = 7, [10] = 8}) do
+			if was < lvl and p.level >= lvl then Analytics.onboard(plr, step) end
+		end
+		if p.level >= 5 then Badges.award(plr, "Level5") end
+		if p.level >= 25 then Badges.award(plr, "Level25") end
+	end
 	-- a class opening at this level (the Archer and the Mage at 5): say so at once
 	if leveled > 0 then
 		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -81,6 +91,9 @@ end
 
 -- forward: round XP also climbs the pass
 local addPassXP
+-- what the dashboard counts (Economy ▸ Analytics) and the badges (Economy ▸ Badges)
+local Analytics = require(script.Parent:WaitForChild("Analytics"))
+local Badges = require(script.Parent:WaitForChild("Badges"))
 
 function Economy.award(plr, events)
 	if noRewards() then return {marks = 0, xp = 0, levels = 0, blocked = true} end
@@ -113,6 +126,8 @@ function Economy.award(plr, events)
 		p.wallet.keys = (p.wallet.keys or 0) + ((E.keys or {}).firstWin or 0)
 	end
 	p.wallet.marks += marks
+	Analytics.source(plr, "Marks", marks, p.wallet.marks, "Gameplay", "Round")
+	if firstWin and (E.keys or {}).firstWin then Analytics.source(plr, "Keys", E.keys.firstWin, p.wallet.keys, "Gameplay", "FirstWinOfDay") end
 	local levels = Economy.addXP(plr, xp)
 	addPassXP(plr, xp)
 	Profile.markDirty(plr)
@@ -120,13 +135,16 @@ function Economy.award(plr, events)
 	return {marks = marks, xp = xp, levels = levels, firstWin = firstWin, level = p.level, weary = weary}
 end
 
-function Economy.spend(plr, marks, crowns)
+-- (why: what it was spent on, for the dashboard: "Crate:Forge", "Pass", "Exchange"…)
+function Economy.spend(plr, marks, crowns, why)
 	local p = Profile.get(plr)
 	marks, crowns = marks or 0, crowns or 0
 	if p.wallet.marks < marks then return false, string.format("not enough Marks (you need %d, you have %d)", marks, p.wallet.marks) end
 	if p.wallet.crowns < crowns then return false, string.format("not enough Crowns (you need %d, you have %d)", crowns, p.wallet.crowns) end
 	p.wallet.marks -= marks; p.wallet.crowns -= crowns
 	Profile.markDirty(plr)
+	Analytics.sink(plr, "Marks", marks, p.wallet.marks, "Shop", why or "Shop")
+	Analytics.sink(plr, "Crowns", crowns, p.wallet.crowns, "Shop", why or "Shop")
 	return true
 end
 
@@ -261,11 +279,12 @@ function Economy.openCrate(plr, crateId, free, payWith)
 		if payWith == "crowns" then
 			-- paid random items: never for a player whose region bars them
 			if collection().restricted(plr) then return nil, "Crates open with Keys in your region (earn them by playing)" end
-			local ok, msg = Economy.spend(plr, 0, crate.cost); if not ok then return nil, msg end
+			local ok, msg = Economy.spend(plr, 0, crate.cost, "Crate:" .. crateId); if not ok then return nil, msg end
 		else
 			local need = crate.keys or 1
 			if (p.wallet.keys or 0) < need then return nil, string.format("you need %d Key%s (earned: level-ups, the first win of the day, tasks)", need, need > 1 and "s" or "") end
 			p.wallet.keys -= need
+			Analytics.sink(plr, "Keys", need, p.wallet.keys, "Shop", "Crate:" .. crateId)
 		end
 	elseif collection().restricted(plr) and free == "paid" then
 		-- a crate inside something bought with Robux (the premium pass): a fixed reward instead
@@ -313,6 +332,9 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
 	log(plr.Name, "opened", crateId, "->", win.kind, win.id, win.rarity, dup and ("dup +" .. refund) or "")
+	Analytics.onboard(plr, 5)
+	Analytics.event(plr, "CrateOpened", 1, crateId, win.rarity, win.kind)
+	if win.rarity == "Mythic" or win.rarity == "Unique" then Badges.award(plr, "Mythic") end
 	local KIND_LABEL = {killfx = "Kill effect · ", emote = "Emote · ", piece = "Armor · ", armorfx = "Armor finish · "}
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
 		or (win.kind == "spellfx" and (((Catalog.SPELLS[win.spell] or {}).name or "Spell") .. " · " .. win.name))
@@ -392,6 +414,10 @@ function Economy.grantReward(plr, r)
 	end
 	Profile.markDirty(plr)
 	Economy.changed:Fire(plr)
+	local why = tostring(r.from or "Reward")
+	if r.marks then Analytics.source(plr, "Marks", r.marks, p.wallet.marks, "TimedReward", why) end
+	if r.crowns then Analytics.source(plr, "Crowns", r.crowns, p.wallet.crowns, "TimedReward", why) end
+	if r.keys then Analytics.source(plr, "Keys", r.keys, p.wallet.keys, "TimedReward", why) end
 	return table.concat(bits, "  ·  "), crateResult
 end
 
@@ -471,7 +497,7 @@ function Economy.passBuy(plr)
 	local P = Catalog.PASS
 	local rec = passRecord(plr)
 	if rec.premium then return false, "you already have the pass" end
-	local ok, msg = Economy.spend(plr, 0, P.price); if not ok then return false, msg end
+	local ok, msg = Economy.spend(plr, 0, P.price, "Pass"); if not ok then return false, msg end
 	rec.premium = true
 	Profile.markDirty(plr); Economy.changed:Fire(plr)
 	return true, P.name .. "  ·  premium unlocked"
@@ -506,23 +532,27 @@ end
 function Economy.exchange(plr, tier)
 	local t = E.exchange[tier]
 	if not t then return false, "no such tier" end
-	local ok, msg = Economy.spend(plr, 0, t.crowns); if not ok then return false, msg end
+	local ok, msg = Economy.spend(plr, 0, t.crowns, "Exchange"); if not ok then return false, msg end
 	Profile.get(plr).wallet.marks += t.marks
+	Analytics.source(plr, "Marks", t.marks, Profile.get(plr).wallet.marks, "Shop", "Exchange")
 	Profile.markDirty(plr); Economy.changed:Fire(plr)
 	return true, string.format("+%d Marks for %d Crowns", t.marks, t.crowns)
 end
 
--- Developer Product receipt: credit once per receipt id
+-- Developer Product receipt: credit once per receipt id, and only call it granted once
+-- the save has landed (else Roblox asks again later: the receipt id stops a double credit)
 function Economy.grantProduct(plr, productId, receiptId)
 	local p = Profile.get(plr)
-	if receiptId and p.receipts[receiptId] then return true end
+	if not Profile.ready(plr) then return false end
+	if receiptId and p.receipts[receiptId] then return Profile.save(plr) end
 	for _, prod in ipairs(E.products) do
 		if prod.id ~= 0 and prod.id == productId then
 			p.wallet.crowns += prod.crowns
 			if receiptId then p.receipts[receiptId] = true end
-			Profile.markDirty(plr); Profile.save(plr); Economy.changed:Fire(plr)
+			Analytics.source(plr, "Crowns", prod.crowns, p.wallet.crowns, "IAP", tostring(prod.crowns) .. " Crowns")
+			Profile.markDirty(plr); Economy.changed:Fire(plr)
 			log(plr.Name, "bought", prod.crowns, "Crowns")
-			return true
+			return Profile.save(plr)
 		end
 	end
 	return false

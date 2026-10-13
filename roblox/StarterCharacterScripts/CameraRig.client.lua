@@ -832,8 +832,34 @@ end)
 if DebugFlags.get("Logs") then print("[CameraRig " .. VERSION .. "] loop bound as " .. LOOP_NAME) end
 
 --------------------------------------------------------------------
---  DEATH — first person from inside the head, wherever it ends up
+--  DEATH — first person from inside the head, wherever it ends up; then (the KILL CAM,
+--  Settings ▸ Kill cam) the head turns to the one who did it and the view closes on them
+--  until the veil comes down
 --------------------------------------------------------------------
+local KILLCAM_AT, KILLCAM_TURN = 0.75, 0.55   -- seconds into the fall it starts; how long the turn takes
+-- who killed us: a player (LastHitBy = their UserId) or a bot (by its name, the nearest of that name)
+local function killerOf()
+	local id = tonumber(character:GetAttribute("LastHitBy")) or 0
+	if id > 0 then
+		local p = Players:GetPlayerByUserId(id)
+		local c = p and p.Character
+		if c and c ~= character then return c end
+	end
+	local name = character:GetAttribute("LastHitByName")
+	local npcs = workspace:FindFirstChild("NPCs")
+	if type(name) ~= "string" or name == "" or not npcs then return nil end
+	local best, bestD = nil, math.huge
+	for _, m in ipairs(npcs:GetChildren()) do
+		local hum = m:FindFirstChildOfClass("Humanoid")
+		local root = m:FindFirstChild("HumanoidRootPart")
+		if hum and root and (m.Name == name or hum.DisplayName == name or m:GetAttribute("TagName") == name) then
+			local d = (root.Position - Head.Position).Magnitude
+			if d < bestD then best, bestD = m, d end
+		end
+	end
+	return best
+end
+
 local function onDied()
 	pcall(function() RunService:UnbindFromRenderStep(LOOP_NAME) end)
 	setCrouch(false)
@@ -848,9 +874,24 @@ local function onDied()
 	-- (the screen itself — the fall, the veil, the way back — is StarterPlayerScripts ▸
 	-- DeathScreen; here only the camera, held in the head while the body falls)
 	local t0 = os.clock()
+	local killer = S("KillCam") ~= "Off" and killerOf() or nil
 	RunService:BindToRenderStep("DeathCam", CAM, function()
 		if Head.Parent then
-			Camera.CFrame = Head.CFrame * CFrame.new(0, 0.15, -0.25)
+			local cf = Head.CFrame * CFrame.new(0, 0.15, -0.25)
+			-- the kill cam: turn from where the head lies to the killer, closing in on them
+			local kt = os.clock() - t0 - KILLCAM_AT
+			local aim = killer and killer.Parent and (killer:FindFirstChild("Head") or killer:FindFirstChild("HumanoidRootPart"))
+			if aim and kt > 0 then
+				local k = math.clamp(kt / KILLCAM_TURN, 0, 1)
+				k = k * k * (3 - 2 * k)
+				local eye = cf.Position + Vector3.new(0, 0.9 * k, 0)
+				local look = CFrame.lookAt(eye, aim.Position + Vector3.new(0, -0.6, 0))
+				cf = cf:Lerp(look, k)
+				local dist = (aim.Position - eye).Magnitude
+				local fov = math.clamp(math.deg(2 * math.atan(4 / math.max(dist, 1))), 14, FP_FOV)
+				Camera.FieldOfView = FP_FOV + (fov - FP_FOV) * k
+			end
+			Camera.CFrame = cf
 		end
 		local t = os.clock() - t0 - DEATH_HOLD
 		-- under the veil: stop steering the camera so the loadout menu can take

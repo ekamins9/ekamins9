@@ -65,6 +65,7 @@ local function progress(plr, key, n)
 			if it.n >= def.goal then
 				it.done = true
 				p.wallet.marks += def.pay
+				pcall(function() require(script.Parent:WaitForChild("Analytics")).source(plr, "Marks", def.pay, p.wallet.marks, "Gameplay", def.weekly and "WeeklyTask" or "Task") end)
 				Stats.changed:Fire(plr, def.text, def.pay)
 				-- every finished task counts toward the task skins (Catalog ▸ Skins, unlock = {stat = "contract"})
 				-- and climbs the season pass

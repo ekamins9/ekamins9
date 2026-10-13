@@ -13,7 +13,11 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
-local FAR = 140          -- studs: past this the head stops moving (it can't be made out)
+local UserInputService = game:GetService("UserInputService")
+-- (a phone: heads move only close by, half as often; everywhere: only what's on screen)
+local PHONE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local FAR = PHONE and 60 or 140   -- studs: past this the head stops moving (it can't be made out)
+local frame = 0
 local CRACKLE = 0.06     -- seconds between a lightning beam's jumps
 local rng = Random.new()
 
@@ -66,6 +70,8 @@ CollectionService:GetInstanceRemovedSignal("TrimAnim"):Connect(function(f) folde
 for _, f in ipairs(CollectionService:GetTagged("TrimAnim")) do task.defer(track, f) end
 
 RunService.RenderStepped:Connect(function()
+	frame += 1
+	if PHONE and frame % 2 == 1 then return end
 	local t = os.clock()
 	local cam = workspace.CurrentCamera
 	local camPos = cam and cam.CFrame.Position or Vector3.zero
@@ -75,7 +81,12 @@ RunService.RenderStepped:Connect(function()
 			folders[folder] = nil
 		else
 			local inWorld = folder:IsDescendantOf(workspace)
-			if not inWorld or (h.Position - camPos).Magnitude < FAR then
+			local seen = not inWorld
+			if inWorld and (h.Position - camPos).Magnitude < FAR then
+				local _, onScreen = cam:WorldToViewportPoint(h.Position)
+				seen = onScreen or (h.Position - camPos).Magnitude < 8
+			end
+			if seen then
 				local byWeld = inWorld and not h.Anchored
 				local hcf = (not byWeld) and h.CFrame or nil
 				for _, e in ipairs(st.list) do

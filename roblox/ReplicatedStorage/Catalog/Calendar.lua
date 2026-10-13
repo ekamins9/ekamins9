@@ -36,7 +36,11 @@
      beta     {from = dropId, to = dropId, title, finish = "<finish id>"}: everyone who
               plays in the beta is a Beta Tester, numbered: the title and the finish,
               bound, never sold, never in a crate (Collection.checkClaims)
-     features {item = "<skin id>", from, to}: the WEAPONS shelf's headliner ]]
+     features {item = "<skin id>", from, to}: the WEAPONS shelf's headliner
+     weekends {from = dropId, rotation = {event…}}: every weekend (Friday 16:00 to Monday
+              08:00 UTC) the next event of the rotation runs, like any event above (earn,
+              modes) plus `rule` (a change to play: "roulette" = Armory Roulette, a random
+              weapon pair every spawn in battle). Skipped when a dated event is on. ]]
 
 local C = Color3.fromRGB
 
@@ -124,6 +128,14 @@ return {
 	features = {
 		{item = "Zweihander:Frostgift", from = "TwelfthNight", to = "BlackSails"},
 	},
+	-- a reason to come back every weekend: one of these, in turn
+	weekends = {from = "Beta", rotation = {
+		{id = "XP", name = "Double XP Weekend", color = C(120, 200, 255), blurb = "Every battle pays double XP all weekend.", earn = {xp = 2}},
+		{id = "Roulette", name = "Armory Roulette", color = C(255, 196, 80),
+			blurb = "Every time you spawn in battle you're handed a random weapon pair. Master them all! (+25% XP)", earn = {xp = 1.25}, rule = "roulette"},
+		{id = "Raid", name = "Raid Weekend", color = C(120, 200, 220), blurb = "The Horde pays double Marks all weekend.", earn = {marks = 2}, modes = {"Horde"}},
+		{id = "Marks", name = "War Chest Weekend", color = C(232, 184, 74), blurb = "Every battle pays half again as many Marks all weekend.", earn = {marks = 1.5}},
+	}},
 	crates = {
 		Bladesmith = {always = true},
 		Forge      = {always = true},

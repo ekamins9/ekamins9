@@ -95,6 +95,7 @@ local Dresser    = require(ReplicatedStorage:WaitForChild("Dresser"))
 local Profile    = require(script.Parent:WaitForChild("Profile"))
 local Game       = require(ServerScriptService:WaitForChild("Game"):WaitForChild("Game"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local Drops      = require(ReplicatedStorage:WaitForChild("Drops"))   -- (a weekend's rule: Armory Roulette)
 local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 
 local AUTO_EQUIP    = true
@@ -284,6 +285,35 @@ spawnAs = function(plr, classId, opts)
 			lo.weapon, lo.weaponSkin = opts.weapon, skin
 		end
 		if lo.secondary == lo.weapon then lo.secondary, lo.secondarySkin = nil, nil end
+	end
+	-- ARMORY ROULETTE (a weekend's rule, Catalog ▸ Calendar weekends): in battle, every
+	-- spawn hands you a random pair your class can carry (your own skin for it if you have one)
+	if not opts.weapon and Drops.rule("roulette") and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" and not Game.server.ranked then
+		local cls = GameConfig.CLASSES[classId]
+		local prim, sec = {}, {}
+		for _, w in ipairs(Catalog.WEAPONS) do
+			if Catalog.weaponFits(cls, w, "primary") then table.insert(prim, w.id) end
+			if Catalog.weaponFits(cls, w, "secondary") then table.insert(sec, w.id) end
+		end
+		local function skinFor(wid)
+			for _, other in pairs(p.classes) do
+				for _, k in ipairs({"weapon", "secondary"}) do
+					local sk = type(other) == "table" and other[k] == wid and other[k .. "Skin"]
+					if sk and Profile.has(plr, "skins", sk) then return sk end
+				end
+			end
+			return wid .. ":Default"
+		end
+		if #prim > 0 then
+			lo.weapon = prim[math.random(#prim)]; lo.weaponSkin = skinFor(lo.weapon)
+			local s2 = {}
+			for _, id in ipairs(sec) do if id ~= lo.weapon then table.insert(s2, id) end end
+			lo.secondary = s2[1] and s2[math.random(#s2)] or nil
+			lo.secondarySkin = lo.secondary and skinFor(lo.secondary) or nil
+			local ev = ReplicatedStorage:FindFirstChild("HubEvent")
+			local wn = Catalog.WEAPON[lo.weapon] and Catalog.WEAPON[lo.weapon].name or lo.weapon
+			if ev then task.delay(1.5, function() if plr.Parent then ev:FireClient(plr, "Toast", "ARMORY ROULETTE  ·  this life: the " .. wn) end end) end
+		end
 	end
 	Profile.setActive(plr, classId)
 	spawning[plr] = true

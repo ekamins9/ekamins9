@@ -28,6 +28,7 @@
                    attribute MenuTour mirrors it   starterGift  the recruit's gift was given
        play        {day = "YYYY-MM-DD", seconds, claimed = {["1"] = true}}   today's playtime gifts
        eggs        {[eggId] = count}  waiting to be set in a nest
+       funnel      {["n"] = true}: the newcomer's path steps already counted (Economy ▸ Analytics)
        nests       {["1"] = {egg, started (os.time), boost (seconds gained by the Hatchery)}}
        companion   the companion out with you ("" = none)   stars  {[companionId] = 1..5}
        drills      {[lessonId] = true} the Drill Master's lessons done   spars  {[skill] = wins in the ring}
@@ -37,8 +38,21 @@
        unlockSeen     the "Archer and Mage unlocked" pop-up was shown (level 5)
        dropSeen       the drop whose announcement was last shown (each drop once, ever)
        trainTrack     sent to the training yard to learn a class ("archer" / "mage"): read there once
-     Loaded on join, saved on leave and every AUTOSAVE seconds while dirty.
-     A v1 profile (classes with armor = set id) is migrated on first load. ]]
+     Loaded on join, saved on leave and every AUTOSAVE seconds.
+     A v1 profile (classes with armor = set id) is migrated on first load.
+
+     ONE SERVER AT A TIME (the session lock): a profile is claimed when it's loaded
+     (UpdateAsync writes _lockJob = this server's JobId, _lockAt = now) and let go when its
+     player leaves. A server that finds it claimed by another waits LOCK_WAIT seconds for
+     that one to let go (it's usually saving them on their way here), then takes it over;
+     a lock older than LOCK_STALE (its server died) is taken at once. A save never writes
+     over a profile another server has taken: that server's session is over (the player
+     is told and sent off). So a player hopping servers can't be loaded twice, and an item
+     can't be traded away on one server and still be there on another.
+     A LOAD THAT FAILS (Roblox's data stores down) never becomes a fresh profile that
+     overwrites the real one: the session is marked unsafe, never saved, and the player is
+     asked to rejoin (in Studio, with its data stores off, you play on a fresh one unsaved).
+     Profile.save returns whether the save landed (a purchase is only granted once it has). ]]
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -49,6 +63,9 @@ local Catalog    = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Profile = {}
 local STORE, OLD_STORE = "Profiles_v2", "Profiles_v1"
 local AUTOSAVE = 60
+local LOCK_STALE = 200   -- seconds: a lock this old (its server gone) is taken over at once
+local LOCK_WAIT = 14     -- seconds a server waits for another to let a profile go
+local JOB = game.JobId ~= "" and game.JobId or ("studio-" .. tostring(math.random(1, 1e9)))
 
 local store, oldStore
 local warned = false
@@ -61,6 +78,8 @@ local function getStore()
 end
 
 local cache, dirty = {}, {}
+local state = {}     -- [plr] = "ok" (loaded and ours) | "unsafe" (never save: the load failed) | "lost" (another server took it)
+local loading = {}   -- [plr] = true while its load is in flight
 
 function Profile.defaultLoadout(classId)
 	local cls = GameConfig.CLASSES[classId]
@@ -86,7 +105,7 @@ local function default()
 		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, unlockSeen = false, dropSeen = "", copies = {}, tally = {}, claims = {}, copySeq = 0,
-		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3}
+		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3, funnel = {}}
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -112,7 +131,18 @@ local function migrate(old)
 	return p
 end
 
+-- (the Economy's analytics and badges: required when used, they require this module)
+local function econ(name)
+	local ok, m = pcall(function() return require(game:GetService("ServerScriptService"):WaitForChild("Economy"):WaitForChild(name)) end)
+	return ok and m or nil
+end
+
 local function fill(p)
+	-- (someone who played before the newcomer's path was counted is past all of it)
+	if p.funnel == nil then
+		p.funnel = {}
+		for i = 1, 8 do p.funnel[tostring(i)] = true end
+	end
 	-- someone who has played before isn't sent through the newcomer's path
 	if p.tutorial == nil then p.tutorial = (((p.level or 1) > 1) or p.askedTraining == true) and 2 or 0 end
 	-- (the menu tour and the recruit's gift are for newcomers: not for anyone already through)
@@ -158,18 +188,73 @@ local function fill(p)
 	return p
 end
 
+-- claim this player's saved profile for this server (see the top: the session lock)
+-- → the record (nil: none saved yet), and whether the claim went through
+local function claim(s, plr)
+	local key = "u" .. plr.UserId
+	local deadline = os.clock() + LOCK_WAIT
+	local tries = 0
+	while plr.Parent do
+		local outcome, raw
+		local ok, err = pcall(s.UpdateAsync, s, key, function(old)
+			if type(old) ~= "table" then outcome = "none"; return nil end
+			local owner, at = old._lockJob, tonumber(old._lockAt) or 0
+			if owner and owner ~= JOB and os.time() - at < LOCK_STALE and os.clock() < deadline then
+				outcome = "busy"; return nil
+			end
+			old._lockJob, old._lockAt = JOB, os.time()
+			outcome, raw = "ok", old
+			return old
+		end)
+		if ok and outcome == "ok" then return raw, true end
+		if ok and outcome == "none" then return nil, true end
+		if ok and outcome == "busy" then
+			task.wait(1.5)   -- (the other server is saving them on their way here)
+		else
+			tries += 1
+			if not warned then warned = true; warn("[Profile] load failed:", err) end
+			-- (Studio with its data stores off: no point waiting)
+			if tries >= 4 or tostring(err):find("Studio") then return nil, false end
+			task.wait(tries)
+		end
+	end
+	return nil, false
+end
+
 local function load(plr)
 	local data
 	local s = getStore()
+	local safe = false
 	if s then
-		local ok, v = pcall(s.GetAsync, s, "u" .. plr.UserId)
-		if ok and type(v) == "table" then data = fill(v)
-		elseif ok and oldStore then
-			local ok2, old = pcall(oldStore.GetAsync, oldStore, "u" .. plr.UserId)
-			if ok2 and type(old) == "table" then data = migrate(old); dirty[plr] = true end
-		elseif not ok and not warned then warned = true; warn("[Profile] load failed:", v) end
+		local raw, ok = claim(s, plr)
+		if ok and raw then data = fill(raw); safe = true
+		elseif ok then
+			-- nothing saved yet: an old v1 profile to bring over, or a new player
+			safe = true
+			if oldStore then
+				local ok2, old = pcall(oldStore.GetAsync, oldStore, "u" .. plr.UserId)
+				if ok2 and type(old) == "table" then data = migrate(old)
+				elseif not ok2 then safe = false end
+			end
+			dirty[plr] = true
+		end
 	end
+	local brandNew = data == nil and safe
 	data = data or default()
+	state[plr] = safe and "ok" or "unsafe"
+	-- (counted: a newcomer's first step; and the badges this profile has already earned)
+	task.defer(function()
+		if not plr.Parent or state[plr] ~= "ok" then return end
+		local A, B = econ("Analytics"), econ("Badges")
+		if brandNew and A then A.onboard(plr, 1) end
+		if B then B.check(plr, cache[plr]) end
+	end)
+	if not safe and not game:GetService("RunService"):IsStudio() and plr.Parent then
+		-- (never a fresh profile that would save over the real one: back in a minute)
+		task.defer(function()
+			if plr.Parent then plr:Kick("We couldn't load your save just now (Roblox's data service is having trouble). Nothing was lost: please rejoin in a minute.") end
+		end)
+	end
 	if game:GetService("RunService"):IsStudio() and not GameConfig.STUDIO_NEWCOMER then
 		data.tutorial, data.menuTour, data.starterGift = 2, true, true
 	end
@@ -187,9 +272,29 @@ function Profile.setTutorial(plr, n)
 	if n >= 2 then p.askedTraining = true end
 	plr:SetAttribute("Tutorial", n)
 	Profile.markDirty(plr)
+	-- (the newcomer's path: ready for battle, then their first battle fought)
+	task.defer(function()
+		local A, B = econ("Analytics"), econ("Badges")
+		if A then A.onboard(plr, n >= 2 and 4 or 3) end
+		if B and n >= 1 then B.award(plr, "Graduate") end
+	end)
 end
 
-function Profile.get(plr) return cache[plr] or load(plr) end
+function Profile.get(plr)
+	if cache[plr] then return cache[plr] end
+	-- (one load per player: anyone asking while it's in flight waits for it)
+	if loading[plr] then
+		while loading[plr] and not cache[plr] do task.wait() end
+		return cache[plr] or default()
+	end
+	loading[plr] = true
+	local ok, res = pcall(load, plr)
+	loading[plr] = nil
+	if not ok then warn("[Profile] load error:", res); state[plr] = "unsafe"; cache[plr] = cache[plr] or default() end
+	return cache[plr]
+end
+-- is this profile loaded and this server's to save? (a purchase waits for it)
+function Profile.ready(plr) return state[plr] == "ok" end
 function Profile.markDirty(plr) dirty[plr] = true end
 -- staff wiped this player's data (Admin): a fresh profile, saved over the old one
 function Profile.reset(plr)
@@ -198,13 +303,31 @@ function Profile.reset(plr)
 	return cache[plr]
 end
 
-local function save(plr)
+-- write it (release: let the lock go, they're leaving) → whether it landed
+local function save(plr, release)
 	local data = cache[plr]
 	local s = getStore()
-	if not (data and s) then return end
-	local ok, err = pcall(s.SetAsync, s, "u" .. plr.UserId, data)
-	if not ok and not warned then warned = true; warn("[Profile] save failed:", err) end
+	if not (data and s) or state[plr] ~= "ok" then return false end
+	local taken = false
+	local ok, err = pcall(s.UpdateAsync, s, "u" .. plr.UserId, function(old)
+		-- (another server has them now: its record is the true one, never written over)
+		if type(old) == "table" and old._lockJob and old._lockJob ~= JOB then taken = true; return nil end
+		data._lockJob = (not release) and JOB or nil
+		data._lockAt = os.time()
+		return data
+	end)
+	if ok and taken then
+		state[plr] = "lost"
+		warn("[Profile] another server took over " .. plr.Name .. "'s save: this one won't write it again")
+		if plr.Parent then plr:Kick("You're playing on another server now: this one has let go of your save.") end
+		return false
+	end
+	if not ok then
+		if not warned then warned = true; warn("[Profile] save failed:", err) end
+		return false
+	end
 	dirty[plr] = nil
+	return true
 end
 Profile.save = save
 
@@ -408,6 +531,11 @@ function Profile.setAppearance(plr, app) Profile.get(plr).appearance = app; dirt
 function Profile.addStat(plr, key, n)
 	local p = cache[plr]; if not p then return end
 	p.stats[key] = (p.stats[key] or 0) + (n or 1); dirty[plr] = true
+	-- (firsts worth a badge)
+	if key == "kill" or key == "win" then
+		local B = econ("Badges")
+		if B then B.award(plr, key == "kill" and "FirstBlood" or "FirstWin") end
+	end
 end
 function Profile.rating(plr, bracket) return Profile.get(plr).rating[bracket] or Catalog.ECONOMY.ratingStart end
 function Profile.setRating(plr, bracket, r) Profile.get(plr).rating[bracket] = r; dirty[plr] = true end
@@ -426,18 +554,32 @@ function Profile.summary(plr)
 	armoury = Profile.ratingHook and Profile.ratingHook(p) or 0}
 end
 
-Players.PlayerAdded:Connect(function(plr) task.spawn(load, plr) end)
-for _, p in ipairs(Players:GetPlayers()) do task.spawn(load, p) end
+Players.PlayerAdded:Connect(function(plr) task.spawn(Profile.get, plr) end)
+for _, p in ipairs(Players:GetPlayers()) do task.spawn(Profile.get, p) end
 Players.PlayerRemoving:Connect(function(plr)
-	if dirty[plr] then save(plr) end
-	cache[plr], dirty[plr] = nil, nil
+	while loading[plr] do task.wait() end
+	-- (always written on the way out: it lets the lock go for their next server)
+	if state[plr] == "ok" then save(plr, true) end
+	cache[plr], dirty[plr], state[plr] = nil, nil, nil
 end)
+-- every AUTOSAVE seconds: the changed ones saved, and everyone's lock kept fresh
 task.spawn(function()
 	while true do
 		task.wait(AUTOSAVE)
-		for plr in pairs(dirty) do if plr.Parent then task.spawn(save, plr) end end
+		for plr in pairs(cache) do if plr.Parent and state[plr] == "ok" then task.spawn(save, plr) end end
 	end
 end)
-game:BindToClose(function() for plr in pairs(dirty) do save(plr) end end)
+-- the server closing: everyone saved and let go, all at once, before it's allowed to close
+game:BindToClose(function()
+	local left = 0
+	for plr in pairs(cache) do
+		if state[plr] == "ok" then
+			left += 1
+			task.spawn(function() pcall(save, plr, true); left -= 1 end)
+		end
+	end
+	local t0 = os.clock()
+	while left > 0 and os.clock() - t0 < 25 do task.wait() end
+end)
 
 return Profile

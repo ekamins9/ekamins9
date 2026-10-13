@@ -516,6 +516,30 @@ on the server for real spawns and on the client for every menu mannequin, so wha
 what spawns. Profiles are DataStore `Profiles_v2` (v1 saves migrate: armor set → its three
 pieces). **Adding content is config only: see [CONTENT_GUIDE.md](CONTENT_GUIDE.md).**
 
+**Saving is one server at a time** (`Profile`, the session lock): a profile is claimed as it loads
+(UpdateAsync stamps `_lockJob` / `_lockAt`) and let go as its player leaves; a server finding it
+claimed waits up to 14 s for the other to let go (it's saving them on their way over), then takes
+it (a lock older than 200 s, its server dead, at once), and a save never writes over a profile
+another server has taken (that session ends: the player is told). Every player is saved every 60 s
+(which keeps their lock fresh) and on the way out; a closing server saves everyone at once.
+**A load that fails never becomes a fresh profile saved over the real one:** the session is
+unsafe (never saved) and the player is asked to rejoin (in Studio with its data stores off: a
+fresh profile, unsaved, at once). A Crowns purchase is only reported granted once its save has
+landed (`Profile.save` returns whether it did; the receipt id stops a double credit).
+
+**Analytics** (`Economy ▸ Analytics`, AnalyticsService: Creator Dashboard ▸ Analytics): the
+newcomer's funnel (Joined → Basic training begun → Ready for battle → First battle fought →
+First crate opened → Level 2 → Level 5 → Level 10; each step once per player, profile `funnel`;
+players from before it are counted past it), every Marks / Crowns / Keys source and sink (rounds,
+level-ups, tasks, the ring, the Gauntlet, rewards, purchases; the shop, crates, the pass, the
+exchange: `Economy.spend(…, why)`), and the custom events RoundPlayed (mode, won/lost, server
+type), CrateOpened (crate, rarity, kind) and Trade.
+
+**Badges** (`Economy ▸ Badges`): Welcome, Graduate, First Blood, First Victory, Bow and Staff
+(level 5), Veteran (25), Champion Slayer, Iron Will (Gauntlet wave 10), Touched by Legend (a
+Mythic), Beta Tester. Their ids live only in the place: `ServerStorage ▸ BadgeIds ▸ <key>`
+IntValues (0 = not made yet: skipped). Earned ones are awarded on join too (`Badges.check`).
+
 **The weights trade real things** (`Catalog ▸ Weights`; the class cards show HP / ARMOR / SPEED /
 STAMINA bars and the full line under each class):
 - **Light (Vanguard):** 100 HP, 3% armor, 106% walk speed, the fastest sprint (×1.55), 120 stamina
@@ -802,7 +826,8 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   three worlds in orbit, a moon round the ringed one, dust paths and a wheel of constellations.
   The moving parts carry `Anim` attributes (rotations about a centre, innermost first; `osc`,
   `bob`, `pulse`) and the Trim folder the tag `TrimAnim`; `StarterPlayerScripts ▸ TrimAnim` turns
-  them on every client (weld C0s in the world, CFrames in previews; still past 140 studs) and makes
+  them on every client (weld C0s in the world, CFrames in previews; only on screen; still past 140
+  studs, or 60 on a phone, where they also turn at half the frame rate) and makes
   the heads' lights breathe, flicker or walk the rainbow and their lightning jump.
 - **Drawing a weapon** (`DrawFX`, client): taking a weapon in hand, the arm reaches to where it
   hangs (over the right shoulder for a two-hander, a bow or a staff; across to the left hip for a
@@ -915,6 +940,14 @@ bundles (one click buys) or the Crowns › Marks exchange right there (`HX.short
 **Roblox's paid-random-item rules:** where `PolicyService` restricts paid random items
 (`ArePaidRandomItemsRestricted`), Crowns don't open crates (Keys do), eggs aren't sold, early
 hatching is off, and crates or eggs inside a purchase (the premium pass) become Marks.
+
+**Weekends** (`Catalog ▸ Calendar ▸ weekends`, `Drops.events`): every Friday 16:00 to Monday
+08:00 UTC the next of the rotation runs, like a dated event (the crier, the DAILY tab, the pay):
+Double XP Weekend, **Armory Roulette** (`rule = "roulette"`: every spawn in battle hands you a
+random weapon pair your class can carry, your own skin for it if you have one; never in the
+Courtyard, the yard or ranked; +25% XP), Raid Weekend (the Horde pays double Marks), War Chest
+Weekend (battles pay half again as many Marks). A dated event (Halloween…) takes the weekend
+instead. `Drops.rule(name)` asks whether a rule is on.
 
 **Trading** (TRADE in the dock). Same server, level 5 and up, only where Roblox allows trading paid
 items (`IsPaidItemTradingAllowed`). **Armor goes only as a full set**: one copy of every piece of
@@ -1518,7 +1551,11 @@ The intro's fire, wherever a moment deserves it (`UIFX.embers` / `sparks` / `vig
   FIGHT IN 3 (the mode's respawn delay) · BACK TO THE COURTYARD · BACK ON YOUR FEET · THE NEXT
   WAVE BRINGS YOU BACK · OUT FOR THIS ROUND. A new body lifts it with a golden flash and a blade
   drawn; the class screen or the menu opening lifts it too (LoadoutMenu sets `Lift`, and waits
-  for `HoldUntil` so the fall is always seen). CameraRig only holds the camera in the head now.
+  for `HoldUntil` so the fall is always seen). CameraRig holds the camera in the head as you fall,
+  and then the **kill cam** (Settings ▸ Kill cam): 0.75 s in, the head turns over 0.55 s to the
+  one who did it (a player by `LastHitBy`, a bot by `LastHitByName`, the nearest of that name)
+  and the view closes in on them (the field of view narrowed to frame them, near or far) until
+  the veil comes down.
 - **The round begins** (`Celebrate`): FIGHT! slams down under the round's number (or the mode and
   the map), a war horn, sparks, a shudder. Not in the Courtyard or the training yard.
 - **Level up**: LEVEL 7 lands in gold on a dark band, a brass flourish, sparks and embers — after

@@ -1,4 +1,44 @@
-# Updated scripts: archers' outfits
+# Updated scripts: launch-safe saving, analytics, badges, kill cam, weekend events
+
+- **Saving is one server at a time (no more duplicates).** Before, a profile was read on join and written over on leave with nothing stopping two servers at once. Hop servers quickly after a trade and an item could exist in both places. Now:
+  - A profile is claimed when it loads and let go when you leave.
+  - A server finding it claimed waits for the other to finish, then takes it.
+  - A server that lost it never writes over it again.
+- **No more wiped saves on a bad day.** Before, if Roblox's data service failed when you joined, you got a fresh profile, and the next autosave overwrote your real one. Now that session is never saved, and you're asked to rejoin.
+- **Purchases:** Crowns only count as delivered once they're safely saved. If the save fails, Roblox retries the receipt later, and it's never credited twice.
+- **Analytics** (Creator Dashboard ▸ Analytics):
+  - The newcomer's funnel: joined → training → ready → first battle → first crate → levels 2, 5 and 10.
+  - Every Marks / Crowns / Keys source and sink.
+  - The events RoundPlayed, CrateOpened and Trade.
+- **Badges:** ten of them (Welcome, Graduate, First Blood, First Victory, Bow and Staff, Veteran, Champion Slayer, Iron Will, Touched by Legend, Beta Tester).
+  - Make them on the dashboard, then type each id into Studio ▸ ServerStorage ▸ BadgeIds.
+  - Anyone who already earned one gets it when they join.
+- **Kill cam:** after you fall, the view turns to whoever got you and closes in on them, near or far. Settings ▸ Kill cam turns it off.
+- **Weekend events, every weekend** (Friday 16:00 to Monday 08:00 UTC), in turn:
+  - Double XP.
+  - **Armory Roulette:** a random weapon pair every spawn in battle.
+  - Raid Weekend: the Horde pays double.
+  - War Chest Weekend: 1.5× Marks.
+  - A dated event like Halloween takes the weekend instead.
+- **Phones:** staff heads only animate when on screen, and on phones only up close and at half rate.
+- **Studio:** BadgeIds was created in ServerStorage (Studio only). **Save the place.**
+- See **docs/LAUNCH.md** for what's left for you.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout ▸ Profile | ModuleScript | the session lock; unsafe loads never saved; save returns success; one load per player; the funnel field; badges and funnel hooks |
+| [Analytics.lua](ServerScriptService/Economy/Analytics.lua), [Badges.lua](ServerScriptService/Economy/Badges.lua) (new) | ServerScriptService ▸ Economy | ModuleScript | the dashboard's events; the badges |
+| [Economy.lua](ServerScriptService/Economy/Economy.lua), [Stats.lua](ServerScriptService/Economy/Stats.lua), [Trading.lua](ServerScriptService/Economy/Trading.lua) | ServerScriptService ▸ Economy | ModuleScript | money in and out counted; `spend(…, why)`; purchases wait for the save |
+| [Training.lua](ServerScriptService/Game/Training.lua), [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService | ModuleScript, Script | funnel, ring and Gauntlet pay, badges; RoundPlayed |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | Armory Roulette |
+| [Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua), [Drops.lua](ReplicatedStorage/Drops.lua) | ReplicatedStorage | ModuleScript | the weekend rotation; `Drops.rule` |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | StarterCharacterScripts; ReplicatedStorage | LocalScript; ModuleScript | the kill cam and its setting |
+| [TrimAnim.client.lua](StarterPlayerScripts/TrimAnim.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | on-screen only; phones lighter |
+| [README.md](README.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) (new) | | doc | all of the above; the launch checklist |
+
+---
+
+## Before that: archers' outfits
 
 - **The Bowman: the Archer's own outfit.**
   - A hood with a long tail and a dagged capelet in your colours.

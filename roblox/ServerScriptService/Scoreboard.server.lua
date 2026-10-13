@@ -249,6 +249,7 @@ if Game then
 			local events = {round = 1, win = won and 1 or 0, kill = c.kill or 0, parry = c.parry or 0, chamber = c.chamber or 0, objective = c.objective or 0, wave = c.wave or 0,
 				kill_Squire = c.kill_Squire or 0, kill_Knight = c.kill_Knight or 0, kill_Champion = c.kill_Champion or 0}
 			local pay = Economy and Economy.award(p, events) or {marks = 0, xp = 0, levels = 0}
+			pcall(function() require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Analytics")).event(p, "RoundPlayed", 1, modeId, won and "won" or "lost", Game.server.door) end)
 			if Stats and not (Economy and pay.blocked) then
 				Stats.add(p, "round", 1)
 				if won then
