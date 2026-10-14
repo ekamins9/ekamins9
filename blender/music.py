@@ -1,33 +1,80 @@
-"""MUSIC — an original track for the game's videos, synthesized from nothing (no samples, no
-licence to worry about). Hybrid-epic at 140 BPM in D minor, 30 bars (51.4 s):
+"""MUSIC — original tracks for the game's videos, synthesized from nothing (no samples, no
+licence to worry about). Each PLAN is a tempo, a key (a chord progression and a lead hook), a
+drum style and its sections, in bars:
 
-    bars  0-3   INTRO      a dark pad, heartbeat booms, a riser and a snare roll into
-    bars  4-11  DROP A     four-on-the-floor kick, claps, hats, a distorted pumping bass,
-                           supersaw stabs on the off-beats, an impact and a crash
-    bars 12-15  BREAKDOWN  half-time drums, a pad, a 16th-note arpeggio, a riser, a stop
-    bars 16-25  DROP B     all of drop A and the lead hook, with echoes
-    bars 26-29  OUTRO      an impact, the last chord held, a final boom, the tail
+    intro      a dark pad, heartbeat booms, a riser and a snare roll into
+    drop       driving drums, a distorted pumping bass, supersaw stabs on the off-beats,
+               an impact and a crash
+    droplead   the drop with the lead hook on top, with echoes
+    break      half-time drums, a pad, a 16th-note arpeggio, a riser, a roll, a breath
+    outro      an impact, the last chord held, a final boom, the tail
 
-    "C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" blender/music.py
-        -> footage/music/anthem.wav (44.1 kHz, 16-bit stereo, loud)
+    anthem   140 BPM, D minor, four-on-the-floor, 30 bars (51.4 s): the first hype edit
+    warcry   150 BPM, E minor, four-on-the-floor, 36 bars (57.6 s): the second trailer
+    rush     160 BPM, F minor, breakbeat drums, 32 bars (48 s): the first-person cut
+
+    "C:/Program Files/Blender Foundation/Blender 5.2/5.2/python/bin/python.exe" blender/music.py [plan]
+        -> footage/music/<plan>.wav (44.1 kHz, 16-bit stereo, loud)
 
 Everything is numpy: oscillators, envelopes, FFT filters, an FFT reverb, a soft-clipping master.
 """
 import os
+import sys
 import wave
 
 import numpy as np
 
 SR = 44100
-BPM = 140
-BEAT = 60 / BPM
-BAR = 4 * BEAT
-BARS = 30
 TAIL = 1.6
-N = int((BARS * BAR + TAIL) * SR)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "footage", "music", "anthem.wav")
+
+# (bass root, chord) a bar each, four bars; the hook in eighths over those four bars
+PROGS = {
+    "A": [(38, [62, 65, 69]), (34, [58, 62, 65]), (41, [60, 65, 69]), (36, [60, 64, 67])],          # Dm Bb F C
+    "B": [(40, [64, 67, 71]), (45, [64, 69, 72]), (36, [64, 67, 72]), (35, [63, 66, 71])],          # Em Am C B
+    "C": [(41, [65, 68, 72]), (37, [65, 68, 73]), (39, [67, 70, 75]), (36, [64, 67, 72])],          # Fm Db Eb C
+}
+HOOKS = {
+    "A": [(0, 1, 69), (1, 1, 69), (2, 2, 74), (4, 1, 72), (5, 1, 69), (6, 2, 67),
+          (8, 1, 65), (9, 1, 65), (10, 2, 70), (12, 1, 69), (13, 1, 65), (14, 2, 62),
+          (16, 1, 72), (17, 1, 72), (18, 2, 77), (20, 1, 76), (21, 1, 72), (22, 2, 69),
+          (24, 1, 67), (25, 1, 69), (26, 2, 72), (28, 2, 74), (30, 2, 76)],
+    "B": [(0, 1, 71), (1, 1, 71), (2, 2, 76), (4, 1, 74), (5, 1, 71), (6, 2, 67),
+          (8, 1, 69), (9, 1, 72), (10, 2, 76), (12, 1, 74), (13, 1, 72), (14, 2, 69),
+          (16, 1, 67), (17, 1, 72), (18, 2, 79), (20, 1, 76), (21, 1, 72), (22, 2, 71),
+          (24, 2, 71), (26, 1, 75), (27, 1, 78), (28, 2, 83), (30, 2, 78)],
+    "C": [(0, 1, 72), (1, 1, 72), (2, 1, 75), (3, 1, 77), (4, 2, 80), (6, 2, 77),
+          (8, 1, 73), (9, 1, 77), (10, 2, 80), (12, 2, 77), (14, 2, 73),
+          (16, 1, 75), (17, 1, 79), (18, 2, 82), (20, 1, 79), (21, 1, 75), (22, 2, 79),
+          (24, 1, 76), (25, 1, 79), (26, 2, 84), (28, 2, 79), (30, 2, 76)],
+}
+PLANS = {
+    "anthem": dict(bpm=140, prog="A", drums="four", seed=7,
+                   sections=[("intro", 4), ("drop", 8), ("break", 4), ("droplead", 10), ("outro", 4)]),
+    "warcry": dict(bpm=150, prog="B", drums="four", seed=11,
+                   sections=[("intro", 4), ("drop", 8), ("droplead", 4), ("break", 6), ("droplead", 10), ("outro", 4)]),
+    "rush":   dict(bpm=160, prog="C", drums="break", seed=23,
+                   sections=[("intro", 2), ("drop", 8), ("droplead", 8), ("break", 2), ("droplead", 8), ("outro", 4)]),
+}
+
+# set by configure(plan)
+BPM = BEAT = BAR = None
+BARS = N = 0
+OUT = ""
+PROG = HOOK = None
 rng = np.random.default_rng(7)
+
+
+def configure(name):
+    global BPM, BEAT, BAR, BARS, N, OUT, PROG, HOOK, rng
+    P = PLANS[name]
+    BPM = P["bpm"]; BEAT = 60 / BPM; BAR = 4 * BEAT
+    BARS = sum(n for _, n in P["sections"])
+    N = int((BARS * BAR + TAIL) * SR)
+    OUT = os.path.join(ROOT, "footage", "music", name + ".wav")
+    PROG, HOOK = PROGS[P["prog"]], HOOKS[P["prog"]]
+    rng = np.random.default_rng(P["seed"])
+    return P
 
 
 def hz(m): return 440.0 * 2 ** ((m - 69) / 12)
@@ -170,33 +217,33 @@ def riser(length, lo=300, hi=9000):
 
 
 # ---------------------------------------------------------------- the score
-PROG = [  # (bass root, chord) a bar each: Dm  Bb  F  C
-    (38, [62, 65, 69]), (34, [58, 62, 65]), (41, [60, 65, 69]), (36, [60, 64, 67]),
-]
-# the hook, in eighths: (start, length, note) over the four bars of the progression
-HOOK = [
-    (0, 1, 69), (1, 1, 69), (2, 2, 74), (4, 1, 72), (5, 1, 69), (6, 2, 67),
-    (8, 1, 65), (9, 1, 65), (10, 2, 70), (12, 1, 69), (13, 1, 65), (14, 2, 62),
-    (16, 1, 72), (17, 1, 72), (18, 2, 77), (20, 1, 76), (21, 1, 72), (22, 2, 69),
-    (24, 1, 67), (25, 1, 69), (26, 2, 72), (28, 2, 74), (30, 2, 76),
-]
-
-
-def build():
+def build(P):
     drums, bassB, synth, leadB, fx, verb = Bus(), Bus(), Bus(), Bus(), Bus(), Bus()
     K, S, C, H, HO = kick(), snare(), clap(), hat(), hat(True)
     kicks = []
+    style = P["drums"]
 
-    def drop_bars(b0, b1, lead_on):
+    def kick_at(t, sig=None, g=1.0):
+        drums.add(t, K if sig is None else sig, g); kicks.append(t)
+
+    def drop_bars(b0, b1, lead_on, impact):
         for b in range(b0, b1):
             root, chord = PROG[b % 4]
-            for q in range(4):                        # four on the floor
-                drums.add(at(b, q), K, 1.0); kicks.append(at(b, q))
-            for q in (1, 3):
-                drums.add(at(b, q), S, 0.55); drums.add(at(b, q), C, 0.45, 0.1); verb.add(at(b, q), S, 0.25)
+            if style == "four":
+                for q in range(4):                    # four on the floor
+                    kick_at(at(b, q))
+                for q in (1, 3):
+                    drums.add(at(b, q), S, 0.55); drums.add(at(b, q), C, 0.45, 0.1); verb.add(at(b, q), S, 0.25)
+            else:                                     # a breakbeat: kick 1, the "and" of 2, a push on 4
+                for q in ((0, 1.5, 2.5) if b % 2 == 0 else (0, 1.75, 2.5, 3.5)):
+                    kick_at(at(b, q))
+                for q in (1, 3):
+                    drums.add(at(b, q), S, 0.65); drums.add(at(b, q), C, 0.35, 0.1); verb.add(at(b, q), S, 0.25)
+                for q in (1.75, 3.25, 3.75):          # ghost notes
+                    drums.add(at(b, q), S, 0.14, 0.2)
             for e in range(8):                        # hats: 8ths, 16ths in the second half
-                drums.add(at(b, e / 2 + 0.5 * (e % 2 == 0) * 0), HO if e % 2 else H, 0.22 if e % 2 else 0.16, -0.3)
-                if (b - b0) % 8 >= 4:
+                drums.add(at(b, e / 2), HO if e % 2 else H, 0.22 if e % 2 else 0.16, -0.3)
+                if (b - b0) % 8 >= 4 or style != "four":
                     drums.add(at(b, e / 2 + 0.25), H, 0.12, 0.3)
             for e in range(8):                        # the bass: 8ths, the octave on the off-beats
                 bassB.add(at(b, e / 2), bass(root + (12 if e % 2 else 0), BEAT / 2 * 0.92), 0.5)
@@ -212,51 +259,65 @@ def build():
                         for k, (dt, g) in enumerate(((0.75 * BEAT, 0.35), (1.5 * BEAT, 0.18))):   # echoes
                             leadB.add(t0 + dt, sig, 0.32 * g, (-0.5, 0.5)[k % 2])
                         verb.add(t0, sig, 0.15)
-        fx.add(at(b0), crash(3.0), 0.5); fx.add(at(b0), boom(2.0), 0.9)
+        fx.add(at(b0), crash(3.0 if impact else 2.0), 0.5 if impact else 0.38)
+        if impact: fx.add(at(b0), boom(2.0), 0.9)
         for b in range(b0 + 4, b1, 4): fx.add(at(b), crash(2.0), 0.35)
 
-    # INTRO
-    for b in range(0, 4):
-        root, chord = PROG[b % 4]
-        synth.add(at(b), supersaw(chord, BAR, attack=0.4, cutoff=1400 + b * 700), 0.45)
-        bassB.add(at(b), bass(root, BAR * 0.98) * 0.6, 0.35)
-        if b < 3:
-            drums.add(at(b), kick(1.6), 0.9); kicks.append(at(b))
-            verb.add(at(b), kick(1.6), 0.3)
-    fx.add(at(0), riser(4 * BAR), 0.55)
-    for i, q in enumerate([0, 1, 2, 2.5, 3, 3.25, 3.5, 3.75]):       # the roll into the drop
-        drums.add(at(3, q), S, 0.2 + 0.05 * i)
-    for k in range(16):
-        drums.add(at(3, 2 + k / 8), S, 0.12 + k * 0.025)
-    # DROP A
-    drop_bars(4, 12, False)
-    # BREAKDOWN
-    for b in range(12, 16):
-        root, chord = PROG[b % 4]
-        synth.add(at(b), supersaw(chord, BAR, attack=0.15, cutoff=2600), 0.4)
-        bassB.add(at(b), bass(root, BAR * 0.95) * 0.7, 0.3)
-        if b < 15:
-            drums.add(at(b, 0), K, 0.9); kicks.append(at(b, 0))
-            drums.add(at(b, 2), S, 0.5); verb.add(at(b, 2), S, 0.3)
-        tones = chord + [chord[0] + 12]
-        for s in range(16):                           # the arpeggio
-            m = tones[[0, 1, 2, 3, 2, 1, 2, 3][s % 8]] + 12
-            synth.add(at(b, s / 4), pluck(m), 0.22, (-0.4, 0.4)[s % 2])
-            verb.add(at(b, s / 4), pluck(m), 0.08)
-    fx.add(at(14), riser(2 * BAR), 0.6)
-    for k in range(24):                               # the roll, then a breath of silence
-        drums.add(at(15, k / 8), S, 0.1 + k * 0.022)
-    # DROP B
-    drop_bars(16, 26, True)
-    # OUTRO
-    fx.add(at(26), boom(3.0), 1.0); fx.add(at(26), crash(4.0), 0.55)
-    synth.add(at(26), supersaw([62, 65, 69, 74], 3.2 * BAR, attack=0.01, cutoff=5000) * np.exp(-secs(int(3.2 * BAR * SR)) / 2.2), 0.6)
-    bassB.add(at(26), bass(38, 2 * BAR), 0.45)
-    for q in range(0, 8, 2):
-        drums.add(at(26, q), K, 0.8); kicks.append(at(26, q))
-        drums.add(at(26, q + 1), S, 0.45); verb.add(at(26, q + 1), S, 0.25)
-    fx.add(at(28), boom(2.5), 1.0); fx.add(at(28), crash(3.0), 0.45)
-    drums.add(at(28), kick(2.0), 1.0)
+    def intro(b0, n):
+        for b in range(b0, b0 + n):
+            root, chord = PROG[b % 4]
+            synth.add(at(b), supersaw(chord, BAR, attack=0.4, cutoff=1400 + (b - b0) * 2800 / n), 0.45)
+            bassB.add(at(b), bass(root, BAR * 0.98) * 0.6, 0.35)
+            if b < b0 + n - 1:
+                kick_at(at(b), kick(1.6), 0.9); verb.add(at(b), kick(1.6), 0.3)
+                if n <= 2: kick_at(at(b, 2), kick(1.6), 0.8)
+        fx.add(at(b0), riser(n * BAR), 0.55)
+        last = b0 + n - 1
+        for i, q in enumerate([0, 1, 2, 2.5, 3, 3.25, 3.5, 3.75]):   # the roll into the drop
+            drums.add(at(last, q), S, 0.2 + 0.05 * i)
+        for k in range(16):
+            drums.add(at(last, 2 + k / 8), S, 0.12 + k * 0.025)
+
+    def breakdown(b0, n):
+        for b in range(b0, b0 + n):
+            root, chord = PROG[b % 4]
+            synth.add(at(b), supersaw(chord, BAR, attack=0.15, cutoff=2600), 0.4)
+            bassB.add(at(b), bass(root, BAR * 0.95) * 0.7, 0.3)
+            if b < b0 + n - 1:
+                kick_at(at(b, 0), None, 0.9)
+                drums.add(at(b, 2), S, 0.5); verb.add(at(b, 2), S, 0.3)
+            tones = chord + [chord[0] + 12]
+            for s in range(16):                       # the arpeggio
+                m = tones[[0, 1, 2, 3, 2, 1, 2, 3][s % 8]] + 12
+                synth.add(at(b, s / 4), pluck(m), 0.22, (-0.4, 0.4)[s % 2])
+                verb.add(at(b, s / 4), pluck(m), 0.08)
+        r = min(2, n)
+        fx.add(at(b0 + n - r), riser(r * BAR), 0.6)
+        for k in range(24):                           # the roll, then a breath of silence
+            drums.add(at(b0 + n - 1, k / 8), S, 0.1 + k * 0.022)
+
+    def outro(b0, n):
+        root, chord = PROG[0]
+        fx.add(at(b0), boom(3.0), 1.0); fx.add(at(b0), crash(4.0), 0.55)
+        held = min(3.2, n - 0.8) * BAR
+        synth.add(at(b0), supersaw(chord + [chord[0] + 12], held, attack=0.01, cutoff=5000) * np.exp(-secs(int(held * SR)) / 2.2), 0.6)
+        bassB.add(at(b0), bass(root, 2 * BAR), 0.45)
+        for q in range(0, 8, 2):
+            kick_at(at(b0, q), None, 0.8)
+            drums.add(at(b0, q + 1), S, 0.45); verb.add(at(b0, q + 1), S, 0.25)
+        if n >= 3:
+            fx.add(at(b0 + 2), boom(2.5), 1.0); fx.add(at(b0 + 2), crash(3.0), 0.45)
+            drums.add(at(b0 + 2), kick(2.0), 1.0)
+
+    b, prev = 0, None
+    for kind, n in P["sections"]:
+        if kind == "intro": intro(b, n)
+        elif kind == "drop": drop_bars(b, b + n, False, prev not in ("drop", "droplead"))
+        elif kind == "droplead": drop_bars(b, b + n, True, prev not in ("drop", "droplead"))
+        elif kind == "break": breakdown(b, n)
+        elif kind == "outro": outro(b, n)
+        b += n
+        prev = kind
 
     # the sidechain: bass and synths duck under every kick
     t = secs(N)
@@ -298,4 +359,5 @@ def write(x):
 
 
 if __name__ == "__main__":
-    write(build())
+    name = sys.argv[1] if len(sys.argv) > 1 else "anthem"
+    write(build(configure(name)))
