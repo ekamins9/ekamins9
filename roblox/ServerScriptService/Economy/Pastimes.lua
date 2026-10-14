@@ -219,6 +219,13 @@ function Pastimes.hatch(plr, nest, now)
 	local res = Pastimes.grantCompanion(plr, win.id, Economy.collection().rollPetVariant(), e.name)
 	res.egg = n.egg
 	res.nest = tonumber(nest)
+	-- a big one: everyone sees it (Economy ▸ Pulls), once the hatch has played
+	task.delay(5, function()
+		pcall(function()
+			require(script.Parent:WaitForChild("Pulls")).announce(plr, {name = res.name, rarity = res.rarity, variant = res.variant,
+				serial = res.serial, from = e.name, kind = "companion"})
+		end)
+	end)
 	return res
 end
 

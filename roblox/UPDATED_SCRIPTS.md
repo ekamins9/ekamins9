@@ -1,4 +1,55 @@
-# Updated scripts: GIFTS (send anything to anyone, online or not; buy anything as a gift)
+# Updated scripts: nothing in the shop for good (daily crate and egg rotation, vault weekends), big pulls everyone sees
+
+What the research said (MM2, Da Hood, CS2, Fortnite, Valorant, Rocket League, TF2), and what's here now:
+
+- **Scarcity has to be real and visible.**
+  - The eight armoury crates are now a **daily rotation**: 3 a day, each in 3 days out of 8. The four core eggs are too: 2 a day.
+  - Every crate and egg card says how long it has: TODAY ONLY · 6h LEFT, LAST CHANCE (under 2 days), FEATURED · UNTIL THE NEXT DROP, EVENT, BACK FROM THE VAULT.
+  - A crate's page also says when it's back: BACK IN 2d 4h, THEN INTO THE VAULT, or NEVER COMES BACK.
+  - The crates page and the Hatchery show **what's in tomorrow**.
+  - An item's "drops from the …" line says whether its crate is in today, or when it's back.
+  - Nothing says "always here" any more. Packs and shelf skins already rotated daily. Only weapons (gameplay) and Crowns are always there.
+- **"It's back!" moments** (Fortnite returns, CS2 cases): a new weekend, **From the Vault**, brings one vaulted drop crate back until Monday, each in turn. It's skipped while nothing is vaulted (the beta).
+- **Status everyone sees** (CS2's unbox messages, MM2 Godlies):
+  - A Legendary or better (or a Radiant finish): a banner for everyone in the server, 8 s after the open so the opener's reel lands first.
+  - A Mythic, a Unique or a Radiant Legendary: a 🌍 banner with a war horn in **every server**, plus a **pillar of light** over the player in the Courtyard. The opener gets "Every server just saw your MYTHIC!".
+  - Legendary+ hatches count too.
+  - SETTINGS › **Name on big pulls**: Show / Hide (Hide shows "Someone").
+- **Social proof**:
+  - a **BIG PULLS** feed along the bottom of the crates page (the last 24 game-wide);
+  - **PULLED FROM IT LATELY** on each crate.
+- **Known scarcity** (MM2 values, numbered Godlies): a Mythic's page says **ONLY N EXIST · EACH ONE NUMBERED**, or **NOBODY HAS PULLED ONE YET**.
+- **Showing off in a fight** (CS/Valorant kill banners): the kill feed names the killer's skin in its rarity's colour when it's Epic or better, or has a finish.
+- **Fair and by the rules** (Roblox's paid-random-items policy, 2026):
+  - **ODDS OF EVERY ITEM** on every crate lists each item's own chance, the finish chances, the pity, and the pity's odds when it's due.
+  - The reel's filler was already drawn by the true odds (no staged near-misses).
+  - Region rules, Keys, and the pity are unchanged.
+- Checked in Play:
+  - the rotation for 9 days (each day 3 different crates + Royal; the eggs alternate);
+  - a guaranteed Legendary from the Arcana Crate reached the feed;
+  - the banners (in-server and 🌍) queue and show;
+  - the gallery's TODAY ONLY / TOMORROW lines and the feed chips;
+  - a crate page's rotation line, odds button, PULLED FROM IT LATELY, and NOBODY HAS PULLED ONE YET on a Mythic;
+  - the Hatchery's TOMORROW and TODAY ONLY.
+- Not checked: the pillar of light and the kill-feed skin in a real fight (both need someone else there to see them), and the cross-server banner between two live servers.
+- A feed read that hangs can never hold the menu up: the server gives up after 3 s, and the menu fetches feeds and counts on the side, never in its own queue.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Economy/Pulls.lua](ServerScriptService/Economy/Pulls.lua) (new) | ServerScriptService ▸ Economy | ModuleScript | banners, cross-server, the pillar, the feed, how many exist |
+| [Catalog/Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `rotations` (crates 3 a day, eggs 2), every crate and egg `daily`, the From the Vault weekend |
+| [Drops.lua](ReplicatedStorage/Drops.lua) | ReplicatedStorage | ModuleScript | the daily rotation, vault weekends, `crateNext` / `eggNext`, `vaultable`, how a crate is in |
+| [Economy/Economy.lua](ServerScriptService/Economy/Economy.lua), [Economy/Pastimes.lua](ServerScriptService/Economy/Pastimes.lua) | ServerScriptService ▸ Economy | ModuleScript | a big pull or hatch is announced |
+| [Economy/Collection.lua](ServerScriptService/Economy/Collection.lua) | ServerScriptService ▸ Economy | ModuleScript | `Collection.count` |
+| [Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | `RecentPulls`, `Population` |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua), [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | ServerScriptService / StarterPlayerScripts | Script / LocalScript | the killer's skin in the kill feed |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | Name on big pulls |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | rotation lines, tomorrow, the feed, banners, odds of every item, Mythic counts |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | rotation, big pulls |
+
+---
+
+## Before that: GIFTS (send anything to anyone, online or not; buy anything as a gift)
 
 - **GIFTS** (a new dock tile, with its own gift-box icon). It's a separate feature from trading: one way, by username, whether they're online or offline.
   1. **Who**: type their Roblox username (or pick someone in this server, or a friend online). It shows their face, name and level, and whether they're here.

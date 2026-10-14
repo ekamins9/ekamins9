@@ -68,6 +68,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Companions.lua` | `ReplicatedStorage` → `Companions` (creatures and eggs built from parts) | ModuleScript |
 | `StarterPlayerScripts/Pastimes.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pastimes` (companions following, the gift chip, your eggs in the nests) | LocalScript |
 | `ServerScriptService/Economy/EconomyServer.server.lua` | `ServerScriptService` → `Economy` → `EconomyServer` | Script |
+| `ServerScriptService/Economy/Pulls.lua` | `ServerScriptService` → `Economy` → `Pulls` (big pulls: banners, the feed, how many exist) | ModuleScript |
 | `ServerScriptService/Economy/Gifting.lua` | `ServerScriptService` → `Economy` → `Gifting` (the gift box: send anything to anyone, buy as a gift) | ModuleScript |
 | `ServerScriptService/Build/<Name>.lua` | `ServerScriptService` → `Build` (Folder) → `Builder`, `Weapons`, `Armor`, `Body`, `Blueprints` | ModuleScript each |
 | `ReplicatedStorage/Theme.lua` | `ReplicatedStorage` → `Theme` | ModuleScript |
@@ -396,7 +397,7 @@ lingering cloud, a fountain of gold, rising spirits) and have their own release 
 (`arrow = "<kind>"` → `ArrowFX`): fire, frost, shadow, holy, storm, venom, gilded, blood — a trail,
 a glowing head, particles, a light, a burst where it lands, a smoulder where it sticks. The Tool
 carries `Skin` and `ArrowFx` attributes (`LoadoutServer`); the server passes the kind with every
-"Shot" so everyone sees it. Most roll from the **Fletcher's Crate** (always in rotation); Venomstring,
+"Shot" so everyone sees it. Most roll from the **Fletcher's Crate** (in the daily rotation); Venomstring,
 Heartseeker and Glacier are earned by kills; Stormcaller and Thunderbolt come from the Royal crate;
 the Gilded Longbow is on the shelf. The reticle shows the shake and closes as you draw; full
 draw zooms a little. On a touch screen, hold a SWING button to draw, BLOCK lets down. Bows hang
@@ -888,7 +889,7 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
     blade length. The animation (the weapon's idle guard) fades out and back in over 0.2 s, so
     nothing snaps.
 
-## Drops, rarity, collections, trading, gifts (`Catalog ▸ Calendar`, `Drops`, `Economy ▸ Collection`, `Economy ▸ Trading`, `Economy ▸ Gifting`)
+## Drops, rarity, collections, trading, gifts (`Catalog ▸ Calendar`, `Drops`, `Economy ▸ Collection`, `Economy ▸ Pulls`, `Economy ▸ Trading`, `Economy ▸ Gifting`)
 
 **The Forge.** Every weapon skin is its own mesh (`blender/forge.py` + `blender/themes.py`: new
 edges, guards, pommels, grips, ornaments, painted patterns, Neon inlays), welded on from
@@ -936,8 +937,33 @@ kills (shown on its card). Earned, pass, pack, claim and Founder items are BOUND
 The **Armoury rating** (`Collection.rating`) adds it all up: rarity × finish × relic / limited /
 low-number bonuses.
 
-**Crates.** Only crates in rotation can be opened (events first, then the featured ones, then the
-always-there Bladesmith, Hafted and Relic). Open with **Keys** (earned only: a Key per level-up,
+**Nothing is for sale for good** (`Calendar ▸ rotations`, `crates`, `eggs`; `Drops.crateLive`
+returns how a crate is in: `daily` / `featured` / `event` / `vault`). The eight armoury crates are
+a **daily rotation**: 3 a day (each is in 3 days in 8), the window sliding through
+`rotations.crates.order` every UTC midnight; the four core eggs likewise, 2 a day. A drop's crate is
+**featured** for its weeks, then **vaulted**; a **From the Vault** weekend (`weekends.rotation`,
+`vault = true`) brings one vaulted crate back until Monday, each in turn (none vaulted yet: that
+weekend is skipped). Event crates (`retire = true`) never return: their items become RELICS.
+Every card says how long it has and when it's back ("TODAY ONLY · 6h LEFT", "LAST CHANCE",
+"BACK IN 2d 4h", "BACK FROM THE VAULT"), the crates page and the Hatchery say what's in tomorrow,
+and an item's "drops from the …" line says whether its crate is in today (`HX.rotationText`,
+`HX.tomorrow`). Packs and shelf skins already rotate daily (`Catalog ▸ Store`); the season pass
+lasts its season. Only weapons (Marks, gameplay) and Crowns are always there.
+
+**Big pulls** (`Economy ▸ Pulls`). A Legendary or better out of a crate, a top finish (Radiant; a
+Spectral companion), or a Legendary+ hatch: a banner slides down for everyone in the server, 8
+seconds after the open (so the opener's own reel lands first). A Mythic, a Unique or a Radiant
+Legendary goes to **every server** (MessagingService "Pulls", a 🌍 banner and a war horn) and, in
+the Courtyard, a **pillar of light** rises where the player stands; the opener gets "Every server
+just saw your MYTHIC". The crates page has a **BIG PULLS** feed (the last 24 game-wide, MemoryStore
+"RecentPulls", 3 days) and each crate a **PULLED FROM IT LATELY** list. A Mythic's page says how
+many exist ("ONLY 37 EXIST · EACH ONE NUMBERED", or "NOBODY HAS PULLED ONE YET": its serial
+counter, `Collection.count`). SETTINGS › **Name on big pulls**: Hide shows "Someone" instead.
+**The kill feed** names the killer's skin when it's Epic or better (or has a finish), in its
+rarity's colour (`Scoreboard`: the Tool's `Skin` / `SkinVariant`).
+
+**Crates.** Only crates in rotation can be opened (events first, then one back from the vault, then
+the drop's, then today's). Open with **Keys** (earned only: a Key per level-up,
 one for the first win of the day, more from events) or Crowns. The odds (with the finish
 chances) are on screen before every open, and when the pity is due they say so (Legendary or
 better; the pity is long, 20–40 opens, so a Legendary is a moment). A crate opened anywhere
@@ -946,11 +972,14 @@ else (the pass, a daily or playtime gift) **spins on the crate screen** like any
 bundles (one click buys) or the Crowns › Marks exchange right there (`HX.shortOf`).
 **Roblox's paid-random-item rules:** where `PolicyService` restricts paid random items
 (`ArePaidRandomItemsRestricted`), Crowns don't open crates (Keys do), eggs aren't sold, early
-hatching is off, and crates or eggs inside a purchase (the premium pass) become Marks.
+hatching is off, and crates or eggs inside a purchase (the premium pass) become Marks. Every
+crate's **ODDS OF EVERY ITEM** lists each item's own chance (each rarity's share split evenly),
+the finish chances and the pity, and shows the pity's odds when it is due (Roblox's rule: each
+outcome's odds, as percentages, before the purchase).
 
 **Weekends** (`Catalog ▸ Calendar ▸ weekends`, `Drops.events`): every Friday 16:00 to Monday
 08:00 UTC the next of the rotation runs, like a dated event (the crier, the DAILY tab, the pay):
-Double XP Weekend, **Armory Roulette** (`rule = "roulette"`: every spawn in battle hands you a
+Double XP Weekend, **From the Vault** (a vaulted crate is back), **Armory Roulette** (`rule = "roulette"`: every spawn in battle hands you a
 random weapon pair your class can carry, your own skin for it if you have one; never in the
 Courtyard, the yard or ranked; +25% XP), Raid Weekend (the Horde pays double Marks), War Chest
 Weekend (battles pay half again as many Marks). A dated event (Halloween…) takes the weekend
@@ -1054,7 +1083,7 @@ credit and reads TEAMKILLED in the feed.
 
 ## Armor sets
 
-**Armor is collectable now, like skins.** The **Forge Crate** (always in rotation) drops:
+**Armor is collectable now, like skins.** The **Forge Crate** (in the daily rotation) drops:
 - **finishes** (`Catalog ▸ ArmorFX`, `ReplicatedStorage ▸ ArmorFX`), one per class in LOADOUT ›
   FINISH, on any set of any weight. Rare: Gilded, Blackened, Bloodsteel, Verdigris. Epic:
   Emberforged, Frostbound, Verdant, Rosewarden. Legendary: Stormborn, Voidtouched, Sunblessed.
@@ -1088,7 +1117,7 @@ the brow, a cloak edged in silver leaves, glowing fletchings; its finish Moonlit
 (Mythic: a golden mask under a crest of burning feathers, folded wings of fire; its finish
 Phoenixfire). The Fletcher's own finishes, Moonlit and Phoenixfire, drop on their own too.
 
-The **War Chest** (always in rotation too) is the second armor crate: six more crate-only sets,
+The **War Chest** (in the daily rotation too) is the second armor crate: six more crate-only sets,
 Ranger (Light, Rare), Berserker (Light, Epic: a bear for a hood), Corsair (Medium, Epic: a
 tricorn and a captain's coat), Deathless (Medium, Legendary: a skull helm, a ribcage), Lionheart
 (Heavy, Legendary: a crowned great helm with a mane), Obsidian (Heavy, Mythic: volcanic glass),

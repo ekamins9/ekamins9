@@ -22,11 +22,18 @@
      events   {id, name, from, to, color, blurb, earn = {event = multiplier},
               modes = {mode ids the earn bonus is for (nil = all)}, after = dropId
               (never before that drop is out, whatever the dates say)}
-     crates   per crate: windows = {{from = dropId|time, to = dropId|time|nil}},
-              event = eventId (in rotation for the event), always = true
-              (permanent), retire = true (once its last window ends its items
-              are RELICS: never coming back). Not listed = always in rotation.
+     NOTHING IS FOR SALE FOR GOOD. Every crate and egg is in one of three ways:
+     crates   per crate: daily = "<rotation>" (in on its days of the daily rotation
+              below), windows = {{from = dropId|time, to = dropId|time|nil}} (a drop's
+              featured crate for its weeks; after its last window it is VAULTED and a
+              From the Vault weekend can bring it back), event = eventId (in for the
+              event only), retire = true (once its last window ends its items are
+              RELICS: never coming back, never vaulted).
      eggs     the same, per egg
+     rotations {<name> = {slots, epoch, order = {ids…}}}: every UTC day `slots` of `order`
+              are in, the window sliding `slots` along each day and wrapping, so each
+              comes round every few days and none is there every day. Change the order
+              to change which ones share a day.
      claims   {id, from, to, reward = {skin | title | marks | keys | egg | crate}, note, after}
               everyone who plays while it is open gets it, once (numbered when
               it is a skin)
@@ -40,7 +47,9 @@
      weekends {from = dropId, rotation = {event…}}: every weekend (Friday 16:00 to Monday
               08:00 UTC) the next event of the rotation runs, like any event above (earn,
               modes) plus `rule` (a change to play: "roulette" = Armory Roulette, a random
-              weapon pair every spawn in battle). Skipped when a dated event is on. ]]
+              weapon pair every spawn in battle) or `vault = true` (FROM THE VAULT: one
+              vaulted crate is back until Monday, each in turn; with none vaulted yet the
+              next weekend in the rotation runs). Skipped when a dated event is on. ]]
 
 local C = Color3.fromRGB
 
@@ -135,16 +144,24 @@ return {
 			blurb = "Every time you spawn in battle you're handed a random weapon pair. Master them all! (+25% XP)", earn = {xp = 1.25}, rule = "roulette"},
 		{id = "Raid", name = "Raid Weekend", color = C(120, 200, 220), blurb = "The Horde pays double Marks all weekend.", earn = {marks = 2}, modes = {"Horde"}},
 		{id = "Marks", name = "War Chest Weekend", color = C(232, 184, 74), blurb = "Every battle pays half again as many Marks all weekend.", earn = {marks = 1.5}},
+		{id = "Vault", name = "From the Vault", color = C(255, 120, 200), vault = true,
+			blurb = "A vaulted crate is back in the Armoury for the weekend only. Monday morning it goes back in the vault."},
 	}},
+	-- THE DAILY ROTATION: 3 of the 8 armoury crates a day (each is in 3 days in 8, never two
+	-- weeks running on the same days), 2 of the 4 eggs (every other day)
+	rotations = {
+		crates = {slots = 3, epoch = "2026-10-05", order = {"Bladesmith", "Forge", "Relic", "Hafted", "Arcana", "Grim", "Fletcher", "WarChest"}},
+		eggs   = {slots = 2, epoch = "2026-10-05", order = {"Speckled", "Ember", "Mossy", "Royal"}},
+	},
 	crates = {
-		Bladesmith = {always = true},
-		Forge      = {always = true},
-		WarChest   = {always = true},
-		Arcana     = {always = true},
-		Hafted     = {always = true},
-		Relic      = {always = true},
-		Grim       = {always = true},
-		Fletcher   = {always = true},
+		Bladesmith = {daily = "crates"},
+		Forge      = {daily = "crates"},
+		WarChest   = {daily = "crates"},
+		Arcana     = {daily = "crates"},
+		Hafted     = {daily = "crates"},
+		Relic      = {daily = "crates"},
+		Grim       = {daily = "crates"},
+		Fletcher   = {daily = "crates"},
 		Royal      = {windows = {{from = "Beta", to = "HollowNight"}, {from = "SeaWolves", to = "Frostfall"}}},
 		Ossuary    = {windows = {{from = "Bonewright", to = "Ironclad"}}},
 		Hollow     = {event = "Hollow2026", retire = true},
@@ -156,10 +173,10 @@ return {
 		BlackSails = {windows = {{from = "BlackSails"}}},
 	},
 	eggs = {
-		Speckled = {always = true},
-		Mossy    = {always = true},
-		Ember    = {always = true},
-		Royal    = {always = true},
+		Speckled = {daily = "eggs"},
+		Mossy    = {daily = "eggs"},
+		Ember    = {daily = "eggs"},
+		Royal    = {daily = "eggs"},
 		Grave    = {event = "Hollow2026", retire = true},
 		Stag     = {windows = {{from = "WildHunt", to = "Northmen"}}},
 		Fjord    = {windows = {{from = "Northmen", to = "Frostfall"}}},

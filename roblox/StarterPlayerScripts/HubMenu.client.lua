@@ -2117,7 +2117,12 @@ local function skinWhere(s)
 	elseif src == "earned" then
 		return "earn it: " .. Catalog.unlockText(s.unlock) .. "  ·  " .. progressText(s.unlock), "earned"
 	elseif src == "crate" then
-		return "drops from the " .. (Catalog.CRATES[s.crate] and Catalog.CRATES[s.crate].name or s.crate), "crate"
+		-- (and whether its crate is in today, or when it's back)
+		local cn = Catalog.CRATES[s.crate] and Catalog.CRATES[s.crate].name or s.crate
+		local short = HX.rotationText("crate", s.crate)
+		if short ~= "" then return "drops from the " .. cn .. "  ·  " .. short, "crate" end
+		local nx = HX.Drops.crateNext(s.crate)
+		return "drops from the " .. cn .. (nx and ("  ·  back in the Armoury in " .. HX.span(nx - HX.Drops.now())) or ""), "crate"
 	elseif src == "pack" then
 		local pk = Catalog.PACKS[s.pack]
 		if skinOnSale(s.id) then return "in today's shop  ·  " .. (pk and pk.name or s.pack) .. " pack", "buy" end
@@ -2145,7 +2150,12 @@ function Preview.where(it, ownKind)
 		end
 		return "a season pass reward", "pass"
 	end
-	if src == "crate" then return "drops from the " .. (Catalog.CRATES[it.crate] and Catalog.CRATES[it.crate].name or it.crate), "crate" end
+	if src == "crate" then
+		local short = HX.rotationText("crate", it.crate)
+		local nx = short == "" and HX.Drops.crateNext(it.crate)
+		return "drops from the " .. (Catalog.CRATES[it.crate] and Catalog.CRATES[it.crate].name or it.crate)
+			.. (short ~= "" and ("  ·  " .. short) or (nx and ("  ·  back in " .. HX.span(nx - HX.Drops.now())) or "")), "crate"
+	end
 	return "", "owned"
 end
 
@@ -2502,6 +2512,150 @@ function HX.crateView(parent, crateId, size, opts)
 	return vp, st
 end
 
+-- HOW LONG IT'S AROUND. Nothing in the shop is there for good: a crate or an egg is in on
+-- its days of the daily rotation, for its drop's weeks, for an event, or back from the vault
+-- for a weekend. -> the short tag for its card, its colour, the long line for its page.
+function HX.rotationText(kind, id)
+	local D = HX.Drops
+	local live, leaves, rule, how = (kind == "egg" and D.eggLive or D.crateLive)(id)
+	if not live then return "", COL.DIM, "" end
+	local now = D.now()
+	local left = leaves and HX.span(leaves - now)
+	local where = kind == "egg" and "THE SHOP" or "THE ARMOURY"
+	local nxt = leaves and (kind == "egg" and D.eggNext or D.crateNext)(id, leaves + 1)
+	local back = nxt and ("  ·  BACK IN " .. HX.span(nxt - now)) or ""
+	if how == "daily" then
+		local today = leaves and leaves - now <= 86400
+		return (today and "TODAY ONLY" or "IN ROTATION") .. (left and ("  ·  " .. left .. " LEFT") or ""), COL.ACCENT,
+			(today and ("IN " .. where .. " TODAY ONLY") or ("IN " .. where)) .. (left and ("  ·  LEAVES IN " .. left) or "") .. back
+	elseif how == "event" then
+		local gone = not (kind == "egg" and D.eggReturns or D.crateReturns)(id, math.huge)
+		return "EVENT" .. (left and ("  ·  " .. left .. " LEFT") or ""), RARITY_COL.Mythic,
+			"EVENT " .. string.upper(kind) .. (left and ("  ·  LEAVES IN " .. left) or "") .. (gone and "  ·  NEVER COMES BACK" or back)
+	elseif how == "vault" then
+		return "BACK FROM THE VAULT" .. (left and ("  ·  " .. left .. " LEFT") or ""), HX.VAULT_COL,
+			"BACK FROM THE VAULT FOR THE WEEKEND" .. (left and ("  ·  LEAVES IN " .. left) or "") .. "  ·  THEN BACK IN THE VAULT"
+	elseif how == "featured" then
+		local gone = not (kind == "egg" and D.eggReturns or D.crateReturns)(id, math.huge)
+		local last = leaves and leaves - now < 2 * 86400
+		local tail = gone and "  ·  THEN GONE FOR GOOD: EVERYTHING IN IT BECOMES A RELIC" or (nxt and back or "  ·  THEN INTO THE VAULT")
+		return (last and "LAST CHANCE" or "FEATURED") .. (left and ("  ·  " .. left .. " LEFT") or "  ·  UNTIL THE NEXT DROP"), last and RARITY_COL.Mythic or COL.ACCENT,
+			"THIS DROP'S " .. string.upper(kind) .. (left and ("  ·  LEAVES IN " .. left) or "  ·  HERE UNTIL THE NEXT DROP LANDS") .. tail
+	end
+	return "IN ROTATION", COL.DIM, "IN ROTATION"
+end
+HX.VAULT_COL = Color3.fromRGB(255, 120, 200)
+-- what's in tomorrow (crates or eggs, by name) and when tomorrow starts
+function HX.tomorrow(kind)
+	local D = HX.Drops
+	local t = (math.floor(D.now() / 86400) + 1) * 86400
+	local out = {}
+	for id, def in pairs(kind == "egg" and Catalog.EGG or Catalog.CRATES) do
+		if (kind == "egg" and D.eggLive or D.crateLive)(id, t + 60) and (kind ~= "egg" or Catalog.released(def)) then table.insert(out, string.upper(def.name)) end
+	end
+	table.sort(out)
+	return out, t
+end
+
+-- a call for something on the side (a feed, a count): it never holds the menu's own calls
+-- up, and gives up after 6 seconds -> the answer, or {ok = false}
+function HX.sideCall(op, ...)
+	local t0 = os.clock()
+	while callBusy and os.clock() - t0 < 3 do task.wait() end
+	local gap = 0.11 - (os.clock() - lastCallAt)
+	if gap > 0 then task.wait(gap) end
+	lastCallAt = os.clock()
+	local args, res = table.pack(...), nil
+	task.spawn(function()
+		local ok, r = pcall(hubRemote.InvokeServer, hubRemote, op, table.unpack(args, 1, args.n))
+		res = (ok and type(r) == "table") and r or {ok = false}
+	end)
+	local t1 = os.clock()
+	while res == nil and os.clock() - t1 < 6 do task.wait(0.05) end
+	return res or {ok = false, msg = "no answer"}
+end
+-- THE BIG PULLS game-wide (Economy ▸ Pulls): fetched now and then, newest first
+HX.pulls = {list = {}, at = -1e9}
+function HX.recentPulls(cb)
+	if os.clock() - HX.pulls.at < 25 then if cb then task.spawn(cb, HX.pulls.list) end; return end
+	HX.pulls.at = os.clock()
+	task.spawn(function()
+		local r = HX.sideCall("RecentPulls")
+		if r.ok and type(r.pulls) == "table" then HX.pulls.list = r.pulls end
+		if cb then cb(HX.pulls.list) end
+	end)
+end
+function HX.ago(t)
+	local d = os.time() - (tonumber(t) or os.time())
+	if d < 60 then return "just now" end
+	return HX.span(d) .. " ago"
+end
+-- one pull as a chip: who, what, how rare, when
+function HX.pullChip(parent, pu, order)
+	local col = RARITY_COL[pu.rarity] or COL.DIM
+	local c = frame(parent, COL.GLASS2, 10); c.LayoutOrder = order or 0
+	c.AutomaticSize = Enum.AutomaticSize.X; c.Size = UDim2.fromOffset(0, 40)
+	border(c, col, 1.5, 0.25)
+	padding(c, 10, 12, 0, 0)
+	hlist(c, 8).VerticalAlignment = Enum.VerticalAlignment.Center
+	local fin = pu.variant and (string.upper(pu.variant) .. " ") or ""
+	local a = title(c, string.upper(tostring(pu.who or "Someone")), 13, WHITE); a.AutomaticSize = Enum.AutomaticSize.X; a.Size = UDim2.fromOffset(0, 16); a.LayoutOrder = 1
+	local b = title(c, fin .. string.upper(pu.rarity or ""), 12, HX.VARIANT_COL[pu.variant] or col); b.AutomaticSize = Enum.AutomaticSize.X; b.Size = UDim2.fromOffset(0, 16); b.LayoutOrder = 2
+	local n = title(c, tostring(pu.name or "") .. (pu.serial and (" #" .. fmt(pu.serial)) or ""), 13, col); n.AutomaticSize = Enum.AutomaticSize.X; n.Size = UDim2.fromOffset(0, 16); n.LayoutOrder = 3
+	local w = title(c, HX.ago(pu.at), 11, COL.DIM); w.AutomaticSize = Enum.AutomaticSize.X; w.Size = UDim2.fromOffset(0, 16); w.LayoutOrder = 4
+	return c
+end
+-- how many exist (numbered things): fills `lab` when the answer comes
+HX.made = {}
+function HX.population(key, lab, fmtFn)
+	local function put(n) if lab and lab.Parent and n then lab.Text = fmtFn(n) end end
+	local c = HX.made[key]
+	if c and os.clock() - c.at < 120 then put(c.n); return end
+	task.spawn(function()
+		local r = HX.sideCall("Population", {key})
+		local n = r.ok and r.made and tonumber(r.made[key])
+		if n then HX.made[key] = {n = n, at = os.clock()} end
+		put(n)
+	end)
+end
+-- the copy key a crate item is numbered under (Economy ▸ Collection)
+function HX.serialKey(it)
+	local PREFIX = {killfx = "fx:", emote = "emote:", piece = "armor:", armorfx = "finish:", spellfx = "spell:"}
+	return it.kind == "skin" and it.id or ((PREFIX[it.kind] or "emote:") .. it.id)
+end
+-- EVERY ITEM'S ODDS (shown before any open; the pity, when due, as it really is)
+function HX.oddsDetails(crate, pool, odds, pityDue)
+	modal("ODDS: " .. string.upper(crate.name), pityDue and "Your next open is the guaranteed one: Legendary or better, at these odds." or "The chance of each item on your next open.", nil, function(box)
+		local sf = Instance.new("ScrollingFrame")
+		sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0; sf.Size = UDim2.new(1, 0, 0, 430); sf.LayoutOrder = 5
+		sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.Y; sf.ScrollBarThickness = 6; sf.ScrollBarImageColor3 = COL.DIM
+		sf.Parent = box
+		vlist(sf, 4)
+		local hasSkins = false
+		for i = #Catalog.RARITIES, 1, -1 do
+			local r = Catalog.RARITIES[i]
+			local items = {}
+			for _, it in ipairs(pool) do if it.rarity == r then table.insert(items, it); if it.kind == "skin" then hasSkins = true end end end
+			if #items > 0 then
+				local pr = odds[r] or 0
+				local h = title(sf, string.format("%s  ·  %s IN ALL  ·  EACH ITEM BELOW: %s", string.upper(r), HX.pct(pr), HX.pct(pr / #items)), 14, RARITY_COL[r] or COL.DIM)
+				h.Size = UDim2.new(1, -10, 0, 20); h.LayoutOrder = nextOrder()
+				local names = {}
+				for _, it in ipairs(items) do
+					local w = it.kind == "skin" and Catalog.WEAPON[it.weapon] and (" (" .. Catalog.WEAPON[it.weapon].name .. ")") or ""
+					table.insert(names, tostring(it.name) .. w)
+				end
+				local d = dim(sf, table.concat(names, "  ·  "), 13); d.Size = UDim2.new(1, -10, 0, 0); d.LayoutOrder = nextOrder()
+			end
+		end
+		local V = ECON.variants or {}
+		local std = 100 - (V.Masterwork or 0) - (V.Radiant or 0)
+		if hasSkins then dim(sf, string.format("Every weapon skin then rolls its finish: Standard %s · Masterwork %s · Radiant %s. (So a Radiant Mythic is %s × %s.)",
+			HX.pct(std), HX.pct(V.Masterwork or 0), HX.pct(V.Radiant or 0), HX.pct(odds.Mythic or 0), HX.pct(V.Radiant or 0)), 12).Size = UDim2.new(1, -10, 0, 0) end
+		dim(sf, string.format("A Legendary or better is guaranteed within %d opens. Probabilities are rounded; the total of the displayed individual probabilities may not equal 100%%.", crate.pity or 20), 12).Size = UDim2.new(1, -10, 0, 0)
+	end, 620)
+end
+
 -- THE GALLERY: every crate in rotation as a card: the chest turning, its name,
 -- how long it's around, its Mythic, and what an open costs. Click: its page.
 function HX.crateGallery(host, liveCrates)
@@ -2513,11 +2667,29 @@ function HX.crateGallery(host, liveCrates)
 	kt.AnchorPoint = Vector2.new(1, 0); kt.Position = UDim2.new(1, 0, 0, 0); kt.Size = UDim2.fromOffset(300, 40); kt.TextXAlignment = Enum.TextXAlignment.Right
 	local nd, nt = HX.Drops.nextWith("crate")
 	local nc = nd and Catalog.CRATES[nd.crate]
-	local sub = dim(host, "Tap a crate to see everything inside and open it. Every crate can drop a Mythic."
+	local tm, tAt = HX.tomorrow("crate")
+	local sub = dim(host, "THE ARMOURY CHANGES EVERY DAY."
+		.. (#tm > 0 and string.format("  TOMORROW (IN %s): %s", HX.span(tAt - HX.Drops.now()), table.concat(tm, " · ")) or "")
 		.. ((nc and nt) and string.format("  ·  NEW CRATE IN %s: %s", HX.span(nt - HX.Drops.now()), string.upper(nc.name)) or ""), 14)
-	sub.Position = UDim2.fromOffset(0, 42); sub.Size = UDim2.new(1, 0, 0, 20)
+	sub.Position = UDim2.fromOffset(0, 42); sub.Size = UDim2.new(1, 0, 0, 20); sub.AutomaticSize = Enum.AutomaticSize.None; sub.TextTruncate = Enum.TextTruncate.AtEnd
+	-- THE BIG PULLS, game-wide: who got what, a moment ago
+	local FEED = LAYOUT.compact and 46 or 54
+	local feed = clearFrame(host); feed.AnchorPoint = Vector2.new(0, 1); feed.Position = UDim2.new(0, 0, 1, 0); feed.Size = UDim2.new(1, 0, 0, FEED)
+	local fl = title(feed, "⚡ BIG PULLS", 13, RARITY_COL.Legendary); fl.Size = UDim2.fromOffset(LAYOUT.compact and 0 or 104, FEED); fl.Visible = not LAYOUT.compact
+	local fs = Instance.new("ScrollingFrame")
+	fs.BackgroundTransparency = 1; fs.BorderSizePixel = 0; fs.Position = UDim2.fromOffset(LAYOUT.compact and 0 or 110, 0); fs.Size = UDim2.new(1, LAYOUT.compact and 0 or -110, 1, 0)
+	fs.ScrollingDirection = Enum.ScrollingDirection.X; fs.CanvasSize = UDim2.new(); fs.AutomaticCanvasSize = Enum.AutomaticSize.X; fs.ScrollBarThickness = 4; fs.ScrollBarImageColor3 = COL.DIM
+	fs.Parent = feed
+	hlist(fs, 8).VerticalAlignment = Enum.VerticalAlignment.Center
+	local pend = dim(fs, "…", 13); pend.AutomaticSize = Enum.AutomaticSize.X; pend.Size = UDim2.fromOffset(0, 20)
+	HX.recentPulls(function(list)
+		if not fs.Parent then return end
+		pend:Destroy()
+		if #list == 0 then local e = dim(fs, "No Legendaries pulled in the last three days. Be the first.", 13); e.AutomaticSize = Enum.AutomaticSize.X; e.Size = UDim2.fromOffset(0, 20) end
+		for i, pu in ipairs(list) do if i <= 16 then HX.pullChip(fs, pu, i) end end
+	end)
 	local sf = Instance.new("ScrollingFrame")
-	sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0; sf.Position = UDim2.fromOffset(0, 74); sf.Size = UDim2.new(1, 0, 1, -74)
+	sf.BackgroundTransparency = 1; sf.BorderSizePixel = 0; sf.Position = UDim2.fromOffset(0, 74); sf.Size = UDim2.new(1, 0, 1, -74 - FEED - 6)
 	sf.CanvasSize = UDim2.new(); sf.AutomaticCanvasSize = Enum.AutomaticSize.Y; sf.ScrollBarThickness = 6; sf.ScrollBarImageColor3 = COL.DIM
 	sf.Parent = host
 	padding(sf, 4, 10, 4, 10)
@@ -2535,9 +2707,8 @@ function HX.crateGallery(host, liveCrates)
 		do local g = card:FindFirstChildOfClass("UIGradient") or Instance.new("UIGradient", card); g.Rotation = 90; g.Color = ColorSequence.new(col:Lerp(Color3.new(0, 0, 0), 0.5), Color3.fromRGB(10, 12, 22)) end
 		local view, vs = HX.crateView(card, lc.id, UDim2.new(1, 0, 0, VH), {dist = LAYOUT.compact and 9.5 or 10.5})
 		view.Position = UDim2.fromOffset(0, 26)
-		local when = lc.event and "EVENT" or (lc.featured and "FEATURED" or "ALWAYS HERE")
-		if lc.leaves then when ..= "  ·  " .. HX.span(lc.leaves - HX.Drops.now()) .. " LEFT" end
-		local wt = title(card, when, 12, lc.event and RARITY_COL.Mythic or (lc.featured and COL.ACCENT or COL.DIM))
+		local when, wcol = HX.rotationText("crate", lc.id)
+		local wt = title(card, when, 12, wcol)
 		wt.Position = UDim2.fromOffset(14, 10); wt.Size = UDim2.new(1, -28, 0, 16)
 		local nm = title(card, c.name, 22); nm.Position = UDim2.fromOffset(14, VH + 28); nm.Size = UDim2.new(1, -28, 0, 28); nm.TextTruncate = Enum.TextTruncate.AtEnd
 		local top
@@ -5098,15 +5269,16 @@ do
 	--  CRATES: the chosen item on a stage, the strip, the drum
 	----------------------------------------------------------------
 	local function crates()
-		-- only the crates in rotation now: events first, then the featured ones, then the always-there
+		-- only the crates in rotation now (nothing is there every day): events first, then one back
+		-- from the vault, then the drop's own, then today's
 		local liveCrates = {}
 		for k, c in pairs(Catalog.CRATES) do
-			local live, leaves, rule = HX.Drops.crateLive(k)
-			if live then table.insert(liveCrates, {id = k, c = c, leaves = leaves, event = rule and rule.event ~= nil, featured = rule ~= nil and not rule.always}) end
+			local live, leaves, _, how = HX.Drops.crateLive(k)
+			if live then table.insert(liveCrates, {id = k, c = c, leaves = leaves, how = how}) end
 		end
+		local RANK = {event = 0, vault = 1, featured = 2, daily = 3}
 		table.sort(liveCrates, function(a, b)
-			local ra = a.event and 0 or (a.featured and 1 or 2)
-			local rb = b.event and 0 or (b.featured and 1 or 2)
+			local ra, rb = RANK[a.how] or 4, RANK[b.how] or 4
 			if ra ~= rb then return ra < rb end
 			return a.id < b.id
 		end)
@@ -5156,6 +5328,14 @@ do
 			local each = (crate.odds[sel.rarity] or 0) / math.max(1, nOf)
 			local note = title(stg, have and "OWNED ✔" or string.format("%s CHANCE FOR A %s PER OPEN  ·  %s FOR THIS ONE", HX.pct(crate.odds[sel.rarity] or 0), string.upper(sel.rarity), HX.pct(each)), 14, have and COL.GOOD or COL.DIM)
 			note.AnchorPoint = Vector2.new(0, 1); note.Position = UDim2.new(0, 20, 1, -14); note.Size = UDim2.new(1, -40, 0, 18)
+			-- a Mythic is numbered: how many anyone has ever pulled
+			if sel.rarity == "Mythic" or sel.rarity == "Unique" then
+				local pop = title(stg, "", 18, RARITY_COL[sel.rarity]); pop.AnchorPoint = Vector2.new(0, 1); pop.Position = UDim2.new(0, 20, 1, -36); pop.Size = UDim2.new(1, -40, 0, 22)
+				HX.population(HX.serialKey(sel), pop, function(n)
+					if n == 0 then return "NOBODY HAS PULLED ONE YET" end
+					return (n == 1 and "ONLY 1 EXISTS" or ("ONLY " .. fmt(n) .. " EXIST")) .. "  ·  EACH ONE NUMBERED"
+				end)
+			end
 		else
 			dim(stageH, "This crate is empty: point some skins, kill effects or emotes at it.")
 		end
@@ -5176,11 +5356,9 @@ do
 		local c1 = panel(rightList, crate.name)
 		local P = state.profile or {}
 		local cc = P.crates and P.crates[ui.crate] or {opens = 0, sinceLegendary = 0}
-		-- in rotation how long: an event crate, a featured one leaving, or always here
-		local when = lc.event and "EVENT CRATE" or (lc.featured and "FEATURED" or "ALWAYS IN THE ARMOURY")
-		if lc.leaves then when ..= "  ·  LEAVES IN " .. HX.span(lc.leaves - HX.Drops.now()) end
-		if lc.event or (lc.featured and not HX.Drops.crateReturns(ui.crate, math.huge)) then when ..= "  ·  NEVER COMES BACK" end
-		local wl = title(c1, when, 13, lc.event and RARITY_COL.Mythic or COL.ACCENT); wl.Size = UDim2.new(1, 0, 0, 18); wl.LayoutOrder = nextOrder()
+		-- in rotation how long (today only, the drop's weeks, an event, a vault weekend) and when it's back
+		local _, wcol, when = HX.rotationText("crate", ui.crate)
+		local wl = title(c1, when ~= "" and when or "OUT OF ROTATION", 13, wcol); wl.Size = UDim2.new(1, 0, 0, 0); wl.AutomaticSize = Enum.AutomaticSize.Y; wl.TextWrapped = true; wl.LayoutOrder = nextOrder()
 		dim(c1, crate.description or "", 13)
 		-- the odds for YOUR next open (the pity, when due, shows as it is)
 		local since = cc.sinceLegendary or 0
@@ -5205,6 +5383,10 @@ do
 		for _, it in ipairs(pool) do if it.kind == "skin" then hasSkins = true end end
 		dim(c1, (hasSkins and string.format("Every skin also rolls a finish: Masterwork %s · Radiant %s (otherwise Standard). ", HX.pct(V.Masterwork or 0), HX.pct(V.Radiant or 0)) or "") .. "Within a rarity every item is equally likely.", 12)
 		dim(c1, string.format("A Legendary or better is guaranteed within %d opens  ·  %d since your last.", crate.pity or 20, since), 12)
+		do
+			local oh, ob = fatButton(c1, "ODDS OF EVERY ITEM  ›", COL.GLASS2, 15); oh.Size = UDim2.new(1, 0, 0, 38); oh.LayoutOrder = nextOrder()
+			ob.Activated:Connect(function() HX.oddsDetails(crate, pool, odds, pityDue) end)
+		end
 		dim(c1, "Every pull is yours to keep: a duplicate is another copy, to trade, to forge (three skins into a better finish) or to scrap for Marks if you choose.", 12)
 		-- open with a Key (earned only) or Crowns (not where paid random items are barred)
 		local keys = P.wallet and P.wallet.keys or 0
@@ -5285,6 +5467,22 @@ do
 			local res = HX.pendingSpin
 			HX.pendingSpin = nil
 			task.spawn(spin, res)
+		end
+		do   -- the big pulls out of this crate lately, anyone's
+			local lp = panel(rightList, "PULLED FROM IT LATELY", true)
+			local w = dim(lp, "…", 12)
+			HX.recentPulls(function(list)
+				if not lp.Parent then return end
+				local n = 0
+				for _, pu in ipairs(list) do
+					if pu.from == crate.name and n < 5 then
+						n += 1
+						row(lp, tostring(pu.who or "Someone") .. "  ·  " .. tostring(pu.name or "") .. (pu.serial and (" #" .. fmt(pu.serial)) or ""), HX.ago(pu.at), false, nil, HX.VARIANT_COL[pu.variant] or RARITY_COL[pu.rarity])
+					end
+				end
+				w.Text = n == 0 and "No Legendary or better out of this one in the last three days." or ""
+				w.Visible = n == 0
+			end)
 		end
 		local pl = panel(rightList, "YOUR PULLS THIS SESSION", true)
 		if #ui.pulls == 0 then dim(pl, "Nothing yet.") end
@@ -6207,11 +6405,15 @@ do
 		local note = dim(steps, P.restricted and "In your region eggs aren't sold: they come as gifts." or "Pets are looks only, never stats.", 13)
 		note.AutomaticSize = Enum.AutomaticSize.None; note.Size = UDim2.fromOffset(300, 46); note.LayoutOrder = 9; note.TextYAlignment = Enum.TextYAlignment.Center
 		note.Visible = not LAYOUT.compact or P.restricted == true
-		do   -- what's coming: the next drop that brings an egg
+		do   -- what's coming: tomorrow's eggs, the next drop that brings one
 			local nd, nt = HX.Drops.nextWith("egg")
 			local ne = nd and Catalog.EGG[nd.egg]
-			if ne and nt then
-				local up = title(body, string.format("NEW EGG IN %s  ·  %s", HX.span(nt - HX.Drops.now()), string.upper(ne.name)), 14, COL.ACCENT)
+			local tm = HX.tomorrow("egg")
+			local bits = {}
+			if #tm > 0 then table.insert(bits, "TOMORROW: " .. table.concat(tm, " · ")) end
+			if ne and nt then table.insert(bits, string.format("NEW EGG IN %s: %s", HX.span(nt - HX.Drops.now()), string.upper(ne.name))) end
+			if #bits > 0 then
+				local up = title(body, table.concat(bits, "  ·  "), 14, COL.ACCENT)
 				up.AnchorPoint = Vector2.new(1, 0); up.Position = UDim2.new(1, 0, 0, 14); up.Size = UDim2.fromOffset(420, 20); up.TextXAlignment = Enum.TextXAlignment.Right
 				up.Visible = not LAYOUT.compact
 			end
@@ -6253,7 +6455,9 @@ do
 			local od = label(foot, table.concat(words, "  ·  "), 12, FONT_BODY, COL.DIM); od.Position = UDim2.fromOffset(0, 48); od.Size = UDim2.new(1, 0, 0, 32); od.TextYAlignment = Enum.TextYAlignment.Top
 			od.Visible = not LAYOUT.compact   -- (a phone: the bar says it; WHAT'S INSIDE has the numbers)
 			if leaves then
-				local lv = title(foot, "LEAVES THE SHOP IN " .. HX.span(leaves - HX.Drops.now()), 12, COL.ACCENT); lv.Position = UDim2.fromOffset(0, LAYOUT.compact and 46 or 84); lv.Size = UDim2.new(1, 0, 0, 16)
+				local short, lcol = HX.rotationText("egg", eg.id)
+				local lv = title(foot, short, 12, lcol); lv.Position = UDim2.fromOffset(0, LAYOUT.compact and 46 or 84); lv.Size = UDim2.new(1, 0, 0, 16)
+				lv.TextTruncate = Enum.TextTruncate.AtEnd
 			end
 			local peek = button(foot, "WHAT'S INSIDE?", 16, COL.GLASS2); peek.Position = UDim2.fromOffset(0, 108); peek.Size = UDim2.new(1, 0, 0, 52)
 			if LAYOUT.compact then   -- (a phone: up by the name)
@@ -8376,8 +8580,57 @@ function HX.showGifts(list)
 	pcall(function() HX.FX.play("Boom") end)
 end
 
+-- A BIG PULL (Economy ▸ Pulls): a banner slides down for a few seconds, one at a time
+HX.bannerQ = {}
+function HX.pullBanner(pu)
+	if #HX.bannerQ >= 4 then return end
+	table.insert(HX.bannerQ, pu)
+	if #HX.bannerQ > 1 then return end
+	task.spawn(function()
+		while #HX.bannerQ > 0 do
+			local p = HX.bannerQ[1]
+			local sg = playerGui:FindFirstChild("PullBanner")
+			if not sg then
+				sg = Instance.new("ScreenGui"); sg.Name = "PullBanner"; sg.ResetOnSpawn = false; sg.IgnoreGuiInset = true; sg.DisplayOrder = 2190
+				sg.Parent = playerGui
+			end
+			local col = HX.VARIANT_COL[p.variant] or RARITY_COL[p.rarity] or COL.ACCENT
+			local big = p.size == "global"
+			local b = frame(sg, Color3.fromRGB(12, 14, 24), 14)
+			b.AnchorPoint = Vector2.new(0.5, 1); b.Position = UDim2.new(0.5, 0, 0, -10); b.Size = UDim2.fromOffset(big and 620 or 540, big and 78 or 66)
+			b.BackgroundTransparency = 0.05
+			do local g = Instance.new("UIGradient", b); g.Color = ColorSequence.new(col:Lerp(Color3.new(0, 0, 0), 0.35), Color3.fromRGB(12, 14, 24)) end
+			border(b, col, big and 3 or 2, 0)
+			local icon = title(b, p.global and "🌍" or "⚡", big and 34 or 28, col); icon.Position = UDim2.fromOffset(14, 0); icon.Size = UDim2.new(0, 44, 1, 0); icon.TextXAlignment = Enum.TextXAlignment.Center
+			local fin = p.variant and (string.upper(p.variant) .. " ") or ""
+			local kindWord = p.kind == "companion" and "HATCHED" or "PULLED"
+			local l1 = title(b, string.format("%s %s A %s%s!", string.upper(tostring(p.who or "Someone")), kindWord, fin, string.upper(p.rarity or "")), big and 22 or 19, col)
+			l1.Position = UDim2.fromOffset(66, big and 10 or 8); l1.Size = UDim2.new(1, -80, 0, big and 28 or 24); l1.TextTruncate = Enum.TextTruncate.AtEnd
+			local l2 = title(b, tostring(p.name or "") .. (p.serial and (" #" .. fmt(p.serial)) or "") .. "  ·  " .. tostring(p.from or "") .. (p.global and "  ·  in another server" or ""), 14, WHITE)
+			l2.Position = UDim2.fromOffset(66, big and 42 or 36); l2.Size = UDim2.new(1, -80, 0, 20); l2.TextTruncate = Enum.TextTruncate.AtEnd
+			pcall(function() if big then HX.FX.play("Horn", {Volume = 0.3}) else HX.FX.play("LevelUp", {Volume = 0.25}) end end)
+			TweenService:Create(b, TweenInfo.new(0.35, Enum.EasingStyle.Back), {Position = UDim2.new(0.5, 0, 0, (big and 88 or 80) + 6)}):Play()
+			task.wait(big and 5.5 or 4)
+			TweenService:Create(b, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, 0, -10)}):Play()
+			task.wait(0.35)
+			b:Destroy()
+			table.remove(HX.bannerQ, 1)
+		end
+	end)
+end
+
 hubEvent.OnClientEvent:Connect(function(what, a, b, c)
 	if what == "FirstBattleDone" then return end
+	if what == "Pull" and type(a) == "table" then
+		table.insert(HX.pulls.list, 1, a)
+		if a.mine then
+			-- yours: the reveal was the show; this says who else saw it
+			if a.size == "global" then toast("🌍 Every server just saw your " .. string.upper(a.rarity or "") .. "!", RARITY_COL[a.rarity]) end
+			return
+		end
+		HX.pullBanner(a)
+		return
+	end
 	if what == "GiftsIn" and type(a) == "table" then
 		if b then state.profile = b; refreshWallet() end
 		local from = a[1] and a[1].fromName or "someone"

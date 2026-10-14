@@ -7,6 +7,7 @@
                                          (earned only) and get eggs as gifts.
        Collection.serial(key, limit)     the next serial number of an item, global across
                                          servers (DataStore "Serials_v1"); nil = sold out
+       Collection.count(key)             how many of it have been numbered (exist) so far
        Collection.grantNumbered(plr, skinId, from, variant)   a skin as a new COPY (Profile.addCopy),
                                          numbered if it wants a number; bound if it is not tradable
        Collection.tradable(key)          may a copy of it change hands (Trading)?
@@ -97,6 +98,16 @@ function Collection.serial(key, limit)
 	local s = Catalog.SKIN[key]
 	if s and s.limited and got then Collection.publishStock(key, got) end
 	return got
+end
+
+-- how many have been numbered so far (= how many exist), without taking one
+function Collection.count(key)
+	local n = localCounters[key] or 0
+	if store then
+		local ok, v = pcall(store.GetAsync, store, dsKey(key))
+		if ok then n = math.max(n, tonumber(v) or 0) end
+	end
+	return n
 end
 
 local stockFolder = ReplicatedStorage:FindFirstChild("LimitedStock")

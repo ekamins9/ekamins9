@@ -348,6 +348,7 @@ Ossuary = {name = "Ossuary Crate", description = "Bone blades. Mythic: The Marro
            cost = 75, odds = {Common = 50, Rare = 30, Epic = 14, Legendary = 5.5, Mythic = 0.5},
            pity = 20, refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}},
 -- Calendar:  Ossuary = {windows = {{from = "Bonewright", to = "Ironclad"}}},
+--   (or daily = "crates" and its name in rotations.crates.order: in a few days a week)
 ```
 
 `odds` must sum to 100 and every rarity in them needs an item (the server warns). Every crate
@@ -387,10 +388,14 @@ on every server: no restart, no update on the day.
 6. On live servers staff can release a drop early or hold one back from the admin panel
    (F2 ▸ server ▸ DROPS), on every server at once.
 
-**What stays and what rotates:** Bladesmith, Hafted and Relic crates and the Speckled, Mossy,
-Ember and Royal eggs are always there. Each drop's crate and egg rotate in for 2–3 weeks, then
-are vaulted (they may return: give them another window). Event crates and eggs (`retire = true`)
-never return: their items become RELICS, which is what makes them worth something.
+**Nothing stays for good.** The eight armoury crates (`daily = "crates"`) and the four core eggs
+(`daily = "eggs"`) are a daily rotation (`Calendar ▸ rotations`: `slots` a day out of `order`,
+sliding each UTC midnight; reorder `order` to choose which share a day; a new armoury crate is a
+`daily = "crates"` line plus a name in `order`). Each drop's crate and egg rotate in for 2–3
+weeks, then are vaulted: a **From the Vault** weekend brings one back now and then by itself, or
+give it another window. Event crates and eggs (`retire = true`) never return: their items become
+RELICS, which is what makes them worth something. Don't use `always = true`: nothing in the
+shop is there every day, and every card says how long it has left.
 
 ## 6f. Season rewards
 

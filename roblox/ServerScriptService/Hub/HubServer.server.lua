@@ -923,6 +923,11 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	elseif op == "Forge" then
 		local ok, msg, variant = Economy.collection().forge(plr, a)
 		return {ok = ok, msg = msg, variant = variant, profile = Profile.summary(plr)}
+	elseif op == "RecentPulls" or op == "Population" then
+		-- the big pulls game-wide; how many of each numbered thing exist (Economy ▸ Pulls)
+		local Pulls = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Pulls"))
+		if op == "RecentPulls" then return {ok = true, pulls = Pulls.recent()} end
+		return {ok = true, made = Pulls.made(a)}
 	elseif op == "GiftFind" or op == "GiftInfo" or op == "GiftSend" or op == "GiftBuy" or op == "GiftCrowns" then
 		-- gifts: Marks, Crowns, items, or the shop bought for someone (Economy ▸ Gifting)
 		local Gifting = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Gifting"))

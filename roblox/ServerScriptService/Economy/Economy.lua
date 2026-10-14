@@ -401,6 +401,13 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
 		or (win.kind == "spellfx" and (((Catalog.SPELLS[win.spell] or {}).name or "Spell") .. " · " .. win.name))
 		or ((KIND_LABEL[win.kind] or "") .. win.name)
+	-- a big one: everyone sees it (Economy ▸ Pulls), once the opener's own reel has landed
+	task.delay(8, function()
+		pcall(function()
+			require(script.Parent:WaitForChild("Pulls")).announce(plr, {name = label, rarity = win.rarity,
+				variant = variant, serial = serial, from = crate.name, kind = win.kind})
+		end)
+	end)
 	return {crate = crateId, kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
 		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
 		copies = copies}

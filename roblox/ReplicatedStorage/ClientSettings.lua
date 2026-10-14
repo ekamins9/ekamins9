@@ -87,14 +87,16 @@ ClientSettings.CHOICES = {
 		hint = "Who can ask you to trade: anyone, only your Roblox friends, or nobody."},
 	{key = "Gifts", label = "Gifts from", options = {"Everyone", "Friends", "Nobody"},
 		hint = "Who can send you gifts (Marks, Crowns, items, things from the shop): anyone, only your Roblox friends, or nobody."},
+	{key = "Pulls", label = "Name on big pulls", options = {"Show", "Hide"},
+		hint = "A Legendary or better out of a crate is shown to everyone (a Mythic to every server). Hide: it says Someone instead of your name."},
 }
 -- the settings the server enforces (who may invite you, trade with you, send you gifts)
-ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests", "Gifts"}
+ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests", "Gifts", "Pulls"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1,
 	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
-	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone",
+	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone", Pulls = "Show",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 

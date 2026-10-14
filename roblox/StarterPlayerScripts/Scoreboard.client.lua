@@ -37,6 +37,9 @@ local COL_TK     = Color3.fromRGB(255, 170, 60)
 local COL_GOLD   = Color3.fromRGB(255, 206, 84)    -- season pass holders
 local COL_TITLE  = Color3.fromRGB(255, 226, 168)   -- titles
 local COL_PANEL  = Theme.PANEL
+-- a skin shown off in the feed, by rarity
+local SKIN_COL   = {Epic = Color3.fromRGB(196, 120, 255), Legendary = Color3.fromRGB(255, 186, 60), Mythic = Color3.fromRGB(255, 82, 104), Unique = Color3.fromRGB(255, 236, 190),
+	Rare = Color3.fromRGB(96, 166, 255), Common = Color3.fromRGB(170, 180, 196)}
 local COL_ROW    = Theme.CARD
 local COL_ROW_ON = Theme.CARD_ON
 --------------------------------------------------------------------
@@ -158,8 +161,12 @@ local function pushFeed(e)
 	elseif e.killer then
 		local verb = VERB[e.kind] or (GameConfig.GORE and "killed" or "defeated")
 		if e.teamkill then verb = "TEAMKILLED" end
-		t.Text = string.format('%s  <font color="#%s">%s</font>  %s%s', name(e.killer, e.killerId, e.killerTeam, true), (e.teamkill and COL_TK or COL_KILL):ToHex(), verb, victim,
-			e.weapon ~= "" and string.format('  <font color="#%s">%s</font>', COL_DIM:ToHex(), e.weapon) or "")
+		-- the weapon, or the skin on it when it's one to show off: its name in its rarity's colour
+		local what = e.weapon ~= "" and string.format('  <font color="#%s">%s</font>', COL_DIM:ToHex(), e.weapon) or ""
+		if e.skin and SKIN_COL[e.skinRarity] then
+			what = string.format('  <font color="#%s"><b>%s%s</b></font>', SKIN_COL[e.skinRarity]:ToHex(), e.skinVariant and (e.skinVariant .. " ") or "", e.skin)
+		end
+		t.Text = string.format('%s  <font color="#%s">%s</font>  %s%s', name(e.killer, e.killerId, e.killerTeam, true), (e.teamkill and COL_TK or COL_KILL):ToHex(), verb, victim, what)
 	else
 		t.Text = string.format('%s  <font color="#%s">%s</font>', victim, COL_DIM:ToHex(), e.kind == "bleed" and "bled out" or "died")
 	end

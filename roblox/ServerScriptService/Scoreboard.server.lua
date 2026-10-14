@@ -11,7 +11,8 @@
 
        ReplicatedStorage.KillFeedRemote (RemoteEvent, created here)
          server -> all: "Kill", {killer=, victim=, weapon=, kind=, killerId=, victimId=, teamkill=,
-                                  killerTeam=, victimTeam=}   (team keys, "" with no teams: the feed's colours)
+                                  killerTeam=, victimTeam=,   (team keys, "" with no teams: the feed's colours)
+                                  skin=, skinRarity=, skinVariant=}   (the killer's skin, Epic or better)
        ReplicatedStorage.HubEvent "Rewards", {marks, xp, level, levels, firstWin, blocked, won, kills, parries, result, rating, delta}
 
      Test dummies appear in the feed but never on the board, never pay. A match's
@@ -147,6 +148,15 @@ local function onDied(char)
 		killerTeam = recent and (killerPlr and killerPlr.Character and killerPlr.Character:GetAttribute("Team")
 			or char:GetAttribute("LastHitByTeam")) or "",
 	}
+	-- the killer's skin, when it's worth showing off (Epic or better, or a finish): the feed
+	-- names it in its rarity's colour
+	local tool = killerPlr and killerPlr.Character and killerPlr.Character:FindFirstChildOfClass("Tool")
+	local skinName = tool and tool.Name == weapon and tool:GetAttribute("Skin")
+	local sk = skinName and Catalog and Catalog.SKIN[weapon .. ":" .. skinName]
+	local variant = tool and tool:GetAttribute("SkinVariant")
+	if sk and (sk.rarity == "Epic" or sk.rarity == "Legendary" or sk.rarity == "Mythic" or sk.rarity == "Unique" or (variant and variant ~= "")) then
+		entry.skin, entry.skinRarity, entry.skinVariant = sk.name, sk.rarity, (variant ~= "" and variant or nil)
+	end
 	remote:FireAllClients("Kill", entry)
 	log(entry.killer or "(nobody)", teamkill and "TEAMKILLED" or "killed", entry.victim, entry.kind)
 end
