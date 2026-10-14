@@ -13,8 +13,13 @@
            opts.target    the character to fight (default: the nearest player)
            opts.fightBots also fights other bots not on its team (a match's
                           bot fill: Game ▸ BotFill); default players only
-           opts.goal      fn() -> Vector3 | nil: where to head when no foe is
-                          near (an objective: the hill, the ram)
+           opts.goal      fn(bot) -> Vector3 | nil: where to head when no foe is
+                          near (an objective: the hill, the ram, the Horde's campfire)
+           opts.engage    fn(bot, foe) -> bool: may it fight that one? false: it leaves
+                          them be and heads for its goal (Horde: someone far from the
+                          campfire, or up on a roof)
+           opts.sack      fn(bot): at its goal with nobody to fight, it strikes at what's
+                          there (facing opts.face(bot) -> Vector3), and this lands each blow
            opts.arena     {centre = Vector3, radius = n}: it keeps inside
            opts.onDeath   fn(bot, killerPlayer)
            opts.startDelay  seconds before it moves or strikes (a countdown)
@@ -230,12 +235,13 @@ local function handleOf(tool) return tool:FindFirstChild("Handle") or tool:FindF
 --------------------------------------------------------------------
 --  ATTACKS
 --------------------------------------------------------------------
--- the nearest living player not on `team` (a bot's own side)
-local function nearestPlayer(pos, team)
+-- the nearest living player not on `team` (a bot's own side) that `ok(char)` allows (if given)
+local function nearestPlayer(pos, team, ok)
 	local best, bestD = nil, math.huge
 	for _, p in ipairs(Players:GetPlayers()) do
 		local c = p.Character
 		if team and c and c:GetAttribute("Team") == team then c = nil end
+		if c and ok and not ok(c) then c = nil end
 		local hrp = c and c:FindFirstChild("HumanoidRootPart")
 		local hum = c and c:FindFirstChildOfClass("Humanoid")
 		if hrp and hum and hum.Health > 0 then
@@ -785,12 +791,14 @@ function Bot:think()
 	local foeDist = 0
 	if not (target and target.Parent) then
 		if self.fightBots then target, foeDist = nearestFoe(self, hrp.Position, model:GetAttribute("Team"))
-		else target = nearestPlayer(hrp.Position, model:GetAttribute("Team")) end
+		else target = nearestPlayer(hrp.Position, model:GetAttribute("Team"), self.engage and function(c) return self.engage(self, c) end) end
 	end
+	-- someone the mode says to leave be (far from what it came for, out of reach): the goal instead
+	if target and self.engage and not self.engage(self, target) then target = nil end
 	local thrp = target and target:FindFirstChild("HumanoidRootPart")
 	local thum = target and target:FindFirstChildOfClass("Humanoid")
 	-- nobody near enough to bother with: head for the objective, if there is one
-	local goal = self.goal and (not thrp or (foeDist or 0) > 38) and self.goal()
+	local goal = self.goal and (not thrp or (foeDist or 0) > 38) and self.goal(self)
 	if goal and os.clock() >= self.startAt then
 		local to = goal - hrp.Position
 		to = Vector3.new(to.X, 0, to.Z)
@@ -801,6 +809,7 @@ function Bot:think()
 			hum:Move(w)
 		else
 			hum:Move(Vector3.zero)
+			if self.sack then self:sackGoal(os.clock()) end
 		end
 		return
 	end
@@ -972,6 +981,27 @@ function Bot:think()
 	self.nextAttack = now + rand(sk.interval) * (foeWeak and 0.6 or 1)
 	ctrl.attack(name)
 	self:armTricks(st > 45 and sk.feint or 0, st > 30 and sk.morph or 0, sk.combo)
+end
+
+-- at its goal, nobody to fight: it faces what's there and strikes at it, a blow every second
+-- and a half or so (a swing when it holds a blade; the blow lands through opts.sack)
+function Bot:sackGoal(now)
+	local face = self.face and self.face(self)
+	if face then
+		local f = face - self.hrp.Position
+		f = Vector3.new(f.X, 0, f.Z)
+		if f.Magnitude > 0.1 then self.lookAt = f end
+	end
+	if now < (self.nextSack or 0) then return end
+	self.nextSack = now + 1.25 + math.random() * 0.6
+	local ctrl = self.ctrl
+	if ctrl and ctrl.attack and not (ctrl.ranged or ctrl.magic) and ctrl.snapshot().phase == "idle" then
+		local name = pickAttack(self)
+		if name then ctrl.attack(name) end
+	end
+	task.delay(0.45, function()
+		if self.alive and self.hum.Health > 0 and not self.model:GetAttribute("Ragdolled") then self.sack(self) end
+	end)
 end
 
 --------------------------------------------------------------------
@@ -1200,7 +1230,7 @@ function Bots.spawn(opts)
 
 	local startAt = os.clock() + (opts.startDelay or 0)
 	local bot = setmetatable({model = model, hum = hum, hrp = hrp, skill = skill, target = opts.target, arena = opts.arena,
-		fightBots = opts.fightBots == true, goal = opts.goal,
+		fightBots = opts.fightBots == true, goal = opts.goal, engage = opts.engage, sack = opts.sack, face = opts.face,
 		alive = true, conns = {}, nextAttack = startAt + 1.2, strafe = 1, strafeUntil = 0, learned = {},
 		startAt = startAt, invulnerable = opts.invulnerable == true, attacks = {}, reach = 5, cfg = {}}, Bot)
 	bot.temper = Bots.TEMPERS[opts.temper] or Bots.TEMPERS[TEMPER_NAMES[math.random(#TEMPER_NAMES)]]

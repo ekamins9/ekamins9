@@ -1,4 +1,14 @@
---[[ HORDE — everyone together against waves of bots (after Mordhau's Horde).
+--[[ HORDE — everyone together against waves of bots (after Mordhau's Horde), DEFENDING
+     SOMETHING: the camp's fire, the caravan, the villagers round the well (Game ▸
+     HordeObjective; which one is the mode's `objectives` list, by map, or the map's own
+     Spots ▸ HordeObjective). The horde comes for it. A bot fights a player who is in its
+     face, or who stands by the objective; one who's off away from it (further than LEASH),
+     or up on something it can't reach, it leaves be and goes to wreck the objective instead.
+     So running round the map or sitting on a roof saves nobody: kill them before they
+     wreck it. A blow from a Squire takes 12 of its health, a Knight 18, a Champion 26, the
+     Warlord 60, an archer or a mage 10; it's mended by REPAIR of its whole between waves.
+     When it falls, or everyone is down at once, the horde has won and the round ends.
+
      A short breather, then wave 1: a handful of Squires pour in through the
      map's gates (Map ▸ Spots ▸ HordeGate1..n; the map's B spawns if there are
      none). Each wave is bigger and better trained: Knights from wave 3,
@@ -6,8 +16,7 @@
      lot of health). The fallen come back between waves (and when the break
      runs out, whoever hasn't pressed SPAWN goes in as the class they're on:
      LoadoutServer ▸ _G.AutoSpawn); the standing are made whole, limbs and all
-     (_G.MakeWhole). When everyone is down at once, the horde has won and the
-     round ends.
+     (_G.MakeWhole).
 
      Players can't hurt each other (pvp = false) and bots don't hurt each other
      (FriendlyFire off). Each wave cleared pays everyone here `wave`; each bot
@@ -15,7 +24,8 @@
 
      Round attributes for the HUD (StarterPlayerScripts ▸ Objectives):
        ObjKind "Horde" · ObjLabel "WAVE n" · ObjState "wave" | "break" ·
-       ObjProgress · ObjNote · ObjAttack (players up) · ObjDefend (bots up) ]]
+       ObjProgress · ObjNote · ObjAttack (players up) · ObjDefend (bots up) ·
+       ObjPos (the objective) · ObjName ("THE CAMPFIRE") · ObjHealth 0..1 · ObjHit (under attack) ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,11 +35,20 @@ local MapLoader = Game.MapLoader
 
 local node = Game.node
 local event   -- the ObjectiveEvent banner (Siege makes it; made here too if needed)
-local ATTRS = {"ObjKind", "ObjStage", "ObjStages", "ObjLabel", "ObjProgress", "ObjState", "ObjPos", "ObjAttack", "ObjDefend", "ObjNote"}
+local ATTRS = {"ObjKind", "ObjStage", "ObjStages", "ObjLabel", "ObjProgress", "ObjState", "ObjPos", "ObjAttack", "ObjDefend", "ObjNote", "ObjName", "ObjHealth", "ObjHit"}
+local HordeObjective = require(script.Parent.Parent:WaitForChild("HordeObjective"))
 
 local BREAK = 12          -- seconds between waves
 local FIRST = 8           -- before the first
 local MAX_ALIVE = 10      -- bots on the field at once (the rest wait their turn)
+local LEASH = 55          -- a player further than this from the objective is left be (unless in a bot's face)
+local FACE = 12           -- …this close to a bot, it fights them wherever they are
+local CHASE = 40          -- how far a bot goes after someone by the objective (an archer or a mage: 70)
+local UP = 7              -- up on something more than this above a bot: it can't reach them, so it doesn't try
+local SACK = {Squire = 12, Knight = 18, Champion = 26, Warlord = 60}   -- a blow on the objective, by rank
+local SACK_CASTER = 10    -- an archer's or a mage's
+local REPAIR = 0.3        -- of its whole, mended between waves
+local LOST = {Campfire = "THE CAMPFIRE WENT OUT", Caravan = "THE CARAVAN BURNED", Villagers = "THE VILLAGERS FELL"}
 local WEAPONS = {"Longsword", "ArmingSword", "Mace", "Spear", "WarAxe", "Falchion", "Halberd", "MorningStar"}
 
 local Horde = setmetatable({}, {__index = Game.Mode})
@@ -62,6 +81,8 @@ local function alivePlayers()
 	return n
 end
 
+local function flat(v) return Vector3.new(v.X, 0, v.Z).Magnitude end
+
 local function gates()
 	local out = {}
 	local m = MapLoader.current
@@ -88,13 +109,78 @@ function Horde:start(map)
 	node:SetAttribute("ObjKind", "Horde")
 	node:SetAttribute("ObjStages", 0)
 	node:SetAttribute("ObjStage", 0)
+	-- what you're defending: by map (the mode's `objectives`), built on open ground in the middle
+	local mapModel = MapLoader.current
+	local kinds = self.def.objectives or {}
+	if self.obj then self.obj:destroy() end
+	local mapName = map or node:GetAttribute("Map") or ""   -- (the loaded model is always called "Map")
+	local ok, obj = pcall(HordeObjective.build, kinds[mapName] or "Campfire", mapModel, self.def.objectiveHealth or 1500)
+	if ok then self.obj = obj else warn("[Horde] objective:", obj); self.obj = nil end
+	self.ring, self.lost, self.alertAt, self.warned = 0, nil, -1e9, {}
+	if self.obj then
+		node:SetAttribute("ObjPos", self.obj.pos)
+		node:SetAttribute("ObjName", self.obj.name)
+		node:SetAttribute("ObjHealth", 1)
+	end
 	self:publishScores()
 end
 
 function Horde:stop()
 	for b in pairs(self.live or {}) do if b.model.Parent then b:destroy() end end
 	self.live, self.queue = {}, {}
+	if self.obj then self.obj:destroy(); self.obj = nil end
 	for _, k in ipairs(ATTRS) do node:SetAttribute(k, nil) end
+end
+
+-- THE OBJECTIVE, through a bot's eyes -------------------------------------------------
+-- where it heads with nobody to fight: its own place round the objective (or right here,
+-- once it's close enough to strike)
+function Horde:goalFor(b)
+	local o = self.obj
+	if not o or o.hp <= 0 then return nil end
+	local me = b.hrp.Position
+	if flat(me - o.pos) <= o.radius + 3.2 then return me end
+	local a = b.ringAngle or 0
+	return o.pos + Vector3.new(math.cos(a), 0, math.sin(a)) * (o.radius + 2.2)
+end
+-- may it fight this player? In its face: yes. Out of reach above it, or off away from the
+-- objective: no (it goes for the objective). Otherwise: someone near the objective it can get to.
+function Horde:engage(b, foe)
+	local o = self.obj
+	if not o or o.hp <= 0 then return true end
+	local fr = foe:FindFirstChild("HumanoidRootPart")
+	if not fr then return false end
+	local me = b.hrp.Position
+	local caster = b.model:GetAttribute("Class") ~= nil
+	if not caster and math.abs(fr.Position.Y - me.Y) > UP then return false end
+	local d = flat(fr.Position - me)
+	if d < FACE then return true end
+	if flat(fr.Position - o.pos) > LEASH then return false end
+	return d < (caster and 70 or CHASE)
+end
+-- a blow lands on it
+function Horde:sacked(b, rank, caster)
+	local o = self.obj
+	if not o or o.hp <= 0 or self.phase ~= "wave" then return end
+	o:hit(caster and SACK_CASTER or (SACK[rank] or 12), b.hrp.Position)
+	local h = o:health()
+	if o.hp <= 0 then
+		self.lost = "objective"
+		self.phase = "over"
+		event:FireAllClients("Stage", {text = LOST[o.kind] or (o.name .. " FELL"), team = "B", horde = true, sub = "THE HORDE HAS WON", final = true})
+		return
+	end
+	-- the alarm: when it's first hit (again, after a quiet spell), and at half and a quarter
+	local now = os.clock()
+	local word = (h <= 0.25 and not self.warned[25]) and 25 or ((h <= 0.5 and not self.warned[50]) and 50 or nil)
+	if word then
+		self.warned[word] = true
+		self.alertAt = now
+		event:FireAllClients("Stage", {text = string.format("%s: %d%% LEFT", o.name, math.floor(h * 100 + 0.5)), team = "B", horde = true, sub = "SAVE IT! GET BACK THERE!"})
+	elseif now - self.alertAt > 20 then
+		self.alertAt = now
+		event:FireAllClients("Stage", {text = o.name .. " IS UNDER ATTACK!", team = "B", horde = true, sub = "GET BACK AND DEFEND IT!"})
+	end
 end
 
 function Horde:canSpawn(plr)
@@ -124,12 +210,20 @@ function Horde:spawnOne(skill, at)
 		weight = warlord and "Heavy" or nil,
 		name = warlord and "The Warlord" or (cls and (skill .. " " .. cls)) or skill,
 		team = "B", startDelay = 0.6, corpseTime = 4,
+		-- the objective (Horde:goalFor / engage / sacked)
+		goal = function(b) return self:goalFor(b) end,
+		engage = function(b, foe) return self:engage(b, foe) end,
+		sack = function(b) self:sacked(b, warlord and "Warlord" or skill, cls ~= nil) end,
+		face = function() return self.obj and self.obj.pos end,
 		onDeath = function(b, killer)
 			self.live[b] = nil
 			self.killed += 1
 			if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (warlord and "Champion" or skill or "Squire")) end
 		end,
 	})
+	-- its own place round the objective (spread by the golden angle)
+	self.ring = (self.ring or 0) + 1
+	bot.ringAngle = self.ring * 2.39996 + math.random() * 0.3
 	if warlord then
 		local hp = 320 + 80 * #Players:GetPlayers()
 		bot.hum.MaxHealth, bot.hum.Health = hp, hp
@@ -175,10 +269,14 @@ function Horde:tick(dt)
 		node:SetAttribute("ObjDefend", alive)
 		-- everyone down: the horde wins
 		if self.everUp and up == 0 then self.phase = "over" return end
+		if self.phase == "over" then return end   -- (the objective fell this tick)
 		-- the wave is beaten
 		if #self.queue == 0 and alive == 0 then
 			self.phase = "break"
 			self.nextAt = now + BREAK
+			-- the objective mended a little, the alarms reset
+			if self.obj then self.obj:repair(REPAIR) end
+			self.warned, self.alertAt = {}, -1e9
 			for _, p in ipairs(Players:GetPlayers()) do
 				if _G.RoundBump then _G.RoundBump(p, "wave") end
 				local st = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile")).get(p).stats
@@ -191,19 +289,27 @@ function Horde:tick(dt)
 		end
 	end
 	node:SetAttribute("ObjAttack", up)
+	if self.obj then
+		node:SetAttribute("ObjHealth", self.obj:health())
+		node:SetAttribute("ObjHit", os.clock() - self.obj.lastHitAt < 1.6)
+	end
 	node:SetAttribute("Objective", self:objective())
 end
 
 function Horde:isOver()
 	if self.phase == "over" then
-		return string.format("THE HORDE OVERRAN YOU  ·  YOU HELD %d WAVE%s", math.max(0, self.wave - 1), self.wave - 1 == 1 and "" or "S")
+		local o = self.obj
+		local head = (self.lost == "objective" and o) and (LOST[o.kind] or (o.name .. " FELL")) or "THE HORDE OVERRAN YOU"
+		return string.format("%s  ·  YOU HELD %d WAVE%s", head, math.max(0, self.wave - 1), self.wave - 1 == 1 and "" or "S")
 	end
 	return nil
 end
 function Horde:result() return string.format("YOU HELD %d WAVES", math.max(0, self.wave - 1)) end
 function Horde:objective()
-	if self.phase == "wave" then return string.format("HORDE  ·  WAVE %d  ·  %d foes left", self.wave, (self.total or 0) - (self.killed or 0)) end
-	return string.format("HORDE  ·  %s", self.wave == 0 and "the first wave is coming" or ("wave " .. self.wave .. " beaten: get back up and get ready"))
+	local o = self.obj
+	local guard = o and string.format("  ·  defend %s (%d%%)", string.lower(o.name), math.floor(o:health() * 100 + 0.5)) or ""
+	if self.phase == "wave" then return string.format("HORDE  ·  WAVE %d%s  ·  %d foes left", self.wave, guard, (self.total or 0) - (self.killed or 0)) end
+	return string.format("HORDE  ·  %s%s", self.wave == 0 and "the first wave is coming" or ("wave " .. self.wave .. " beaten: get back up and get ready"), guard)
 end
 
 return Horde

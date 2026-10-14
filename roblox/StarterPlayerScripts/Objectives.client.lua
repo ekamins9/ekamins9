@@ -1,5 +1,6 @@
 --[[ OBJECTIVES (client) — the HUD for a mode that publishes Obj* attributes on
-     ReplicatedStorage.Round (Game ▸ Modes ▸ Siege):
+     ReplicatedStorage.Round (Game ▸ Modes ▸ Siege; Horde: the wave and what you defend, its
+     health in the bar, DEFEND / UNDER ATTACK! over it):
        • under the round strip: ATTACK or DEFEND for your side, the stage line,
          a bar in the attackers' colour with what's happening there ("PUSHING
          3 v 1", "CONTESTED", "BATTERING · GATE 4 / 10"…) and a pip per stage
@@ -173,7 +174,7 @@ task.spawn(function()
 		if info.horde then
 			-- the horde: a wave coming, or a wave beaten
 			bannerText.TextColor3 = info.team == "B" and Color3.fromRGB(255, 120, 90) or Theme.GOOD
-			bannerSub.Text = info.team == "B" and string.format("%d FOES ARE COMING", info.count or 0) or "THE FALLEN CAN SPAWN AGAIN  ·  GET READY"
+			bannerSub.Text = info.sub or (info.team == "B" and string.format("%d FOES ARE COMING", info.count or 0) or "THE FALLEN CAN SPAWN AGAIN  ·  GET READY")
 		elseif info.final then
 			bannerSub.Text = mine and "THE CASTLE IS OURS" or "THE CASTLE HAS FALLEN"
 		elseif (info.add or 0) > 0 then
@@ -214,7 +215,7 @@ RunService.RenderStepped:Connect(function()
 	local kind = round:GetAttribute("ObjKind")
 	local live = kind ~= nil and round:GetAttribute("State") == "Round"
 	panel.Visible = live and not hubMenuUp()
-	bb.Enabled = live and kind ~= "Horde"
+	bb.Enabled = live and (kind ~= "Horde" or typeof(round:GetAttribute("ObjPos")) == "Vector3")
 	if not live then return end
 	if kind == "Hill" then
 		-- KOTH: the scoreboard has the points; here, just the marker over the hill
@@ -236,14 +237,41 @@ RunService.RenderStepped:Connect(function()
 		return
 	end
 	if kind == "Horde" then
-		role.Text = "HORDE"
-		role.BackgroundColor3 = Color3.fromRGB(150, 110, 60)
-		line.Text = string.format("%s   ·   %d OF YOU STANDING", string.upper(round:GetAttribute("ObjLabel") or ""), round:GetAttribute("ObjAttack") or 0)
-		barFill.BackgroundColor3 = round:GetAttribute("ObjState") == "break" and Theme.GOOD or Color3.fromRGB(230, 170, 60)
-		barFill.Size = UDim2.fromScale(math.clamp(round:GetAttribute("ObjProgress") or 0, 0, 1), 1)
-		barText.Text = round:GetAttribute("ObjNote") or ""
+		-- the wave, and what you're defending: its health in the bar while a wave is on
+		local oname = round:GetAttribute("ObjName")
+		local h = round:GetAttribute("ObjHealth")
+		local hit = round:GetAttribute("ObjHit") == true
+		local pulse = 0.5 + 0.5 * math.sin(os.clock() * 10)
+		role.Text = oname and "DEFEND" or "HORDE"
+		role.BackgroundColor3 = hit and Color3.fromRGB(200, 60, 50):Lerp(Color3.fromRGB(150, 110, 60), pulse) or Color3.fromRGB(150, 110, 60)
+		line.Text = string.format("%s%s   ·   %d OF YOU STANDING", string.upper(round:GetAttribute("ObjLabel") or ""), oname and ("   ·   " .. oname) or "", round:GetAttribute("ObjAttack") or 0)
+		local note = round:GetAttribute("ObjNote") or ""
+		local pct = h and string.format("%d%%", math.floor(h * 100 + 0.5)) or ""
+		if round:GetAttribute("ObjState") ~= "break" and h then
+			barFill.BackgroundColor3 = (h > 0.6 and Color3.fromRGB(110, 210, 100) or (h > 0.3 and Color3.fromRGB(235, 180, 60) or Color3.fromRGB(235, 70, 60)))
+			if hit then barFill.BackgroundColor3 = barFill.BackgroundColor3:Lerp(Color3.fromRGB(255, 255, 255), 0.35 * pulse) end
+			barFill.Size = UDim2.fromScale(math.clamp(h, 0, 1), 1)
+			barText.Text = string.format("%s %s%s   ·   %s", oname or "", pct, hit and "  ·  UNDER ATTACK!" or "", note)
+		else
+			barFill.BackgroundColor3 = Theme.GOOD
+			barFill.Size = UDim2.fromScale(math.clamp(round:GetAttribute("ObjProgress") or 0, 0, 1), 1)
+			barText.Text = note .. (oname and h and ("   ·   " .. oname .. " " .. pct) or "")
+		end
 		for _, pp in ipairs(pipList) do pp:Destroy() end
 		pipList = {}
+		-- the marker over it, through walls: where to run to
+		local pos = round:GetAttribute("ObjPos")
+		if typeof(pos) == "Vector3" then
+			anchor.Position = pos + Vector3.new(0, 11, 0)
+			if anchor.Parent ~= workspace then anchor.Parent = workspace end
+			local cam = workspace.CurrentCamera
+			local far = cam and (cam.CFrame.Position - pos).Magnitude or 0
+			dist.Text = string.format("%dm", math.floor(far / 3.6 + 0.5))
+			verb.Text = hit and "UNDER ATTACK!" or "DEFEND"
+			local col = hit and Color3.fromRGB(255, 80, 70):Lerp(Color3.fromRGB(255, 220, 140), pulse) or Color3.fromRGB(255, 214, 140)
+			verb.TextColor3 = col
+			diamond.BackgroundColor3 = col
+		end
 		return
 	end
 	local atk = round:GetAttribute("Attackers") or "A"

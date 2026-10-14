@@ -43,7 +43,7 @@ GameConfig.DOORS = {
 	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS"}, access = "Public", vote = true,
 		blurb = "The big fight. The mode changes between rounds by vote."},
 	Horde     = {name = "Horde",     mode = "Horde",    access = "Friends", maxPlayers = 6,
-		blurb = "You and your party against waves of bots. Hold out as long as you can."},
+		blurb = "You and your party defend the camp against waves of bots: keep the fire burning, the caravan whole, the villagers safe."},
 	Lists     = {name = "The Lists", mode = "Lists",    access = "Locked",  brackets = {"1v1", "2v2", "3v3"},
 		blurb = "1v1, 2v2, 3v3. Casual or ranked. Honor rules."},
 }
@@ -94,9 +94,14 @@ GameConfig.MODES = {
 	},
 	Horde = {
 		name = "Horde", category = "Horde", teams = 0, maxPlayers = 6, minPlayers = 1,
-		description = "You and your party against waves of bots, bigger and better trained each time; every fifth wave brings a Warlord. The fallen come back between waves.",
+		description = "You and your party defend the camp against waves of bots: keep the campfire burning, the caravan whole, the villagers safe. Each wave is bigger and better trained; every fifth brings a Warlord. Lose what you're defending and the horde wins.",
 		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak", "HollowGrove", "Pinewatch", "Marshfen", "Cinderfall", "Bloodpit", "Frosthollow"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,   -- the party can't hurt each other; the bots can hurt you
+		-- what you defend on each map (Game ▸ HordeObjective: "Campfire" | "Caravan" | "Villagers";
+		-- a map's own Spots ▸ HordeObjective with a Kind attribute wins), and how much it takes
+		objectives = {Wildwood = "Campfire", Colosseum = "Villagers", Ravenhold = "Caravan", Stormbreak = "Villagers", HollowGrove = "Campfire",
+			Pinewatch = "Campfire", Marshfen = "Caravan", Cinderfall = "Villagers", Bloodpit = "Campfire", Frosthollow = "Caravan"},
+		objectiveHealth = 1500,
 	},
 	Siege = {
 		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,

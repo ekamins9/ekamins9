@@ -670,7 +670,11 @@ it should be heard standing next to someone, never across the yard. Licensed lib
   wagon, a tent) out until a body fits, and says how many it moved.
 - **Horde maps:** give the Horde ways in: `K.spot(ctx, "HordeGate1", CFrame.lookAt(outside,
   middle))` a dozen studs outside each opening, with the ground from there to the middle clear
-  enough to walk (bots steer round trees, wagons and walls, but not through a maze).
+  enough to walk (bots steer round trees, wagons and walls, but not through a maze). Say what's
+  defended there: a line in `GameConfig.MODES.Horde.objectives` (`MyMap = "Caravan"`: "Campfire",
+  "Caravan" or "Villagers"). It's built on open ground near the centre of the gates; to put it
+  somewhere exact, add `K.spot(ctx, "HordeObjective", CFrame.new(x, groundY, z), {Kind =
+  "Villagers"})` (leave room: about 12 studs across, 14 for the caravan).
 - **Bots don't climb steps:** a 1-stud step stops them. Anything a bot must reach, such as a KOTH
   hill on a platform, needs a ramp (an invisible WedgePart over the steps does it) or a rise of
   half a stud at most. Terrain `FillCylinder` / `FillBlock` thinner than a voxel row (4 studs)

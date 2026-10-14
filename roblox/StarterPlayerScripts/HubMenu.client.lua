@@ -3892,7 +3892,7 @@ do
 	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Big battles  ·  vote the next battle", big = true, color = Color3.fromRGB(214, 70, 60),
 		pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.4, -8, 0.46, -6), scene = "Warfront", tag = "POPULAR", tagColor = COL.RED,
 		onClick = function() goDoor("Warfront") end})
-	tiles.Horde = tile({key = "Horde", title = "HORDE", sub = "You + party vs waves of bots", color = Color3.fromRGB(150, 110, 60),
+	tiles.Horde = tile({key = "Horde", title = "HORDE", sub = "Defend the camp vs waves of bots", color = Color3.fromRGB(150, 110, 60),
 		pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.2, -10, 0.46, -6), scene = "Horde", tag = "NEW", tagColor = COL.GOLD,
 		onClick = function() goDoor("Horde") end})
 	tiles.Training = tile({key = "Training", title = "TRAINING", sub = "Your own yard  ·  drills pay Marks", color = Color3.fromRGB(70, 150, 90),

@@ -1,4 +1,56 @@
-# Updated scripts: nothing in the shop for good (daily crate and egg rotation, vault weekends), big pulls everyone sees
+# Updated scripts: Horde, defend the camp (a campfire, a caravan, villagers): the horde goes for it
+
+- **What you defend, by map** (`GameConfig.MODES.Horde.objectives`; a map's own `Spots ▸ HordeObjective` wins):
+
+  | Objective | Maps | What's there |
+  |---|---|---|
+  | **Campfire** | Wildwood, Hollow Grove, Pinewatch, Bloodpit | the fire with stones, logs and a pot on a tripod; log benches round it, bedrolls, firewood, a tent, a banner |
+  | **Caravan** | Ravenhold, Marshfen, Frosthollow | a covered wagon with barrels, crates, a sack and a lantern |
+  | **Villagers** | Colosseum, Stormbreak, Cinderfall | four villagers round a thatched well: one with a pitchfork, one with a lantern, an old one with a cane, a child |
+
+  Each is built from parts on the clearest open ground near the middle (at ground level, never on a roof or a wagon).
+- **The horde comes for it.** A bot fights you when you're in its face (12 studs), or when you're by the objective (within 55) and it can get to you.
+  - **If you're off round the map, or up on something** (more than 7 studs above it), it leaves you be and goes to wreck the objective.
+  - Each bot takes its own place round the objective and strikes it every second and a half: a Squire 12, a Knight 18, a Champion 26, the Warlord 60, an archer or a mage 10 (of 1,500).
+  - Archers and mages still shoot people on roofs.
+  - So kiting the horde round the map or camping on top of something no longer works: kill them before they wreck it.
+- **When it falls, the horde has won** ("THE CAMPFIRE WENT OUT · YOU HELD 4 WAVES"). Everyone down at once still loses too. Between waves it's mended by 30%.
+- **You can see it wear down**:
+  - the fire sinks and smokes, then goes out;
+  - the wagon smokes, catches fire, loses its canvas and slumps;
+  - the villagers fall one by one, and get back up as it's mended.
+
+  Each blow throws sparks and a thump.
+- **HUD**:
+  - a health bar over it ("DEFEND THE VILLAGERS");
+  - the panel: DEFEND · WAVE 3 · THE VILLAGERS, with its health in the bar while a wave is on (flashing under attack);
+  - a marker over it through walls: DEFEND, or **UNDER ATTACK!** in red, with how far away it is;
+  - banners when it's first hit ("THE CAMPFIRE IS UNDER ATTACK! · GET BACK AND DEFEND IT!") and at 50% and 25%.
+- `Bots`: new `opts.engage` (whom it may fight) and `opts.sack` / `opts.face` (strike what's at its goal); `goal(bot)` gets the bot. The nearest player it *may* fight is picked, not just the nearest.
+- The PLAY board's Horde blurb says what it's about now.
+- Checked in Play:
+  - every one of the 10 Horde maps builds its objective on open ground;
+  - on Wildwood, standing on a perch 14 studs up beside the campfire: all three Squires ignored me and went to the fire, and it fell from 100% to 62% in 30 s;
+  - standing by it on the ground: they came for me;
+  - the villagers fall at 45% and one gets back up when it's mended to 75%;
+  - the caravan's fire lights below 45%;
+  - the HUD in a Colosseum wave (DEFEND · THE VILLAGERS 73% · 3 FOES LEFT, the bar over the well, the marker);
+  - pictures of all three objectives and a campfire at 20%.
+- Not checked: a full game to the objective falling with real players, and how the damage numbers feel in late waves (tune `SACK`, `REPAIR`, `objectiveHealth`).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Game/HordeObjective.lua](ServerScriptService/Game/HordeObjective.lua) (new) | ServerScriptService ▸ Game | ModuleScript | builds the campfire / caravan / villagers, places it, health, wear, sparks |
+| [Game/Modes/Horde.lua](ServerScriptService/Game/Modes/Horde.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the objective: who bots fight, striking it, alarms, mending, losing |
+| [Combat/Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | `engage`, `sack`, `face` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | `objectives` per map, `objectiveHealth`, the blurbs |
+| [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Horde HUD: health, DEFEND / UNDER ATTACK! marker |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Horde tile's line |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | Horde; giving a map its objective |
+
+---
+
+## Before that: nothing in the shop for good (daily crate and egg rotation, vault weekends), big pulls everyone sees
 
 What the research said (MM2, Da Hood, CS2, Fortnite, Valorant, Rocket League, TF2), and what's here now:
 
