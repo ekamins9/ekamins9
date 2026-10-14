@@ -1,4 +1,66 @@
-# Updated scripts: the Showcase Director (one screen to film the game), GENERATE, custom battles, bots that look like players
+# Updated scripts: GIFTS (send anything to anyone, online or not; buy anything as a gift)
+
+- **GIFTS** (a new dock tile, with its own gift-box icon). It's a separate feature from trading: one way, by username, whether they're online or offline.
+  1. **Who**: type their Roblox username (or pick someone in this server, or a friend online). It shows their face, name and level, and whether they're here.
+  2. **What**: ITEMS (anything that trades, armor as full sets), MARKS, CROWNS, or FROM THE SHOP.
+  3. **Send it**, with a card picked from a list ("GG!", "Happy birthday!"…), never typed.
+- **Buy as a gift**: a 🎁 button by every purchase:
+  - shelf skins;
+  - packs and their pieces (the shop, the armory);
+  - the season pass (GIFT THE PASS);
+  - every Crowns bundle (🎁 AS A GIFT, paid in Robux; the receipt delivers to them).
+
+  A player's profile has **SEND A GIFT**; inspecting something you own has **GIFT IT**.
+- **The gift box** (`Gifts_v1`): every gift waits in it until they're here. It opens:
+  - at once in this server;
+  - on a nudge from another server;
+  - when they next join, with a Roblox phone notification if set up (`Gift`, LAUNCH §8).
+
+  Opening it twice can't duplicate anything: the profile remembers the ids it opened, and the box keeps a gift until that save lands. When it arrives:
+  - a pop-up card shows each gift: who it's from, the card, what was in it;
+  - something they already own comes as what was paid for it;
+  - a skin is a copy of its own.
+- **Rules**:
+  - level 5 and up;
+  - only where Roblox allows trading paid items (PolicyService `IsPaidItemTradingAllowed`). That's checked for the sender, and for the recipient as it arrives: where they can't receive it, it goes back to the sender whole;
+  - their privacy: new setting **SETTINGS › Gifts from**: Everyone / Friends / Nobody;
+  - daily caps: 25,000 Marks, 5,000 Crowns, 20 items, 30 gifts;
+  - never crates, eggs or Keys.
+
+  The sender's save lands before anything leaves; if the box can't be written, it all comes back. Logged in `GiftLog_v1`. Right-to-erasure covers the box, the log, and the sender's name on gifts still waiting.
+- Trading's item check is now `Trading.checkItems`, shared with gifts.
+- The dock tiles are a little smaller (92 px) so 11 fit. On a phone the dock is 2 × 6.
+- Modal buttons now always sort below a pop-up's own content.
+- Checked in Play (Studio's own data, with a Studio-only stand-in profile for the account builderman):
+  - finding a player by username, and refusing yourself;
+  - sending 500 Marks + 20 Crowns, and a Masterwork Saint's Mercy (gone from my inventory);
+  - buying a shelf skin and the pass for him;
+  - the daily cap refusing 999,999 Marks;
+  - all four sat in his box;
+  - the reverse (his four gifts to me): the wallet, the pass, both copies arrived, the box emptied, and the pop-up showed all four;
+  - the GIFTS screen's layout.
+- Not checked: a real Robux Crowns gift (it needs the live game), and a real second player online.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Economy/Gifting.lua](ServerScriptService/Economy/Gifting.lua) (new) | ServerScriptService ▸ Economy | ModuleScript | the gift box, sending, buying for someone, Robux receipts |
+| [Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy | ModuleScript | `giftQuote` (a purchase, packed to travel), `passGift` |
+| [Economy/Trading.lua](ServerScriptService/Economy/Trading.lua) | ServerScriptService ▸ Economy | ModuleScript | `checkItems`, `policyOk` |
+| [Economy/EconomyServer.server.lua](ServerScriptService/Economy/EconomyServer.server.lua) | ServerScriptService ▸ Economy | Script | a Crowns receipt bought as a gift goes to their box |
+| [Hub/HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | the Gift ops; a Crowns buy for yourself forgets a waiting gift |
+| [Hub/Reminders.server.lua](ServerScriptService/Hub/Reminders.server.lua) | ServerScriptService ▸ Hub | Script | `_G.NotifyGift` |
+| [Safety/Erasure.lua](ServerScriptService/Safety/Erasure.lua) | ServerScriptService ▸ Safety | ModuleScript | Gifts_v1, GiftLog_v1 |
+| [Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | `giftsIn`, `giftDay` |
+| [Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua), [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | `gifting` config; the Gifts from setting |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the GIFTS screen, 🎁 buttons, the gift cards pop-up, the dock |
+| [../blender/ui_icons.py](../blender/ui_icons.py) | | Blender | the gift-box icon |
+| [README.md](README.md), [../docs/LAUNCH.md](../docs/LAUNCH.md) | | doc | gifts; the Gift notification; RTBF table |
+
+Studio only (save the place): ReplicatedStorage ▸ Cosmetics ▸ Icons ▸ **Gifts** (the icon); ServerStorage ▸ NotifyIds ▸ **Gift** (empty: the notification's id).
+
+---
+
+## Before that: the Showcase Director (one screen to film the game), GENERATE, custom battles, bots that look like players
 
 - **The Showcase Director** (F4, or F2 › SHOWCASE › OPEN THE SHOWCASE DIRECTOR): one screen.
   1. **What to film**: GENERATE, CUSTOM BATTLE, the five ready-made battles, the Courtyard tour, the armor parade.

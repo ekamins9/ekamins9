@@ -789,6 +789,8 @@ local function buyCrowns(plr, index)
 	local prod = Catalog.ECONOMY.products[tonumber(index) or 0]
 	if not prod then return false, "no such bundle" end
 	if (prod.id or 0) == 0 then return false, string.format("no Developer Product named \"%s\" yet (Creator Dashboard ▸ Monetization)", prod.product or (tostring(prod.crowns) .. " Crowns")) end
+	-- (for yourself: a gift purchase still waiting on its receipt is forgotten, Economy ▸ Gifting)
+	pcall(function() require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Gifting")).forget(plr) end)
 	local ok, err = pcall(MarketplaceService.PromptProductPurchase, MarketplaceService, plr, prod.id)
 	return ok, ok and "purchase prompt opened" or ("could not open the purchase: " .. tostring(err))
 end
@@ -921,6 +923,10 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	elseif op == "Forge" then
 		local ok, msg, variant = Economy.collection().forge(plr, a)
 		return {ok = ok, msg = msg, variant = variant, profile = Profile.summary(plr)}
+	elseif op == "GiftFind" or op == "GiftInfo" or op == "GiftSend" or op == "GiftBuy" or op == "GiftCrowns" then
+		-- gifts: Marks, Crowns, items, or the shop bought for someone (Economy ▸ Gifting)
+		local Gifting = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Gifting"))
+		return Gifting.op(plr, op, a, b, c)
 	elseif op:sub(1, 5) == "Trade" then
 		local Trading = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Trading"))
 		local fn = ({TradeRequest = Trading.request, TradeAccept = Trading.accept, TradeDecline = Trading.decline, TradeOffer = Trading.offer,

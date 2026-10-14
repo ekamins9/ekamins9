@@ -58,9 +58,15 @@ end
 Players.PlayerAdded:Connect(function(plr) task.spawn(checkPolicy, plr) end)
 for _, plr in ipairs(Players:GetPlayers()) do task.spawn(checkPolicy, plr) end
 
-function Trading.allowed(plr)
+-- may this player trade (or gift) things bought with Robux or in-experience currency? (Roblox's
+-- PolicyService; Economy ▸ Gifting asks too)
+function Trading.policyOk(plr)
 	if policy[plr] == nil then checkPolicy(plr) end
-	if not policy[plr] then return false, "trading isn't available in your region" end
+	return policy[plr] == true
+end
+
+function Trading.allowed(plr)
+	if not Trading.policyOk(plr) then return false, "trading isn't available in your region" end
 	if (Profile.get(plr).level or 1) < Trading.MIN_LEVEL then return false, "trading opens at level " .. Trading.MIN_LEVEL end
 	return true
 end
@@ -155,27 +161,28 @@ local function unready(s)
 	s.ready, s.confirmed, s.readyAt = {}, {}, nil
 end
 
-function Trading.offer(plr, uids)
-	local s = byPlayer[plr]
-	if not s then return false, "you aren't trading" end
-	if type(uids) ~= "table" then return false, "bad offer" end
+-- a list of this player's copies that may change hands, as given: every one theirs, unbound and
+-- tradable, armor only as whole sets, at most `max` items (a set counts as one)
+-- -> the list, or nil and why (Economy ▸ Gifting checks a gift the same way)
+function Trading.checkItems(plr, uids, max)
+	if type(uids) ~= "table" then return nil, "bad offer" end
 	local p = Profile.get(plr)
 	local list, seen = {}, {}
 	local sets, others = {}, 0
-	if #uids > Trading.MAX * 6 then return false, "too much at once" end
+	if #uids > max * 6 then return nil, "too much at once" end
 	for _, uid in ipairs(uids) do
 		if type(uid) ~= "string" or seen[uid] then continue end
 		local key, c = Profile.findCopy(p, uid)
-		if not key then return false, "you don't have that any more" end
-		if c.b or not Collection.tradable(key) then return false, "that one can't be traded" end
+		if not key then return nil, "you don't have that any more" end
+		if c.b or not Collection.tradable(key) then return nil, "that one can't be traded" end
 		-- (armor: gathered by its set, checked whole below)
 		local pieceId = key:match("^armor:(.+)$")
 		if pieceId then
 			local pc = Catalog.PIECE[pieceId]
 			local set = pc and (pc.set or ("pack:" .. tostring(pc.pack)))
-			if not set then return false, "that one can't be traded" end
+			if not set then return nil, "that one can't be traded" end
 			sets[set] = sets[set] or {}
-			if sets[set][pieceId] then return false, "one copy of each piece of a set" end
+			if sets[set][pieceId] then return nil, "one copy of each piece of a set" end
 			sets[set][pieceId] = true
 		else
 			others += 1
@@ -189,11 +196,19 @@ function Trading.offer(plr, uids)
 		setCount += 1
 		for _, pc in ipairs(Catalog.PIECES) do
 			if (pc.set or ("pack:" .. tostring(pc.pack))) == set and not Catalog.isFree(pc) and not have[pc.id] then
-				return false, "armor trades as a full set: put up every piece of " .. tostring(pc.setName or set)
+				return nil, "armor goes as a full set: put in every piece of " .. tostring(pc.setName or set)
 			end
 		end
 	end
-	if others + setCount > Trading.MAX then return false, "at most " .. Trading.MAX .. " items a side" end
+	if others + setCount > max then return nil, "at most " .. max .. " items at once" end
+	return list, others + setCount
+end
+
+function Trading.offer(plr, uids)
+	local s = byPlayer[plr]
+	if not s then return false, "you aren't trading" end
+	local list, why = Trading.checkItems(plr, uids, Trading.MAX)
+	if not list then return false, why end
 	s.offer[plr] = list
 	unready(s)
 	push(s)

@@ -171,6 +171,15 @@ local function dailyCheck()
 	if n > 0 then print(string.format("[Reminders] daily gift: %d notified", n)) end
 end
 
+-- a gift waiting in their box (Economy ▸ Gifting), when they're not in this server: "Gift", a
+-- notification string "{name} sent you a gift in Steel & Glory!" (parameter: name)
+_G.NotifyGift = function(userId, fromName)
+	if RunService:IsStudio() or not messageId("Gift") then return end
+	-- (one a day per player whatever we do: this lock keeps us from asking more than once an hour)
+	if not claim("gift:" .. tostring(userId), 3600) then return end
+	send(userId, "Gift", {name = tostring(fromName or "Someone")}, "gift")
+end
+
 if not RunService:IsStudio() then
 	task.spawn(function()
 		task.wait(60)

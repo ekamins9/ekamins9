@@ -91,4 +91,16 @@ return {
 	keys = {levelUp = 1, firstWin = 1, perContracts = 5},
 	variants = {Masterwork = 5, Radiant = 1},
 	trading = {minLevel = 5, maxItems = 8, countdown = 5},   -- (Economy ▸ Trading)
+	-- GIFTS (Economy ▸ Gifting): Marks, Crowns and items sent to anyone by username, online or
+	-- not, or anything in the shop bought for them. From level `minLevel`, where Roblox allows
+	-- trading paid items; each day (UTC) at most `perDay` of each; `notes` are the cards a gift
+	-- can carry (chosen, never typed: nothing to filter)
+	gifting = {minLevel = 5, maxItems = 8, perDay = {marks = 25000, crowns = 5000, items = 20, gifts = 30},
+		notes = {"For you!", "Happy birthday!", "GG!", "Thanks!", "Welcome to the fight!", "Good luck out there!", "Merry Christmas!", "You earned it!"}},
+	-- CLANS (Hub ▸ Clans): starting one costs `cost` Marks, from level `minLevel`; at most `max`
+	-- members; the owner may rename it every `renameDays` days for `renameCost`. A member's
+	-- battles earn the clan `points` (a round played, a round won), up to `dailyPoints` a member
+	-- a day, on a weekly board (Monday 00:00 UTC). Glory only: the board pays nothing.
+	clans = {cost = 5000, minLevel = 5, max = 20, renameCost = 2500, renameDays = 7,
+		points = {round = 1, win = 2}, dailyPoints = 30},
 }

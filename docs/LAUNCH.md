@@ -189,6 +189,7 @@ New ad pictures: `blender/store_ads.py` (its header says how). The trailer: `ble
      | Standard Key | Bans_v1 | `u{UserId}` |
      | Standard Key | PlayerSettings_v1 | `u{UserId}` |
      | Standard Key | SeasonGrants_v1 | `u{UserId}` |
+     | Standard Key | Gifts_v1 | `u{UserId}` |
      | Ordered Key | LB_Warfront | `{UserId}` |
      | Ordered Key | LB_1v1 | `{UserId}` |
      | Ordered Key | LB_2v2 | `{UserId}` |
@@ -210,9 +211,10 @@ Both are built into the game. Each needs a few minutes of setup on Roblox's side
 |---|---|---|
 | Weekend | `{event} is on in Steel & Glory: come and fight!` | once, as a weekend event begins, to everyone seen in the last two weeks |
 | Daily | `Your day {day} gift is waiting in the Courtyard.` | about a day after someone's last visit |
+| Gift | `{name} sent you a gift in Steel & Glory!` | when someone sends them a gift and they aren't playing |
 
 - [ ] Creator Dashboard ▸ your experience ▸ **Engagement ▸ Notifications** ▸ create both strings exactly as above (`{event}` and `{day}` are filled in by the game). Copy each one's ID.
-- [ ] In Studio: **ServerStorage ▸ NotifyIds**. Paste each ID into the `Value` of the StringValue with the same name (`Weekend`, `Daily`). The slots are already there.
+- [ ] In Studio: **ServerStorage ▸ NotifyIds**. Paste each ID into the `Value` of the StringValue with the same name (`Weekend`, `Daily`, `Gift`). The slots are already there.
 - [ ] Creator Hub ▸ **Open Cloud ▸ API Keys ▸ Create API Key**:
   - add the **user.user-notification** API system;
   - pick this experience and tick **write**;

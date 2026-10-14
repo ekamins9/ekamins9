@@ -862,10 +862,10 @@ do
 			if b then
 				local btn = bigBtn(modalBox, b[1], b[2], function() if b[3] then b[3]() end end)
 				btn.Size = UDim2.new(1, 0, 0, 46)
-				btn.LayoutOrder = 100 + i
+				btn.LayoutOrder = 1e8 + i   -- (after anything `extra` made, however it was ordered)
 			end
 		end
-		local c = bigBtn(modalBox, "CLOSE", COL.GLASS2, closeModal); c.LayoutOrder = 200
+		local c = bigBtn(modalBox, "CLOSE", COL.GLASS2, closeModal); c.LayoutOrder = 2e8
 		modalBack.Visible = true
 		modalScale.Scale = 0.9
 		-- (taller than the screen: it shrinks until it fits)
@@ -1864,6 +1864,7 @@ local SCREEN_DEF = {
 	PASS       = {title = "SEASON PASS", icon = "Pass"},
 	HATCHERY   = {title = "PETS",     icon = "Hatchery"},
 	TRADE      = {title = "TRADE",    icon = "Trade"},
+	GIFTS      = {title = "GIFTS",    icon = "Gifts"},
 	RANKS      = {title = "LEADERBOARDS", icon = "Ranks"},
 	PROFILE    = {title = "PROFILE",  icon = "Loadout"},
 	INVENTORY  = {title = "INVENTORY", icon = "Inventory"},
@@ -1871,7 +1872,7 @@ local SCREEN_DEF = {
 }
 -- old tab names and the names other scripts send over the bus
 local ALIAS = {INV = "INVENTORY", COLLECTION = "INVENTORY", LOBBY = "PLAY", MENU = "PLAY", LOADOUT = "CLASSES", WARDROBE = "PLAY", APPEARANCE = "PLAY", STORE = "SHOP", CRATES = "SHOP", WEAPONS = "ARMORY", ARMOR = "ARMORY",
-	EGGS = "HATCHERY", PETS = "HATCHERY", EGGSHOP = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS", RULE = "RULES"}
+	EGGS = "HATCHERY", PETS = "HATCHERY", EGGSHOP = "HATCHERY", COMPANIONS = "HATCHERY", TRADING = "TRADE", GIFT = "GIFTS", GIFTING = "GIFTS", LEADERBOARD = "RANKS", LEADERBOARDS = "RANKS", RULE = "RULES"}
 local tabFrame, render, screenFoot = {PLAY = lobby}, {}, {}
 for name in pairs(SCREEN_DEF) do
 	local f = clearFrame(content)
@@ -2059,6 +2060,13 @@ function Packs.price(packKey)
 	local m, c = 0, 0
 	for _, pc in ipairs(Packs.pieces(packKey)) do if not owns("pieces", pc.id) then m += pc.marks or 0; c += pc.crowns or 0 end end
 	for _, sk in ipairs(Packs.skins(packKey)) do if not owns("skins", sk.id) then m += sk.marks or 0; c += sk.crowns or 0 end end
+	local disc = 1 - (Catalog.PACKS[packKey].bundle or 0)
+	return math.floor(m * disc + 0.5), math.floor(c * disc + 0.5)
+end
+function Packs.priceAll(packKey)
+	local m, c = 0, 0
+	for _, pc in ipairs(Packs.pieces(packKey)) do if not pc.crate and not Catalog.isFree(pc) then m += pc.marks or 0; c += pc.crowns or 0 end end
+	for _, sk in ipairs(Packs.skins(packKey)) do m += sk.marks or 0; c += sk.crowns or 0 end
 	local disc = 1 - (Catalog.PACKS[packKey].bundle or 0)
 	return math.floor(m * disc + 0.5), math.floor(c * disc + 0.5)
 end
@@ -2641,11 +2649,125 @@ local function afterBuy(r, rerenderFn)
 	if rerenderFn then rerenderFn() else rerender() end
 end
 
+--------------------------------------------------------------------
+--  GIFTS (Economy ▸ Gifting): who it's for (a username, or someone picked), then send what
+--  you have (the GIFTS screen) or buy something for them (a 🎁 button by every purchase).
+--  HX.giftTo is whoever was found last; ui.giftNote the card picked.
+--------------------------------------------------------------------
+-- look someone up: a username (text) or a user id (number) -> the server's answer
+function HX.giftFind(who)
+	local r = call("GiftFind", who)
+	HX.giftTo = r.ok and {userId = r.userId, name = r.name, displayName = r.displayName, here = r.here, level = r.level} or nil
+	return r
+end
+-- "who is it for": a username box, FIND, and their face and name. onFound(who) after each find
+function HX.giftWhoBox(parent, onFound)
+	local holder = clearFrame(parent); holder.Size = UDim2.new(1, 0, 0, 0); holder.AutomaticSize = Enum.AutomaticSize.Y; holder.LayoutOrder = nextOrder()
+	vlist(holder, 8)
+	local line = clearFrame(holder); line.Size = UDim2.new(1, 0, 0, 44); line.LayoutOrder = 1
+	local box = Instance.new("TextBox")
+	box.PlaceholderText = "Their Roblox username…"; box.Text = HX.giftTo and HX.giftTo.name or ""; box.ClearTextOnFocus = false
+	box.Font = FONT_BODY; box.TextSize = 16; box.TextColor3 = COL.TEXT; box.PlaceholderColor3 = COL.DIM
+	box.BackgroundColor3 = COL.PANEL; box.BorderSizePixel = 0; box.Size = UDim2.new(1, -128, 1, 0); box.TextXAlignment = Enum.TextXAlignment.Left
+	box.Parent = line
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+	padding(box, 12, 12, 0, 0)
+	local find = button(line, "FIND", 16, COL.BLUE); find.AnchorPoint = Vector2.new(1, 0); find.Position = UDim2.new(1, 0, 0, 0); find.Size = UDim2.new(0, 120, 1, 0)
+	local card = frame(holder, COL.GLASS2, 12); card.Size = UDim2.new(1, 0, 0, 72); card.LayoutOrder = 2
+	local face = Instance.new("ImageLabel"); face.BackgroundColor3 = COL.PANEL; face.Size = UDim2.fromOffset(60, 60); face.Position = UDim2.fromOffset(6, 6); face.Parent = card
+	Instance.new("UICorner", face).CornerRadius = UDim.new(1, 0)
+	local nm = title(card, "", 18); nm.Position = UDim2.fromOffset(76, 8); nm.Size = UDim2.new(1, -84, 0, 22); nm.TextTruncate = Enum.TextTruncate.AtEnd
+	local sub = label(card, "", 13, FONT, COL.DIM); sub.Position = UDim2.fromOffset(76, 32); sub.Size = UDim2.new(1, -84, 0, 34); sub.TextYAlignment = Enum.TextYAlignment.Top
+	local function show(r)
+		local who = HX.giftTo
+		if r and not r.ok then
+			face.Image = ""; nm.Text = "CAN'T SEND TO THEM"; nm.TextColor3 = COL.BAD; sub.Text = r.msg or ""
+		elseif who then
+			face.Image = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", who.userId)
+			nm.Text = (who.displayName or who.name) .. "   @" .. tostring(who.name); nm.TextColor3 = COL.TEXT
+			sub.Text = (who.level and ("LEVEL " .. who.level .. "  ·  ") or "") .. (who.here and "IN THIS SERVER: THEY GET IT RIGHT AWAY" or "NOT HERE: IT WAITS IN THEIR GIFT BOX")
+		else
+			face.Image = ""; nm.Text = "WHO IS IT FOR?"; nm.TextColor3 = COL.DIM; sub.Text = "Type their Roblox username and press FIND, or pick someone."
+		end
+	end
+	local function go(q)
+		if q == nil or q == "" then return end
+		find.Text = "…"
+		local r = HX.giftFind(q)
+		find.Text = "FIND"
+		if type(q) == "number" and HX.giftTo then box.Text = HX.giftTo.name end
+		show(r)
+		if onFound then onFound(HX.giftTo) end
+	end
+	find.Activated:Connect(function() go(box.Text) end)
+	box.FocusLost:Connect(function(enter) if enter then go(box.Text) end end)
+	show()
+	return holder, go
+end
+-- the card a gift carries: picked, never typed
+function HX.giftNotePicker(parent)
+	local notes = (ECON.gifting or {}).notes or {}
+	local items = {{text = "NO CARD"}}
+	for i, n in ipairs(notes) do table.insert(items, {text = "“" .. n .. "”", i = i}) end
+	local holder = clearFrame(parent); holder.Size = UDim2.new(1, 0, 0, 0); holder.AutomaticSize = Enum.AutomaticSize.Y; holder.LayoutOrder = nextOrder()
+	local function paint()
+		clear(holder)
+		chips(holder, items, function(it) return it.i == ui.giftNote end, function(it) ui.giftNote = it.i; paint() end, 30)
+	end
+	paint()
+	return holder
+end
+-- BUY AS A GIFT: o = {kind, id, label, marks, crowns} (a shop item) or {bundle = i, crowns, robux, label}
+function HX.giftBuy(o)
+	local priceBox
+	local function paintPrices()
+		if not priceBox then return end
+		clear(priceBox)
+		local who = HX.giftTo
+		if not who then dim(priceBox, "Find who it's for first.", 13); return end
+		local name = string.upper(who.displayName or who.name)
+		local function buyWith(text, color, fn)
+			local b = bigBtn(priceBox, text, color, fn); b.Size = UDim2.new(1, 0, 0, 48)
+		end
+		if o.bundle then
+			buyWith("🎁 BUY FOR " .. name .. "  ·  R$ " .. fmt(o.robux or 0), COL.GREEN, function()
+				local r = call("GiftCrowns", who.userId, o.bundle, ui.giftNote)
+				toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+				if r.ok then closeModal() end
+			end)
+			return
+		end
+		local function go(currency)
+			local r = call("GiftBuy", who.userId, {kind = o.kind, id = o.id, currency = currency, note = ui.giftNote})
+			if not r.ok and HX.shortOf(r.msg) then return end
+			toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+			if r.profile then state.profile = r.profile; refreshWallet() end
+			if r.ok then closeModal(); pcall(function() HX.FX.play("Coins") end) end
+		end
+		if (o.marks or 0) > 0 then buyWith("🎁 BUY FOR " .. name .. "  ·  " .. fmt(o.marks) .. " MARKS", COL.BLUE, function() go("marks") end) end
+		if (o.crowns or 0) > 0 then buyWith("🎁 BUY FOR " .. name .. "  ·  " .. fmt(o.crowns) .. " CROWNS", COL.GOLD, function() go("crowns") end) end
+	end
+	modal("🎁 BUY AS A GIFT", tostring(o.label or "") .. "  ·  for someone else, whether they're playing or not: it waits in their gift box. You pay, they get it.", nil, function(box)
+		HX.giftWhoBox(box, function() paintPrices() end)
+		local nh = title(box, "A CARD WITH IT", 13, COL.DIM); nh.Size = UDim2.new(1, 0, 0, 18); nh.LayoutOrder = nextOrder()
+		HX.giftNotePicker(box)
+		priceBox = clearFrame(box); priceBox.Size = UDim2.new(1, 0, 0, 0); priceBox.AutomaticSize = Enum.AutomaticSize.Y; priceBox.LayoutOrder = nextOrder()
+		vlist(priceBox, 8)
+		paintPrices()
+	end, 620)
+end
+-- the 🎁 entry for a modal() button list
+function HX.giftButton(o)
+	return {"🎁  BUY AS A GIFT FOR SOMEONE", COL.PURPLE, function() closeModal(); task.defer(HX.giftBuy, o) end}
+end
+
 -- the buy buttons for a skin on sale today (for modal() lists)
 local function skinBuyButtons(s, after)
 	local out = {}
 	if (s.marks or 0) > 0 then table.insert(out, {"BUY  ·  " .. fmt(s.marks) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "skin", s.id, "marks"), after) end}) end
 	if (s.crowns or 0) > 0 then table.insert(out, {"BUY  ·  " .. fmt(s.crowns) .. " CROWNS", COL.GOLD, function() afterBuy(call("Buy", "skin", s.id, "crowns"), after) end}) end
+	table.insert(out, HX.giftButton({kind = "skin", id = s.id, marks = s.marks, crowns = s.crowns,
+		label = s.name .. " " .. (Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon)}))
 	return out
 end
 
@@ -3155,32 +3277,32 @@ do
 	local dock = clearFrame(lobby)
 	dock.AnchorPoint = Vector2.new(0, 1)
 	dock.Position = UDim2.new(0, 24, 1, -22)
-	dock.Size = UDim2.fromOffset(10 * 100 + 9 * 12, 100)
+	dock.Size = UDim2.fromOffset(11 * 92 + 10 * 8, 92)
 	if LAYOUT.compact then
-		-- (a phone: two columns of five down the left)
-		dock.AnchorPoint = Vector2.new(0, 0); dock.Position = UDim2.fromOffset(14, 98); dock.Size = UDim2.fromOffset(2 * 80 + 8, 5 * 80 + 4 * 8)
+		-- (a phone: two columns of six down the left)
+		dock.AnchorPoint = Vector2.new(0, 0); dock.Position = UDim2.fromOffset(14, 94); dock.Size = UDim2.fromOffset(2 * 70 + 6, 6 * 70 + 5 * 6)
 		local g = Instance.new("UIGridLayout", dock)
-		g.CellSize = UDim2.fromOffset(80, 80); g.CellPadding = UDim2.fromOffset(8, 8); g.FillDirectionMaxCells = 2; g.SortOrder = Enum.SortOrder.LayoutOrder
+		g.CellSize = UDim2.fromOffset(70, 70); g.CellPadding = UDim2.fromOffset(6, 6); g.FillDirectionMaxCells = 2; g.SortOrder = Enum.SortOrder.LayoutOrder
 	else
-		hlist(dock, 12)
+		hlist(dock, 8)
 	end
 	HX.DOCK_TIPS = {
 		CLASSES = "Your classes: armor, finish, colours, weapons, spells", ARMORY = "Every weapon and its skins, armor sets, kill effects, emotes",
 		INVENTORY = "Everything you own, in one place", SHOP = "Today's packs and skins, the crates, Crowns",
 		PASS = "The season pass: rewards as you level", HATCHERY = "Eggs, nests and the pets that follow you",
-		TRADE = "Swap skins with other players", TASKS = "Daily and weekly tasks: they pay Marks by themselves",
+		TRADE = "Swap skins with other players", GIFTS = "Send Marks, Crowns and items to anyone, or buy them something", TASKS = "Daily and weekly tasks: they pay Marks by themselves",
 		RANKS = "Leaderboards, season rewards and player profiles", SETTINGS = "Controls, camera, sound, privacy",
 	}
 	local DOCK = {{"LOADOUT", "Loadout", "CLASSES"}, {"ARMORY", "Armory", "ARMORY"}, {"INVENTORY", "Inventory", "INVENTORY"}, {"SHOP", "Shop", "SHOP"}, {"PASS", "Pass", "PASS"},
-		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"TASKS", "Tasks", "TASKS"}, {"RANKS", "Ranks", "RANKS"}, {"SETTINGS", "Settings", "SETTINGS"}}
+		{"PETS", "Hatchery", "HATCHERY"}, {"TRADE", "Trade", "TRADE"}, {"GIFTS", "Gifts", "GIFTS"}, {"TASKS", "Tasks", "TASKS"}, {"RANKS", "Ranks", "RANKS"}, {"SETTINGS", "Settings", "SETTINGS"}}
 	for i, d in ipairs(DOCK) do
 		local b, badge = dockTile(dock, d[2], d[1])
-		b.Size = UDim2.fromOffset(100, 100)
+		b.Size = UDim2.fromOffset(92, 92)
 		for _, ch in ipairs(b:GetChildren()) do
 			if ch:IsA("ImageLabel") then
-				ch.Size = LAYOUT.compact and UDim2.fromOffset(66, 66) or UDim2.fromOffset(86, 86)
-				if LAYOUT.compact then ch.Position = UDim2.new(0.5, 0, 0, -16) end
-			elseif ch:IsA("TextLabel") and ch.Name ~= "Badge" then ch.TextSize = LAYOUT.compact and 15 or 15 end
+				ch.Size = LAYOUT.compact and UDim2.fromOffset(58, 58) or UDim2.fromOffset(80, 80)
+				if LAYOUT.compact then ch.Position = UDim2.new(0.5, 0, 0, -14) end
+			elseif ch:IsA("TextLabel") and ch.Name ~= "Badge" then ch.TextSize = LAYOUT.compact and 13 or 14 end
 		end
 		b.Name = "Dock_" .. d[1]
 		b.LayoutOrder = i
@@ -4578,6 +4700,12 @@ do
 			title(acts, "IN TODAY'S SHOP  ·  " .. storeCountdown() .. " LEFT", 15, COL.ACCENT).Size = UDim2.new(1, 0, 0, 20)
 			if m > 0 then local h, b = fatButton(acts, "BUY  ·  " .. fmt(m) .. " MARKS", COL.BLUE, 19); h.Size = UDim2.new(1, 0, 0, 52); h.LayoutOrder = nextOrder(); b.Activated:Connect(function() afterBuy(call("Buy", "pack", set.pack, "marks"), render.ARMORY) end) end
 			if c > 0 then local h, b = fatButton(acts, "BUY  ·  " .. fmt(c) .. " CROWNS", COL.GOLD, 19); h.Size = UDim2.new(1, 0, 0, 52); h.LayoutOrder = nextOrder(); b.Activated:Connect(function() afterBuy(call("Buy", "pack", set.pack, "crowns"), render.ARMORY) end) end
+			do
+				local gm, gc = m, c
+				if Packs.priceAll then gm, gc = Packs.priceAll(set.pack) end
+				local gh, gb = fatButton(acts, "🎁  BUY AS A GIFT", COL.PURPLE, 17); gh.Size = UDim2.new(1, 0, 0, 46); gh.LayoutOrder = nextOrder()
+				gb.Activated:Connect(function() HX.giftBuy({kind = "pack", id = set.pack, label = pk.name .. " (whole pack)", marks = gm, crowns = gc}) end)
+			end
 			dim(acts, string.format("The whole %s pack%s, %d%% off.", pk.name, #Packs.skins(set.pack) > 0 and " (with its weapon skins)" or "", math.floor((pk.bundle or 0) * 100 + 0.5)), 12)
 		else
 			local when = Packs.nextOnSale(set.pack)
@@ -4800,6 +4928,11 @@ do
 			if m > 0 then table.insert(buttons, {"WHOLE PACK  ·  " .. fmt(m) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "pack", k, "marks"), render.SHOP) end}) end
 			if c > 0 then table.insert(buttons, {"WHOLE PACK  ·  " .. fmt(c) .. " CROWNS", COL.GOLD, function() afterBuy(call("Buy", "pack", k, "crowns"), render.SHOP) end}) end
 		end
+		if onSale then
+			-- (the whole pack for someone else: at its full pack price, whatever you own)
+			local gm, gc = Packs.priceAll and Packs.priceAll(k)
+			table.insert(buttons, HX.giftButton({kind = "pack", id = k, label = pk.name .. " (whole pack)", marks = gm or m, crowns = gc or c}))
+		end
 		modal(pk.name, string.format("%s  ·  %s  ·  %s", pk.weight or "", Packs.rarity(k), all and "owned" or (onSale and string.format("%d%% off as a whole pack", math.floor((pk.bundle or 0) * 100 + 0.5)) or "not in today's shop")), buttons, function(box)
 			local two = clearFrame(box); two.Size = UDim2.new(1, 0, 0, 280); two.LayoutOrder = 5
 			local th = mannequinThumb(two, Packs.loadout(k), pk.weight, UDim2.new(0, 230, 1, 0), nil, {dist = 9})
@@ -4812,6 +4945,7 @@ do
 					local opts = {}
 					if (pc.marks or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "piece", pc.id, "marks"), render.SHOP) end}) end
 					if (pc.crowns or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL.GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns"), render.SHOP) end}) end
+					table.insert(opts, HX.giftButton({kind = "piece", id = pc.id, label = pc.name, marks = pc.marks, crowns = pc.crowns}))
 					modal(pc.name, pc.description or "", opts)
 				end or nil, have and COL.GOOD or COL.MARKS)
 			end
@@ -5174,7 +5308,7 @@ do
 		local grid = clearFrame(list); grid.LayoutOrder = nextOrder()
 		grid.Size = UDim2.new(1, 0, 0, 0); grid.AutomaticSize = Enum.AutomaticSize.Y
 		local gl = Instance.new("UIGridLayout", grid)
-		gl.CellSize = UDim2.new(0.25, -12, 0, 330); gl.CellPadding = UDim2.fromOffset(16, 16); gl.SortOrder = Enum.SortOrder.LayoutOrder
+		gl.CellSize = UDim2.new(0.25, -12, 0, 380); gl.CellPadding = UDim2.fromOffset(16, 16); gl.SortOrder = Enum.SortOrder.LayoutOrder
 		local tierCol = {RARITY_COL.Common, RARITY_COL.Rare, RARITY_COL.Epic, RARITY_COL.Legendary}
 		for i, pr in ipairs(ECON.products or {}) do
 			local live = products[i] or {}
@@ -5195,10 +5329,16 @@ do
 			local w = title(card, "CROWNS", 15, COL.CROWNS); w.Position = UDim2.fromOffset(0, 228); w.Size = UDim2.new(1, 0, 0, 18); w.TextXAlignment = Enum.TextXAlignment.Center
 			local price = live.robux or pr.robux
 			local bh, buy = fatButton(card, live.ready == false and "COMING SOON" or ("R$ " .. fmt(price)), live.ready == false and COL.GLASS2 or COL.GREEN, 22)
-			bh.AnchorPoint = Vector2.new(0.5, 1); bh.Position = UDim2.new(0.5, 0, 1, -12); bh.Size = UDim2.new(1, -24, 0, 54)
+			bh.AnchorPoint = Vector2.new(0.5, 1); bh.Position = UDim2.new(0.5, 0, 1, -62); bh.Size = UDim2.new(1, -24, 0, 54)
 			buy.Activated:Connect(function()
 				local res = call("BuyCrowns", i)
 				toast(res.msg or "", res.ok and COL.GOOD or COL.BAD)
+			end)
+			local gh, gb = fatButton(card, "🎁  AS A GIFT", COL.PURPLE, 15)
+			gh.AnchorPoint = Vector2.new(0.5, 1); gh.Position = UDim2.new(0.5, 0, 1, -12); gh.Size = UDim2.new(1, -24, 0, 42)
+			gb.Activated:Connect(function()
+				if live.ready == false then toast("that bundle isn't on sale yet", COL.BAD); return end
+				HX.giftBuy({bundle = i, crowns = pr.crowns, robux = price, label = fmt(pr.crowns) .. " Crowns"})
 			end)
 		end
 		local ex = panel(list, "CROWNS › MARKS")
@@ -5694,6 +5834,12 @@ do
 		progressBar(barH, into / P.tierXP, COL.GOLD, (ps.tier or 0) >= maxTier and "MAX TIER" or string.format("%s / %s XP TO TIER %d", fmt(into), fmt(P.tierXP), (ps.tier or 0) + 1), 24)
 		local how = title(box, string.format("EVERY ROUND'S XP COUNTS  ·  +%d PER DAILY TASK, x3 FOR THE WEEKLY", P.taskXP or 0), 12, COL.DIM)
 		how.Position = UDim2.fromOffset(0, 94); how.Size = UDim2.new(0.6, 0, 0, 16)
+		do
+			-- (the pass for someone else)
+			local gh, gb = fatButton(box, "🎁  GIFT THE PASS", COL.PURPLE, 15)
+			gh.AnchorPoint = Vector2.new(1, 0); gh.Position = UDim2.new(1, ps.premium and 0 or -410, 0, ps.premium and 70 or 8); gh.Size = UDim2.fromOffset(220, 44)
+			gb.Activated:Connect(function() HX.giftBuy({kind = "pass", id = "pass", label = P.name .. " premium", crowns = P.price}) end)
+		end
 		if ps.premium then
 			local pb = title(box, "★ PREMIUM", 28, COL.GOLD); pb.AnchorPoint = Vector2.new(1, 0); pb.Position = UDim2.new(1, 0, 0, 10); pb.Size = UDim2.fromOffset(320, 34); pb.TextXAlignment = Enum.TextXAlignment.Right
 			local pbs = title(box, "EVERY PREMIUM REWARD IS YOURS AS YOU CLIMB", 12, COL.DIM); pbs.AnchorPoint = Vector2.new(1, 0); pbs.Position = UDim2.new(1, 0, 0, 46); pbs.Size = UDim2.fromOffset(380, 16); pbs.TextXAlignment = Enum.TextXAlignment.Right
@@ -6687,6 +6833,11 @@ HX.screens = function()
 						local r = call("TradeRequest", id); toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
 					end)
 				end
+				act("🎁  SEND A GIFT", COL.PURPLE, function()
+					local r = HX.giftFind(id)
+					if not r.ok then toast(r.msg or "", COL.BAD); return end
+					selectTab("GIFTS")
+				end)
 				if not d.party then
 					act("INVITE TO PARTY", COL.GREEN, function()
 						local r = call("PartyInvite", id, d.display); toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
@@ -7440,6 +7591,14 @@ function HX.inspect(kind, id, copy, theirs)
 	if #mine > 0 and kind ~= "companion" then
 		act("TRADE IT", COL.BLUE, function() selectTab("TRADE") end)
 	end
+	do
+		-- (a copy that can change hands: one goes into a gift)
+		local give
+		for _, c in ipairs(mine) do if not c.b then give = c.u; break end end
+		if give and kind ~= "piece" then
+			act("🎁  GIFT IT", COL.PURPLE, function() ui.giftItems = {give}; ui.giftTab = "items"; selectTab("GIFTS") end)
+		end
+	end
 	-- (it pops in)
 	local sc = Instance.new("UIScale", o); sc.Scale = 0.96
 	TweenService:Create(sc, TweenInfo.new(0.18, Enum.EasingStyle.Back), {Scale = 1}):Play()
@@ -7660,6 +7819,8 @@ show = function(tab)
 		loadCatalog()
 	end
 	selectTab(tab or "PLAY")
+	-- (gifts that came while the menu was closed)
+	if HX.pendingGifts then local list = HX.pendingGifts; task.delay(0.5, function() HX.showGifts(list) end) end
 	local day = storeDay()
 	if state.login and not state.login.claimed and day and loginShownDay ~= day and not _G.IntroActive and not _G.TourActive then
 		loginShownDay = day
@@ -7979,10 +8140,251 @@ do
 		bx.Activated:Connect(function() call("TradeCancel") end)
 		dim(al, "Check both sides before you confirm: a trade can't be undone.", 13)
 	end
+
+	------------------------------------------------------------------
+	--  GIFTS — send Marks, Crowns and items to anyone by username, online or not
+	--  (Economy ▸ Gifting decides everything: who may, how much a day, what can go)
+	------------------------------------------------------------------
+	local g = tabFrame.GIFTS
+	ui.giftItems = ui.giftItems or {}
+	ui.giftMarks, ui.giftCrowns = ui.giftMarks or 0, ui.giftCrowns or 0
+	ui.giftTab = ui.giftTab or "items"
+	render.GIFTS = function()
+		clear(g)
+		local info = call("GiftInfo")
+		local P = state.profile or {}
+		local wallet = P.wallet or {}
+		local L = info.left or {}
+		-- 1 · WHO
+		local colA = clearFrame(g); colA.Size = UDim2.new(0.3, -10, 1, 0)
+		local la = scroll(colA, 10)
+		local ha = title(la, "1  ·  WHO IS IT FOR?", 20, COL.ACCENT); ha.Size = UDim2.new(1, 0, 0, 26); ha.LayoutOrder = nextOrder()
+		local _, findWho = HX.giftWhoBox(la, function() render.GIFTS() end)
+		local function pickList(heading2, list)
+			if #list == 0 then return end
+			local hp = title(la, heading2, 13, COL.DIM); hp.Size = UDim2.new(1, 0, 0, 18); hp.LayoutOrder = nextOrder()
+			for _, it in ipairs(list) do
+				row(la, it.name, (HX.giftTo and HX.giftTo.userId == it.id) and "✔" or "PICK", HX.giftTo and HX.giftTo.userId == it.id, function() findWho(it.id) end, COL.ACCENT)
+			end
+		end
+		local here = {}
+		for _, o in ipairs(Players:GetPlayers()) do if o ~= player then table.insert(here, {id = o.UserId, name = o.DisplayName}) end end
+		pickList("IN THIS SERVER", here)
+		local friends = {}
+		for _, fd in ipairs(state.friends or {}) do if not fd.here and #friends < 12 then table.insert(friends, {id = fd.id, name = fd.name}) end end
+		pickList("FRIENDS ONLINE", friends)
+		-- 2 · WHAT
+		local colB = clearFrame(g); colB.Position = UDim2.new(0.3, 0, 0, 0); colB.Size = UDim2.new(0.43, -10, 1, 0)
+		local hb = title(colB, "2  ·  WHAT TO SEND", 20, COL.ACCENT); hb.Size = UDim2.new(1, 0, 0, 26)
+		local tabs = clearFrame(colB); tabs.Position = UDim2.fromOffset(0, 32); tabs.Size = UDim2.new(1, 0, 0, 40)
+		chips(tabs, {{text = "ITEMS", k = "items"}, {text = "MARKS", k = "marks"}, {text = "CROWNS", k = "crowns"}, {text = "FROM THE SHOP", k = "shop"}},
+			function(it) return ui.giftTab == it.k end, function(it) ui.giftTab = it.k; render.GIFTS() end, 36)
+		local body = clearFrame(colB); body.Position = UDim2.fromOffset(0, 80); body.Size = UDim2.new(1, 0, 1, -80)
+		local function amountPicker(kind, have, leftToday, presets)
+			local lb = scroll(body, 10)
+			local cur = kind == "marks" and ui.giftMarks or ui.giftCrowns
+			local big = title(lb, fmt(cur) .. " " .. string.upper(kind), 40, kind == "marks" and COL.MARKS or COL.CROWNS); big.Size = UDim2.new(1, 0, 0, 48); big.LayoutOrder = nextOrder()
+			dim(lb, string.format("You have %s.  You can send %s more today.", fmt(have), fmt(leftToday)), 14)
+			local items = {}
+			for _, n in ipairs(presets) do table.insert(items, {text = "+" .. fmt(n), n = n}) end
+			table.insert(items, {text = "CLEAR", n = 0})
+			chips(lb, items, function() return false end, function(it)
+				local v = it.n == 0 and 0 or math.min(cur + it.n, have, leftToday)
+				if kind == "marks" then ui.giftMarks = v else ui.giftCrowns = v end
+				render.GIFTS()
+			end, 40)
+			local box = Instance.new("TextBox")
+			box.PlaceholderText = "or type an amount…"; box.Text = ""; box.ClearTextOnFocus = true
+			box.Font = FONT_BODY; box.TextSize = 16; box.TextColor3 = COL.TEXT; box.PlaceholderColor3 = COL.DIM
+			box.BackgroundColor3 = COL.PANEL; box.BorderSizePixel = 0; box.Size = UDim2.new(1, 0, 0, 42); box.LayoutOrder = nextOrder()
+			box.TextXAlignment = Enum.TextXAlignment.Left; box.Parent = lb
+			Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8); padding(box, 12, 12, 0, 0)
+			box.FocusLost:Connect(function()
+				local v = math.floor(tonumber((box.Text:gsub("[^%d]", ""))) or -1)
+				if v < 0 then return end
+				v = math.min(v, have, leftToday)
+				if kind == "marks" then ui.giftMarks = v else ui.giftCrowns = v end
+				render.GIFTS()
+			end)
+			return lb
+		end
+		if ui.giftTab == "marks" then
+			amountPicker("marks", wallet.marks or 0, L.marks or 0, {100, 500, 1000, 5000})
+		elseif ui.giftTab == "crowns" then
+			local lb = amountPicker("crowns", wallet.crowns or 0, L.crowns or 0, {10, 50, 100, 500})
+			dim(lb, "Or buy them a Crowns bundle with Robux: SHOP › CROWNS › 🎁 AS A GIFT.", 13)
+		elseif ui.giftTab == "shop" then
+			local lb = scroll(body, 8)
+			dim(lb, "Anything in today's shop, bought for them: you pay, they get it. Something they already own comes to them as what you paid.", 13)
+			for _, id in ipairs(state.store and state.store.skins or {}) do
+				local sk = Catalog.SKIN[id]
+				if sk then
+					row(lb, sk.name .. "  ·  " .. (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon), priceText(sk.marks, sk.crowns) .. "  🎁", false, function()
+						HX.giftBuy({kind = "skin", id = id, marks = sk.marks, crowns = sk.crowns, label = sk.name})
+					end, RARITY_COL[sk.rarity] or COL.MARKS)
+				end
+			end
+			for _, k in ipairs(state.store and state.store.packs or {}) do
+				local pk = Catalog.PACKS[k]
+				if pk then
+					local gm, gc = 0, 0
+					if Packs.priceAll then gm, gc = Packs.priceAll(k) else gm, gc = Packs.price(k) end
+					row(lb, pk.name .. "  ·  WHOLE PACK", priceText(gm, gc) .. "  🎁", false, function()
+						HX.giftBuy({kind = "pack", id = k, label = pk.name .. " (whole pack)", marks = gm, crowns = gc})
+					end, RARITY_COL[Packs.rarity(k)] or COL.MARKS)
+				end
+			end
+			local PP = Catalog.PASS
+			row(lb, PP.name .. "  ·  PREMIUM", fmt(PP.price) .. " Crowns  🎁", false, function()
+				HX.giftBuy({kind = "pass", id = "pass", label = PP.name .. " premium", crowns = PP.price})
+			end, COL.GOLD)
+			row(lb, "A CROWNS BUNDLE (ROBUX)", "SHOP › CROWNS  ›", false, function() openCrowns() end, COL.CROWNS)
+		else
+			-- ITEMS: the copies that can be given (armor as full sets), tap to add
+			local hi = title(body, string.format("TAP TO ADD  ·  UP TO %d A GIFT  ·  %d MORE TODAY", info.maxItems or 8, L.items or 0), 13, COL.DIM)
+			hi.Size = UDim2.new(1, 0, 0, 18)
+			local pg = grid(body, 10); pg.Position = UDim2.fromOffset(0, 24); pg.Size = UDim2.new(1, 0, 1, -24)
+			local picked = {}
+			for _, u in ipairs(ui.giftItems) do picked[u] = true end
+			local mine, armorBySet = {}, {}
+			for key, list in pairs(P.copies or {}) do
+				local pieceId = key:match("^armor:(.+)$")
+				local pc = pieceId and Catalog.PIECE[pieceId]
+				local set = pc and (pc.set or ("pack:" .. tostring(pc.pack)))
+				for _, c in ipairs(list) do
+					if not c.b then
+						if set then
+							armorBySet[set] = armorBySet[set] or {}
+							armorBySet[set][pc.id] = armorBySet[set][pc.id] or c
+						else
+							table.insert(mine, {u = c.u, key = key, n = c.n, v = c.v})
+						end
+					end
+				end
+			end
+			for set, byPiece in pairs(armorBySet) do
+				local units, key, name, whole = {}, nil, set, true
+				for _, pc in ipairs(Catalog.PIECES) do
+					if (pc.set or ("pack:" .. tostring(pc.pack))) == set and not Catalog.isFree(pc) then
+						local c = byPiece[pc.id]
+						if not c then whole = false; break end
+						table.insert(units, c.u)
+						if pc.slot == "top" or not key then key = "armor:" .. pc.id end
+						name = pc.setName or name
+					end
+				end
+				if whole and #units > 0 then table.insert(mine, {u = units[1], units = units, key = key, label = name, subLabel = "FULL SET"}) end
+			end
+			table.sort(mine, function(a, b) return worth(a) > worth(b) end)
+			for i, c in ipairs(mine) do
+				local units = c.units or {c.u}
+				local on = picked[units[1]] == true
+				local cb = card(pg, c, function()
+					if on then
+						local drop = {}
+						for _, u in ipairs(units) do drop[u] = true end
+						for k = #ui.giftItems, 1, -1 do if drop[ui.giftItems[k]] then table.remove(ui.giftItems, k) end end
+					else
+						for _, u in ipairs(units) do table.insert(ui.giftItems, u) end
+					end
+					render.GIFTS()
+				end, on)
+				cb.LayoutOrder = i
+			end
+			if #mine == 0 then dim(pg, "Nothing you can give yet: crate and shop skins, kill effects and emotes out of crates, crate armor (as full sets) and hatched companions can be given.", 13) end
+		end
+		-- 3 · SEND
+		local colC = clearFrame(g); colC.AnchorPoint = Vector2.new(1, 0); colC.Position = UDim2.new(1, 0, 0, 0); colC.Size = UDim2.new(0.27, 0, 1, 0)
+		local lc = scroll(colC, 10)
+		local hc = title(lc, "3  ·  SEND IT", 20, COL.ACCENT); hc.Size = UDim2.new(1, 0, 0, 26); hc.LayoutOrder = nextOrder()
+		local sum = panel(lc, "THE GIFT")
+		local who = HX.giftTo
+		row(sum, "FOR", who and (who.displayName or who.name) or "nobody yet", false, nil, who and COL.TEXT or COL.BAD)
+		local itemCount = 0
+		do local seen = {}; for _, u in ipairs(ui.giftItems) do if not seen[u] then seen[u] = true; itemCount += 1 end end end
+		if itemCount > 0 then row(sum, "ITEMS", tostring(itemCount) .. (itemCount == 1 and " copy" or " copies"), false, function() ui.giftItems = {}; render.GIFTS() end, COL.TEXT) end
+		if ui.giftMarks > 0 then row(sum, "MARKS", fmt(ui.giftMarks), false, nil, COL.MARKS) end
+		if ui.giftCrowns > 0 then row(sum, "CROWNS", fmt(ui.giftCrowns), false, nil, COL.CROWNS) end
+		if itemCount == 0 and ui.giftMarks == 0 and ui.giftCrowns == 0 then dim(sum, "Nothing yet: pick items, Marks or Crowns in the middle.", 13) end
+		local nh = title(lc, "A CARD WITH IT", 13, COL.DIM); nh.Size = UDim2.new(1, 0, 0, 18); nh.LayoutOrder = nextOrder()
+		HX.giftNotePicker(lc)
+		local ready = who ~= nil and (itemCount > 0 or ui.giftMarks > 0 or ui.giftCrowns > 0) and info.allowed
+		local sh, sb = fatButton(lc, "🎁  SEND GIFT", ready and COL.GREEN or COL.GLASS2, 24); sh.Size = UDim2.new(1, 0, 0, 66); sh.LayoutOrder = nextOrder()
+		sb.Activated:Connect(function()
+			if not info.allowed then toast(info.why or "you can't send gifts yet", COL.BAD); return end
+			if not who then toast("pick who it's for first", COL.BAD); return end
+			if not ready then toast("pick something to send", COL.BAD); return end
+			local bits = {}
+			if itemCount > 0 then table.insert(bits, itemCount .. (itemCount == 1 and " item" or " items")) end
+			if ui.giftMarks > 0 then table.insert(bits, fmt(ui.giftMarks) .. " Marks") end
+			if ui.giftCrowns > 0 then table.insert(bits, fmt(ui.giftCrowns) .. " Crowns") end
+			modal("SEND THIS GIFT?", string.format("%s to %s (@%s). A gift can't be undone or taken back.", table.concat(bits, " + "), who.displayName or who.name, who.name), {
+				{"🎁  YES, SEND IT", COL.GREEN, function()
+					closeModal()
+					local r = call("GiftSend", who.userId, {marks = ui.giftMarks, crowns = ui.giftCrowns, items = ui.giftItems, note = ui.giftNote})
+					if not r.ok and HX.shortOf(r.msg) then return end
+					toast(r.msg or "", r.ok and COL.GOOD or COL.BAD)
+					if r.profile then state.profile = r.profile; refreshWallet() end
+					if r.ok then
+						ui.giftItems, ui.giftMarks, ui.giftCrowns = {}, 0, 0
+						pcall(function() HX.FX.play("Coins") end)
+					end
+					render.GIFTS()
+				end},
+			})
+		end)
+		if not info.allowed then dim(lc, "You can't send gifts yet: " .. tostring(info.why or "") .. ".", 13) end
+		local rules = panel(lc, "TODAY YOU CAN STILL SEND")
+		dim(rules, string.format("%s Marks  ·  %s Crowns  ·  %d items  ·  %d gifts (resets at midnight UTC)", fmt(L.marks or 0), fmt(L.crowns or 0), L.items or 0, L.gifts or 0), 13)
+		local warn = panel(lc, "STAY SAFE")
+		dim(warn, "Gifts are one way: nothing comes back. Never send anything to someone who promises you something in return, and staff will never ask you for gifts. Who can send YOU gifts: SETTINGS › Gifts from.", 13)
+	end
+end
+
+-- gifts that came: a card for each, what was in it (HX.pendingGifts: kept until the menu is up)
+function HX.showGifts(list)
+	if not open then HX.pendingGifts = list; return end
+	HX.pendingGifts = nil
+	local n = #list
+	modal(n == 1 and "🎁 YOU GOT A GIFT!" or ("🎁 YOU GOT " .. n .. " GIFTS!"), "", {{"AWESOME!", COL.GREEN, function() closeModal() end}}, function(box)
+		for _, gift in ipairs(list) do
+			local p = panel(box, nil)
+			local head = gift.returned and ("RETURNED: " .. tostring(gift.fromName or "they") .. " can't receive gifts where they are")
+				or ("FROM " .. string.upper(tostring(gift.fromName or "a player")))
+			local t = title(p, head, 18, gift.returned and COL.DIM or COL.ACCENT); t.Size = UDim2.new(1, 0, 0, 22); t.LayoutOrder = 0; t.TextTruncate = Enum.TextTruncate.AtEnd
+			if gift.note then local nt = title(p, "“" .. tostring(gift.note) .. "”", 16, COL.TEXT); nt.Size = UDim2.new(1, 0, 0, 20); nt.LayoutOrder = 1 end
+			local thumbs = {}
+			for _, it in ipairs(gift.items or {}) do if it.kind == "copy" then table.insert(thumbs, it) end end
+			if #thumbs > 0 then
+				local strip = clearFrame(p); strip.Size = UDim2.new(1, 0, 0, 96); strip.LayoutOrder = 2
+				hlist(strip, 8)
+				for i, it in ipairs(thumbs) do
+					if i > 5 then break end
+					local kind, id = HX.fromKey(it.key)
+					local d = HX.defOf(kind, id)
+					if d then
+						local th = HX.thumb(strip, kind, d, UDim2.fromOffset(96, 96))
+						th.LayoutOrder = i
+						border(th, RARITY_COL[d.rarity] or COL.DIM, 2, 0)
+					end
+				end
+			end
+			for _, line in ipairs(gift.lines or {}) do local l = dim(p, line, 14); l.TextColor3 = COL.TEXT end
+			if #thumbs > 0 then dim(p, #thumbs .. (#thumbs == 1 and " item" or " items") .. " added to your INVENTORY.", 12) end
+		end
+	end, 600)
+	pcall(function() HX.FX.play("Boom") end)
 end
 
 hubEvent.OnClientEvent:Connect(function(what, a, b, c)
 	if what == "FirstBattleDone" then return end
+	if what == "GiftsIn" and type(a) == "table" then
+		if b then state.profile = b; refreshWallet() end
+		local from = a[1] and a[1].fromName or "someone"
+		toast("🎁 a gift from " .. tostring(from) .. (open and "" or ": press M to open it"), COL.GOOD)
+		HX.showGifts(a)
+		return
+	end
 	if what == "Toast" then
 		toast(a)
 	elseif what == "TradeInvite" and type(a) == "table" then

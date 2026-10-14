@@ -85,14 +85,16 @@ ClientSettings.CHOICES = {
 		hint = "Who can invite you to their party: anyone, only your Roblox friends, or nobody."},
 	{key = "TradeRequests", label = "Trade requests from", options = {"Everyone", "Friends", "Nobody"},
 		hint = "Who can ask you to trade: anyone, only your Roblox friends, or nobody."},
+	{key = "Gifts", label = "Gifts from", options = {"Everyone", "Friends", "Nobody"},
+		hint = "Who can send you gifts (Marks, Crowns, items, things from the shop): anyone, only your Roblox friends, or nobody."},
 }
--- the settings the server enforces (who may invite you, trade with you)
-ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests"}
+-- the settings the server enforces (who may invite you, trade with you, send you gifts)
+ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests", "Gifts"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1,
 	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
-	PartyInvites = "Everyone", TradeRequests = "Everyone",
+	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone",
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 

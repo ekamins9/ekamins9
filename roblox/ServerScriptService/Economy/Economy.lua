@@ -251,6 +251,68 @@ function Economy.buy(plr, kind, id, currency)
 	return false, "unknown purchase"
 end
 
+-- BUYING AS A GIFT (Economy ▸ Gifting): what a purchase would give, packed to travel to someone
+-- else's gift box, and its price. Nothing is charged here; whether they already have it is
+-- settled when it arrives (something they own comes as what was paid for it instead; a skin
+-- is a copy of its own, so a second one is simply another copy). Crates, eggs and Keys are
+-- never bought as gifts: random items stay with whoever pays for them.
+--   -> {marks, crowns, label, grants = {{kind, id, refund}}, skins = {{id, refund}}, pass, serial}, or nil and why
+function Economy.giftQuote(kind, id, currency)
+	currency = currency == "crowns" and "crowns" or "marks"
+	local function back(m, c) return {marks = m, crowns = c} end
+	if kind == "piece" then
+		local pc = Catalog.PIECE[id]; if not pc then return nil, "no such piece" end
+		if pc.crate then return nil, "crate armor can't be bought as a gift: send a copy you own instead" end
+		if Catalog.isFree(pc) then return nil, "everyone has that one already" end
+		if not Catalog.onSale(pc.pack) then return nil, "not in today's store" end
+		local m, c = price(pc.marks, pc.crowns, currency); if not m then return nil, c end
+		return {marks = m, crowns = c, label = pc.name, grants = {{"pieces", pc.id, back(m, c)}}}
+	elseif kind == "pack" then
+		local pk = Catalog.PACKS[id]; if not pk then return nil, "no such pack" end
+		if not Catalog.onSale(id) then return nil, "not in today's store" end
+		local disc = 1 - (pk.bundle or 0)
+		local m, c, grants = 0, 0, {}
+		local function add(kindOf, itemId, im, ic)
+			local pm, pc2 = price(math.floor((im or 0) * disc + 0.5), math.floor((ic or 0) * disc + 0.5), currency)
+			table.insert(grants, {kindOf, itemId, pm and back(pm, pc2) or back(0, 0)})
+			m += im or 0; c += ic or 0
+		end
+		for _, pc in ipairs(Catalog.PIECES) do
+			if pc.pack == id and not pc.crate and not Catalog.isFree(pc) then add("pieces", pc.id, pc.marks, pc.crowns) end
+		end
+		for _, sk in ipairs(Catalog.SKINS) do if sk.pack == id then add("skins", sk.id, sk.marks, sk.crowns) end end
+		if #grants == 0 then return nil, "nothing in that pack" end
+		local pm, pcn = price(math.floor(m * disc + 0.5), math.floor(c * disc + 0.5), currency); if not pm then return nil, pcn end
+		return {marks = pm, crowns = pcn, label = pk.name, grants = grants}
+	elseif kind == "weapon" then
+		local w = Catalog.WEAPON[id]; if not w then return nil, "no such weapon" end
+		if not w.marks or w.marks <= 0 then return nil, "that weapon is earned, not bought" end
+		return {marks = w.marks, crowns = 0, label = w.name, grants = {{"weapons", w.id, back(w.marks, 0)}}}
+	elseif kind == "color" then
+		local col = Catalog.COLOR[id]; if not col or not col.crowns then return nil, "no such colour" end
+		local cr = type(col.crowns) == "number" and col.crowns or 0
+		if cr <= 0 then return nil, "that colour is free" end
+		return {marks = 0, crowns = cr, label = id, grants = {{"colors", id, back(0, cr)}}}
+	elseif kind == "skin" then
+		local sk = Catalog.SKIN[id]; if not sk then return nil, "no such skin" end
+		local src = Catalog.skinSource(sk)
+		if src == "earned" then return nil, "that skin is earned by playing" end
+		if src == "pass" then return nil, "that skin comes from the season pass" end
+		if src == "crate" then return nil, "crate skins can't be bought as gifts: send a copy you own instead" end
+		if not Catalog.skinOnSale(id) then return nil, Catalog.soldOut(sk) and "sold out: every one has been made" or "not in today's shop" end
+		local m, c = price(sk.marks, sk.crowns, currency); if not m then return nil, c end
+		local wname = Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon
+		-- (a shelf skin is a copy of its own; a pack's skin is owned the way the pack gives it)
+		if src ~= "shop" then return {marks = m, crowns = c, label = wname .. " · " .. sk.name, grants = {{"skins", id, back(m, c)}}} end
+		return {marks = m, crowns = c, label = wname .. " · " .. sk.name, skins = {{id = id, refund = back(m, c)}},
+			serial = collection().wantsSerial(sk) and id or nil}
+	elseif kind == "pass" then
+		local P = Catalog.PASS
+		return {marks = 0, crowns = P.price, label = P.name, pass = P.season, passRefund = back(0, P.price)}
+	end
+	return nil, "that can't be bought as a gift"
+end
+
 --------------------------------------------------------------------
 --  CRATES
 --------------------------------------------------------------------
@@ -491,6 +553,16 @@ function Economy.passClaimAll(plr)
 	end
 	if #lines == 0 then return false, "nothing to claim yet", {}, {} end
 	return true, string.format("%d rewards claimed", #lines), lines, crates
+end
+
+-- the premium pass, a gift (Economy ▸ Gifting): false when they have it already, or it was
+-- bought for a season that's over (it comes as its price instead)
+function Economy.passGift(plr, season)
+	local rec = passRecord(plr)
+	if rec.premium or season ~= Catalog.PASS.season then return false end
+	rec.premium = true
+	Profile.markDirty(plr); Economy.changed:Fire(plr)
+	return true
 end
 
 function Economy.passBuy(plr)

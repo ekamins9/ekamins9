@@ -8,7 +8,8 @@ shop (a treasure chest), tasks (a sealed scroll), wardrobe (a tabard on a
 hanger), settings (a gear), pass (a crowned banner), hatchery (a straw nest
 with two eggs: the PETS tile), trade (two arrows chasing round a coin and a gem),
 inventory (a buckled satchel with a sword hilt), ranks (a gold trophy cup with a
-gem, on a stepped dark base: the LEADERBOARDS tile). Output: 512x512 RGBA
+gem, on a stepped dark base: the LEADERBOARDS tile), gifts (a ribboned box with a gold
+bow: the GIFTS tile). Output: 512x512 RGBA
 PNGs in blender/out/ui/.
 """
 import bpy, bmesh, math, os, random, sys
@@ -434,7 +435,32 @@ def trophy():
     return objs
 
 
-MODELS = {"loadout": (helmet, 0.92, 0.0), "armory": (crossed_swords, 0.9, -0.55), "shop": (chest, 0.92, -0.55),
+def gift_box():
+    """the gifts: a royal-blue box tied with a red ribbon and a big gold bow, a gem on the knot"""
+    m = I.mats()
+    blue = I.material("BoxBlue", (0.1, 0.24, 0.78), rough=0.35)
+    blue_dark = I.material("BoxBlueDark", (0.06, 0.15, 0.55), rough=0.4)
+    red = I.material("Ribbon", (0.86, 0.1, 0.12), rough=0.3, emit=0.03)
+    objs = [box("Box", (1.3, 1.3, 0.98), (0, 0, -0.32), blue, bevel=0.06)]
+    objs.append(box("Lid", (1.44, 1.44, 0.3), (0, 0, 0.3), blue_dark, bevel=0.06))
+    # the ribbon: a band each way, round the box and over the lid
+    for rot in ((0, 0, 0), (0, 0, math.pi / 2)):
+        objs.append(box("RibbonBox", (0.26, 1.34, 0.99), (0, 0, -0.32), red, rot=rot, bevel=0.02))
+        objs.append(box("RibbonLid", (0.26, 1.48, 0.32), (0, 0, 0.3), red, rot=rot, bevel=0.02))
+    # the bow: two gold loops leaning out, two tails, a knot with a gem
+    for sx in (-1, 1):
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.3, minor_radius=0.085, major_segments=40, minor_segments=12,
+                                         location=(sx * 0.3, 0, 0.66), rotation=(math.pi / 2, sx * 0.55, 0))
+        loop = bpy.context.active_object; loop.name = "Loop"
+        loop.scale = (1.0, 0.62, 1.0)
+        I.link(loop, m["gold"]); smooth(loop); objs.append(loop)
+        objs.append(box("Tail", (0.16, 0.06, 0.5), (sx * 0.2, -0.18, 0.3), m["gold"], rot=(0.25, sx * 0.5, 0), bevel=0.02))
+    objs.append(sphere("Knot", 0.17, (0, 0, 0.56), m["gold"], scale=(1, 0.8, 0.9)))
+    objs.append(I.gem("Gem", (0, -0.15, 0.56), 0.11, m["gem_red"], rot=(0.4, 0.2, 0.7)))
+    return objs
+
+
+MODELS = {"loadout": (helmet, 0.92, 0.0), "gifts": (gift_box, 0.9, -0.45), "armory": (crossed_swords, 0.9, -0.55), "shop": (chest, 0.92, -0.55),
           "tasks": (scroll, 0.92, -0.3), "wardrobe": (wardrobe, 0.92, -0.3), "settings": (gear, 0.95, -0.4),
           "pass": (pass_banner, 0.92, -0.25), "hatchery": (hatchery_nest, 0.86, -0.5),
           "trade": (trade_arrows, 0.9, -0.2), "inventory": (satchel, 0.9, -0.45), "ranks": (trophy, 0.9, -0.35)}

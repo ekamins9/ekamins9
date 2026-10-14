@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local Economy = require(script.Parent:WaitForChild("Economy"))
 require(script.Parent:WaitForChild("Collection"))   -- claims, Founders, limited stock, the policy check
 require(script.Parent:WaitForChild("Trading"))      -- player-to-player trades
+local Gifting = require(script.Parent:WaitForChild("Gifting"))   -- gifts: the gift box, sent and bought
 local Catalog = require(game:GetService("ReplicatedStorage"):WaitForChild("Catalog"))
 
 -- fill product ids from the universe's Developer Products, by name
@@ -41,6 +42,9 @@ end)
 MarketplaceService.ProcessReceipt = function(info)
 	local plr = Players:GetPlayerByUserId(info.PlayerId)
 	if not plr then return Enum.ProductPurchaseDecision.NotProcessedYet end
+	-- Crowns bought as a gift for someone else go to their gift box (Economy ▸ Gifting)
+	local handled, saved = Gifting.receipt(plr, info.ProductId, info.PurchaseId)
+	if handled then return saved and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet end
 	local ok = Economy.grantProduct(plr, info.ProductId, info.PurchaseId)
 	return ok and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
 end

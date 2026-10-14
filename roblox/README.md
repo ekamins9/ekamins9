@@ -68,6 +68,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Companions.lua` | `ReplicatedStorage` → `Companions` (creatures and eggs built from parts) | ModuleScript |
 | `StarterPlayerScripts/Pastimes.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pastimes` (companions following, the gift chip, your eggs in the nests) | LocalScript |
 | `ServerScriptService/Economy/EconomyServer.server.lua` | `ServerScriptService` → `Economy` → `EconomyServer` | Script |
+| `ServerScriptService/Economy/Gifting.lua` | `ServerScriptService` → `Economy` → `Gifting` (the gift box: send anything to anyone, buy as a gift) | ModuleScript |
 | `ServerScriptService/Build/<Name>.lua` | `ServerScriptService` → `Build` (Folder) → `Builder`, `Weapons`, `Armor`, `Body`, `Blueprints` | ModuleScript each |
 | `ReplicatedStorage/Theme.lua` | `ReplicatedStorage` → `Theme` | ModuleScript |
 | `ServerScriptService/Loadout/Profile.lua` | `ServerScriptService` → `Loadout` → `Profile` | ModuleScript |
@@ -887,7 +888,7 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
     blade length. The animation (the weapon's idle guard) fades out and back in over 0.2 s, so
     nothing snaps.
 
-## Drops, rarity, collections, trading (`Catalog ▸ Calendar`, `Drops`, `Economy ▸ Collection`, `Economy ▸ Trading`)
+## Drops, rarity, collections, trading, gifts (`Catalog ▸ Calendar`, `Drops`, `Economy ▸ Collection`, `Economy ▸ Trading`, `Economy ▸ Gifting`)
 
 **The Forge.** Every weapon skin is its own mesh (`blender/forge.py` + `blender/themes.py`: new
 edges, guards, pommels, grips, ornaments, painted patterns, Neon inlays), welded on from
@@ -963,6 +964,20 @@ Both sides put up to 8 items up, both press READY, a
 5-second countdown runs (any change un-readies both), both CONFIRM; the server re-checks every
 copy, swaps them in one step and saves both profiles at once. Each side shows its worth (rating
 points). Logged in DataStore `TradeLog_v1`.
+
+**Gifts** (GIFTS in the dock; `Economy ▸ Gifting`). One way, to anyone, by Roblox username, whether
+they're playing or not: Marks, Crowns, items (the copies that trade, armor as full sets), or
+anything in today's shop **bought for them** (a 🎁 button by every purchase: shelf skins, packs and
+their pieces, weapons, the pass, a Crowns bundle with Robux). A gift goes into their **gift box**
+(DataStore `Gifts_v1`, key `u<id>`) and is opened the moment they're here: in this server at once,
+in another on a MessagingService nudge, offline when they next join (and a Roblox notification,
+`Hub ▸ Reminders`). Something they already own comes as what was paid for it; a skin is a copy of
+its own. Rules: level 5 and up, where Roblox allows trading paid items (sender, and the recipient
+as it arrives: where they can't receive it, it goes back to the sender whole), their privacy
+(SETTINGS › Gifts from), and a daily cap (`ECONOMY.gifting.perDay`: 25,000 Marks, 5,000 Crowns, 20
+items, 30 gifts). A gift carries a card picked from `ECONOMY.gifting.notes`, never typed. Never:
+crates, eggs, Keys. The sender's save lands before anything leaves; every gift is logged
+(`GiftLog_v1`). Received gifts pop up as cards (from whom, the note, what was in it).
 
 **The shop.** The DAILY tab opens with this week's drop (name, blurb, its headliner, the events
 running, NEXT DROP IN … · ???) and the menu shows it once a session. The WEAPONS shelf's headliner

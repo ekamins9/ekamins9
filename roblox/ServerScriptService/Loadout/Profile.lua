@@ -105,7 +105,8 @@ local function default()
 		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, unlockSeen = false, dropSeen = "", copies = {}, tally = {}, claims = {}, copySeq = 0,
-		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3, funnel = {}}
+		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3, funnel = {},
+		giftsIn = {}, giftDay = {}}   -- (Economy ▸ Gifting: the gift ids opened, today's sending)
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p

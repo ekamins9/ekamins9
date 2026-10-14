@@ -5,13 +5,14 @@
      The keys Roblox can delete by itself if you set up deletion templates (Creator Hub ▸
      Configurations ▸ Data stores manager ▸ RTBF Deletion; docs/LAUNCH.md lists them):
        Profiles_v2 / Profiles_v1 / AdminQueue_v1 / Bans_v1 /
-       PlayerSettings_v1 / SeasonGrants_v1                    key  u{UserId}
+       PlayerSettings_v1 / SeasonGrants_v1 / Gifts_v1         key  u{UserId}
        LB_Warfront / LB_1v1 / LB_2v2 / LB_3v3 /
        RecentPlayers_v1 (ordered)                             key  {UserId}
      What no template can reach, their id INSIDE shared records, this does (and the keys
      too, so one button is enough):
-       Staff_v1 "roles" · Bans_v1 "index" · AdminLog_v1 "log" · TradeLog_v1 (each trade's key
-       carries both ids)
+       Staff_v1 "roles" · Bans_v1 "index" · AdminLog_v1 "log" · TradeLog_v1 and GiftLog_v1 (each
+       trade's and gift's key carries both ids) · Gifts_v1 (gifts from them still waiting in
+       someone's box: the gift stays theirs, the sender becomes "a player")
 
        Erasure.erase(userId) -> ok, report     (yields; the Owner's ERASE DATA in the admin panel)
 
@@ -34,7 +35,7 @@ local function ordered(name)
 	return ok and s or nil
 end
 
-local KEYED = {"Profiles_v2", "Profiles_v1", "AdminQueue_v1", "Bans_v1", "PlayerSettings_v1", "SeasonGrants_v1"}   -- key "u<id>"
+local KEYED = {"Profiles_v2", "Profiles_v1", "AdminQueue_v1", "Bans_v1", "PlayerSettings_v1", "SeasonGrants_v1", "Gifts_v1"}   -- key "u<id>"
 local function boards()
 	local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 	local season = Catalog.PASS and Catalog.PASS.season or "S1"
@@ -118,6 +119,48 @@ function Erasure.erase(userId)
 			end
 		end)
 		note("TradeLog_v1: %s", ok and (n .. " trades deleted") or "couldn't reach")
+	end
+	-- gifts: "g<time>_<from>_<to>_<gift id>"
+	local gifts = store("GiftLog_v1")
+	if gifts then
+		local n, ok = 0, pcall(function()
+			local pages = gifts:ListKeysAsync("g")
+			while true do
+				for _, k in ipairs(pages:GetCurrentPage()) do
+					local _, a, b = k.KeyName:match("^g(%d+)_(%d+)_(%d+)")
+					if tonumber(a) == userId or tonumber(b) == userId then
+						gifts:RemoveAsync(k.KeyName)
+						n += 1
+					end
+				end
+				if pages.IsFinished then break end
+				pages:AdvanceToNextPageAsync()
+			end
+		end)
+		note("GiftLog_v1: %s", ok and (n .. " gifts deleted") or "couldn't reach")
+	end
+	-- their gifts still waiting in other people's boxes: from "a player" now
+	local boxes = store("Gifts_v1")
+	if boxes then
+		local n, ok = 0, pcall(function()
+			local pages = boxes:ListKeysAsync("u")
+			while true do
+				for _, k in ipairs(pages:GetCurrentPage()) do
+					local okU = pcall(boxes.UpdateAsync, boxes, k.KeyName, function(old)
+						if type(old) ~= "table" or type(old.list) ~= "table" then return nil end
+						local changed = false
+						for _, g in ipairs(old.list) do
+							if type(g) == "table" and tonumber(g.from) == userId then g.from, g.fromName = 0, "a player"; changed = true; n += 1 end
+						end
+						return changed and old or nil
+					end)
+					if not okU then error("update failed") end
+				end
+				if pages.IsFinished then break end
+				pages:AdvanceToNextPageAsync()
+			end
+		end)
+		note("Gifts_v1 boxes: %s", ok and (n .. " waiting gifts made anonymous") or "couldn't reach")
 	end
 	return true, report
 end
