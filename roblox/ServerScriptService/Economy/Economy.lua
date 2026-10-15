@@ -116,19 +116,8 @@ function Economy.addXP(plr, xp)
 		if p.level >= 5 then Badges.award(plr, "Level5") end
 		if p.level >= 25 then Badges.award(plr, "Level25") end
 	end
-	-- a class opening at this level (the Archer and the Mage at 5): say so at once
-	if leveled > 0 then
-		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-		local opened = {}
-		for _, id in ipairs(GameConfig.CLASS_ORDER) do
-			local c = GameConfig.CLASSES[id]
-			if c.unlock and c.unlock.level and was < c.unlock.level and p.level >= c.unlock.level then table.insert(opened, string.upper(c.name)) end
-		end
-		local ev = ReplicatedStorage:FindFirstChild("HubEvent")
-		if #opened > 0 and ev and plr.Parent then
-			ev:FireClient(plr, "Toast", table.concat(opened, " & ") .. " UNLOCKED!  Learn " .. (#opened > 1 and "them" or "it") .. " in the Training Yard (PLAY)")
-		end
-	end
+	-- (a class opening at this level, the Archer and the Mage at 5: the level-up's card says so,
+	-- Celebrate.client, and in the Courtyard the menu offers the trip to their teachers)
 	Profile.markDirty(plr)
 	return leveled
 end

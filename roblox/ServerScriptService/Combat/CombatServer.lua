@@ -961,6 +961,11 @@ function CombatServer.attach(Tool, weaponConfig)
 				local perfect = raisedAgo <= cfg.PERFECT_PARRY
 				if not perfect then setAttr("ParriedAt", now) end   -- doBlockStart lets us guard at once against the riposte
 				target:SetAttribute("FastUntil", now + cfg.RIPOSTE_DURATION)
+				-- (the window on every screen, in the shared clock: the blade glows gold and your HUD
+				-- counts it down, RiposteCue.client)
+				target:SetAttribute("RiposteUntil", workspace:GetServerTimeNow() + cfg.RIPOSTE_DURATION)
+				target:SetAttribute("RiposteLen", cfg.RIPOSTE_DURATION)
+				target:SetAttribute("RiposteSpeed", cfg.RIPOSTE_SPEED)
 				statHook(target, "parry")
 				target:SetAttribute("ParryTick", (target:GetAttribute("ParryTick") or 0) + 1)
 				-- streak: parries close together pay out more (1vX)
@@ -1501,6 +1506,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		local now = os.clock()
 		local speed, windup, active, recovery = attackTimes(info, name)
 		if combo then windup = 0 end   -- straight into the next swing
+		-- a riposte: the quick windup, seen (RiposteCue.client: RIPOSTE!, a gold trail)
+		if (attr("FastUntil") or 0) > now then setAttr("RiposteTick", (character:GetAttribute("RiposteTick") or 0) + 1) end
 
 		state.token += 1
 		local token = state.token

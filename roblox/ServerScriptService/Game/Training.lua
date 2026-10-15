@@ -37,17 +37,23 @@
        • NOBODY IS HELD BACK: basic training lets you on past a step you've been at for
          ASSIST seconds, and past the ring after two lost fights; the trip to the first
          battle is tried again if it fails (HubServer).
-       • BASIC TRAINING: a newcomer (profile tutorial 0) gets the short course
-         (Catalog ▸ Drills, basic = true) and is put right in front of each
-         step's dummy, facing it. Finished — or skipped — they're on their way
-         to their first battle (HubServer, _G.HubTravel).
+       • BASIC TRAINING: a newcomer (profile tutorial 0) gets the course (Catalog ▸
+         Drills, basic = true: every move Sir Aldric teaches) and is put right in
+         front of each step's dummy, facing it. Finished — or skipped — they're on
+         their way to their first battle (HubServer, _G.HubTravel).
+       • THE FULL COURSE (Sir Aldric's menu, later): the same course again, the same
+         way (course "replay": placed at each step, the card up top), ending in the
+         yard. A lesson picked from his list puts you at its dummy too.
+       • STOP THE LESSONS (any teacher's menu, or the card's STOP): no lesson on, no
+         beacon, until you ask for one again.
      Players can't hurt each other here (the mode is peaceful).
      Remote: ReplicatedStorage ▸ TrainingRemote
-       client → server  "Lesson", id · "Restart", track · "Spar", skill · "Leave" ·
-                        "Practice", skill, count · "ClearPractice" · "Gauntlet" ·
-                        "Basic", control (Find Your Feet) · "SkipTraining"
+       client → server  "Lesson", id · "Restart", track (Sir Aldric's: the full course) · "Spar",
+                        skill · "Leave" · "Practice", skill, count · "ClearPractice" · "Gauntlet" ·
+                        "Basic", control (Find Your Feet) · "SkipTraining" · "StopLessons"
        server → client  "Menu", info, track | "practice" · "Ring", records · "Progress" · "Done", id, line ·
-                        "Course" (basic training begins) · "Graduated", skipped ·
+                        "Course", kind (basic training / the full course begins) · "CourseDone" ·
+                        "Stopped" · "Graduated", skipped ·
                         "Spar", what, … · "Gauntlet", what, … · "Practice", what, … ]]
 
 local Players = game:GetService("Players")
@@ -142,10 +148,10 @@ local function publish(plr)
 	for id in pairs(profileOf(plr).drills) do table.insert(done, id) end
 	table.sort(done)
 	plr:SetAttribute("DrillsDone", table.concat(done, ","))
-	-- basic training: which step of how many
-	local basic = L and L.course == "basic"
-	plr:SetAttribute("Course", basic and "basic" or nil)
-	if basic and l then
+	-- basic training (or the full course again): which step of how many
+	local course = L and L.course or nil
+	plr:SetAttribute("Course", course)
+	if course and l then
 		local n, at = 0, 0
 		for _, x in ipairs(D.lessons) do if x.basic then n += 1; if x.id == l.id then at = n end end end
 		plr:SetAttribute("CourseStep", at)
@@ -276,7 +282,7 @@ local function setLesson(plr, id)
 	if l.event == "charge" then task.delay(1.5, function() if learners[plr] == L and L.id == id then spawnCharger(plr, l) end end) end
 	publish(plr)
 	tell(plr, "Progress")
-	if L.course == "basic" then task.delay(0.6, function() if learners[plr] == L and L.id == id then placeFor(plr) end end) end
+	if L.course or L.place then task.delay(0.6, function() if learners[plr] == L and L.id == id then placeFor(plr) end end) end
 end
 
 -- the steps of basic training, in order
@@ -303,6 +309,24 @@ local function graduate(plr, skipped)
 	end)
 end
 
+-- the full course walked again: back in the yard, nothing on
+local function courseDone(plr)
+	local L = learners[plr]
+	if L then L.course, L.id, L.replay, L.place = nil, nil, nil, nil end
+	dropCharger(plr)
+	publish(plr)
+	tell(plr, "CourseDone")
+end
+-- no lesson on until you ask for one (basic training has its own way out: skip)
+local function stopLessons(plr)
+	local L = learners[plr]
+	if not L or L.course == "basic" then return end
+	L.course, L.id, L.replay, L.place = nil, nil, nil, nil
+	dropCharger(plr)
+	publish(plr)
+	tell(plr, "Stopped")
+end
+
 local function firstOpen(p, track)
 	for _, l in ipairs(TRACK[track or "knight"] or {}) do if not p.drills[l.id] then return l end end
 	return nil
@@ -325,9 +349,9 @@ local function complete(plr)
 	end
 	tell(plr, "Done", l.id, line)
 	toast(plr, line)
-	if L.course == "basic" then
+	if L.course then
 		local nb = basicAfter(l.id)
-		if nb then setLesson(plr, nb.id) else graduate(plr, false) end
+		if nb then setLesson(plr, nb.id) elseif L.course == "basic" then graduate(plr, false) else courseDone(plr) end
 		return
 	end
 	-- on to the next lesson: a replay walks the course in order; otherwise the
@@ -493,7 +517,8 @@ local function menuInfo(plr, track)
 	local c = t and t.class and GameConfig.CLASSES[t.class]
 	return {current = L and L.id or nil, records = spars, gauntlet = p.gauntlet, practicing = practice[plr] ~= nil,
 		ringBusy = ring and ring.player ~= plr and ring.player.DisplayName or nil, perWave = (D.gauntlet and D.gauntlet.perWave) or 0,
-		track = track or "knight", locked = (not trackOpen(plr, track or "knight")) and Catalog.unlockText(c and c.unlock) or nil}
+		track = track or "knight", locked = (not trackOpen(plr, track or "knight")) and Catalog.unlockText(c and c.unlock) or nil,
+		course = L and L.course or nil, class = t and t.class or nil}
 end
 
 -- THE TEACHERS: Sir Aldric (steel), Wren the Bowmaster (the bow), Magister Orrin (magic).
@@ -664,7 +689,7 @@ placeFor = function(plr)
 	local L = learners[plr]
 	local l = L and LESSON[L.id or ""]
 	local char = alive(plr)
-	if not (l and char) then return end
+	if not (l and char) or l.track ~= "knight" then return end
 	if ring and ring.player == plr then return end
 	if l.event == "spar" then startSpar(plr, l.skill or "Squire"); return end
 	if l.setup then
@@ -1011,7 +1036,7 @@ function Training.start(map)
 			-- (and a Mage's mana bar comes with the new body)
 			if l and l.track == "mage" then task.delay(0.8, function() if plr.Character == c and c:GetAttribute("MaxMana") then c:SetAttribute("Mana", l.event == "meditate" and 20 or c:GetAttribute("MaxMana")) end end) end
 			-- back on your feet in basic training: straight back to your step
-			if L.course == "basic" then task.delay(1, function() if plr.Character == c then placeFor(plr) end end) end
+			if L.course then task.delay(1, function() if plr.Character == c then placeFor(plr) end end) end
 		end))
 	end
 	for _, plr in ipairs(Players:GetPlayers()) do task.spawn(join, plr) end
@@ -1030,13 +1055,23 @@ function Training.start(map)
 			local L = learners[plr] or {conns = {}}
 			learners[plr] = L
 			L.replay = true   -- picked by hand: walk on from there
+			if L.course ~= "basic" then L.course = nil end
+			L.place = LESSON[a] ~= nil and LESSON[a].track == "knight"   -- (put at its dummy, as on the course)
 			setLesson(plr, a)
 		elseif what == "Restart" then
 			local L = learners[plr] or {conns = {}}
 			learners[plr] = L
-			L.replay = true
-			local list = TRACK[type(a) == "string" and a or "knight"] or TRACK.knight
-			setLesson(plr, list[1].id)
+			local track = TRACK[a] and a or "knight"
+			if track == "knight" and L.course ~= "basic" then
+				-- Sir Aldric's: the whole course again, exactly as on your first day
+				L.course, L.replay, L.place = "replay", nil, nil
+				tell(plr, "Course", "replay")
+				setLesson(plr, basicAfter(nil).id)
+			else
+				L.replay = true
+				setLesson(plr, TRACK[track][1].id)
+			end
+		elseif what == "StopLessons" then stopLessons(plr)
 		elseif what == "Spar" and type(a) == "string" then startSpar(plr, a)
 		elseif what == "Gauntlet" then startGauntlet(plr)
 		elseif what == "Practice" and type(a) == "string" then startPractice(plr, a, b)
@@ -1116,7 +1151,8 @@ _G.TrainingTrack = function(plr, track)
 	local l = firstOpen(p, track) or TRACK[track][1]
 	local L = learners[plr] or {conns = {}}
 	learners[plr] = L
-	L.replay = nil
+	L.replay, L.place = nil, nil
+	if L.course ~= "basic" then L.course = nil end
 	setLesson(plr, l.id)
 	return true
 end

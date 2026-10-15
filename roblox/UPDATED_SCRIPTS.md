@@ -1,4 +1,50 @@
-# Updated scripts: power gestures (Flameblade raises the blade and it ignites), burning / frozen / poisoned / rooted / dazed / shocked bodies, impact bursts
+# Updated scripts: the full course in the intro and again from Sir Aldric, stop the lessons, class locks and the unlock card, a riposte you can see
+
+- **The intro tutorial teaches every move**. Basic training is now 14 steps:
+  - Find Your Feet;
+  - swing, stab, overhead, **both sides**;
+  - block, parry, **riposte**, **feint**, **morph**;
+  - kick, **footwork (dodges)**, **the chamber**;
+  - a Squire in the ring.
+
+  It was 8 steps; the bold ones are new to it. You're still placed in front of each step's dummy.
+- **Talking to Sir Aldric later replays the intro tutorial**. **THE FULL COURSE** is the first day's course again, the same way: teleported in front of each dummy, the card up top (THE FULL COURSE · STEP n / 14). It ends in the yard with COURSE COMPLETE, not a trip to battle. A lesson picked from ALL LESSONS also puts you at its dummy.
+- **Cancel the lessons**: every teacher's menu now has **STOP THE LESSONS** while you're on one. On the full course, the card's button is **STOP THE COURSE**. Either clears the lesson and the beacon until you ask again.
+- **Archer / Mage locked**: their teachers say "Come back when the ARCHER is unlocked. Unlock it by reaching LEVEL 5". Every other way into their lessons already refused.
+- **Unlock card**: the level-up that unlocks a class is followed by a card, **ARCHER & MAGE UNLOCKED!**, naming who teaches them in the Training Yard. It replaces the old one-line toast. In the Courtyard the menu's pop-up still offers the trip.
+- **Riposte cue**: after a parry,
+  - the screen's edge flashes gold;
+  - **RIPOSTE · STRIKE NOW** appears under the crosshair, with "YOUR NEXT SWING +60% FASTER" and a bar running out with the window;
+  - swinging into it shows **RIPOSTE!** and a gold trail on the blade;
+  - **anyone's** blade (bots too) glows gold while their window is open, so you know to guard.
+
+  The riposte lesson explains it.
+- Sir Aldric's speech bubble now shrinks long lines to fit.
+- **Checked in Play** (training yard):
+  - THE FULL COURSE started at step 1/14 and moved me to the dummy;
+  - a hand-picked Riposte lesson put me 5.5 studs in front of the drill dummy;
+  - STOP THE LESSONS cleared the lesson and the beacon and showed LESSONS PUT AWAY;
+  - Sir Aldric's 7-row menu, Wren's locked board, the riposte HUD;
+  - the unlock card from a real level 4 to 5.
+- **Not checked yet**:
+  - walking all 14 steps to COURSE COMPLETE;
+  - a real parry into a riposte in a fight (the cue was driven by its attributes);
+  - the card's taller body text, the dimmer blade light and the shorter riposte line (fixed after the run).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | every lesson in basic training; the riposte line |
+| [Game/Training.lua](ServerScriptService/Game/Training.lua) | ServerScriptService ▸ Game | ModuleScript | the full course (course "replay"), StopLessons, placing picked lessons |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the course card, STOP, the new menu, locked lines, the bubble |
+| [Celebrate.client.lua](StarterPlayerScripts/Celebrate.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the class-unlocked card |
+| [RiposteCue.client.lua](StarterPlayerScripts/RiposteCue.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the riposte window, seen |
+| [Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | RiposteUntil / RiposteLen / RiposteSpeed, RiposteTick |
+| [Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy | ModuleScript | the old unlock toast gone (the card says it) |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: power gestures (Flameblade raises the blade and it ignites), burning / frozen / poisoned / rooted / dazed / shocked bodies, impact bursts
 
 - **Every power moves the body** as it goes off, on every screen, players and bots:
   - **Flameblade** (and every imbue): a dip, the blade straight up overhead, chin up, the free hand sweeping off it as it catches fire. Imbues now wind up 0.35 s, so the flames catch at the top.

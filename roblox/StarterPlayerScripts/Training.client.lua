@@ -221,7 +221,10 @@ local function skipNow()
 	skipB.Text = "OFF TO BATTLE…"
 	remote:FireServer("SkipTraining")
 end
-skipB.MouseButton1Click:Connect(function() if skipConfirm then skipConfirm() end end)
+skipB.MouseButton1Click:Connect(function()
+	if player:GetAttribute("Course") == "replay" then remote:FireServer("StopLessons"); return end
+	if skipConfirm then skipConfirm() end
+end)
 
 -- the Drill Master's bubble (local: he tells each of you your own lesson)
 local bubble = Instance.new("BillboardGui")
@@ -236,6 +239,9 @@ local bubbleBox = Instance.new("Frame"); bubbleBox.BackgroundColor3 = Color3.fro
 Instance.new("UICorner", bubbleBox).CornerRadius = UDim.new(0, 12)
 local bubbleText = Instance.new("TextLabel"); bubbleText.BackgroundTransparency = 1; bubbleText.Size = UDim2.new(1, -16, 1, -12); bubbleText.Position = UDim2.fromOffset(8, 6)
 bubbleText.Font = Theme.FONT; bubbleText.TextSize = 15; bubbleText.TextWrapped = true; bubbleText.TextColor3 = Color3.fromRGB(40, 30, 20); bubbleText.Parent = bubbleBox
+-- (a long line shrinks to fit rather than spilling out of the bubble)
+bubbleText.TextScaled = true
+do local c = Instance.new("UITextSizeConstraint"); c.MaxTextSize = 15; c.MinTextSize = 9; c.Parent = bubbleText end
 
 -- the head of whoever teaches this track (Sir Aldric, Wren, Orrin: their Instructor attribute)
 local function masterHead(track)
@@ -264,13 +270,15 @@ local function refreshCard()
 		return
 	end
 	local n, goal = player:GetAttribute("DrillProgress") or 0, player:GetAttribute("DrillGoal") or l.goal
-	local basic = player:GetAttribute("Course") == "basic"
-	skipB.Visible = yard and basic and not skipping
+	local course = player:GetAttribute("Course")
+	local basic = course == "basic"
+	skipB.Visible = yard and course ~= nil and not skipping
+	skipB.Text = basic and "SKIP TRAINING  ·  M" or "STOP THE COURSE"
 	menuB.Visible = not basic
-	-- a newcomer's card sits up top, where they can't miss it
-	card.Position = basic and UDim2.new(0.5, -165, 0, 64) or UDim2.new(1, -346, 0.5, -96)
-	if basic then
-		cardHead.Text = string.format("BASIC TRAINING  ·  STEP %d / %d", player:GetAttribute("CourseStep") or 1, player:GetAttribute("CourseSteps") or 7)
+	-- a course's card (a newcomer's, or the full course again) sits up top, where they can't miss it
+	card.Position = course and UDim2.new(0.5, -165, 0, 64) or UDim2.new(1, -346, 0.5, -96)
+	if course then
+		cardHead.Text = string.format("%s  ·  STEP %d / %d", basic and "BASIC TRAINING" or "THE FULL COURSE", player:GetAttribute("CourseStep") or 1, player:GetAttribute("CourseSteps") or 14)
 	else
 		cardHead.Text = string.format("%s  ·  LESSON %d / %d", teacherOf(l.track).short or "DRILL MASTER", l.step, #TRACK[l.track])
 	end
@@ -325,7 +333,7 @@ player:GetAttributeChangedSignal("Drill"):Connect(function()
 	if id == lastDrill then return end
 	lastDrill = id
 	local l = LESSON[id or ""]
-	if l and inYard() and player:GetAttribute("Course") ~= "basic" and not hubMenuUp() then lessonIntro(l)
+	if l and inYard() and player:GetAttribute("Course") == nil and not hubMenuUp() then lessonIntro(l)
 	else intro.Visible = false end
 end)
 
@@ -541,9 +549,9 @@ end
 -- can come back (the class opens at level 5)
 local LINES = {
 	archer = {hello = "\"Steady hands, sharp eyes. Shall we?\"", done = "\"You don't need me any more. Go and make them duck.\"",
-		locked = "\"Come back when you've seen a few fights: the bow opens to you at %s.\""},
+		locked = "\"Come back when the ARCHER is unlocked.\"\n\nUnlock it by reaching %s. I'll be here."},
 	mage = {hello = "\"Magic is patience, then fire. Ready?\"", done = "\"I've nothing left to teach you. Mind your mana.\"",
-		locked = "\"The arcane waits until you're ready: come back at %s.\""},
+		locked = "\"Come back when the MAGE is unlocked.\"\n\nUnlock it by reaching %s. The arcane will wait."},
 }
 local function classBoard(info, track)
 	local t = teacherOf(track)
@@ -557,8 +565,9 @@ local function classBoard(info, track)
 	local doneN = 0
 	for _, l in ipairs(list) do if done[l.id] then doneN += 1 end end
 	if info.locked then
-		local sub = text(b, string.format(lines.locked, string.upper(info.locked)), 17, WHITE, Theme.FONT)
-		sub.Position = UDim2.fromOffset(20, 64); sub.Size = UDim2.new(1, -40, 0, 80); sub.TextYAlignment = Enum.TextYAlignment.Top; sub.ZIndex = 7
+		local sub = text(b, string.format(lines.locked, string.upper(info.locked)), 18, WHITE, Theme.FONT)
+		sub.Position = UDim2.fromOffset(20, 64); sub.Size = UDim2.new(1, -40, 0, 100); sub.TextYAlignment = Enum.TextYAlignment.Top; sub.ZIndex = 7
+		local lock = text(b, "🔒  LOCKED", 14, Theme.BAD); lock.Position = UDim2.new(1, -150, 0, 22); lock.Size = UDim2.fromOffset(90, 18); lock.ZIndex = 7
 		local ok = button(b, "I'LL BE BACK", Theme.GLASS2, UDim2.new(1, -40, 0, 54), UDim2.new(0, 20, 1, -74)); ok.ZIndex = 7; ok.TextSize = 18
 		ok.MouseButton1Click:Connect(closeBoard)
 		return
@@ -577,6 +586,10 @@ local function classBoard(info, track)
 		{"ALL LESSONS", Theme.BLUE, function() lessonBoard(track) end, "Pick any lesson to learn or redo it."},
 		{"START OVER", Theme.GLASS2, function() remote:FireServer("Restart", track); closeBoard() end, "Walk the whole course again from the first lesson."},
 	}
+	if cur then
+		table.insert(rows, 2, {"STOP THE LESSONS", Theme.RED, function() remote:FireServer("StopLessons"); closeBoard() end, "Done for now? Put the lessons away. Talk to me again to pick them up."})
+		b.Size = UDim2.fromOffset(640, 490); b.Position = UDim2.new(0.5, -320, 0.5, -245)
+	end
 	for i, r in ipairs(rows) do
 		local y = 84 + (i - 1) * 72
 		local bt = button(b, r[1], r[2], UDim2.new(0.5, -24, 0, 58), UDim2.new(0, 20, 0, y)); bt.ZIndex = 7; bt.TextSize = 18
@@ -602,21 +615,28 @@ local function menuBoard(info, track)
 	local sub = text(b, cur and string.format("\"You're on lesson %d: %s. %d of %d done.\"", cur.step, cur.title, doneN, #TRACK.knight)
 		or (doneN >= #TRACK.knight and "\"You've learned it all. Now prove it.\"" or "\"What'll it be, recruit?\""), 15, Theme.DIM, Theme.FONT)
 	sub.Position = UDim2.fromOffset(20, 50); sub.Size = UDim2.new(1, -40, 0, 22); sub.ZIndex = 7
-	local rows = {
-		{cur and ("CARRY ON  ·  " .. string.upper(cur.title)) or "PICK UP THE LESSONS", Theme.GREEN, function()
-			if cur then closeBoard() else lessonBoard("knight") end end,
-			cur and "Back to it: follow the arrow." or "Every lesson, ticked when done."},
-		{"ALL LESSONS", Theme.BLUE, function() lessonBoard("knight") end, "Pick any lesson to learn or redo it."},
-		{"START OVER", Theme.GLASS2, function() remote:FireServer("Restart", "knight"); closeBoard() end, "Walk the whole course again from the first swing."},
-		{"SPAR IN THE RING", Theme.GLASS2, function() ringBoard(lastInfo.records) end, "One on one with a Squire, a Knight or a Champion."},
-		{"PRACTICE BOTS", Theme.GLASS2, practiceBoard, "One to three bots at once on the practice ground."},
-		{"THE GAUNTLET", Theme.RED, function() remote:FireServer("Gauntlet"); closeBoard() end,
-			string.format("Wave after wave in the ring until you fall. Your best: wave %d. Each new best wave pays %d Marks.", lastInfo.gauntlet or 0, lastInfo.perWave or 0)},
-	}
-	if lastInfo.ringBusy then rows[4][4] = lastInfo.ringBusy .. " is in the ring right now."; rows[6][4] = lastInfo.ringBusy .. " is in the ring right now." end
+	local onCourse = lastInfo.course == "replay"
+	local rows = {}
+	if cur then
+		table.insert(rows, {"CARRY ON  ·  " .. string.upper(cur.title), Theme.GREEN, closeBoard, "Back to it: follow the arrow."})
+		table.insert(rows, {onCourse and "STOP THE COURSE" or "STOP THE LESSONS", Theme.RED, function() remote:FireServer("StopLessons"); closeBoard() end,
+			"Done for now? Put the lessons away. Talk to me again to pick them up."})
+	end
+	if not onCourse then
+		table.insert(rows, {"THE FULL COURSE", cur and Theme.GLASS2 or Theme.GREEN, function() remote:FireServer("Restart", "knight"); closeBoard() end,
+			"Every move again, step by step, just like your first day: I'll put you in front of each dummy."})
+	end
+	table.insert(rows, {"ALL LESSONS", Theme.BLUE, function() lessonBoard("knight") end, "Pick any one lesson to learn or redo it."})
+	local busy = lastInfo.ringBusy and (lastInfo.ringBusy .. " is in the ring right now.")
+	table.insert(rows, {"SPAR IN THE RING", Theme.GLASS2, function() ringBoard(lastInfo.records) end, busy or "One on one with a Squire, a Knight or a Champion."})
+	table.insert(rows, {"PRACTICE BOTS", Theme.GLASS2, practiceBoard, "One to three bots at once on the practice ground."})
+	table.insert(rows, {"THE GAUNTLET", Theme.RED, function() remote:FireServer("Gauntlet"); closeBoard() end,
+		busy or string.format("Wave after wave in the ring until you fall. Your best: wave %d. Each new best wave pays %d Marks.", lastInfo.gauntlet or 0, lastInfo.perWave or 0)})
+	-- (seven rows fit at 64 apart)
+	local step = #rows > 6 and 64 or 72
 	for i, r in ipairs(rows) do
-		local y = 84 + (i - 1) * 72
-		local bt = button(b, r[1], r[2], UDim2.new(0.5, -24, 0, 58), UDim2.new(0, 20, 0, y)); bt.ZIndex = 7; bt.TextSize = 18
+		local y = 84 + (i - 1) * step
+		local bt = button(b, r[1], r[2], UDim2.new(0.5, -24, 0, step - 10), UDim2.new(0, 20, 0, y)); bt.ZIndex = 7; bt.TextSize = 18
 		bt.MouseButton1Click:Connect(r[3])
 		local d = text(b, r[4], 13, Theme.DIM, Theme.FONT); d.Position = UDim2.new(0.5, 6, 0, y + 6); d.Size = UDim2.new(0.5, -26, 0, 46); d.TextYAlignment = Enum.TextYAlignment.Center; d.ZIndex = 7
 	end
@@ -674,8 +694,16 @@ remote.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	elseif what == "Progress" then refreshCard()
 	elseif what == "Course" then
 		skipping = false
-		skipB.Text = "SKIP TRAINING  ·  M"
-		show("WELCOME, RECRUIT!", "A few quick steps, then your first battle.", Theme.ACCENT, 4.5)
+		if a == "replay" then
+			show("THE FULL COURSE", "every move again, step by step  ·  STOP THE COURSE anytime", Theme.ACCENT, 4)
+		else
+			show("WELCOME, RECRUIT!", "Every move, step by step, then your first battle.", Theme.ACCENT, 4.5)
+		end
+	elseif what == "CourseDone" then
+		show("COURSE COMPLETE!", "every move, start to finish  ·  spar, run the Gauntlet or call up bots", Theme.GOLD, 5)
+	elseif what == "Stopped" then
+		intro.Visible = false
+		show("LESSONS PUT AWAY", "talk to a teacher to pick them up again", WHITE, 3)
 	elseif what == "Graduated" then
 		skipB.Visible = false
 		if a then

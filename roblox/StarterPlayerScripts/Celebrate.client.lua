@@ -6,16 +6,21 @@
        LEVEL UP           your Level goes up (the attribute HubServer keeps): LEVEL 7 lands
                           in gold with a brass flourish and a shower of sparks — after the
                           round's result and any travel screen have gone
+       A CLASS UNLOCKED   a level that opens a class (GameConfig.CLASSES unlock: the Archer and
+                          the Mage at 5): a card after the banner, ARCHER & MAGE UNLOCKED, and
+                          who teaches them in the Training Yard (in the Courtyard the menu's
+                          pop-up then offers the trip: HubMenu HX.unlockPopup)
        BACK ON YOUR FEET  anyone (a player) spawning in a match rises out of a burst of
                           embers (local only; the Courtyard and the training yard don't)
 
-     Test hooks (the command bar / MCP): _G.CelebrateRound(), _G.CelebrateLevel(n). ]]
+     Test hooks (the command bar / MCP): _G.CelebrateRound(), _G.CelebrateLevel(n), _G.CelebrateUnlock(). ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService      = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local Catalog    = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Theme      = require(ReplicatedStorage:WaitForChild("Theme"))
 local UIFX       = require(ReplicatedStorage:WaitForChild("UIFX"))
 
@@ -133,7 +138,60 @@ local function busy()
 	end
 	return false
 end
-local function levelUp(level)
+-- the classes that open between two levels (GameConfig.CLASSES unlock = {level = n})
+local function opened(from, to)
+	local out = {}
+	for _, id in ipairs(GameConfig.CLASS_ORDER) do
+		local c = GameConfig.CLASSES[id]
+		local at = c.unlock and c.unlock.level
+		if at and from < at and to >= at then table.insert(out, c) end
+	end
+	return out
+end
+-- NEW CLASSES: a card under where the banner was, a while, then gone (no buttons: it may
+-- come mid-fight; the Courtyard's menu offers the trip itself)
+local function classesUnlocked(list)
+	local names, who = {}, {}
+	for _, c in ipairs(list) do
+		table.insert(names, string.upper(c.name))
+		local t = c.tutor and Catalog.DRILLS.tracks[c.tutor]
+		if t then table.insert(who, string.format("%s teaches the %s", (t.master or ""):match("^([^,]+)") or t.master, c.name)) end
+	end
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.fromScale(1, 1)
+	holder.Parent = gui
+	local card = Instance.new("Frame")
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.3)
+	card.Size = UDim2.fromOffset(640, 224)
+	card.BackgroundColor3 = Color3.fromRGB(20, 16, 10)
+	card.BackgroundTransparency = 0.12
+	card.BorderSizePixel = 0
+	card.ZIndex = 2
+	card.Parent = holder
+	Instance.new("UICorner", card).CornerRadius = UDim.new(0, 14)
+	local st = Instance.new("UIStroke"); st.Color = GOLD; st.Thickness = 2; st.Transparency = 0.2; st.Parent = card
+	local small, ss = text(holder, #list > 1 and "NEW CLASSES UNLOCKED" or "NEW CLASS UNLOCKED", 20, Theme.FONT_TITLE, GOLD, 0.3 - 0.075, 26)
+	local big, bs = text(holder, table.concat(names, " & ") .. " UNLOCKED!", 46, Theme.FONT_TITLE, WHITE, 0.3 - 0.02, 56)
+	local body, bds = text(holder, "Head to the TRAINING YARD (PLAY menu) to learn " .. (#list > 1 and "them" or "it") .. ": " .. table.concat(who, ", ")
+		.. ". A few short lessons, and each one pays.", 17, Theme.FONT, WHITE, 0.3 + 0.07, 66)
+	body.TextWrapped = true
+	body.Size = UDim2.fromOffset(580, 66)
+	for _, l in ipairs({small, big, body}) do l.ZIndex = 5 end
+	local sc = Instance.new("UIScale"); sc.Scale = 0.7; sc.Parent = card
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	UIFX.play("LevelUp")
+	appear(small, ss, 0.25)
+	slam(big, bs, Vector2.new(0.5, 0.28), "gold", 1.8)
+	task.delay(0.4, function() appear(body, bds, 0.4) end)
+	local stop = UIFX.embers(holder, {colors = "gold", rate = 0.05, life = {1.4, 2.2}, top = {0.18, 0.4}, z = 3})
+	task.delay(8, function()
+		stop()
+		UIFX.fadeOut(holder, 0.7, true)
+	end)
+end
+local function levelUp(level, from)
 	-- (after the round's result, the travel screen, the welcome)
 	local t0 = os.clock()
 	while busy() and os.clock() - t0 < 20 do task.wait(0.25) end
@@ -180,12 +238,16 @@ local function levelUp(level)
 		stop()
 		UIFX.fadeOut(holder, 0.6, true)
 	end)
+	-- a class opened at this level: its card once the banner's gone
+	local list = from and opened(from, level) or {}
+	if #list > 0 then task.delay(3.3, function() classesUnlocked(list) end) end
 end
+_G.CelebrateUnlock = function() classesUnlocked(opened(0, 99)) end
 local lastLevel = nil
 local function onLevel()
 	local lv = player:GetAttribute("Level")
 	if type(lv) ~= "number" then return end
-	if lastLevel and lv > lastLevel then task.spawn(levelUp, lv) end
+	if lastLevel and lv > lastLevel then task.spawn(levelUp, lv, lastLevel) end
 	lastLevel = lv
 end
 player:GetAttributeChangedSignal("Level"):Connect(onLevel)

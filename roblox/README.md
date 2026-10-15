@@ -92,7 +92,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
 | `ReplicatedFirst/Loading.client.lua` | `ReplicatedFirst` → `Loading` (the first thing anyone sees: the name while the game loads, or the travel screen carried over) | LocalScript |
-| `StarterPlayerScripts/DeathScreen.client.lua`, `Celebrate.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `DeathScreen` (the fall and the way back), `Celebrate` (FIGHT!, LEVEL UP, spawn embers) | LocalScript each |
+| `StarterPlayerScripts/DeathScreen.client.lua`, `Celebrate.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `DeathScreen` (the fall and the way back), `Celebrate` (FIGHT!, LEVEL UP, a class unlocked, spawn embers) | LocalScript each |
+| `StarterPlayerScripts/RiposteCue.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RiposteCue` (the riposte window: your HUD, everyone's gold blade) | LocalScript |
 | `StarterPlayerScripts/LocaleText.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LocaleText` (English readers skip automatic translation: cheaper screens) | LocalScript |
 | `ReplicatedStorage/Ballistics.lua` | `ReplicatedStorage` → `Ballistics` (the arc that lands an arrow on its aim) | ModuleScript |
 | `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
@@ -154,12 +155,13 @@ a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (*
    that never shows the card is sent to training after 30 s.
 2. **Basic training** (a Tiltyard server of their own): they spawn at once as a **Knight with a
    Greatsword** (`GameConfig.DEFAULT_CLASS`; no class screen: `LoadoutServer` spawns anyone with
-   tutorial < 2) and walk an eight-step course (`Catalog ▸ Drills`, `basic = true`): **Find Your
-   Feet** first (a checklist of the camera, sprint, crouch, hop, dodge and freeing the mouse, in
-   their own binds, ticking as they press each), then swing, stab, overhead, block, parry, kick, and
-   a Squire in the ring. For each step they're **placed right in front of its dummy, facing it**
+   tutorial < 2) and walk a fourteen-step course (`Catalog ▸ Drills`, `basic = true`: every move
+   Sir Aldric teaches): **Find Your Feet** first (a checklist of the camera, sprint, crouch, hop,
+   dodge and freeing the mouse, in their own binds, ticking as they press each), then swing, stab,
+   overhead, both sides, block, parry, riposte, feint, morph, kick, footwork (dodges), the chamber,
+   and a Squire in the ring. For each step they're **placed right in front of its dummy, facing it**
    (`Training`, `FaceYaw` / `FaceTick` turn the camera with them). The lesson dummies' blows are
-   **harmless** (attribute `Harmless`). The card up top says STEP n / 8; **SKIP TRAINING · M**: the
+   **harmless** (attribute `Harmless`). The card up top says STEP n / 14; **SKIP TRAINING · M**: the
    button, or the menu key (a newcomer may not know how to free the mouse yet), asks *SKIP
    TRAINING?* first (`_G.MenuKeyOverride`).
 3. **Trained (or skipped): tutorial 1, straight into a battle** (`_G.HubTravel` → a Warfront
@@ -1491,7 +1493,11 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - **Parry chain**: after a *successful* parry you can re-guard instantly with a fresh parry window
   for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A guard that comes
   down without having parried **breaks the chain** (and the streak): back to the normal cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing
-  itself plays at normal speed.
+  itself plays at normal speed. **You can see it** (`RiposteCue.client`, from `RiposteUntil` /
+  `RiposteLen` / `RiposteSpeed` in the shared clock and `RiposteTick`): a gold flash round the
+  screen as it opens, RIPOSTE · STRIKE NOW under the crosshair with how much quicker and a bar
+  running out with the window, RIPOSTE! and a gold trail as you swing into it; anyone's blade
+  (bots too) glows gold while their window's open, so you know to guard.
 - **Walls**: hits are rejected when the line from your head to the hit point passes through solid
   geometry (`WALL_CHECK`), so nobody gets stabbed through a wall.
 - **Per-region damage**: `damage` is a number (× `HEAD_DAMAGE_MULT` / `LEG_DAMAGE_MULT`) or
@@ -1762,8 +1768,11 @@ it from the map's `Spots`:
 - **Where to go:** a light beam and a bobbing arrow stand over your next stop (the straw dummy,
   the drill dummy, the ring, the Drill Master), with an arrow at the edge of the screen when it's
   out of view; the lesson card says GO TO › … (`DrillTarget` / `DrillTargetName` on the player).
-- **Sir Aldric, the Drill Master**: E opens his menu: carry on, start over, all lessons (pick any
-  to learn or redo), spar in the ring, practice bots, the Gauntlet. There are 13 lessons
+- **Sir Aldric, the Drill Master**: E opens his menu: carry on, **stop the lessons** (no lesson,
+  no beacon, until you ask again), **THE FULL COURSE** (the first day's course again, the same
+  way: placed in front of each step's dummy, the card up top with STEP n / 14 and STOP THE COURSE,
+  ending in the yard with COURSE COMPLETE: course `replay`), all lessons (pick any to learn or
+  redo; you're put at its dummy too), spar in the ring, practice bots, the Gauntlet. There are 14 lessons
   (`Catalog ▸ Drills`), from the swing, stab and overhead to both sides, blocks, parries,
   ripostes, feints, morphs, kicks, dodges and chambers, then a first win in the ring. Each lesson
   watches the combat system's own signals (which attack landed, GuardTick, ParryTick, FeintTick,
@@ -1783,7 +1792,11 @@ it from the map's `Spots`:
   charging down the range. The Magister's: a spell on a dummy, three different spells cast
   (`CastTick`), forty mana won back meditating, two blows warded (`WardHit`), one Chain Lightning
   striking two, two hits with the staff's melee self, then a charging Squire. A class still locked
-  gets "come back at level 5".
+  can't be taught: its teacher says "Come back when the ARCHER is unlocked. Unlock it by reaching
+  LEVEL 5" (every way into its lessons checks it). They also have STOP THE LESSONS.
+- **A class unlocked**: the level-up that opens it is followed by a card, ARCHER & MAGE UNLOCKED,
+  naming their teachers in the Training Yard (`Celebrate.client`); in the Courtyard the menu then
+  offers the trip to each.
 - **Nobody gets stuck in basic training:** a step you've been at for 75 seconds, Sir Aldric
   waves you past (`ASSIST`); two lost fights in the ring and the last step counts anyway
   (`ASSIST_SPARS`); on a controller or a touch screen Find Your Feet has a GOT IT button. The trip
