@@ -1,4 +1,33 @@
-# Updated scripts: magic for every class (a third slot of powers and throwables), shields, class levels, three new crates
+# Updated scripts: the admin panel (F2) covers everything new: class levels, XP, Keys, the pass, spells, crates
+
+- **UNLOCK EVERYTHING** now also:
+  - sets every class to its top class level, so all 50 powers open, with their mastery titles and mastery skins;
+  - gives every Mage spell.
+
+  Shields, throwables and their skins were already included, since they're weapons and skins. In Play it unlocked 901 things.
+- **Leveling**, in a player's card:
+  - **+ XP** (type an amount, or +500 / +5000): the real thing. Their level and the class they're playing climb, with every banner and Key, so you can watch a level-up.
+  - **SET CLASS LEVEL**: pick a class, or ALL, and a level. Titles and mastery skins up to that level come with it.
+  - **MAX EVERY CLASS** and **RESET CLASSES** (the reset needs a second press).
+  - **SET LEVEL** as before.
+- **+ KEYS / − KEYS** beside the Marks and Crowns. **GIVE PREMIUM PASS**.
+- Items: a new **SPELL** list (Mage spells). The **TITLE** list now has the class mastery titles.
+- **Fixed**: the CRATE list was always empty, and giving a crate always failed. Crates are keyed by id, but the code read them as a list.
+- The card's info line shows Keys and every class's level.
+- Checked in Play through the panel's own remote:
+  - +5000 XP took the Knight from class level 1 to 9;
+  - a Footman set to 12;
+  - +3 Keys, a Spellforge Crate opened, the spell Meteor;
+  - unlock everything: 901 things, every class at 30.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Admin/AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService ▸ Admin | Script | xp, classlevel, pass, Keys, spells; unlock everything; the crate fix |
+| [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the controls |
+
+---
+
+## Before that: magic for every class (a third slot of powers and throwables), shields, class levels, three new crates
 
 - **Three slots now**:
   1. the primary weapon;

@@ -201,11 +201,28 @@ local ITEM_KINDS = {
 	{key = "spellfx", label = "SPELL SKIN", list = function() local t = {} for _, s in ipairs(Catalog.SPELLSKINS or {}) do table.insert(t, {id = s.id, name = ((Catalog.SPELLS[s.spell] or {}).name or s.spell) .. " · " .. s.name}) end return t end},
 	{key = "companion", label = "COMPANION", list = function() local t = {} for _, c in ipairs(Catalog.COMPANIONS) do table.insert(t, {id = c.id, name = c.name or c.id}) end return t end},
 	{key = "egg", label = "EGG", list = function() local t = {} for _, e in ipairs(Catalog.EGGS.eggs) do table.insert(t, {id = e.id, name = e.name or e.id}) end return t end},
-	{key = "crate", label = "CRATE", list = function() local t = {} for _, c in ipairs(Catalog.CRATES) do table.insert(t, {id = c.id, name = c.name or c.id}) end return t end},
-	{key = "title", label = "TITLE", list = function()
+	{key = "crate", label = "CRATE", list = function()
 		local t = {}
-		for _, x in ipairs(Catalog.BODY.titles or {}) do table.insert(t, {id = x, name = x}) end
-		for _, x in ipairs(Catalog.BODY.earnedTitles or {}) do table.insert(t, {id = x.title, name = x.title}) end
+		for id, c in pairs(Catalog.CRATES) do table.insert(t, {id = id, name = c.name or id}) end
+		table.sort(t, function(a, b) return a.name < b.name end)
+		return t end},
+	{key = "spell", label = "SPELL", list = function()
+		local t = {}
+		for id, sp in pairs(Catalog.SPELLS) do if type(sp) == "table" and sp.kind and not sp.power then table.insert(t, {id = id, name = sp.name or id}) end end
+		table.sort(t, function(a, b) return a.name < b.name end)
+		return t end},
+	{key = "title", label = "TITLE", list = function()
+		local t, seen = {}, {}
+		local function add(x) if x and not seen[x] then seen[x] = true; table.insert(t, {id = x, name = x}) end end
+		for _, x in ipairs(Catalog.BODY.titles or {}) do add(x) end
+		for _, x in ipairs(Catalog.BODY.earnedTitles or {}) do add(x.title) end
+		-- (the class mastery titles: Catalog ▸ Mastery)
+		for _, cid in ipairs(GameConfig.CLASS_ORDER) do
+			local lv = {}
+			for l in pairs((Catalog.MASTERY.titles or {})[cid] or {}) do table.insert(lv, l) end
+			table.sort(lv)
+			for _, l in ipairs(lv) do add(Catalog.MASTERY.titles[cid][l]) end
+		end
 		return t end},
 	{key = "color", label = "COLOUR", list = function() local t = {} for _, c in ipairs(Catalog.PALETTE) do table.insert(t, {id = c.name, name = c.name}) end return t end},
 }
@@ -227,7 +244,12 @@ local function playerCard(area)
 	if p.role then table.insert(info, string.upper(p.role)) end
 	table.insert(info, p.here == false and "NOT IN THIS SERVER" or "IN THIS SERVER")
 	if p.level then table.insert(info, "level " .. p.level) end
-	if p.marks then table.insert(info, p.marks .. " Marks · " .. (p.crowns or 0) .. " Crowns") end
+	if p.marks then table.insert(info, p.marks .. " Marks · " .. (p.crowns or 0) .. " Crowns · " .. (p.keys or 0) .. " Keys") end
+	if p.classLevels then
+		local bits = {}
+		for _, cid in ipairs(GameConfig.CLASS_ORDER) do table.insert(bits, string.sub(cid, 1, 3) .. " " .. tostring(p.classLevels[cid] or 1)) end
+		table.insert(info, "class levels " .. table.concat(bits, " "))
+	end
 	if p.kills then table.insert(info, p.kills .. " kills") end
 	if p.ban then table.insert(info, "BANNED: " .. tostring(p.ban.reason or "")) end
 	local inf = label(area, table.concat(info, "   ·   "), 13, Theme.DIM, Theme.FONT_BODY); inf.LayoutOrder = 2
@@ -277,10 +299,30 @@ local function playerCard(area)
 			button(r, "− MARKS", Theme.GLASS2, 84).Activated:Connect(function() go("marks", -1) end)
 			button(r, "+ CROWNS", Theme.GOLD, 90).Activated:Connect(function() go("crowns", 1) end)
 			button(r, "− CROWNS", Theme.GLASS2, 90).Activated:Connect(function() go("crowns", -1) end)
+			button(r, "+ KEYS", Theme.BLUE, 76).Activated:Connect(function() go("keys", 1) end)
+			button(r, "− KEYS", Theme.GLASS2, 76).Activated:Connect(function() go("keys", -1) end)
 		end
 		if can("progress") then
-			local lvl = box(r, "level", 64)
-			button(r, "SET LEVEL", Theme.BLUE, 96).Activated:Connect(function() act("level", {level = tonumber(lvl.Text)}) end)
+			-- the level outright, or real XP (their level and their class's climb, banners and Keys and all)
+			local r2 = hrow(area); r2.LayoutOrder = order; order += 1
+			local lvl = box(r2, "level", 64)
+			button(r2, "SET LEVEL", Theme.BLUE, 96).Activated:Connect(function() act("level", {level = tonumber(lvl.Text)}) end)
+			local xp = box(r2, "XP", 84)
+			button(r2, "+ XP", Theme.GREEN, 70).Activated:Connect(function() act("xp", {amount = tonumber(xp.Text)}) end)
+			for _, n in ipairs({500, 5000}) do
+				button(r2, "+" .. n, Theme.GLASS2, 64).Activated:Connect(function() act("xp", {amount = n}) end)
+			end
+			-- a class's level (Catalog ▸ Mastery: its powers, titles, mastery skins)
+			local r3 = hrow(area); r3.LayoutOrder = order; order += 1
+			local classes = table.clone(GameConfig.CLASS_ORDER)
+			table.insert(classes, "all")
+			local ci = 1
+			local cb = button(r3, "CLASS: " .. string.upper(classes[ci]), Theme.GLASS2, 150)
+			cb.Activated:Connect(function() ci = ci % #classes + 1; cb.Text = "CLASS: " .. string.upper(classes[ci]) end)
+			local cl = box(r3, "class level", 90)
+			button(r3, "SET CLASS LEVEL", Theme.BLUE, 140).Activated:Connect(function() act("classlevel", {class = classes[ci], level = tonumber(cl.Text)}) end)
+			button(r3, "MAX EVERY CLASS", Theme.GOLD, 150).Activated:Connect(function() act("classlevel", {class = "all", level = Catalog.MASTERY.max}) end)
+			button(r3, "RESET CLASSES", Theme.GLASS2, 130).Activated:Connect(function() confirm("cls" .. p.userId, function() act("classlevel", {class = "all", level = 1}) end) end)
 		end
 	end
 	-- items
@@ -325,10 +367,11 @@ local function playerCard(area)
 		fill()
 	end
 	-- the big ones
-	if can("unlock") or can("reset") then
-		section("EVERYTHING")
+	if can("unlock") or can("reset") or can("items") then
+		section("EVERYTHING  ·  incl. shields, throwables, spells, titles, every class maxed (all powers)")
 		local r = hrow(area); r.LayoutOrder = order; order += 1
 		if can("unlock") then button(r, "UNLOCK EVERYTHING", Theme.GOLD, 190).Activated:Connect(function() confirm("unlock" .. p.userId, function() act("unlockall") end) end) end
+		if can("items") then button(r, "GIVE PREMIUM PASS", Theme.BLUE, 180).Activated:Connect(function() act("pass") end) end
 		if can("reset") then button(r, "WIPE SAVED DATA", Color3.fromRGB(150, 30, 30), 190).Activated:Connect(function() confirm("reset" .. p.userId, function() act("reset") end) end) end
 	end
 	-- a right-to-erasure request from Roblox (your inbox names the user id): every trace, for good

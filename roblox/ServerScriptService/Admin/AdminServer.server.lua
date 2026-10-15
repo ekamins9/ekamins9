@@ -15,6 +15,8 @@
            bots {skill, count}              clearbots {}
            currency {userId, kind = "marks"|"crowns", amount (negative takes)}
            item {userId, kind, id, take}    unlockall {userId}       level {userId, level}
+           xp {userId, amount}  (real XP: level-ups, the class's too, banners and Keys)
+           classlevel {userId, class ("all" for every class), level}    pass {userId}
                                             (a Unique skin: given as THE one copy, #1 of 1;
                                             refused if somebody already has it)
            reset {userId}                   setrole {userId, name, role ("" takes it away)}
@@ -134,6 +136,33 @@ end
 --------------------------------------------------------------------
 --  CHANGES TO A PLAYER'S DATA (here, or waiting for them)
 --------------------------------------------------------------------
+-- the XP total that puts a class at `level` (Catalog ▸ Mastery)
+local function classXPFor(level)
+	local M, total = Catalog.MASTERY, 0
+	for l = 1, math.clamp(level, 1, M.max) - 1 do total += M.need(l) end
+	return total
+end
+-- a class at `level`: its XP set to match, and what the levels up to it give (its titles, its
+-- mastery skins: as a level-up would, without the Keys); returns how many things that was
+local function setClassLevel(plr, classId, level)
+	local p = Profile.get(plr)
+	local M = Catalog.MASTERY
+	level = math.clamp(math.floor(level), 1, M.max)
+	p.classXP = type(p.classXP) == "table" and p.classXP or {}
+	p.classXP[classId] = classXPFor(level)
+	local n = 1
+	for l, title in pairs(M.titles[classId] or {}) do
+		if l <= level then Profile.grant(plr, "titles", title); n += 1 end
+	end
+	for _, sk in ipairs(Catalog.SPELLSKINS or {}) do
+		if sk.mastery and sk.mastery.class == classId and sk.mastery.level <= level and Profile.copyCount(p, "spell:" .. sk.id) == 0 then
+			Profile.addCopy(plr, "spell:" .. sk.id, {from = "class mastery", bound = true}); n += 1
+		end
+	end
+	Profile.markDirty(plr)
+	return n
+end
+
 local function everything(plr)
 	local n = 0
 	for _, pc in ipairs(Catalog.PIECES) do Profile.grant(plr, "pieces", pc.id); n += 1 end
@@ -154,19 +183,41 @@ local function everything(plr)
 	for layer, list in pairs(Catalog.BODY.faceParts or {}) do
 		for _, it in ipairs(list) do if it.crowns then Profile.grant(plr, "faceParts", layer .. "_" .. it.id); n += 1 end end
 	end
+	-- every Mage spell (they open by level), and every class at its top class level: all 50 powers,
+	-- the mastery titles and skins (Catalog ▸ Mastery, Catalog ▸ Powers)
+	for id, sp in pairs(Catalog.SPELLS) do
+		if type(sp) == "table" and sp.kind and not sp.power then Profile.grant(plr, "spells", id); n += 1 end
+	end
+	for _, cid in ipairs(GameConfig.CLASS_ORDER) do n += setClassLevel(plr, cid, Catalog.MASTERY.max) end
 	return n
 end
 
-local ITEM_KINDS = {piece = "pieces", skin = "skins", weapon = "weapons", emote = "emotes", killfx = "killfx", companion = "companions", title = "titles", color = "colors", armorfx = "armorfx", spellfx = "spellfx"}
+local ITEM_KINDS = {piece = "pieces", skin = "skins", weapon = "weapons", emote = "emotes", killfx = "killfx", companion = "companions", title = "titles", color = "colors", armorfx = "armorfx", spellfx = "spellfx", spell = "spells"}
 
 -- one change, on a player who is here; returns a line for the toast / log
 local function apply(plr, op)
 	local p = Profile.get(plr)
 	if op.op == "currency" then
-		local key = op.kind == "crowns" and "crowns" or "marks"
+		local key = (op.kind == "crowns" or op.kind == "keys") and op.kind or "marks"
 		p.wallet[key] = math.max(0, (p.wallet[key] or 0) + op.amount)
 		Profile.markDirty(plr); Economy.changed:Fire(plr)
-		return string.format("%s%d %s", op.amount >= 0 and "+" or "", op.amount, key == "crowns" and "Crowns" or "Marks")
+		return string.format("%s%d %s", op.amount >= 0 and "+" or "", op.amount, key == "crowns" and "Crowns" or (key == "keys" and "Keys" or "Marks"))
+	elseif op.op == "xp" then
+		-- the real thing: their level and the class they're on climb, with every banner and Key
+		local before = p.level
+		Economy.addXP(plr, math.max(0, math.floor(op.amount)))
+		Economy.changed:Fire(plr)
+		local cls = plr.Character and plr.Character:GetAttribute("Class") or p.active
+		return string.format("+%d XP (level %d%s · %s class level %d)", op.amount, p.level, p.level > before and (" from " .. before) or "",
+			tostring(cls), Catalog.classLevel(p, cls))
+	elseif op.op == "classlevel" then
+		local list = op.class == "all" and GameConfig.CLASS_ORDER or {op.class}
+		for _, cid in ipairs(list) do if GameConfig.CLASSES[cid] then setClassLevel(plr, cid, op.level) end end
+		Economy.changed:Fire(plr)
+		return string.format("%s at class level %d", op.class == "all" and "every class" or tostring(op.class), math.clamp(math.floor(op.level), 1, Catalog.MASTERY.max))
+	elseif op.op == "pass" then
+		local ok = Economy.passGift(plr, Catalog.PASS.season)
+		return ok and "the premium season pass" or "they have the pass already"
 	elseif op.op == "item" then
 		if op.take then
 			local k = ITEM_KINDS[op.kind]
@@ -175,6 +226,7 @@ local function apply(plr, op)
 			return "took " .. tostring(op.id)
 		end
 		if op.kind == "weapon" then Profile.grant(plr, "weapons", op.id); Economy.changed:Fire(plr); return "the weapon " .. op.id end
+		if op.kind == "spell" then Profile.grant(plr, "spells", op.id); Economy.changed:Fire(plr); return "the spell " .. op.id end
 		local line = Economy.grantReward(plr, {[op.kind] = op.id})
 		return line
 	elseif op.op == "unlockall" then
@@ -280,11 +332,11 @@ end
 
 local NEEDS = {kick = "kick", unban = "ban", ["goto"] = "teleport", bring = "teleport", freeze = "teleport", heal = "health", kill = "health",
 	endround = "rounds", nextmode = "rounds", nextmap = "rounds", bots = "bots", clearbots = "bots", currency = "currency", item = "items",
-	unlockall = "unlock", level = "progress", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops", erase = "erase",
+	unlockall = "unlock", level = "progress", xp = "progress", classlevel = "progress", pass = "items", reset = "reset", setrole = "staff", shutdown = "shutdown", drop = "drops", erase = "erase",
 	showcase = "showcase", showcase_stop = "showcase"}
 -- actions done to another player: you must outrank them (on yourself it's fine)
 local ON_PLAYER = {kick = true, ban = true, ["goto"] = false, bring = true, freeze = true, heal = false, kill = true, currency = true, item = true,
-	unlockall = true, level = true, reset = true, setrole = true, erase = true}
+	unlockall = true, level = true, xp = true, classlevel = true, pass = true, reset = true, setrole = true, erase = true}
 
 -- DROPS (Catalog ▸ Calendar): release one early or hold one back, on every
 -- server at once (MessagingService) and for servers that start later (DataStore)
@@ -442,7 +494,7 @@ local function act(plr, action, a)
 	elseif action == "currency" then
 		local amount = math.floor(tonumber(a.amount) or 0)
 		if amount == 0 then return false, "how much?" end
-		local ok, msg = change(targetId, {op = "currency", kind = a.kind == "crowns" and "crowns" or "marks", amount = amount})
+		local ok, msg = change(targetId, {op = "currency", kind = (a.kind == "crowns" or a.kind == "keys") and a.kind or "marks", amount = amount})
 		logAction(plr, "currency", targetId, tname, string.format("%d %s", amount, a.kind or "marks"))
 		return ok, msg
 	elseif action == "item" then
@@ -457,7 +509,9 @@ local function act(plr, action, a)
 			or (kind == "egg" and Catalog.EGG[id]) or (kind == "color" and Catalog.COLOR[id]) or (kind == "title" and id ~= "")
 			or (kind == "armorfx" and Catalog.ARMORFX_BY and Catalog.ARMORFX_BY[id])
 			or (kind == "spellfx" and Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[id])
-		if kind == "crate" then for _, c in ipairs(Catalog.CRATES) do if c.id == id then valid = c end end end
+			or (kind == "spell" and Catalog.SPELLS[id] and Catalog.SPELLS[id].kind and not Catalog.SPELLS[id].power)
+		-- (the crates are keyed by id)
+		if kind == "crate" then valid = Catalog.CRATES[id] end
 		if not valid then return false, "no such " .. kind end
 		if a.take and (kind == "egg" or kind == "crate") then return false, "eggs and crates can't be taken back" end
 		local ok, msg = change(targetId, {op = "item", kind = kind, id = id, take = a.take == true})
@@ -472,6 +526,23 @@ local function act(plr, action, a)
 		if not lvl then return false, "which level?" end
 		local ok, msg = change(targetId, {op = "level", level = lvl})
 		logAction(plr, "level", targetId, tname, lvl)
+		return ok, msg
+	elseif action == "xp" then
+		local amount = math.floor(tonumber(a.amount) or 0)
+		if amount <= 0 then return false, "how much XP?" end
+		local ok, msg = change(targetId, {op = "xp", amount = math.min(amount, 1e6)})
+		logAction(plr, "xp", targetId, tname, amount)
+		return ok, msg
+	elseif action == "classlevel" then
+		local lvl = tonumber(a.level)
+		local cls = a.class == "all" and "all" or (GameConfig.CLASSES[tostring(a.class)] and tostring(a.class))
+		if not (lvl and cls) then return false, "which class, which level?" end
+		local ok, msg = change(targetId, {op = "classlevel", class = cls, level = lvl})
+		logAction(plr, "classlevel", targetId, tname, cls .. " " .. lvl)
+		return ok, msg
+	elseif action == "pass" then
+		local ok, msg = change(targetId, {op = "pass"})
+		logAction(plr, "pass", targetId, tname)
 		return ok, msg
 	elseif action == "reset" then
 		local ok, msg = change(targetId, {op = "reset"})
@@ -531,7 +602,11 @@ local function playerRow(p)
 	return {userId = p.UserId, name = p.Name, display = p.DisplayName, role = roleOf(p.UserId), level = pr.level, marks = pr.wallet.marks,
 		crowns = pr.wallet.crowns, team = p.Team and p.Team.Name or "", alive = hum ~= nil and hum.Health > 0,
 		frozen = p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.HumanoidRootPart.Anchored or false,
-		kills = pr.stats.kill or 0, rounds = pr.stats.round or 0}
+		kills = pr.stats.kill or 0, rounds = pr.stats.round or 0, keys = pr.wallet.keys or 0, classLevels = (function()
+			local t = {}
+			for _, cid in ipairs(GameConfig.CLASS_ORDER) do t[cid] = Catalog.classLevel(pr, cid) end
+			return t
+		end)()}
 end
 
 -- a little burst is fine (opening the panel asks a few things at once): 8 calls, refilled 8 a second
