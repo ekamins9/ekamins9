@@ -73,8 +73,9 @@ end)
 --------------------------------------------------------------------
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RigPose = require(ReplicatedStorage:WaitForChild("RigPose"))
--- (a bot's emote: a showcase's bots emote over the fallen, Hub ▸ Cosmetics. Emotes are drawn
--- through RigPose, so an emoting bot is posed here like a ranged one, sword or not)
+-- (a bot's emote: a showcase's bots emote over the fallen, Hub ▸ Cosmetics; and a power's
+-- gesture, ReplicatedStorage ▸ PowerPoses. Emotes are drawn through RigPose, so an emoting
+-- bot is posed here like a ranged one, sword or not)
 local Emotes = require(ReplicatedStorage:WaitForChild("Emotes"))
 local posed = setmetatable({}, {__mode = "k"})   -- [model] = {joints, origins, cur = inputs}
 
@@ -137,7 +138,8 @@ RunService.RenderStepped:Connect(function(dt)
 			local want = inputsFor(m, stance)
 			e.cur = e.cur and RigPose.lerpInputs and RigPose.lerpInputs(e.cur, want, k) or want
 			e.cur.ranged = stance
-			pcall(RigPose.apply, e.joints, RigPose.compute(e.cur, e.origins), 1)
+			-- (an emote or a power's gesture lets go of the bow's or the staff's stance: RigPose.calm)
+			pcall(RigPose.apply, e.joints, RigPose.compute(RigPose.calm(m, e.cur), e.origins), 1)
 		elseif e then
 			-- (the bow put away, a sword drawn: the joints back to rest for its animations)
 			for name, m6 in pairs(e.joints) do if m6.Parent and e.origins[name] then m6.C0 = e.origins[name] end end

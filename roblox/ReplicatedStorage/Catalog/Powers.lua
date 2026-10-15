@@ -5,6 +5,9 @@
 
        id, class, name, glyph, level (class level), cooldown (s), cast (s of wind-up, 0 = instant)
        color, glow    its two colours (a power skin changes them: Catalog ▸ PowerSkins)
+       pose           the gesture it plays (ReplicatedStorage ▸ PowerPoses: Ignite, Envenom, Vow,
+                      Roar, Brace, Surge, Haste, Breath, Scout, Cast, Conjure, Sky, Slam, Spin,
+                      Lunge, Leap, Vanish, Nock); left out, one that fits its kind
        desc           what it does, as the loadout says it
        kind and its numbers:
          imbue   the weapon in your hand burns / freezes / … for `time` s (or `hits` blows):
@@ -54,7 +57,8 @@ local P = {}
 local function add(t)
 	t.color, t.glow = t.color or col(t.el or ARCANE), t.glow or (t.el or ARCANE)[2]
 	t.el = nil
-	t.cast = t.cast or 0.2
+	-- (an imbue's wind-up is the weapon going up before it catches; an ultimate's, the gathering)
+	t.cast = t.cast or (t.kind == "imbue" and 0.35) or (t.ultimate and 0.45) or 0.2
 	table.insert(P, t)
 end
 
@@ -70,7 +74,7 @@ add{id = "Flameblade", class = "Knight", name = "Flameblade", glyph = "🔥", le
 add{id = "IronSkin", class = "Knight", name = "Iron Skin", glyph = "🛡", level = AT[2], cooldown = 34, el = STONE,
 	kind = "buff", time = 6, mods = {taken = 0.7, speed = 0.9}, aura = "stone",
 	desc = "Your skin turns to iron for 6 seconds: you take 30% less damage, but move a little slower."}
-add{id = "ShieldOfFaith", class = "Knight", name = "Shield of Faith", glyph = "✝", level = AT[3], cooldown = 30, el = HOLY,
+add{id = "ShieldOfFaith", class = "Knight", name = "Shield of Faith", glyph = "✝", level = AT[3], cooldown = 30, el = HOLY, pose = "Vow",
 	kind = "buff", time = 8, barrier = 35, aura = "holy",
 	desc = "A shell of golden light soaks the next 35 damage you'd take (8 seconds)."}
 add{id = "WarCry", class = "Knight", name = "War Cry", glyph = "📯", level = AT[4], cooldown = 40, el = FIRE,
@@ -79,16 +83,16 @@ add{id = "WarCry", class = "Knight", name = "War Cry", glyph = "📯", level = A
 add{id = "Juggernaut", class = "Knight", name = "Juggernaut", glyph = "🐂", level = AT[5], cooldown = 40, el = STONE,
 	kind = "buff", time = 6, mods = {unflinching = true, taken = 0.85}, aura = "stone",
 	desc = "For 6 seconds no blow makes you flinch: swing straight through theirs."}
-add{id = "HolySmite", class = "Knight", name = "Holy Smite", glyph = "⚔", level = AT[6], cooldown = 24, el = HOLY,
+add{id = "HolySmite", class = "Knight", name = "Holy Smite", glyph = "⚔", level = AT[6], cooldown = 24, el = HOLY, pose = "Vow",
 	kind = "imbue", time = 6, hits = 1, element = "holy", bonus = 22, shove = 34, heal = 10,
 	desc = "Your next hit (within 6 s) lands with heaven's weight: 22 more damage, a shove, and it heals you 10."}
-add{id = "Consecrate", class = "Knight", name = "Consecrate", glyph = "☀", level = AT[7], cooldown = 45, el = HOLY,
+add{id = "Consecrate", class = "Knight", name = "Consecrate", glyph = "☀", level = AT[7], cooldown = 45, el = HOLY, cast = 0.4,
 	kind = "zone", at = "self", radius = 10, time = 6, allies = {heal = 4}, foes = {dps = 3},
 	desc = "Hallow the ground round you for 6 seconds: allies there heal, foes there burn."}
 add{id = "Charge", class = "Knight", name = "Charge", glyph = "🏇", level = AT[8], cooldown = 20, el = FIRE,
 	kind = "dash", distance = 24, time = 0.45, hit = {damage = 12, shove = 40, stun = 0.6},
 	desc = "Rush 24 studs straight ahead, bowling over (12 damage, staggered) whoever you hit."}
-add{id = "ThunderSlam", class = "Knight", name = "Thunder Slam", glyph = "💥", level = AT[9], cooldown = 30, el = STORM,
+add{id = "ThunderSlam", class = "Knight", name = "Thunder Slam", glyph = "💥", level = AT[9], cooldown = 30, el = STORM, cast = 0.4,
 	kind = "spell", spell = {kind = "nova", radius = 10, damage = 12, slow = 0.35, slowTime = 2, shove = 0},
 	desc = "Strike the ground: a ring of thunder 10 studs round you, 12 damage and a heavy slow."}
 add{id = "AvatarOfWar", class = "Knight", name = "Avatar of War", glyph = "👑", level = AT[10], cooldown = 100, el = HOLY, ultimate = true,
@@ -133,7 +137,7 @@ add{id = "Tempest", class = "Footman", name = "Tempest", glyph = "⛈", level = 
 --------------------------------------------------------------------
 --  VANGUARD — TRICKS: shadow and venom
 --------------------------------------------------------------------
-add{id = "VenomEdge", class = "Vanguard", name = "Venom Edge", glyph = "🐍", level = AT[1], cooldown = 26, el = VENOM,
+add{id = "VenomEdge", class = "Vanguard", name = "Venom Edge", glyph = "🐍", level = AT[1], cooldown = 26, el = VENOM, pose = "Envenom",
 	kind = "imbue", time = 8, element = "venom", poison = {dps = 3, time = 4},
 	desc = "Coat your blade for 8 seconds: every hit poisons them (12 damage over 4 seconds)."}
 add{id = "Shadowstep", class = "Vanguard", name = "Shadowstep", glyph = "🌑", level = AT[2], cooldown = 13, el = SHADOW, cast = 0,
@@ -154,7 +158,7 @@ add{id = "PhantomBlades", class = "Vanguard", name = "Phantom Blades", glyph = "
 add{id = "Vanish", class = "Vanguard", name = "Vanish", glyph = "👻", level = AT[7], cooldown = 42, el = SHADOW,
 	kind = "stealth", time = 4, mods = {speed = 1.15}, ambush = 1.5,
 	desc = "Fade from sight for 4 seconds. Striking from it ends it, with half again the damage."}
-add{id = "Ambush", class = "Vanguard", name = "Ambush", glyph = "🔪", level = AT[8], cooldown = 22, el = BLOOD,
+add{id = "Ambush", class = "Vanguard", name = "Ambush", glyph = "🔪", level = AT[8], cooldown = 22, el = BLOOD, pose = "Envenom",
 	kind = "imbue", time = 6, hits = 1, element = "blood", bonus = 10, behind = 2,
 	desc = "Your next hit (within 6 s) deals 10 more, and double from behind."}
 add{id = "ShadowChain", class = "Vanguard", name = "Shadow Chain", glyph = "⛓", level = AT[9], cooldown = 20, el = SHADOW,
@@ -192,7 +196,7 @@ add{id = "SeekerArrows", class = "Archer", name = "Seeker Arrows", glyph = "🧭
 add{id = "VineSnare", class = "Archer", name = "Vine Snare", glyph = "🌿", level = AT[8], cooldown = 24, el = NATURE,
 	kind = "arrows", count = 1, enchant = {fx = "toxic", snare = {time = 1.6}},
 	desc = "Your next arrow sprouts vines: whoever it hits is rooted for a moment and a half."}
-add{id = "EagleEye", class = "Archer", name = "Eagle Eye", glyph = "🦅", level = AT[9], cooldown = 34, el = HOLY,
+add{id = "EagleEye", class = "Archer", name = "Eagle Eye", glyph = "🦅", level = AT[9], cooldown = 34, el = HOLY, pose = "Scout",
 	kind = "buff", time = 8, mods = {draw = 0.6, speed = 1.1}, aura = "holy",
 	desc = "For 8 seconds you draw 40% faster and move lighter."}
 add{id = "ArrowRain", class = "Archer", name = "Rain of Arrows", glyph = "🌧", level = AT[10], cooldown = 85, el = NATURE, ultimate = true,

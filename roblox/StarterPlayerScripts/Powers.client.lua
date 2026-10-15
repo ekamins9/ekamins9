@@ -6,12 +6,17 @@
      wiping down, the seconds left, a throwable's charges. A class level-up gets a banner.
 
      EVERYONE (from the character attributes Combat ▸ Powers / Shields / Throwing publish):
-       an imbue's flames (or frost, venom, light…) on the weapon in hand · a buff's aura ·
-       a stealthy character fades (yours to a ghost, theirs nearly gone) · a familiar at the
-       shoulder · poison and roots · a shield raised in front while they block (ShieldGrip
-       IdleC0 / BlockC0) · and from PowerFX / ThrowFX: circles on the ground (fire, frost,
-       smoke, a dome, a gravity well, a rain of arrows), dashes, slams, decoys, and every
-       thrown thing in flight. Colours come from the power's look and its skin (MagicFX.lookOf). ]]
+       the gesture as a power winds up or goes off, and a throw's fling (ReplicatedStorage ▸
+       PowerPoses) · an imbue's flames (or frost, venom, light…) on the weapon in hand, flaring
+       up as it catches · a buff's aura · an ultimate's shockwave · a stealthy character fades
+       (yours to a ghost, theirs nearly gone) · a familiar at the shoulder · a shield raised in
+       front while they block (ShieldGrip IdleC0 / BlockC0) · and from PowerFX / ThrowFX:
+       circles on the ground (fire, frost, smoke, a dome, a gravity well, a rain of arrows),
+       dashes, slams, decoys, an imbued blow's burst where it lands (Strike: fire, frost, a
+       gust, venom, a pillar of light; a draining blow's life flowing back), and every thrown
+       thing in flight. Colours come from the power's look and its skin (MagicFX.lookOf).
+       What's been done to a body (burning, frozen, poisoned, rooted, dazed, shocked) is
+       StatusFX's. ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -27,12 +32,14 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
+local PowerPoses = require(ReplicatedStorage:WaitForChild("PowerPoses"))
 
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("PowerRemote", 60)
 local round = ReplicatedStorage:WaitForChild("Round")
 local WHITE = Color3.new(1, 1, 1)
 local TEX = {spark = "rbxasset://textures/particles/sparkles_main.dds", fire = "rbxasset://textures/particles/fire_main.dds", smoke = "rbxasset://textures/particles/smoke_main.dds"}
+local SND = {cast = 9125899162, boom = 1835337001, whoosh = 9120709477, zap2 = 9116275998, ice = 9119577515, shing = 9119742466, thud = 9046338796}
 local function snow() return workspace:GetServerTimeNow() end
 
 local fxFolder = workspace:FindFirstChild("PowerFX")
@@ -57,6 +64,16 @@ local function part(props)
 	for k, v in pairs(props) do p[k] = v end
 	p.Parent = props.Parent or fxFolder
 	return p
+end
+local function sound(id, at, vol, speed)
+	local holder = at
+	if typeof(at) == "Vector3" then
+		holder = Instance.new("Attachment"); holder.WorldPosition = at; holder.Parent = workspace.Terrain
+		Debris:AddItem(holder, 4)
+	end
+	local snd = Instance.new("Sound"); snd.SoundId = "rbxassetid://" .. id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+	snd.RollOffMaxDistance = 100; snd.Parent = holder; snd:Play()
+	Debris:AddItem(snd, 4)
 end
 local function emitter(parent, c1, c2, o)
 	o = o or {}
@@ -344,12 +361,36 @@ local function drawOn(c, isMe)
 			L.imbue = {}
 			for _, p in ipairs(bladeParts(tool)) do
 				local fire = im == "fire" or im == "holy"
-				local e = emitter(p, col, glow, {texture = fire and TEX.fire or TEX.spark, size = fire and 0.55 or 0.3, rate = fire and 40 or 30, speed = 1.5, life = 0.45,
-					accel = Vector3.new(0, fire and 4 or 1, 0), box = true, light = 1})
+				local e = emitter(p, glow, col, {texture = fire and TEX.fire or TEX.spark, size = fire and 0.75 or 0.3, rate = fire and 50 or 30, speed = 1.5, life = 0.45,
+					accel = Vector3.new(0, fire and 4 or 1, 0), box = true, light = fire and 0.7 or 1})
+				e.ZOffset = 0.4
 				local l = Instance.new("PointLight"); l.Color = col; l.Range = 9; l.Brightness = 1.6; l.Parent = p
 				table.insert(L.imbue, e); table.insert(L.imbue, l)
 			end
 		end
+	end
+	-- a fresh imbue CATCHES: the blade flares up, a burst off its whole length, a whoosh
+	local imUntil = im and c:GetAttribute("ImbueUntil") or nil
+	if imUntil ~= L.imUntil then
+		local fresh = imUntil ~= nil and L.imSeen
+		L.imUntil, L.imSeen = imUntil, true
+		if fresh and L.imbue then
+			local col, glow = look(c:GetAttribute("ImbueSpell"), c:GetAttribute("ImbueSkin"))
+			for _, x in ipairs(L.imbue) do
+				if x:IsA("ParticleEmitter") then
+					local burst = emitter(x.Parent, glow, col, {texture = x.Texture, size = 0.9, rate = 0, speed = 7, life = 0.45, box = true, light = 1})
+					burst:Emit(26)
+					Debris:AddItem(burst, 1.2)
+				elseif x:IsA("PointLight") then
+					x.Brightness = 3.5; x.Range = 13
+					TweenService:Create(x, TweenInfo.new(0.7, Enum.EasingStyle.Quad), {Brightness = 1.6, Range = 9}):Play()
+				end
+			end
+			local blade = L.imbue[1] and L.imbue[1].Parent
+			if blade then sound(SND.whoosh, blade, 0.6, im == "frost" and 1.3 or (im == "fire" and 0.85 or 1.05)) end
+		end
+	elseif not im then
+		L.imSeen = true
 	end
 	-- the aura of a buff
 	local au = (c:GetAttribute("AuraUntil") or 0) > t and c:GetAttribute("Aura") or nil
@@ -395,32 +436,43 @@ local function drawOn(c, isMe)
 			L.familiar.CFrame = L.familiar.CFrame:Lerp(head.CFrame * CFrame.new(2, 1.2 + bob, 0.6), 0.2)
 		end
 	end
-	-- poison (green bubbles) and a root (vines at the feet)
-	local function status(key, on, make)
-		if on and not L[key] then L[key] = make() elseif not on and L[key] then for _, x in ipairs(L[key]) do x:Destroy() end; L[key] = nil end
+	-- the body's part: a gesture as a power winds up (ReplicatedStorage ▸ PowerPoses)
+	local casting = c:GetAttribute("PowerCasting")
+	if casting ~= L.casting then
+		L.casting = casting
+		if casting then
+			PowerPoses.play(c, PowerPoses.gestureFor(Catalog.POWER[casting]))
+			L.posedAt = os.clock()
+		end
 	end
-	local root = c:FindFirstChild("HumanoidRootPart")
-	if root then
-		status("poison", c:GetAttribute("Poisoned") == true, function()
-			return {emitter(root, Color3.fromRGB(110, 220, 70), Color3.fromRGB(200, 255, 150), {size = 0.35, rate = 16, speed = 1.5, life = 0.8, accel = Vector3.new(0, 3, 0), box = true})}
-		end)
-		status("snare", c:GetAttribute("Snared") == true, function()
-			local out = {}
-			for k = 1, 6 do
-				local a = k / 6 * math.pi * 2
-				local v = part({Name = "Vine", Size = Vector3.new(0.25, 2.4, 0.25), Material = Enum.Material.Grass, Color = Color3.fromRGB(60, 130, 50),
-					CFrame = root.CFrame * CFrame.new(math.cos(a) * 1.1, -2.2, math.sin(a) * 1.1) * CFrame.Angles(math.cos(a) * 0.5, 0, math.sin(a) * 0.5)})
-				table.insert(out, v)
-			end
-			return out
-		end)
-	end
-	-- the moment a power goes off: a burst of its light and a ring of sound
+	-- a throw's fling
+	local tt = c:GetAttribute("ThrowTick")
+	if L.seen and tt ~= L.throwTick then PowerPoses.play(c, PowerPoses.THROW) end
+	L.throwTick = tt
+	-- the moment a power goes off: a burst of its light and a ring of sound (an ultimate's
+	-- a shockwave and a column of light); its gesture now, if it had no wind-up to start in
 	local tick = c:GetAttribute("PowerTick")
 	if tick ~= L.tick then
-		local first = L.tick == nil
+		local first = not L.seen
 		L.tick = tick
 		local root = c:FindFirstChild("HumanoidRootPart")
+		local d = Catalog.POWER[c:GetAttribute("LastPower") or ""]
+		if not first and d and os.clock() - (L.posedAt or 0) > 0.7 then PowerPoses.play(c, PowerPoses.gestureFor(d)) end
+		if not first and root and d and d.ultimate then
+			local col, glow = look(c:GetAttribute("PowerSpell"), c:GetAttribute("PowerSkin"))
+			local ground = root.Position - Vector3.new(0, 2.9, 0)
+			for k = 0, 1 do
+				local r = part({Name = "UltimateWave", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 2, 2), Material = Enum.Material.Neon, Color = k == 0 and glow or col,
+					CFrame = CFrame.new(ground + Vector3.new(0, 0.2 + k * 0.1, 0)) * CFrame.Angles(0, 0, math.rad(90)), Transparency = 0.1})
+				TweenService:Create(r, TweenInfo.new(0.6 + k * 0.25, Enum.EasingStyle.Quart), {Size = Vector3.new(0.2, 34 - k * 8, 34 - k * 8), Transparency = 1}):Play()
+				Debris:AddItem(r, 1)
+			end
+			local beam = part({Name = "UltimateColumn", Shape = Enum.PartType.Cylinder, Size = Vector3.new(40, 3, 3), Material = Enum.Material.Neon, Color = glow,
+				CFrame = CFrame.new(ground + Vector3.new(0, 20, 0)) * CFrame.Angles(0, 0, math.rad(90)), Transparency = 0.2})
+			TweenService:Create(beam, TweenInfo.new(0.7, Enum.EasingStyle.Quad), {Size = Vector3.new(40, 0.2, 0.2), Transparency = 1}):Play()
+			Debris:AddItem(beam, 0.8)
+			sound(SND.boom, root, 0.55, 0.8)
+		end
 		if not first and root then
 			local col, glow = look(c:GetAttribute("PowerSpell"), c:GetAttribute("PowerSkin"))
 			local b = part({Name = "PowerBurst", Size = Vector3.new(2, 4, 2), Transparency = 1, CFrame = root.CFrame})
@@ -444,6 +496,7 @@ local function drawOn(c, isMe)
 			grip.C0 = idle:Lerp(block, L.raise)
 		end
 	end
+	L.seen = true
 end
 
 RunService.RenderStepped:Connect(function()
@@ -459,7 +512,7 @@ RunService.RenderStepped:Connect(function()
 	end
 	for c, L in pairs(looks) do
 		if not c.Parent then
-			for _, k in ipairs({"imbue", "aura", "poison", "snare"}) do clearKey(L, k) end
+			for _, k in ipairs({"imbue", "aura"}) do clearKey(L, k) end
 			if L.familiar then L.familiar:Destroy() end
 			looks[c] = nil
 		end
@@ -568,6 +621,89 @@ function EVENTS.Slam(at, radius, spellId, skin)
 	local e2 = emitter(dust, col, glow, {size = 0.5, rate = 0, speed = 14, life = 0.4})
 	e2:Emit(40)
 	Debris:AddItem(dust, 1.5)
+end
+-- an imbued blow lands: a flash where it struck and the element bursting off it; holy light
+-- comes down in a pillar, wind blows out in a ring, frost shatters in shards, and a draining
+-- blow's life flows back to the striker
+local STRIKE_SND = {fire = {SND.whoosh, 0.8}, frost = {SND.ice, 1.1}, holy = {SND.shing, 0.9}, wind = {SND.whoosh, 1.35},
+	venom = {SND.whoosh, 0.65}, blood = {SND.zap2, 0.7}, shadow = {SND.zap2, 0.55}}
+function EVENTS.Strike(attacker, target, at, element, spellId, skin, drain)
+	if typeof(at) ~= "Vector3" then return end
+	local col, glow = look(spellId, skin)
+	local cam = workspace.CurrentCamera
+	if cam and (cam.CFrame.Position - at).Magnitude > 220 then return end
+	-- the flash
+	local flash = part({Name = "StrikeFlash", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.6, Material = Enum.Material.Neon, Color = glow, CFrame = CFrame.new(at), Transparency = 0.05})
+	TweenService:Create(flash, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {Size = Vector3.one * 3.6, Transparency = 1}):Play()
+	local l = Instance.new("PointLight"); l.Color = col; l.Range = 14; l.Brightness = 5; l.Parent = flash
+	TweenService:Create(l, TweenInfo.new(0.35), {Brightness = 0}):Play()
+	Debris:AddItem(flash, 0.5)
+	-- the element
+	local holder = part({Name = "StrikeBurst", Size = Vector3.one * 0.8, Transparency = 1, CFrame = CFrame.new(at)})
+	Debris:AddItem(holder, 2)
+	if element == "fire" then
+		emitter(holder, col, Color3.fromRGB(200, 50, 10), {texture = TEX.fire, size = 1.4, rate = 0, speed = 9, life = 0.45, accel = Vector3.new(0, 10, 0), light = 1}):Emit(30)
+		emitter(holder, glow, col, {size = 0.3, rate = 0, speed = 18, life = 0.6, accel = Vector3.new(0, -12, 0)}):Emit(24)
+	elseif element == "frost" then
+		emitter(holder, glow, col, {size = 0.5, rate = 0, speed = 12, life = 0.5}):Emit(30)
+		for k = 1, 7 do
+			local dir = (Vector3.new(math.random() - 0.5, math.random() * 0.8, math.random() - 0.5)).Unit
+			local shard = part({Name = "IceShard", Size = Vector3.new(0.18, 0.18, 0.6 + math.random() * 0.5), Material = Enum.Material.Glass, Color = Color3.fromRGB(190, 235, 255),
+				Transparency = 0.15, CFrame = CFrame.lookAt(at, at + dir)})
+			TweenService:Create(shard, TweenInfo.new(0.45, Enum.EasingStyle.Quad), {CFrame = CFrame.lookAt(at + dir * 4, at + dir * 5) * CFrame.Angles(math.random() * 3, 0, 0), Transparency = 1}):Play()
+			Debris:AddItem(shard, 0.5)
+		end
+	elseif element == "holy" then
+		emitter(holder, glow, col, {size = 0.45, rate = 0, speed = 10, life = 0.7}):Emit(34)
+		local ground = at - Vector3.new(0, 3, 0)
+		local pillar = part({Name = "HolyPillar", Shape = Enum.PartType.Cylinder, Size = Vector3.new(30, 2.4, 2.4), Material = Enum.Material.Neon, Color = glow,
+			CFrame = CFrame.new(ground + Vector3.new(0, 15, 0)) * CFrame.Angles(0, 0, math.rad(90)), Transparency = 0.15})
+		TweenService:Create(pillar, TweenInfo.new(0.55, Enum.EasingStyle.Quad), {Size = Vector3.new(30, 0.2, 0.2), Transparency = 1}):Play()
+		Debris:AddItem(pillar, 0.6)
+		ring(ground, 7, col, glow, 0.45)
+	elseif element == "wind" then
+		emitter(holder, glow, col, {size = 0.35, rate = 0, speed = 22, life = 0.3, spread = 20}):Emit(28)
+		local r = part({Name = "Gust", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.1, 1, 1), Material = Enum.Material.Neon, Color = glow,
+			CFrame = CFrame.new(at) * CFrame.Angles(0, 0, math.rad(90)), Transparency = 0.3})
+		TweenService:Create(r, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Size = Vector3.new(0.1, 9, 9), Transparency = 1}):Play()
+		Debris:AddItem(r, 0.35)
+	elseif element == "venom" then
+		emitter(holder, col, glow, {size = 0.45, rate = 0, speed = 10, life = 0.7, accel = Vector3.new(0, -24, 0)}):Emit(26)
+		emitter(holder, col, glow, {texture = TEX.smoke, size = 1.6, rate = 0, speed = 2, life = 0.9, alpha = 0.5, light = 0.2}):Emit(6)
+	elseif element == "shadow" or element == "blood" then
+		emitter(holder, col, glow, {texture = TEX.smoke, size = 1.4, rate = 0, speed = 5, life = 0.6, alpha = 0.35, light = 0.4}):Emit(12)
+		emitter(holder, glow, col, {size = 0.4, rate = 0, speed = 12, life = 0.4}):Emit(20)
+	else
+		emitter(holder, glow, col, {size = 0.45, rate = 0, speed = 12, life = 0.5}):Emit(30)
+	end
+	local sd = STRIKE_SND[element]
+	sound(sd and sd[1] or SND.cast, at, 0.45, sd and sd[2] or 1.2)
+	-- a draining blow: motes of life flowing from them to the striker
+	local back = drain and typeof(attacker) == "Instance" and attacker:FindFirstChild("HumanoidRootPart")
+	if back then
+		for k = 1, 8 do
+			local mote = part({Name = "LifeMote", Shape = Enum.PartType.Ball, Size = Vector3.one * 0.35, Material = Enum.Material.Neon, Color = k % 2 == 0 and glow or col, CFrame = CFrame.new(at)})
+			local bend = Vector3.new(math.random() - 0.5, 0.6 + math.random(), math.random() - 0.5) * 3
+			local t0, dur = os.clock() + k * 0.04, 0.5
+			local conn
+			conn = RunService.RenderStepped:Connect(function()
+				local x = math.clamp((os.clock() - t0) / dur, 0, 1)
+				if x >= 1 or not back.Parent then conn:Disconnect(); mote:Destroy(); return end
+				local to = back.Position
+				local mid = (at + to) / 2 + bend
+				local a, b = at:Lerp(mid, x), mid:Lerp(to, x)
+				mote.CFrame = CFrame.new(a:Lerp(b, x))
+				mote.Size = Vector3.one * (0.35 * (1 - x * 0.6))
+			end)
+		end
+		task.delay(0.6, function()
+			if back.Parent then
+				local e = emitter(back, glow, col, {size = 0.4, rate = 0, speed = 3, life = 0.6, box = true})
+				e:Emit(16)
+				Debris:AddItem(e, 1)
+			end
+		end)
+	end
 end
 function EVENTS.Decoy(model, time, spellId, skin)
 	if not model then return end

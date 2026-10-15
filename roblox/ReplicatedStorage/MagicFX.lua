@@ -10,8 +10,8 @@
          the orb, growing as the cast fills · Warded → a shield of light in front (WardHit
          ripples it, WardBroke shatters it) · Meditating → a turning circle on the ground
          and light rising into you · Shield → a shell of light (ShieldHit flashes it) ·
-         HexUntil → a curse's mark over the head · HasteUntil → wind at the heels ·
-         Burning → flames · Frosted → frost
+         HexUntil → a curse's mark over the head · HasteUntil → wind at the heels
+         (Burning, Frosted and the other things done to a body: StarterPlayerScripts ▸ StatusFX)
 
      A SPELL SKIN (Catalog ▸ SpellSkins, the caster's choice per spell, passed with every
      event) changes the colours and the shape: MagicFX.lookOf(spellId, skinId). The menus
@@ -716,13 +716,7 @@ local function bodyFx(char, kind)
 	local torso = char:FindFirstChild("Torso")
 	if not torso then return nil end
 	local a = Instance.new("Attachment"); a.Name = "MagicFX_" .. kind; a.Parent = torso
-	if kind == "burn" then
-		emitter(a, TEX.fire, Color3.fromRGB(255, 160, 60), Color3.fromRGB(200, 40, 10), 1.6, 30, {0.3, 0.6}, {1, 3}, Vector3.new(0, 6, 0), 40, 1)
-		emitter(a, TEX.spark, Color3.fromRGB(255, 220, 120), Color3.fromRGB(255, 80, 20), 0.25, 14, {0.4, 0.9}, {1, 4}, Vector3.new(0, 5, 0), 90, 1)
-	elseif kind == "frost" then
-		emitter(a, TEX.spark, Color3.fromRGB(240, 252, 255), Color3.fromRGB(150, 214, 255), 0.3, 24, {0.6, 1.2}, {0.2, 0.8}, Vector3.new(0, -1.5, 0), 180, 0.8)
-		emitter(a, TEX.smoke, Color3.fromRGB(200, 236, 255), nil, 1.4, 6, {0.6, 1}, {0.2, 0.6}, Vector3.new(0, -0.5, 0), 180, 0.2)
-	elseif kind == "haste" then
+	if kind == "haste" then
 		a.Position = Vector3.new(0, -2.6, 0)
 		emitter(a, TEX.spark, Color3.fromRGB(220, 250, 255), Color3.fromRGB(120, 220, 255), 0.35, 40, {0.3, 0.6}, {3, 6}, Vector3.new(0, 2, 0), 70, 1)
 	end
@@ -953,12 +947,8 @@ function MagicFX.start()
 					end
 				end
 			end
-			-- burning, frosted, hasted
+			-- hasted (burning, frosted: StatusFX)
 			if full then
-				local burning = char:GetAttribute("Burning") == true
-				if burning and not L.burn then L.burn = bodyFx(char, "burn") elseif not burning and L.burn then L.burn:Destroy(); L.burn = nil end
-				local frosted = char:GetAttribute("Frosted") == true
-				if frosted and not L.frost then L.frost = bodyFx(char, "frost") elseif not frosted and L.frost then L.frost:Destroy(); L.frost = nil end
 				local hasted = (char:GetAttribute("HasteUntil") or 0) > snow
 				if hasted and not L.haste then L.haste = bodyFx(char, "haste") elseif not hasted and L.haste then L.haste:Destroy(); L.haste = nil end
 			end

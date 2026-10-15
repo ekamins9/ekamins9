@@ -112,6 +112,8 @@ end
 local function stun(target, secs)
 	if secs and secs > 0 and not target:GetAttribute("Boss") then
 		target:SetAttribute("StunnedUntil", math.max(target:GetAttribute("StunnedUntil") or 0, os.clock() + secs))
+		-- (StunnedUntil is the server's clock; DazedUntil the shared one, for the stars: StatusFX)
+		target:SetAttribute("DazedUntil", math.max(target:GetAttribute("DazedUntil") or 0, now() + secs))
 		CombatServer.interrupt(target, "kicked")
 	end
 end
@@ -166,6 +168,7 @@ end
 local function shock(caster, fromModel, sh, spellId, skin)
 	local r0 = rootOf(fromModel)
 	if not r0 then return end
+	if fromModel ~= caster then fromModel:SetAttribute("ShockedUntil", now() + 1.4) end
 	local points, hit = {r0.Position}, {[fromModel] = true}
 	local at = r0.Position
 	for _ = 1, sh.jumps or 1 do
@@ -174,6 +177,7 @@ local function shock(caster, fromModel, sh, spellId, skin)
 		hit[m] = true
 		at = rootOf(m).Position
 		table.insert(points, at)
+		m:SetAttribute("ShockedUntil", now() + 1.4)   -- (crackling: StatusFX)
 		hurt(caster, m, sh.damage or 6, (Spells[spellId] or {}).name or "Power")
 	end
 	if #points > 1 then MagicServer.fx:FireAllClients("Chain", spellId, points, caster, skin) end
@@ -470,8 +474,8 @@ function Powers.use(c, aim)
 	c:SetAttribute("PowerReadyAt", readyAt[uid][def.id]); c:SetAttribute("PowerCD", cd)
 	local ctx = {spellId = spellOf(def.id), skin = s.skin, name = def.name}
 	local function go()
-		if not alive(c) or c:GetAttribute("Ragdolled") then return end
 		c:SetAttribute("PowerCasting", nil)
+		if not alive(c) or c:GetAttribute("Ragdolled") then return end
 		c:SetAttribute("PowerTick", (c:GetAttribute("PowerTick") or 0) + 1)
 		c:SetAttribute("LastPower", def.id)
 		local fn = KIND[def.kind]
@@ -541,6 +545,10 @@ function Powers.onMelee(attacker, target, dmg, hitPos)
 		dmg += d.bonus or 0
 		if d.behind and behind(attacker, target) then dmg *= d.behind end
 		local name = (Spells[im.spellId] or {}).name or "Power"
+		-- the blow lands with the element: a burst where it struck on every screen (Powers.client)
+		local tr = rootOf(target)
+		local at = typeof(hitPos) == "Vector3" and hitPos or (tr and tr.Position)
+		if at then fx:FireAllClients("Strike", attacker, target, at, d.element or "arcane", im.spellId, im.skin, (d.lifesteal or 0) > 0 or (d.heal or 0) > 0) end
 		task.defer(function()
 			if not target.Parent then return end
 			if d.burn then MagicServer.burn(attacker, target, d.burn, name) end

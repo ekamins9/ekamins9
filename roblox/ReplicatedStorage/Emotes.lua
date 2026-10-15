@@ -346,6 +346,14 @@ DEF.HelmetToss = {d = 2.6, pose = track({
 
 Emotes.DURATION = {}
 for id, d in pairs(DEF) do Emotes.DURATION[id] = d.d end
+-- motions from elsewhere, built the same way (ReplicatedStorage ▸ PowerPoses: a power's gesture).
+-- gesture = true: a power's, not an emote — it rides a dash or a leap (no walking or falling
+-- ends it), and only an attack, a block, a hit or a weapon swap cuts it short
+Emotes.track, Emotes.with, Emotes.window = track, with, window
+function Emotes.define(id, d)
+	DEF[id] = d
+	Emotes.DURATION[id] = d.d
+end
 function Emotes.has(id) return DEF[id] ~= nil end
 function Emotes.isUpper(id) return DEF[id] ~= nil and DEF[id].upper == true end
 
@@ -524,7 +532,7 @@ local function interrupted(char, rec, d, t)
 	if (char:FindFirstChildOfClass("Tool") or false) ~= rec.tool then return true end
 	if char:GetAttribute("HitTick") ~= rec.hitTick then return true end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if hrp then
+	if hrp and not d.gesture then
 		local v = hrp.AssemblyLinearVelocity
 		if math.abs(v.Y) > 12 then return true end
 		if not d.upper and t > 0.3 and v.X * v.X + v.Z * v.Z > 6 then return true end

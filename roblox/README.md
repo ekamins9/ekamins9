@@ -68,6 +68,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Heraldry.lua` | `ReplicatedStorage` → `Heraldry` (arms painted on shields) | ModuleScript |
 | `ReplicatedStorage/Catalog/Powers.lua`, `Arsenal.lua`, `ArsenalSkins.lua`, `PowerSkins.lua`, `Mastery.lua` | `ReplicatedStorage` → `Catalog` → … | ModuleScript each |
 | `StarterPlayerScripts/Powers.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Powers` (the orb, the Power key, every power's FX, thrown things, shields raised) | LocalScript |
+| `StarterPlayerScripts/StatusFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `StatusFX` (burning, frozen, poisoned, rooted, dazed, shocked bodies) | LocalScript |
 | `Tools/<Shield or Throwable>` (18) | `ServerStorage` → `Weapons` → `<id>` (a Tool with a Config; Blueprints builds the body) | Tool |
 | `ServerScriptService/Game/HordeObjective.lua` | `ServerScriptService` → `Game` → `HordeObjective` (the campfire, the caravan, the villagers) | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
@@ -85,7 +86,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
 | `ReplicatedStorage/PreviewRig.lua` | `ReplicatedStorage` → `PreviewRig` (a dressed mannequin for menus) | ModuleScript |
 | `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads` (a skin's trim parts; its trail and aura; a staff skin's head) | ModuleScript each |
-| `ReplicatedStorage/KillFX.lua`, `Emotes.lua` | `ReplicatedStorage` → `KillFX`, `Emotes` (the effects and motions) | ModuleScript each |
+| `ReplicatedStorage/KillFX.lua`, `Emotes.lua`, `PowerPoses.lua` | `ReplicatedStorage` → `KillFX`, `Emotes`, `PowerPoses` (the effects and motions; a power's gesture) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
@@ -534,8 +535,27 @@ can't see into, a dome, a rain of arrows), **summon** (a familiar that shoots), 
 fade; bots lose you beyond 6 studs; a blow out of it ambushes: Ward), **arrows** (the next N
 arrows: RangedServer `Powers.takeArrow` / `arrowHit` — fire, frost, storm, splits, bursts,
 marks, homing, roots). A player's cooldowns outlive their body. Everyone sees it: imbue
-flames on the blade, auras, wings, familiars, ghostly stealth, poison, roots, circles on the
-ground (`PowerFX`). No new animations: the user's own clips stay; the powers are FX.
+flames on the blade (flaring up as it catches), auras, wings, familiars, ghostly stealth,
+circles on the ground, an ultimate's shockwave and column of light (`PowerFX`), and an imbued
+blow's burst where it lands (`Strike`: fire, frost shards, a gust, venom, a pillar of light; a
+draining blow's life flowing back to the striker).
+
+**Gestures** (`ReplicatedStorage ▸ PowerPoses`): every power moves the body as it goes off —
+the blade raised overhead as it ignites, a war cry's arms flung wide, a slam's blade driven into
+the ground, a whirlwind's spin, a lunge, an archer reaching to the quiver, a mage's hand thrust
+at the target, a throw's fling. They are procedural motions registered with `Emotes`
+(`Emotes.define`, `gesture = true`), so every screen draws them on players and bots, the blade
+turned in the hand; arms-only, short, they ride dashes and leaps, and an attack, a block or a
+hit cuts them off. Imbues wind up 0.35 s (the blade goes up before it catches), ultimates
+0.45 s. The combat clips are untouched.
+
+**What powers do to a body** (`StatusFX.client`, every screen): **Burning** — flames pouring
+off the whole body, embers, smoke, a flickering firelight and an orange tint; **Frosted** — the
+feet locked in ice, crystals on the shins, forearms and shoulders, cold mist and steaming
+breath, shattering off when it ends; **Poisoned** — green bubbles, drips and haze; **Snared** —
+vines bursting from the ground round the legs; **DazedUntil** — stars round the head (a power's
+stun, a shield bash); **ShockedUntil** — lightning crawling over the body (Storm Arrow, a shock
+imbue). One tint Highlight per body, at most 10.
 
 **Class levels** (`Catalog ▸ Mastery`): every XP you earn also goes to the class you're
 fighting as (`Economy.addClassXP`, `p.classXP`), 250 XP to level 2, rising to 2,600 a level,

@@ -402,7 +402,10 @@ shop is there every day, and every card says how long it has left.
 - **A power**: a line in `Catalog ▸ Powers` (`add{id, class, name, glyph, level, cooldown, kind,
   …}`): pick a kind (imbue, buff, spell, shout, dash, leap, zone, summon, stealth, arrows) and
   its numbers (the file's header lists every field). It's registered as a spell (`Pw_<id>`) by
-  itself. Ten a class; `level` is the class level it opens at.
+  itself. Ten a class; `level` is the class level it opens at. `pose = "Slam"` picks its
+  gesture (left out, one fitting its kind).
+- **A gesture**: `def("Name", seconds, keys, extra)` in `ReplicatedStorage ▸ PowerPoses` — keyframes
+  in the emote format (6b), arms-only; a power plays it with `pose = "Name"`.
 - **A power skin**: a line in `Catalog ▸ PowerSkins` (`sk{id, power, name, rarity, crate =
   "Spellforge" | mastery = {class, level}, look = {color, glow, shape…}}`).
 - **A shield**: a line in `Catalog ▸ Arsenal` shields (block, cone, parry, arrows, speed, bash),

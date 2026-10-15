@@ -394,6 +394,8 @@ function CombatServer.resolveKick(character, cfg, hooks)
 			local kd = (cfg.KICK_DAMAGE + (character:GetAttribute("ShieldBash") or 0)) * ff
 			if character:GetAttribute("ShieldStun") and not m:GetAttribute("Boss") then
 				m:SetAttribute("StunnedUntil", math.max(m:GetAttribute("StunnedUntil") or 0, now + character:GetAttribute("ShieldStun")))
+				-- (stars round the head on every screen: StatusFX, in server time)
+				m:SetAttribute("DazedUntil", workspace:GetServerTimeNow() + character:GetAttribute("ShieldStun"))
 			end
 			CombatServer.credit(m, character, hooks.weaponName or "", "kick")
 			CombatServer.showDamage(character, m, kd, "body", hum.Health - kd <= 0, ff < 1)

@@ -1,4 +1,60 @@
-# Updated scripts: the admin panel (F2) covers everything new: class levels, XP, Keys, the pass, spells, crates
+# Updated scripts: power gestures (Flameblade raises the blade and it ignites), burning / frozen / poisoned / rooted / dazed / shocked bodies, impact bursts
+
+- **Every power moves the body** as it goes off, on every screen, players and bots:
+  - **Flameblade** (and every imbue): a dip, the blade straight up overhead, chin up, the free hand sweeping off it as it catches fire. Imbues now wind up 0.35 s, so the flames catch at the top.
+  - **War Cry / Tailwind**: arms flung wide, chest out.
+  - **Thunder Slam / Consecrate**: the blade overhead, then driven into the ground (wind-up 0.4 s, so the slam lands with the blow).
+  - **Whirlwind** spins; **Charge / Gale Lunge** lunge; **Skybound / Levitate** spring and tuck; **Vanish / Mirage / Smoke Veil / Shadowstep** sweep the cloak across the face.
+  - **Iron Skin / Juggernaut** brace; **Shield of Faith / Holy Smite** a vow, blade before the face; **Venom Edge / Ambush** draw the blade across the face.
+  - **Ultimates** (Avatar of War, Tempest, Nightfall) crouch and burst up into a V, with a shockwave and a column of light (wind-up 0.45 s).
+  - Archers reach to the quiver for an enchanted arrow; mages thrust a hand at the target, raise both for a familiar or a dome, or sweep a hand down from the sky for Starfall / Rain of Arrows. Throwables get a fling.
+
+  They are arms-only and short. Dashes and leaps don't interrupt them; an attack, a block or a hit does, so a power never holds you up. Your combat clips are untouched: these are procedural motions in the emote engine (`Emotes.define`).
+- **Status effects, for their full duration** (new `StatusFX`):
+  - **Burning**: flames pour off the whole body (head and hands too), with embers, a smoke plume, flickering firelight and an orange tint.
+  - **Frosted**: the feet locked in blocks of ice, crystals on the shins, forearms and shoulders, cold mist and steaming breath. The ice shatters off when it ends.
+  - **Poisoned**: bubbles, drips and a green haze. **Snared**: vines burst from the ground round the legs, then sink back.
+  - **Dazed** (a power's stun, a shield bash): stars circle the head. **Shocked** (Storm Arrow, a shock): lightning crawls over the body.
+- **The blade catching**: a fresh imbue flares up along the blade with a whoosh. The blade's fire is hotter and visible in daylight.
+- **An imbued blow lands with its element**:
+  - fire bursts and embers;
+  - frost shards;
+  - a wind ring;
+  - a venom splash;
+  - a pillar of light from the sky (holy);
+  - shadow smoke.
+
+  Bloodlust and Holy Smite's heal send motes of life flowing back to the striker.
+- **Fixed**:
+  - The power burst never played for the first power of each life.
+  - Dying mid-wind-up left the power "casting".
+- **Checked in Play**:
+  - Flameblade from the real trigger: the gesture starts with the wind-up, the fire catches at the top, the gesture finishes.
+  - Ignite, Roar, Slam, Surge, Lunge, Cast and Vanish posed on a bot (Roar and Surge widened after).
+  - Burning: first tuned live, then engulfing the whole body.
+  - Frost: ice on the feet, shins and arms, following the body.
+  - Poison, vines, stars and lightning spawned on a bot with no errors.
+- **Not checked yet**:
+  - every gesture in a real fight;
+  - the Strike bursts on a real imbued hit;
+  - the burn as written to the file (it was tuned live).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [PowerPoses.lua](ReplicatedStorage/PowerPoses.lua) (new) | ReplicatedStorage | ModuleScript | the gestures, and which power plays which |
+| [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage | ModuleScript | `Emotes.define`; a gesture rides dashes and leaps |
+| [MagicFX.lua](ReplicatedStorage/MagicFX.lua) | ReplicatedStorage | ModuleScript | burning and frosted moved to StatusFX |
+| [Catalog/Powers.lua](ReplicatedStorage/Catalog/Powers.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `pose`; imbue / ultimate / slam wind-ups |
+| [StatusFX.client.lua](StarterPlayerScripts/StatusFX.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | burning, frozen, poisoned, rooted, dazed, shocked |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | gestures started; the catch flare; ultimate shockwave; Strike bursts |
+| [NpcAnimator.client.lua](StarterPlayerScripts/NpcAnimator.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a gesturing bot lets go of its bow / staff stance |
+| [Combat/Powers.lua](ServerScriptService/Combat/Powers.lua) | ServerScriptService ▸ Combat | ModuleScript | DazedUntil, ShockedUntil, the Strike event, the casting fix |
+| [Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | a shield bash dazes (DazedUntil) |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: the admin panel (F2) covers everything new: class levels, XP, Keys, the pass, spells, crates
 
 - **UNLOCK EVERYTHING** now also:
   - sets every class to its top class level, so all 50 powers open, with their mastery titles and mastery skins;
