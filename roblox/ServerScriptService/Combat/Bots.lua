@@ -20,6 +20,10 @@
                           campfire, or up on a roof)
            opts.sack      fn(bot): at its goal with nobody to fight, it strikes at what's
                           there (facing opts.face(bot) -> Vector3), and this lands each blow
+           opts.fireLimit n, or fn(bot, foe) -> n: an archer or a mage with one shoots or casts
+                          at a foe only while fewer than n others (with a limit) are: the rest
+                          keep their distance and wait their turn (Horde: one per player, so a
+                          lone player isn't shot at from every side at once)
            opts.arena     {centre = Vector3, radius = n}: it keeps inside
            opts.onDeath   fn(bot, killerPlayer)
            opts.startDelay  seconds before it moves or strikes (a countdown)
@@ -800,6 +804,7 @@ function Bot:think()
 	-- nobody near enough to bother with: head for the objective, if there is one
 	local goal = self.goal and (not thrp or (foeDist or 0) > 38) and self.goal(self)
 	if goal and os.clock() >= self.startAt then
+		if model:GetAttribute("Threat") then model:SetAttribute("Threat", nil) end
 		local to = goal - hrp.Position
 		to = Vector3.new(to.X, 0, to.Z)
 		self.facing, self.foe, self.lookAt = nil, nil, to
@@ -834,6 +839,7 @@ function Bot:think()
 	end
 
 	if ctrl and (ctrl.ranged or ctrl.magic) then return self:thinkCaster(target, thrp, now) end
+	if model:GetAttribute("Threat") then model:SetAttribute("Threat", nil) end   -- (a sidearm out: no shot coming)
 
 	local to = thrp.Position - hrp.Position
 	local flat = Vector3.new(to.X, 0, to.Z)
@@ -983,6 +989,31 @@ function Bot:think()
 	self:armTricks(st > 45 and sk.feint or 0, st > 30 and sk.morph or 0, sk.combo)
 end
 
+-- AN ATTACK TOKEN (opts.fireLimit): may it shoot / cast at `foe` now? A bot that has one keeps
+-- it while it keeps firing (each shot holds it `hold` seconds more); the others wait
+local firing = setmetatable({}, {__mode = "k"})
+function Bot:mayFire(foe, now, hold)
+	local lim = self.fireLimit
+	if type(lim) == "function" then lim = lim(self, foe) end
+	if not lim then return true end
+	local t = firing[foe]
+	if not t then t = {}; firing[foe] = t end
+	local n = 0
+	for b, upTo in pairs(t) do
+		if b ~= self then
+			if upTo > now and b.alive then n += 1 else t[b] = nil end
+		end
+	end
+	if (t[self] or 0) > now or n < lim then t[self] = now + hold; return true end
+	return false
+end
+-- who it's drawing / casting on, for their screen's warning (Threats): their user id, or none
+function Bot:threat(foe)
+	local plr = foe and Players:GetPlayerFromCharacter(foe)
+	local id = plr and plr.UserId or nil
+	if self.model:GetAttribute("Threat") ~= id then self.model:SetAttribute("Threat", id) end
+end
+
 -- at its goal, nobody to fight: it faces what's there and strikes at it, a blow every second
 -- and a half or so (a swing when it holds a blade; the blow lands through opts.sack)
 function Bot:sackGoal(now)
@@ -1096,6 +1127,7 @@ function Bot:thinkCaster(target, thrp, now)
 
 	if ctrl.ranged then
 		local cfg = ctrl.cfg
+		self:threat((st.drawing or (not ctrl.isBow and st.loaded and seen)) and target or nil)
 		if ctrl.isBow then
 			if st.drawing then
 				if not seen then
@@ -1105,7 +1137,7 @@ function Bot:thinkCaster(target, thrp, now)
 					ctrl.npc("Loose", (aim - head.Position).Unit, nil, aim)
 					self.nextShot = now + rand(gap)
 				end
-			elseif seen and st.ready and st.ammo > 0 and now >= (self.nextShot or 0) and dist < 110 then
+			elseif seen and st.ready and st.ammo > 0 and now >= (self.nextShot or 0) and dist < 110 and self:mayFire(target, now, cfg.DRAW_TIME + 2.5) then
 				ctrl.npc("Draw")
 				self.drawAt = now
 				-- (a good archer draws to the full; a green one lets fly early)
@@ -1113,7 +1145,7 @@ function Bot:thinkCaster(target, thrp, now)
 			end
 		else
 			if not st.loaded and not st.reloading and st.ammo > 0 then ctrl.npc("Reload")
-			elseif st.loaded and seen and now >= (self.nextShot or 0) and dist < 120 then
+			elseif st.loaded and seen and now >= (self.nextShot or 0) and dist < 120 and self:mayFire(target, now, 3) then
 				local aim = self:aimAt(target, cfg.SPEED_MAX)
 				ctrl.npc("Loose", (aim - head.Position).Unit, nil, aim)
 				self.nextShot = now + rand(gap)
@@ -1125,6 +1157,11 @@ function Bot:thinkCaster(target, thrp, now)
 	-- A MAGE
 	local hp = hum.Health / math.max(hum.MaxHealth, 1)
 	local mana = st.mana or 0
+	do
+		local sp = st.casting and Spells[st.casting]
+		local atThem = sp and not (sp.kind == "heal" or sp.kind == "buff" or sp.target == "self")
+		self:threat(atThem and target or nil)
+	end
 	if self.meditating then
 		if mana > 85 or dist < 20 or hp < 0.3 then ctrl.npc("Meditate", false); self.meditating = false end
 		return
@@ -1170,6 +1207,8 @@ function Bot:thinkCaster(target, thrp, now)
 	elseif seen then
 		for _, id in ipairs({"Firebolt", "IceLance", "ArcaneMissiles", "ChainLightning"}) do if can[id] then pick = id; break end end
 	end
+	-- (mending itself, or a nova when they're on top of it, needs no turn; anything it throws does)
+	if pick and pick ~= "Mend" and pick ~= "FrostNova" and not self:mayFire(target, now, ((Spells[pick] or {}).cast or 1) + 2.5) then pick = nil end
 	if pick then
 		ctrl.npc("Cast", pick)
 		self.nextCast = now + rand(gap)
@@ -1230,7 +1269,7 @@ function Bots.spawn(opts)
 
 	local startAt = os.clock() + (opts.startDelay or 0)
 	local bot = setmetatable({model = model, hum = hum, hrp = hrp, skill = skill, target = opts.target, arena = opts.arena,
-		fightBots = opts.fightBots == true, goal = opts.goal, engage = opts.engage, sack = opts.sack, face = opts.face,
+		fightBots = opts.fightBots == true, goal = opts.goal, engage = opts.engage, sack = opts.sack, face = opts.face, fireLimit = opts.fireLimit,
 		alive = true, conns = {}, nextAttack = startAt + 1.2, strafe = 1, strafeUntil = 0, learned = {},
 		startAt = startAt, invulnerable = opts.invulnerable == true, attacks = {}, reach = 5, cfg = {}}, Bot)
 	bot.temper = Bots.TEMPERS[opts.temper] or Bots.TEMPERS[TEMPER_NAMES[math.random(#TEMPER_NAMES)]]

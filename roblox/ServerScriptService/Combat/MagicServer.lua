@@ -94,6 +94,8 @@ local function hurt(caster, target, dmg, spellName, head)
 	local mult = hurtMult(caster, target)
 	if mult <= 0 then return false end
 	dmg *= mult
+	-- a caster's own strength (SpellPower: Horde's mages hit softer than a player's)
+	dmg *= caster and caster:GetAttribute("SpellPower") or 1
 	-- armor turns half of what it would turn from a blade
 	dmg *= 1 - 0.5 * math.clamp(target:GetAttribute("ArmorProtection") or 0, 0, 0.9)
 	dmg = Ward.scale(target, caster, dmg)
@@ -248,7 +250,9 @@ function RESOLVE.chain(caster, sp, ctx)
 		local r = rootOf(first)
 		table.insert(points, (r and r.Position) or stop)
 		hurt(caster, first, sp.damage * ctx.power, sp.name, res and res.Instance.Name == "Head")
-		CombatServer.interrupt(first, "lightning")
+		-- (a player's lightning breaks what you were doing; a bot's only hurts: it can't be
+		-- dodged, so it mustn't also open you up to every blade round you)
+		if Players:GetPlayerFromCharacter(caster) then CombatServer.interrupt(first, "lightning") end
 		local hit = {[first] = true}
 		local from = points[#points]
 		for _ = 1, sp.chain or 0 do
@@ -552,7 +556,8 @@ function MagicServer.attach(tool, cfg)
 			stopMeditating(c)
 			token += 1
 			local myToken = token
-			local castTime = sp.cast * castMult
+			-- (CastSlow on the caster: Horde's mages take longer over it, so it can be seen coming)
+			local castTime = sp.cast * castMult * (c:GetAttribute("CastSlow") or 1)
 			casting = {id = a, token = myToken}
 			c:SetAttribute("Casting", a)
 			c:SetAttribute("CastStart", now())

@@ -48,6 +48,16 @@ local UP = 7              -- up on something more than this above a bot: it can'
 local SACK = {Squire = 12, Knight = 18, Champion = 26, Warlord = 60}   -- a blow on the objective, by rank
 local SACK_CASTER = 10    -- an archer's or a mage's
 local REPAIR = 0.3        -- of its whole, mended between waves
+-- THE HORDE'S ARCHERS AND MAGES. Each player is shot at by at most FIRE_LIMIT of them at a
+-- time (two from wave FIRE_TWO); the rest keep their distance and wait their turn. Mages hit
+-- for SPELL_POWER of a player's spell, take CAST_SLOW as long over it (their rune circle and
+-- your screen's warning give you time to dodge or break it), come in with MAGE_MANA, and no
+-- more than 1 + one per two more players are up at once (the rest come as archers). A bot's
+-- lightning never breaks your swing or guard (Combat ▸ MagicServer).
+local FIRE_LIMIT, FIRE_TWO = 1, 10
+local SPELL_POWER = 0.65
+local CAST_SLOW = 1.5     -- a Horde mage takes this much longer over each spell (time to see it coming)
+local MAGE_MANA = 60      -- …and comes in with this much mana, so it has to stop and meditate sooner
 local LOST = {Campfire = "THE CAMPFIRE WENT OUT", Caravan = "THE CARAVAN BURNED", Villagers = "THE VILLAGERS FELL"}
 local WEAPONS = {"Longsword", "ArmingSword", "Mace", "Spear", "WarAxe", "Falchion", "Halberd", "MorningStar"}
 
@@ -202,6 +212,11 @@ function Horde:spawnOne(skill, at)
 	-- archers in the horde from wave 3, mages from wave 5 (Combat ▸ Bots: opts.class)
 	local r = math.random()
 	local cls = not warlord and ((self.wave >= 3 and r < 0.16) and "Archer" or ((self.wave >= 5 and r < 0.26) and "Mage" or nil)) or nil
+	if cls == "Mage" then
+		local mages = 0
+		for b in pairs(self.live) do if b.alive and b.model:GetAttribute("Class") == "Mage" then mages += 1 end end
+		if mages >= 1 + math.floor((#Players:GetPlayers() - 1) / 2) then cls = "Archer" end
+	end
 	local bot = Bots.spawn({
 		at = at * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3)),
 		skill = warlord and "Champion" or skill,
@@ -215,12 +230,18 @@ function Horde:spawnOne(skill, at)
 		engage = function(b, foe) return self:engage(b, foe) end,
 		sack = function(b) self:sacked(b, warlord and "Warlord" or skill, cls ~= nil) end,
 		face = function() return self.obj and self.obj.pos end,
+		fireLimit = function() return self.wave >= FIRE_TWO and 2 or FIRE_LIMIT end,
 		onDeath = function(b, killer)
 			self.live[b] = nil
 			self.killed += 1
 			if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (warlord and "Champion" or skill or "Squire")) end
 		end,
 	})
+	if cls == "Mage" then
+		bot.model:SetAttribute("SpellPower", SPELL_POWER)
+		bot.model:SetAttribute("CastSlow", CAST_SLOW)
+		bot.model:SetAttribute("Mana", math.min(bot.model:GetAttribute("Mana") or MAGE_MANA, MAGE_MANA))
+	end
 	-- its own place round the objective (spread by the golden angle)
 	self.ring = (self.ring or 0) + 1
 	bot.ringAngle = self.ring * 2.39996 + math.random() * 0.3

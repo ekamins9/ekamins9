@@ -1,4 +1,27 @@
-# Updated scripts: Horde, defend the camp (a campfire, a caravan, villagers): the horde goes for it
+# Updated scripts: Horde's mages balanced (one shooter at a time, a warning when you're targeted)
+
+The problem (solo, from wave 5): mage bots aimed almost perfectly, and nothing stopped several archers and mages from firing at you at once. Their Chain Lightning, which can't be dodged, also broke your swing or guard, so the melee bots around you got free hits.
+
+- **Attack tokens** (`Bots` `opts.fireLimit`, Horde: 1 per player, 2 from wave 10): only one archer or mage shoots or casts at you at a time. The rest keep their distance and wait their turn. A mage healing itself, or using Frost Nova when you're on top of it, doesn't need a turn.
+- **A bot's lightning no longer breaks your swing or guard** (a player's still does).
+- **Horde mages are weaker** (all constants at the top of Horde.lua):
+  - they hit for 65% of a player's spell (`SpellPower`);
+  - they take 1.5× as long over each cast (`CastSlow`), so the rune circle shows longer;
+  - they start with 60 mana, so they have to stop and meditate sooner;
+  - no more than 1 mage is up at once solo (1 more per two more players; extra rolls come as archers).
+- **Warning when you're targeted** (new `Threats` LocalScript): when a bot draws a bow or casts a spell at you, it gets a red mark with the spell's symbol (or 🏹). If it's off screen, a red arrow round the middle of the screen points at it, with a soft tick when a new one starts.
+- Checked in Play, three Champion mages on a target standing still for 30 s: **184 damage before, 44 now**, and never more than one casting at once.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Combat/Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | `fireLimit` tokens; `Threat` (who it's aiming at) |
+| [Combat/MagicServer.lua](ServerScriptService/Combat/MagicServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `SpellPower`, `CastSlow`; a bot's lightning doesn't interrupt |
+| [Game/Modes/Horde.lua](ServerScriptService/Game/Modes/Horde.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the mage rules |
+| [Threats.client.lua](StarterPlayerScripts/Threats.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the warning |
+
+---
+
+## Before that: Horde, defend the camp (a campfire, a caravan, villagers): the horde goes for it
 
 - **What you defend, by map** (`GameConfig.MODES.Horde.objectives`; a map's own `Spots ▸ HordeObjective` wins):
 
