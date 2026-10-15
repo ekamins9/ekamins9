@@ -10,6 +10,7 @@
                                           (Cosmetics ▸ Skins) or, without one, tints + trim (SkinTrims);
                                           then its trail / aura and its finish (SkinFX: Masterwork, Radiant)
        Dresser.attachWeapon(rig, weaponId, skinId)   preview only: welds Cosmetics ▸ Weapons ▸ <id> to the right hand
+       Dresser.attachShield(rig, shieldId, skinId)   preview only: a shield on the left arm
 
      Welding follows the armor convention: every clothing model has a part
      named Middle the size of the limb; Middle lands exactly on the limb and
@@ -589,6 +590,31 @@ function Dresser.attachWeapon(rig, weaponId, skinId, variant)
 	m.Name = "WeaponPreview"
 	m.Parent = rig
 	if skinId then Dresser.applySkin(m, skinId, variant) end
+	return true
+end
+
+-- preview rig: a SHIELD on the left arm, as a body wears it (Combat ▸ Shields' idle place)
+local SHIELD_IDLE = CFrame.new(-1.55, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
+function Dresser.attachShield(rig, shieldId, skinId)
+	local old = rig:FindFirstChild("ShieldPreview"); if old then old:Destroy() end
+	local torso = rig:FindFirstChild("Torso")
+	local t = shieldId and Catalog.weaponModel(shieldId)
+	if not (torso and t) then return false end
+	local m = t:Clone()
+	local handle = m:FindFirstChild("Handle", true)
+	if not handle then m:Destroy(); return false end
+	strip(m)
+	for _, p in ipairs(m:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
+			local w = Instance.new("Weld"); w.Part0, w.Part1 = torso, p
+			w.C0 = SHIELD_IDLE * (p == handle and CFrame.identity or handle.CFrame:ToObjectSpace(p.CFrame))
+			w.Parent = p
+		end
+	end
+	m.Name = "ShieldPreview"
+	m.Parent = rig
+	if skinId then Dresser.applySkin(m, skinId) end
 	return true
 end
 

@@ -20,6 +20,9 @@
                           campfire, or up on a roof)
            opts.sack      fn(bot): at its goal with nobody to fight, it strikes at what's
                           there (facing opts.face(bot) -> Vector3), and this lands each blow
+           opts.power     a power in its third slot (Catalog ▸ Powers; opts.powerSkin its look):
+                          it uses it when it fits (Bot:tryPower) · Bots.pickPower(rank, class)
+                          picks one by chance (none for a Squire)
            opts.fireLimit n, or fn(bot, foe) -> n: an archer or a mage with one shoots or casts
                           at a foe only while fewer than n others (with a limit) are: the rest
                           keep their distance and wait their turn (Horde: one per player, so a
@@ -867,6 +870,7 @@ function Bot:think()
 	local foeReach = reachOf(target)
 	self.lookAt = nil
 
+	if self.power then self:tryPower(target, thrp, dist, now) end
 	-- stamina: under its reserve it backs off and gets its wind back
 	if sk.reserve > 0 then
 		if st < sk.reserve * 0.7 then self.recovering = true elseif st > sk.reserve + 25 then self.recovering = false end
@@ -1021,6 +1025,60 @@ function Bot:threat(foe)
 	if self.model:GetAttribute("Threat") ~= id then self.model:SetAttribute("Threat", id) end
 end
 
+-- A POWER (Combat ▸ Powers): used when it's ready and it fits what's in front of it
+local Powers
+local function powers() Powers = Powers or require(script.Parent:WaitForChild("Powers")); return Powers end
+local POWER_POOL = {
+	melee = {"Flameblade", "IronSkin", "WarCry", "Charge", "ThunderSlam", "HolySmite", "Quickstep", "Whirlwind", "CycloneEdge",
+		"GaleLunge", "VenomEdge", "Shadowstep", "PhantomBlades", "Bloodlust"},
+	Archer = {"FlameArrows", "FrostArrows", "StormArrow", "Volley", "BlastArrow", "VineSnare"},
+	Mage = {"Familiar", "TimeWarp", "GravityWell", "SoulSiphon", "ManaSurge"},
+}
+local POWER_CHANCE = {Squire = 0, Knight = 0.4, Champion = 0.85}
+function Bots.pickPower(rank, cls, chance)
+	if math.random() >= (chance or POWER_CHANCE[rank] or 0) then return nil end
+	local pool = POWER_POOL[cls or "melee"] or POWER_POOL.melee
+	local id = pool[math.random(#pool)]
+	-- (now and then a look of its own, like a player's)
+	local skin
+	if math.random() < 0.3 then
+		local list = Catalog.spellSkinsFor("Pw_" .. id)
+		local crate = {}
+		for _, s in ipairs(list) do if s.crate then table.insert(crate, s.id) end end
+		skin = crate[1] and crate[math.random(#crate)] or nil
+	end
+	return id, skin
+end
+function Bot:tryPower(target, thrp, dist, now)
+	local def = self.power
+	if not (def and target and thrp) or now < (self.nextPowerTry or 0) then return end
+	self.nextPowerTry = now + 0.4
+	if (self.model:GetAttribute("PowerReadyAt") or 0) > workspace:GetServerTimeNow() then return end
+	local hp = self.hum.Health / math.max(self.hum.MaxHealth, 1)
+	local k, fit = def.kind, false
+	local aim = thrp.Position
+	if k == "imbue" or k == "shout" then fit = dist < (def.radius or 9)
+	elseif k == "buff" then
+		if def.instant and def.instant.mana then fit = (self.model:GetAttribute("Mana") or 100) < 40
+		elseif def.instant and def.instant.stamina then fit = (self.model:GetAttribute("BlockMeter") or 100) < 35
+		else fit = dist < 12 or hp < 0.5 end
+	elseif k == "dash" then fit = dist > 8 and dist < (def.distance or 16) + 2
+	elseif k == "leap" then fit = dist > 12 and dist < 28
+	elseif k == "zone" then fit = def.at == "aim" and dist < (def.range or 50) or dist < (def.radius or 8) - 1
+	elseif k == "summon" then fit = dist < (def.range or 40)
+	elseif k == "stealth" then fit = hp < 0.45
+	elseif k == "arrows" then fit = dist > 10
+	elseif k == "spell" then
+		local sp = def.spell or {}
+		if sp.kind == "nova" then fit = dist < (sp.radius or 9) - 1
+		elseif sp.kind == "blink" then fit = dist > 14 and dist < (sp.distance or 18) + 6
+		else fit = dist < (sp.range or 40) end
+		local head = target:FindFirstChild("Head")
+		if head and sp.kind ~= "meteor" then aim = head.Position end
+	end
+	if fit and math.random() < 0.7 then pcall(powers().use, self.model, aim) end
+end
+
 -- at its goal, nobody to fight: it faces what's there and strikes at it, a blow every second
 -- and a half or so (a swing when it holds a blade; the blow lands through opts.sack)
 function Bot:sackGoal(now)
@@ -1116,6 +1174,7 @@ function Bot:thinkCaster(target, thrp, now)
 	hum.WalkSpeed = self:speedFor(mv, dist > far + 10, busy) * math.max(mag, 0.35) * (busy and 0.35 or 1)
 	hum:Move(mv)
 	if now < self.startAt then return end
+	if self.power then self:tryPower(target, thrp, dist, now) end
 	local head = model:FindFirstChild("Head")
 	local foeHead = target:FindFirstChild("Head")
 	if not (head and foeHead) then return end
@@ -1308,6 +1367,13 @@ function Bots.spawn(opts)
 		end
 	end
 	bot.parryTick = model:GetAttribute("ParryTick") or 0
+	if opts.power and Catalog.POWER[opts.power] then
+		bot.power = Catalog.POWER[opts.power]
+		task.defer(function()
+			pcall(powers().equip, model, nil, {thirdKind = "power", thirdId = opts.power,
+				spellSkins = opts.powerSkin and {["Pw_" .. opts.power] = opts.powerSkin} or {}})
+		end)
+	end
 
 	-- face the opponent (or the weapon it's going for) every frame, yaw only, at a
 	-- player's turn rate; then the reflexes

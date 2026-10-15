@@ -193,7 +193,10 @@ local function spawnOne(team)
 	local myRound = roundId
 	local seat = takeSeat(team, nextName())
 	local entry = {team = team, seat = seat, kind = kind}
+	-- (a power by rank: Knights now and then, Champions mostly; a showcase's always: Combat ▸ Bots)
+	local power, powerSkin = bots().pickPower(skill, cls, BotFill.override and (skill ~= "Squire" and 1 or 0.5) or nil)
 	local opts = {
+		power = power, powerSkin = powerSkin,
 		at = at, skill = skill, weapon = (not cls) and list[math.random(#list)] or nil, team = team, class = cls or nil,
 		name = seat:GetAttribute("Name"), fightBots = true, goal = objective, corpseTime = 6,
 		startDelay = 0.5,

@@ -158,6 +158,8 @@ dressFresh = function(o)
 	end
 	pcall(Dresser.dress, m, {loadout = lo, appearance = o.appearance, weight = o.weight, team = o.team, preview = true})
 	if o.weapon ~= false and (o.loadout or {}).weapon then pcall(Dresser.attachWeapon, m, o.loadout.weapon, o.loadout.weaponSkin) end
+	if o.weapon ~= false and (o.loadout or {}).shield then pcall(Dresser.attachShield, m, o.loadout.shield, o.loadout.shieldSkin)
+	elseif m:FindFirstChild("ShieldPreview") then m.ShieldPreview:Destroy() end
 	PreviewRig.poseRig(m, o.pose)
 	PreviewRig.settle(m)
 	for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end

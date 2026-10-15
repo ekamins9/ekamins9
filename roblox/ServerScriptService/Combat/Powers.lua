@@ -461,7 +461,7 @@ function Powers.use(c, aim)
 	if s.kind ~= "power" or not s.power then return false, "nothing in your third slot" end
 	if not inBattle() then return false, "Powers are for battle: try them in the Training Yard" end
 	local def = s.power
-	local uid = plr and plr.UserId or 0
+	local uid = plr and plr.UserId or c   -- (a bot's cooldowns are its own body's)
 	readyAt[uid] = readyAt[uid] or {}
 	local t = now()
 	if t < (readyAt[uid][def.id] or 0) then return false, string.format("%s is ready in %d", def.name, math.ceil(readyAt[uid][def.id] - t)) end
@@ -514,7 +514,7 @@ function Powers.equip(c, plr, lo)
 		c:SetAttribute("Power", def.id)
 		c:SetAttribute("PowerSpell", spellOf(def.id))
 		c:SetAttribute("PowerSkin", s.skin)
-		local uid = plr and plr.UserId or 0
+		local uid = plr and plr.UserId or c
 		c:SetAttribute("PowerReadyAt", readyAt[uid] and readyAt[uid][def.id] or 0)
 		c:SetAttribute("PowerCD", def.cooldown)
 	elseif lo.thirdKind == "throwable" then

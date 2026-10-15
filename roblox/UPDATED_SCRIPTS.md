@@ -42,6 +42,14 @@
   - 26 throwable skins (Mythic **Phoenix Feathers**), in the **Quartermaster's Crate**.
 
   All three crates are in the daily rotation (now 4 of 11 crates a day).
+- **Bots use powers too** (`Bots` `opts.power`, `Bots.pickPower`, `Bot:tryPower`): each one uses its power when it's ready and the moment fits. It charges from range, imbues and shouts up close, casts when in range, enchants arrows, and goes stealthy when hurt.
+  - Match bots: some Knights (40%) and most Champions (85%).
+  - Showcase bots: all of them (so the videos are full of magic).
+  - Horde: half the Champions, and every Warlord (Avatar of War or Thunder Slam).
+
+  Checked: three Champion bots used Charge and Flameblade on me in 20 s, each as often as its cooldown allows.
+- **Everyone sees a power go off**: a burst of its light and a sound. Bots' powers, and the poison and roots you put on them, are drawn too.
+- **The class screen's mannequin wears your shield** (`Dresser.attachShield`, PreviewRig).
 - **Fixed**: `Economy.addXP` used Analytics and Badges before they were defined, so a level-up could error partway through.
 - **Checked in Play**:
   - all 50 powers fired one after another on a real character with no errors, and a power on cooldown is refused;
@@ -53,8 +61,7 @@
 - **Not checked yet**:
   - a real fight with powers and shields (balance: every number is config);
   - the controller tap and the phone button;
-  - bots don't use powers;
-  - the class-screen mannequin doesn't show the shield.
+  - Whirlwind on a bot: never fired in the test (it only fits right up close).
 
 | File | Studio location | Type | Change |
 |---|---|---|---|

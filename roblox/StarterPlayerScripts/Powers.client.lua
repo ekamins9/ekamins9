@@ -415,6 +415,24 @@ local function drawOn(c, isMe)
 			return out
 		end)
 	end
+	-- the moment a power goes off: a burst of its light and a ring of sound
+	local tick = c:GetAttribute("PowerTick")
+	if tick ~= L.tick then
+		local first = L.tick == nil
+		L.tick = tick
+		local root = c:FindFirstChild("HumanoidRootPart")
+		if not first and root then
+			local col, glow = look(c:GetAttribute("PowerSpell"), c:GetAttribute("PowerSkin"))
+			local b = part({Name = "PowerBurst", Size = Vector3.new(2, 4, 2), Transparency = 1, CFrame = root.CFrame})
+			local e = emitter(b, col, glow, {size = 0.45, rate = 0, speed = 10, life = 0.5, light = 1})
+			e:Emit(36)
+			local l = Instance.new("PointLight"); l.Color = col; l.Range = 16; l.Brightness = 3; l.Parent = b
+			TweenService:Create(l, TweenInfo.new(0.5), {Brightness = 0}):Play()
+			local snd = Instance.new("Sound"); snd.SoundId = "rbxassetid://9125899162"; snd.Volume = 0.5; snd.PlaybackSpeed = 1.15
+			snd.RollOffMaxDistance = 90; snd.Parent = b; snd:Play()
+			Debris:AddItem(b, 2)
+		end
+	end
 	-- a shield up while they block
 	local sm = c:FindFirstChild("ShieldModel")
 	local grip = sm and sm.PrimaryPart and sm.PrimaryPart:FindFirstChild("ShieldGrip")
@@ -433,6 +451,11 @@ RunService.RenderStepped:Connect(function()
 	for _, p in ipairs(Players:GetPlayers()) do
 		local c = p.Character
 		if c then local ok, err = pcall(drawOn, c, c == me); if not ok then warn("[Powers.client]", err) end end
+	end
+	-- (bots too: their powers, and what yours did to them: poison, roots)
+	local npcs = workspace:FindFirstChild("NPCs")
+	for _, c in ipairs(npcs and npcs:GetChildren() or {}) do
+		if c:IsA("Model") then pcall(drawOn, c, false) end
 	end
 	for c, L in pairs(looks) do
 		if not c.Parent then

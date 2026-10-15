@@ -217,7 +217,11 @@ function Horde:spawnOne(skill, at)
 		for b in pairs(self.live) do if b.alive and b.model:GetAttribute("Class") == "Mage" then mages += 1 end end
 		if mages >= 1 + math.floor((#Players:GetPlayers() - 1) / 2) then cls = "Archer" end
 	end
+	-- (a power: every Warlord, half the Champions; never the archers or mages: they're enough)
+	local power = warlord and (math.random() < 0.5 and "AvatarOfWar" or "ThunderSlam")
+		or ((skill == "Champion" and not cls) and (Bots.pickPower("Champion", nil, 0.5)) or nil)
 	local bot = Bots.spawn({
+		power = power,
 		at = at * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3)),
 		skill = warlord and "Champion" or skill,
 		class = cls,
