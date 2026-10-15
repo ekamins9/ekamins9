@@ -221,6 +221,16 @@ do
 	Players.PlayerRemoving:Connect(function(plr) last[plr] = nil end)
 end
 
+-- THE SHIELD AND THE THIRD SLOT (Combat ▸ Shields, Combat ▸ Powers): a shield worn beside a
+-- one-handed primary; a power or a throwable on the Power key, or a sidearm on the bar (3)
+local Shields = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Shields"))
+local Powers = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Powers"))
+local function thirdSlot(plr, char, lo)
+	if lo.shield then Shields.wear(char, lo.shield, lo.shieldSkin) else Shields.unwear(char) end
+	Powers.equip(char, plr, lo)
+	if lo.thirdKind == "sidearm" and lo.thirdId then giveWeapon(plr, char, lo.thirdId, lo.thirdSkin, false, 3, lo) end
+end
+
 local spawnAs   -- (below)
 local function show(plr, reason)
 	if not plr.Parent then return end
@@ -320,6 +330,11 @@ spawnAs = function(plr, classId, opts)
 			if ev then task.delay(1.5, function() if plr.Parent then ev:FireClient(plr, "Toast", "ARMORY ROULETTE  ·  this life: the " .. wn) end end) end
 		end
 	end
+	-- (a shield only beside a one-handed primary: a lesson's or the roulette's weapon may not be one)
+	if lo.shield and not Catalog.shieldFits(GameConfig.CLASSES[classId], lo.weapon, lo.shield) then
+		lo.shield, lo.shieldSkin = nil, nil
+		if lo.thirdKind == "sidearm" then lo.thirdKind, lo.thirdId = "none", nil end
+	end
 	Profile.setActive(plr, classId)
 	spawning[plr] = true
 	log(plr.Name, "spawning as", classId, "-", lo.helmet, lo.top, lo.bottom, "+", tostring(lo.weapon), "/", tostring(lo.secondary))
@@ -349,6 +364,7 @@ spawnAs = function(plr, classId, opts)
 	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2, lo) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, AUTO_EQUIP, 1, lo) end
+	thirdSlot(plr, char, lo)
 	if SPAWN_PROTECT > 0 and not opts.again and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" then
 		local ff = Instance.new("ForceField"); ff.Visible = true; ff.Parent = char
 		Debris:AddItem(ff, SPAWN_PROTECT)
@@ -402,6 +418,7 @@ _G.CourtyardRedress = function(plr)
 	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2, lo) end
 	if lo.weapon then giveWeapon(plr, char, lo.weapon, lo.weaponSkin, hadOut, 1, lo) end
+	thirdSlot(plr, char, lo)
 	log(plr.Name, "re-dressed in the Courtyard as", classId)
 end
 Players.PlayerRemoving:Connect(function(plr) redressAt[plr] = nil end)

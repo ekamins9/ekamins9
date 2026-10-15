@@ -24,6 +24,16 @@ local function hexed(c) return typeof(c) == "Instance" and (c:GetAttribute("HexU
 
 function Ward.scale(target, from, dmg)
 	if not (target and dmg and dmg > 0) then return dmg end
+	-- the powers (Combat ▸ Powers): more dealt (DealtMult), less taken (TakenMult), and a blow out
+	-- of stealth lands harder and ends it (Ambush, HiddenUntil)
+	if typeof(from) == "Instance" then
+		dmg *= from:GetAttribute("DealtMult") or 1
+		if (from:GetAttribute("HiddenUntil") or 0) > now() then
+			dmg *= from:GetAttribute("Ambush") or 1
+			from:SetAttribute("HiddenUntil", nil); from:SetAttribute("Ambush", nil)
+		end
+	end
+	dmg *= target:GetAttribute("TakenMult") or 1
 	-- the hex: the curse weakens who strikes, and opens who's struck
 	if hexed(from) then dmg *= 1 - math.clamp(from:GetAttribute("HexWeaken") or 0, 0, 0.9) end
 	if hexed(target) then dmg *= 1 + math.clamp(target:GetAttribute("HexExpose") or 0, 0, 1) end

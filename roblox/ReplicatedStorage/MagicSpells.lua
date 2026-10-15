@@ -174,4 +174,27 @@ S.DEFAULT = {"Firebolt", "ChainLightning", "FrostNova", "Mend"}
 S.WAND_ORDER = {"Spark", "Mote", "Ember", "FrostDart", "Zap", "Gust"}
 S.WAND_DEFAULT = {"Spark", "Mote"}
 for id, sp in pairs(S) do if type(sp) == "table" and sp.kind then sp.id = id end end
+
+-- THE POWERS (Catalog ▸ Powers): every class's power is here too, as "Pw_<id>" (power = true:
+-- never one a Mage picks), so its look, its skins (Catalog ▸ SpellSkins) and the spells it
+-- casts (Combat ▸ MagicServer.cast) work like any spell's. The rest borrow a kind for the look:
+-- a shout rings out like a nova, a familiar's shots fly like bolts.
+do
+	local ok, P = pcall(function() return require(script.Parent:WaitForChild("Catalog"):WaitForChild("Powers")) end)
+	if ok and type(P) == "table" then
+		for _, pw in ipairs(P.list) do
+			local sp = {id = "Pw_" .. pw.id, name = pw.name, glyph = pw.glyph, color = pw.color, glow = pw.glow, power = pw.id,
+				desc = pw.desc, unlock = {free = true}, mana = 0, cast = 0, cooldown = 0}
+			for k, v in pairs(pw.spell or {}) do sp[k] = v end
+			if not pw.spell then
+				if pw.kind == "shout" then sp.kind = "nova"; sp.radius = pw.radius; sp.damage = 0
+				elseif pw.kind == "summon" then
+					sp.kind = "bolt"; sp.speed = pw.bolt.speed; sp.range = (pw.range or 40) + 12; sp.radius = 0.45
+					sp.damage = pw.bolt.damage; sp.seek = 2.6; sp.shape = "wisp"; sp.noInterrupt = true
+				end
+			end
+			S[sp.id] = sp
+		end
+	end
+end
 return S

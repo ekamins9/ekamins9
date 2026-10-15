@@ -33,6 +33,8 @@ local Debris = game:GetService("Debris")
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
 local Ward = require(script.Parent:WaitForChild("Ward"))
 local Injury = require(script.Parent:WaitForChild("Injury"))
+local Powers   -- (Combat ▸ Powers: arrow enchantments; loaded once everything is)
+task.defer(function() Powers = require(script.Parent:WaitForChild("Powers")) end)
 local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundBank = require(ReplicatedStorage:WaitForChild("SoundBank"))
 local ArrowFX = require(ReplicatedStorage:WaitForChild("ArrowFX"))
@@ -273,7 +275,7 @@ local function kindSound(fx, which, at)
 		if snd and at then Sounds.play(snd.id, at, {Volume = snd.Volume, Speed = snd.Speed, MaxDistance = 90, Ttl = 4}) end
 	end
 
-	local function onHit(shooter, shotWeapon, res, vel, power, shotKind, fx)
+	local function onHit(shooter, shotWeapon, res, vel, power, shotKind, fx, ench)
 		local part = res.Instance
 		local model = part and part:FindFirstAncestorOfClass("Model")
 		local hum = model and model:FindFirstChildOfClass("Humanoid")
@@ -293,17 +295,21 @@ local function kindSound(fx, which, at)
 			elseif family == "Wood" then Sounds.play(SND.wood, at2, {Volume = 0.8, Speed = 1.25, MaxDistance = 70}) end
 			kindSound(fx, "impact", at2)
 			stick(shotKind, at * CFrame.new(0, 0, 0.5), part, cfg.STICK_LIFE, fx)
+			if ench and Powers then Powers.arrowHit(shooter, ench, res.Position, nil, dir) end
 			return
 		end
 		local target = model
 		if CombatServer.peaceful(shooter, target) then return end
 		-- a raised guard facing it stops it
 		local look = target:FindFirstChild("HumanoidRootPart") and target.HumanoidRootPart.CFrame.LookVector or Vector3.zero
-		if target:GetAttribute("Blocking") and look:Dot(-dir) > 0.35 then
+		-- (a shield that stops arrows catches them from far wider, for less: Combat ▸ Shields)
+		local shieldWide = target:GetAttribute("ShieldArrows") == true
+		if target:GetAttribute("Blocking") and look:Dot(-dir) > (shieldWide and math.cos(math.rad(70 + (target:GetAttribute("ShieldCone") or 0))) or 0.35) then
 			local parried = (target:GetAttribute("ParryUntil") or 0) > os.clock()
 			Sounds.bank(parried and "Parry" or "Block", part)
 			Injury.sparks(res.Position, 0.6)
-			if not parried then CombatServer.drainStamina(target, cfg.BLOCK_COST, nil) end
+			if not parried then CombatServer.drainStamina(target, cfg.BLOCK_COST * (target:GetAttribute("ShieldBlock") or 1), nil) end
+			if ench and Powers then Powers.arrowHit(shooter, ench, res.Position, nil, dir) end
 			target:SetAttribute("GuardText", parried and "ARROW PARRIED" or "ARROW BLOCKED")
 			target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
 			return
@@ -349,16 +355,17 @@ local function kindSound(fx, which, at)
 		if GORE then stick(shotKind, at * CFrame.new(0, 0, 0.9), part, cfg.STICK_LIFE, fx)
 		else Injury.hitFlash(part, 18) end
 		hum:TakeDamage(dmg)
+		if ench and Powers then Powers.arrowHit(shooter, ench, res.Position, target, dir) end
 	end
 
 	-- loose one: the server's own flight, stepped every frame
-	local function loose(dirIn, shotId, target)
+	local function loose(dirIn, shotId, target, noEnchant, extraEnch)
 		local head = character:FindFirstChild("Head")
 		local hrp = character:FindFirstChild("HumanoidRootPart")
 		if not (head and hrp) then return end
 		local power = 1
 		if isBow then
-			power = math.clamp((os.clock() - drawStart) / cfg.DRAW_TIME, cfg.MIN_POWER, 1)
+			power = math.clamp((os.clock() - drawStart) / (cfg.DRAW_TIME * (character:GetAttribute("DrawMult") or 1)), cfg.MIN_POWER, 1)
 		end
 		local speed = cfg.SPEED_MIN + (cfg.SPEED_MAX - cfg.SPEED_MIN) * power
 		local g = cfg.GRAVITY * (isBow and (1.4 - 0.4 * power) or 1)
@@ -380,6 +387,16 @@ local function kindSound(fx, which, at)
 		local vel = dir * speed
 		local shooter, shotWeapon, kind = character, weaponName, cfg.KIND
 		local fx = Tool:GetAttribute("ArrowFx")
+		-- an enchantment on it (Combat ▸ Powers): its look, a split, a homing curve
+		local ench = (not noEnchant) and Powers and Powers.takeArrow(character) or nil
+		if ench and ench.fx then fx = ench.fx end
+		if ench and ench.split and not noEnchant then
+			for k = 1, (ench.split.n or 3) - 1 do
+				local yaw = math.rad((k % 2 == 1 and 1 or -1) * math.ceil(k / 2) * (ench.split.spread or 6))
+				task.defer(loose, (CFrame.fromAxisAngle(Vector3.yAxis, yaw) * dir).Unit, nil, nil, true, ench)
+			end
+		end
+		ench = ench or extraEnch
 		shotSeq += 1
 		local id = (player and player.UserId or 0) .. ":" .. tostring(type(shotId) == "number" and shotId or shotSeq)
 		arrowEvent:FireAllClients("Shot", id, origin, vel, g, kind, player and player.UserId or 0, fx)
@@ -404,12 +421,33 @@ local function kindSound(fx, which, at)
 			if res then
 				conn:Disconnect()
 				arrowEvent:FireAllClients("Stop", id, res.Position)
-				local ok, err = pcall(onHit, shooter, shotWeapon, res, vel, power, kind, fx)
+				local ok, err = pcall(onHit, shooter, shotWeapon, res, vel, power, kind, fx, ench)
 				if not ok then warn("[Ranged]", err) end
 				return
 			end
 			pos += step
 			vel = nextVel
+			-- a seeker arrow curves after whoever's nearest ahead of it
+			if ench and ench.seek and t > 0.08 then
+				local best, bestD
+				for _, p in ipairs(Players:GetPlayers()) do
+					local tc = p.Character
+					local tr = tc and tc ~= shooter and tc:FindFirstChild("HumanoidRootPart")
+					if tr and CombatServer.friendlyMult(shooter, tc) >= 1 then
+						local to = tr.Position - pos
+						if to.Magnitude < 70 and vel.Unit:Dot(to.Unit) > 0.6 and (not bestD or to.Magnitude < bestD) then best, bestD = tr, to.Magnitude end
+					end
+				end
+				local npcs = workspace:FindFirstChild("NPCs")
+				for _, m in ipairs(npcs and npcs:GetChildren() or {}) do
+					local tr = m:FindFirstChild("HumanoidRootPart")
+					if tr and m ~= shooter and m:GetAttribute("Team") ~= shooter:GetAttribute("Team") then
+						local to = tr.Position - pos
+						if to.Magnitude < 70 and vel.Unit:Dot(to.Unit) > 0.6 and (not bestD or to.Magnitude < bestD) then best, bestD = tr, to.Magnitude end
+					end
+				end
+				if best then vel = vel:Lerp((best.Position - pos).Unit * vel.Magnitude, math.min(1, ench.seek * dt)) end
+			end
 			if t > cfg.MAX_FLIGHT or pos.Y < -200 then
 				conn:Disconnect()
 				arrowEvent:FireAllClients("Stop", id, nil)

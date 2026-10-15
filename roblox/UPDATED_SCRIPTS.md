@@ -1,4 +1,79 @@
-# Updated scripts: Horde's mages balanced (one shooter at a time, a warning when you're targeted)
+# Updated scripts: magic for every class (a third slot of powers and throwables), shields, class levels, three new crates
+
+- **Three slots now**:
+  1. the primary weapon;
+  2. a sidearm, **or a shield** beside a one-handed primary;
+  3. **the third slot**: your class's **POWER**, a **THROWABLE**, or (beside a shield) a sidearm on key 3.
+
+  **E** uses the third slot. On a controller, tap D-pad ↑ (holding it still opens the emote wheel); on a phone, tap the orb. It aims at your crosshair. The orb by your energy bar shows the power, its cooldown, seconds left, and arrow or throwable charges.
+- **50 powers**, ten per class, unlocked by **class level**:
+  - Knight OATHS (Flameblade … Avatar of War)
+  - Footman GAMBITS (Quickstep, Windstep, Mirage … Tempest)
+  - Vanguard TRICKS (Venom Edge, Shadowstep, Vanish … Nightfall)
+  - Archer ENCHANTMENTS (Flame/Frost/Storm/Blast/Seeker arrows, Volley … Rain of Arrows)
+  - Mage RITUALS (Familiar, Time Warp, Gravity Well … Starfall)
+
+  Every power is config in `Catalog ▸ Powers`. One engine (`Combat ▸ Powers`) runs ten kinds: imbue, buff, spell, shout, dash, leap, zone, summon, stealth, arrows. Everyone sees the effects:
+  - flames, frost, venom or light on the blade, and auras;
+  - golden wings, a familiar at your shoulder, a stealthy character fading;
+  - poison bubbles, vine roots;
+  - glowing circles on the ground, smoke, domes, gravity wells, a rain of arrows.
+
+  There are no new animations (your own clips stay), only effects.
+- **Class levels** (`Catalog ▸ Mastery`): the XP you earn also levels the class you're playing (30 levels). Levels open:
+  - powers;
+  - titles at 10, 20 and 30 (e.g. Oathsworn, Paladin, Knight-Commander);
+  - mastery power skins at 15 and 25;
+  - a Key every 5 levels.
+
+  A banner says what opened. The class screen shows your class level and what's next.
+- **8 shields** (Buckler, Targe, Round, Heater, Spiked, Kite, Scutum, Tower Pavise), for one-handed classes. A shield sits on your left arm and rises in front of you when you block. It:
+  - catches blows from a wider angle;
+  - makes blocks cheaper;
+  - changes the parry window (the Buckler's is longer);
+  - stops arrows, bolts and thrown things;
+  - turns your kick into a bash.
+
+  The big ones slow you.
+- **10 throwables**: knives, axe, war darts, javelin, firebomb (a fire pool), frost flask, smoke bomb (bots lose you in it), caltrops, bolas (they root you), holy water (it heals). Charges come back one at a time, and the server flies each one on an arc.
+- **Skins and crates**:
+  - 35 power skins (Mythic **Seraph**, six wings), in the new **Spellforge Crate**, plus 10 mastery skins;
+  - 26 shield skins with painted **heraldry** (lions, crosses, suns, chevrons; Mythic **Aegis of the First King**), in the **Heraldry Crate**;
+  - 26 throwable skins (Mythic **Phoenix Feathers**), in the **Quartermaster's Crate**.
+
+  All three crates are in the daily rotation (now 4 of 11 crates a day).
+- **Fixed**: `Economy.addXP` used Analytics and Badges before they were defined, so a level-up could error partway through.
+- **Checked in Play**:
+  - all 50 powers fired one after another on a real character with no errors, and a power on cooldown is refused;
+  - Flameblade's flames and the orb;
+  - the Lionheart heater (red field, gold rim, a crowned lion) on the arm and raised when blocking;
+  - Avatar of War's wings;
+  - a Firebomb thrown into a fire pool, with the orb's recharge;
+  - the CLASSES screen's class level card, shield picker and third slot.
+- **Not checked yet**:
+  - a real fight with powers and shields (balance: every number is config);
+  - the controller tap and the phone button;
+  - bots don't use powers;
+  - the class-screen mannequin doesn't show the shield.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Powers.lua](ReplicatedStorage/Catalog/Powers.lua), [Arsenal.lua](ReplicatedStorage/Catalog/Arsenal.lua), [ArsenalSkins.lua](ReplicatedStorage/Catalog/ArsenalSkins.lua), [PowerSkins.lua](ReplicatedStorage/Catalog/PowerSkins.lua), [Mastery.lua](ReplicatedStorage/Catalog/Mastery.lua) (new) | ReplicatedStorage ▸ Catalog | ModuleScript | the powers, shields, throwables, their skins, class levels |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [SpellSkins.lua](ReplicatedStorage/Catalog/SpellSkins.lua), [Crates.lua](ReplicatedStorage/Catalog/Crates.lua), [Calendar.lua](ReplicatedStorage/Catalog/Calendar.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | loads them; the three crates in the rotation |
+| [MagicSpells.lua](ReplicatedStorage/MagicSpells.lua), [Heraldry.lua](ReplicatedStorage/Heraldry.lua) (new), [Dresser.lua](ReplicatedStorage/Dresser.lua), [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | powers as spells; shield arms; the Power key |
+| [Combat/Powers.lua](ServerScriptService/Combat/Powers.lua), [Throwing.lua](ServerScriptService/Combat/Throwing.lua), [Shields.lua](ServerScriptService/Combat/Shields.lua) (new) | ServerScriptService ▸ Combat | ModuleScript | the engine |
+| [Combat/CombatServer.lua](ServerScriptService/Combat/CombatServer.lua), [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua), [MagicServer.lua](ServerScriptService/Combat/MagicServer.lua), [Ward.lua](ServerScriptService/Combat/Ward.lua), [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | the hooks: shield blocks, imbues, enchanted arrows, buffs, stealth |
+| [CharacterSystems.server.lua](ServerScriptService/CharacterSystems.server.lua), [MovementServer.server.lua](ServerScriptService/MovementServer.server.lua) | ServerScriptService | Script | stamina and dodge modifiers |
+| [Loadout/LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua), [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | Script / ModuleScript | the shield and third slot at spawn; loadout rules; class XP |
+| [Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy | ModuleScript | `addClassXP`; the level-up fix |
+| [Build/ArsenalBlueprints.lua](ServerScriptService/Build/ArsenalBlueprints.lua) (new), [Build/Weapons.lua](ServerScriptService/Build/Weapons.lua) | ServerScriptService ▸ Build | ModuleScript | the bodies |
+| [Tools/](Tools) 18 new folders | ServerStorage ▸ Weapons | Tool | the shields' and throwables' Tools |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) (new), [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [GamepadControls.client.lua](StarterPlayerScripts/GamepadControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the orb and FX; the class screen panels; D-pad ↑ |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: Horde's mages balanced (one shooter at a time, a warning when you're targeted)
 
 The problem (solo, from wave 5): mage bots aimed almost perfectly, and nothing stopped several archers and mages from firing at you at once. Their Chain Lightning, which can't be dodged, also broke your swing or guard, so the melee bots around you got free hits.
 

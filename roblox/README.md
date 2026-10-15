@@ -63,6 +63,12 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Build/MapProps.lua` | `ServerScriptService` → `Build` → `MapProps` (wagons, trees, campfires, braziers, graves, longships…) | ModuleScript |
 | `ServerScriptService/Build/MapWildwood.lua`, `MapRavenhold.lua`, `MapStormbreak.lua` | `ServerScriptService` → `Build` → `MapWildwood` / `MapRavenhold` / `MapStormbreak` | ModuleScript |
 | `ServerScriptService/Game/Modes/Horde.lua` | `ServerScriptService` → `Game` → `Modes` → `Horde` | ModuleScript |
+| `ServerScriptService/Combat/Powers.lua`, `Throwing.lua`, `Shields.lua` | `ServerScriptService` → `Combat` → `Powers` / `Throwing` / `Shields` (the third slot's magic, throwables, shields) | ModuleScript each |
+| `ServerScriptService/Build/ArsenalBlueprints.lua` | `ServerScriptService` → `Build` → `ArsenalBlueprints` (shields' and throwables' bodies) | ModuleScript |
+| `ReplicatedStorage/Heraldry.lua` | `ReplicatedStorage` → `Heraldry` (arms painted on shields) | ModuleScript |
+| `ReplicatedStorage/Catalog/Powers.lua`, `Arsenal.lua`, `ArsenalSkins.lua`, `PowerSkins.lua`, `Mastery.lua` | `ReplicatedStorage` → `Catalog` → … | ModuleScript each |
+| `StarterPlayerScripts/Powers.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Powers` (the orb, the Power key, every power's FX, thrown things, shields raised) | LocalScript |
+| `Tools/<Shield or Throwable>` (18) | `ServerStorage` → `Weapons` → `<id>` (a Tool with a Config; Blueprints builds the body) | Tool |
 | `ServerScriptService/Game/HordeObjective.lua` | `ServerScriptService` → `Game` → `HordeObjective` (the campfire, the caravan, the villagers) | ModuleScript |
 | `ServerScriptService/Economy/Pastimes.lua` | `ServerScriptService` → `Economy` → `Pastimes` (gifts, eggs, hatching, companions) | ModuleScript |
 | `ServerScriptService/Hub/Pastimes.server.lua` | `ServerScriptService` → `Hub` → `Pastimes` (playtime clock, the Hatchery) | Script |
@@ -497,6 +503,69 @@ per spell in LOADOUT ▸ SPELLS ▸ LOOKS (the class's `spellSkins`, kept for a 
 arsenal too), carried on the weapon (`SpellSkins` attribute) and passed with every spell's event,
 so everyone sees it; the spell bar and crosshair take its colours. Menus show a still model of it
 (`MagicFX.preview`) on cards, the crate page, inspect, inventory and trades.
+
+## Magic for every class: the third slot, shields, throwables, class levels
+
+**Three slots.** 1 the primary · 2 a sidearm, or a **SHIELD** beside a one-handed primary ·
+3 the **THIRD SLOT**: the class's **POWER** (its magic), a **THROWABLE**, or (beside a shield) a
+sidearm on the bar. The Power key (**E**; a controller's D-pad ↑ tap, a hold is still the emote
+wheel; on a phone the orb by your energy bar) uses it, aimed at your crosshair (`Powers.client`
+→ `PowerRemote` → `Combat ▸ Powers`). The orb right of the energy bar shows its symbol, its
+cooldown wiping down, the seconds, an enchantment's arrows or a throwable's charges. Powers
+work in battle and the Training Yard, not in the Courtyard.
+
+**Powers** (`Catalog ▸ Powers`, config only; `Combat ▸ Powers` runs them): ten a class, each
+opened by **class level** (1, 2, 4, 6, 8, 10, 13, 16, 19, 22 — the tenth an ultimate):
+- KNIGHT · OATHS: Flameblade, Iron Skin, Shield of Faith, War Cry, Juggernaut, Holy Smite, Consecrate, Charge, Thunder Slam, **Avatar of War**
+- FOOTMAN · GAMBITS: Quickstep, Second Wind, Windstep, Gale Lunge, Cyclone Edge, Mirage, Tailwind, Whirlwind, Skybound, **Tempest**
+- VANGUARD · TRICKS: Venom Edge, Shadowstep, Smoke Veil, Bloodlust, Marked for Death, Phantom Blades, Vanish, Ambush, Shadow Chain, **Nightfall**
+- ARCHER · ENCHANTMENTS: Flame / Frost Arrows, Storm Arrow, Volley, Blast Arrow, Hunter's Mark, Seeker Arrows, Vine Snare, Eagle Eye, **Rain of Arrows**
+- MAGE · RITUALS: Arcane Familiar, Mana Surge, Time Warp, Mirror Image, Ward Dome, Spellsurge, Gravity Well, Levitate, Soul Siphon, **Starfall**
+
+The kinds: **imbue** (the weapon burns, freezes, poisons, shocks, drinks, shoves: `Powers.onMelee`
+from CombatServer's clean hit), **buff** (modifiers summed into SpeedMult_Power, TakenMult,
+DealtMult, StaminaRegenMult, DodgeCostMult, DodgeCooldownMult, Unflinching, DrawMult,
+CastMult_Power, ManaFree — Ward, the movement, CharacterSystems, MovementServer, RangedServer
+and MagicServer read them; a barrier; an instant), **spell** (a Mage's kinds cast free by
+`MagicServer.cast`: every power is registered in MagicSpells as `Pw_<id>`, `power = true`, so its
+look and skins work like a spell's), **shout**, **dash**, **leap** (a slam where you land, or a
+slow float), **zone** (at you or where you aim: heal, shield, burn, slow, pull, smoke that bots
+can't see into, a dome, a rain of arrows), **summon** (a familiar that shoots), **stealth** (you
+fade; bots lose you beyond 6 studs; a blow out of it ambushes: Ward), **arrows** (the next N
+arrows: RangedServer `Powers.takeArrow` / `arrowHit` — fire, frost, storm, splits, bursts,
+marks, homing, roots). A player's cooldowns outlive their body. Everyone sees it: imbue
+flames on the blade, auras, wings, familiars, ghostly stealth, poison, roots, circles on the
+ground (`PowerFX`). No new animations: the user's own clips stay; the powers are FX.
+
+**Class levels** (`Catalog ▸ Mastery`): every XP you earn also goes to the class you're
+fighting as (`Economy.addClassXP`, `p.classXP`), 250 XP to level 2, rising to 2,600 a level,
+30 levels. Each level can open a power, a title (10 / 20 / 30: Oathsworn, Paladin,
+Knight-Commander…), a mastery power skin (15, 25; bound) and a Key every 5. A banner says what
+opened. The class screen shows the level, the bar and what's next.
+
+**Shields** (`Catalog ▸ Arsenal` shields; `Combat ▸ Shields`): Buckler, Targe, Round Shield,
+Heater, Spiked Shield, Kite, Scutum, Tower Pavise, unlocked by level or bought with Marks like
+any weapon. Worn on the left arm (a copy of the Tool's body), raised in front of you on every
+screen while you block; a GuardHull in front of you is there to blades only while you block.
+Each widens the guard (ShieldCone), cheapens blocks (ShieldBlock), changes the parry window
+(ShieldParry), stops arrows, bolts and thrown things from the front (ShieldArrows:
+RangedServer, MagicServer, Throwing ask `Shields.stops`), makes the kick a bash (ShieldBash /
+ShieldStun), and the big ones slow you (SpeedMult_Shield). Not for the Archer or the Mage.
+
+**Throwables** (`Catalog ▸ Arsenal` throwables; `Combat ▸ Throwing`): Throwing Knives (free),
+Throwing Axe, War Darts, Javelin (pierces armour), Firebomb, Frost Flask, Smoke Bomb,
+Caltrops, Bolas (roots), Holy Water (heals your side). Charges come back one at a time;
+flown on an arc by the server, drawn on every screen (`ThrowFX`); bursts are power zones.
+
+**Bodies**: shields and throwables are Tools in ServerStorage ▸ Weapons (`Tools/<id>`, Config
+only), their bodies from `Build ▸ ArsenalBlueprints`, so Blueprints builds them and their menu
+displays like any weapon's. **Skins**: power skins are spell skins (`Catalog ▸ PowerSkins`,
+appended to SpellSkins; the **Spellforge Crate**, Mythic *Seraph*); shield and throwable skins
+are weapon skins (`Catalog ▸ ArsenalSkins`): the **Heraldry Crate** paints arms on shields
+(`ReplicatedStorage ▸ Heraldry`: cross, saltire, chevron, pale, fess, bend, quarterly, bordure,
+chief, sun, star, lion, tower; Mythic *Aegis of the First King*) and the **Quartermaster's
+Crate** dresses throwables (Mythic *Phoenix Feathers*). All three are in the daily rotation
+(4 of 11 a day).
 
 ## Classes that open later: the Archer and the Mage (level 5)
 

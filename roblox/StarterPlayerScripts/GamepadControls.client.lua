@@ -9,7 +9,8 @@
        A / ✕     jump            B / ○     dodge           X / □     kick (or pick up,
        Y / △     feint                                               when a prompt shows)
        LS click  sprint (on until you stop)                RS click  first / third person
-       D-pad ↑   emote wheel (hold, aim with the right stick, let go)
+       D-pad ↑   tap: your POWER / throw (the third slot: Powers.client) · hold: the emote
+                 wheel (aim with the right stick, let go)
        D-pad ↓   crouch (toggle)        D-pad ← →  weapons (Hotbar)
        VIEW / TOUCHPAD   tap: the menu · hold: the scoreboard
        right stick       look
@@ -38,6 +39,7 @@ local CURVE = 1.7        -- small tilts aim finely, full tilts turn fast
 local AIM_ZONE = 0.45    -- how far the right stick must lean to aim a swing
 local SENS = 0.003       -- CameraRig's mouse sensitivity (a look delta is in mouse pixels)
 local HOLD_BOARD = 0.28  -- seconds on SELECT before it's the scoreboard, not the menu
+local emoteDownAt, emoteOpened = nil, false   -- (D-pad ↑: a tap is the power, a hold the emote wheel)
 
 -- Select is ours (the menu): not Roblox's UI-selection toggle
 pcall(function() GuiService.AutoSelectGuiEnabled = false end)
@@ -104,7 +106,13 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	elseif code == PAD.Block then TouchInput.press("Block", true)
 	elseif code == PAD.Sprint then sprintOn = not sprintOn; TouchInput.press("Sprint", sprintOn)
 	elseif code == PAD.Crouch then crouchOn = not crouchOn; TouchInput.press("Crouch", crouchOn)
-	elseif code == PAD.Emote then TouchInput.press("Emote", true)
+	elseif code == PAD.Emote then
+		-- a tap is the power; held a moment, the emote wheel
+		local mine = os.clock()
+		emoteDownAt, emoteOpened = mine, false
+		task.delay(0.22, function()
+			if emoteDownAt == mine then emoteOpened = true; TouchInput.press("Emote", true) end
+		end)
 	else
 		for _, action in ipairs(BY_CODE[code] or {}) do
 			if action ~= "Pickup" and action ~= "Reload" and action ~= "Board" then TouchInput.press(action, true) end
@@ -124,7 +132,10 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 	if code == PAD.Swing then swingUp()
 	elseif code == PAD.Block then TouchInput.press("Block", false)
-	elseif code == PAD.Emote then TouchInput.press("Emote", false) end
+	elseif code == PAD.Emote then
+		if emoteOpened then TouchInput.press("Emote", false) else TouchInput.press("Power", true) end
+		emoteDownAt, emoteOpened = nil, false
+	end
 end)
 
 -- every frame: look with the right stick, sprint ends when you stop, the

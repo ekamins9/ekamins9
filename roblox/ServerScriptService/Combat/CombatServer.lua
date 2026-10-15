@@ -390,7 +390,11 @@ function CombatServer.resolveKick(character, cfg, hooks)
 			if hooks.dprint then hooks.dprint("KICK staggered", m.Name) end
 		else
 			local ff = CombatServer.friendlyMult(character, m)
-			local kd = cfg.KICK_DAMAGE * ff
+			-- (with a shield the kick is a bash: Combat ▸ Shields)
+			local kd = (cfg.KICK_DAMAGE + (character:GetAttribute("ShieldBash") or 0)) * ff
+			if character:GetAttribute("ShieldStun") and not m:GetAttribute("Boss") then
+				m:SetAttribute("StunnedUntil", math.max(m:GetAttribute("StunnedUntil") or 0, now + character:GetAttribute("ShieldStun")))
+			end
 			CombatServer.credit(m, character, hooks.weaponName or "", "kick")
 			CombatServer.showDamage(character, m, kd, "body", hum.Health - kd <= 0, ff < 1)
 			hum:TakeDamage(kd)
@@ -899,7 +903,8 @@ function CombatServer.attach(Tool, weaponConfig)
 			local to = myHRP.Position - targetHRP.Position
 			to = Vector3.new(to.X, 0, to.Z)
 			if to.Magnitude > 1e-3 then
-				facing = targetHRP.CFrame.LookVector:Dot(to.Unit) >= math.cos(math.rad(cfg.BLOCK_CONE_DEG))
+				-- (a shield catches them from wider: Combat ▸ Shields)
+				facing = targetHRP.CFrame.LookVector:Dot(to.Unit) >= math.cos(math.rad(math.min(cfg.BLOCK_CONE_DEG + (target:GetAttribute("ShieldCone") or 0), 179)))
 			end
 		end
 
@@ -909,9 +914,10 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- OR any point of our blade is inside a raised, facing guard hull right
 		-- now, the guard caught it. "Sword inside the box = blocked."
 		if not claimedGuard and guardUp and facing then
-			local tool = target:FindFirstChildOfClass("Tool")
+			local tool = target:FindFirstChildOfClass("Tool") or target:FindFirstChild("ShieldHull")
 			if tool then
-				for _, h in ipairs(tool:GetDescendants()) do
+				-- (the weapon's hull, or a shield's: anywhere on them)
+				for _, h in ipairs(target:GetDescendants()) do
 					if h.Name == "GuardHull" and h:IsA("BasePart")
 						and (pointInBox(hitPos, h, cfg.GUARD_MARGIN) or bladeInside(h, cfg.GUARD_MARGIN)) then
 						claimedGuard = true
@@ -975,7 +981,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				dprint("PARRIED by", target.Name)
 			else
 				-- BLOCK: drains defender stamina by the attack's blockCost; empty = guard broken
-				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1) * (target:GetAttribute("StaminaCostMult") or 1))
+				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1) * (target:GetAttribute("StaminaCostMult") or 1) * (target:GetAttribute("ShieldBlock") or 1))
 				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
 				Injury.sparks(hitPos, 1)
@@ -1039,7 +1045,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		-- a clean hit breaks whatever they were doing, so trades are rarer
 		interrupt(target, "hit")
 		-- reeling: no swinging back for HIT_STUN (bosses shrug it off)
-		if not target:GetAttribute("Boss") then
+		if not (target:GetAttribute("Boss") or target:GetAttribute("Unflinching")) then
 			local reel = os.clock() + cfg.HIT_STUN
 			if reel > (target:GetAttribute("ReelUntil") or 0) then target:SetAttribute("ReelUntil", reel) end
 		end
@@ -1098,6 +1104,11 @@ function CombatServer.attach(Tool, weaponConfig)
 				return
 			end
 			dmg = through
+		end
+		-- a power on the blade (fire, venom, a smite…: Combat ▸ Powers)
+		do
+			local ok, P = pcall(require, script.Parent:WaitForChild("Powers"))
+			if ok and P then dmg = P.onMelee(character, target, dmg, hitPos) end
 		end
 		-- a stab through the face is a finisher, not a damage roll
 		if isStab and region == "head" and cfg.STAB_HEAD_EXECUTE then
@@ -1720,7 +1731,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		CombatServer.dropProtection(character)
 		setAttr("Blocking", true)
 		if chained or now - state.lastBlockStart >= cfg.PARRY_RETRY then
-			setAttr("ParryUntil", now + cfg.PARRY_WINDOW)
+			setAttr("ParryUntil", now + cfg.PARRY_WINDOW * (attr("ShieldParry") or 1))
 		end
 		state.lastBlockStart = now
 		state.guardStart = now   -- a guard that comes down without having parried ends the chain
@@ -1749,7 +1760,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function interruptSelf(reason)
 		-- bosses (Horde / Siege warlords, attribute Boss) don't flinch: they swing
 		-- straight through hits and kicks — read them and parry
-		if character and character:GetAttribute("Boss") and (reason == "hit" or reason == "kicked") then return end
+		if character and (character:GetAttribute("Boss") or character:GetAttribute("Unflinching")) and (reason == "hit" or reason == "kicked") then return end
 		local cancelled = false
 		if state.phase ~= "idle" then
 			-- a hit only stops a swing that hasn't committed yet; a kick stops anything

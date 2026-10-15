@@ -44,6 +44,8 @@ local Spells = require(ReplicatedStorage:WaitForChild("MagicSpells"))
 local CombatServer = require(script.Parent:WaitForChild("CombatServer"))
 local Ward = require(script.Parent:WaitForChild("Ward"))
 local Ragdoll = require(script.Parent:WaitForChild("Ragdoll"))
+local Shields   -- (Combat ▸ Shields, loaded once everything is: it needs nothing of ours)
+task.defer(function() Shields = require(script.Parent:WaitForChild("Shields")) end)
 
 local MagicServer = {}
 
@@ -209,6 +211,11 @@ function RESOLVE.bolt(caster, sp, ctx)
 		local function burst(at, hitPart)
 			conn:Disconnect()
 			local direct = hitPart and modelOfPart(hitPart)
+			-- (a shield raised toward it: it splashes off: Combat ▸ Shields)
+			if direct and humOf(direct) and Shields and Shields.stops(direct, ctx.origin) then
+				direct:SetAttribute("GuardText", "SHIELD"); direct:SetAttribute("GuardTick", (direct:GetAttribute("GuardTick") or 0) + 1)
+				direct = nil
+			end
 			if direct and humOf(direct) then
 				local head = hitPart.Name == "Head"
 				if hurt(caster, direct, sp.damage * ctx.power * (head and (sp.headMult or 1) or 1), sp.name, head) then
@@ -249,10 +256,13 @@ function RESOLVE.chain(caster, sp, ctx)
 	if first then
 		local r = rootOf(first)
 		table.insert(points, (r and r.Position) or stop)
-		hurt(caster, first, sp.damage * ctx.power, sp.name, res and res.Instance.Name == "Head")
+		local landed = hurt(caster, first, sp.damage * ctx.power, sp.name, res and res.Instance.Name == "Head")
 		-- (a player's lightning breaks what you were doing; a bot's only hurts: it can't be
 		-- dodged, so it mustn't also open you up to every blade round you)
-		if Players:GetPlayerFromCharacter(caster) then CombatServer.interrupt(first, "lightning") end
+		if Players:GetPlayerFromCharacter(caster) and not sp.noInterrupt then CombatServer.interrupt(first, "lightning") end
+		-- (a power's chain: Shadow Chain slows who it strikes, Soul Siphon heals the caster as much)
+		if landed and sp.slowOnHit then chill(caster, first, sp.slowOnHit.slow, sp.slowOnHit.time) end
+		if landed and sp.siphon then heal(caster, sp.damage * ctx.power * sp.siphon, 0.6) end
 		local hit = {[first] = true}
 		local from = points[#points]
 		for _ = 1, sp.chain or 0 do
@@ -283,7 +293,15 @@ function RESOLVE.nova(caster, sp, ctx)
 	for _, m in ipairs(everyone()) do
 		local r = rootOf(m)
 		if m ~= caster and r and (r.Position - r0.Position).Magnitude <= sp.radius then
-			if sp.shove then
+			if sp.shove and (sp.damage or 0) > 0 then
+				-- damage AND a shove (a power's Whirlwind)
+				if hurt(caster, m, sp.damage * ctx.power, sp.name) then
+					local away = Vector3.new(r.Position.X - r0.Position.X, 0, r.Position.Z - r0.Position.Z)
+					if away.Magnitude < 0.1 then away = r0.CFrame.LookVector end
+					shove(m, away.Unit * sp.shove + Vector3.new(0, sp.shove * 0.3, 0))
+					if (sp.slow or 0) > 0 then chill(caster, m, sp.slow, sp.slowTime or 2) end
+				end
+			elseif sp.shove then
 				-- a gust: no harm, just thrown back (foes only)
 				if hurtMult(caster, m) > 0 then
 					local away = Vector3.new(r.Position.X - r0.Position.X, 0, r.Position.Z - r0.Position.Z)
@@ -323,6 +341,19 @@ local function aimedGround(caster, sp, ctx)
 end
 -- a meteor: after a delay; full damage in the middle, less at the edge, a shove away
 function RESOLVE.meteor(caster, sp, ctx)
+	if (sp.count or 1) > 1 and not ctx.one then
+		local centre = aimedGround(caster, sp, ctx)
+		for k = 1, sp.count do
+			task.delay((k - 1) * (sp.every or 0.4), function()
+				local a, d = math.random() * math.pi * 2, k == 1 and 0 or math.random() * (sp.spread or 8)
+				local c2 = table.clone(ctx)
+				c2.one = true
+				c2.aim = centre + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+				RESOLVE.meteor(caster, sp, c2)
+			end)
+		end
+		return
+	end
 	local at = aimedGround(caster, sp, ctx)
 	fx:FireAllClients("Meteor", ctx.id, at, sp.radius, sp.delay, ctx.skin)
 	task.delay(sp.delay, function()
@@ -411,6 +442,26 @@ function RESOLVE.blink(caster, sp, ctx)
 	caster:PivotTo(CFrame.new(to) * (r.CFrame - r.Position))
 	fx:FireAllClients("Blink", ctx.id, from, to, ctx.skin)
 end
+
+--------------------------------------------------------------------
+--  FOR THE POWERS (Combat ▸ Powers): a spell cast by anyone, free, at once
+--------------------------------------------------------------------
+-- MagicServer.cast(caster, spellId, aimPoint, skinId): it goes off now (no mana, no wind-up)
+function MagicServer.cast(caster, spellId, aim, skinId)
+	local sp = Spells[spellId]
+	local fn = sp and RESOLVE[sp.kind]
+	local r = rootOf(caster)
+	if not (fn and r) then return false end
+	local head = caster:FindFirstChild("Head")
+	local origin = (head and head.Position or r.Position) + r.CFrame.LookVector * 1.5
+	local dir = (typeof(aim) == "Vector3" and (aim - origin).Magnitude > 0.5) and (aim - origin).Unit or r.CFrame.LookVector
+	task.spawn(fn, caster, sp, {id = spellId, origin = origin, dir = dir, aim = typeof(aim) == "Vector3" and aim or nil, power = 1, skin = skinId})
+	return true
+end
+MagicServer.burn, MagicServer.chill, MagicServer.shove, MagicServer.heal = burn, chill, shove, heal
+MagicServer.everyone, MagicServer.alive, MagicServer.friendly, MagicServer.rayTo = everyone, alive, friendly, rayTo
+MagicServer.groundAt = groundAt
+MagicServer.fx = fx
 
 --------------------------------------------------------------------
 --  MANA: meditation only (every character that has a mana bar)
@@ -526,7 +577,7 @@ function MagicServer.attach(tool, cfg)
 		if incapacitated(c) then cancel(c, true); return end
 		local id = casting.id
 		local sp = Spells[id]
-		local cost = (sp.mana or 0) * manaMult
+		local cost = (sp.mana or 0) * manaMult * (c:GetAttribute("ManaFree") and 0 or 1)
 		local mana = c:GetAttribute("Mana") or 0
 		if mana < cost then cancel(c, true); return end
 		if cost > 0 then c:SetAttribute("Mana", mana - cost) end
@@ -552,12 +603,12 @@ function MagicServer.attach(tool, cfg)
 			local sp = type(a) == "string" and book()[a] and Spells[a]
 			if not sp or casting or incapacitated(c) or c:GetAttribute("Warded") then return end
 			if os.clock() < (cooldown[a] or 0) then return end
-			if (c:GetAttribute("Mana") or 0) < (sp.mana or 0) * manaMult then if plr then remote:FireClient(plr, "NoMana", a) end; return end
+			if not c:GetAttribute("ManaFree") and (c:GetAttribute("Mana") or 0) < (sp.mana or 0) * manaMult then if plr then remote:FireClient(plr, "NoMana", a) end; return end
 			stopMeditating(c)
 			token += 1
 			local myToken = token
 			-- (CastSlow on the caster: Horde's mages take longer over it, so it can be seen coming)
-			local castTime = sp.cast * castMult * (c:GetAttribute("CastSlow") or 1)
+			local castTime = sp.cast * castMult * (c:GetAttribute("CastSlow") or 1) * (c:GetAttribute("CastMult_Power") or 1)
 			casting = {id = a, token = myToken}
 			c:SetAttribute("Casting", a)
 			c:SetAttribute("CastStart", now())

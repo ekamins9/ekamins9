@@ -246,6 +246,13 @@ local function nearestPlayer(pos, team, ok)
 		local c = p.Character
 		if team and c and c:GetAttribute("Team") == team then c = nil end
 		if c and ok and not ok(c) then c = nil end
+		-- (stealth or smoke: Combat ▸ Powers — only seen up close)
+		if c then
+			local hid = (c:GetAttribute("HiddenUntil") or 0) > workspace:GetServerTimeNow()
+			local smoke = (c:GetAttribute("InSmokeUntil") or 0) > workspace:GetServerTimeNow()
+			local r = (hid or smoke) and c:FindFirstChild("HumanoidRootPart")
+			if r and (r.Position - pos).Magnitude > (hid and 6 or 9) then c = nil end
+		end
 		local hrp = c and c:FindFirstChild("HumanoidRootPart")
 		local hum = c and c:FindFirstChildOfClass("Humanoid")
 		if hrp and hum and hum.Health > 0 then

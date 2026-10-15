@@ -23,6 +23,7 @@ local DebugFlags = require(ReplicatedStorage:WaitForChild("DebugFlags"))
 local Drops = require(ReplicatedStorage:WaitForChild("Drops"))
 
 local Economy = {}
+local Analytics, Badges   -- (set below: Economy.addXP above them uses them on a level-up)
 local Collection   -- (requires Economy back: loaded on first use)
 local function collection()
 	Collection = Collection or require(script.Parent:WaitForChild("Collection"))
@@ -51,9 +52,52 @@ function Economy.levelFor(xp)
 	return lvl
 end
 
+-- CLASS LEVELS (Catalog ▸ Mastery): the class you fight as climbs with every bit of XP you earn;
+-- each level can open a power, a title, a mastery skin (bound) or a Key, and says so
+function Economy.addClassXP(plr, classId, xp)
+	local p = Profile.get(plr)
+	local M = Catalog.MASTERY
+	if not (M and classId and xp and xp > 0) then return 0 end
+	p.classXP = type(p.classXP) == "table" and p.classXP or {}
+	local before = M.levelOf(p.classXP[classId] or 0)
+	p.classXP[classId] = (p.classXP[classId] or 0) + xp
+	local after = M.levelOf(p.classXP[classId])
+	if after > before then
+		local news = {}
+		for lvl = before + 1, after do
+			for _, pw in ipairs(Catalog.POWERS.byClass[classId] or {}) do
+				if pw.level == lvl then table.insert(news, {kind = "power", id = pw.id, text = "NEW POWER: " .. string.upper(pw.name)}) end
+			end
+			local title = (M.titles[classId] or {})[lvl]
+			if title then Profile.grant(plr, "titles", title); table.insert(news, {kind = "title", text = "TITLE: " .. string.upper(title)}) end
+			for _, sk in ipairs(Catalog.SPELLSKINS or {}) do
+				if sk.mastery and sk.mastery.class == classId and sk.mastery.level == lvl then
+					Profile.addCopy(plr, "spell:" .. sk.id, {from = "class mastery", bound = true})
+					table.insert(news, {kind = "skin", id = sk.id, text = "MASTERY SKIN: " .. string.upper(sk.name)})
+				end
+			end
+			if (M.keyEvery or 0) > 0 and lvl % M.keyEvery == 0 then
+				p.wallet.keys = (p.wallet.keys or 0) + 1
+				table.insert(news, {kind = "key", text = "+1 KEY"})
+			end
+		end
+		local ev = ReplicatedStorage:FindFirstChild("HubEvent")
+		if ev and plr.Parent then ev:FireClient(plr, "ClassLevel", {class = classId, level = after, news = news}) end
+		pcall(function() require(script.Parent:WaitForChild("Analytics")).event(plr, "ClassLevel", after, classId) end)
+	end
+	Profile.markDirty(plr)
+	return after - before
+end
+
 function Economy.addXP(plr, xp)
 	local p = Profile.get(plr)
 	p.xp += xp
+	-- (and the class you're fighting as: your character's, else the one you'd spawn as)
+	do
+		local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+		local cls = plr.Character and plr.Character:GetAttribute("Class") or p.active
+		if GameConfig.CLASSES[cls] then Economy.addClassXP(plr, cls, xp) end
+	end
 	local leveled = 0
 	local was = p.level
 	while true do
@@ -92,8 +136,8 @@ end
 -- forward: round XP also climbs the pass
 local addPassXP
 -- what the dashboard counts (Economy ▸ Analytics) and the badges (Economy ▸ Badges)
-local Analytics = require(script.Parent:WaitForChild("Analytics"))
-local Badges = require(script.Parent:WaitForChild("Badges"))
+Analytics = require(script.Parent:WaitForChild("Analytics"))
+Badges = require(script.Parent:WaitForChild("Badges"))
 
 function Economy.award(plr, events)
 	if noRewards() then return {marks = 0, xp = 0, levels = 0, blocked = true} end

@@ -502,10 +502,13 @@ end
 -- real Tool on the server (or a preview copy): tint SkinPart parts (or swap
 -- in the skin model's parts around the Handle), then build the skin's trim —
 -- the parts that change the weapon's shape (SkinTrims)
+local Heraldry
 function Dresser.applySkin(tool, skinId, variant)
 	local skin = skinId and Catalog.SKIN[skinId]
 	SkinTrims.clear(tool)
 	SkinFX.clear(tool)
+	Heraldry = Heraldry or require(script.Parent:WaitForChild("Heraldry"))
+	Heraldry.clear(tool)   -- (a shield's arms: ReplicatedStorage ▸ Heraldry)
 	-- (whatever the last skin hid, a staff's plain claws and orb, comes back first)
 	for _, p in ipairs(tool:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
@@ -554,6 +557,7 @@ function Dresser.applySkin(tool, skinId, variant)
 	end
 	if SkinTrims.apply(tool, skin) then n += 1 end
 	if SkinFX.apply(tool, skin, variant) then n += 1 end
+	if skin.heraldry and Heraldry.apply(tool, skin) then n += 1 end
 	return n > 0
 end
 

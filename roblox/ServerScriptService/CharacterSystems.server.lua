@@ -106,6 +106,7 @@ local function setup(char)
 			and (char:GetAttribute("StunnedUntil") or 0) <= os.clock() then
 			local calm = os.clock() - (char:GetAttribute("LastCombatAt") or -1e9) >= (char:GetAttribute("StaminaRegenDelay") or STAMINA_DELAY)
 			local rate = (char:GetAttribute("StaminaRegen") or STAMINA_REGEN) * (calm and 1 or (char:GetAttribute("CombatRegenMult") or COMBAT_REGEN))
+				* (char:GetAttribute("StaminaRegenMult") or 1)   -- (a power: Combat ▸ Powers)
 			local max = char:GetAttribute("BlockMax") or STAMINA_MAX
 			local m = char:GetAttribute("BlockMeter") or max
 			if m < max and rate > 0 then

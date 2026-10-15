@@ -397,6 +397,23 @@ give it another window. Event crates and eggs (`retire = true`) never return: th
 RELICS, which is what makes them worth something. Don't use `always = true`: nothing in the
 shop is there every day, and every card says how long it has left.
 
+## 6h. Powers, shields, throwables, class levels
+
+- **A power**: a line in `Catalog ▸ Powers` (`add{id, class, name, glyph, level, cooldown, kind,
+  …}`): pick a kind (imbue, buff, spell, shout, dash, leap, zone, summon, stealth, arrows) and
+  its numbers (the file's header lists every field). It's registered as a spell (`Pw_<id>`) by
+  itself. Ten a class; `level` is the class level it opens at.
+- **A power skin**: a line in `Catalog ▸ PowerSkins` (`sk{id, power, name, rarity, crate =
+  "Spellforge" | mastery = {class, level}, look = {color, glow, shape…}}`).
+- **A shield**: a line in `Catalog ▸ Arsenal` shields (block, cone, parry, arrows, speed, bash),
+  a blueprint `W.<Id>` in `Build ▸ ArsenalBlueprints` (the board with `FACE(w, h, y, z, round)`
+  so arms can be painted on it), and a folder `Tools/<Id>` (init.meta.json + Config.lua: copy one).
+- **A throwable**: the same three: `Catalog ▸ Arsenal` throwables (charges, recharge, speed,
+  gravity, damage, snare, burst, look), a blueprint, a Tools folder.
+- **Their skins**: `Catalog ▸ ArsenalSkins` (`sh(...)` for shields with a heraldry pattern,
+  `th(...)` for throwables). New heraldry patterns: `ReplicatedStorage ▸ Heraldry`.
+- **Class levels**: `Catalog ▸ Mastery` (the XP curve, titles at levels, a Key every N levels).
+
 ## 6f. Season rewards
 
 `Catalog ▸ Economy ▸ seasonRewards`: `Warfront` and `Lists` are lists of `{top = n, reward = …}`

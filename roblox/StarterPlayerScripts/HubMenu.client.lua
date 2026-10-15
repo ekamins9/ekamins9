@@ -4192,8 +4192,16 @@ do
 	local function choose(k, v)
 		local lo = edit()
 		lo[k] = v
-		if k == "weapon" then lo.weaponSkin = v .. ":Default"; if lo.secondary == v then lo.secondary = nil; lo.secondarySkin = nil end end
-		if k == "secondary" then lo.secondarySkin = v and (v .. ":Default") or nil end
+		if k == "weapon" then
+			lo.weaponSkin = v .. ":Default"; if lo.secondary == v then lo.secondary = nil; lo.secondarySkin = nil end
+			-- (a shield only beside a one-hander)
+			local w = Catalog.WEAPON[v]
+			if lo.shield and not (w and w.family == "OneHanded") then lo.shield, lo.shieldSkin = nil, nil; if lo.thirdKind == "sidearm" then lo.thirdKind = nil end end
+		end
+		if k == "secondary" then
+			lo.secondarySkin = v and (v .. ":Default") or nil
+			if v then lo.shield, lo.shieldSkin = nil, nil; if lo.thirdKind == "sidearm" then lo.thirdKind = nil end end   -- (a secondary or a shield)
+		end
 		ui.dirty[ui.editing] = true
 		ui.tryOn = nil
 		render.CLASSES()
@@ -4241,6 +4249,7 @@ do
 			local bar = clearFrame(list); bar.Size = UDim2.new(1, 0, 0, 40); bar.LayoutOrder = nextOrder()
 			local sw = HX.lockSwitch(bar, 230, 38); sw.AnchorPoint = Vector2.new(1, 0); sw.Position = UDim2.new(1, 0, 0, 0)
 		end
+		HX.classLevelPanel(list, id)
 		local p = panel(list, "ARMOR  ·  " .. string.upper(cls.weight))
 		for _, slot in ipairs(Catalog.SLOTS) do
 			heading(p, slot == "bottom" and "LEGS" or string.upper(slot))
@@ -4348,6 +4357,8 @@ do
 				if owns("skins", s.id) then itemCard(sg3, i, s.name, s.rarity, lo.secondarySkin == s.id, true, RARITY_COL[s.rarity], function() lo.secondarySkin = s.id; ui.dirty[id] = true; render.CLASSES() end) end
 			end
 		end
+		if stale() then return end
+		HX.arsenalPanels(list, lo, id, cardGrid, itemCard)
 		dim(list, string.format("%s.  Weight %s:  %s. Looks never change stats.", cls.description or "", cls.weight, weightLine(cls.weight)), 12)
 		if stale() then return end
 		clear(live); list.Parent = live
@@ -4617,7 +4628,8 @@ do
 		local left = clearFrame(body); left.Size = UDim2.new(0, 270, 1, 0)
 		local leftList = scroll(left, 6)
 		local right = clearFrame(body); right.Position = UDim2.new(0, 286, 0, 0); right.Size = UDim2.new(1, -286, 1, 0)
-		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}, {"Ranged", "RANGED  ·  ARCHER"}}
+		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}, {"Ranged", "RANGED  ·  ARCHER"},
+			{"Shield", "SHIELDS  ·  BESIDE A ONE-HANDER"}, {"Throwable", "THROWABLES  ·  THIRD SLOT"}}
 		local function shown(w) return not HX.hideLocked() or owns("weapons", w.id) end
 		if not Catalog.WEAPON[ui.shopWeapon] or not shown(Catalog.WEAPON[ui.shopWeapon]) then
 			ui.shopWeapon = nil
@@ -5731,6 +5743,157 @@ end
 --  level). Click one to put it in or take it out; the server checks it
 --  (Profile.validateLoadout).
 --------------------------------------------------------------------
+-- A CLASS'S LEVEL (Catalog ▸ Mastery): how far, and what the next levels open
+function HX.classLevelPanel(list, classId)
+	local P = state.profile or {}
+	local M = Catalog.MASTERY
+	local lvl, into, need = M.levelOf(P.classXP and P.classXP[classId] or 0)
+	local p = panel(list, string.upper(className(classId)) .. "  ·  CLASS LEVEL " .. lvl)
+	local bar = clearFrame(p); bar.Size = UDim2.new(1, 0, 0, 16); bar.LayoutOrder = nextOrder()
+	progressBar(bar, need > 0 and into / need or 1, COL.ACCENT, need > 0 and string.format("%s / %s XP", fmt(into), fmt(need)) or "MASTERED", 16)
+	local nexts = {}
+	for _, pw in ipairs(Catalog.POWERS.byClass[classId] or {}) do
+		if pw.level > lvl then table.insert(nexts, string.format("LV %d  %s %s", pw.level, pw.glyph or "", pw.name)); break end
+	end
+	for l2 = lvl + 1, M.max do
+		local t = (M.titles[classId] or {})[l2]
+		if t then table.insert(nexts, string.format("LV %d  title \"%s\"", l2, t)); break end
+	end
+	for _, sk in ipairs(Catalog.SPELLSKINS or {}) do
+		if sk.mastery and sk.mastery.class == classId and sk.mastery.level > lvl then table.insert(nexts, string.format("LV %d  %s skin", sk.mastery.level, sk.name)); break end
+	end
+	dim(p, (#nexts > 0 and ("NEXT  ·  " .. table.concat(nexts, "   ·   ") .. ".  ") or "") .. "Every bit of XP you earn as a " .. className(classId) .. " counts; a Key every " .. M.keyEvery .. " levels.", 12)
+end
+
+-- THE SHIELD (beside a one-handed primary) and THE THIRD SLOT (a power, a throwable, a sidearm)
+function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
+	local cls = GameConfig.CLASSES[classId]
+	local P = state.profile or {}
+	local function dirty() ui.dirty[classId] = true; ui.tryOn = nil; render.CLASSES() end
+	local function skinCards(parent, weaponId, current, set)
+		local g = cardGrid(parent, 40)
+		itemCard(g, 0, "Default", "free", (current or ""):match(":Default$") ~= nil or current == nil, true, nil, function() set(weaponId .. ":Default") end)
+		for i, sk in ipairs(Catalog.skinsFor(weaponId)) do
+			local have = owns("skins", sk.id)
+			itemCard(g, i, sk.name, have and sk.rarity or (skinWhere(sk)), current == sk.id, have, RARITY_COL[sk.rarity], function()
+				if have then set(sk.id) else toast(sk.name .. ": " .. (skinWhere(sk)), COL.DIM) end
+			end)
+		end
+	end
+	-- SHIELD
+	local w = Catalog.WEAPON[lo.weapon or ""]
+	if w and w.family == "OneHanded" and not cls.ranged and not cls.magic then
+		local sp = panel(list, "SHIELD  ·  INSTEAD OF A SECONDARY")
+		dim(sp, "Beside a one-handed weapon, up in front of you while you block: it catches blows from wider, for less stamina, and stops arrows, bolts and thrown things. Your kick becomes a bash.", 12)
+		local g = cardGrid(sp, 40)
+		itemCard(g, 0, "No shield", "carry a secondary", lo.shield == nil, true, nil, function()
+			lo.shield, lo.shieldSkin = nil, nil
+			if lo.thirdKind == "sidearm" then lo.thirdKind, lo.thirdId, lo.thirdSkin = nil, nil, nil end
+			dirty()
+		end)
+		for i, sh in ipairs(Catalog.ARSENAL.shields) do
+			local have = owns("weapons", sh.id)
+			local stats = string.format("blocks %d%% cheaper · +%d°%s", math.floor((1 - sh.block) * 100 + 0.5), sh.cone, sh.arrows and " · arrows" or "")
+			itemCard(g, i, sh.name, have and stats or (unlockText(sh) .. (sh.marks and ("  ·  or " .. fmt(sh.marks) .. " Marks") or "")), lo.shield == sh.id, have, nil, function()
+				if have then
+					lo.shield, lo.shieldSkin = sh.id, sh.id .. ":Default"
+					lo.secondary, lo.secondarySkin = nil, nil
+					dirty()
+				else toast(sh.name .. ": " .. unlockText(sh) .. " (or buy it in the ARMORY)", COL.DIM) end
+			end)
+		end
+		if lo.shield then
+			local sh = Catalog.WEAPON[lo.shield]
+			if sh then dim(sp, sh.desc or "", 12) end
+			heading(sp, "SHIELD SKIN  ·  HERALDRY")
+			skinCards(sp, lo.shield, lo.shieldSkin, function(v) lo.shieldSkin = v; dirty() end)
+		end
+	end
+	-- THE THIRD SLOT
+	local tp = panel(list, "THIRD SLOT  ·  " .. (Catalog.POWERS.names[classId] or "POWERS") .. "  ·  E")
+	dim(tp, "Your class's magic, a throwable, or (beside a shield) a sidearm. In battle press E (a controller's D-pad ↑ tap; on a phone, tap its button by your energy bar); it aims where your crosshair is.", 12)
+	local kind = lo.thirdKind or "power"
+	ui.thirdTab = ui.thirdTab or (kind == "throwable" and "throw" or (kind == "sidearm" and "side" or "power"))
+	if ui.thirdTab == "side" and not lo.shield then ui.thirdTab = "power" end
+	do
+		local row = clearFrame(tp); row.Size = UDim2.new(1, 0, 0, 34); row.LayoutOrder = nextOrder()
+		hlist(row, 8)
+		local tabs = {{"power", "POWERS"}, {"throw", "THROWABLES"}}
+		if lo.shield then table.insert(tabs, {"side", "SIDEARM"}) end
+		for i, tb in ipairs(tabs) do
+			local b = button(row, tb[2], 13, ui.thirdTab == tb[1] and COL.BLUE or COL.GLASS2)
+			b.Size = UDim2.new(1 / #tabs, -6, 0, 34); b.LayoutOrder = i
+			b.Activated:Connect(function() ui.thirdTab = tb[1]; render.CLASSES() end)
+		end
+	end
+	if ui.thirdTab == "power" then
+		local lvl = Catalog.classLevel(P, classId)
+		local g = cardGrid(tp, 40)
+		for i, pw in ipairs(Catalog.POWERS.byClass[classId] or {}) do
+			local open = lvl >= pw.level
+			local sub = open and string.format("%s%ds cooldown", pw.ultimate and "ULTIMATE · " or "", pw.cooldown) or string.format("%s CLASS LEVEL %d", string.upper(className(classId)), pw.level)
+			itemCard(g, i, (pw.glyph or "") .. "  " .. pw.name, sub, kind == "power" and lo.thirdId == pw.id, open, pw.ultimate and RARITY_COL.Legendary or nil, function()
+				if open then lo.thirdKind, lo.thirdId = "power", pw.id; dirty()
+				else toast(pw.name .. " opens at " .. className(classId) .. " class level " .. pw.level .. ". " .. (pw.desc or ""), COL.DIM) end
+			end)
+		end
+		local pw = kind == "power" and Catalog.POWER[lo.thirdId or ""]
+		if pw then
+			local d = panel(tp, (pw.glyph or "") .. "  " .. string.upper(pw.name) .. (pw.ultimate and "  ·  ULTIMATE" or ""), true)
+			dim(d, (pw.desc or "") .. string.format("  (%ds to come back)", pw.cooldown), 13)
+			heading(tp, "ITS LOOK")
+			local spellId = "Pw_" .. pw.id
+			lo.spellSkins = lo.spellSkins or {}
+			local cur = lo.spellSkins[spellId]
+			local sg = cardGrid(tp, 40)
+			itemCard(sg, 0, "Default", "its own colours", cur == nil, true, pw.color, function() lo.spellSkins[spellId] = nil; dirty() end)
+			for i, sk in ipairs(Catalog.spellSkinsFor(spellId)) do
+				local have = owns("spellfx", sk.id)
+				local where = sk.mastery and string.format("%s CLASS LEVEL %d", string.upper(className(sk.mastery.class)), sk.mastery.level)
+					or ((Catalog.CRATES[sk.crate or ""] or {}).name or "a crate")
+				itemCard(sg, i, sk.name, have and sk.rarity or where, cur == sk.id, have, RARITY_COL[sk.rarity], function()
+					if have then lo.spellSkins[spellId] = sk.id; dirty() else toast(sk.name .. ": " .. where .. ". " .. (sk.description or ""), COL.DIM) end
+				end)
+			end
+		end
+	elseif ui.thirdTab == "throw" then
+		local g = cardGrid(tp, 40)
+		for i, t in ipairs(Catalog.ARSENAL.throwables) do
+			local have = owns("weapons", t.id)
+			local what = t.burst and (t.burst.fire and "fire pool" or (t.burst.frost and "frost cloud" or (t.burst.smoke and "smoke" or (t.burst.ground and "spikes" or "heals"))))
+				or (t.snare and "roots them" or (t.damage .. " damage"))
+			itemCard(g, i, t.name, have and string.format("%d × %s · %ds each", t.charges, what, t.recharge) or (unlockText(t) .. (t.marks and ("  ·  or " .. fmt(t.marks) .. " Marks") or "")),
+				kind == "throwable" and lo.thirdId == t.id, have, nil, function()
+				if have then lo.thirdKind, lo.thirdId, lo.thirdSkin = "throwable", t.id, t.id .. ":Default"; dirty()
+				else toast(t.name .. ": " .. unlockText(t) .. " (or buy it in the ARMORY)", COL.DIM) end
+			end)
+		end
+		local t = kind == "throwable" and Catalog.WEAPON[lo.thirdId or ""]
+		if t then
+			dim(tp, t.desc or "", 12)
+			heading(tp, "ITS SKIN")
+			skinCards(tp, t.id, lo.thirdSkin, function(v) lo.thirdSkin = v; dirty() end)
+		end
+	else
+		local g = cardGrid(tp, 40)
+		local n = 0
+		for _, sw in ipairs(Catalog.WEAPONS) do
+			if sw.id ~= lo.weapon and Catalog.weaponFits(cls, sw, "secondary") then
+				n += 1
+				local have = owns("weapons", sw.id)
+				itemCard(g, n, sw.name, have and "a sidearm on 3" or unlockText(sw), kind == "sidearm" and lo.thirdId == sw.id, have, nil, function()
+					if have then lo.thirdKind, lo.thirdId, lo.thirdSkin = "sidearm", sw.id, sw.id .. ":Default"; dirty() end
+				end)
+			end
+		end
+		local sw = kind == "sidearm" and Catalog.WEAPON[lo.thirdId or ""]
+		if sw then
+			heading(tp, "ITS SKIN")
+			skinCards(tp, sw.id, lo.thirdSkin, function(v) lo.thirdSkin = v; dirty() end)
+		end
+	end
+end
+
 function HX.spellsPanel(list, lo, classId, cardGrid, itemCard)
 	local Spells = Catalog.SPELLS
 	local w = lo.weapon and Catalog.WEAPON[lo.weapon]

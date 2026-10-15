@@ -473,4 +473,7 @@ W.Crossbow = function()
 	return out
 end
 
+-- the shields and throwables (Catalog ▸ Arsenal)
+require(script.Parent:WaitForChild("ArsenalBlueprints"))(W, B)
+
 return W

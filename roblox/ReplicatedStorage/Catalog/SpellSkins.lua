@@ -4,6 +4,7 @@
      spell they carry (LOADOUT ▸ SPELLS ▸ LOOKS); everyone sees it (MagicFX: the
      server passes the caster's skin with every spell). They come out of the ARCANA
      CRATE as copies of their own ("spell:" .. id): trade the spare, scrap it, or keep it.
+     Every class's POWERS wear spell skins too (Catalog ▸ PowerSkins, appended below).
 
        id (unique), spell (a MagicSpells id), name, rarity, crate, description
        look = {
@@ -19,7 +20,7 @@
 
 local C = Color3.fromRGB
 
-return {
+local SKINS = {
 	-- RARE: new colours
 	{id = "Bluefire", spell = "Firebolt", name = "Bluefire", rarity = "Rare", crate = "Arcana",
 	 description = "Fire that burns blue. Hotter, they say, and nobody who's been hit by it argues.",
@@ -111,3 +112,6 @@ return {
 	 description = "No rock: a dragon of violet fire dives out of the sky, wings spread, and lands on them.",
 	 look = {color = C(170, 60, 255), glow = C(255, 190, 255), shape = "wyrm"}},
 }
+-- the powers' looks (Catalog ▸ PowerSkins: spell = "Pw_<power>") are spell skins too
+for _, s in ipairs(require(script.Parent:WaitForChild("PowerSkins"))) do table.insert(SKINS, s) end
+return SKINS

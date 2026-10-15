@@ -94,7 +94,9 @@ function Profile.defaultLoadout(classId)
 	return {helmet = d("helmet"), top = d("top"), bottom = d("bottom"),
 		colors = {Primary = "Navy", Secondary = "Slate", Accent = "Ochre", Metal = "Ash"},
 		weapon = weapon, weaponSkin = weapon and (weapon .. ":Default") or nil,
-		secondary = second, secondarySkin = second and (second .. ":Default") or nil}
+		secondary = second, secondarySkin = second and (second .. ":Default") or nil,
+		-- the third slot: the class's first power (open from class level 1: magic for everyone)
+		thirdKind = "power", thirdId = (Catalog.POWERS.byClass[classId] or {})[1] and Catalog.POWERS.byClass[classId][1].id or nil}
 end
 
 local function default()
@@ -106,7 +108,8 @@ local function default()
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, unlockSeen = false, dropSeen = "", copies = {}, tally = {}, claims = {}, copySeq = 0,
 		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3, funnel = {},
-		giftsIn = {}, giftDay = {}}   -- (Economy ▸ Gifting: the gift ids opened, today's sending)
+		giftsIn = {}, giftDay = {},   -- (Economy ▸ Gifting: the gift ids opened, today's sending)
+		classXP = {}}                 -- (Catalog ▸ Mastery: every class's own XP, its class level)
 	for k, v in pairs(Catalog.BODY.defaults) do p.appearance[k] = v end
 	for id in pairs(GameConfig.CLASSES) do p.classes[id] = Profile.defaultLoadout(id) end
 	return p
@@ -455,10 +458,51 @@ function Profile.validateLoadout(plr, classId, lo)
 	end
 	if lo.weapon and allowed(lo.weapon, "primary") then out.weapon = lo.weapon end
 	out.weaponSkin = (lo.weaponSkin and Catalog.SKIN[lo.weaponSkin] and Catalog.SKIN[lo.weaponSkin].weapon == out.weapon and Profile.has(plr, "skins", lo.weaponSkin)) and lo.weaponSkin or (out.weapon and out.weapon .. ":Default" or nil)
+	local function skinOf(wid, skinId)
+		return (skinId and Catalog.SKIN[skinId] and Catalog.SKIN[skinId].weapon == wid and Profile.has(plr, "skins", skinId)) and skinId or (wid .. ":Default")
+	end
 	if lo.secondary and lo.secondary ~= out.weapon and allowed(lo.secondary, "secondary") then
 		out.secondary = lo.secondary
-		out.secondarySkin = (lo.secondarySkin and Catalog.SKIN[lo.secondarySkin] and Catalog.SKIN[lo.secondarySkin].weapon == out.secondary and Profile.has(plr, "skins", lo.secondarySkin)) and lo.secondarySkin or (out.secondary .. ":Default")
+		out.secondarySkin = skinOf(out.secondary, lo.secondarySkin)
 	else out.secondary, out.secondarySkin = nil, nil end
+	-- A SHIELD in the secondary slot, beside a one-handed primary (Catalog ▸ Arsenal)
+	if lo.shield and Catalog.shieldFits(cls, out.weapon, lo.shield) and Profile.has(plr, "weapons", lo.shield) then
+		out.shield, out.shieldSkin = lo.shield, skinOf(lo.shield, lo.shieldSkin)
+		out.secondary, out.secondarySkin = nil, nil
+	end
+	-- THE THIRD SLOT: a power the class level has opened, a throwable, or (beside a shield) a sidearm
+	do
+		local p = Profile.get(plr)
+		local kind, id = lo.thirdKind, lo.thirdId
+		if kind == "power" and not (Catalog.powerOpen(p, classId, id)) then kind, id = nil, nil end
+		if kind == "throwable" then
+			local t = Catalog.WEAPON[id or ""]
+			if not (t and t.throwable and Profile.has(plr, "weapons", id)) then kind, id = nil, nil end
+		end
+		if kind == "sidearm" then
+			if not (out.shield and id ~= out.weapon and allowed(id, "secondary")) then kind, id = nil, nil end
+		end
+		if kind == "none" then id = nil end
+		if kind == nil then
+			-- (nothing valid: the class's first power)
+			local first = (Catalog.POWERS.byClass[classId] or {})[1]
+			kind, id = first and "power" or "none", first and first.id or nil
+		end
+		if (p.level or 1) < (Catalog.MASTERY.thirdSlot or 1) then kind, id = "none", nil end
+		out.thirdKind, out.thirdId = kind, id
+		if kind == "throwable" or kind == "sidearm" then out.thirdSkin = skinOf(id, lo.thirdSkin) end
+	end
+	-- every class's POWER LOOKS (Catalog ▸ PowerSkins: spell skins of "Pw_<power>"), kept for every
+	-- power of the class (they're there when the power comes back to the slot)
+	out.spellSkins = {}
+	if type(lo.spellSkins) == "table" then
+		for spellId, skinId in pairs(lo.spellSkins) do
+			local sk = Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[skinId]
+			local sp = Catalog.SPELLS[spellId]
+			if sk and sk.spell == spellId and sp and sp.power and Catalog.POWER[sp.power] and Catalog.POWER[sp.power].class == classId
+				and Profile.has(plr, "spellfx", skinId) then out.spellSkins[spellId] = skinId end
+		end
+	end
 	-- A MAGE'S ARSENAL (ReplicatedStorage ▸ MagicSpells): spells they have (free, or their level
 	-- reached), no two the same, as many as the weapon carries; and a look for each (a spell
 	-- skin they own a copy of: Catalog ▸ SpellSkins)
@@ -468,7 +512,7 @@ function Profile.validateLoadout(plr, classId, lo)
 		local list, seen = {}, {}
 		local function add(id)
 			local sp = type(id) == "string" and Spells[id]
-			if sp and sp.kind and not sp.wand and not seen[id] and #list < slots and Profile.has(plr, "spells", id) then seen[id] = true; table.insert(list, id) end
+			if sp and sp.kind and not sp.wand and not sp.power and not seen[id] and #list < slots and Profile.has(plr, "spells", id) then seen[id] = true; table.insert(list, id) end
 		end
 		for _, id in ipairs(type(lo.spells) == "table" and lo.spells or {}) do add(id) end
 		if #list == 0 then for _, id in ipairs(Spells.DEFAULT) do add(id) end end
@@ -485,12 +529,11 @@ function Profile.validateLoadout(plr, classId, lo)
 			if #wl == 0 then for _, id in ipairs(Spells.WAND_DEFAULT) do addW(id) end end
 			out.wandSpells = wl
 		end
-		out.spellSkins = {}
 		if type(lo.spellSkins) == "table" then
 			for spellId, skinId in pairs(lo.spellSkins) do
 				local sk = Catalog.SPELLSKIN_BY and Catalog.SPELLSKIN_BY[skinId]
 				-- (kept for a spell out of the arsenal too: it's there when the spell comes back)
-				if sk and sk.spell == spellId and Catalog.SPELLS[spellId] and Profile.has(plr, "spellfx", skinId) then out.spellSkins[spellId] = skinId end
+				if sk and sk.spell == spellId and Catalog.SPELLS[spellId] and not Catalog.SPELLS[spellId].power and Profile.has(plr, "spellfx", skinId) then out.spellSkins[spellId] = skinId end
 			end
 		end
 	end
@@ -550,7 +593,7 @@ function Profile.summary(plr)
 		login = p.login, killfx = p.killfx, emotes = p.emotes, tutorial = p.tutorial, menuTour = p.menuTour,
 		eggs = p.eggs, nests = p.nests, companion = p.companion, stars = p.stars, drills = p.drills, spars = p.spars,
 		gauntlet = p.gauntlet, askedTraining = p.askedTraining, unlockSeen = p.unlockSeen, dropSeen = p.dropSeen,
-	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder, beta = p.beta,
+	copies = p.copies, tally = p.tally, claims = p.claims, founder = p.founder, beta = p.beta, classXP = p.classXP,
 	trading = Profile.tradingHook and Profile.tradingHook(plr) or nil,
 	restricted = Profile.restrictedHook and Profile.restrictedHook(plr) or false,
 	armoury = Profile.ratingHook and Profile.ratingHook(p) or 0}

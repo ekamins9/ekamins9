@@ -97,7 +97,7 @@ local function dodge(plr, char, dx, dz)
 	if type(dx) ~= "number" or type(dz) ~= "number" or dx ~= dx or dz ~= dz then return end
 	local now = os.clock()
 	local why
-	local cost = M.DODGE_COST * (char:GetAttribute("DodgeCost") or 1)   -- light armor dodges cheap, heavy dear
+	local cost = M.DODGE_COST * (char:GetAttribute("DodgeCost") or 1) * (char:GetAttribute("DodgeCostMult") or 1)   -- light armor dodges cheap, heavy dear (a power: cheaper still)
 	if now < (dodgeReady[char] or 0) then why = "cooldown"
 	elseif char:GetAttribute("Blocking") then why = "blocking"
 	elseif char:GetAttribute("Acting") then why = "mid-action"
@@ -110,7 +110,7 @@ local function dodge(plr, char, dx, dz)
 		remote:FireClient(plr, "DodgeDenied", why)
 		return
 	end
-	dodgeReady[char] = now + M.DODGE_COOLDOWN
+	dodgeReady[char] = now + M.DODGE_COOLDOWN * (char:GetAttribute("DodgeCooldownMult") or 1)
 	char:SetAttribute("DodgeReadyAt", dodgeReady[char])   -- server clock; the client keeps its own
 	char:SetAttribute("LastDodgeAt", now)                 -- CombatServer refunds stamina if this dodges a swing
 	CombatServer.drainStamina(char, cost, char:GetAttribute("BlockMax"))

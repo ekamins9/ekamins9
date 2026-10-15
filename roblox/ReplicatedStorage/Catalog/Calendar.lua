@@ -147,10 +147,10 @@ return {
 		{id = "Vault", name = "From the Vault", color = C(255, 120, 200), vault = true,
 			blurb = "A vaulted crate is back in the Armoury for the weekend only. Monday morning it goes back in the vault."},
 	}},
-	-- THE DAILY ROTATION: 3 of the 8 armoury crates a day (each is in 3 days in 8, never two
+	-- THE DAILY ROTATION: 4 of the 11 armoury crates a day (each is in 4 days in 11, never two
 	-- weeks running on the same days), 2 of the 4 eggs (every other day)
 	rotations = {
-		crates = {slots = 3, epoch = "2026-10-05", order = {"Bladesmith", "Forge", "Relic", "Hafted", "Arcana", "Grim", "Fletcher", "WarChest"}},
+		crates = {slots = 4, epoch = "2026-10-05", order = {"Bladesmith", "Forge", "Spellforge", "Relic", "Hafted", "Heraldry", "Arcana", "Grim", "Quartermaster", "Fletcher", "WarChest"}},
 		eggs   = {slots = 2, epoch = "2026-10-05", order = {"Speckled", "Ember", "Mossy", "Royal"}},
 	},
 	crates = {
@@ -162,6 +162,9 @@ return {
 		Relic      = {daily = "crates"},
 		Grim       = {daily = "crates"},
 		Fletcher   = {daily = "crates"},
+		Spellforge = {daily = "crates"},
+		Heraldry   = {daily = "crates"},
+		Quartermaster = {daily = "crates"},
 		Royal      = {windows = {{from = "Beta", to = "HollowNight"}, {from = "SeaWolves", to = "Frostfall"}}},
 		Ossuary    = {windows = {{from = "Bonewright", to = "Ironclad"}}},
 		Hollow     = {event = "Hollow2026", retire = true},

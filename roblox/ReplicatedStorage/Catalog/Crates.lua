@@ -72,6 +72,23 @@ return {
 		cost = 85, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(170, 90, 255),
 	},
+	-- THE THIRD SLOT'S LOOKS: every class's power skins (Catalog ▸ PowerSkins), shield heraldry and
+	-- throwables (Catalog ▸ ArsenalSkins)
+	Spellforge = {
+		name = "Spellforge Crate", description = "Power skins for every class: blue oaths and hellfire blades, phoenix leaps, spectral ravens, starshowers. Mythic: Seraph, six wings of light for the Knight's Avatar of War.",
+		cost = 85, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
+		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(120, 200, 255),
+	},
+	Heraldry = {
+		name = "Heraldry Crate", description = "Shields painted with arms: lions, crosses, suns and chevrons. Mythic: the Aegis of the First King.",
+		cost = 75, odds = {Common = 50, Rare = 32, Epic = 13.7, Legendary = 4, Mythic = 0.3}, pity = 35,
+		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(200, 40, 50),
+	},
+	Quartermaster = {
+		name = "Quartermaster's Crate", description = "Throwables with a story: frostfang knives, dragon's breath bombs, a wyrmtooth javelin. Mythic: Phoenix Feathers.",
+		cost = 70, odds = {Common = 50, Rare = 32, Epic = 13.7, Legendary = 4, Mythic = 0.3}, pity = 35,
+		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(180, 130, 60),
+	},
 	-- THE DROPS (Catalog ▸ Calendar): each in rotation for a few weeks, then vaulted
 	Ossuary = {
 		name = "Ossuary Crate", description = "Bone blades, skull pommels, vertebrae grips. Mythic: The Marrow King. Armor finish: Bonewhite.",
