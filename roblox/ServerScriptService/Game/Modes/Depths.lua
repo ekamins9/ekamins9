@@ -43,6 +43,7 @@ local MapLoader = Game.MapLoader
 local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
 local Powers = require(Combat:WaitForChild("Powers"))
+local Perception = require(Combat:WaitForChild("Perception"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 
 local node = Game.node
@@ -292,6 +293,64 @@ function Depths:roster(room)
 	return out
 end
 
+-- a room's monsters' rules (the same for those waiting in it and those that come with its fight)
+function Depths:roomOpts(room)
+	local players = playersN()
+	-- (gentle on the first floor; a party makes them tougher, not more numerous only)
+	local hpMult = (0.8 + (self.floor - 1) * 0.15) * (1 + (players - 1) * 0.3)
+	local dealt = 0.8 + (self.floor - 1) * 0.08
+	-- their fighting skill, capped by the floor: Squires on the first, Knights on the second
+	local skillCap = ({"Squire", "Knight"})[self.floor]
+	return {team = "B", startDelay = 1.2, corpseTime = 3,
+		hpMult = hpMult, dealt = dealt, skillCap = skillCap,
+		engage = self.senses.engage, goal = self.senses.goal,
+		arena = {centre = Vector3.new(room.cx, 0, room.cz), radius = math.max(room.w, room.d) / 2 + 4},
+		bounds = {centre = Vector3.new(room.cx, 0, room.cz), hw = room.w / 2, hd = room.d / 2},
+		onSpawn = function(mob)
+			room.mobs[mob] = true
+			local how = mob.over and mob.over.sense
+			if how and mob.bot and room.state == "sealed" then self.senses:add(mob.bot, how) end
+		end,
+		onDeath = function(mob, killer)
+			room.mobs[mob] = nil
+			local tier = mob.def.tier or 1
+			if killer then
+				local r = self:runOf(killer)
+				r.kills += 1
+				r.gold += KILL_GOLD[tier] or 2
+				Loot.onKill(killer)
+				if _G.RoundBump then _G.RoundBump(killer, "kill_" .. (tier >= 3 and "Champion" or (tier == 2 and "Knight" or "Squire"))) end
+				self:sendRun(killer)
+			end
+			if mob.boss then self.bossDown = true end
+			if mob.bot then self.senses:remove(mob.bot) end
+		end}
+end
+
+-- A ROOM'S MONSTERS, WAITING (Combat ▸ Perception): there before anyone comes in, some asleep,
+-- the rest standing about; they come for you when they see or hear you (a crouch is quiet), and
+-- the gates slam the moment one does. Strike one that hasn't noticed you: a sneak attack.
+function Depths:prepare(room)
+	if room.prepared or room.kind == "boss" then return end
+	room.prepared = true
+	room.opts = self:roomOpts(room)
+	room.mobs = {}
+	local home = Vector3.new(room.cx, 3, room.cz)
+	local sleepy = math.random() < 0.4
+	for i, e in ipairs(self:roster(room)) do
+		local spot = room.spots[((i - 1) % #room.spots) + 1]
+		local look = Vector3.new(room.cx + math.random(-8, 8), spot.Y, room.cz + math.random(-8, 8))
+		local how = {home = spot, asleep = sleepy and not e.elite}
+		local mob = Monsters.spawn(e.id, room.opts, {at = CFrame.new(spot, look), elite = e.elite, sense = how})
+		if mob then
+			room.mobs[mob] = true
+			if mob.bot and not self.senses.bots[mob.bot] then self.senses:add(mob.bot, how) end
+		end
+	end
+	room.waiting = 0
+	for _ in pairs(room.mobs) do room.waiting += 1 end
+end
+
 function Depths:engage(room)
 	room.state = "fight"
 	self.active = room
@@ -307,29 +366,22 @@ function Depths:engage(room)
 		end
 	end
 	local players = playersN()
-	-- (gentle on the first floor; a party makes them tougher, not more numerous only)
-	local hpMult = (0.8 + (self.floor - 1) * 0.15) * (1 + (players - 1) * 0.3)
-	local dealt = 0.8 + (self.floor - 1) * 0.08
-	-- their fighting skill, capped by the floor: Squires on the first, Knights on the second
-	local skillCap = ({"Squire", "Knight"})[self.floor]
-	local opts = {team = "B", startDelay = 1.2, corpseTime = 3,
-		hpMult = hpMult, dealt = dealt, skillCap = skillCap,
-		arena = {centre = Vector3.new(room.cx, 0, room.cz), radius = math.max(room.w, room.d) / 2 + 4},
-		bounds = {centre = Vector3.new(room.cx, 0, room.cz), hw = room.w / 2, hd = room.d / 2},
-		onSpawn = function(mob) room.mobs[mob] = true end,
-		onDeath = function(mob, killer)
-			room.mobs[mob] = nil
-			local tier = mob.def.tier or 1
-			if killer then
-				local r = self:runOf(killer)
-				r.kills += 1
-				r.gold += KILL_GOLD[tier] or 2
-				Loot.onKill(killer)
-				if _G.RoundBump then _G.RoundBump(killer, "kill_" .. (tier >= 3 and "Champion" or (tier == 2 and "Knight" or "Squire"))) end
-				self:sendRun(killer)
+	if room.prepared then
+		-- (those waiting here know now, and fight to the end)
+		local n = 0
+		for mob in pairs(room.mobs) do
+			n += 1
+			if mob.bot then self.senses:remove(mob.bot) end
+			if mob.model then
+				mob.model:SetAttribute("Alert", "!")
+				task.delay(1.6, function() if mob.model and mob.model.Parent then mob.model:SetAttribute("Alert", nil) end end)
 			end
-			if mob.boss then self.bossDown = true end
-		end}
+		end
+		event:FireAllClients("Banner", room.kind == "elite" and {text = "A CHAMPION", sub = "IT HAS SEEN YOU", kind = "elite"}
+			or {text = "THE GATES SLAM SHUT", sub = string.format("%d FOES", n), kind = "fight"})
+		return
+	end
+	local opts = self:roomOpts(room)
 	room.opts = opts
 	room.mobs = {}
 	local list = self:roster(room)
@@ -399,6 +451,7 @@ function Depths:dressRooms()
 	for _, room in ipairs(self.layout.rooms) do
 		room.state = (room.kind == "combat" or room.kind == "elite" or room.kind == "stairs" or room.kind == "boss") and "sealed" or "clear"
 		if room.kind == "start" then room.state = "clear" end
+		if room.state == "sealed" then self:prepare(room) end
 		if room.kind == "treasure" then self:placeChest(room, "depths", 1) end
 		if room.kind == "shrine" then
 			local p = Instance.new("Part")
@@ -476,8 +529,12 @@ function Depths:descend()
 	end
 	event:FireAllClients("Fade", {on = true})
 	task.wait(0.6)
-	-- hold everyone still while the floor is swapped
+	-- hold everyone still while the floor is swapped (and what waited in rooms you passed by goes with it)
 	for _, p in ipairs(Players:GetPlayers()) do local r = p.Character and rootOf(p.Character); if r then r.Anchored = true end end
+	for _, room in ipairs(self.layout.rooms) do
+		for mob in pairs(room.mobs or {}) do Monsters.despawn(mob) end
+		if room.opts then Monsters.halt(room.opts) end
+	end
 	Loot.clear()
 	local name, layout = Dungeon.build(self.theme, floorOpts(self.floor, playersN()))
 	self.layout = layout
@@ -528,6 +585,7 @@ function Depths:start(map)
 	self.floor = 1
 	self.won, self.wiped, self.boss, self.bossDown, self.active, self.descendAt = false, false, nil, false, nil, nil
 	self.everUp = false
+	self.senses = Perception.new({sight = 40, fov = 140, hearing = 11, memory = 9, shout = 26, leash = 70})
 	if not self.layout or self.layout.theme ~= self.theme then
 		-- (no procedural build happened: Studio's switch onto a map name; build it now)
 		local name = self:buildMap(self.theme)
@@ -651,16 +709,39 @@ function Depths:tick(dt)
 		node:SetAttribute("ObjState", "fight")
 		if left == 0 and (now - (room.engagedAt or 0)) > 2 then self:clear(room) end
 	else
-		-- step into a sealed room (well inside: not just its doorway) and it begins
+		-- step into a sealed room (well inside: not just its doorway), or be seen by what waits
+		-- in it, and it begins
+		local started = false
 		for _, p in ipairs(Players:GetPlayers()) do
 			local c = aliveChar(p)
 			local r = c and rootOf(c)
 			if r then
 				local rm = Dungeon.roomAt(self.layout, r.Position)
-				if rm and rm.state == "sealed" and math.abs(r.Position.X - rm.cx) < rm.w / 2 - 6 and math.abs(r.Position.Z - rm.cz) < rm.d / 2 - 6 then
+				local deep = rm and math.abs(r.Position.X - rm.cx) < rm.w / 2 - (rm.prepared and 2 or 6) and math.abs(r.Position.Z - rm.cz) < rm.d / 2 - (rm.prepared and 2 or 6)
+				-- (a sneak past a sleeping room is allowed: only its middle wakes it)
+				if rm and rm.state == "sealed" and deep and (not rm.prepared or math.abs(r.Position.X - rm.cx) < rm.w / 2 - 9 and math.abs(r.Position.Z - rm.cz) < rm.d / 2 - 9) then
 					rm.engagedAt = now
 					self:engage(rm)
+					started = true
 					break
+				end
+			end
+		end
+		if not started then
+			for _, rm in ipairs(self.layout.rooms) do
+				if rm.state == "sealed" and rm.prepared then
+					local seen = false
+					for mob in pairs(rm.mobs or {}) do
+						if mob.alive and mob.model and mob.model:GetAttribute("Alert") == "!" then seen = true; break end
+					end
+					-- (or they were all killed in their sleep: the room is yours)
+					local left = 0
+					for mob in pairs(rm.mobs or {}) do if mob.alive then left += 1 end end
+					if seen or (left == 0 and (rm.waiting or 0) > 0) then
+						rm.engagedAt = now
+						self:engage(rm)
+						break
+					end
 				end
 			end
 		end

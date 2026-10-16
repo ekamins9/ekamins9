@@ -66,13 +66,17 @@ end
 
 function Perception:add(bot, how)
 	how = how or {}
+	if bot.model then bot.model:SetAttribute("Perceives", true) end
 	local s = {aware = {}, checked = {}, home = how.home, patrol = how.patrol, wp = 1, asleep = how.asleep,
 		sight = how.sight or self.sight, hearing = how.hearing or self.hearing, mode = how.asleep and "asleep" or "idle"}
 	self.bots[bot] = s
 	if bot.model then bot.model:SetAttribute("Alert", how.asleep and "z" or nil) end
 	return s
 end
-function Perception:remove(bot) self.bots[bot] = nil end
+function Perception:remove(bot)
+	self.bots[bot] = nil
+	if bot.model then bot.model:SetAttribute("Perceives", nil) end
+end
 
 local function setAlert(b, a) if b.model and b.model.Parent and b.model:GetAttribute("Alert") ~= a then b.model:SetAttribute("Alert", a) end end
 local function rootOf(m) return m and m:FindFirstChild("HumanoidRootPart") end
@@ -216,6 +220,24 @@ function Perception.noise(pos, radius, foe)
 				end
 			end
 		end
+	end
+end
+
+-- A SNEAK ATTACK: a blade on one that hasn't noticed you (asleep: more so) lands double, and
+-- says so on your screen (Combat ▸ Powers' hit hooks)
+Perception.SNEAK, Perception.SNEAK_ASLEEP = 2, 2.5
+do
+	local ok, Powers = pcall(require, script.Parent:WaitForChild("Powers"))
+	if ok and Powers and Powers.meleeHooks then
+		table.insert(Powers.meleeHooks, function(attacker, target, dmg)
+			if not (target:GetAttribute("Perceives") and Players:GetPlayerFromCharacter(attacker)) then return dmg end
+			local a = target:GetAttribute("Alert")
+			if a == "!" then return dmg end
+			local k = a == "z" and Perception.SNEAK_ASLEEP or Perception.SNEAK
+			attacker:SetAttribute("GuardText", string.format("SNEAK ATTACK  ×%s", k))
+			attacker:SetAttribute("GuardTick", (attacker:GetAttribute("GuardTick") or 0) + 1)
+			return dmg * k
+		end)
 	end
 end
 

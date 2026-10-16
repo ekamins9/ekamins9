@@ -1,4 +1,19 @@
-# Updated scripts: Deadvault rebuilt after Dark and Darker
+# Updated scripts: The Depths' monsters wait, perceive, and can be caught asleep
+
+- **The Depths' monsters wait in their rooms** before the gates drop (some asleep, the rest standing about), with the same senses as Deadvault's (Combat ▸ Perception): they come when they see or hear you, and the gates drop the moment one does.
+- **Sneak attacks**: a blow on a monster that hasn't noticed you lands double (×2.5 on a sleeper), and says so on your screen. Kill a whole room in its sleep and it's yours.
+- Going down a floor takes the monsters of the rooms you passed by with it. The boss still comes with its fight.
+- **Checked in Play**: a floor with 4 rooms waiting (11 monsters, 4 asleep); walking into a doorway, its monsters noticed and the room sealed in half a second; compile of both scripts.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `prepare`, `roomOpts`, the waiting rooms' trigger |
+| [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | the sneak attack hook, `Perceives` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Deadvault rebuilt after Dark and Darker
 
 - **A vast, quiet, detailed dungeon** (Dungeon `raid = true`): 30 rooms, each something it once was (great halls, crypts, cells, libraries, armouries, storerooms, chapels, caverns, treasure vaults, the lair), furnished to match, with pilasters, skirting and fewer torches.
 - **Monsters that perceive** (new Combat ▸ Perception): they see (in front, in range, nothing in the way) and hear (running, fighting; crouching is quiet), shout for friends, hunt where they last saw you and go back. Many rooms are empty, some monsters sleep, pairs patrol. **!**, **?** and **z z** over their heads.
@@ -66,18 +81,3 @@
 | [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | guides, edge arrow, UP NEXT, chest rooms on the map |
 | [README.md](README.md) | | doc | |
 | [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | a relic's `class` |
-
----
-
-## Before that: a shield slings onto your back for a two-hander
-
-- **Shields and two-handers**: picking up (or switching to) a weapon that can't go beside a shield used to leave the shield on your arm, half working and fighting the two-hander's animations.
-  - Now a two-hander, a polearm, a bow or a staff in your hand slings the shield onto your back, face out, all of its effects off.
-  - A one-hander back in your hand puts it back on your arm, block and all.
-- **Checked in Play**: a Buckler with an Arming Sword (on the arm), a Zweihander equipped (on the back, the shield's block off), back to the Arming Sword (on the arm again).
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | `sling`, watching what's in your hand |
-| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | leaves a slung shield's weld alone |
-| [README.md](README.md) | | doc | |

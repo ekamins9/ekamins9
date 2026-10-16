@@ -1698,7 +1698,11 @@ Three floors; floor 3 ends in the theme's boss.
   doorway has a portcullis (Map ▸ Gates). It lands in ServerStorage ▸ Maps like any map; the
   mode gets the layout. `GameServer` asks a `procedural` mode to build the voted theme
   (`mode:buildMap(theme)`) before loading it.
-- **A room seals** when you're well inside: its gates drop, stragglers are drawn in, its monsters
+- **Its monsters wait** in their rooms (`Depths:prepare`, Combat ▸ Perception), some asleep, the rest
+  standing about: they come when they **see or hear** you (crouch to stay quiet), and the gates
+  drop the moment one does. A blow on one that hasn't noticed you is a **SNEAK ATTACK** (×2, ×2.5
+  on a sleeper); kill a whole room in its sleep and it's yours. The boss still comes with its fight.
+- **A room seals** when you're well inside (or seen): its gates drop, stragglers are drawn in, its monsters
   come. Kill them all and the gates rise; the fallen are back on their feet in the room; everyone
   mends 40%. A cleared room sometimes leaves a chest (an elite room always does; in a room with a
   centrepiece, the start's brazier, an altar, the fountain, it stands on open floor).
