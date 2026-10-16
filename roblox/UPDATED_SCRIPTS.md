@@ -1,4 +1,44 @@
-# Updated scripts: shields off the arm, a shield block raises only the shield arm, one-handers keep the off arm still, stronger ripostes
+# Updated scripts: shields strapped to the arm, a real shield block, shield skins rebuilt, imbued blows through a guard
+
+- **The shield is strapped to the left arm** (welded to it, not the torso), against the arm's armor: no more floating gap. It goes wherever the arm goes (gestures, emotes, a fall), in game and on the class-screen mannequin.
+- **Blocking with a shield**: the arm comes up across your chest and the shield turns upright on it, right in front of you. No more held out at arm's length. The guard that catches blades moved with it.
+- **Shield skins rebuilt**: each skin now has its own board material, its own rim material, raised and outlined arms, and ornaments built onto the shield along its outline (new ShieldDress). For example:
+  - **Aegis of the First King** (Mythic): a sunburst behind it, gold wings, a jewelled crown, a gilded glowing edge, studs, a gem.
+  - **Wyvern**: dark scaled wings, curled horns, thorns, a toxic-green glowing rim.
+  - **Bulwark of Dawn**: a sandstone board with a blazing sunburst and flames.
+  - **Sea-Wolf**: horns. **Raven Banner**: iron bands and hanging raven feathers. **Castellan**: battlements.
+  - **Yggdrasil**: vines, runes and a glowing edge. **Templar** and **Crusader**: ribbons. **Duelist's Rose**: thorns and a gem.
+
+  Every one of the 27 is different.
+- **Imbued blows go through a guard**: a block (or a shield) stops the sword's damage, but the power still lands:
+  - its own damage, burn, venom, frost, hex, lightning and heal;
+  - a shove that **staggers** them (Holy Smite, Cyclone Edge).
+
+  Against a parry, the magic lands at half and nothing shoves; the parry still wins the exchange.
+- **Checked in Play**:
+  - the Aegis on the arm, at ease and blocking;
+  - Wyvern and Bulwark of Dawn blocking;
+  - Holy Smite against a guard: 22 damage through, shoved 6 studs, stunned, the one-hit imbue used up;
+  - no catalog warnings after renaming the skin's rim-material field (`trim` was already taken by weapon trims).
+- **Not checked yet**:
+  - every other skin on screen;
+  - a real swing into a real block (the guard hook was tested by calling it directly);
+  - the parry half.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ShieldDress.lua](ReplicatedStorage/ShieldDress.lua) (new) | ReplicatedStorage | ModuleScript | shield skins' materials and ornaments |
+| [Heraldry.lua](ReplicatedStorage/Heraldry.lua) | ReplicatedStorage | ModuleScript | arms raised and outlined |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | the dress applied; the preview shield on the arm |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage | ModuleScript | the shield arm across the chest |
+| [Catalog/ArsenalSkins.lua](ReplicatedStorage/Catalog/ArsenalSkins.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | every shield skin's dress |
+| [Combat/Shields.lua](ServerScriptService/Combat/Shields.lua), [Powers.lua](ServerScriptService/Combat/Powers.lua), [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | on the arm; `Powers.onGuarded` and its hook |
+| [Build/ArsenalBlueprints.lua](ServerScriptService/Build/ArsenalBlueprints.lua) | ServerScriptService ▸ Build | ModuleScript | each board's outline (FaceShape) |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: shields off the arm, a shield block raises only the shield arm, one-handers keep the off arm still, stronger ripostes
 
 - **Shields no longer clip into the arm.** The board sat on the arm's centre line, so the arm (and its armor) went through it. It now sits 2.05 studs out, just outside a heavy set's pauldrons and bracers, with the straps on the forearm. This applies in game and on the class screen mannequin.
 - **Blocking with a shield**: the weapon keeps its normal upright guard (no block animation is played with a shield). Only the shield arm comes up, its hand behind the board. The raised shield sits a little further forward so the arm doesn't poke through it.

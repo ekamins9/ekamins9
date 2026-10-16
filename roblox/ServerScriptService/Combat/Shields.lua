@@ -1,8 +1,9 @@
 --[[ SHIELDS — a shield in the secondary slot, beside a one-handed primary (Catalog ▸ Arsenal).
-     It's worn, not held: a copy of its Tool's body (ServerStorage ▸ Weapons ▸ <id>) welded to
-     your torso at your left arm, in its skin and arms (Dresser.applySkin, Heraldry). Every
-     screen raises it in front of you while you block (Combat ▸ Powers.client: the weld's
-     IdleC0 / BlockC0). The block itself is a GuardHull welded in front of you that's only
+     It's worn, not held: a copy of its Tool's body (ServerStorage ▸ Weapons ▸ <id>) strapped
+     to your LEFT ARM (welded to it: it goes wherever the arm goes), in its skin and arms
+     (Dresser.applySkin, Heraldry, ShieldDress). While you block, the arm comes up across your
+     chest (RigPose) and the shield turns upright on it, facing the blow (Combat ▸
+     Powers.client: the weld's IdleC0 / BlockC0, in the arm's frame). The block itself is a GuardHull welded in front of you that's only
      there to blades while Blocking is on, so a blow that meets it is blocked, like a weapon's.
 
      What it does is on the character for the combat code: ShieldId (which), ShieldCone (CombatServer: the
@@ -22,11 +23,16 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 
 local Shields = {}
--- on the left arm, face out: the board just outside the arm and its armor (a heavy set's
--- pauldrons and bracers reach 2.15 studs out from the torso's middle), the straps on the forearm
-local IDLE = CFrame.new(-2.05, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
--- up in front of you, far enough out that the raised arm's hand is behind the board (RigPose)
-local BLOCK = CFrame.new(-0.35, 0.2, -1.75) * CFrame.Angles(0, math.rad(12), 0)
+-- IN THE LEFT ARM'S FRAME. At ease: on the outside of the forearm, face out, the board's back
+-- against the arm and its armor (further out it floats; further in the arm comes through it)
+local IDLE = CFrame.new(-0.35, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
+-- blocking: the arm raised across the chest (RigPose SHIELD_RAISE / SHIELD_ACROSS), the shield
+-- turned upright on it, facing forward (a little to the left), just in front of the chest
+local BLOCK = CFrame.new(-0.35, -0.3, 0, 0, 0, 1, -0.98545, 0.16997, 0, -0.16997, -0.98545, 0)
+-- the guard that catches blades while you block, where the raised shield is (TORSO frame)
+local HULL = CFrame.new(-0.6, 0.35, -1.4) * CFrame.Angles(0, math.rad(21), 0)
+-- (no left arm: the same places on the torso)
+local ARM_AT = CFrame.new(-1.5, 0, 0)
 local ATTRS = {"ShieldId", "ShieldCone", "ShieldBlock", "ShieldParry", "ShieldArrows", "ShieldBash", "ShieldStun", "SpeedMult_Shield"}
 
 local function template(id)
@@ -51,8 +57,11 @@ function Shields.wear(c, id, skinId)
 	local def = Catalog.WEAPON[id or ""]
 	if not (def and def.shield) then return false end
 	local torso = c:FindFirstChild("Torso")
+	local arm = c:FindFirstChild("Left Arm")
 	local t = template(id)
 	if not (torso and t) then return false end
+	local idle, block = IDLE, BLOCK
+	if not arm then arm, idle, block = torso, ARM_AT * IDLE, ARM_AT * BLOCK end
 	-- the body: every visible part of the Tool, welded to its Handle
 	local m = Instance.new("Model")
 	m.Name = "ShieldModel"
@@ -69,7 +78,7 @@ function Shields.wear(c, id, skinId)
 	if not handle then m:Destroy(); return false end
 	-- (the whole body where it goes first, THEN the welds: a weld keeps whatever offset it finds)
 	m.PrimaryPart = handle
-	m:PivotTo(torso.CFrame * IDLE)
+	m:PivotTo(arm.CFrame * idle)
 	for _, p in ipairs(m:GetChildren()) do
 		if p ~= handle and p:IsA("BasePart") then
 			local w = Instance.new("WeldConstraint"); w.Part0, w.Part1 = handle, p; w.Parent = p
@@ -77,10 +86,10 @@ function Shields.wear(c, id, skinId)
 	end
 	local grip = Instance.new("Weld")
 	grip.Name = "ShieldGrip"
-	grip.Part0, grip.Part1 = torso, handle
-	grip.C0 = IDLE
-	grip:SetAttribute("IdleC0", IDLE)
-	grip:SetAttribute("BlockC0", BLOCK)
+	grip.Part0, grip.Part1 = arm, handle
+	grip.C0 = idle
+	grip:SetAttribute("IdleC0", idle)
+	grip:SetAttribute("BlockC0", block)
 	grip.Parent = handle
 	m.Parent = c
 	if skinId then pcall(Dresser.applySkin, m, skinId) end
@@ -94,8 +103,8 @@ function Shields.wear(c, id, skinId)
 	hull.Size = Vector3.new(w + 0.8, h + 0.6, 1.6)
 	hull.Transparency = 1
 	hull.CanCollide, hull.CanTouch, hull.CanQuery, hull.Massless = false, false, false, true
-	hull.CFrame = torso.CFrame * BLOCK * CFrame.new(0, 0, -0.2)
-	local hw = Instance.new("Weld"); hw.Part0, hw.Part1, hw.C0 = torso, hull, BLOCK * CFrame.new(0, 0, -0.2); hw.Parent = hull
+	hull.CFrame = torso.CFrame * HULL
+	local hw = Instance.new("Weld"); hw.Part0, hw.Part1, hw.C0 = torso, hull, HULL; hw.Parent = hull
 	-- (blade sweeps stop on a part named GuardHull: CombatClient / CombatServer)
 	local guard = hull:Clone()
 	guard.Name = "GuardHull"

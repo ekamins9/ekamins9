@@ -940,6 +940,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			-- a guard with no stamina behind it, or one arm, can't hold: the weapon flies
 			local meter = target:GetAttribute("BlockMeter") or cfg.BLOCK_MAX
 			markCombat(character)
+			-- (a power on the blade: the guard stops the steel, not the magic: Combat ▸ Powers)
+			local function magicThrough(parried)
+				local ok, P = pcall(require, script.Parent:WaitForChild("Powers"))
+				if ok and P and P.onGuarded then pcall(P.onGuarded, character, target, hitPos, parried) end
+			end
 			-- what the defender's HUD says happened (GuardTick makes it pop)
 			local function guardText(text)
 				target:SetAttribute("GuardText", text)
@@ -952,6 +957,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				sfx("Block", part)
 				guardText("DISARMED")
 				tell("Blocked", true)
+				magicThrough(false)
 				return
 			end
 			if (target:GetAttribute("ParryUntil") or 0) > now then
@@ -988,6 +994,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				Sounds.voice("Parry", target:FindFirstChild("Head"), {Who = target})
 				tell("Parried")
 				dprint("PARRIED by", target.Name)
+				magicThrough(true)
 			else
 				-- BLOCK: drains defender stamina by the attack's blockCost; empty = guard broken
 				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1) * (target:GetAttribute("StaminaCostMult") or 1) * (target:GetAttribute("ShieldBlock") or 1))
@@ -1011,6 +1018,7 @@ function CombatServer.attach(Tool, weaponConfig)
 					tell("Blocked", false)
 					dprint("blocked by", target.Name, "meter", math.floor(m))
 				end
+				magicThrough(false)
 			end
 			return
 		end

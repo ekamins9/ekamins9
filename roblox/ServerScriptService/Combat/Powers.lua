@@ -590,6 +590,50 @@ function Powers.onMelee(attacker, target, dmg, hitPos)
 	return dmg
 end
 
+-- AN IMBUED BLOW ON A GUARD (CombatServer, when a block, a shield or a parry stops it): the
+-- steel is stopped, the magic isn't. Blocked, all of it lands: the power's own damage (`bonus`),
+-- its burn, venom, frost, hex, lightning, its heal, and a shove that STAGGERS them (Holy Smite,
+-- Cyclone Edge). Parried, the magic still lands at half and nothing shoves: the parry wins the
+-- exchange and the riposte is theirs. The sword's own damage, and what comes of it (lifesteal,
+-- an ambush's ×), never gets through.
+local GUARD_STAGGER = 0.5
+function Powers.onGuarded(attacker, target, hitPos, parried)
+	local s = state[attacker]
+	local im = s and s.imbue
+	if not (im and im.untilT > now() and target and target.Parent) then return end
+	if hurtMult(attacker, target) <= 0 then return end
+	local d = im.def
+	local name = (Spells[im.spellId] or {}).name or "Power"
+	local tr = rootOf(target)
+	local at = typeof(hitPos) == "Vector3" and hitPos or (tr and tr.Position)
+	if at then fx:FireAllClients("Strike", attacker, target, at, d.element or "arcane", im.spellId, im.skin, (d.heal or 0) > 0) end
+	-- (both of them see that it went through)
+	attacker:SetAttribute("GuardText", string.upper(name) .. "  ·  THROUGH THE GUARD")
+	attacker:SetAttribute("GuardTick", (attacker:GetAttribute("GuardTick") or 0) + 1)
+	task.defer(function()
+		if not target.Parent then return end
+		local k = parried and 0.5 or 1
+		if (d.bonus or 0) > 0 then hurt(attacker, target, d.bonus * k, name) end
+		if d.burn then MagicServer.burn(attacker, target, d.burn, name) end
+		if d.poison then poison(attacker, target, d.poison, name) end
+		if d.chill then MagicServer.chill(attacker, target, d.chill.slow, d.chill.time) end
+		if d.hex then hex(target, d.hex) end
+		if d.shock then shock(attacker, target, d.shock, im.spellId, im.skin) end
+		if d.shove and not parried then
+			local ar, tr2 = rootOf(attacker), rootOf(target)
+			local away = ar and tr2 and flat(tr2.Position - ar.Position)
+			if away and away.Magnitude > 0.1 then MagicServer.shove(target, away.Unit * d.shove + Vector3.new(0, d.shove * 0.3, 0)) end
+			stun(target, d.stagger or GUARD_STAGGER)
+		end
+		local h = humOf(attacker)
+		if h and h.Health > 0 and (d.heal or 0) > 0 then h.Health = math.min(h.MaxHealth, h.Health + d.heal * k) end
+	end)
+	if im.hits then
+		im.hits -= 1
+		if im.hits <= 0 then endImbue(attacker) end
+	end
+end
+
 function Powers.takeArrow(shooter)
 	local s = state[shooter]
 	local a = s and s.arrows

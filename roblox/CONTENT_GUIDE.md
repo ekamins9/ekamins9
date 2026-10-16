@@ -421,8 +421,10 @@ shop is there every day, and every card says how long it has left.
   so arms can be painted on it), and a folder `Tools/<Id>` (init.meta.json + Config.lua: copy one).
 - **A throwable**: the same three: `Catalog ▸ Arsenal` throwables (charges, recharge, speed,
   gravity, damage, snare, burst, look), a blueprint, a Tools folder.
-- **Their skins**: `Catalog ▸ ArsenalSkins` (`sh(...)` for shields with a heraldry pattern,
-  `th(...)` for throwables). New heraldry patterns: `ReplicatedStorage ▸ Heraldry`.
+- **Their skins**: `Catalog ▸ ArsenalSkins` (`sh(...)` for shields with a heraldry pattern and a
+  dress: `field` / `rim` materials, `accent`, `glow`, `adorn = {...}` from `ReplicatedStorage ▸
+  ShieldDress`; `th(...)` for throwables). A new ornament is a function `A.name` in ShieldDress
+  (built on the board's outline: `along`, `rimBars`, `tri`, `bar`, `ball`, `spike`). New heraldry patterns: `ReplicatedStorage ▸ Heraldry`.
 - **Class levels**: `Catalog ▸ Mastery` (the XP curve, titles at levels, a Key every N levels).
 
 ## 6f. Season rewards

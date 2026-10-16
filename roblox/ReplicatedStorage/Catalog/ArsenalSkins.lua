@@ -4,8 +4,11 @@
      A shield's skin can also paint arms on it:
        heraldry = {pattern, color}   pattern: cross saltire chevron pale fess bend quarterly
                                      bordure chief sun star lion tower (ReplicatedStorage ▸
-                                     Heraldry); color = the charge's colour (the field is
-                                     `blade`, the rim and boss `grip`) ]]
+                                     Heraldry: raised, outlined); color = the charge's colour
+                                     (the field is `blade`, the rim and boss `grip`)
+     and dress it (ReplicatedStorage ▸ ShieldDress): field / rim (materials), accent, glow,
+     adorn = {studs gilded glowedge boss gem spike thorns wings crown rays horns feathers vines
+     runes bands tassels merlons flames} ]]
 
 local C = Color3.fromRGB
 local GOLD, SILVER, BLACK, WHITE = C(232, 184, 74), C(214, 218, 226), C(28, 28, 32), C(240, 240, 236)
@@ -25,44 +28,75 @@ local function th(weapon, name, rarity, blade, grip, extra)
 end
 
 --------------------------------------------------------------------
---  SHIELDS (the Heraldry Crate)
+--  SHIELDS (the Heraldry Crate): each its own board (field), its own metal (trim) and its own
+--  ornaments (adorn: ReplicatedStorage ▸ ShieldDress), so no two look alike; the rarer, the
+--  more of a thing it is
 --------------------------------------------------------------------
-sh("Buckler", "Polished", "Common", C(226, 230, 236), C(120, 90, 60))
-sh("Buckler", "Gilt Boss", "Rare", C(200, 206, 214), GOLD, "sun", GOLD)
-sh("Buckler", "Duelist's Rose", "Epic", C(40, 40, 46), C(200, 40, 70), "star", C(230, 50, 80), {fx = "petals"})
+local ROSE, EMBER, LEAF = C(220, 60, 100), C(255, 150, 60), C(150, 255, 150)
+sh("Buckler", "Polished", "Common", C(226, 230, 236), C(120, 90, 60), nil, nil,
+	{field = "Metal", accent = C(190, 196, 206), adorn = {"studs"}})
+sh("Buckler", "Gilt Boss", "Rare", C(200, 206, 214), GOLD, "sun", GOLD,
+	{field = "Metal", rim = "Foil", adorn = {"gilded", "boss", "studs"}})
+sh("Buckler", "Duelist's Rose", "Epic", C(40, 40, 46), C(200, 40, 70), "star", C(230, 50, 80),
+	{fx = "petals", field = "Fabric", rim = "Foil", accent = ROSE, glow = C(255, 90, 130), adorn = {"gilded", "thorns", "gem"}})
 
-sh("Targe", "Clan Tartan", "Common", C(40, 90, 50), C(120, 84, 50), "quarterly", C(160, 40, 40))
-sh("Targe", "Highlander", "Rare", C(90, 60, 40), GOLD, "saltire", WHITE)
-sh("Targe", "Thistle Crown", "Epic", PURPLE, SILVER, "star", C(200, 150, 255), {fx = "holy"})
+sh("Targe", "Clan Tartan", "Common", C(40, 90, 50), C(120, 84, 50), "quarterly", C(160, 40, 40),
+	{field = "Fabric", accent = C(200, 160, 80), adorn = {"studs"}})
+sh("Targe", "Highlander", "Rare", C(90, 60, 40), GOLD, "saltire", WHITE,
+	{field = "Leather", rim = "Metal", accent = C(200, 200, 210), adorn = {"studs", "boss", "spike"}})
+sh("Targe", "Thistle Crown", "Epic", PURPLE, SILVER, "star", C(200, 150, 255),
+	{fx = "holy", field = "Fabric", rim = "Foil", accent = C(210, 190, 255), glow = C(200, 150, 255), adorn = {"vines", "crown", "gem"}})
 
-sh("RoundShield", "Raven Banner", "Common", BLACK, C(110, 80, 50), "pale", RED)
-sh("RoundShield", "Sea-Wolf", "Rare", C(30, 70, 120), C(150, 150, 160), "sun", WHITE)
-sh("RoundShield", "Jarl's Wheel", "Epic", RED, GOLD, "cross", GOLD, {fx = "embers"})
-sh("RoundShield", "Yggdrasil", "Legendary", C(30, 60, 40), GOLD, "lion", C(140, 255, 160), {fx = "holy", glow = C(140, 255, 160)})
+sh("RoundShield", "Raven Banner", "Common", BLACK, C(110, 80, 50), "pale", RED,
+	{field = "WoodPlanks", adorn = {"bands", "feathers"}, feather = C(26, 26, 32)})
+sh("RoundShield", "Sea-Wolf", "Rare", C(30, 70, 120), C(150, 150, 160), "sun", WHITE,
+	{field = "WoodPlanks", rim = "Metal", adorn = {"studs", "horns"}, horn = C(236, 226, 200)})
+sh("RoundShield", "Jarl's Wheel", "Epic", RED, GOLD, "cross", GOLD,
+	{fx = "embers", field = "Wood", rim = "Foil", glow = EMBER, adorn = {"gilded", "studs", "flames"}})
+sh("RoundShield", "Yggdrasil", "Legendary", C(30, 60, 40), GOLD, "lion", C(140, 255, 160),
+	{fx = "holy", glow = LEAF, field = "Wood", rim = "Foil", adorn = {"vines", "runes", "glowedge", "gem"}})
 
-sh("Heater", "Azure Chevron", "Common", BLUE, SILVER, "chevron", WHITE)
-sh("Heater", "Crusader", "Rare", WHITE, C(160, 160, 170), "cross", RED)
-sh("Heater", "Lionheart", "Epic", RED, GOLD, "lion", GOLD, {fx = "gold"})
-sh("Heater", "Sunguard", "Legendary", C(250, 240, 220), GOLD, "sun", GOLD, {fx = "holy", glow = C(255, 230, 150)})
+sh("Heater", "Azure Chevron", "Common", BLUE, SILVER, "chevron", WHITE,
+	{field = "Fabric", accent = SILVER, adorn = {"studs"}})
+sh("Heater", "Crusader", "Rare", WHITE, C(160, 160, 170), "cross", RED,
+	{field = "Fabric", rim = "Metal", accent = SILVER, ribbon = RED, glow = C(255, 220, 160), adorn = {"gilded", "tassels"}})
+sh("Heater", "Lionheart", "Epic", RED, GOLD, "lion", GOLD,
+	{fx = "gold", field = "Fabric", rim = "Foil", glow = C(255, 70, 70), adorn = {"gilded", "crown", "studs"}})
+sh("Heater", "Sunguard", "Legendary", C(250, 240, 220), GOLD, "sun", GOLD,
+	{fx = "holy", glow = C(255, 230, 150), field = "Marble", rim = "Foil", adorn = {"rays", "gilded", "gem", "glowedge"}})
 
-sh("SpikedShield", "Blackthorn", "Rare", BLACK, C(150, 30, 30), "bordure", C(150, 30, 30))
-sh("SpikedShield", "Wyvern", "Epic", GREEN, C(40, 40, 40), "bend", C(180, 255, 120), {fx = "toxic"})
+sh("SpikedShield", "Blackthorn", "Rare", BLACK, C(150, 30, 30), "bordure", C(150, 30, 30),
+	{field = "Slate", rim = "Metal", accent = C(170, 40, 40), adorn = {"thorns", "bands"}})
+sh("SpikedShield", "Wyvern", "Epic", GREEN, C(40, 40, 40), "bend", C(180, 255, 120),
+	{fx = "toxic", field = "Slate", rim = "Metal", accent = C(60, 70, 50), glow = C(180, 255, 120), wing = C(46, 80, 46), wingMaterial = "Slate",
+		horn = C(70, 76, 60), adorn = {"wings", "horns", "thorns", "glowedge"}})
 
-sh("Kite", "Norman", "Common", C(200, 170, 120), C(110, 80, 50), "fess", RED)
-sh("Kite", "Two Lions", "Rare", RED, GOLD, "lion", GOLD)
-sh("Kite", "Templar", "Epic", WHITE, BLACK, "cross", RED, {fx = "holy"})
+sh("Kite", "Norman", "Common", C(200, 170, 120), C(110, 80, 50), "fess", RED,
+	{field = "Wood", accent = C(160, 150, 140), adorn = {"studs", "bands"}})
+sh("Kite", "Two Lions", "Rare", RED, GOLD, "lion", GOLD,
+	{field = "Fabric", rim = "Foil", adorn = {"gilded"}})
+sh("Kite", "Templar", "Epic", WHITE, BLACK, "cross", RED,
+	{fx = "holy", field = "Fabric", rim = "Metal", accent = GOLD, ribbon = RED, glow = C(255, 236, 190), adorn = {"gilded", "tassels", "gem"}})
 
-sh("Scutum", "Legionary", "Common", C(160, 30, 30), GOLD, "fess", GOLD)
-sh("Scutum", "Thunderbolt", "Rare", C(160, 30, 30), GOLD, "star", GOLD)
-sh("Scutum", "Imperial Eagle", "Legendary", PURPLE, GOLD, "sun", GOLD, {fx = "gold", glow = C(255, 220, 120)})
+sh("Scutum", "Legionary", "Common", C(160, 30, 30), GOLD, "fess", GOLD,
+	{field = "Wood", rim = "Foil", adorn = {"bands"}})
+sh("Scutum", "Thunderbolt", "Rare", C(160, 30, 30), GOLD, "star", GOLD,
+	{field = "Wood", rim = "Foil", glow = C(255, 220, 120), adorn = {"bands", "glowedge"}})
+sh("Scutum", "Imperial Eagle", "Legendary", PURPLE, GOLD, "sun", GOLD,
+	{fx = "gold", glow = C(255, 220, 120), field = "Fabric", rim = "Foil", wing = GOLD, adorn = {"wings", "crown", "gilded", "gem", "glowedge"}})
 
-sh("Pavise", "Town Watch", "Common", C(40, 90, 160), C(130, 100, 70), "chief", GOLD)
-sh("Pavise", "Castellan", "Rare", C(120, 120, 128), BLACK, "tower", WHITE)
-sh("Pavise", "Bulwark of Dawn", "Epic", C(250, 200, 120), C(150, 100, 60), "sun", C(255, 120, 60), {fx = "embers"})
+sh("Pavise", "Town Watch", "Common", C(40, 90, 160), C(130, 100, 70), "chief", GOLD,
+	{field = "WoodPlanks", ribbon = C(40, 90, 160), glow = GOLD, adorn = {"bands", "tassels"}})
+sh("Pavise", "Castellan", "Rare", C(120, 120, 128), BLACK, "tower", WHITE,
+	{field = "Slate", rim = "Metal", accent = C(150, 150, 160), adorn = {"merlons", "bands", "studs"}})
+sh("Pavise", "Bulwark of Dawn", "Epic", C(250, 200, 120), C(150, 100, 60), "sun", C(255, 120, 60),
+	{fx = "embers", field = "Sandstone", rim = "Foil", accent = GOLD, glow = EMBER, adorn = {"rays", "flames", "gilded"}})
 
--- THE MYTHIC: one shield everyone stops to look at
+-- THE MYTHIC: one shield everyone stops to look at: a sunburst behind it, white-gold wings,
+-- a crown, a burning gem, a rim of light
 sh("Heater", "Aegis of the First King", "Mythic", C(250, 245, 230), GOLD, "lion", GOLD,
-	{fx = "sovereign", glow = C(255, 220, 120), trail = true})
+	{fx = "sovereign", glow = C(255, 220, 120), trail = true, field = "Marble", rim = "Foil", wing = GOLD, wingMaterial = "Foil",
+		adorn = {"rays", "wings", "crown", "gilded", "studs", "gem", "glowedge"}})
 
 --------------------------------------------------------------------
 --  THROWABLES (the Quartermaster's Crate)

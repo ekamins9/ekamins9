@@ -8,7 +8,8 @@
      patterns: cross saltire chevron pale fess bend quarterly bordure chief sun star lion tower ]]
 
 local Heraldry = {}
-local DEPTH = 0.04
+local DEPTH = 0.07     -- (raised off the board: embossed, not painted)
+local EDGE = 0.07      -- the dark outline round each charge, behind it
 local TAG = "HeraldryPart"
 
 function Heraldry.clear(container)
@@ -36,30 +37,42 @@ function Heraldry.apply(container, skin)
 	local round = face:GetAttribute("FaceRound") == true
 	local frame = handle.CFrame * CFrame.new(0, Y, Z)
 	local color = h.color or Color3.new(1, 1, 1)
-	local mat = (skin.rarity == "Legendary" or skin.rarity == "Mythic") and Enum.Material.Metal or Enum.Material.SmoothPlastic
+	-- (gold-ish charges on the good ones are gold leaf; the rest enamel)
+	local rich = skin.rarity == "Epic" or skin.rarity == "Legendary" or skin.rarity == "Mythic"
+	local goldish = color.R > 0.7 and color.G > 0.55 and color.B < 0.5
+	local mat = (rich and goldish) and Enum.Material.Foil or (rich and Enum.Material.Metal or Enum.Material.SmoothPlastic)
+	local edgeColor = h.outline or color:Lerp(Color3.new(0, 0, 0), 0.7)
 	local n = 0
 	local made = {}
 	-- a bar of w × l centred at (x, y) on the board, turned `rot` degrees
-	local function bar(x, y, w, l, rot)
+	local function piece(size, cf, col, m)
 		local p = Instance.new("Part")
 		p.Name = "Arms"
-		p.Size = Vector3.new(w, l, DEPTH)
-		p.CFrame = frame * CFrame.new(x, y, 0) * CFrame.Angles(0, 0, math.rad(rot or 0))
-		p.Color, p.Material = color, mat
+		p.Size = size
+		p.CFrame = cf
+		p.Color, p.Material = col, m
 		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = false, false, false, false
 		p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 		p:SetAttribute(TAG, true)
 		p.Anchored = true
-		n += 1
 		table.insert(made, p)
 		return p
 	end
+	-- a bar of w × l centred at (x, y) on the board, turned `rot` degrees, with its outline behind
+	local function bar(x, y, w, l, rot)
+		local cf = frame * CFrame.new(x, y, 0) * CFrame.Angles(0, 0, math.rad(rot or 0))
+		piece(Vector3.new(w + EDGE, l + EDGE, DEPTH * 0.6), cf * CFrame.new(0, 0, 0.012), edgeColor, Enum.Material.SmoothPlastic)
+		n += 1
+		return piece(Vector3.new(w, l, DEPTH), cf * CFrame.new(0, 0, -0.01), color, mat)
+	end
 	-- a disc of diameter d at (x, y)
 	local function disc(x, y, d)
-		local p = bar(x, y, d, d, 0)
+		local cf = frame * CFrame.new(x, y, 0) * CFrame.Angles(0, math.rad(90), 0)
+		local back = piece(Vector3.new(DEPTH * 0.6, d + EDGE, d + EDGE), cf * CFrame.new(-0.012, 0, 0), edgeColor, Enum.Material.SmoothPlastic)
+		back.Shape = Enum.PartType.Cylinder
+		n += 1
+		local p = piece(Vector3.new(DEPTH, d, d), cf * CFrame.new(0.01, 0, 0), color, mat)
 		p.Shape = Enum.PartType.Cylinder
-		p.Size = Vector3.new(DEPTH, d, d)
-		p.CFrame = frame * CFrame.new(x, y, 0) * CFrame.Angles(0, math.rad(90), 0)
 		return p
 	end
 	local m = math.min(W, H)

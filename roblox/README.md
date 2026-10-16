@@ -541,7 +541,10 @@ opened by **class level** (1, 2, 4, 6, 8, 10, 13, 16, 19, 22 — the tenth an ul
 - MAGE · RITUALS: Arcane Familiar, Mana Surge, Time Warp, Mirror Image, Ward Dome, Spellsurge, Gravity Well, Levitate, Soul Siphon, **Starfall**
 
 The kinds: **imbue** (the weapon burns, freezes, poisons, shocks, drinks, shoves: `Powers.onMelee`
-from CombatServer's clean hit), **buff** (modifiers summed into SpeedMult_Power, TakenMult,
+from CombatServer's clean hit; **a guard stops the steel, not the magic**: on a block, a shield or
+a knocked-away guard the power's own damage, its burn / venom / frost / hex / lightning, its heal
+and a shove that staggers (Holy Smite, Cyclone Edge) all land; on a parry the magic lands at
+half and nothing shoves; the sword's damage never gets through: `Powers.onGuarded`), **buff** (modifiers summed into SpeedMult_Power, TakenMult,
 DealtMult, StaminaRegenMult, DodgeCostMult, DodgeCooldownMult, Unflinching, DrawMult,
 CastMult_Power, ManaFree — Ward, the movement, CharacterSystems, MovementServer, RangedServer
 and MagicServer read them; a barrier; an instant), **spell** (a Mage's kinds cast free by
@@ -593,9 +596,15 @@ fighting as (`Economy.addClassXP`, `p.classXP`), 250 XP to level 2, rising to 2,
 Knight-Commander…), a mastery power skin (15, 25; bound) and a Key every 5. A banner says what
 opened. The class screen shows the level, the bar and what's next.
 
-**Shields** (`Catalog ▸ Arsenal` shields; `Combat ▸ Shields`; worn just outside the left arm's armor;
-blocking raises only the shield and its arm (`RigPose`), the weapon keeping its guard: no block clip
-with a shield, CombatClient): Buckler, Targe, Round Shield,
+**Shields** (`Catalog ▸ Arsenal` shields; `Combat ▸ Shields`): strapped to the LEFT ARM (welded to
+it, against its armor, so it goes wherever the arm goes); blocking brings the arm across the chest
+(`RigPose` SHIELD_RAISE / SHIELD_ACROSS) and the shield turns upright on it, just in front of you
+(the weld's IdleC0 / BlockC0, in the arm's frame); the weapon keeps its guard (no block clip with a
+shield, CombatClient). **Their skins are things of their own** (`Catalog ▸ ArsenalSkins`): a board
+material and a rim material, arms raised and outlined (`Heraldry`), and ornaments built onto the
+shield following its outline (`ReplicatedStorage ▸ ShieldDress`: studs, a gilded edge, a glowing
+edge, a boss, a gem, a spike, thorns, wings, a crown, a sunburst behind it, horns, hanging
+feathers, vines, runes, iron bands, ribbons, battlements, flames). Buckler, Targe, Round Shield,
 Heater, Spiked Shield, Kite, Scutum, Tower Pavise, unlocked by level or bought with Marks like
 any weapon. Worn on the left arm (a copy of the Tool's body), raised in front of you on every
 screen while you block; a GuardHull in front of you is there to blades only while you block.

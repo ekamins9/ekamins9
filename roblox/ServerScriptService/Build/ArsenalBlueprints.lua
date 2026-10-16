@@ -13,8 +13,10 @@ return function(W, B)
 	local cf, v = B.cf, B.v
 	local RIM = {SkinPart = "Grip"}
 	-- the main board: where Heraldry paints (its size and where its front is, in the Handle's frame)
-	local function FACE(w, h, y, z, isRound)
-		return {SkinPart = "Blade", ShieldFace = true, FaceW = w, FaceH = h, FaceY = y, FaceZ = z, FaceRound = isRound or nil}
+	-- (shape: the board's outline, for a skin's ornaments to follow: ReplicatedStorage ▸ ShieldDress)
+	local function FACE(w, h, y, z, isRound, shape)
+		return {SkinPart = "Blade", ShieldFace = true, FaceW = w, FaceH = h, FaceY = y, FaceZ = z, FaceRound = isRound or nil,
+			FaceShape = shape or (isRound and "round") or "rect"}
 	end
 	local BOARD = {SkinPart = "Blade"}
 
@@ -65,7 +67,7 @@ return function(W, B)
 	-- behind the top board)
 	W.Heater = function()
 		local out = grip()
-		table.insert(out, B.box("Face", v(2.3, 1.55, 0.14), cf(0, 0.55, -0.3), C.CLOTH, M.WOOD, FACE(2.3, 2.6, 0.05, -0.37)))
+		table.insert(out, B.box("Face", v(2.3, 1.55, 0.14), cf(0, 0.55, -0.3), C.CLOTH, M.WOOD, FACE(2.3, 2.6, 0.05, -0.37, false, "heater")))
 		table.insert(out, B.box("Point", v(1.63, 1.63, 0.14), cf(0, -0.2, -0.29, 0, 0, 45), C.CLOTH, M.WOOD, BOARD))
 		table.insert(out, B.box("Rim", v(2.42, 0.12, 0.18), cf(0, 1.34, -0.3), C.IRON, M.METAL, RIM))
 		for _, s in ipairs({-1, 1}) do
@@ -76,7 +78,7 @@ return function(W, B)
 	W.Kite = function()
 		local out = grip()
 		table.insert(out, B.cyl("Crown", 2.2, 0.14, cf(0, 0.75, -0.31, 90, 0, 0), C.CLOTH, M.WOOD, BOARD))
-		table.insert(out, B.box("Face", v(2.2, 1.3, 0.14), cf(0, 0.15, -0.3), C.CLOTH, M.WOOD, FACE(2.0, 3.2, 0.1, -0.38)))
+		table.insert(out, B.box("Face", v(2.2, 1.3, 0.14), cf(0, 0.15, -0.3), C.CLOTH, M.WOOD, FACE(2.0, 3.2, 0.1, -0.38, false, "kite")))
 		table.insert(out, B.box("Point", v(1.56, 1.56, 0.14), cf(0, -0.9, -0.29, 0, 0, 45), C.CLOTH, M.WOOD, BOARD))
 		table.insert(out, B.ball("Boss", 0.4, cf(0, 0.3, -0.4), C.STEEL, M.METAL, RIM))
 		return out
@@ -84,7 +86,7 @@ return function(W, B)
 	-- the scutum: a tall board bent round you (a middle panel and two angled sides)
 	W.Scutum = function()
 		local out = grip()
-		table.insert(out, B.box("Face", v(1.3, 3.6, 0.14), cf(0, 0, -0.32), C.RED, M.WOOD, FACE(1.3, 3.4, 0, -0.39)))
+		table.insert(out, B.box("Face", v(1.3, 3.6, 0.14), cf(0, 0, -0.32), C.RED, M.WOOD, FACE(1.3, 3.4, 0, -0.39, false, "scutum")))
 		for _, s in ipairs({-1, 1}) do
 			table.insert(out, B.box("Side", v(0.75, 3.6, 0.14), cf(s * 0.98, 0, -0.18, 0, s * -28, 0), C.RED, M.WOOD, BOARD))
 			table.insert(out, B.box("Rim", v(0.08, 3.7, 0.18), cf(s * 1.32, 0, -0.02, 0, s * -28, 0), C.BRASS, M.METAL, RIM))
@@ -95,7 +97,7 @@ return function(W, B)
 	end
 	W.Pavise = function()
 		local out = grip()
-		table.insert(out, B.box("Face", v(2.6, 4.0, 0.2), cf(0, 0.2, -0.32), C.CLOTH, M.WOOD, FACE(2.5, 3.9, 0.2, -0.55)))
+		table.insert(out, B.box("Face", v(2.6, 4.0, 0.2), cf(0, 0.2, -0.32), C.CLOTH, M.WOOD, FACE(2.5, 3.9, 0.2, -0.55, false, "rect")))
 		table.insert(out, B.box("Ridge", v(0.42, 4.0, 0.14), cf(0, 0.2, -0.47), C.CLOTH, M.WOOD, BOARD))
 		for _, s in ipairs({-1, 1}) do
 			table.insert(out, B.box("Rim", v(0.12, 4.1, 0.24), cf(s * 1.3, 0.2, -0.32), C.IRON, M.METAL, RIM))

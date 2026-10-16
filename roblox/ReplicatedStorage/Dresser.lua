@@ -503,13 +503,15 @@ end
 -- real Tool on the server (or a preview copy): tint SkinPart parts (or swap
 -- in the skin model's parts around the Handle), then build the skin's trim —
 -- the parts that change the weapon's shape (SkinTrims)
-local Heraldry
+local Heraldry, ShieldDress
 function Dresser.applySkin(tool, skinId, variant)
 	local skin = skinId and Catalog.SKIN[skinId]
 	SkinTrims.clear(tool)
 	SkinFX.clear(tool)
 	Heraldry = Heraldry or require(script.Parent:WaitForChild("Heraldry"))
+	ShieldDress = ShieldDress or require(script.Parent:WaitForChild("ShieldDress"))
 	Heraldry.clear(tool)   -- (a shield's arms: ReplicatedStorage ▸ Heraldry)
+	ShieldDress.clear(tool)   -- (and its dress: materials put back, ornaments gone)
 	-- (whatever the last skin hid, a staff's plain claws and orb, comes back first)
 	for _, p in ipairs(tool:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
@@ -559,6 +561,8 @@ function Dresser.applySkin(tool, skinId, variant)
 	if SkinTrims.apply(tool, skin) then n += 1 end
 	if SkinFX.apply(tool, skin, variant) then n += 1 end
 	if skin.heraldry and Heraldry.apply(tool, skin) then n += 1 end
+	-- a shield skin's materials and ornaments (wings, a crown, a sunburst…: ReplicatedStorage ▸ ShieldDress)
+	if (skin.adorn or skin.field or skin.rim) and ShieldDress.apply(tool, skin) then n += 1 end
 	return n > 0
 end
 
@@ -593,11 +597,14 @@ function Dresser.attachWeapon(rig, weaponId, skinId, variant)
 	return true
 end
 
--- preview rig: a SHIELD on the left arm, as a body wears it (Combat ▸ Shields' idle place)
-local SHIELD_IDLE = CFrame.new(-2.05, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)   -- (outside the arm's armor)
+-- preview rig: a SHIELD strapped to the left arm, as a body wears it (Combat ▸ Shields' idle
+-- place, in the arm's frame: against the arm's armor)
+local SHIELD_IDLE = CFrame.new(-0.35, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
 function Dresser.attachShield(rig, shieldId, skinId)
 	local old = rig:FindFirstChild("ShieldPreview"); if old then old:Destroy() end
-	local torso = rig:FindFirstChild("Torso")
+	local torso = rig:FindFirstChild("Left Arm")
+	local at = SHIELD_IDLE
+	if not torso then torso, at = rig:FindFirstChild("Torso"), CFrame.new(-1.5, 0, 0) * SHIELD_IDLE end
 	local t = shieldId and Catalog.weaponModel(shieldId)
 	if not (torso and t) then return false end
 	local m = t:Clone()
@@ -608,7 +615,7 @@ function Dresser.attachShield(rig, shieldId, skinId)
 		if p:IsA("BasePart") then
 			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
 			local w = Instance.new("Weld"); w.Part0, w.Part1 = torso, p
-			w.C0 = SHIELD_IDLE * (p == handle and CFrame.identity or handle.CFrame:ToObjectSpace(p.CFrame))
+			w.C0 = at * (p == handle and CFrame.identity or handle.CFrame:ToObjectSpace(p.CFrame))
 			w.Parent = p
 		end
 	end

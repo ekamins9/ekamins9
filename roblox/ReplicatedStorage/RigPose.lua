@@ -263,10 +263,11 @@ function RigPose.calm(char, inputs)
 	return out
 end
 
--- A SHIELD UP: while you block with one (ShieldId, Blocking) its arm comes up before you, the
--- hand behind the board (the shield itself rises on its own weld: Powers.client); the weapon
--- keeps its guard (CombatClient plays no block clip with a shield). Eased in and out per body.
-local SHIELD_RAISE, SHIELD_ACROSS = 1.05, 0.5
+-- A SHIELD UP: while you block with one (ShieldId, Blocking) its arm comes up across your
+-- chest, the outside of the forearm facing forward, and the shield strapped to it turns upright
+-- on it (its weld: Combat ▸ Shields, Powers.client); the weapon keeps its guard (CombatClient
+-- plays no block clip with a shield). Eased in and out per body.
+local SHIELD_RAISE, SHIELD_ACROSS = 1.4, 1.2
 local shieldUp = setmetatable({}, {__mode = "k"})
 local function shieldArm(char, target)
 	if not char:GetAttribute("ShieldId") then shieldUp[char] = nil; return target end
