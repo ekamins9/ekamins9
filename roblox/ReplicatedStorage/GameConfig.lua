@@ -50,6 +50,8 @@ GameConfig.DOORS = {
 	-- matchmade: a public server for that mode (HubServer)
 	Depths    = {name = "The Depths", mode = "Depths",  access = "Friends", maxPlayers = 4, party = true, page = 2,
 		blurb = "A dungeon built fresh every run. Three floors, chests, relics, a boss at the bottom."},
+	Crownfall = {name = "Crownfall", mode = "Crownfall", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
+		blurb = "A battle royale on an island built fresh every match. Drop in, loot, outlast the ring."},
 	Kingslayer = {name = "Kingslayer", mode = "Kingslayer", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
 		blurb = "Take the crown. Kill the king to be the king. Hold it to win."},
 	Plague    = {name = "Plague Night", mode = "Plague", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
@@ -58,7 +60,7 @@ GameConfig.DOORS = {
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
-GameConfig.ADVENTURE_ORDER = {"Depths", "Invasion", "Kingslayer", "Plague"}
+GameConfig.ADVENTURE_ORDER = {"Depths", "Crownfall", "Invasion", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -133,6 +135,13 @@ GameConfig.MODES = {
 		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,
 	},
+	-- CROWNFALL (Game ▸ Modes ▸ Crownfall): a battle royale on an island built fresh (Game ▸ Realm)
+	Crownfall = {
+		name = "Crownfall", category = "Adventure", teams = 0, maxPlayers = 16, minPlayers = 1,
+		description = "Drop onto an island built fresh every match with only a plain weapon. Loot its chests for weapons, armour, potions and tomes; the ring of fire closes in. Last one standing takes the crown.",
+		maps = {"Crownlands"}, procedural = true,
+		roundLength = 10 * 60, intermission = 15, respawnDelay = 0, hidden = true, botFill = 12, fillAnywhere = true,
+	},
 	-- KINGSLAYER (Game ▸ Modes ▸ Kingslayer): everyone against the King
 	Kingslayer = {
 		name = "Kingslayer", category = "Adventure", teams = 0, maxPlayers = 16, minPlayers = 1,
@@ -190,6 +199,7 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
 	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
+	Crownlands = "The Crownlands",
 	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 

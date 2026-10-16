@@ -178,10 +178,11 @@ end
 function Loot.tome(classId, luck)
 	local r = Loot.rarity(luck)
 	local pool = {}
-	for _, p in ipairs(Catalog.POWERS or {}) do
+	local all = (Catalog.POWERS and Catalog.POWERS.list) or {}
+	for _, p in ipairs(all) do
 		if not p.throw and p.class and math.abs((CFG.RANK[CFG.TOME_RARITY(p.level or 1)] or 1) - (CFG.RANK[r.id] or 1)) <= 1 then table.insert(pool, p) end
 	end
-	if #pool == 0 then for _, p in ipairs(Catalog.POWERS or {}) do if not p.throw and p.class then table.insert(pool, p) end end end
+	if #pool == 0 then for _, p in ipairs(all) do if not p.throw and p.class then table.insert(pool, p) end end end
 	if #pool == 0 then return nil end
 	local p = pool[math.random(#pool)]
 	return {kind = "tome", uid = uid(), power = p.id, rarity = CFG.TOME_RARITY(p.level or 1), name = "Tome of " .. (p.name or p.id)}
@@ -281,7 +282,7 @@ function Loot.card(item)
 		c.glyph = p and p.glyph or "📖"
 		c.power = item.power
 		table.insert(c.lines, "Your power becomes " .. ((p and p.name) or item.power))
-		if p and p.description then table.insert(c.lines, p.description) end
+		if p and (p.desc or p.description) then table.insert(c.lines, p.desc or p.description) end
 	elseif item.kind == "potion" then
 		local p = CFG.POTION[item.potion]
 		c.sub = r.id .. " potion"

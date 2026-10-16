@@ -1713,6 +1713,23 @@ Three floors; floor 3 ends in the theme's boss.
   boss bar (any Boss near you, the Horde's Warlord too), banners and the fade going down. Objectives
   steps aside for an OwnHud mode.
 
+### Crownfall (`Game ▸ Modes ▸ Crownfall`, `Game ▸ Realm`)
+A battle royale for up to 16, bots filling the rest (`fillAnywhere`). **The island is built fresh
+every match** (`Realm.build`): terrain (grass on a beach in a sea, round hills, dirt roads to the
+middle), the Crown Keep (walls, towers, arched gates, a hall, banners), villages, a mill, watchtowers,
+camps, a chapel with graves, ruins, each with a name and chests; forests and rocks between.
+- **The drop**: a few seconds in, everyone comes down out of the sky under a canopy (steer where
+  you land) as their class with only a plain weapon (no power, no throwable). Bots wait for it.
+- **Chests** spill three things for whoever opens them (`Catalog ▸ Loot` CHESTS.crownfall, rolled for
+  the opener's class): weapons (rarity, skin, affixes), armour (`Loot.setArmor`: less damage taken,
+  more health), potions (drunk on the spot), tomes (a power), relics. A new weapon or armour takes
+  its slot and drops the old one. Whoever falls drops what they found.
+- **The ring of fire** closes in phases (`RING`: wait, shrink, tighter, hotter); outside it you burn
+  (the Burning look). Bots head into the next ring when they're outside it (`botOpts`, BotFill's hook).
+- No respawns; the last one standing wins (`stats.crownfallWins`).
+- HUD: how many are left, the ring's clock, the island map (its places, the ring, the next ring,
+  you), the place you're in. Vote picture: MapShots ▸ Crownlands.
+
 ### Invasions (`Game ▸ Modes ▸ Invasion`, on the Horde's rules)
 Four themed hordes behind one door (the tile asks which army): `InvGoblin`, `InvElf`, `InvUndead`,
 `InvOrc` in `GameConfig.MODES`, all `impl = "Invasion"` (Game.load takes a mode's module from

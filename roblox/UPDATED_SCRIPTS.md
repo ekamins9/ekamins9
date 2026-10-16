@@ -1,4 +1,38 @@
-# Updated scripts: Kingslayer (kill the king to be the king) and Plague Night (the fallen rise as ghouls)
+# Updated scripts: Crownfall — a battle royale on an island built fresh every match
+
+- **CROWNFALL** (PLAY ▸ ADVENTURES):
+  - Every match a new island: grass, hills, a beach and the sea; the Crown Keep in the middle; villages, a mill, watchtowers, camps, a chapel, ruins, each with its name and chests; forests between.
+  - **The drop**: everyone glides down out of the sky under a canopy, as their class with a plain weapon.
+  - **Loot** in the chests: weapons (rarities, skins, affixes), armour, potions, tomes (a power), relics. A better weapon or armour swaps in and drops the old one. The fallen drop everything they found.
+  - **The ring of fire** closes in five phases, each tighter and hotter. Outside it, you burn.
+  - Bots fill the island, wait for the drop, and head into the ring.
+  - Last one standing wins.
+- The island map on screen: its places, the ring and the next ring, you; the place you're in beside the ring's clock.
+- **Fixed on the way**: tomes never rolled (the powers list is `Catalog.POWERS.list`). The Depths' chests now offer them too.
+- Vote picture: MapShots ▸ Crownlands (**save the place**).
+- **Checked in Play**:
+  - the island (about 2,900 parts, built in about 4 s);
+  - the drop and the glide;
+  - the bots waiting for it;
+  - finds (a weapon with a skin and affixes, Kingsguard armour, a tome's power);
+  - the ring closing; the map, the HUD.
+- **Not checked yet**:
+  - a whole match to the last one standing;
+  - a chest opened by hand (the same chest code as The Depths);
+  - with other players.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Realm.lua](ServerScriptService/Game/Realm.lua), [Modes/Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) (new) | ServerScriptService ▸ Game | ModuleScript | the island; the mode |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | a mode's `botOpts` |
+| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | tomes from the powers list |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the mode, its door, its map title |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the island map, the place you're in |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Kingslayer (kill the king to be the king) and Plague Night (the fallen rise as ghouls)
 
 - **KINGSLAYER** (PLAY ▸ ADVENTURES):
   - The crown appears in the middle of the field. Take it and you're the King: crowned, glowing gold through walls, much tougher, hunted by everyone.

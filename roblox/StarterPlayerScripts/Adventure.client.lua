@@ -195,6 +195,7 @@ mapArea.Size = UDim2.new(1, -16, 1, -30)
 mapArea.Parent = mapPanel
 
 local layout = nil
+local placeName = nil
 local seen, visited = {}, {}
 local roomFrames, dots = {}, {}
 local bounds = nil
@@ -207,10 +208,51 @@ local function toMap(x, z)
 	return UDim2.fromOffset(ox + (x - bounds.x0) * s, oy + (z - bounds.z0) * s), s
 end
 local STATE_COL = {sealed = Color3.fromRGB(70, 74, 90), fight = Color3.fromRGB(210, 60, 60), clear = Color3.fromRGB(64, 92, 140)}
+-- an island (Crownfall): its shape, its places, the ring and the next one
+local ringNow, ringNext
+local function circleFrame(color, fillT, strokeColor)
+	local f = frame(mapArea, color, fillT)
+	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0.5, 0); c.Parent = f
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	if strokeColor then stroke(f, strokeColor, 2, 0) end
+	return f
+end
+local function drawRealm()
+	local R = layout.radius or 300
+	bounds = {x0 = -R - 12, z0 = -R - 12, w = 2 * R + 24, h = 2 * R + 24}
+	mapTitle.Text = "CROWNFALL"
+	local pos, sc = toMap(0, 0)
+	local island = circleFrame(Color3.fromRGB(70, 110, 60), 0)
+	island.Position = pos; island.Size = UDim2.fromOffset(2 * R * sc, 2 * R * sc)
+	for _, poi in ipairs(layout.pois or {}) do
+		local d = frame(mapArea, Color3.fromRGB(230, 220, 190), 0, 3)
+		d.AnchorPoint = Vector2.new(0.5, 0.5)
+		d.Position = toMap(poi.x, poi.z)
+		d.Size = UDim2.fromOffset(5, 5)
+		d.ZIndex = 3
+		local t = text(mapArea, string.upper(poi.name), 8, Color3.fromRGB(240, 236, 220), FONT)
+		t.AnchorPoint = Vector2.new(0.5, 0)
+		local pp = toMap(poi.x, poi.z)
+		t.Position = UDim2.fromOffset(pp.X.Offset, pp.Y.Offset + 3)
+		t.Size = UDim2.fromOffset(80, 10)
+		t.ZIndex = 3
+	end
+	ringNow = circleFrame(Color3.new(1, 1, 1), 1, Color3.fromRGB(255, 120, 40)); ringNow.ZIndex = 4
+	ringNext = circleFrame(Color3.new(1, 1, 1), 1, Color3.fromRGB(255, 255, 255)); ringNext.ZIndex = 4
+end
+local function placeOn(f, c, r)
+	if not (f and typeof(c) == "Vector3" and r) then if f then f.Visible = false end; return end
+	local pos, sc = toMap(c.X, c.Z)
+	f.Visible = true
+	f.Position = pos
+	f.Size = UDim2.fromOffset(2 * r * sc, 2 * r * sc)
+end
 local function drawMap()
 	for _, c in ipairs(mapArea:GetChildren()) do c:Destroy() end
 	roomFrames, dots = {}, {}
+	ringNow, ringNext = nil, nil
 	if not layout then return end
+	if layout.kind == "realm" then drawRealm(); return end
 	local x0, z0, x1, z1 = math.huge, math.huge, -math.huge, -math.huge
 	for _, r in pairs(layout.rooms) do
 		x0 = math.min(x0, r.cx - r.w / 2); x1 = math.max(x1, r.cx + r.w / 2)
@@ -259,7 +301,7 @@ local function refreshRoom(id)
 	rf.frame.BackgroundTransparency = visited[id] and 0 or 0.45
 end
 local function see(id)
-	if not layout or not layout.rooms[id] then return end
+	if not (layout and layout.rooms and layout.rooms[id]) then return end
 	local changed = not visited[id]
 	visited[id] = true
 	seen[id] = true
@@ -273,7 +315,7 @@ local function see(id)
 	end
 end
 local function roomAt(pos)
-	if not layout then return nil end
+	if not (layout and layout.rooms) then return nil end
 	for id, r in pairs(layout.rooms) do
 		if math.abs(pos.X - r.cx) <= r.w / 2 and math.abs(pos.Z - r.cz) <= r.d / 2 then return id end
 	end
@@ -573,8 +615,9 @@ if event then
 				drawMap()
 				for id in pairs(roomFrames) do refreshRoom(id) end
 			end)
+			placeName = nil
 		elseif kind == "Room" then
-			if layout and data and layout.rooms[data.id] then
+			if layout and layout.rooms and data and layout.rooms[data.id] then
 				layout.rooms[data.id].state = data.state
 				refreshRoom(data.id)
 			end
@@ -647,7 +690,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if not own then showTip(false) end
 	if own then
 		runLabel.Text = round:GetAttribute("ObjLabel") or ""
-		runNote.Text = round:GetAttribute("ObjNote") or ""
+		runNote.Text = (round:GetAttribute("ObjNote") or "") .. (placeName and ("  ·  📍 " .. string.upper(placeName)) or "")
 		-- the chip: a mode's word for you (your crown points, your side), else the run's gold
 		local chip = player:GetAttribute("AdvChip")
 		if chip then goldText.Text = chip; goldChip.Size = UDim2.fromOffset(170, 36)
@@ -681,6 +724,16 @@ RunService.RenderStepped:Connect(function(dt)
 			local id = roomAt(hrp.Position)
 			if id then see(id) end
 			for rid, rf in pairs(roomFrames) do rf.stroke.Transparency = (rid == id) and 0 or 1 end
+			-- an island: the ring, the next ring, the place you're in
+			if layout.kind == "realm" then
+				placeOn(ringNow, round:GetAttribute("RingCentre"), round:GetAttribute("RingRadius"))
+				placeOn(ringNext, round:GetAttribute("RingNextCentre"), round:GetAttribute("RingNextRadius"))
+				local here
+				for _, poi in ipairs(layout.pois or {}) do
+					if (Vector3.new(poi.x, 0, poi.z) - Vector3.new(hrp.Position.X, 0, hrp.Position.Z)).Magnitude < (poi.r or 25) + 6 then here = poi.name end
+				end
+				placeName = here
+			end
 		end
 		local live = {}
 		for _, p in ipairs(Players:GetPlayers()) do

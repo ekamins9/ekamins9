@@ -218,6 +218,11 @@ local function spawnOne(team)
 			end
 		end,
 	}
+	-- (the mode's say in its bots: Crownfall's wait for the drop and keep inside the ring)
+	if Game.current and Game.current.botOpts then
+		local okM, errM = pcall(Game.current.botOpts, Game.current, opts)
+		if not okM then warn("[BotFill] botOpts:", errM) end
+	end
 	if BotFill.override and BotFill.override.dress then
 		local okD, err = pcall(BotFill.override.dress, opts, kind or cls or skill)
 		if not okD then warn("[BotFill] dress:", err) end
