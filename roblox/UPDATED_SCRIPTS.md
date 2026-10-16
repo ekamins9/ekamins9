@@ -1,4 +1,18 @@
-# Updated scripts: spoils of war in the Invasions; no stray team scores
+# Updated scripts: dawn burns the dead; the dragon's last flight
+
+- **Plague Night**: when the clock runs out with anyone living, the sun comes up and the dead burn away where they stand.
+- **Dragonfall**: at a fifth of its health left (enraged), Cindermaw takes to the sky one last time: man the ballistae again to bring it down for good.
+- **Checked in Play**: the dragon enraged at a third, took off again at 18%, the ballistae lit up, three bolts crashed it; compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Plague.lua](ServerScriptService/Game/Modes/Plague.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | dawn burns the dead away |
+| [Dragon.lua](ServerScriptService/Combat/Dragon.lua) | ServerScriptService ▸ Combat | ModuleScript | a last flight near the end |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: spoils of war in the Invasions; no stray team scores
 
 - **Invasions: spoils of war.** Every third wave beaten, a gilded chest stands by what you defend, one for each of you: a relic rolled for your class (better the deeper you are) that stays yours for the whole run (it comes back with you after a fall), and a healing draught.
 - **No more "CROWN 0 — 0 IRON"** on top of Plague Night: a mode with its own HUD hides the team score row.
@@ -39,30 +53,3 @@
 | [README.md](README.md) | | doc | |
 
 Studio-only: ReplicatedStorage ▸ MapShots ▸ Caldera (the vote picture) — save the place to keep it.
-
----
-
-## Before that: Plague Night rebuilt, a King everyone hunts, royal caches, darker raids
-
-- **Plague Night: the dead never come from one place.** Each ghoul claws up out of the ground (grave-mist, broken earth) on open ground 45–80 studs from someone living, inside the town, never on a roof or inside anything; a turned player rises where they fell. Before, every ghoul and every turned player came in at the plague side's spawns, all in one spot.
-  - **The dead surge** every 70 seconds from all sides at once.
-  - **Worse things as the night deepens**: Plague Runners (quick), Bloaters (they burst green when they fall), Plague Brutes (huge). New Bestiary entries; a monster's `burst` colours its blast.
-  - **Lanterns** on the living; the last of them **stands alone** (mended, +50 health, quicker).
-  - **Toward dawn**: the sky pales and the mist lifts as the clock runs (the map's Atmosphere too, put back at the end).
-- **Kingslayer: everyone against the King.** Bots within 110 studs of the King go for them; the crown on the ground draws the bots. A long reign burns brighter and the field hears of it every 30 seconds.
-- **Crownfall: royal caches.** As each of the first three rings closes, a gilded chest falls out of the sky under a canopy inside the next ring, with a gold flare over it till it's opened: four things rolled with a king's luck.
-- **Deadvault: darker and lived-in.** Every raid room gets cracks, rubble, cobwebs strung where wall meets ceiling, damp streaks, puddles, chains or a hanging cage, bones, guttering candles and dust drifting in the torchlight. The raid's light is dimmer (less ambient and sky light, a thicker haze). Fire lights now **flicker** (new TorchFlicker client script), in the dungeons and the Gilded Rat.
-- **Checked in Play**: Plague on Millfield (ghouls came up 45–120 studs out on all sides, villagers fought them, a Bloater turned up, the night lightened on schedule); Kingslayer (with the player crowned, the bots within reach closed from 64 studs to 3–7 in 20 seconds); Crownfall (a cache fell from 130 studs in 9 seconds and became an openable Royal cache); Deadvault (raid built in about 6 seconds, every room dressed); compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Plague.lua](ServerScriptService/Game/Modes/Plague.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | spawns out of the ground round the living, surges, kinds, lanterns, last stand, dawn |
-| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Plague Runner, Bloater, Plague Brute; `burst` |
-| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | an explode's colour from `burst` |
-| [Kingslayer.lua](ServerScriptService/Game/Modes/Kingslayer.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | bots hunt the King; a long reign burns brighter |
-| [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | royal caches |
-| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | raid grime, hanging cages, new cobwebs, darker raid light, flickering fire lights |
-| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | resets the sky light scales between maps |
-| [TavernMap.lua](ServerScriptService/Game/TavernMap.lua) | ServerScriptService ▸ Game | ModuleScript | its fires flicker |
-| [TorchFlicker.client.lua](StarterPlayerScripts/TorchFlicker.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [README.md](README.md) | | doc | |

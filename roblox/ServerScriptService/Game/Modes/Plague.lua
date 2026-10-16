@@ -429,6 +429,17 @@ end
 function Plague:result()
 	if self:living() > 0 then
 		self:teamResult("A")
+		-- the sun comes up and the dead burn away where they stand
+		Lighting.ClockTime, Lighting.Brightness = 6.2, 2
+		for m in pairs(self.mobs or {}) do
+			local r = m.alive and m.bot and m.bot.hrp
+			if r then
+				Monsters.burst(r.Position, Color3.fromRGB(255, 190, 90), 24, 8)
+				Monsters.ring(r.Position - Vector3.new(0, 2.8, 0), 6, Color3.fromRGB(255, 170, 70), 0.6)
+			end
+			pcall(Monsters.despawn, m)
+		end
+		self.mobs = {}
 		return string.format("DAWN BREAKS  ·  %d OF THE LIVING HELD OUT", self:living())
 	end
 	self:teamResult("B")

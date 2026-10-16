@@ -21,7 +21,8 @@
      fireballs at each of you, and its brood called up out of the lava; BALLISTAE bring it down
      (enough bolts and it CRASHES, DOWNED for a while: everyone strike). Under a third it is
      ENRAGED: quicker, the caldera rains fire, and now and then it rises over the middle and
-     breathes INFERNO over everything — only the ward stones shelter you. ]]
+     breathes INFERNO over everything — only the ward stones shelter you. Near the end (a fifth
+     left) it takes to the sky ONE LAST TIME: the ballistae again. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -986,6 +987,13 @@ function Dragon:brain()
 		if s == "ground" then
 			if frac <= 0.66 and not self.flown then
 				self.flown = true
+				self.busy = true
+				local ok, err = pcall(self.takeOff, self)
+				if not ok then warn("[Dragon] take off", err); self:setState("sky") end
+				self.busy = false
+			elseif frac <= 0.2 and self.enraged and not self.flownAgain then
+				-- one last time into the sky (the ballistae again)
+				self.flownAgain = true
 				self.busy = true
 				local ok, err = pcall(self.takeOff, self)
 				if not ok then warn("[Dragon] take off", err); self:setState("sky") end

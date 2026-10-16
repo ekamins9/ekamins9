@@ -1883,7 +1883,8 @@ You and your party (1 – 6, a party door like the Depths) against **Cindermaw, 
   past the first) and it **crashes**, downed for 9 s (it takes 50% more). Under **a third** it's
   **enraged**: quicker, fire rains, and every 40 s it rises over the middle for an **Inferno**:
   whoever its fire can see is burned; behind a ward stone you're sheltered (the stones light up
-  and are marked while it winds up).
+  and are marked while it winds up). At **a fifth** left it takes to the sky one last time: the
+  ballistae again.
 - **Its look on your screen** (`Dragon.client`): the server only moves its root and sets
   attributes (`DragonState`, `Fly`, `Jaw`, `Rear`, `Look`, `Breath`, `BreathYaw`, the `Snap` /
   `Swipe` / `Tail` / `Buffet` counters, `Reel`, `Downed`, `Enraged`, `Dead`); the client turns its
@@ -1927,6 +1928,8 @@ town. A ghoul sees the living near it outlined through walls.
   when they fall: stand clear), Plague Brutes after two fifths (huge, mending, enraged; a few at once).
 - **The living carry a lantern's glow**; the last of them **stands alone** (mended, +50 health,
   quicker, and everyone's told).
+- **Dawn**: when the clock runs out with anyone living, the sun comes up and the dead burn away
+  where they stand.
 - **Toward dawn**: the clock is the night. The sky pales, the mist thins, the fog lifts (the map's
   Atmosphere too: it's thickened to a night mist at the start and put back at the end).
 
