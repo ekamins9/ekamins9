@@ -1,4 +1,33 @@
-# Updated scripts: the dungeon game looks like the rest of the game, our own prompts, clear ways out, no battle class screen
+# Updated scripts: the Siege of Stormwatch, a new player's first battle
+
+- **A brand-new player starts in a battle**: a dark, stormy night, the Iron Host at the gate of Stormwatch. They learn every move in the middle of it: swing, stab and overhead on raiders over the wall, dodging trebuchet fire, block / parry / riposte against a raider through the breach, kicking a brute's guard open, running the gauntlet of arrows to the gate, holding the gate beside the garrison, and a duel with Lord Varg, the Host's champion.
+- **Cutscenes**: the opening (the storm, the camp, a fireball into a tower, Captain Hale), the ram breaking the gate, Lord Varg's entrance, dawn and the King's riders. Black bars, a flying camera, subtitles, title cards; any of them can be skipped.
+- **The war all round you** (new WarFX): rain that stops under a roof, lightning and thunder, volleys of arrows arcing over the walls and sticking in the cobbles, trebuchet fire and its blasts, war cries, the battle's roar and its own score.
+- **The screen**: a lesson card in your own controls, the captain's lines, a beacon over where to go (and an edge arrow when it's behind you), M to pause or skip, an end card with a welcome purse (300 Marks, 250 XP, once).
+- **Fixes found while testing**: the over-the-shoulder camera pressed against a wall showed the inside of your own helmet (it now hides the head, CameraRig); a dungeon panel showed empty in other modes with their own HUD; the scoreboard strip doubled up over a mode's own top.
+- **Checked in Play**: the whole story start to finish (each lesson's signal, the bombardment hurting and knocking back, the breach, the battle with the garrison, Varg's boss bar, dawn, the end card and its purse); every touched script compiled in Studio.
+- **Studio-only (save the place)**: ReplicatedStorage ▸ WarAudio (the sounds), ServerStorage ▸ PrologueProps ▸ Trebuchet.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Prologue.lua](ServerScriptService/Game/Modes/Prologue.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
+| [StormwatchMap.lua](ServerScriptService/Game/StormwatchMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | new |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS / MODES Prologue, Stormwatch |
+| [Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the prologue's purse |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | a newcomer's training is the Prologue |
+| [Intro.client.lua](StarterPlayerScripts/Intro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a newcomer goes straight to the siege |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | no helmet-inside view against walls |
+| [Music.client.lua](StarterPlayerScripts/Music.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `_G.OwnScore` |
+| [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | hides for a cutscene |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `OwnTop` |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | its panel only in the dungeon |
+| [README.md](README.md) | | doc | the Siege of Stormwatch |
+
+---
+
+## Before that: the dungeon game looks like the rest of the game, our own prompts, clear ways out, no battle class screen
 
 - **The dungeon lobby wears the game's look**: FredokaOne headings, Gotham type, outlined white text, dark-glass rounded panels, chunky glossy buttons, a blue pill under the chosen tab, with Dark and Darker's layouts and a gold accent. The raid's own screens (DarkUI) follow.
 - **Nobody is naked**: a mannequin's empty armour slot takes its class's plain piece. The PLAY scene shows your party standing before the table, facing you, lit warm.
@@ -41,18 +70,4 @@
 |---|---|---|---|
 | [Plague.lua](ServerScriptService/Game/Modes/Plague.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | dawn burns the dead away |
 | [Dragon.lua](ServerScriptService/Combat/Dragon.lua) | ServerScriptService ▸ Combat | ModuleScript | a last flight near the end |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: spoils of war in the Invasions; no stray team scores
-
-- **Invasions: spoils of war.** Every third wave beaten, a gilded chest stands by what you defend, one for each of you: a relic rolled for your class (better the deeper you are) that stays yours for the whole run (it comes back with you after a fall), and a healing draught.
-- **No more "CROWN 0 — 0 IRON"** on top of Plague Night: a mode with its own HUD hides the team score row.
-- **Checked in Play**: an Invasion (Goblin Raid) with the wave set to 3: the spoils chest stood by the hoard, two openings gave two relics, and they were back on after dying and coming back; compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Invasion.lua](ServerScriptService/Game/Modes/Invasion.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | spoils of war |
-| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no team scores under an OwnHud |
 | [README.md](README.md) | | doc | |

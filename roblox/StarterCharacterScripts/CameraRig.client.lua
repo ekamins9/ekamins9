@@ -534,6 +534,7 @@ local CAM = Enum.RenderPriority.Camera.Value
 -- unique per copy: an older camera script unbinding "FPRig" can't take this loop away
 local LOOP_NAME = "CameraRig_" .. VERSION .. "_" .. tostring(math.random(1, 1e9))
 local lastLoopError = 0
+local wasSqueezed = false
 local function loopBody(dt)
 	if not (Neck.Parent and RootJoint.Parent) then return end
 	local a   = math.clamp(dt*BEND_SPEED, 0, 1)
@@ -806,9 +807,20 @@ local function loopBody(dt)
 	end
 	Humanoid.CameraOffset = Vector3.zero
 
-	-- visibility
-	if inFP ~= lastInFP then setBodyForFP(inFP); lastInFP = inFP end
-	if inFP then
+	-- visibility · a wall pressing the camera up against your head (a cramped room, a tunnel)
+	-- counts as first person for it: you don't see the inside of your own helmet
+	local squeezed = false
+	if not inFP then
+		local gap = (Camera.CFrame.Position - Head.Position).Magnitude
+		squeezed = gap < (wasSqueezed and 3.2 or 2.4)
+	end
+	wasSqueezed = squeezed
+	local hideHead = inFP or squeezed
+	if hideHead ~= lastInFP then setBodyForFP(hideHead); lastInFP = hideHead end
+	if squeezed then
+		Head.LocalTransparencyModifier = 1
+		setTorsoAlpha(0)
+	elseif inFP then
 		Head.LocalTransparencyModifier     = 1
 		LeftArm.LocalTransparencyModifier  = 0
 		RightArm.LocalTransparencyModifier = 0

@@ -499,8 +499,9 @@ local function hubMenuUp()
 end
 
 local function refreshRound()
-	-- the menu has its own top bar (the wallet sits where this strip is)
-	strip.Visible = not hubMenuUp()
+	-- the menu has its own top bar (the wallet sits where this strip is) · a mode with a top of
+	-- its own (OwnTop: the Prologue's lesson card, War's banners) has none
+	strip.Visible = not hubMenuUp() and roundNode:GetAttribute("OwnTop") ~= true
 	local left = roundNode:GetAttribute("TimeLeft") or 0
 	local m, sec = math.floor(left / 60), left % 60
 	local modeName = roundNode:GetAttribute("ModeName") or ""

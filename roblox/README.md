@@ -145,7 +145,13 @@ a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (*
    show — the welcome film (`_G.IntroCinematic`), a menu or a body. Arriving by teleport, the
    travel screen you left on stays up instead (`_G.ArrivingTravelGui`) until you have a body or
    the class screen (`TravelScreen`).
-1. **The welcome** (`Intro`): a ~12 s cinematic over the Courtyard (letterbox bars sliding in,
+1. **THE SIEGE OF STORMWATCH** (the Prologue, below): a newcomer goes straight from the loading
+   screen into a battle of their own (`Intro` asks `HubServer`'s `"Intro"` op for `Train`, which is
+   the Prologue now) and learns to fight in the middle of it. When it ends (or they skip it) they
+   are at tutorial 2 and in the Courtyard, where the menu tour (5) follows. Steps 1 to 4 below are
+   the older path, still there if the Prologue is ever missing (`GameConfig.DOORS.Prologue`).
+
+   **The old welcome** (`Intro`): a ~12 s cinematic over the Courtyard (letterbox bars sliding in,
    embers, the map's own camera shots as slow dollies with a line each, then the name slamming
    down with a flash, a shake, a horn and a boom; any key skips),
    to its own score (`MusicConfig` `Intro`). Then the card: **WELCOME, SOLDIER!** with **BEGIN
@@ -179,6 +185,42 @@ a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (*
    way the **recruit's gift** follows once (`Catalog ▸ Economy ▸ starterGift`: 500 Marks and a Key)
    with **OPEN A CRATE**, straight to the crates. (Studio: the player attribute `TourAutoplay`
    clicks through the tour for a test.)
+
+### The Siege of Stormwatch (`Game ▸ Modes ▸ Prologue`, `Game ▸ StormwatchMap`, `Prologue.client`, `ReplicatedStorage ▸ WarFX`)
+A dark, stormy night; the Iron Host is at Stormwatch's gate, and you are a soldier of its garrison.
+A server of your own (`DOORS.Prologue`, `MODES.Prologue`: hidden, ownSpawn, one map built fresh).
+- **The castle** (`StormwatchMap.build`): curtain walls with crenels and a breach in the east wall,
+  a gatehouse of two towers and an oak-and-iron gate (its own `Gate` model, which bursts apart),
+  corner towers (one burning), the keep, the barracks, an armoury of racks, a burning smithy,
+  stables, stakes, braziers, banners, puddles, spent arrows in the cobbles; outside, a field of mud,
+  the Host's tents and fires, rank on rank of torches, their trebuchets (ServerStorage ▸
+  PrologueProps ▸ Trebuchet, a generated model; a timber one is built if it's missing), the ram
+  under its hide roof, ladders on the walls, hills on the horizon. The story's places are map
+  attributes `P_<name>` (wake, armory, raiders, breach, gate, ram, yard, army…), the trebuchets'
+  throwing arms `T_1…`. Night and storm lighting, heavy atmosphere.
+- **The story** (`Prologue.STEPS`): a cutscene (the storm, the Host, a tower hit, Captain Hale
+  wakes you) → run to the armoury → raiders over the wall (swing, stab, overhead on a staggering
+  raider) → the trebuchets find the yard (a red ring under you: dodge out of it, or take the blast)
+  → a raider through the breach (block, parry, riposte: his blows teach, `Harmless`) → a brute
+  behind his guard (kick, then cut him down) → run for the gatehouse through falling arrows →
+  cutscene: the ram, the gate bursts, the Host pours in → hold the gate beside the garrison (six
+  of the Host) → cutscene: **Lord Varg** → the duel (a boss bar; every fall weakens him) →
+  cutscene: dawn, horns, the King's riders, **STORMWATCH STANDS**. Before the battle you can't
+  fall (30 % health always left); in it you come back at the gatehouse.
+- **On your screen** (`Prologue.client`): the lesson card (STEP n / 13, what to do in your own
+  controls, a progress bar, a tick when done), Captain Hale's lines, a beacon of light over where to
+  go with an arrow at the screen's edge, the cutscenes (black bars, a flying camera, subtitles,
+  title cards; SPACE / ENTER / tap / Ⓐ skips one), M: RESUME / SKIP THE TUTORIAL (asked once),
+  and the end card (the welcome purse, `Catalog ▸ Economy ▸ prologue`: 300 Marks and 250 XP once,
+  TO THE COURTYARD). The siege plays its own score (`_G.OwnScore` quiets Music), cutscenes hide the
+  hotbar (`_G.CinematicUp`), and its own top (`OwnTop`) hides the scoreboard's strip.
+- **The war all round** (`ReplicatedStorage ▸ WarFX`, client only, nothing replicated): rain round
+  the camera (gone under a roof), lightning with thunder a moment later, heavy cloud; the
+  garrison's volleys off the walls and the Host's answering ones arcing into the yard and sticking
+  in the cobbles; trebuchet fire on high arcs and its blasts (flash, fire, smoke, flying stones, a
+  scorch, a shake by distance); war cries from the camp. Arrows are pooled and moved in bulk.
+- **Sounds** live in ReplicatedStorage ▸ WarAudio (Studio-only; generated): Thunder, Rain,
+  Battle, Impact, Incoming, Arrows, Horn, Gate, Charge, Music. Anything missing is just quiet.
 
 Someone with no body (the menu, the intro) still sees the map: `GameServer` points their
 `ReplicationFocus` at the map's middle (`MapLoader.focus`), and the map carries its camera shots,

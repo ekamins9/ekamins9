@@ -43,6 +43,7 @@ end
 
 local function moodNow()
 	if _G.IntroMusic then return "Intro" end   -- (a newcomer's welcome: Intro)
+	if _G.OwnScore then return "Silent" end    -- (a mode playing its own score: the Prologue, War)
 	local mode, state = round:GetAttribute("Mode"), round:GetAttribute("State")
 	if mode == nil or mode == "Hub" or mode == "Tiltyard" then return "Hub" end
 	if state ~= "Round" then return "Intermission" end

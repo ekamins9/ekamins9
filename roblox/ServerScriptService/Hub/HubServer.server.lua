@@ -877,7 +877,8 @@ local function introOp(plr, what)
 		Profile.get(plr).askedTraining = true
 		ok, msg = play(plr, "Warfront", {mode = "TDM", first = true})
 	else
-		ok, msg = play(plr, "Tiltyard")
+		-- (training is the prologue now: the Siege of Stormwatch; the drill yard stays on the menu)
+		ok, msg = play(plr, GameConfig.DOORS.Prologue and "Prologue" or "Tiltyard")
 	end
 	if not ok then introGone[plr] = nil end
 	return {ok = ok, msg = msg}
@@ -1075,7 +1076,7 @@ local function routeNewcomer(plr)
 		end
 		if not plr.Parent or introShown[plr] or introGone[plr] or Game.server.mode ~= "Hub" then return end
 		introGone[plr] = true
-		play(plr, "Tiltyard")
+		play(plr, GameConfig.DOORS.Prologue and "Prologue" or "Tiltyard")
 		return
 	end
 	task.wait(STUDIO and 0.5 or 2)   -- (the client is up: it shows the travel screen)

@@ -691,6 +691,23 @@ local welcoming, battling = false, false
 local function decide()
 	local tut = player:GetAttribute("Tutorial") or 2
 	local mode = round:GetAttribute("Mode")
+	-- (a newcomer goes straight into the prologue: the Siege of Stormwatch is the welcome)
+	if tut == 0 and mode == "Hub" and GameConfig.MODES.Prologue and not _G.PrologueTried then
+		if welcoming then return end
+		welcoming = true
+		_G.PrologueTried = true
+		_G.IntroActive = true
+		task.spawn(function()
+			if _G.ShowTravel then _G.ShowTravel("THE SIEGE OF STORMWATCH", "A STORMY NIGHT  ·  THE GATE IS FALLING") end
+			local ok, r = pcall(function() return hubRemote:InvokeServer("Intro", "Train") end)
+			welcoming = false
+			if not (ok and type(r) == "table" and r.ok) then
+				if _G.HideTravel then _G.HideTravel() end
+				decide()   -- (it failed: the welcome card instead)
+			end
+		end)
+		return
+	end
 	if tut == 0 and mode == "Hub" then
 		if welcoming then return end
 		welcoming = true

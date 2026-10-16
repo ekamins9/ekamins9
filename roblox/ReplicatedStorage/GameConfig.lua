@@ -61,6 +61,9 @@ GameConfig.DOORS = {
 		blurb = "Take the crown. Kill the king to be the king. Hold it to win."},
 	Plague    = {name = "Plague Night", mode = "Plague", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
 		blurb = "Survive until dawn. The fallen rise as ghouls and hunt the living."},
+	-- THE PROLOGUE (Game ▸ Modes ▸ Prologue): a brand-new player's first minutes, on a server of their own
+	Prologue = {name = "The Siege of Stormwatch", mode = "Prologue", access = "Friends", maxPlayers = 1, party = true,
+		blurb = "A stormy night. The Iron Host is at the gate. Learn to fight in the middle of the battle."},
 	Dragonfall = {name = "Dragonfall", mode = "Dragonfall", access = "Friends", maxPlayers = 6, party = true, page = 2,
 		blurb = "You and your party against Cindermaw, the Ashen Wyrm, in its burning caldera. Ballistae to bring it down, ward stones against its fire."},
 	Invasion  = {name = "Invasions", mode = "InvGoblin", modes = {"InvGoblin", "InvElf", "InvUndead", "InvOrc"}, access = "Friends", maxPlayers = 6, party = true, page = 2,
@@ -202,6 +205,13 @@ GameConfig.MODES = {
 		description = "Brutes, berserkers and war-drummers who drive the rest on: kill the drummers first. Save the villagers. Every fifth wave, the Warchief.",
 		maps = {"Colosseum", "Stormbreak", "Wildwood", "Pinewatch", "Cinderfall", "Bloodpit", "Ravenhold", "Marshfen"},
 	},
+	-- THE PROLOGUE (Game ▸ Modes ▸ Prologue): the Siege of Stormwatch, the newcomer's tutorial
+	Prologue = {
+		name = "The Siege of Stormwatch", category = "Tutorial", teams = 0, maxPlayers = 1, minPlayers = 1,
+		description = "A dark, stormy night. The Iron Host is at Stormwatch's gate, and you learn to fight in the middle of the battle.",
+		maps = {"Stormwatch"}, procedural = true,
+		roundLength = 0, intermission = 0, respawnDelay = 3, hidden = true, pvp = false, ownSpawn = true,
+	},
 	-- DRAGONFALL (Game ▸ Modes ▸ Dragonfall, Combat ▸ Dragon): you and your party against a dragon
 	Dragonfall = {
 		name = "Dragonfall", category = "Adventure", teams = 0, maxPlayers = 6, minPlayers = 1,
@@ -227,7 +237,7 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
 	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
-	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera",
+	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera", Stormwatch = "Stormwatch",
 	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 

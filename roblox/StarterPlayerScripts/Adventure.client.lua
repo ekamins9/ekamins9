@@ -77,7 +77,8 @@ local function stroke(f, color, th, t)
 end
 
 local function ownHud()
-	return round:GetAttribute("OwnHud") == true and round:GetAttribute("State") == "Round"
+	-- (a mode with its own top, OwnTop: the Prologue, War, draws its own; this is the dungeon's)
+	return round:GetAttribute("OwnHud") == true and round:GetAttribute("State") == "Round" and round:GetAttribute("OwnTop") ~= true
 end
 local function menuUp()
 	local h = player.PlayerGui:FindFirstChild("HubMenu")

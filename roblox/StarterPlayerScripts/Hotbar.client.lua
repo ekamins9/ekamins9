@@ -310,6 +310,7 @@ end)
 --  EVERY FRAME: which is out, the ammo, the turning, whether the bar shows at all
 --------------------------------------------------------------------
 local function menuUp()
+	if _G.CinematicUp then return true end   -- (a cutscene has the screen)
 	for _, n in ipairs({"HubMenu", "LoadoutMenu", "TravelScreen", "Intro", "DungeonMenu", "DungeonDown"}) do
 		local g = playerGui:FindFirstChild(n)
 		if g and g:IsA("ScreenGui") and g.Enabled then return true end

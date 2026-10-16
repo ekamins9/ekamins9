@@ -46,6 +46,8 @@ return {
 	daily = {full = 2500, rest = 0.4},
 	-- a Key so the first crate opens right away (the gift card sends them to the crates)
 	starterGift = {marks = 500, keys = 1},
+	-- the prologue won (Game ▸ Modes ▸ Prologue: the Siege of Stormwatch), once
+	prologue = {marks = 300, xp = 250},
 	products = {
 		{crowns = 100,  robux = 99,  id = 0, product = "100 Crowns"},
 		{crowns = 550,  robux = 499, id = 0, product = "550 Crowns", bonus = "+10%"},
