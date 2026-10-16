@@ -160,9 +160,16 @@ function Depths:grant(plr, item)
 	local r = self:runOf(plr)
 	local char = aliveChar(plr)
 	if item.kind == "weapon" then
-		-- (into a free slot, else in place of the one in your hand: Loot.slotFor)
-		if char then Loot.giveWeapon(plr, item) else item.slot = item.slot or 1 end
+		-- (into a free slot, else in place of the one in your hand, which drops at your feet:
+		-- you or a friend can take it back)
+		local old
+		if char then _, old = Loot.giveWeapon(plr, item) else item.slot = item.slot or 1 end
 		r.weapons[item.slot] = item
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if old and root then
+			local at = root.Position + root.CFrame.LookVector * 3 - Vector3.new(0, 2.5, 0)
+			Loot.drop(old, at, {life = 300, onTake = function(p2, it) if not aliveChar(p2) then return false end; self:grant(p2, it); return true end})
+		end
 	elseif item.kind == "relic" then
 		table.insert(r.relics, item.relic)
 		if char then Loot.setRelics(char, r.relics) end
@@ -212,7 +219,13 @@ function Depths:chestFor(plr, kind, luckBonus)
 end
 
 function Depths:placeChest(room, kind, luck)
-	local cf = CFrame.new(room.chest or room.feature) * CFrame.Angles(0, math.rad(math.random(0, 3) * 90), 0)
+	-- (clear of the room's centrepiece: the start's brazier, an altar, a fountain, the stairs)
+	local at = room.chest or room.feature
+	if (room.kind == "start" or room.kind == "shrine" or room.kind == "fountain" or room.kind == "stairs") and room.spots and #room.spots > 0 then
+		local s = room.spots[math.random(#room.spots)]
+		at = Vector3.new(s.X, at.Y, s.Z)
+	end
+	local cf = CFrame.lookAt(at, Vector3.new(room.cx, at.Y, room.cz))
 	local rarity = kind == "boss" and "Legendary" or (kind == "elite" and "Epic" or (kind == "treasure" and "Rare" or "Uncommon"))
 	Loot.chest(cf, {rarity = rarity, perPlayer = true, gilded = kind ~= "depths", label = kind == "boss" and "The Hoard" or "Chest",
 		onOpen = function(plr)
@@ -220,6 +233,9 @@ function Depths:placeChest(room, kind, luck)
 			self:chestFor(plr, kind, luck)
 			return true
 		end})
+	-- (its room on the map: a chest in it)
+	room.hasChest = true
+	self:sendRoom(room)
 end
 
 --------------------------------------------------------------------
@@ -240,7 +256,7 @@ function Depths:shut(room, down)
 end
 
 function Depths:sendRoom(room)
-	event:FireAllClients("Room", {id = room.id, state = room.state, kind = room.kind})
+	event:FireAllClients("Room", {id = room.id, state = room.state, kind = room.kind, hasChest = room.hasChest})
 end
 
 -- who's coming at you in this room
@@ -255,7 +271,7 @@ function Depths:roster(room)
 		for _ = 1, 1 + math.floor(players / 2) do add(mons.common[math.random(#mons.common)]) end
 		return out
 	end
-	local budget = (3 + self.floor * 1.3 + math.min(room.depth, 6) * 0.45) * (1 + (players - 1) * 0.55)
+	local budget = (2 + self.floor * 1.0 + math.min(room.depth, 6) * 0.3) * (1 + (players - 1) * 0.5)
 	if room.kind == "elite" then
 		add(mons.elite[math.random(#mons.elite)], {elite = true})
 		budget *= 0.55
@@ -263,7 +279,7 @@ function Depths:roster(room)
 		budget *= 1.15
 		if self.floor >= 2 then add(mons.elite[math.random(#mons.elite)]); budget -= 3 end
 	end
-	local eliteChance = (self.floor - 1) * 0.08
+	local eliteChance = (self.floor - 1) * 0.05
 	while budget >= 1 and #out < 12 do
 		local ranged = math.random() < 0.28
 		local pool = ranged and mons.ranged or mons.common
@@ -291,10 +307,13 @@ function Depths:engage(room)
 		end
 	end
 	local players = playersN()
-	local hpMult = (1 + (self.floor - 1) * 0.22) * (1 + (players - 1) * 0.3)
-	local dealt = 1 + (self.floor - 1) * 0.08
+	-- (gentle on the first floor; a party makes them tougher, not more numerous only)
+	local hpMult = (0.8 + (self.floor - 1) * 0.15) * (1 + (players - 1) * 0.3)
+	local dealt = 0.8 + (self.floor - 1) * 0.08
+	-- their fighting skill, capped by the floor: Squires on the first, Knights on the second
+	local skillCap = ({"Squire", "Knight"})[self.floor]
 	local opts = {team = "B", startDelay = 1.2, corpseTime = 3,
-		hpMult = hpMult, dealt = dealt,
+		hpMult = hpMult, dealt = dealt, skillCap = skillCap,
 		arena = {centre = Vector3.new(room.cx, 0, room.cz), radius = math.max(room.w, room.d) / 2 + 4},
 		bounds = {centre = Vector3.new(room.cx, 0, room.cz), hw = room.w / 2, hd = room.d / 2},
 		onSpawn = function(mob) room.mobs[mob] = true end,
@@ -318,7 +337,7 @@ function Depths:engage(room)
 		local spot = room.spots[((i - 1) % #room.spots) + 1]
 		if e.boss then spot = room.feature + Vector3.new(0, 3, 0) end
 		local o2 = {at = CFrame.new(spot, Vector3.new(room.cx, spot.Y, room.cz)), elite = e.elite}
-		if e.boss then o2.hpMult = (1 + (players - 1) * 0.6) * (1 + (self.floor - 1) * 0.1) end
+		if e.boss then o2.hpMult = 0.75 * (1 + (players - 1) * 0.6); o2.skillCap = "Knight" end
 		local mob = Monsters.spawn(e.id, opts, o2)
 		if mob then
 			room.mobs[mob] = true
@@ -349,7 +368,7 @@ function Depths:clear(room)
 		local c = aliveChar(p)
 		if c then
 			local h = humOf(c)
-			h.Health = math.min(h.MaxHealth, h.Health + h.MaxHealth * 0.25)
+			h.Health = math.min(h.MaxHealth, h.Health + h.MaxHealth * 0.4)
 		else
 			local at = CFrame.new(Vector3.new(room.cx + math.random(-5, 5), 3, room.cz + math.random(-5, 5)))
 			self:revive(p, at)
@@ -399,7 +418,8 @@ function Depths:dressRooms()
 				local have = haveRelics(r)
 				local cards = {}
 				for _ = 1, 3 do
-					local rel = Loot.relic(2 + self.floor * 0.6, have)
+					local c = plr.Character
+					local rel = Loot.relic(2 + self.floor * 0.6, have, nil, c and c:GetAttribute("Class"))
 					if rel then have[rel.relic] = true; table.insert(cards, rel) end
 				end
 				self:offer(plr, cards, "A BLESSING", "The shrine offers you one")
@@ -491,7 +511,7 @@ function Depths:sendLayout(plr)
 	for _, r in ipairs(L.rooms) do
 		local doors = {}
 		for d, nid in pairs(r.doors) do doors[d] = nid end
-		rooms[r.id] = {id = r.id, cx = r.cx, cz = r.cz, w = r.w, d = r.d, kind = r.kind, state = r.state, doors = doors}
+		rooms[r.id] = {id = r.id, cx = r.cx, cz = r.cz, w = r.w, d = r.d, kind = r.kind, state = r.state, doors = doors, hasChest = r.hasChest}
 	end
 	local data = {rooms = rooms, floor = self.floor, floors = FLOORS, theme = self.theme, themeName = Catalog.DUNGEONS[self.theme].name}
 	if plr then event:FireClient(plr, "Layout", data) else event:FireAllClients("Layout", data) end

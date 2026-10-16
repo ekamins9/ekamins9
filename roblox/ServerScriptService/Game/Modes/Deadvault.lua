@@ -117,7 +117,9 @@ function Deadvault:populate()
 					local at = r and r.Position or home
 					local tier = mob.def.tier or 1
 					self:dropItem(Loot.gold((GOLD_OF[tier] or 4) * (0.7 + math.random() * 0.6)), at)
-					if tier >= 3 or mob.elite then self:dropItem(Loot.roll("elite", "Knight", 1.5), at) end
+					-- (fitted to whoever felled it: an Archer's kill drops an Archer's find)
+					local kc = typeof(killer) == "Instance" and killer:IsA("Player") and killer.Character or nil
+					if tier >= 3 or mob.elite then self:dropItem(Loot.roll("elite", (kc and kc:GetAttribute("Class")) or "Knight", 1.5), at) end
 					if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (tier >= 3 and "Champion" or (tier == 2 and "Knight" or "Squire"))) end
 				end,
 				onSpawn = function(m) self.mobs[m] = true end}
@@ -265,9 +267,7 @@ function Deadvault:take(plr, item, at)
 	if item.kind == "gold" then r.gold += item.gold
 	elseif item.kind == "weapon" then
 		-- (a free slot, else the one in your hand is swapped out: into the bag, or dropped)
-		local slot = Loot.slotFor(plr)
-		local old = r.weapons[slot]
-		Loot.giveWeapon(plr, item)
+		local _, old = Loot.giveWeapon(plr, item)
 		r.weapons[item.slot] = item
 		if old and not toBag(old) then self:dropItem(old, here) end
 	elseif item.kind == "armor" then

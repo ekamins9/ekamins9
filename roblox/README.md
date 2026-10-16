@@ -1700,10 +1700,16 @@ Three floors; floor 3 ends in the theme's boss.
   (`mode:buildMap(theme)`) before loading it.
 - **A room seals** when you're well inside: its gates drop, stragglers are drawn in, its monsters
   come. Kill them all and the gates rise; the fallen are back on their feet in the room; everyone
-  mends a quarter. A cleared room sometimes leaves a chest (an elite room always does).
+  mends 40%. A cleared room sometimes leaves a chest (an elite room always does; in a room with a
+  centrepiece, the start's brazier, an altar, the fountain, it stands on open floor).
+- **Difficulty** (`Depths:engage`): gentle first floors. Monsters start at 80% health and damage
+  and grow with each floor; how well they fight is capped by the floor (Squires on the first,
+  Knights on the second; the boss never fights better than a Knight); elites come from the second
+  floor; the boss has 75% of its health pool. Every boss move hits at `BossMoves.DAMAGE` (85%).
 - **Chests** are per player: each opens it once and gets **three cards** (`Game ▸ Loot`): a weapon
-  your class carries with a skin and affixes, a relic, a tome (any class's power, for the run),
-  gold. The shrine offers three relics; the fountain makes you whole once a floor; the stairs room,
+  your class carries with a skin and affixes, a relic, a tome (one of **your class's** powers, for
+  the run), gold. A weapon find with both hands full swaps out the one in your hand: it drops at
+  your feet (you or a friend can take it back). The shrine offers three relics; the fountain makes you whole once a floor; the stairs room,
   cleared, leads down (anyone starts a 5 s countdown; everyone goes).
 - Your **run** (looted weapons, relics, tome, gold) survives respawns: the mode's
   `adjustLoadout` / `noteSpawn` hooks in `LoadoutServer` put it back on every new body.
@@ -1714,7 +1720,10 @@ Three floors; floor 3 ends in the theme's boss.
 - **On screen** (`StarterPlayerScripts ▸ Adventure.client`, any mode with Round ▸ OwnHud): the run
   panel (floor, what's happening, gold), your relics (hover / tap for what they do), a fog-of-war
   minimap with what each room is, the chest cards (1 / 2 / 3, a controller's A, LEAVE IT), the
-  boss bar (any Boss near you, the Horde's Warlord too), banners and the fade going down. Objectives
+  boss bar (any Boss near you, the Horde's Warlord too), banners and the fade going down. **Guides**:
+  a marker over what's worth walking to (OPEN CHEST, PRAY, DRINK, DESCEND, a find's name; EXTRACT and
+  TAKE THE CROWN in the other adventures), an arrow at the screen's edge to the nearest one off
+  screen, an UP NEXT line under the run panel, a gift on the map's rooms with a chest. Objectives
   steps aside for an OwnHud mode.
 
 ### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `VaultMenu.client`)
@@ -1817,7 +1826,9 @@ has its own name). Weapon affixes: burn, chill, poison, lifesteal, damage, storm
 sky), execute, giant (elites and bosses), holy (the undead), speed, thirst (a kill heals), stagger.
 Relics (passive, carried): armour, speed, damage, health, dodges, stamina, luck, on-hit fire and
 frost, lifesteal, regen, a kill's heal, the Berserker's Totem, the Thorned Mantle, the Ring of
-Storms, the Phoenix Plume, the Shard of the Crown. Potions, armour tiers and gold for the other
+Storms, the Phoenix Plume, the Shard of the Crown. A relic with a `class` (the Eagle Feather's draw,
+the Mana Pearl's cast) only rolls for that class, and a tome only teaches the finder's own class's
+powers: nobody sees another class's things. Potions, armour tiers and gold for the other
 adventures. Loot never touches anyone's collection: a skin on a looted blade is the run's. In the
 world: `Loot.drop` (a turning thing in a beam of its rarity's colour), `Loot.chest` (per player or
 shared). Prompts use your pickup key (V).

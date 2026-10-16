@@ -91,7 +91,7 @@ local runPanel = frame(gui, Theme.GLASS, 0.18, 12)
 runPanel.Name = "Run"
 runPanel.AnchorPoint = Vector2.new(0.5, 0)
 runPanel.Position = UDim2.new(0.5, 0, 0, 74)
-runPanel.Size = UDim2.fromOffset(440, 54)
+runPanel.Size = UDim2.fromOffset(440, 74)
 runPanel.Visible = false
 stroke(runPanel, Theme.STROKE, 1.5, 0.85)
 local runLabel = text(runPanel, "", 17, Theme.TEXT, TITLE)
@@ -102,9 +102,14 @@ local runNote = text(runPanel, "", 13, Theme.DIM, FONT)
 runNote.Position = UDim2.fromOffset(16, 29)
 runNote.Size = UDim2.new(1, -150, 0, 18)
 runNote.TextXAlignment = Enum.TextXAlignment.Left
+-- UP NEXT: what to do now (Guides, below)
+local hintLine = text(runPanel, "", 13, Theme.ACCENT, FONT)
+hintLine.Position = UDim2.fromOffset(16, 50)
+hintLine.Size = UDim2.new(1, -32, 0, 18)
+hintLine.TextXAlignment = Enum.TextXAlignment.Left
 local goldChip = frame(runPanel, Theme.GLASS2, 0, 10)
 goldChip.AnchorPoint = Vector2.new(1, 0.5)
-goldChip.Position = UDim2.new(1, -10, 0.5, 0)
+goldChip.Position = UDim2.new(1, -10, 0, 27)
 goldChip.Size = UDim2.fromOffset(122, 36)
 local goldText = text(goldChip, "💰 0", 17, Theme.MARKS, TITLE)
 goldText.Size = UDim2.fromScale(1, 1)
@@ -113,7 +118,7 @@ local relicBar = Instance.new("Frame")
 relicBar.Name = "Relics"
 relicBar.BackgroundTransparency = 1
 relicBar.AnchorPoint = Vector2.new(0.5, 0)
-relicBar.Position = UDim2.new(0.5, 0, 0, 134)
+relicBar.Position = UDim2.new(0.5, 0, 0, 154)
 relicBar.Size = UDim2.fromOffset(440, 34)
 relicBar.Visible = false
 relicBar.Parent = gui
@@ -292,7 +297,7 @@ local function drawMap()
 		local icon = text(f, KIND_ICON[r.kind] or "", math.clamp(r.w * s * 0.5, 9, 16), Theme.TEXT, FONT)
 		icon.Size = UDim2.fromScale(1, 1)
 		icon.ZIndex = 3
-		roomFrames[id] = {frame = f, stroke = st, room = r}
+		roomFrames[id] = {frame = f, stroke = st, room = r, icon = icon}
 	end
 end
 local function refreshRoom(id)
@@ -301,6 +306,8 @@ local function refreshRoom(id)
 	rf.frame.BackgroundColor3 = STATE_COL[rf.room.state] or STATE_COL.sealed
 	rf.frame.Visible = seen[id] == true
 	rf.frame.BackgroundTransparency = visited[id] and 0 or 0.45
+	-- (a chest in it, shown till the room's own icon matters more)
+	if rf.icon then rf.icon.Text = (rf.room.hasChest and (rf.room.kind == "combat" or rf.room.kind == "elite")) and "🎁" or (KIND_ICON[rf.room.kind] or "") end
 end
 local function see(id)
 	if not (layout and layout.rooms and layout.rooms[id]) then return end
@@ -621,6 +628,7 @@ if event then
 		elseif kind == "Room" then
 			if layout and layout.rooms and data and layout.rooms[data.id] then
 				layout.rooms[data.id].state = data.state
+				layout.rooms[data.id].hasChest = data.hasChest
 				refreshRoom(data.id)
 			end
 		elseif kind == "Run" then
@@ -789,6 +797,196 @@ RunService.RenderStepped:Connect(function(dt)
 		bossPhase.Text = boss:GetAttribute("Enraged") and "ENRAGED" or ""
 	else
 		lagFrac = 1
+	end
+end)
+
+--------------------------------------------------------------------
+--  GUIDES: what you can use, marked over it (OPEN CHEST, DESCEND, PRAY, DRINK, EXTRACT, TAKE
+--  THE CROWN, a find's name), and the one that matters most pointed at from the edge of the
+--  screen when you can't see it; and UP NEXT in the run panel
+--------------------------------------------------------------------
+local guideGui = Instance.new("ScreenGui")
+guideGui.Name = "AdventureGuides"
+guideGui.ResetOnSpawn = false
+guideGui.IgnoreGuiInset = true
+guideGui.DisplayOrder = 5
+guideGui.Parent = player.PlayerGui
+local markers = {}   -- [part] = {bb, label, dist, pointer, info}
+local function pointerDiamond(parent, color)
+	local d = frame(parent, color, 0)
+	d.Size = UDim2.fromOffset(14, 14)
+	d.Rotation = 45
+	d.AnchorPoint = Vector2.new(0.5, 0.5)
+	stroke(d, Theme.OUTLINE, 2, 0)
+	return d
+end
+local function makeMarker(part, info)
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "Guide"
+	bb.Adornee = part
+	bb.Size = UDim2.fromOffset(220, 64)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, info.up or 4, 0)
+	bb.AlwaysOnTop = true
+	bb.LightInfluence = 0
+	bb.MaxDistance = info.range or 150
+	bb.Parent = guideGui
+	local label = text(bb, info.text, info.small and 14 or 18, info.color or Theme.TEXT, TITLE)
+	label.Size = UDim2.new(1, 0, 0, 22)
+	label.TextStrokeTransparency = 0.2
+	local dist = text(bb, "", 11, Theme.DIM, FONT)
+	dist.Position = UDim2.fromOffset(0, 22); dist.Size = UDim2.new(1, 0, 0, 14)
+	local pointer = pointerDiamond(bb, info.color or Theme.ACCENT)
+	pointer.Position = UDim2.new(0.5, 0, 0, 48)
+	pointer.Visible = not info.small
+	return {bb = bb, label = label, dist = dist, pointer = pointer, info = info}
+end
+
+-- what's out there now (scanned a few times a second)
+local function guideTargets()
+	local out = {}
+	local key = "OpenedBy_" .. player.UserId
+	local drops = workspace:FindFirstChild("LootDrops")
+	for _, m in ipairs(drops and drops:GetChildren() or {}) do
+		if m.Name == "Chest" and not m:GetAttribute(key) then
+			local body = m:FindFirstChild("Body")
+			local pr = body and body:FindFirstChildOfClass("ProximityPrompt")
+			if body and pr and pr.Enabled then
+				table.insert(out, {part = body, text = "OPEN CHEST", color = RARITY_COLOR[m:GetAttribute("Rarity") or "Common"] or Theme.ACCENT, prio = 1, arrow = true, up = 4.5})
+			end
+		elseif m.Name == "LootDrop" then
+			local a = m:FindFirstChild("Anchor")
+			local pr = a and a:FindFirstChildOfClass("ProximityPrompt")
+			if a and pr then
+				table.insert(out, {part = a, text = pr.ObjectText ~= "" and pr.ObjectText or "TAKE", color = RARITY_COLOR[m:GetAttribute("Rarity") or "Common"] or Theme.TEXT, prio = 9, small = true, range = 45, up = 2.5})
+			end
+		end
+	end
+	local map = workspace:FindFirstChild("Map")
+	if map then
+		for _, d in ipairs(map:GetChildren()) do
+			if d:IsA("BasePart") and not d:GetAttribute(key) then
+				local pr = d:FindFirstChildOfClass("ProximityPrompt")
+				if pr and pr.Enabled then
+					if d.Name == "StairsPrompt" then table.insert(out, {part = d, text = "DESCEND", color = Color3.fromRGB(150, 210, 255), prio = 2, arrow = true})
+					elseif d.Name == "ShrinePrompt" then table.insert(out, {part = d, text = "PRAY FOR A BLESSING", color = Color3.fromRGB(255, 226, 130), prio = 3, arrow = true})
+					elseif d.Name == "FountainPrompt" then table.insert(out, {part = d, text = "DRINK", color = Color3.fromRGB(120, 255, 210), prio = 4, arrow = false}) end
+				end
+			end
+		end
+		local props = map:FindFirstChild("Props")
+		for _, d in ipairs(props and props:GetChildren() or {}) do
+			if d.Name == "ExitPortal" then
+				local pr = d:FindFirstChild("ExtractPrompt")
+				if pr and pr.Enabled then table.insert(out, {part = d, text = "EXTRACT", color = Color3.fromRGB(110, 180, 255), prio = 1, arrow = true, up = 7}) end
+			end
+		end
+		local crown = map:FindFirstChild("FallenCrown")
+		local base = crown and crown:FindFirstChild("Base")
+		if base then table.insert(out, {part = base, text = "TAKE THE CROWN", color = Color3.fromRGB(255, 205, 60), prio = 1, arrow = true}) end
+	end
+	return out
+end
+
+local edge = Instance.new("Frame")
+edge.Name = "EdgeArrow"
+edge.BackgroundTransparency = 1
+edge.Size = UDim2.fromOffset(160, 60)
+edge.AnchorPoint = Vector2.new(0.5, 0.5)
+edge.Visible = false
+edge.Parent = guideGui
+-- (a chevron: two bars meeting at the tip, turned toward the target)
+local chevron = {}
+for i = 1, 2 do
+	local b = frame(edge, Theme.ACCENT, 0, 2)
+	b.AnchorPoint = Vector2.new(0.5, 0.5)
+	b.Size = UDim2.fromOffset(20, 6)
+	stroke(b, Theme.OUTLINE, 1.5, 0)
+	chevron[i] = b
+end
+local edgeLabel = text(edge, "", 14, Theme.TEXT, TITLE)
+edgeLabel.AnchorPoint = Vector2.new(0.5, 0)
+edgeLabel.Position = UDim2.new(0.5, 0, 0.5, 14); edgeLabel.Size = UDim2.fromOffset(200, 18)
+edgeLabel.TextStrokeTransparency = 0.2
+
+local lastGuideScan, guideList = 0, {}
+local MODE_HINT = {
+	Depths = "EXPLORE: FIND THE WAY DOWN", Deadvault = "LOOT THE ROOMS  ·  THE WAYS OUT OPEN SOON",
+	Crownfall = "FIND CHESTS  ·  STAY INSIDE THE RING", Kingslayer = "TAKE THE CROWN, OR TAKE IT FROM THE KING",
+	Plague = "SURVIVE UNTIL DAWN",
+}
+RunService.RenderStepped:Connect(function()
+	local own = ownHud() and not menuUp()
+	local now = os.clock()
+	if now - lastGuideScan > 0.3 then
+		lastGuideScan = now
+		guideList = own and guideTargets() or {}
+		local keep = {}
+		for _, g in ipairs(guideList) do
+			keep[g.part] = true
+			local m = markers[g.part]
+			if not m then m = makeMarker(g.part, g); markers[g.part] = m end
+			m.info = g
+			m.label.Text = g.text
+		end
+		for part, m in pairs(markers) do if not keep[part] or not part.Parent then m.bb:Destroy(); markers[part] = nil end end
+	end
+	guideGui.Enabled = own
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	-- the markers bob, and say how far
+	local bob = math.sin(now * 4) * 4
+	for part, m in pairs(markers) do
+		m.pointer.Position = UDim2.new(0.5, 0, 0, 48 + bob)
+		if hrp then m.dist.Text = string.format("%dm", math.floor((part.Position - hrp.Position).Magnitude / 3.6 + 0.5)) end
+	end
+	-- the one that matters most (lowest prio, then nearest), pointed at when it's off the screen
+	local best, bestScore
+	if hrp then
+		for _, g in ipairs(guideList) do
+			if g.arrow and g.part.Parent then
+				local d = (g.part.Position - hrp.Position).Magnitude
+				local score = g.prio * 1000 + d
+				if not bestScore or score < bestScore then best, bestScore = g, score end
+			end
+		end
+	end
+	local state = round:GetAttribute("ObjState")
+	if own then
+		if state == "fight" then hintLine.Text = "FIGHT: DEFEAT THEM ALL, THE GATES OPEN WHEN THEY FALL"
+		elseif best then hintLine.Text = "UP NEXT: " .. best.text
+		else hintLine.Text = MODE_HINT[round:GetAttribute("Mode") or ""] or "" end
+	end
+	edge.Visible = false
+	if own and best and cam and state ~= "fight" then
+		local p, onScreen = cam:WorldToViewportPoint(best.part.Position)
+		local vs = cam.ViewportSize
+		if not onScreen or p.Z < 0 then
+			local c = vs / 2
+			-- (from the camera's point of view: right / up; one behind you goes to a side)
+			local rel = cam.CFrame:PointToObjectSpace(best.part.Position)
+			local dir = Vector2.new(rel.X, -rel.Y)
+			if rel.Z > 0 then dir = Vector2.new(rel.X >= 0 and 1 or -1, math.clamp(-rel.Y / math.max(rel.Z, 1), -0.4, 0.4)) end
+			if dir.Magnitude < 1e-3 then dir = Vector2.new(1, 0) end
+			dir = dir.Unit
+			local hw, hh = vs.X / 2 - 110, vs.Y / 2 - 170
+			local k = math.min(hw / math.max(math.abs(dir.X), 1e-3), hh / math.max(math.abs(dir.Y), 1e-3))
+			local at = c + dir * k
+			edge.Position = UDim2.fromOffset(at.X, at.Y)
+			local u = dir.Unit
+			local tip = Vector2.new(80, 30) + u * 12
+			for i, b in ipairs(chevron) do
+				local a = math.atan2(-u.Y, -u.X) + (i == 1 and 0.65 or -0.65)
+				local back = Vector2.new(math.cos(a), math.sin(a))
+				local mid = tip + back * 9
+				b.Position = UDim2.fromOffset(mid.X, mid.Y)
+				b.Rotation = math.deg(a)
+				b.BackgroundColor3 = best.color or Theme.ACCENT
+			end
+			edgeLabel.Text = best.text .. (hrp and string.format("  ·  %dm", math.floor((best.part.Position - hrp.Position).Magnitude / 3.6 + 0.5)) or "")
+			edgeLabel.TextColor3 = best.color or Theme.TEXT
+			edge.Visible = true
+		end
 	end
 end)
 

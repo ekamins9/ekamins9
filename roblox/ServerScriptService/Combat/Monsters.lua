@@ -819,9 +819,13 @@ function spawnMob(id, opts, over)
 	local weight = def.weight or setWeight or "Light"
 	local name = def.name
 	if elite then name = elite.id .. " " .. name end
+	-- (a mode can cap how well it fights: The Depths' first floors)
+	local skill = def.skill or "Squire"
+	local RANKS = {Squire = 1, Knight = 2, Champion = 3}
+	if o.skillCap and (RANKS[skill] or 1) > (RANKS[o.skillCap] or 3) then skill = o.skillCap end
 	local bot = Bots.spawn({
 		-- (no team colours on its armour: its own; its side is set just below)
-		at = o.at, team = nil, skill = def.skill or "Squire", class = def.class,
+		at = o.at, team = nil, skill = skill, class = def.class,
 		weapon = pick(def.weapon), name = name, loadout = lo, appearance = appearanceOf(def), weight = weight,
 		goal = o.goal, engage = o.engage, sack = o.sack, face = o.face, arena = o.arena, fightBots = o.fightBots,
 		fireLimit = o.fireLimit, startDelay = o.startDelay or 0.5, corpseTime = o.corpseTime or 4,

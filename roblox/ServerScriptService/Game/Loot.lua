@@ -163,13 +163,15 @@ function Loot.weapon(classId, luck, rarity)
 	return {kind = "weapon", uid = uid(), weapon = w.id, skin = skin, slot = pickd.slot, rarity = r.id, affixes = affixes, name = name, power = r.power}
 end
 
-function Loot.relic(luck, have, rarity)
+-- (classId: a class's own relics only for it — no Eagle Feather for a Knight)
+function Loot.relic(luck, have, rarity, classId)
 	local r = rarity and rarityOf(rarity) or Loot.rarity(luck)
 	local pool = {}
+	local function ok(rel) return not (have and have[rel.id]) and (not rel.class or not classId or rel.class == classId) end
 	for _, rel in ipairs(CFG.RELICS) do
-		if not (have and have[rel.id]) and math.abs((CFG.RANK[rel.rarity] or 1) - (CFG.RANK[r.id] or 1)) <= 1 then table.insert(pool, rel) end
+		if ok(rel) and math.abs((CFG.RANK[rel.rarity] or 1) - (CFG.RANK[r.id] or 1)) <= 1 then table.insert(pool, rel) end
 	end
-	if #pool == 0 then for _, rel in ipairs(CFG.RELICS) do if not (have and have[rel.id]) then table.insert(pool, rel) end end end
+	if #pool == 0 then for _, rel in ipairs(CFG.RELICS) do if ok(rel) then table.insert(pool, rel) end end end
 	if #pool == 0 then return nil end
 	local rel = pool[math.random(#pool)]
 	return {kind = "relic", uid = uid(), relic = rel.id, rarity = rel.rarity, name = rel.name}
@@ -178,11 +180,13 @@ end
 function Loot.tome(classId, luck)
 	local r = Loot.rarity(luck)
 	local pool = {}
+	-- (your own class's powers: no Storm Arrow for a Knight)
 	local all = (Catalog.POWERS and Catalog.POWERS.list) or {}
+	local function mine(p) return not p.throw and p.class and (not classId or p.class == classId) end
 	for _, p in ipairs(all) do
-		if not p.throw and p.class and math.abs((CFG.RANK[CFG.TOME_RARITY(p.level or 1)] or 1) - (CFG.RANK[r.id] or 1)) <= 1 then table.insert(pool, p) end
+		if mine(p) and math.abs((CFG.RANK[CFG.TOME_RARITY(p.level or 1)] or 1) - (CFG.RANK[r.id] or 1)) <= 1 then table.insert(pool, p) end
 	end
-	if #pool == 0 then for _, p in ipairs(all) do if not p.throw and p.class then table.insert(pool, p) end end end
+	if #pool == 0 then for _, p in ipairs(all) do if mine(p) then table.insert(pool, p) end end end
 	if #pool == 0 then return nil end
 	local p = pool[math.random(#pool)]
 	return {kind = "tome", uid = uid(), power = p.id, rarity = CFG.TOME_RARITY(p.level or 1), name = "Tome of " .. (p.name or p.id)}
@@ -230,7 +234,7 @@ function Loot.roll(chestKind, classId, luck, opts)
 	local floor = opts.floor
 	local item
 	if kind == "weapon" then item = Loot.weapon(classId, luck, floor and atLeast(Loot.rarity(luck), floor) or nil)
-	elseif kind == "relic" then item = Loot.relic(luck, opts.have, floor and atLeast(Loot.rarity(luck), floor) or nil)
+	elseif kind == "relic" then item = Loot.relic(luck, opts.have, floor and atLeast(Loot.rarity(luck), floor) or nil, classId)
 	elseif kind == "tome" then item = Loot.tome(classId, luck)
 	elseif kind == "potion" then item = Loot.potion(luck)
 	elseif kind == "armor" then item = Loot.armor(luck, floor and atLeast(Loot.rarity(luck), floor) or nil)
@@ -341,13 +345,32 @@ function Loot.slotFor(plr)
 	return 1
 end
 
+-- a weapon in someone's hands as an item again (what a find swaps out: it lands on the floor)
+function Loot.toolItem(tool)
+	if not tool then return nil end
+	local id = Catalog.WEAPON[tool.Name] and tool.Name or tool:GetAttribute("Twin") or tool.Name
+	if not Catalog.WEAPON[id] then return nil end
+	local affixes = {}
+	for aid, v in (tool:GetAttribute("LootAffixes") or ""):gmatch("(%w+)=([%d%.%-]+)") do table.insert(affixes, {id = aid, v = tonumber(v)}) end
+	return {kind = "weapon", uid = tool:GetAttribute("LootUid") or uid(), weapon = id, skin = tool:GetAttribute("SkinId"),
+		rarity = tool:GetAttribute("LootRarity") or "Common", name = tool:GetAttribute("LootName") or (Catalog.WEAPON[id].name or id),
+		power = tool:GetAttribute("LootPower") or 0, affixes = affixes}
+end
+
+-- -> the new Tool, and the item it swapped out (or nil: the slot was free)
 function Loot.giveWeapon(plr, item)
 	if not (_G.GiveWeapon and item and item.kind == "weapon") then return nil end
 	item.slot = Loot.slotFor(plr)
+	local old
+	for _, holder in ipairs({plr.Character, plr:FindFirstChildOfClass("Backpack")}) do
+		for _, t in ipairs(holder and holder:GetChildren() or {}) do
+			if t:IsA("Tool") and t:GetAttribute("Slot") == item.slot and not t:GetAttribute("TwinHidden") then old = old or Loot.toolItem(t) end
+		end
+	end
 	local tool, twin = _G.GiveWeapon(plr, item.weapon, item.skin, item.slot, true)
 	Loot.tagTool(tool, item)
 	if twin then Loot.tagTool(twin, item) end
-	return tool
+	return tool, old
 end
 
 -- what's on a character (relics, armor, a rise used)

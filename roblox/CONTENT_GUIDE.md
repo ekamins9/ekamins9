@@ -755,7 +755,8 @@ it should be heard standing next to someone, never across the yard. Licensed lib
   (`GameConfig.MODES.Depths`), `GameConfig.MAP_TITLES`, and give it a **vote picture**
   (ReplicatedStorage ▸ MapShots ▸ <key>: shoot its boss room, upload, resolve the Decal).
 - **Loot**: `Catalog ▸ Loot`: rarities, affixes (a `kind` the hit hook knows), relics (`mods`,
-  `health`, or an `effect`), potions, armour, tomes (any power), what each chest holds.
+  `health`, or an `effect`; `class = "Archer"` for one only that class can use, e.g. bow draw),
+  potions, armour, tomes (the finder's own class's powers), what each chest holds.
 - **A new adventure door**: `GameConfig.DOORS` (`party = true` or `matchmade = true`, `page = 2`),
   `ADVENTURE_ORDER`, and its tile in HubMenu's page 2 (`ADV`; a scene in `SCENES`).
 

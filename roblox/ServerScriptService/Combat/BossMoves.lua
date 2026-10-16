@@ -50,6 +50,7 @@ local folder = workspace:FindFirstChild("MonsterFX")
 if not folder then folder = Instance.new("Folder"); folder.Name = "MonsterFX"; folder.Parent = workspace end
 
 local DODGE_IFRAMES = 0.45
+Moves.DAMAGE = 0.85   -- every big move's damage, ×
 local FX = {
 	bone    = {main = Color3.fromRGB(230, 222, 196), glow = Color3.fromRGB(120, 255, 170), mat = Enum.Material.SmoothPlastic},
 	ghost   = {main = Color3.fromRGB(140, 230, 255), glow = Color3.fromRGB(150, 240, 255), mat = Enum.Material.Neon},
@@ -226,7 +227,7 @@ local function strike(mob, c, dmg, spec, from, o)
 		end
 	end
 	-- (MagicServer scales a caster's damage by its SpellPower: a move is its own, at full weight)
-	MagicServer.hurt(mob.model, c, dmg / math.max(0.1, mob.model:GetAttribute("SpellPower") or 1), spec.name or mob.def.name)
+	MagicServer.hurt(mob.model, c, Moves.DAMAGE * dmg / math.max(0.1, mob.model:GetAttribute("SpellPower") or 1), spec.name or mob.def.name)
 	if o.knock ~= false and from then
 		local away = flat(r.Position - from)
 		if away.Magnitude < 0.1 then away = Vector3.new(0, 0, 1) end

@@ -11,12 +11,12 @@
                   kinds: burn, chill, poison, lifesteal, damage, storm, execute, giant, holy,
                   speed, thirst, stagger
        LEGENDARY_NAMES   a Legendary weapon's own name
-       RELICS     carried, never held: mods (Powers.addMods: speed, taken, dealt, stamina,
+       RELICS     carried, never held (`class`: only that class finds it): mods (Powers.addMods: speed, taken, dealt, stamina,
                   dodgeCost, dodgeCooldown, draw, cast), health (+max), or an effect (burn,
                   chill, lifesteal, storm, thorns, regen, berserk, rise, luck, thirst)
        POTIONS    drunk where you stand: heal (of your whole), or mods for `time` s
        ARMOR      worn over your class's (Crownfall, Deadvault): taken ×, health +
-       TOMES      any power, any class: a tome teaches it for the run (Catalog ▸ Powers) ]]
+       TOMES      one of your own class's powers: a tome teaches it for the run (Catalog ▸ Powers) ]]
 
 local C = Color3.fromRGB
 
@@ -60,8 +60,8 @@ L.RELICS = {
 	{id = "WindBoots",    name = "Boots of the Wind",  glyph = "👢", rarity = "Uncommon",  mods = {dodgeCooldown = 0.7, dodgeCost = 0.75}, text = "Dodge sooner, and for less wind"},
 	{id = "BellowsLung",  name = "Bellows Lung",       glyph = "💨", rarity = "Uncommon",  mods = {stamina = 1.3},                text = "Your stamina comes back 30% faster"},
 	{id = "LuckyCoin",    name = "Lucky Coin",         glyph = "🪙", rarity = "Uncommon",  effect = "luck",                       text = "Chests are kinder to you"},
-	{id = "ManaPearl",    name = "Mana Pearl",         glyph = "🔮", rarity = "Uncommon",  mods = {cast = 0.85},                  text = "Spells come 15% quicker"},
-	{id = "EagleFeather", name = "Eagle Feather",      glyph = "🪶", rarity = "Uncommon",  mods = {draw = 0.8},                   text = "Draw your bow 20% quicker"},
+	{id = "ManaPearl",    class = "Mage", name = "Mana Pearl",         glyph = "🔮", rarity = "Uncommon",  mods = {cast = 0.85},                  text = "Spells come 15% quicker"},
+	{id = "EagleFeather", class = "Archer", name = "Eagle Feather",      glyph = "🪶", rarity = "Uncommon",  mods = {draw = 0.8},                   text = "Draw your bow 20% quicker"},
 	{id = "EmberCharm",   name = "Ember Charm",        glyph = "🔥", rarity = "Rare",      effect = "burn",                       text = "Your blows set them burning"},
 	{id = "FrostShard",   name = "Frost Shard",        glyph = "❄️", rarity = "Rare",      effect = "chill",                      text = "Your blows chill them"},
 	{id = "CountessFang", name = "Fang of the Countess", glyph = "🦇", rarity = "Rare",    effect = "lifesteal",                  text = "8% of every hit heals you"},
