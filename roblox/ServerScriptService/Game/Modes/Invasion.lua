@@ -18,7 +18,12 @@
      Colossus, the Warchief) with its own big moves (Combat ▸ BossMoves) and a boss bar. Waves
      grow and harden as in the Horde; the break between makes you whole and mends what you
      defend. Pay as the Horde: `wave` for everyone, a kill by its rank. Your best wave per army:
-     stats.invasionBest_<army>. ]]
+     stats.invasionBest_<army>.
+
+     SPOILS OF WAR: every third wave beaten, a gilded chest stands by what you defend, one for
+     each of you (open it in the break): a RELIC rolled for your class (better the deeper you are:
+     Game ▸ Loot), yours for the rest of the run (it comes back with you when you fall), and a
+     healing draught drunk on the spot. Runs grow stronger as they go. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -48,6 +53,8 @@ local ARMIES = {
 		elite = {"OrcBerserker", "Ogre"}, special = "OrcDrummer", lords = {"OrcWarchief"}, rangedShare = 0.2},
 }
 local STEAL = 120          -- what a thief carries off
+local SPOILS_EVERY = 3     -- waves between the spoils of war
+local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
 local DRUM_EVERY = 1.25    -- the war drums' beat
 
 local Invasion = setmetatable({}, {__index = Horde})
@@ -175,6 +182,61 @@ function Invasion:spawnOne(entry, at)
 	end
 end
 
+-- SPOILS OF WAR: a gilded chest by the objective, one for each of you: a relic for the run
+function Invasion:spoils()
+	if self.spoilsChest and self.spoilsChest.model then self.spoilsChest.model:Destroy() end
+	local o = self.obj
+	local centre = o and o.pos or (MapLoader.spawns(nil)[1] and MapLoader.spawns(nil)[1].Position) or Vector3.zero
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = {MapLoader.current, workspace.Terrain}
+	local spot
+	for i = 0, 7 do
+		local a = i / 8 * math.pi * 2 + math.random() * 0.3
+		local probe = centre + Vector3.new(math.cos(a) * ((o and o.radius or 6) + 6), 0, math.sin(a) * ((o and o.radius or 6) + 6))
+		local hit = workspace:Raycast(probe + Vector3.new(0, 30, 0), Vector3.new(0, -70, 0), rp)
+		if hit and hit.Normal.Y > 0.8 then spot = hit.Position; break end
+	end
+	spot = spot or centre
+	local wave = self.wave
+	local rarity = wave >= 12 and "Legendary" or (wave >= 9 and "Epic" or (wave >= 6 and "Rare" or "Uncommon"))
+	self.spoilsChest = Loot.chest(CFrame.lookAt(spot, Vector3.new(centre.X, spot.Y, centre.Z)), {rarity = rarity, gilded = true, label = "Spoils of war", perPlayer = true, hold = 0.8,
+		onOpen = function(plr) return self:takeSpoils(plr, wave) end})
+	local ev = adventure()
+	if ev then ev:FireAllClients("Banner", {text = "SPOILS OF WAR", sub = "A CHEST FOR EACH OF YOU BY " .. (o and o.name or "THE CAMP") .. "  ·  A RELIC FOR THE RUN", kind = "victory"}) end
+end
+
+-- your share of the spoils: a relic for the run (rolled for your class, better the deeper), a draught
+function Invasion:takeSpoils(plr, wave)
+	local char = plr.Character
+	local h = char and char:FindFirstChildOfClass("Humanoid")
+	if not (h and h.Health > 0) then return false end
+	local mine = self.relics[plr] or {}
+	local have = {}
+	for _, id in ipairs(mine) do have[id] = true end
+	local item = Loot.relic(0.6 + wave * 0.22 + Loot.luckOf(char), have, nil, char:GetAttribute("Class"))
+	if item then
+		table.insert(mine, item.relic)
+		self.relics[plr] = mine
+		Loot.setRelics(char, mine)
+	end
+	pcall(Loot.drink, char, "Healing")
+	local ev = adventure()
+	if ev then ev:FireClient(plr, "Banner", {text = item and string.upper(item.name) or "SPOILS OF WAR", sub = item and ((Loot.card(item) or {}).sub or "A RELIC FOR THE RUN") or "NOTHING LEFT TO TAKE", kind = "clear"}) end
+	return true
+end
+
+-- back in after a fall: your relics come with you
+function Invasion:noteSpawn(plr)
+	local mine = self.relics and self.relics[plr]
+	if mine and #mine > 0 then
+		task.defer(function()
+			local char = plr.Character
+			if char and char.Parent then Loot.setRelics(char, mine) end
+		end)
+	end
+end
+
 -- a shout (the Horde's banner)
 function Invasion:alert(text, sub)
 	local now = os.clock()
@@ -200,6 +262,7 @@ function Invasion:start(map)
 			if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (tier >= 3 and "Champion" or (tier == 2 and "Knight" or "Squire"))) end
 		end}
 	Horde.start(self, map)
+	self.relics, self.spoilsFor, self.spoilsChest = {}, 0, nil
 	node:SetAttribute("ObjName", self.obj and self.obj.name or "")
 	-- Undead Night: it's night
 	if self.army.night then
@@ -217,6 +280,9 @@ end
 
 function Invasion:stop()
 	if self.mobOpts then Monsters.halt(self.mobOpts) end
+	pcall(Loot.clear)
+	for _, p in ipairs(Players:GetPlayers()) do if p.Character then pcall(Loot.setRelics, p.Character, {}) end end
+	self.relics, self.spoilsChest = {}, nil
 	Horde.stop(self)
 	if self.lightBefore then
 		for k, v in pairs(self.lightBefore) do pcall(function() Lighting[k] = v end) end
@@ -255,6 +321,12 @@ function Invasion:tick(dt)
 				end
 			end
 		end
+	end
+	-- the spoils of war, every third wave
+	if self.phase == "break" and self.wave > 0 and self.wave % SPOILS_EVERY == 0 and (self.spoilsFor or 0) < self.wave then
+		self.spoilsFor = self.wave
+		local ok, err = pcall(self.spoils, self)
+		if not ok then warn("[Invasion] spoils:", err) end
 	end
 	-- keep a best wave per army
 	if self.phase == "break" and self.wave > (self.bestNoted or 0) then

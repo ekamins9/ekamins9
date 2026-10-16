@@ -1860,6 +1860,10 @@ new kinds) and a lord every fifth wave with its big moves:
   live (a beat you can see): kill them first. Lord: Gorzak the Warchief.
 Pay and stats as the Horde; your best wave per army is `stats.invasionBest_<army>`. The Horde
 gained hooks for this (`roster`, `aliveCount`, `removeLive`, a forced `objective`).
+- **Spoils of war** (`Invasion:spoils`, `takeSpoils`): every third wave beaten, a gilded chest
+  stands by what you defend, one for each of you (`perPlayer`): a relic rolled for your class
+  (luck and the chest's rarity grow with the wave) that stays yours for the run (`noteSpawn`
+  puts it back on after a fall), and a healing draught. A run gets stronger as it goes.
 
 ### Dragonfall (`Game ▸ Modes ▸ Dragonfall`, `Combat ▸ Dragon`, `Game ▸ CalderaMap`, `Dragon.client`)
 You and your party (1 – 6, a party door like the Depths) against **Cindermaw, the Ashen Wyrm**.

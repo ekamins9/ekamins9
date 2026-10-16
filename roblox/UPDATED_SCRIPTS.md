@@ -1,4 +1,18 @@
-# Updated scripts: Dragonfall, a dragon raid for you and your party
+# Updated scripts: spoils of war in the Invasions; no stray team scores
+
+- **Invasions: spoils of war.** Every third wave beaten, a gilded chest stands by what you defend, one for each of you: a relic rolled for your class (better the deeper you are) that stays yours for the whole run (it comes back with you after a fall), and a healing draught.
+- **No more "CROWN 0 — 0 IRON"** on top of Plague Night: a mode with its own HUD hides the team score row.
+- **Checked in Play**: an Invasion (Goblin Raid) with the wave set to 3: the spoils chest stood by the hoard, two openings gave two relics, and they were back on after dying and coming back; compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Invasion.lua](ServerScriptService/Game/Modes/Invasion.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | spoils of war |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no team scores under an OwnHud |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Dragonfall, a dragon raid for you and your party
 
 - **Dragonfall** (new mode, a party door on the Play menu's Adventures page, 1 – 6): **Cindermaw, the Ashen Wyrm**, in its burning caldera.
   - **The Ashen Caldera** (new CalderaMap, built fresh): cracked basalt with glowing seams round an old paved ring, black cliffs with lava running down them into pools, lava pools on the floor (they burn), six ward stones with glowing runes, four ballistae on platforms, the bones of something huge, the swords and shields of those who came before, ash falling, a burning dusk. Vote picture: MapShots ▸ Caldera.
@@ -51,27 +65,4 @@ Studio-only: ReplicatedStorage ▸ MapShots ▸ Caldera (the vote picture) — s
 | [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | resets the sky light scales between maps |
 | [TavernMap.lua](ServerScriptService/Game/TavernMap.lua) | ServerScriptService ▸ Game | ModuleScript | its fires flicker |
 | [TorchFlicker.client.lua](StarterPlayerScripts/TorchFlicker.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: The Gilded Rat, the dungeon game's own world
-
-- **A world of its own** for The Depths and Deadvault: **The Gilded Rat**, an adventurers' lodge (new Tavern mode, its own public servers).
-  - The Courtyard's Deadvault and Depths tiles take you there; leaving a raid brings you back there; its door goes home to the Courtyard.
-- **The lodge** (new TavernMap, built fresh): a long timbered hall, candle-lit tables, chandeliers, a great hearth, the Treasurer's counter, the Smith's forge, the Armourer's stands, the Alchemist's bottles and cauldron, your stash's chest, the notice board, the Dungeon Gate, the door home.
-- **The merchants stand at their stalls** as dressed people with names over their heads; TRADE opens their wares in the lobby. The chest opens the stash, the board the class tab, the gate PLAY.
-- **You walk in** as your class; the lobby opens on arrival; M is the lobby there.
-- **Checked in Play**: switched to the Tavern: the lodge built (431 parts), a body walked in, the lobby opened by itself on PLAY; the hall on screen with its merchants; compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Tavern.lua](ServerScriptService/Game/Modes/Tavern.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
-| [TavernMap.lua](ServerScriptService/Game/TavernMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS.Tavern, MODES.Tavern, its title |
-| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | out of a raid: to the Tavern |
-| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | extraction: to the Tavern |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the tiles go to the Tavern; M there is the lobby's |
-| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | opened by the lodge's places and on arrival |
-| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no clock in the Tavern |
 | [README.md](README.md) | | doc | |

@@ -572,8 +572,10 @@ local function refreshRound()
 		banner.Visible = false
 		payLine.Visible = false
 		voteBox.Visible = false
-		scoreRow.Visible = teams == 2
-		if teams == 2 then
+		-- (a mode with a HUD of its own says its sides itself: Plague Night's living and plague)
+		local ownHud = roundNode:GetAttribute("OwnHud") == true
+		scoreRow.Visible = teams == 2 and not ownHud
+		if teams == 2 and not ownHud then
 			scoreA.Text = string.format("%s  %d", string.upper(GameConfig.TEAMS.A.name), roundNode:GetAttribute("ScoreA") or 0)
 			scoreB.Text = string.format("%d  %s", roundNode:GetAttribute("ScoreB") or 0, string.upper(GameConfig.TEAMS.B.name))
 		end
