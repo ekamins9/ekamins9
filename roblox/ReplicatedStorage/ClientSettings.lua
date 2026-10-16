@@ -61,7 +61,8 @@ ClientSettings.KEYS = {
 	{key = "Profile",    label = "Profile of who you look at", default = "P"},
 	{key = "Reload",     label = "Reload the crossbow · meditate (hold)", default = "R"},
 	{key = "Stance",     label = "Staff: magic / melee", default = "H"},
-	{key = "Power",      label = "Power / throw (third slot)", default = "E"},
+	{key = "Power",      label = "Power (your class's magic)", default = "E"},
+	{key = "Throw",      label = "Throw (hold to aim, let go to throw)", default = "C"},
 }
 ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}
 

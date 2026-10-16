@@ -9,9 +9,10 @@
        A / ✕     jump            B / ○     dodge           X / □     kick (or pick up,
        Y / △     feint                                               when a prompt shows)
        LS click  sprint (on until you stop)                RS click  first / third person
-       D-pad ↑   tap: your POWER / throw (the third slot: Powers.client) · hold: the emote
-                 wheel (aim with the right stick, let go)
-       D-pad ↓   crouch (toggle)        D-pad ← →  weapons (Hotbar)
+       D-pad ↑   tap: your POWER (Powers.client) · hold: the emote wheel (aim with the right
+                 stick, let go)
+       D-pad ↓   tap: crouch (toggle) · hold: aim your THROWABLE, let go to throw
+       D-pad ← →  weapons (Hotbar)
        VIEW / TOUCHPAD   tap: the menu · hold: the scoreboard
        right stick       look
 
@@ -88,6 +89,7 @@ end
 
 -- toggles
 local sprintOn, crouchOn = false, false
+local crouchDownAt, throwHeld = nil, false
 local selectAt = nil
 local boardUp = false
 
@@ -105,7 +107,13 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	if code == PAD.Swing then swingDown()
 	elseif code == PAD.Block then TouchInput.press("Block", true)
 	elseif code == PAD.Sprint then sprintOn = not sprintOn; TouchInput.press("Sprint", sprintOn)
-	elseif code == PAD.Crouch then crouchOn = not crouchOn; TouchInput.press("Crouch", crouchOn)
+	elseif code == PAD.Crouch then
+		-- a tap crouches; held a moment, the throwable is aimed (let go to throw)
+		local mine = os.clock()
+		crouchDownAt, throwHeld = mine, false
+		task.delay(0.22, function()
+			if crouchDownAt == mine then throwHeld = true; TouchInput.press("Throw", true) end
+		end)
 	elseif code == PAD.Emote then
 		-- a tap is the power; held a moment, the emote wheel
 		local mine = os.clock()
@@ -135,6 +143,10 @@ UserInputService.InputEnded:Connect(function(input)
 	elseif code == PAD.Emote then
 		if emoteOpened then TouchInput.press("Emote", false) else TouchInput.press("Power", true) end
 		emoteDownAt, emoteOpened = nil, false
+	elseif code == PAD.Crouch then
+		if throwHeld then TouchInput.press("Throw", false)
+		elseif crouchDownAt then crouchOn = not crouchOn; TouchInput.press("Crouch", crouchOn) end
+		crouchDownAt, throwHeld = nil, false
 	end
 end)
 

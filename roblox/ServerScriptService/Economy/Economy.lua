@@ -405,7 +405,11 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	cc.sinceLegendary = (win.rarity == "Legendary" or win.rarity == "Mythic") and 0 or cc.sinceLegendary + 1
 	local OWN = {skin = "skins", killfx = "killfx", emote = "emotes", piece = "pieces", armorfx = "armorfx", spellfx = "spellfx"}
 	local ownKind = OWN[win.kind] or "emotes"
-	local dup = Profile.has(plr, ownKind, win.id)
+	local dup
+	if win.kind == "armorset" then
+		dup = true
+		for _, pid in ipairs(win.pieces) do if not Profile.has(plr, "pieces", pid) then dup = false end end
+	else dup = Profile.has(plr, ownKind, win.id) end
 	local refund = 0
 	local variant, serial
 	if win.kind == "skin" then variant = collection().rollSkinVariant() end
@@ -415,6 +419,16 @@ function Economy.openCrate(plr, crateId, free, payWith)
 		local it = collection().grantNumbered(plr, win.id, from, variant)
 		serial = it and it.n
 		copies = Profile.copyCount(p, win.id)
+	elseif win.kind == "armorset" then
+		-- a whole set: a copy of every piece of it (a Mythic set numbered once, every piece that number)
+		if win.rarity == "Mythic" then serial = collection().serial("armorset:" .. win.id) end
+		copies = math.huge
+		for _, pid in ipairs(win.pieces) do
+			local key = "armor:" .. pid
+			Profile.addCopy(plr, key, {n = serial, from = from, bound = not collection().tradable(key)})
+			copies = math.min(copies, Profile.copyCount(p, key))
+		end
+		if copies == math.huge then copies = 1 end
 	else
 		-- a kill effect, an emote, an armor piece or a finish too: kept as a copy of
 		-- its own, never paid back (a Mythic one numbered); trade the spare, or scrap it
@@ -430,7 +444,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	Analytics.onboard(plr, 5)
 	Analytics.event(plr, "CrateOpened", 1, crateId, win.rarity, win.kind)
 	if win.rarity == "Mythic" or win.rarity == "Unique" then Badges.award(plr, "Mythic") end
-	local KIND_LABEL = {killfx = "Kill effect · ", emote = "Emote · ", piece = "Armor · ", armorfx = "Armor finish · "}
+	local KIND_LABEL = {killfx = "Kill effect · ", emote = "Emote · ", piece = "Armor · ", armorset = "Armor set · ", armorfx = "Armor finish · "}
 	local label = win.kind == "skin" and (Catalog.WEAPON[win.weapon].name .. " · " .. win.name)
 		or (win.kind == "spellfx" and (((Catalog.SPELLS[win.spell] or {}).name or "Spell") .. " · " .. win.name))
 		or ((KIND_LABEL[win.kind] or "") .. win.name)
@@ -443,7 +457,7 @@ function Economy.openCrate(plr, crateId, free, payWith)
 	end)
 	return {crate = crateId, kind = win.kind, itemId = win.id, skinId = win.kind == "skin" and win.id or nil, weapon = win.weapon, name = label, rarity = win.rarity,
 		dup = dup, refund = refund, sinceLegendary = cc.sinceLegendary, opens = cc.opens, variant = variant, serial = serial,
-		copies = copies}
+		copies = copies, pieces = win.pieces, top = win.top}
 end
 
 --------------------------------------------------------------------

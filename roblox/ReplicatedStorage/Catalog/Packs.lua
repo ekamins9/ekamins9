@@ -23,9 +23,9 @@ return {
 	-- crate-only sets (never sold: their pieces come out of the Forge Crate, one at a time)
 	Forge          = {name = "The Forge", crate = true, color = Color3.fromRGB(150, 70, 30)},
 	WarChest       = {name = "The War Chest", crate = true, color = Color3.fromRGB(150, 40, 34)},
-	-- (the Mage's robes out of the Arcana Crate, one piece at a time)
+	-- (the Mage's robes out of the Arcana Crate, whole)
 	Arcana         = {name = "The Arcana", crate = true, color = Color3.fromRGB(110, 60, 180)},
-	-- (archers' outfits out of the Fletcher's Crate, one piece at a time)
+	-- (archers' outfits out of the Fletcher's Crate, whole)
 	Fletcher       = {name = "The Fletcher's", crate = true, color = Color3.fromRGB(96, 140, 64)},
 	-- (the Archer's own outfit: it comes with the class, Config Unlock)
 	Bowman         = {name = "The Bowman", weight = "Light", free = true, color = Color3.fromRGB(70, 96, 52)},

@@ -1,12 +1,20 @@
 --[[ THROWING — the throwables (Catalog ▸ Arsenal: knives, axes, darts, a javelin, bombs,
-     flasks, caltrops, bolas, holy water), in the third slot and thrown with the Power key.
-     Combat ▸ Powers passes the throw on; here it's timed, flown (on an arc, the server's own
-     flight) and resolved: a hit (a shield raised toward it stops it: Combat ▸ Shields), a
-     root, a burst where it lands (a pool of fire, frost, smoke, caltrops: Powers.zoneAt).
+     flasks, caltrops, bolas, holy water): every class carries one, on its own key (Throw, C).
+     HELD TO AIM: press and the arm draws back (a wind-up, Catalog.throwWindup: knives quick, a
+     javelin slow; you walk slower meanwhile), the client draws the
+     arc and where it lands; let go and it flies — at once if the wind-up is done, else the
+     moment it is. Combat ▸ Powers passes the asks on; here it's timed, flown (on an arc, the
+     server's own flight) and resolved: a hit (a shield raised toward it stops it: Combat ▸
+     Shields), a root, a burst where it lands (a pool of fire, frost, smoke, caltrops:
+     Powers.zoneAt).
 
        Throwing.equip(character, id, skinId)   full charges (Throwable, ThrowSkin, ThrowCharges,
                                                ThrowMax, ThrowNextAt for the HUD)
-       Throwing.throw(character, aimPoint) -> ok, why
+       Throwing.aim(character) -> ok, why      the wind-up (ThrowAiming, ThrowWindup,
+                                               SpeedMult_Throw)
+       Throwing.release(character, aimPoint)   let go: thrown when the wind-up's done
+       Throwing.cancel(character)
+       Throwing.throw(character, aimPoint) -> ok, why   (straight away: no wind-up)
      ThrowFX (server → every screen): "Throw", shotId, origin, velocity, gravity, weaponId,
      skinId, thrower · "Land", shotId, pos, stuckIn (a part or nil) ]]
 
@@ -34,6 +42,12 @@ local WHOOSH = "rbxassetid://9120709477"   -- (the menus' whoosh: something leav
 local Powers, Shields
 local function powers() Powers = Powers or require(script.Parent:WaitForChild("Powers")); return Powers end
 local function shields() Shields = Shields or require(script.Parent:WaitForChild("Shields")); return Shields end
+
+-- the wind-up before it can leave the hand (Catalog.throwWindup: by how it's thrown, or the
+-- def's own `windup`)
+local AIM_SLOW = 0.8     -- (walking while you aim)
+local AIM_MAX = 10       -- (held longer than this: put away)
+function Throwing.windupOf(def) return Catalog.throwWindup(def) end
 
 local function publish(c, s)
 	c:SetAttribute("ThrowCharges", s.charges)
@@ -171,6 +185,49 @@ function Throwing.throw(c, aim)
 		vel = nextVel
 		if os.clock() - t0 > 6 or pos.Y < -200 then conn:Disconnect(); fx:FireAllClients("Land", id, nil, nil) end
 	end)
+	return true
+end
+
+local function stopAim(c, s)
+	if s then s.aimAt = nil end
+	c:SetAttribute("ThrowAiming", nil)
+	c:SetAttribute("SpeedMult_Throw", nil)
+end
+function Throwing.cancel(c)
+	stopAim(c, state[c])
+end
+function Throwing.aim(c)
+	local s = state[c]
+	if not s then return false, "no throwable: CLASSES › THROWABLE" end
+	if s.charges <= 0 then return false, string.format("%s: the next one's back in %d", s.def.name, math.ceil(s.nextCharge - now())) end
+	if os.clock() < s.nextThrow then return false, "" end
+	if (c:GetAttribute("StunnedUntil") or 0) > os.clock() then return false, "" end
+	s.aimAt = os.clock()
+	s.aimToken = (s.aimToken or 0) + 1
+	local token = s.aimToken
+	c:SetAttribute("ThrowWindup", Throwing.windupOf(s.def))
+	c:SetAttribute("ThrowAiming", true)
+	c:SetAttribute("SpeedMult_Throw", AIM_SLOW)
+	task.delay(AIM_MAX, function() if s.aimToken == token and s.aimAt then stopAim(c, s) end end)
+	return true
+end
+function Throwing.release(c, aim)
+	local s = state[c]
+	if not s then return false, "" end
+	-- (no wind-up seen: a tap, or an old client: it starts now)
+	if not s.aimAt then
+		local ok, why = Throwing.aim(c)
+		if not ok then return false, why end
+	end
+	local token = s.aimToken
+	local left = s.aimAt + Throwing.windupOf(s.def) - os.clock()
+	local function go()
+		if s.aimToken ~= token or not s.aimAt or not c.Parent then return end
+		stopAim(c, s)
+		if (c:GetAttribute("StunnedUntil") or 0) > os.clock() or c:GetAttribute("Ragdolled") then return end
+		Throwing.throw(c, aim)
+	end
+	if left > 0.01 then task.delay(left, go) else go() end
 	return true
 end
 

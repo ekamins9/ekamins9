@@ -1031,6 +1031,13 @@ local function roundState() return roundNode:GetAttribute("State") or "" end
 -- ownership, mirroring Profile.has on the server
 local function owns(kind, id)
 	local p = state.profile
+	-- (a crate's armor set: every piece of it)
+	if kind == "armorset" then
+		local list = Catalog.setPieces(id)
+		if #list == 0 then return false end
+		for _, pc in ipairs(list) do if not owns("pieces", pc.id) then return false end end
+		return true
+	end
 	if kind == "pieces" then
 		local pc = Catalog.PIECE[id]
 		if pc and Catalog.isFree(pc) then return true end
@@ -1844,6 +1851,7 @@ function Preview.thumb(parent, it, size, zoom)
 	if it.kind == "skin" then return weaponThumb(parent, it.weapon, it.id, size, zoom) end
 	if it.kind == "killfx" then return Preview.killFx(parent, it.id, size, 0.3, true) end
 	if it.kind == "piece" or it.kind == "armorfx" then return HX.armorThumb(parent, it.kind, it.id, size) end
+	if it.kind == "armorset" then return HX.armorThumb(parent, "piece", it.top, size) end   -- (the whole set on show)
 	if it.kind == "spellfx" then return HX.spellThumb(parent, it.id, size) end
 	return Preview.emote(parent, it.id, size, 0.45, true)
 end
@@ -2621,6 +2629,7 @@ end
 -- the copy key a crate item is numbered under (Economy ▸ Collection)
 function HX.serialKey(it)
 	local PREFIX = {killfx = "fx:", emote = "emote:", piece = "armor:", armorfx = "finish:", spellfx = "spell:"}
+	if it.kind == "armorset" then return "armor:" .. tostring(it.top) end   -- (a set: counted by its top)
 	return it.kind == "skin" and it.id or ((PREFIX[it.kind] or "emote:") .. it.id)
 end
 -- EVERY ITEM'S ODDS (shown before any open; the pity, when due, as it really is)
@@ -2718,11 +2727,11 @@ function HX.crateGallery(host, liveCrates)
 			local has = {}
 			for _, it in ipairs(items) do has[it.kind] = true end
 			local tags = {}
-			for _, k in ipairs({{"piece", "ARMOR"}, {"spellfx", "SPELL SKINS"}, {"skin", "SKINS"}, {"armorfx", "FINISHES"}, {"killfx", "KILL FX"}, {"emote", "EMOTES"}}) do
+			for _, k in ipairs({{"armorset", "ARMOR SETS"}, {"spellfx", "SPELL SKINS"}, {"skin", "SKINS"}, {"armorfx", "FINISHES"}, {"killfx", "KILL FX"}, {"emote", "EMOTES"}}) do
 				if has[k[1]] then table.insert(tags, k[2]) end
 			end
 			local chip = title(card, table.concat(tags, " · "), 11, Color3.new(1, 1, 1))
-			chip.BackgroundTransparency = 0; chip.BackgroundColor3 = has.piece and Color3.fromRGB(190, 60, 40) or col:Lerp(Color3.new(0, 0, 0), 0.45)
+			chip.BackgroundTransparency = 0; chip.BackgroundColor3 = has.armorset and Color3.fromRGB(190, 60, 40) or col:Lerp(Color3.new(0, 0, 0), 0.45)
 			chip.AutomaticSize = Enum.AutomaticSize.X; chip.Size = UDim2.fromOffset(0, 20); chip.AnchorPoint = Vector2.new(1, 0); chip.Position = UDim2.new(1, -10, 0, 34)
 			chip.TextXAlignment = Enum.TextXAlignment.Center; chip.ZIndex = 3
 			padding(chip, 8, 8, 0, 0)
@@ -4457,7 +4466,7 @@ function Preview.strip(parent, pool, selectedKey, onPick, height)
 		local t = title(c, it.name, 13); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
 		local subText = it.kind == "skin" and string.upper(Catalog.WEAPON[it.weapon] and Catalog.WEAPON[it.weapon].name or it.weapon)
 			or (it.kind == "spellfx" and string.upper((Catalog.SPELLS[it.spell] or {}).name or "SPELL"))
-			or ({killfx = "KILL FX", piece = "ARMOR", armorfx = "ARMOR FINISH"})[it.kind] or "EMOTE"
+			or ({killfx = "KILL FX", piece = "ARMOR", armorset = "ARMOR SET", armorfx = "ARMOR FINISH"})[it.kind] or "EMOTE"
 		local sub = title(c, subText .. (have and "  ✔" or ""), 11, have and COL.GOOD or COL.DIM); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
 		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
 		c.Activated:Connect(function() onPick(it) end)
@@ -4629,7 +4638,7 @@ do
 		local leftList = scroll(left, 6)
 		local right = clearFrame(body); right.Position = UDim2.new(0, 286, 0, 0); right.Size = UDim2.new(1, -286, 1, 0)
 		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}, {"Ranged", "RANGED  ·  ARCHER"},
-			{"Shield", "SHIELDS  ·  BESIDE A ONE-HANDER"}, {"Throwable", "THROWABLES  ·  THIRD SLOT"}}
+			{"Shield", "SHIELDS  ·  BESIDE A ONE-HANDER"}, {"Throwable", "THROWABLES  ·  HOLD C TO THROW"}}
 		local function shown(w) return not HX.hideLocked() or owns("weapons", w.id) end
 		if not Catalog.WEAPON[ui.shopWeapon] or not shown(Catalog.WEAPON[ui.shopWeapon]) then
 			ui.shopWeapon = nil
@@ -5324,12 +5333,18 @@ do
 			if sel.kind == "skin" then stg = weaponStage(stageH, sel.weapon, sel.id)
 			elseif sel.kind == "killfx" then stg = Preview.killFx(stageH, sel.id, UDim2.fromScale(1, 1))
 			elseif sel.kind == "piece" or sel.kind == "armorfx" then stg = HX.armorStage(stageH, sel.kind, sel.id, UDim2.fromScale(1, 1))
+			elseif sel.kind == "armorset" then stg = HX.armorStage(stageH, "piece", sel.top, UDim2.fromScale(1, 1))
 			elseif sel.kind == "spellfx" then stg = HX.spellStage(stageH, sel.id, UDim2.fromScale(1, 1))
 			else stg = Preview.emote(stageH, sel.id, UDim2.fromScale(1, 1)) end
 			local nm = title(stg, sel.name, 32); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 36)
 			local kindText = sel.kind == "skin" and string.upper(Catalog.WEAPON[sel.weapon] and Catalog.WEAPON[sel.weapon].name or sel.weapon)
 				or (sel.kind == "spellfx" and (string.upper((Catalog.SPELLS[sel.spell] or {}).name or "") .. "  ·  SPELL SKIN"))
 				or (sel.kind == "piece" and ((sel.ref and sel.ref.weight or "") .. " ARMOR  ·  " .. string.upper((sel.ref and sel.ref.slot == "bottom") and "LEGS" or (sel.ref and sel.ref.slot or ""))):upper())
+				or (sel.kind == "armorset" and ((sel.ref and sel.ref.weight or "") .. " ARMOR SET  ·  " .. (function()
+					local names = {}
+					for _, pid in ipairs(sel.pieces or {}) do table.insert(names, (Catalog.PIECE[pid] or {}).name or pid) end
+					return table.concat(names, " + ")
+				end)()):upper())
 				or (HX.KIND_NAME[sel.kind] or "EMOTE")
 			local fxText = sel.kind == "skin" and Preview.fxText(sel.ref) or nil
 			local wn = title(stg, kindText .. (fxText and ("  ·  " .. string.upper(fxText)) or ""), 16, COL.DIM); wn.Position = UDim2.fromOffset(20, 48); wn.Size = UDim2.new(1, -40, 0, 20)
@@ -5427,6 +5442,7 @@ do
 			local won = res.skinId and Catalog.SKIN[res.skinId]
 			local LINES = {skin = "New skin! Equip it from the ARMORY or your LOADOUT.", killfx = "New kill effect! Equip it in the ARMORY.",
 				piece = "New armor! Wear it in your LOADOUT (collect the whole set: it wears its own finish).", armorfx = "New finish! Put it on in your LOADOUT › FINISH, on any set.",
+				armorset = "A whole new armor set, every piece of it! Wear it in your LOADOUT: it wears its own finish.",
 				spellfx = "New spell skin! Wear it on your Mage (LOADOUT › SPELLS › LOOKS)."}
 			local line = LINES[kind] or "New emote! Put it on your wheel in the ARMORY."
 			if res.variant then line = string.upper(res.variant) .. " FINISH!  " .. line end
@@ -5437,8 +5453,8 @@ do
 					closeModal()
 					if kind == "armorfx" then HX.wearFinish(state.activeClass, res.itemId); return end
 					if kind == "spellfx" then HX.wearSpellSkin(res.itemId); return end
-					if kind == "piece" then
-						local pc = Catalog.PIECE[res.itemId]
+					if kind == "piece" or kind == "armorset" then
+						local pc = Catalog.PIECE[kind == "armorset" and (res.top or "") or res.itemId]
 						for cid, c in pairs(GameConfig.CLASSES) do if pc and c.weight == pc.weight then ui.editing = cid; if cid == state.activeClass then break end end end
 						selectTab("CLASSES"); return
 					end
@@ -5451,6 +5467,7 @@ do
 					if kind == "skin" then th = weaponStage(box, won and won.weapon or res.weapon, res.skinId, UDim2.new(1, 0, 0, 240))
 					elseif kind == "killfx" then th = Preview.killFx(box, res.itemId, UDim2.new(1, 0, 0, 260))
 					elseif kind == "piece" or kind == "armorfx" then th = HX.armorStage(box, kind, res.itemId, UDim2.new(1, 0, 0, 280))
+					elseif kind == "armorset" then th = HX.armorStage(box, "piece", res.top, UDim2.new(1, 0, 0, 280))
 					elseif kind == "spellfx" then th = HX.spellStage(box, res.itemId, UDim2.new(1, 0, 0, 260))
 					else th = Preview.emote(box, res.itemId, UDim2.new(1, 0, 0, 260)) end
 					th.LayoutOrder = 5
@@ -5765,7 +5782,8 @@ function HX.classLevelPanel(list, classId)
 	dim(p, (#nexts > 0 and ("NEXT  ·  " .. table.concat(nexts, "   ·   ") .. ".  ") or "") .. "Every bit of XP you earn as a " .. className(classId) .. " counts; a Key every " .. M.keyEvery .. " levels.", 12)
 end
 
--- THE SHIELD (beside a one-handed primary) and THE THIRD SLOT (a power, a throwable, a sidearm)
+-- THE SHIELD (beside a one-handed primary), THE POWER (E), THE THROWABLE (C), and beside a
+-- shield a SIDEARM on 3
 function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
 	local cls = GameConfig.CLASSES[classId]
 	local P = state.profile or {}
@@ -5809,73 +5827,83 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
 			skinCards(sp, lo.shield, lo.shieldSkin, function(v) lo.shieldSkin = v; dirty() end)
 		end
 	end
-	-- THE THIRD SLOT
-	local tp = panel(list, "THIRD SLOT  ·  " .. (Catalog.POWERS.names[classId] or "POWERS") .. "  ·  E")
-	dim(tp, "Your class's magic, a throwable, or (beside a shield) a sidearm. In battle press E (a controller's D-pad ↑ tap; on a phone, tap its button by your energy bar); it aims where your crosshair is.", 12)
-	local kind = lo.thirdKind or "power"
-	ui.thirdTab = ui.thirdTab or (kind == "throwable" and "throw" or (kind == "sidearm" and "side" or "power"))
-	if ui.thirdTab == "side" and not lo.shield then ui.thirdTab = "power" end
-	do
-		local row = clearFrame(tp); row.Size = UDim2.new(1, 0, 0, 34); row.LayoutOrder = nextOrder()
-		hlist(row, 8)
-		local tabs = {{"power", "POWERS"}, {"throw", "THROWABLES"}}
-		if lo.shield then table.insert(tabs, {"side", "SIDEARM"}) end
-		for i, tb in ipairs(tabs) do
-			local b = button(row, tb[2], 13, ui.thirdTab == tb[1] and COL.BLUE or COL.GLASS2)
-			b.Size = UDim2.new(1 / #tabs, -6, 0, 34); b.LayoutOrder = i
-			b.Activated:Connect(function() ui.thirdTab = tb[1]; render.CLASSES() end)
-		end
+	-- (a loadout saved when the power and the throwable shared the third slot)
+	if lo.power == nil and lo.thirdKind == "power" then lo.power = lo.thirdId end
+	if lo.throwable == nil and lo.thirdKind == "throwable" then lo.throwable, lo.throwableSkin = lo.thirdId, lo.thirdSkin end
+	if lo.thirdKind == "power" or lo.thirdKind == "throwable" then lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil end
+	local function keyOf(action, pad)
+		local hints = HX.Hints
+		if hints and hints.mode and hints.mode() == "Gamepad" then return pad end
+		local ok, k = pcall(function() return require(ReplicatedStorage:WaitForChild("ClientSettings")).get("Key_" .. action) end)
+		return ok and k or (action == "Throw" and "C" or "E")
 	end
-	if ui.thirdTab == "power" then
+	-- THE POWER (E)
+	local pp = panel(list, "POWER  ·  " .. (Catalog.POWERS.names[classId] or "POWERS") .. "  ·  " .. tostring(keyOf("Power", "D-PAD ↑")))
+	dim(pp, "Your class's magic. In battle press " .. tostring(keyOf("Power", "D-PAD ↑")) .. " (on a phone, tap its orb by your energy bar); it aims where your crosshair is. Class levels open more.", 12)
+	do
 		local lvl = Catalog.classLevel(P, classId)
-		local g = cardGrid(tp, 40)
+		local first = (Catalog.POWERS.byClass[classId] or {})[1]
+		local cur = lo.power or (first and first.id)
+		local g = cardGrid(pp, 40)
 		for i, pw in ipairs(Catalog.POWERS.byClass[classId] or {}) do
 			local open = lvl >= pw.level
 			local sub = open and string.format("%s%ds cooldown", pw.ultimate and "ULTIMATE · " or "", pw.cooldown) or string.format("%s CLASS LEVEL %d", string.upper(className(classId)), pw.level)
-			itemCard(g, i, (pw.glyph or "") .. "  " .. pw.name, sub, kind == "power" and lo.thirdId == pw.id, open, pw.ultimate and RARITY_COL.Legendary or nil, function()
-				if open then lo.thirdKind, lo.thirdId = "power", pw.id; dirty()
+			itemCard(g, i, (pw.glyph or "") .. "  " .. pw.name, sub, cur == pw.id, open, pw.ultimate and RARITY_COL.Legendary or nil, function()
+				if open then lo.power = pw.id; dirty()
 				else toast(pw.name .. " opens at " .. className(classId) .. " class level " .. pw.level .. ". " .. (pw.desc or ""), COL.DIM) end
 			end)
 		end
-		local pw = kind == "power" and Catalog.POWER[lo.thirdId or ""]
+		local pw = Catalog.POWER[cur or ""]
 		if pw then
-			local d = panel(tp, (pw.glyph or "") .. "  " .. string.upper(pw.name) .. (pw.ultimate and "  ·  ULTIMATE" or ""), true)
+			local d = panel(pp, (pw.glyph or "") .. "  " .. string.upper(pw.name) .. (pw.ultimate and "  ·  ULTIMATE" or ""), true)
 			dim(d, (pw.desc or "") .. string.format("  (%ds to come back)", pw.cooldown), 13)
-			heading(tp, "ITS LOOK")
+			heading(pp, "ITS LOOK")
 			local spellId = "Pw_" .. pw.id
 			lo.spellSkins = lo.spellSkins or {}
-			local cur = lo.spellSkins[spellId]
-			local sg = cardGrid(tp, 40)
-			itemCard(sg, 0, "Default", "its own colours", cur == nil, true, pw.color, function() lo.spellSkins[spellId] = nil; dirty() end)
+			local sk0 = lo.spellSkins[spellId]
+			local sg = cardGrid(pp, 40)
+			itemCard(sg, 0, "Default", "its own colours", sk0 == nil, true, pw.color, function() lo.spellSkins[spellId] = nil; dirty() end)
 			for i, sk in ipairs(Catalog.spellSkinsFor(spellId)) do
 				local have = owns("spellfx", sk.id)
 				local where = sk.mastery and string.format("%s CLASS LEVEL %d", string.upper(className(sk.mastery.class)), sk.mastery.level)
 					or ((Catalog.CRATES[sk.crate or ""] or {}).name or "a crate")
-				itemCard(sg, i, sk.name, have and sk.rarity or where, cur == sk.id, have, RARITY_COL[sk.rarity], function()
+				itemCard(sg, i, sk.name, have and sk.rarity or where, sk0 == sk.id, have, RARITY_COL[sk.rarity], function()
 					if have then lo.spellSkins[spellId] = sk.id; dirty() else toast(sk.name .. ": " .. where .. ". " .. (sk.description or ""), COL.DIM) end
 				end)
 			end
 		end
-	elseif ui.thirdTab == "throw" then
+	end
+	-- THE THROWABLE (C)
+	local tp = panel(list, "THROWABLE  ·  HOLD " .. tostring(keyOf("Throw", "D-PAD ↓")))
+	dim(tp, "Every class carries one. Hold " .. tostring(keyOf("Throw", "D-PAD ↓")) .. " to draw back and aim (the arc shows where it lands), let go to throw; block to put it away. Charges come back one at a time.", 12)
+	do
+		local cur = lo.throwable or Catalog.FREE_THROWABLE
 		local g = cardGrid(tp, 40)
+		itemCard(g, 0, "Nothing", "carry no throwable", cur == "none", true, nil, function() lo.throwable, lo.throwableSkin = "none", nil; dirty() end)
 		for i, t in ipairs(Catalog.ARSENAL.throwables) do
 			local have = owns("weapons", t.id)
 			local what = t.burst and (t.burst.fire and "fire pool" or (t.burst.frost and "frost cloud" or (t.burst.smoke and "smoke" or (t.burst.ground and "spikes" or "heals"))))
 				or (t.snare and "roots them" or (t.damage .. " damage"))
 			itemCard(g, i, t.name, have and string.format("%d × %s · %ds each", t.charges, what, t.recharge) or (unlockText(t) .. (t.marks and ("  ·  or " .. fmt(t.marks) .. " Marks") or "")),
-				kind == "throwable" and lo.thirdId == t.id, have, nil, function()
-				if have then lo.thirdKind, lo.thirdId, lo.thirdSkin = "throwable", t.id, t.id .. ":Default"; dirty()
+				cur == t.id, have, nil, function()
+				if have then lo.throwable, lo.throwableSkin = t.id, t.id .. ":Default"; dirty()
 				else toast(t.name .. ": " .. unlockText(t) .. " (or buy it in the ARMORY)", COL.DIM) end
 			end)
 		end
-		local t = kind == "throwable" and Catalog.WEAPON[lo.thirdId or ""]
+		local t = Catalog.WEAPON[cur or ""]
 		if t then
-			dim(tp, t.desc or "", 12)
+			dim(tp, (t.desc or "") .. string.format("  (a %.2fs wind-up)", Catalog.throwWindup(t)), 12)
 			heading(tp, "ITS SKIN")
-			skinCards(tp, t.id, lo.thirdSkin, function(v) lo.thirdSkin = v; dirty() end)
+			skinCards(tp, t.id, lo.throwableSkin, function(v) lo.throwableSkin = v; dirty() end)
 		end
-	else
-		local g = cardGrid(tp, 40)
+	end
+	-- A SIDEARM on 3, beside a shield (the shield took the secondary's place)
+	if lo.shield then
+		local sp = panel(list, "SIDEARM  ·  BESIDE YOUR SHIELD  ·  3")
+		dim(sp, "Your shield takes the secondary's place: a one-handed sidearm can ride on key 3.", 12)
+		local g = cardGrid(sp, 40)
+		local kind = lo.thirdKind
+		itemCard(g, 0, "None", "no sidearm", kind ~= "sidearm", true, nil, function() lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil; dirty() end)
 		local n = 0
 		for _, sw in ipairs(Catalog.WEAPONS) do
 			if sw.id ~= lo.weapon and Catalog.weaponFits(cls, sw, "secondary") then
@@ -5888,8 +5916,8 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
 		end
 		local sw = kind == "sidearm" and Catalog.WEAPON[lo.thirdId or ""]
 		if sw then
-			heading(tp, "ITS SKIN")
-			skinCards(tp, sw.id, lo.thirdSkin, function(v) lo.thirdSkin = v; dirty() end)
+			heading(sp, "ITS SKIN")
+			skinCards(sp, sw.id, lo.thirdSkin, function(v) lo.thirdSkin = v; dirty() end)
 		end
 	end
 end
@@ -7728,8 +7756,8 @@ end
 --  the creature walking), what it is, where it comes from, YOUR COPIES of it
 --  (number, finish, story, kills) and what you can do with it
 --------------------------------------------------------------------
-HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", armorfx = "ARMOR FINISH", spellfx = "SPELL SKIN", title = "TITLE"}
-HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", armorfx = "armorfx", spellfx = "spellfx", title = "titles"}
+HX.KIND_NAME = {skin = "WEAPON SKIN", killfx = "KILL EFFECT", emote = "EMOTE", companion = "COMPANION", piece = "ARMOR PIECE", armorset = "ARMOR SET", armorfx = "ARMOR FINISH", spellfx = "SPELL SKIN", title = "TITLE"}
+HX.OWNKIND = {skin = "skins", killfx = "killfx", emote = "emotes", companion = "companions", piece = "pieces", armorset = "armorset", armorfx = "armorfx", spellfx = "spellfx", title = "titles"}
 function HX.defOf(kind, id)
 	if kind == "skin" then return Catalog.SKIN[id] end
 	if kind == "killfx" then return Catalog.KILLFX_BY[id] end

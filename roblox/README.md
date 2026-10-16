@@ -63,7 +63,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Build/MapProps.lua` | `ServerScriptService` → `Build` → `MapProps` (wagons, trees, campfires, braziers, graves, longships…) | ModuleScript |
 | `ServerScriptService/Build/MapWildwood.lua`, `MapRavenhold.lua`, `MapStormbreak.lua` | `ServerScriptService` → `Build` → `MapWildwood` / `MapRavenhold` / `MapStormbreak` | ModuleScript |
 | `ServerScriptService/Game/Modes/Horde.lua` | `ServerScriptService` → `Game` → `Modes` → `Horde` | ModuleScript |
-| `ServerScriptService/Combat/Powers.lua`, `Throwing.lua`, `Shields.lua` | `ServerScriptService` → `Combat` → `Powers` / `Throwing` / `Shields` (the third slot's magic, throwables, shields) | ModuleScript each |
+| `ServerScriptService/Combat/Powers.lua`, `Throwing.lua`, `Shields.lua` | `ServerScriptService` → `Combat` → `Powers` / `Throwing` / `Shields` (powers, throwables, shields) | ModuleScript each |
 | `ServerScriptService/Build/ArsenalBlueprints.lua` | `ServerScriptService` → `Build` → `ArsenalBlueprints` (shields' and throwables' bodies) | ModuleScript |
 | `ReplicatedStorage/Heraldry.lua` | `ReplicatedStorage` → `Heraldry` (arms painted on shields) | ModuleScript |
 | `ReplicatedStorage/Catalog/Powers.lua`, `Arsenal.lua`, `ArsenalSkins.lua`, `PowerSkins.lua`, `Mastery.lua` | `ReplicatedStorage` → `Catalog` → … | ModuleScript each |
@@ -86,7 +86,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
 | `ReplicatedStorage/PreviewRig.lua` | `ReplicatedStorage` → `PreviewRig` (a dressed mannequin for menus) | ModuleScript |
 | `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads` (a skin's trim parts; its trail and aura; a staff skin's head) | ModuleScript each |
-| `ReplicatedStorage/KillFX.lua`, `Emotes.lua`, `PowerPoses.lua` | `ReplicatedStorage` → `KillFX`, `Emotes`, `PowerPoses` (the effects and motions; a power's gesture) | ModuleScript each |
+| `ReplicatedStorage/KillFX.lua`, `Emotes.lua`, `PowerPoses.lua`, `PowerAuras.lua` | `ReplicatedStorage` → `KillFX`, `Emotes`, `PowerPoses`, `PowerAuras` (the effects and motions; a power's gesture; a lasting power's look on you) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
@@ -507,15 +507,29 @@ arsenal too), carried on the weapon (`SpellSkins` attribute) and passed with eve
 so everyone sees it; the spell bar and crosshair take its colours. Menus show a still model of it
 (`MagicFX.preview`) on cards, the crate page, inspect, inventory and trades.
 
-## Magic for every class: the third slot, shields, throwables, class levels
+## Magic for every class: a power and a throwable, shields, class levels
 
-**Three slots.** 1 the primary · 2 a sidearm, or a **SHIELD** beside a one-handed primary ·
-3 the **THIRD SLOT**: the class's **POWER** (its magic), a **THROWABLE**, or (beside a shield) a
-sidearm on the bar. The Power key (**E**; a controller's D-pad ↑ tap, a hold is still the emote
-wheel; on a phone the orb by your energy bar) uses it, aimed at your crosshair (`Powers.client`
-→ `PowerRemote` → `Combat ▸ Powers`). The orb right of the energy bar shows its symbol, its
-cooldown wiping down, the seconds, an enchantment's arrows or a throwable's charges. Powers
-work in battle and the Training Yard, not in the Courtyard.
+**Every class carries a POWER and a THROWABLE**, each on its own key, besides its weapons:
+1 the primary · 2 a sidearm, or a **SHIELD** beside a one-handed primary (then a sidearm can ride
+on 3). The loadout's `power` and `throwable` / `throwableSkin` (a loadout saved when the two
+shared a third slot, `thirdKind` "power" / "throwable", is read into its own: Profile, Powers.equip,
+the class screen); `thirdKind` is only the shield's sidearm now. New loadouts get the class's first
+power and the free Throwing Knives.
+- **POWER: E** (a controller's D-pad ↑ tap, a hold is still the emote wheel; on a phone, tap its
+  orb): used at once, aimed at your crosshair (`Powers.client` → `PowerRemote` "Use" →
+  `Combat ▸ Powers`).
+- **THROW: hold C** (a controller: hold D-pad ↓, a tap still crouches; a phone: hold its orb):
+  the arm draws back (`PowerPoses` AIM, on every screen) and you walk slower (SpeedMult_Throw);
+  a dotted arc shows the flight the server will fly (the same `Ballistics.launch`), drawing out
+  from the hand as the wind-up fills (`Catalog.throwWindup`: knives 0.3 s, axes and darts 0.4,
+  bombs 0.45, the javelin 0.6), and a ring where it lands: a burst's own radius flat on the ground
+  under it (a firebomb's pool, a smoke cloud), a small mark on whoever it hits. Gold when ready,
+  the element's colour for a bomb or flask, red on a foe. Let go and it flies (once the wind-up
+  is done); block (right mouse) puts it away; held 10 s it's put away. `PowerRemote` "ThrowAim" /
+  "Throw" / "ThrowCancel" → `Throwing.aim / release / cancel`.
+- Two orbs right of the energy bar, POWER and THROWABLE: symbols, cooldowns wiping down, the
+  seconds, an enchantment's arrows, a throwable's charges. Powers work in battle and the Training
+  Yard, not in the Courtyard.
 
 **Powers** (`Catalog ▸ Powers`, config only; `Combat ▸ Powers` runs them): ten a class, each
 opened by **class level** (1, 2, 4, 6, 8, 10, 13, 16, 19, 22 — the tenth an ultimate):
@@ -541,6 +555,19 @@ flames on the blade (flaring up as it catches), auras, wings, familiars, ghostly
 circles on the ground, an ultimate's shockwave and column of light (`PowerFX`), and an imbued
 blow's burst where it lands (`Strike`: fire, frost shards, a gust, venom, a pillar of light; a
 draining blow's life flowing back to the striker).
+
+**On you while it lasts** (`ReplicatedStorage ▸ PowerAuras`, from the Aura / AuraUntil attributes):
+every power that lasts shows on the body, with a glowing outline and tint in its colour (a
+Highlight, a few at a time) seen at any distance. **Iron Skin**: granite plates grow over the
+shoulders (spiked), chest, forearms and shins, boulders orbit you, and it all cracks off and
+falls when it ends. **Juggernaut**: the same, darker, molten cracks glowing, burning rocks.
+**Holy** (Shield of Faith, Eagle Eye): a golden halo, motes rising. **Wind** (Quickstep,
+Windstep, Tailwind's allies): streaks from hands and feet, gusts. **Tempest**: wind and lightning
+crawling over you. **Nightfall**: a shroud of dark smoke, burning violet eyes, the body darkened.
+**Spellsurge**: runes orbiting the chest. **Avatar of War**: wings, a crown of light, embers.
+**War Cry's allies**: embers rising from the feet, a red-gold pulse on the ground (its foes are
+**cowed**: a red mark over the head, not frozen any more). **Second Wind**: green motes, breath
+steaming. An archer's enchanted arrows make the bow glow while any are left.
 
 **Gestures** (`ReplicatedStorage ▸ PowerPoses`): every power moves the body as it goes off —
 the blade raised overhead as it ignites, a war cry's arms flung wide, a slam's blade driven into
@@ -1181,7 +1208,7 @@ credit and reads TEAMKILLED in the feed.
   Emberforged, Frostbound, Verdant, Rosewarden. Legendary: Stormborn, Voidtouched, Sunblessed.
   Mythic: Celestial, Infernal. They recolour the plates, light the trims (pulse, crackle or
   rainbow: `StarterPlayerScripts ▸ ArmorFX`), and wrap you in an aura and a glow in the world.
-- **four crate-only sets**, one piece at a time: Dragonscale (Heavy, Legendary), Frostwarden
+- **four crate-only sets**, each coming out whole (every piece at once): Dragonscale (Heavy, Legendary), Frostwarden
   (Medium, Legendary), Shadowveil (Light, Legendary), Seraph (Medium, Mythic). Each wears its own
   finish.
 
@@ -1202,7 +1229,7 @@ a dagged capelet in your colours, a leather jerkin, a quiver over the right shou
 the bow arm and a shooting glove; it comes with the class at level 5 (the unlock pop-up says so),
 an Archer starts out in it, and the Armory lists it under CLASS OUTFITS ("WITH THE ARCHER") with
 the Apprentice's robes. Old saves: an Archer still in the plain Light defaults was dressed in it
-(Profile `loadoutV` 3). Four more come out of the **Fletcher's Crate**, a piece at a time: the
+(Profile `loadoutV` 3). Four more come out of the **Fletcher's Crate**, each whole: the
 Greenwood Outlaws (Rare: a feathered cap, Lincoln green, a hunting horn), the Falcon Wardens (Epic:
 a beaked hood, a feather mantle, a falcon on the shoulder), Moonshadow (Legendary: a crescent on
 the brow, a cloak edged in silver leaves, glowing fletchings; its finish Moonlit) and Phoenixborn

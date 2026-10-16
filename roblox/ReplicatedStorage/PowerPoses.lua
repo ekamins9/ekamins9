@@ -11,7 +11,8 @@
        PowerPoses.gestureFor(powerDef) -> id    which one a power plays: its own `pose`
                                                 (Catalog ▸ Powers), else one for its kind
        PowerPoses.play(character, id[, startedAt])
-       PowerPoses.THROW                         a throwable's fling
+       PowerPoses.AIM / THROW (THROW_FROM)      a throwable aimed (held) and flung
+       PowerPoses.stop(character, id)
 
      Started by Powers.client: as a power winds up (PowerCasting), or as it goes off (PowerTick)
      when it has no wind-up; a throw on ThrowTick.
@@ -190,15 +191,29 @@ def("Nock", 1.0, {
 	{0.42, NOCK}, {0.7, NOCK}, {1.0, {}},
 })
 
--- THROW: a snap up behind the head and over, the body turning through it.
-def("Throw", 0.65, {
+-- AIM: held while a throw is aimed — the throwing arm drawn back high behind the head, the
+-- free hand out at the target, the body turned side-on (a held pose: let go and THROW goes on
+-- from it)
+local AIM = {rs = {200, 0, 20}, ls = {88, 0, -6}, waist = {4, 24, 0}, neck = {0, -16, 0}}
+def("Aim", 30, {
+	{0, {}}, {0.22, AIM}, {30, AIM},
+}, function(t, p)
+	-- (a little sway in the held arm: it's ready to go)
+	local w = window(t, 0.22, 30, 0.1)
+	p.rs[1] += 3 * math.sin(t * 5) * w
+end)
+PowerPoses.AIM = "PwAim"
+
+-- THROW: from the drawn-back arm, flung over and through, the body turning with it
+def("Throw", 0.7, {
 	{0, {}},
-	{0.07, {rs = {170, 0, 12}, ls = {60, 0, -12}, waist = {0, 18, 0}, neck = {0, -8, 0}}},
-	{0.2, {rs = {70, 0, -24}, ls = {10, 0, -20}, waist = {-14, -14, 0}, neck = {0, 8, 0}}},
-	{0.34, {rs = {66, 0, -22}, ls = {10, 0, -20}, waist = {-10, -10, 0}}},
-	{0.65, {}},
+	{0.07, AIM},
+	{0.2, {rs = {70, 0, -24}, ls = {10, 0, -20}, waist = {-14, -18, 0}, neck = {0, 8, 0}}},
+	{0.36, {rs = {62, 0, -22}, ls = {10, 0, -20}, waist = {-10, -12, 0}}},
+	{0.7, {}},
 })
 PowerPoses.THROW = "PwThrow"
+PowerPoses.THROW_FROM = 0.07   -- (where THROW picks up from the held AIM)
 
 -- which a power plays: its own (Catalog ▸ Powers `pose`), else by what it does
 local BY_KIND = {imbue = "Ignite", shout = "Roar", dash = "Lunge", leap = "Leap", stealth = "Vanish", summon = "Conjure", arrows = "Nock"}
@@ -230,6 +245,10 @@ end
 function PowerPoses.play(char, id, startedAt)
 	if not (char and id and Emotes.has(id)) then return false end
 	return Emotes.play(char, id, startedAt)
+end
+-- end a gesture (only if it's the one playing)
+function PowerPoses.stop(char, id)
+	if char and Emotes.playing(char) == id then Emotes.stop(char) end
 end
 
 return PowerPoses

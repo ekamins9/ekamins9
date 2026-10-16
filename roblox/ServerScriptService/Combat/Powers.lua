@@ -224,11 +224,15 @@ function KIND.shout(c, def, aim, ctx)
 		local r = rootOf(m)
 		if r and alive(m) and (r.Position - r0.Position).Magnitude <= def.radius then
 			if MagicServer.friendly(c, m) then
-				if def.allies then Powers.addMods(m, def.allies.mods, def.allies.time, "shout:" .. def.id); aura(m, "glow", def.allies.time, ctx.spellId, ctx.skin) end
+				if def.allies then Powers.addMods(m, def.allies.mods, def.allies.time, "shout:" .. def.id); aura(m, def.allies.aura or "glow", def.allies.time, ctx.spellId, ctx.skin) end
 			elseif def.foes and hurtMult(c, m) > 0 then
 				local f = def.foes
 				if f.damage then hurt(c, m, f.damage, def.name) end
-				if f.slow then MagicServer.chill(c, m, f.slow, f.time or 2) end
+				-- (cowed, not frozen: slower for a while, and it shows: StatusFX)
+				if f.slow then
+					Powers.addMods(m, {speed = 1 - f.slow}, f.time or 2, "cowed:" .. def.id)
+					m:SetAttribute("CowedUntil", now() + (f.time or 2))
+				end
 				if f.weaken or f.expose then hex(m, {weaken = f.weaken, expose = f.expose, time = f.time}) end
 				if f.shove then
 					local away = flat(r.Position - r0.Position)
@@ -461,8 +465,7 @@ function Powers.use(c, aim)
 	local s = st(c)
 	if not alive(c) or c:GetAttribute("Ragdolled") then return false, "" end
 	if (c:GetAttribute("StunnedUntil") or 0) > os.clock() then return false, "stunned" end
-	if s.kind == "throwable" then return throwing().throw(c, aim) end
-	if s.kind ~= "power" or not s.power then return false, "nothing in your third slot" end
+	if not s.power then return false, "no power picked: CLASSES › POWER" end
 	if not inBattle() then return false, "Powers are for battle: try them in the Training Yard" end
 	local def = s.power
 	local uid = plr and plr.UserId or c   -- (a bot's cooldowns are its own body's)
@@ -491,17 +494,27 @@ function Powers.use(c, aim)
 	return true
 end
 
+-- "Use", aim: the power · the throwable, held to aim and let go to throw (Combat ▸ Throwing):
+-- "ThrowAim" (the wind-up starts) · "Throw", aim · "ThrowCancel"
 remote.OnServerEvent:Connect(function(plr, what, aim)
-	if what ~= "Use" then return end
 	local c = plr.Character
 	if not c then return end
-	local s = st(c)
-	local t = os.clock()
-	if t - (s.lastAsk or 0) < 0.15 then return end
-	s.lastAsk = t
 	if typeof(aim) ~= "Vector3" or aim ~= aim then aim = nil end
-	local ok, why = Powers.use(c, aim)
-	if not ok and why and why ~= "" then remote:FireClient(plr, "Denied", why) end
+	local s = st(c)
+	if what == "Use" then
+		local t = os.clock()
+		if t - (s.lastAsk or 0) < 0.15 then return end
+		s.lastAsk = t
+		local ok, why = Powers.use(c, aim)
+		if not ok and why and why ~= "" then remote:FireClient(plr, "Denied", why, "power") end
+	elseif what == "ThrowAim" or what == "Throw" or what == "ThrowCancel" then
+		if not alive(c) or c:GetAttribute("Ragdolled") then return end
+		local ok, why
+		if what == "ThrowAim" then ok, why = throwing().aim(c)
+		elseif what == "Throw" then ok, why = throwing().release(c, aim)
+		else throwing().cancel(c); ok = true end
+		if not ok and why and why ~= "" then remote:FireClient(plr, "Denied", why, "throw") end
+	end
 end)
 
 --------------------------------------------------------------------
@@ -510,10 +523,15 @@ end)
 function Powers.equip(c, plr, lo)
 	local s = st(c)
 	s.kind, s.power, s.skin = nil, nil, nil
-	for _, a in ipairs({"Power", "PowerSpell", "PowerSkin", "PowerReadyAt", "PowerCD", "Throwable", "ThrowCharges", "ThrowMax", "ThrowNextAt"}) do c:SetAttribute(a, nil) end
+	for _, a in ipairs({"Power", "PowerSpell", "PowerSkin", "PowerReadyAt", "PowerCD", "Throwable", "ThrowCharges", "ThrowMax", "ThrowNextAt", "ThrowAiming"}) do c:SetAttribute(a, nil) end
 	if not lo then return end
-	if lo.thirdKind == "power" and Catalog.POWER[lo.thirdId or ""] then
-		local def = Catalog.POWER[lo.thirdId]
+	-- (a loadout from before the two had slots of their own)
+	local pid = lo.power or (lo.thirdKind == "power" and lo.thirdId) or nil
+	local tid = lo.throwable or (lo.thirdKind == "throwable" and lo.thirdId) or nil
+	local tskin = lo.throwableSkin or (lo.thirdKind == "throwable" and lo.thirdSkin) or nil
+	if tid and tid ~= "none" then throwing().equip(c, tid, tskin) end
+	if pid and Catalog.POWER[pid] then
+		local def = Catalog.POWER[pid]
 		s.kind, s.power, s.skin = "power", def, skinFor(lo, def.id)
 		c:SetAttribute("Power", def.id)
 		c:SetAttribute("PowerSpell", spellOf(def.id))
@@ -521,9 +539,6 @@ function Powers.equip(c, plr, lo)
 		local uid = plr and plr.UserId or c
 		c:SetAttribute("PowerReadyAt", readyAt[uid] and readyAt[uid][def.id] or 0)
 		c:SetAttribute("PowerCD", def.cooldown)
-	elseif lo.thirdKind == "throwable" then
-		s.kind = "throwable"
-		throwing().equip(c, lo.thirdId, lo.thirdSkin)
 	end
 end
 

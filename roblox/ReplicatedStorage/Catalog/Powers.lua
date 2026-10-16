@@ -5,6 +5,9 @@
 
        id, class, name, glyph, level (class level), cooldown (s), cast (s of wind-up, 0 = instant)
        color, glow    its two colours (a power skin changes them: Catalog ▸ PowerSkins)
+       aura           how it looks ON YOU while it lasts (ReplicatedStorage ▸ PowerAuras: stone,
+                      juggernaut, holy, wind, tempest, night, arcane, avatar, rally, renew, glow;
+                      a shout's `allies.aura` on everyone it lifts)
        pose           the gesture it plays (ReplicatedStorage ▸ PowerPoses: Ignite, Envenom, Vow,
                       Roar, Brace, Surge, Haste, Breath, Scout, Cast, Conjure, Sky, Slam, Spin,
                       Lunge, Leap, Vanish, Nock); left out, one that fits its kind
@@ -78,10 +81,10 @@ add{id = "ShieldOfFaith", class = "Knight", name = "Shield of Faith", glyph = "�
 	kind = "buff", time = 8, barrier = 35, aura = "holy",
 	desc = "A shell of golden light soaks the next 35 damage you'd take (8 seconds)."}
 add{id = "WarCry", class = "Knight", name = "War Cry", glyph = "📯", level = AT[4], cooldown = 40, el = FIRE,
-	kind = "shout", radius = 20, allies = {time = 6, mods = {speed = 1.15, stamina = 1.5}}, foes = {time = 2.5, slow = 0.25},
+	kind = "shout", radius = 20, allies = {time = 6, mods = {speed = 1.15, stamina = 1.5}, aura = "rally"}, foes = {time = 2.5, slow = 0.25},
 	desc = "A roar that drives your side on (faster, quicker breath, 6 s) and staggers foes close by."}
 add{id = "Juggernaut", class = "Knight", name = "Juggernaut", glyph = "🐂", level = AT[5], cooldown = 40, el = STONE,
-	kind = "buff", time = 6, mods = {unflinching = true, taken = 0.85}, aura = "stone",
+	kind = "buff", time = 6, mods = {unflinching = true, taken = 0.85}, aura = "juggernaut",
 	desc = "For 6 seconds no blow makes you flinch: swing straight through theirs."}
 add{id = "HolySmite", class = "Knight", name = "Holy Smite", glyph = "⚔", level = AT[6], cooldown = 24, el = HOLY, pose = "Vow",
 	kind = "imbue", time = 6, hits = 1, element = "holy", bonus = 22, shove = 34, heal = 10,
@@ -106,7 +109,7 @@ add{id = "Quickstep", class = "Footman", name = "Quickstep", glyph = "💨", lev
 	kind = "buff", time = 6, mods = {speed = 1.3}, aura = "wind",
 	desc = "Run 30% faster for 6 seconds."}
 add{id = "SecondWind", class = "Footman", name = "Second Wind", glyph = "🫁", level = AT[2], cooldown = 32, el = WIND, cast = 0,
-	kind = "buff", time = 3, instant = {stamina = 60}, mods = {regen = 5},
+	kind = "buff", time = 3, instant = {stamina = 60}, mods = {regen = 5}, aura = "renew",
 	desc = "Catch your breath at once: 60 stamina back, and 15 health over 3 seconds."}
 add{id = "Windstep", class = "Footman", name = "Windstep", glyph = "🌀", level = AT[3], cooldown = 30, el = WIND,
 	kind = "buff", time = 7, mods = {dodgeCost = 0, dodgeCooldown = 0.45}, aura = "wind",
@@ -121,7 +124,7 @@ add{id = "Mirage", class = "Footman", name = "Mirage", glyph = "👥", level = A
 	kind = "stealth", time = 3, decoy = true, mods = {speed = 1.2},
 	desc = "Leave a shimmering double behind and fade for 3 seconds: foes lose you."}
 add{id = "Tailwind", class = "Footman", name = "Tailwind", glyph = "🍃", level = AT[7], cooldown = 34, el = WIND,
-	kind = "shout", radius = 22, allies = {time = 6, mods = {speed = 1.2, dodgeCost = 0.5}},
+	kind = "shout", radius = 22, allies = {time = 6, mods = {speed = 1.2, dodgeCost = 0.5}, aura = "wind"},
 	desc = "A wind at everyone's back: your side (you too) runs 20% faster and dodges cheaper for 6 seconds."}
 add{id = "Whirlwind", class = "Footman", name = "Whirlwind", glyph = "🌀", level = AT[8], cooldown = 20, el = WIND,
 	kind = "spell", spell = {kind = "nova", radius = 9, damage = 9, shove = 30, slow = 0, slowTime = 0},

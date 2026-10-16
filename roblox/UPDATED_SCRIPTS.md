@@ -1,4 +1,59 @@
-# Updated scripts: the full course in the intro and again from Sir Aldric, stop the lessons, class locks and the unlock card, a riposte you can see
+# Updated scripts: a power AND a throwable for every class, hold-to-aim throws with an arc, armor sets whole in crates, every power visible on you
+
+- **Powers and throwables are separate now**: every class carries one of each.
+  - **E** uses your power, as before.
+  - **C** is the throw; on a controller, hold D-pad ↓ (a tap still crouches); on a phone, hold the throwable's orb.
+  - G stays kick. C was only a hidden second crouch key; crouch is Left Ctrl. Both keys can be rebound in Settings.
+  - New loadouts get the class's first power and the free Throwing Knives; old loadouts are read into the new slots.
+  - Slot 3 is only for a sidearm beside a shield now.
+  - The class screen has a POWER panel and a THROWABLE panel, and a SIDEARM panel when you carry a shield.
+  - Two orbs sit by the energy bar.
+- **Hold to aim, let go to throw**:
+  - The arm draws back over the shoulder (everyone sees it) and you walk a little slower.
+  - A dotted arc shows the real flight and draws out from your hand as the wind-up fills: knives 0.3 s, axes and darts 0.4, bombs 0.45, javelin 0.6.
+  - A ring shows where it lands: for a bomb or flask, its burst radius flat on the ground (where the fire pool or smoke will be); for a blade, a small mark on whatever it hits.
+  - The arc is gold when ready, the element's colour for a bomb, red when it's on an enemy.
+  - Let go and it flies once the wind-up is done; block cancels.
+- **Crates hold whole armor sets**: the Phoenixborn (Mask, Greaves, Wings) and every other crate set is one item. It gives every piece at once, previews the whole set on a mannequin, and is labelled ARMOR SET. A Mythic set is numbered once. The crate descriptions now say so. Pieces still trade one at a time.
+- **Every power that lasts shows on you** (new PowerAuras). The old auras were particles inside the body, hidden by clothes and washed out in daylight. Each now has a glowing outline and tint you can see from far off, plus:
+  - **Iron Skin:** granite plates (spiked shoulders, chest, bracers, greaves) and orbiting boulders, crumbling off when it ends.
+  - **Juggernaut:** darker rock with glowing molten cracks and burning boulders.
+  - **Holy:** a gold halo. **Wind:** limb trails. **Tempest:** wind plus crawling lightning.
+  - **Nightfall:** a smoke shroud, burning violet eyes and a darkened body.
+  - **Spellsurge:** orbiting runes. **Avatar of War:** wings plus a crown of light.
+  - **War Cry allies:** rising embers and a pulse on the ground. **Second Wind:** green motes and steaming breath.
+  - **War Cry's enemies** are "cowed" (a red mark over the head) instead of wrongly frozen.
+  - **Enchanted arrows:** the bow glows while any are left.
+- **Checked in Play**:
+  - both slots equipped at spawn; a knife thrown by holding and letting go (charges 3 → 2);
+  - the arc and ring turning red on the bot; the Firebomb's 6-stud orange ring; the Firebomb's fire pool;
+  - Iron Skin, Night, Arcane and Holy on a bot;
+  - the Forge crate page showing one ARMOR SET card per set;
+  - the class screen's POWER and THROWABLE panels.
+- **Not checked yet**:
+  - the controller hold and the phone orb;
+  - Juggernaut, Wind, Tempest, Rally and Renew on screen;
+  - the flat ground ring and the purple runes (both fixed after the run);
+  - opening a crate set and the result reel.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [PowerAuras.lua](ReplicatedStorage/PowerAuras.lua) (new) | ReplicatedStorage | ModuleScript | every lasting power's look on you |
+| [PowerPoses.lua](ReplicatedStorage/PowerPoses.lua) | ReplicatedStorage | ModuleScript | AIM (held), THROW from it |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Powers.lua](ReplicatedStorage/Catalog/Powers.lua), [Crates.lua](ReplicatedStorage/Catalog/Crates.lua), [Packs.lua](ReplicatedStorage/Catalog/Packs.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | armor sets whole in crates, `throwWindup`, `FREE_THROWABLE`, new auras |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua), [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage | ModuleScript | the Throw key (C), its pad and touch names |
+| [Combat/Powers.lua](ServerScriptService/Combat/Powers.lua), [Throwing.lua](ServerScriptService/Combat/Throwing.lua), [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | two slots; aim / release / cancel; ally auras; cowed |
+| [Loadout/Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | `power`, `throwable` in the loadout (old ones read in) |
+| [Economy/Economy.lua](ServerScriptService/Economy/Economy.lua) | ServerScriptService ▸ Economy | ModuleScript | a crate's armor set: every piece |
+| [Build/Armor.lua](ServerScriptService/Build/Armor.lua) | ServerScriptService ▸ Build | ModuleScript | comments |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | two orbs, the aim and its arc, auras, the bow's glow |
+| [StatusFX.client.lua](StarterPlayerScripts/StatusFX.client.lua), [GamepadControls.client.lua](StarterPlayerScripts/GamepadControls.client.lua), [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | cowed; D-pad ↓ hold; class panels, crate sets |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | C no longer a second crouch key |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: the full course in the intro and again from Sir Aldric, stop the lessons, class locks and the unlock card, a riposte you can see
 
 - **The intro tutorial teaches every move**. Basic training is now 14 steps:
   - Find Your Feet;

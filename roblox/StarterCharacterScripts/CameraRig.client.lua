@@ -131,7 +131,7 @@ local BEND_SPEED      = 16
 local KICK_FALL       = 0.30   -- retract time after the kick peak
 local KICK_SNAP       = 40     -- joint lerp speed during the kick (BEND_SPEED is too mushy)
 local KICK_CAM        = 0.04   -- FP head bump at kick start
-local CROUCH_KEYS     = {ClientSettings.key("Crouch"), Enum.KeyCode.C}   -- rebindable in settings (+ C)
+local CROUCH_KEYS     = {ClientSettings.key("Crouch")}   -- rebindable in settings (C is the throw's now)
 local CROUCH_TOGGLE   = false  -- hold to crouch; true = press to toggle
 local CROUCH_DEBOUNCE = 0.2    -- crouch state can't flip faster than this (no spam)
 local CROUCH_SPEED    = 9      -- how fast the crouch settles
@@ -505,7 +505,7 @@ end, false, table.unpack(CROUCH_KEYS))
 ClientSettings.onChanged(function(key)
 	if key ~= "Key_Crouch" then return end
 	CAS:UnbindAction("Crouch")
-	CROUCH_KEYS = {ClientSettings.key("Crouch"), Enum.KeyCode.C}
+	CROUCH_KEYS = {ClientSettings.key("Crouch")}
 	crouchWanted = false
 	CAS:BindAction("Crouch", function(_, state)
 		if UIS:GetFocusedTextBox() then return Enum.ContextActionResult.Pass end

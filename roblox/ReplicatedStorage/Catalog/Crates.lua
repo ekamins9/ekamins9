@@ -39,7 +39,7 @@ return {
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(150, 120, 255),
 	},
 	Fletcher = {
-		name = "Fletcher's Crate", description = "Bow and crossbow skins (the Epics and Legendaries change the arrows: fire, frost, shadow, sunlight), and archers' outfits a piece at a time: the Greenwood Outlaws, the Falcon Wardens, Moonshadow, and the Mythic Phoenixborn.",
+		name = "Fletcher's Crate", description = "Bow and crossbow skins (the Epics and Legendaries change the arrows: fire, frost, shadow, sunlight), and whole archers' outfits: the Greenwood Outlaws, the Falcon Wardens, Moonshadow, and the Mythic Phoenixborn.",
 		cost = 70, odds = {Common = 55, Rare = 31, Epic = 11, Legendary = 2.7, Mythic = 0.3}, pity = 40,
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(120, 170, 80),
 	},
@@ -56,19 +56,19 @@ return {
 	-- ARMOR: finishes for any set, and the sets you can only find here (Catalog ▸ ArmorFX,
 	-- sets whose Config says Crate = "Forge"); everything a tradable copy
 	Forge = {
-		name = "Forge Crate", description = "Armor. Finishes that set your plate alight, and four sets you'll only find here, one piece at a time.",
+		name = "Forge Crate", description = "Armor. Finishes that set your plate alight, and four whole sets you'll only find here, every piece at once.",
 		cost = 90, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(255, 130, 50),
 	},
 	-- the second armor crate: six more crate-only sets (Config Crate = "WarChest") and its finishes
 	WarChest = {
-		name = "War Chest", description = "Armor. Six sets you'll only find here, a piece at a time: a bear, a ranger, a pirate captain, the deathless, the lion, and obsidian.",
+		name = "War Chest", description = "Armor. Six whole sets you'll only find here: a bear, a ranger, a pirate captain, the deathless, the lion, and obsidian.",
 		cost = 90, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(220, 60, 50),
 	},
 	-- the Mage's crate: spell skins (Catalog ▸ SpellSkins), a look of their own for every spell
 	Arcana = {
-		name = "Arcana Crate", description = "Everything a Mage wears: spell skins (a dragon's head for your Firebolt, golden lightning, a falling moon), seven robes a piece at a time, and finishes made for cloth. Mythic: Wyrmfall, the Star Sage.",
+		name = "Arcana Crate", description = "Everything a Mage wears: spell skins (a dragon's head for your Firebolt, golden lightning, a falling moon), seven whole robes, and finishes made for cloth. Mythic: Wyrmfall, the Star Sage.",
 		cost = 85, odds = {Rare = 58, Epic = 30, Legendary = 11.6, Mythic = 0.4}, pity = 30,
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(170, 90, 255),
 	},

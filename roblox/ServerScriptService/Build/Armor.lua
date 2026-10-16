@@ -1471,8 +1471,8 @@ A_.SunKnights = set(sunArmet(), sunTorso(),
 	function(s) return leg(hose(C.CLOTH2, S), plateLeg(s, C.BRIGHT, C.GOLD, {knee = C.GOLD, foot = C.GOLD, toe = "bear", flutes = true})) end)
 
 --------------------------------------------------------------------
---  THE FORGE CRATE'S SETS (crate-only: their pieces drop one at a time,
---  each a tradable copy; each wears a finish of its own, Config ▸ Finish)
+--  THE FORGE CRATE'S SETS (crate-only: each drops whole, every piece at once,
+--  each piece a tradable copy; each wears a finish of its own, Config ▸ Finish)
 --------------------------------------------------------------------
 local DRAGON, DRAGON2, DHORN = Color3.fromRGB(96, 28, 24), Color3.fromRGB(46, 20, 18), Color3.fromRGB(58, 40, 30)
 local ICE, FROSTFUR = Color3.fromRGB(176, 220, 255), Color3.fromRGB(226, 230, 236)
@@ -1632,7 +1632,7 @@ A_.Seraph = set(seraphHelm(), seraphTorso(),
 
 --------------------------------------------------------------------
 --  THE WAR CHEST SETS (Catalog ▸ Crates ▸ WarChest: six more crate-only sets,
---  a piece at a time, each a tradable copy)
+--  each dropping whole, every piece a tradable copy)
 --------------------------------------------------------------------
 local BEAR, BEAR2 = Color3.fromRGB(92, 66, 44), Color3.fromRGB(58, 40, 26)
 local RGREEN, RGREEN2 = Color3.fromRGB(62, 96, 52), Color3.fromRGB(40, 64, 36)
@@ -2009,8 +2009,8 @@ A_.ApprenticeRobes = set(wizardHat(), robeTorso(),
 		rbox("HemTrim", v(1.26, 0.07, 1.26), cf(0, -0.77, 0), C.GOLD, M.FABRIC, A, 0.08)}, boot(C.DARKLEATHER, -0.66)) end)
 
 --------------------------------------------------------------------
---  MAGE ROBES (weight "Robe": only a Mage wears them; the Arcana Crate's, one
---  piece at a time). Each its own hat or hood, its own shoulders, sleeves and hem.
+--  MAGE ROBES (weight "Robe": only a Mage wears them; the Arcana Crate's, each
+--  dropping whole). Each its own hat or hood, its own shoulders, sleeves and hem.
 --------------------------------------------------------------------
 do
 	local SILVER, NAVY = Color3.fromRGB(222, 228, 240), Color3.fromRGB(30, 34, 84)

@@ -13,6 +13,7 @@
                      (Powers.snare)
        DazedUntil    stars circling the head (Powers.stun, a shield bash; server time)
        ShockedUntil  lightning crawling over the body (Powers.shock; server time)
+       CowedUntil    a war cry's foes: a red mark bobbing over the head, dark red haze at the feet
 
      The tint is a Highlight, one per body, the strongest status's colour, at most HL_CAP at
      once (Roblox draws 31; ArmorFX's rims use some of them). Everything is local to this
@@ -352,6 +353,33 @@ STATUS.shock = {
 				end
 			end
 		end
+	end,
+}
+
+STATUS.cowed = {
+	on = function(c, now) return (c:GetAttribute("CowedUntil") or 0) > now end,
+	make = function(c)
+		local rec = {items = {}, mark = {}}
+		-- a red chevron pointing down at them
+		for s = -1, 1, 2 do
+			local p = part({Name = "CowedMark", Size = Vector3.new(0.5, 0.12, 0.12), Color = C(255, 70, 50)})
+			table.insert(rec.items, p); table.insert(rec.mark, {p = p, s = s})
+		end
+		local root = c:FindFirstChild("HumanoidRootPart")
+		if root then
+			local a = Instance.new("Attachment"); a.Name = "CowedHaze"; a.Position = Vector3.new(0, -2.7, 0); a.Parent = root
+			emitter(a, {tex = TEX.smoke, c1 = C(120, 20, 20), c2 = C(40, 6, 6), size = 1.4, sizeEnd = 2.4, rate = 8, life = 1, speed = 0.6, light = 0, alpha = 0.55, spread = 90, dir = Enum.NormalId.Top})
+			table.insert(rec.items, a)
+		end
+		return rec
+	end,
+	step = function(rec, c, t)
+		local head = c:FindFirstChild("Head")
+		if not head then return end
+		local at = head.Position + Vector3.new(0, 1.6 + 0.15 * math.sin(t * 6), 0)
+		local cam = workspace.CurrentCamera
+		local face = cam and CFrame.lookAt(at, Vector3.new(cam.CFrame.Position.X, at.Y, cam.CFrame.Position.Z)) or CFrame.new(at)
+		for _, m in ipairs(rec.mark) do m.p.CFrame = face * CFrame.new(0.17 * m.s, 0.12, 0) * CFrame.Angles(0, 0, math.rad(-38 * m.s)) end
 	end,
 }
 

@@ -95,8 +95,11 @@ function Profile.defaultLoadout(classId)
 		colors = {Primary = "Navy", Secondary = "Slate", Accent = "Ochre", Metal = "Ash"},
 		weapon = weapon, weaponSkin = weapon and (weapon .. ":Default") or nil,
 		secondary = second, secondarySkin = second and (second .. ":Default") or nil,
-		-- the third slot: the class's first power (open from class level 1: magic for everyone)
-		thirdKind = "power", thirdId = (Catalog.POWERS.byClass[classId] or {})[1] and Catalog.POWERS.byClass[classId][1].id or nil}
+		-- the POWER (E): the class's first power, open from class level 1 (magic for everyone); the
+		-- THROWABLE (C): the free knives; the third slot: a sidearm beside a shield, or nothing
+		power = (Catalog.POWERS.byClass[classId] or {})[1] and Catalog.POWERS.byClass[classId][1].id or nil,
+		throwable = Catalog.FREE_THROWABLE, throwableSkin = Catalog.FREE_THROWABLE and (Catalog.FREE_THROWABLE .. ":Default") or nil,
+		thirdKind = "none"}
 end
 
 local function default()
@@ -470,27 +473,32 @@ function Profile.validateLoadout(plr, classId, lo)
 		out.shield, out.shieldSkin = lo.shield, skinOf(lo.shield, lo.shieldSkin)
 		out.secondary, out.secondarySkin = nil, nil
 	end
-	-- THE THIRD SLOT: a power the class level has opened, a throwable, or (beside a shield) a sidearm
+	-- THE POWER (E) and THE THROWABLE (C): every class carries one of each. (A loadout saved when
+	-- they shared the third slot, thirdKind "power" / "throwable", is read into its own slot.)
 	do
 		local p = Profile.get(plr)
-		local kind, id = lo.thirdKind, lo.thirdId
-		if kind == "power" and not (Catalog.powerOpen(p, classId, id)) then kind, id = nil, nil end
-		if kind == "throwable" then
-			local t = Catalog.WEAPON[id or ""]
-			if not (t and t.throwable and Profile.has(plr, "weapons", id)) then kind, id = nil, nil end
-		end
-		if kind == "sidearm" then
-			if not (out.shield and id ~= out.weapon and allowed(id, "secondary")) then kind, id = nil, nil end
-		end
-		if kind == "none" then id = nil end
-		if kind == nil then
+		local open = (p.level or 1) >= (Catalog.MASTERY.thirdSlot or 1)
+		local pw = lo.power
+		if pw == nil and lo.thirdKind == "power" then pw = lo.thirdId end
+		if pw ~= "none" and not (pw and Catalog.powerOpen(p, classId, pw)) then
 			-- (nothing valid: the class's first power)
 			local first = (Catalog.POWERS.byClass[classId] or {})[1]
-			kind, id = first and "power" or "none", first and first.id or nil
+			pw = first and first.id or "none"
 		end
-		if (p.level or 1) < (Catalog.MASTERY.thirdSlot or 1) then kind, id = "none", nil end
+		out.power = open and pw or "none"
+		local th, thSkin = lo.throwable, lo.throwableSkin
+		if th == nil and lo.thirdKind == "throwable" then th, thSkin = lo.thirdId, lo.thirdSkin end
+		if th ~= "none" then
+			local t = Catalog.WEAPON[th or ""]
+			if not (t and t.throwable and Profile.has(plr, "weapons", th)) then th, thSkin = Catalog.FREE_THROWABLE or "none", nil end
+		end
+		out.throwable = open and th or "none"
+		out.throwableSkin = out.throwable ~= "none" and skinOf(out.throwable, thSkin) or nil
+		-- the third slot is a sidearm's now: beside a shield, on key 3
+		local kind, id = lo.thirdKind, lo.thirdId
+		if not (kind == "sidearm" and out.shield and id ~= out.weapon and allowed(id, "secondary")) then kind, id = "none", nil end
 		out.thirdKind, out.thirdId = kind, id
-		if kind == "throwable" or kind == "sidearm" then out.thirdSkin = skinOf(id, lo.thirdSkin) end
+		if kind == "sidearm" then out.thirdSkin = skinOf(id, lo.thirdSkin) end
 	end
 	-- every class's POWER LOOKS (Catalog ▸ PowerSkins: spell skins of "Pw_<power>"), kept for every
 	-- power of the class (they're there when the power comes back to the slot)

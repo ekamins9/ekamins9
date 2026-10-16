@@ -406,6 +406,14 @@ shop is there every day, and every card says how long it has left.
   gesture (left out, one fitting its kind).
 - **A gesture**: `def("Name", seconds, keys, extra)` in `ReplicatedStorage ▸ PowerPoses` — keyframes
   in the emote format (6b), arms-only; a power plays it with `pose = "Name"`.
+- **A look while it lasts**: a power's `aura` (or a shout's `allies.aura`) names a kind in
+  `ReplicatedStorage ▸ PowerAuras` (stone, juggernaut, holy, wind, tempest, night, arcane, avatar,
+  rally, renew, glow); a new kind is a function there `KIND.name(character, color, glow)` returning
+  `new(items, step, finish)`.
+- **A throwable's wind-up**: `windup = 0.5` on its line in `Catalog ▸ Arsenal` (else by its look:
+  `Catalog.throwWindup`).
+- **A crate-only armor set** comes out of its crate whole (`Catalog.crateItems`: kind "armorset",
+  every piece a copy); give its set folder's Config `Crate = "<crate id>"`.
 - **A power skin**: a line in `Catalog ▸ PowerSkins` (`sk{id, power, name, rarity, crate =
   "Spellforge" | mastery = {class, level}, look = {color, glow, shape…}}`).
 - **A shield**: a line in `Catalog ▸ Arsenal` shields (block, cone, parry, arrows, speed, bash),

@@ -148,7 +148,7 @@ local function autoPieces()
 					rarity = cfg.Rarity or "Common", marks = cfg.PriceMarks or 0, crowns = cfg.PriceCrowns or 0,
 					covers = d.slot == "helmet" and d.covers or nil, set = set.Name, setName = base, auto = true,
 					description = cfg.Description,
-					-- (a crate-only set: its pieces drop one at a time, as tradable copies; a built-in finish)
+					-- (a crate-only set: it drops whole, every piece at once, each a tradable copy; a built-in finish)
 					crate = cfg.Crate, fx = cfg.Finish,
 					-- (its own colours: these slots ignore the player's picks, so the set looks like itself)
 					colors = type(cfg.Colors) == "table" and cfg.Colors or nil,
@@ -186,6 +186,12 @@ end
 Catalog.rebuild()
 
 Catalog.WEAPON = {} for _, w in ipairs(Catalog.WEAPONS) do Catalog.WEAPON[w.id] = w end
+-- a throwable's wind-up (held to aim: Combat ▸ Throwing; the arc fills over it, Powers.client):
+-- by how it's thrown, or its own `windup`. Knives are quick, a javelin slow.
+local THROW_WINDUP = {blade = 0.3, axe = 0.4, dart = 0.4, spear = 0.6, flask = 0.45, bomb = 0.45, bolas = 0.4}
+function Catalog.throwWindup(def) return (def and (def.windup or THROW_WINDUP[def.look or ""])) or 0.4 end
+-- the throwable everyone carries to begin with (the first free one: the knives)
+for _, w in ipairs(Catalog.WEAPONS) do if w.throwable and w.unlock and w.unlock.free then Catalog.FREE_THROWABLE = w.id; break end end
 -- a Mage's spells (ReplicatedStorage ▸ MagicSpells: the numbers, the unlocks) and their skins
 Catalog.SPELLS = require(ReplicatedStorage:WaitForChild("MagicSpells"))
 Catalog.SKIN = {}
@@ -541,16 +547,40 @@ function Catalog.itemSource(it)
 	return "free"
 end
 
+-- the pieces of one armor set, helm · top · legs (piece.set: the set's folder)
+local SLOT_ORDER = {helmet = 1, top = 2, bottom = 3}
+function Catalog.setPieces(setId)
+	local out = {}
+	for _, pc in ipairs(Catalog.PIECES or {}) do if pc.set == setId then table.insert(out, pc) end end
+	table.sort(out, function(a, b) return (SLOT_ORDER[a.slot] or 9) < (SLOT_ORDER[b.slot] or 9) end)
+	return out
+end
+
 -- everything a crate can roll: skins (kind "skin"), kill effects ("killfx"), emotes ("emote"),
--- armor pieces of a crate-only set ("piece"), armor finishes ("armorfx") and spell skins ("spellfx")
+-- WHOLE ARMOR SETS ("armorset": a crate-only set is one item, every piece of it at once;
+-- id = the set, pieces = their ids, top = the piece shown), armor finishes ("armorfx") and
+-- spell skins ("spellfx")
 function Catalog.crateItems(crateId)
 	local out = {}
 	for _, s in ipairs(Catalog.SPELLSKINS or {}) do
 		if s.crate == crateId then table.insert(out, {kind = "spellfx", id = s.id, name = s.name, rarity = s.rarity, spell = s.spell, ref = s}) end
 	end
+	local sets = {}
 	for _, pc in ipairs(Catalog.PIECES or {}) do
-		if pc.crate == crateId then table.insert(out, {kind = "piece", id = pc.id, name = pc.name, rarity = pc.rarity, ref = pc}) end
+		if pc.crate == crateId then
+			local key = pc.set or pc.id
+			local it = sets[key]
+			if not it then
+				it = {kind = "armorset", id = key, name = pc.setName or pc.name, rarity = pc.rarity, pieces = {}, ref = pc}
+				sets[key] = it
+				table.insert(out, it)
+			end
+			table.insert(it.pieces, pc.id)
+			if (Catalog.RARITY_RANK[pc.rarity] or 0) > (Catalog.RARITY_RANK[it.rarity] or 0) then it.rarity = pc.rarity end
+			if pc.slot == "top" then it.top, it.ref = pc.id, pc end
+		end
 	end
+	for _, it in ipairs(out) do if it.kind == "armorset" then it.top = it.top or it.pieces[1] end end
 	for _, f in ipairs(Catalog.ARMORFX or {}) do
 		if f.crate == crateId then table.insert(out, {kind = "armorfx", id = f.id, name = f.name, rarity = f.rarity, ref = f}) end
 	end

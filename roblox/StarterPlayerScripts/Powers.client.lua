@@ -33,6 +33,8 @@ local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 local PowerPoses = require(ReplicatedStorage:WaitForChild("PowerPoses"))
+local Ballistics = require(ReplicatedStorage:WaitForChild("Ballistics"))
+local PowerAuras = require(ReplicatedStorage:WaitForChild("PowerAuras"))
 
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("PowerRemote", 60)
@@ -96,7 +98,7 @@ local function emitter(parent, c1, c2, o)
 end
 
 --------------------------------------------------------------------
---  THE ORB (your third slot)
+--  THE ORBS: your POWER (E) and your THROWABLE (C), side by side right of the energy bar
 --------------------------------------------------------------------
 local gui = Instance.new("ScreenGui")
 gui.Name = "PowerHUD"
@@ -105,62 +107,101 @@ gui.DisplayOrder = 11
 gui.IgnoreGuiInset = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local orb = Instance.new("Frame")
-orb.AnchorPoint = Vector2.new(0, 1)
-orb.Position = UDim2.new(0.5, 352, 1, -96)
-orb.Size = UDim2.fromOffset(64, 64)
-orb.BackgroundColor3 = Color3.fromRGB(18, 20, 30)
-orb.BackgroundTransparency = 0.2
-orb.Visible = false
-orb.Parent = gui
-Instance.new("UICorner", orb).CornerRadius = UDim.new(1, 0)
-local ring = Instance.new("UIStroke", orb); ring.Thickness = 3; ring.Color = Theme.ACCENT
-local glyph = Instance.new("TextLabel")
-glyph.BackgroundTransparency = 1; glyph.Size = UDim2.fromScale(1, 1); glyph.Font = Theme.FONT_TITLE; glyph.TextSize = 30
-glyph.TextColor3 = WHITE; glyph.Text = "✨"; glyph.ZIndex = 2
-glyph.Parent = orb
-local wipe = Instance.new("Frame")
-wipe.AnchorPoint = Vector2.new(0, 1); wipe.Position = UDim2.fromScale(0, 1); wipe.Size = UDim2.fromScale(1, 0)
-wipe.BackgroundColor3 = Color3.new(0, 0, 0); wipe.BackgroundTransparency = 0.35; wipe.BorderSizePixel = 0; wipe.ZIndex = 3
-wipe.Parent = orb
-Instance.new("UICorner", wipe).CornerRadius = UDim.new(1, 0)
-local secs = Instance.new("TextLabel")
-secs.BackgroundTransparency = 1; secs.Size = UDim2.fromScale(1, 1); secs.Font = Theme.FONT_TITLE; secs.TextSize = 24
-secs.TextColor3 = WHITE; secs.TextStrokeTransparency = 0.3; secs.ZIndex = 4; secs.Text = ""
-secs.Parent = orb
-local keyTag = Instance.new("TextLabel")
-keyTag.AnchorPoint = Vector2.new(0.5, 0.5); keyTag.Position = UDim2.new(1, -6, 1, -6); keyTag.Size = UDim2.fromOffset(24, 20)
-keyTag.BackgroundColor3 = Color3.fromRGB(30, 34, 50); keyTag.Font = Theme.FONT_TITLE; keyTag.TextSize = 13; keyTag.TextColor3 = WHITE; keyTag.ZIndex = 5
-keyTag.Parent = orb
-Instance.new("UICorner", keyTag).CornerRadius = UDim.new(0, 5)
-local nameTag = Instance.new("TextLabel")
-nameTag.AnchorPoint = Vector2.new(0.5, 0); nameTag.Position = UDim2.new(0.5, 0, 1, 2); nameTag.Size = UDim2.fromOffset(140, 16)
-nameTag.BackgroundTransparency = 1; nameTag.Font = Theme.FONT; nameTag.TextSize = 12; nameTag.TextColor3 = Color3.fromRGB(220, 220, 230)
-nameTag.TextStrokeTransparency = 0.4; nameTag.Parent = orb
-local pips = Instance.new("Frame")
-pips.AnchorPoint = Vector2.new(0.5, 1); pips.Position = UDim2.new(0.5, 0, 0, -3); pips.Size = UDim2.fromOffset(60, 8); pips.BackgroundTransparency = 1
-pips.Parent = orb
-do local l = Instance.new("UIListLayout", pips); l.FillDirection = Enum.FillDirection.Horizontal; l.HorizontalAlignment = Enum.HorizontalAlignment.Center; l.Padding = UDim.new(0, 4) end
-local pipList = {}
+local function makeOrb()
+	local o = {pipList = {}, deniedUntil = 0}
+	local orb = Instance.new("Frame")
+	orb.AnchorPoint = Vector2.new(0, 1)
+	orb.Position = UDim2.new(0.5, 352, 1, -96)
+	orb.Size = UDim2.fromOffset(64, 64)
+	orb.BackgroundColor3 = Color3.fromRGB(18, 20, 30)
+	orb.BackgroundTransparency = 0.2
+	orb.Visible = false
+	orb.Parent = gui
+	Instance.new("UICorner", orb).CornerRadius = UDim.new(1, 0)
+	o.frame = orb
+	o.ring = Instance.new("UIStroke", orb); o.ring.Thickness = 3; o.ring.Color = Theme.ACCENT
+	o.glyph = Instance.new("TextLabel")
+	o.glyph.BackgroundTransparency = 1; o.glyph.Size = UDim2.fromScale(1, 1); o.glyph.Font = Theme.FONT_TITLE; o.glyph.TextSize = 30
+	o.glyph.TextColor3 = WHITE; o.glyph.Text = "✨"; o.glyph.ZIndex = 2
+	o.glyph.Parent = orb
+	o.wipe = Instance.new("Frame")
+	o.wipe.AnchorPoint = Vector2.new(0, 1); o.wipe.Position = UDim2.fromScale(0, 1); o.wipe.Size = UDim2.fromScale(1, 0)
+	o.wipe.BackgroundColor3 = Color3.new(0, 0, 0); o.wipe.BackgroundTransparency = 0.35; o.wipe.BorderSizePixel = 0; o.wipe.ZIndex = 3
+	o.wipe.Parent = orb
+	Instance.new("UICorner", o.wipe).CornerRadius = UDim.new(1, 0)
+	o.secs = Instance.new("TextLabel")
+	o.secs.BackgroundTransparency = 1; o.secs.Size = UDim2.fromScale(1, 1); o.secs.Font = Theme.FONT_TITLE; o.secs.TextSize = 24
+	o.secs.TextColor3 = WHITE; o.secs.TextStrokeTransparency = 0.3; o.secs.ZIndex = 4; o.secs.Text = ""
+	o.secs.Parent = orb
+	o.keyTag = Instance.new("TextLabel")
+	o.keyTag.AnchorPoint = Vector2.new(0.5, 0.5); o.keyTag.Position = UDim2.new(1, -6, 1, -6); o.keyTag.Size = UDim2.fromOffset(24, 20)
+	o.keyTag.BackgroundColor3 = Color3.fromRGB(30, 34, 50); o.keyTag.Font = Theme.FONT_TITLE; o.keyTag.TextSize = 13; o.keyTag.TextColor3 = WHITE; o.keyTag.ZIndex = 5
+	o.keyTag.Parent = orb
+	Instance.new("UICorner", o.keyTag).CornerRadius = UDim.new(0, 5)
+	o.nameTag = Instance.new("TextLabel")
+	o.nameTag.AnchorPoint = Vector2.new(0.5, 0); o.nameTag.Position = UDim2.new(0.5, 0, 1, 2); o.nameTag.Size = UDim2.fromOffset(74, 16)
+	o.nameTag.BackgroundTransparency = 1; o.nameTag.Font = Theme.FONT; o.nameTag.TextSize = 12; o.nameTag.TextColor3 = Color3.fromRGB(220, 220, 230)
+	o.nameTag.TextStrokeTransparency = 0.4; o.nameTag.Parent = orb
+	-- (two orbs side by side: a long name shrinks to its own orb's width)
+	o.nameTag.TextScaled = true
+	do local k = Instance.new("UITextSizeConstraint"); k.MaxTextSize = 12; k.MinTextSize = 7; k.Parent = o.nameTag end
+	o.pips = Instance.new("Frame")
+	o.pips.AnchorPoint = Vector2.new(0.5, 1); o.pips.Position = UDim2.new(0.5, 0, 0, -3); o.pips.Size = UDim2.fromOffset(60, 8); o.pips.BackgroundTransparency = 1
+	o.pips.Parent = orb
+	do local l = Instance.new("UIListLayout", o.pips); l.FillDirection = Enum.FillDirection.Horizontal; l.HorizontalAlignment = Enum.HorizontalAlignment.Center; l.Padding = UDim.new(0, 4) end
+	-- (on a phone the orb itself is the button)
+	o.tap = Instance.new("TextButton")
+	o.tap.BackgroundTransparency = 1; o.tap.Size = UDim2.fromScale(1, 1); o.tap.Text = ""; o.tap.ZIndex = 6
+	o.tap.Parent = orb
+	return o
+end
+local powerOrb, throwOrb = makeOrb(), makeOrb()
+local function setPips(o, n, col)
+	if #o.pipList ~= n then
+		for _, p in ipairs(o.pipList) do p:Destroy() end
+		o.pipList = {}
+		for i = 1, n do
+			local p = Instance.new("Frame"); p.Size = UDim2.fromOffset(8, 8); p.BorderSizePixel = 0; p.LayoutOrder = i; p.Parent = o.pips
+			Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
+			table.insert(o.pipList, p)
+		end
+	end
+	if col then for _, p in ipairs(o.pipList) do p.BackgroundColor3 = col end end
+end
+local function punch(o)
+	local s = o.frame:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", o.frame)
+	s.Scale = 0.85
+	TweenService:Create(s, TweenInfo.new(0.2, Enum.EasingStyle.Back), {Scale = 1}):Play()
+end
+local function deny(o, why)
+	if not why or why == "" then return end
+	o.nameTag.Text = why
+	o.nameTag.TextColor3 = Color3.fromRGB(255, 150, 140)
+	o.deniedUntil = os.clock() + 1.6
+end
 
--- a phone's button (the orb itself is the button)
-local tap = Instance.new("TextButton")
-tap.BackgroundTransparency = 1; tap.Size = UDim2.fromScale(1, 1); tap.Text = ""; tap.ZIndex = 6
-tap.Parent = orb
-
-local function keyName()
-	local k = ClientSettings.get and ClientSettings.get("Key_Power") or "E"
-	return tostring(k or "E")
+local function keyName(action)
+	local k = ClientSettings.get and ClientSettings.get("Key_" .. action)
+	return tostring(k or (action == "Throw" and "C" or "E"))
+end
+local function keyCode(action)
+	local ok, code = pcall(function() return Enum.KeyCode[keyName(action)] end)
+	return ok and code or nil
 end
 
 -- where you're aiming: what the middle of the screen looks at
-local function aimPoint()
+local arcFolder = Instance.new("Folder"); arcFolder.Name = "ThrowArc"; arcFolder.Parent = workspace
+local function aimRay()
 	local cam = workspace.CurrentCamera
 	if not cam then return nil end
-	local ray = cam:ViewportPointToRay(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+	return cam:ViewportPointToRay(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+end
+local function aimPoint()
+	local ray = aimRay()
+	if not ray then return nil end
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = {player.Character, fxFolder}
+	params.FilterDescendantsInstances = {player.Character, fxFolder, arcFolder}
 	local hit = workspace:Raycast(ray.Origin, ray.Direction * 300, params)
 	return hit and hit.Position or (ray.Origin + ray.Direction * 300)
 end
@@ -168,89 +209,282 @@ local function menuUp()
 	local h = player.PlayerGui:FindFirstChild("HubMenu")
 	return h ~= nil and h.Enabled and _G.HubMenuOpen and _G.HubMenuOpen()
 end
+local function inHub() return round:GetAttribute("Mode") == "Hub" end
+
+-- THE POWER: a press
 local lastAsk = 0
-local deniedUntil = 0   -- (a refusal shows under the orb a moment)
-local function use()
+local function usePower()
 	local c = player.Character
-	if not c or not (c:GetAttribute("Power") or c:GetAttribute("Throwable")) then return end
-	if round:GetAttribute("Mode") == "Hub" then return end
+	if not c or not c:GetAttribute("Power") or inHub() then return end
 	if os.clock() - lastAsk < 0.18 then return end
 	lastAsk = os.clock()
 	if remote then remote:FireServer("Use", aimPoint()) end
-	-- a little punch on the orb
-	local s = orb:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", orb)
-	s.Scale = 0.85
-	TweenService:Create(s, TweenInfo.new(0.2, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	punch(powerOrb)
 end
-tap.Activated:Connect(use)
-UserInputService.InputBegan:Connect(function(input, processed)
-	if processed or UserInputService:GetFocusedTextBox() or menuUp() then return end
-	local k = keyName()
-	local ok, code = pcall(function() return Enum.KeyCode[k] end)
-	if ok and input.KeyCode == code then use() end
+powerOrb.tap.Activated:Connect(usePower)
+
+--------------------------------------------------------------------
+--  THE THROW: held to aim (the arm draws back, the arc and where it lands are drawn, filling
+--  as the wind-up comes round), let go to throw; right mouse (block) puts it away
+--------------------------------------------------------------------
+local ELEMENT_COL = {fire = Color3.fromRGB(255, 130, 50), frost = Color3.fromRGB(150, 220, 255), smoke = Color3.fromRGB(190, 190, 196),
+	ground = Color3.fromRGB(200, 170, 120), heal = Color3.fromRGB(255, 226, 130)}
+local READY = Color3.fromRGB(255, 214, 110)
+local FOE = Color3.fromRGB(255, 80, 70)
+local aiming = nil      -- {t0, def, windup, how ("key" | "touch" | "pad")}
+local dots = {}
+local marker, markerCore, markerLight
+local hint = Instance.new("TextLabel")
+hint.AnchorPoint = Vector2.new(0.5, 0); hint.Position = UDim2.new(0.5, 0, 0.5, 40); hint.Size = UDim2.fromOffset(360, 18)
+hint.BackgroundTransparency = 1; hint.Font = Theme.FONT_TITLE; hint.TextSize = 14; hint.TextColor3 = WHITE; hint.TextStrokeTransparency = 0.35
+hint.Visible = false; hint.Parent = gui
+local holdBar = Instance.new("Frame")
+holdBar.AnchorPoint = Vector2.new(0.5, 0); holdBar.Position = UDim2.new(0.5, 0, 0.5, 60); holdBar.Size = UDim2.fromOffset(120, 5)
+holdBar.BackgroundColor3 = Color3.fromRGB(20, 20, 26); holdBar.BackgroundTransparency = 0.3; holdBar.BorderSizePixel = 0; holdBar.Visible = false; holdBar.Parent = gui
+Instance.new("UICorner", holdBar).CornerRadius = UDim.new(1, 0)
+local holdFill = Instance.new("Frame"); holdFill.Size = UDim2.fromScale(0, 1); holdFill.BackgroundColor3 = READY; holdFill.BorderSizePixel = 0; holdFill.Parent = holdBar
+Instance.new("UICorner", holdFill).CornerRadius = UDim.new(1, 0)
+
+local function clearArc()
+	for _, d in ipairs(dots) do d.Transparency = 1 end
+	if marker then marker.Transparency = 1; markerCore.Transparency = 1; markerLight.Enabled = false end
+	hint.Visible, holdBar.Visible = false, false
+end
+local function dot(i)
+	local d = dots[i]
+	if not d then
+		d = Instance.new("Part")
+		d.Name = "ArcDot"; d.Shape = Enum.PartType.Ball; d.Material = Enum.Material.Neon; d.Anchored = true
+		d.CanCollide, d.CanQuery, d.CanTouch, d.CastShadow = false, false, false, false
+		d.Parent = arcFolder
+		dots[i] = d
+	end
+	return d
+end
+local function ensureMarker()
+	if marker then return end
+	marker = Instance.new("Part")
+	marker.Name = "ArcRing"; marker.Shape = Enum.PartType.Cylinder; marker.Material = Enum.Material.Neon; marker.Anchored = true
+	marker.CanCollide, marker.CanQuery, marker.CanTouch, marker.CastShadow = false, false, false, false
+	marker.Parent = arcFolder
+	markerCore = marker:Clone(); markerCore.Name = "ArcCore"; markerCore.Parent = arcFolder
+	markerLight = Instance.new("PointLight"); markerLight.Range = 8; markerLight.Brightness = 1.5; markerLight.Shadows = false; markerLight.Parent = markerCore
+end
+
+local function startAim(how)
+	local c = player.Character
+	local thr = c and c:GetAttribute("Throwable")
+	if aiming or not thr or inHub() or menuUp() then return end
+	local hum = c:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0) then return end
+	if (c:GetAttribute("ThrowCharges") or 0) <= 0 then
+		local nextAt = c:GetAttribute("ThrowNextAt")
+		deny(throwOrb, nextAt and string.format("back in %d", math.ceil(nextAt - snow())) or "none left")
+		return
+	end
+	local def = Catalog.WEAPON[thr]
+	if not def then return end
+	aiming = {t0 = os.clock(), def = def, windup = Catalog.throwWindup(def), how = how}
+	if remote then remote:FireServer("ThrowAim") end
+	PowerPoses.play(c, PowerPoses.AIM)
+end
+local function release()
+	if not aiming then return end
+	aiming = nil
+	clearArc()
+	if remote then remote:FireServer("Throw", aimPoint()) end
+	punch(throwOrb)
+end
+local function cancelAim()
+	if not aiming then return end
+	aiming = nil
+	clearArc()
+	if remote then remote:FireServer("ThrowCancel") end
+	PowerPoses.stop(player.Character, PowerPoses.AIM)
+end
+
+-- the flight it would take: the server's own launch (Ballistics), stepped until it hits
+local arcParams = RaycastParams.new()
+arcParams.FilterType = Enum.RaycastFilterType.Exclude
+local function flight(c, def, aim)
+	local head = c:FindFirstChild("Head")
+	if not (head and aim) then return nil end
+	local g, speed = def.gravity or 40, def.speed or 90
+	local dir, origin = Ballistics.launch(head.Position, aim, speed, g)
+	local ignore = {c, arcFolder, fxFolder}
+	for _, n in ipairs({"StuckArrows", "MagicFX", "DroppedWeapons"}) do local f = workspace:FindFirstChild(n); if f then table.insert(ignore, f) end end
+	arcParams.FilterDescendantsInstances = ignore
+	local pts, pos, vel = {origin}, origin, dir * speed
+	local dt = 1 / 45
+	for _ = 1, 45 * 4 do
+		local nextVel = vel - Vector3.new(0, g * dt, 0)
+		local step = (vel + nextVel) * 0.5 * dt
+		local res = workspace:Raycast(pos, step, arcParams)
+		if res then
+			table.insert(pts, res.Position)
+			local model = res.Instance:FindFirstAncestorOfClass("Model")
+			local who = model and model:FindFirstChildOfClass("Humanoid") and model or nil
+			return pts, res.Position, res.Normal, who
+		end
+		pos += step
+		vel = nextVel
+		table.insert(pts, pos)
+	end
+	return pts, pos, Vector3.yAxis, nil
+end
+
+-- every frame while aiming: the dotted arc, drawn out from the hand as the wind-up fills,
+-- and a ring where it lands (as wide as what it bursts into); gold when it's ready to go, red
+-- on someone
+RunService.RenderStepped:Connect(function()
+	if not aiming then return end
+	local c = player.Character
+	local hum = c and c:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0) or c:GetAttribute("Ragdolled") or c:GetAttribute("Blocking") or menuUp() then cancelAim(); return end
+	-- (held this long the server has put it away: so do we)
+	if os.clock() - aiming.t0 > 9.5 then cancelAim(); return end
+	local def = aiming.def
+	local k = math.clamp((os.clock() - aiming.t0) / math.max(aiming.windup, 0.05), 0, 1)
+	local ready = k >= 1
+	local pts, land, normal, who = flight(c, def, aimPoint())
+	if not pts then return end
+	local burst = def.burst
+	local elem = burst and ((burst.fire and "fire") or (burst.frost and "frost") or (burst.smoke and "smoke") or (burst.ground and "ground") or ((burst.heal or 0) > 0 and "heal"))
+	local col = who and not burst and FOE or (elem and ELEMENT_COL[elem]) or READY
+	if not ready then col = col:Lerp(WHITE, 0.55) end
+	-- the dots: one every ~1.6 studs along the flight, as far along as the wind-up has come
+	local spaced, run = {}, 0
+	for i = 2, #pts do
+		run += (pts[i] - pts[i - 1]).Magnitude
+		if run >= 1.6 then run = 0; table.insert(spaced, pts[i]) end
+	end
+	local shown = math.max(1, math.floor(#spaced * (0.25 + 0.75 * k)))
+	local t = os.clock()
+	for i = 1, math.max(#spaced, #dots) do
+		local d = dot(i)
+		if i <= shown and spaced[i] then
+			d.Position = spaced[i]
+			local pulse = ready and (0.5 + 0.5 * math.sin(t * 10 - i * 0.6)) or 0
+			d.Size = Vector3.one * (0.18 + 0.08 * pulse)
+			d.Color = col
+			d.Transparency = 0.15 + 0.5 * (i / math.max(#spaced, 1)) * (ready and 0.4 or 1)
+		else
+			d.Transparency = 1
+		end
+	end
+	-- where it lands: a ring the size of its burst, flat on the ground under where it breaks (that's
+	-- where the pool, the cloud, the spikes will be); a blade's a small mark on what it hits
+	ensureMarker()
+	local radius = burst and burst.radius or 1.4
+	local r = radius * (0.35 + 0.65 * k)
+	local up = (normal and normal.Magnitude > 0.1) and normal or Vector3.yAxis
+	if burst then
+		-- (straight down to the ground, through anyone standing there)
+		local ex = table.clone(arcParams.FilterDescendantsInstances)
+		for _ = 1, 3 do
+			local dp = RaycastParams.new()
+			dp.FilterType = Enum.RaycastFilterType.Exclude
+			dp.FilterDescendantsInstances = ex
+			local down = workspace:Raycast(land + Vector3.new(0, 1, 0), Vector3.new(0, -40, 0), dp)
+			if not down then break end
+			local m = down.Instance:FindFirstAncestorOfClass("Model")
+			if m and m:FindFirstChildOfClass("Humanoid") then table.insert(ex, m)
+			else land, up = down.Position, Vector3.yAxis; break end
+		end
+	end
+	local face = CFrame.lookAt(land, land + up) * CFrame.Angles(0, math.rad(90), 0)
+	marker.CFrame = face * CFrame.new(0.05, 0, 0)
+	marker.Size = Vector3.new(0.06, r * 2, r * 2)
+	marker.Color = col
+	marker.Transparency = ready and 0.55 or 0.75
+	markerCore.CFrame = face * CFrame.new(0.07, 0, 0) * CFrame.Angles(t * 2, 0, 0)
+	markerCore.Size = Vector3.new(0.08, math.min(0.9, r * 0.5), math.min(0.9, r * 0.5))
+	markerCore.Color = col
+	markerCore.Transparency = 0.2
+	markerLight.Color = col
+	markerLight.Enabled = true
+	-- under the crosshair: what you're throwing, and whether it's ready
+	hint.Visible, holdBar.Visible = true, not ready
+	hint.Text = string.upper(def.name) .. (ready and "  ·  LET GO TO THROW" or "  ·  WINDING UP…")
+	hint.TextColor3 = ready and col or WHITE
+	holdFill.Size = UDim2.fromScale(k, 1)
 end)
-TouchInput.changed:Connect(function(action, down) if action == "Power" and down then use() end end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if UserInputService:GetFocusedTextBox() then return end
+	-- (right mouse is the block: it puts a throw away)
+	if input.UserInputType == Enum.UserInputType.MouseButton2 and aiming then cancelAim(); return end
+	if processed or menuUp() then return end
+	if input.KeyCode == keyCode("Power") then usePower()
+	elseif input.KeyCode == keyCode("Throw") then startAim("key") end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if input.KeyCode == keyCode("Throw") and aiming and aiming.how == "key" then release() end
+end)
+-- a controller's (GamepadControls: D-pad ↑ tap the power, D-pad ↓ held the throw) and the bus
+TouchInput.changed:Connect(function(action, down)
+	if action == "Power" and down then usePower()
+	elseif action == "Throw" then if down then startAim("pad") elseif aiming then release() end end
+end)
+-- a phone: hold the throw orb, let go to throw
+throwOrb.tap.MouseButton1Down:Connect(function() startAim("touch") end)
+throwOrb.tap.MouseButton1Up:Connect(function() if aiming and aiming.how == "touch" then release() end end)
+UserInputService.TouchEnded:Connect(function() if aiming and aiming.how == "touch" then task.defer(function() if aiming and aiming.how == "touch" then release() end end) end end)
+player.CharacterAdded:Connect(function() aiming = nil; clearArc() end)
+
 if remote then
-	remote.OnClientEvent:Connect(function(what, why)
-		if what == "Denied" and why and why ~= "" then
-			nameTag.Text = why
-			nameTag.TextColor3 = Color3.fromRGB(255, 150, 140)
-			deniedUntil = os.clock() + 1.6
+	remote.OnClientEvent:Connect(function(what, why, which)
+		if what == "Denied" then
+			deny(which == "throw" and throwOrb or powerOrb, why)
+			if which == "throw" then aiming = nil; clearArc() end
 		end
 	end)
 end
 
+local GLYPH = {blade = "🗡", axe = "🪓", spear = "🔱", dart = "🎯", flask = "🧪", bomb = "💣", bolas = "🪢"}
 RunService.RenderStepped:Connect(function()
 	local c = player.Character
 	local power = c and c:GetAttribute("Power")
 	local thr = c and c:GetAttribute("Throwable")
-	local hub = round:GetAttribute("Mode") == "Hub"
-	orb.Visible = (power ~= nil or thr ~= nil) and not hub
-	if not orb.Visible then return end
-	keyTag.Text = UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled and "↑" or keyName()
-	keyTag.Visible = not TouchInput.active()
+	local hub = inHub()
+	powerOrb.frame.Visible = power ~= nil and not hub
+	throwOrb.frame.Visible = thr ~= nil and not hub
+	-- (the two side by side; one alone sits where the first would)
+	throwOrb.frame.Position = UDim2.new(0.5, power and 428 or 352, 1, -96)
+	local pad = UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled
+	local touch = TouchInput.active()
 	local t = snow()
-	if power then
+	if powerOrb.frame.Visible then
+		local o = powerOrb
+		o.keyTag.Text = pad and "↑" or keyName("Power")
+		o.keyTag.Visible = not touch
 		local pw = Catalog.POWER[power]
 		local col = look(c:GetAttribute("PowerSpell"), c:GetAttribute("PowerSkin"))
-		glyph.Text = pw and pw.glyph or "✨"
-		ring.Color = col
+		o.glyph.Text = pw and pw.glyph or "✨"
+		o.ring.Color = col
 		local readyAt, cd = c:GetAttribute("PowerReadyAt") or 0, c:GetAttribute("PowerCD") or 1
 		local left = readyAt - t
-		wipe.Size = UDim2.fromScale(1, math.clamp(left / math.max(cd, 0.1), 0, 1))
-		secs.Text = left > 0 and tostring(math.ceil(left)) or ""
-		if os.clock() > deniedUntil then nameTag.Text = pw and string.upper(pw.name) or ""; nameTag.TextColor3 = Color3.fromRGB(220, 220, 230) end
-		for _, p in ipairs(pipList) do p:Destroy() end
-		pipList = {}
+		o.wipe.Size = UDim2.fromScale(1, math.clamp(left / math.max(cd, 0.1), 0, 1))
+		o.secs.Text = left > 0 and tostring(math.ceil(left)) or ""
+		if os.clock() > o.deniedUntil then o.nameTag.Text = pw and string.upper(pw.name) or ""; o.nameTag.TextColor3 = Color3.fromRGB(220, 220, 230) end
 		local ench, n = c:GetAttribute("ArrowEnchant"), c:GetAttribute("ArrowLeft")
-		if ench and n then
-			for i = 1, n do
-				local p = Instance.new("Frame"); p.Size = UDim2.fromOffset(8, 8); p.BackgroundColor3 = col; p.BorderSizePixel = 0; p.LayoutOrder = i; p.Parent = pips
-				Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
-				table.insert(pipList, p)
-			end
-		end
-	else
+		setPips(o, (ench and n) or 0, col)
+	end
+	if throwOrb.frame.Visible then
+		local o = throwOrb
+		o.keyTag.Text = pad and "↓" or keyName("Throw")
+		o.keyTag.Visible = not touch
 		local def = Catalog.WEAPON[thr]
 		local n, max = c:GetAttribute("ThrowCharges") or 0, c:GetAttribute("ThrowMax") or 1
-		local GLYPH = {blade = "🗡", axe = "🪓", spear = "🔱", dart = "🎯", flask = "🧪", bomb = "💣", bolas = "🪢"}
-		glyph.Text = def and GLYPH[def.look] or "✨"
-		ring.Color = n > 0 and Theme.ACCENT or Color3.fromRGB(120, 120, 130)
+		o.glyph.Text = def and GLYPH[def.look] or "✨"
+		o.ring.Color = aiming and READY or (n > 0 and Theme.ACCENT or Color3.fromRGB(120, 120, 130))
 		local nextAt = c:GetAttribute("ThrowNextAt")
 		local left = nextAt and (nextAt - t) or 0
-		wipe.Size = UDim2.fromScale(1, n > 0 and 0 or math.clamp(left / math.max(def and def.recharge or 15, 1), 0, 1))
-		secs.Text = (n == 0 and left > 0) and tostring(math.ceil(left)) or ""
-		if os.clock() > deniedUntil then nameTag.Text = def and string.upper(def.name) or ""; nameTag.TextColor3 = Color3.fromRGB(220, 220, 230) end
-		if #pipList ~= max then
-			for _, p in ipairs(pipList) do p:Destroy() end
-			pipList = {}
-			for i = 1, max do
-				local p = Instance.new("Frame"); p.Size = UDim2.fromOffset(8, 8); p.BorderSizePixel = 0; p.LayoutOrder = i; p.Parent = pips
-				Instance.new("UICorner", p).CornerRadius = UDim.new(1, 0)
-				table.insert(pipList, p)
-			end
-		end
-		for i, p in ipairs(pipList) do p.BackgroundColor3 = i <= n and Theme.ACCENT or Color3.fromRGB(60, 60, 70) end
+		o.wipe.Size = UDim2.fromScale(1, n > 0 and 0 or math.clamp(left / math.max(def and def.recharge or 15, 1), 0, 1))
+		o.secs.Text = (n == 0 and left > 0) and tostring(math.ceil(left)) or ""
+		if os.clock() > o.deniedUntil then o.nameTag.Text = def and string.upper(def.name) or ""; o.nameTag.TextColor3 = Color3.fromRGB(220, 220, 230) end
+		setPips(o, max)
+		for i, p in ipairs(o.pipList) do p.BackgroundColor3 = i <= n and Theme.ACCENT or Color3.fromRGB(60, 60, 70) end
 	end
 end)
 
@@ -303,16 +537,6 @@ end
 --  ON EVERYONE: imbues, auras, stealth, familiars, poison, roots, shields
 --------------------------------------------------------------------
 local looks = setmetatable({}, {__mode = "k"})   -- [character] = what's drawn on it
-local AURA = {
-	stone = {texture = TEX.smoke, size = 0.8, rate = 14, speed = 1, life = 0.9, alpha = 0.55, light = 0},
-	holy = {size = 0.35, rate = 30, speed = 2.5, life = 0.8},
-	wind = {size = 0.25, rate = 40, speed = 9, life = 0.4, spread = 30},
-	night = {texture = TEX.smoke, size = 1.4, rate = 20, speed = 1.5, life = 1.2, alpha = 0.45, light = 0},
-	tempest = {size = 0.5, rate = 45, speed = 6, life = 0.35},
-	avatar = {size = 0.5, rate = 50, speed = 3, life = 0.9},
-	arcane = {size = 0.35, rate = 30, speed = 2, life = 0.8},
-	glow = {size = 0.3, rate = 20, speed = 2, life = 0.7},
-}
 local function bladeParts(tool)
 	local out = {}
 	for _, p in ipairs(tool:GetDescendants()) do
@@ -392,22 +616,46 @@ local function drawOn(c, isMe)
 	elseif not im then
 		L.imSeen = true
 	end
-	-- the aura of a buff
+	-- the aura of a power that lasts, on the body itself for as long as it does (ReplicatedStorage ▸
+	-- PowerAuras: Iron Skin's stone plates, a halo, wind trails, a shroud, orbiting runes…)
 	local au = (c:GetAttribute("AuraUntil") or 0) > t and c:GetAttribute("Aura") or nil
-	local auKey = au and (au .. tostring(c:GetAttribute("AuraSkin"))) or nil
+	local auKey = au and (au .. tostring(c:GetAttribute("AuraSkin")) .. tostring(c:GetAttribute("AuraUntil"))) or nil
+	-- (a renewed aura of the same kind just goes on)
+	if auKey and L.auKind == au and L.auSkin == c:GetAttribute("AuraSkin") and L.auraFx then auKey = L.auKey end
 	if auKey ~= L.auKey then
+		if L.auraFx then pcall(L.auraFx.finish); L.auraFx = nil end
 		clearKey(L, "aura")
-		L.auKey = auKey
-		local root = c:FindFirstChild("HumanoidRootPart")
-		if auKey and root then
+		L.auKey, L.auKind, L.auSkin = auKey, au, au and c:GetAttribute("AuraSkin") or nil
+		if auKey then
 			local col, glow, Lk = look(c:GetAttribute("AuraSpell"), c:GetAttribute("AuraSkin"))
-			local o = table.clone(AURA[au] or AURA.glow)
-			o.box = true
-			local a = Instance.new("Attachment"); a.Name = "PowerAura"; a.Parent = root
-			local e = emitter(root, col, glow, o)
-			local l = Instance.new("PointLight"); l.Color = col; l.Range = 12; l.Brightness = au == "night" and 0 or 1.2; l.Parent = root
-			L.aura = {a, e, l}
+			L.auraFx = PowerAuras.build(c, au, col, glow)
+			L.aura = {}
 			if au == "avatar" or (Lk and Lk.wings) then for _, w in ipairs(wings(c, col, glow, Lk and Lk.wings or 2)) do table.insert(L.aura, w) end end
+		end
+	end
+	if L.auraFx and L.auraFx.step then pcall(L.auraFx.step, os.clock()) end
+	-- an archer's enchanted arrows: the bow glows with them while any are left
+	local ench = c:GetAttribute("ArrowEnchant")
+	local enchKey = ench and tool and (ench .. tostring(tool)) or nil
+	if enchKey ~= L.enchKey then
+		clearKey(L, "ench")
+		L.enchKey = enchKey
+		if enchKey then
+			local pw = Catalog.POWER[ench]
+			local col, glow = look("Pw_" .. ench, c:GetAttribute("PowerSkin"))
+			if pw and not c:GetAttribute("PowerSkin") then col, glow = pw.color or col, pw.glow or glow end
+			L.ench = {}
+			local n = 0
+			for _, p in ipairs(tool:GetDescendants()) do
+				if p:IsA("BasePart") and p.Transparency < 1 and n < 3 then
+					n += 1
+					local e = emitter(p, glow, col, {size = 0.3, rate = 30, speed = 1, life = 0.45, box = true, light = 1})
+					e.ZOffset = 0.5
+					table.insert(L.ench, e)
+				end
+			end
+			local h = tool:FindFirstChild("Handle")
+			if h then local l = Instance.new("PointLight"); l.Color = col; l.Range = 8; l.Brightness = 1.6; l.Parent = h; table.insert(L.ench, l) end
 		end
 	end
 	-- stealth: theirs nearly gone, yours a ghost
@@ -445,9 +693,18 @@ local function drawOn(c, isMe)
 			L.posedAt = os.clock()
 		end
 	end
-	-- a throw's fling
+	-- a throw: the arm drawn back while they aim (yours is drawn the moment you press), and
+	-- the fling from there as it goes
+	local aimingNow = c:GetAttribute("ThrowAiming") == true
+	if aimingNow ~= (L.aiming or false) then
+		L.aiming = aimingNow
+		if not isMe then
+			if aimingNow then PowerPoses.play(c, PowerPoses.AIM)
+			else task.delay(0.15, function() if not L.aiming then PowerPoses.stop(c, PowerPoses.AIM) end end) end
+		end
+	end
 	local tt = c:GetAttribute("ThrowTick")
-	if L.seen and tt ~= L.throwTick then PowerPoses.play(c, PowerPoses.THROW) end
+	if L.seen and tt ~= L.throwTick then PowerPoses.play(c, PowerPoses.THROW, snow() - PowerPoses.THROW_FROM) end
 	L.throwTick = tt
 	-- the moment a power goes off: a burst of its light and a ring of sound (an ultimate's
 	-- a shockwave and a column of light); its gesture now, if it had no wind-up to start in
@@ -512,7 +769,8 @@ RunService.RenderStepped:Connect(function()
 	end
 	for c, L in pairs(looks) do
 		if not c.Parent then
-			for _, k in ipairs({"imbue", "aura"}) do clearKey(L, k) end
+			if L.auraFx then pcall(L.auraFx.finish); L.auraFx = nil end
+			for _, k in ipairs({"imbue", "aura", "ench"}) do clearKey(L, k) end
 			if L.familiar then L.familiar:Destroy() end
 			looks[c] = nil
 		end

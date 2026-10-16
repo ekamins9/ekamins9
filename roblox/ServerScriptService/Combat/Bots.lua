@@ -1370,7 +1370,7 @@ function Bots.spawn(opts)
 	if opts.power and Catalog.POWER[opts.power] then
 		bot.power = Catalog.POWER[opts.power]
 		task.defer(function()
-			pcall(powers().equip, model, nil, {thirdKind = "power", thirdId = opts.power,
+			pcall(powers().equip, model, nil, {power = opts.power,
 				spellSkins = opts.powerSkin and {["Pw_" .. opts.power] = opts.powerSkin} or {}})
 		end)
 	end
