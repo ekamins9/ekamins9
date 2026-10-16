@@ -8,7 +8,9 @@
        RB / R1   stab            LB / L1   overhead        LT / L2   block (hold)
        A / ✕     jump            B / ○     dodge           X / □     kick (or pick up,
        Y / △     feint                                               when a prompt shows)
-       LS click  sprint (on until you stop)                RS click  first / third person
+       LS click  sprint (on until you stop)
+       RS click  tap: LOCK ON to the foe in front of you (ReplicatedStorage ▸ LockOn; flick the
+                 right stick to move it to the next foe) · hold: first / third person
        D-pad ↑   tap: your POWER (Powers.client) · hold: the emote wheel (aim with the right
                  stick, let go)
        D-pad ↓   tap: crouch (toggle) · hold: aim your THROWABLE, let go to throw
@@ -17,7 +19,9 @@
        right stick       look
 
      Menus (the hub, the class screen, the vote, any pop-up that frees the
-     mouse) get Roblox's virtual cursor: the left stick moves it, A clicks. ]]
+     mouse) get Roblox's virtual cursor: the left stick moves it, A clicks. In the
+     menu B goes back (a pop-up, then a screen, then the menu itself) and LB / RB
+     step through its screens (HubMenu: _G.HubMenuCycle). ]]
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -29,6 +33,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TouchInput = require(ReplicatedStorage:WaitForChild("TouchInput"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local LockOn = require(ReplicatedStorage:WaitForChild("LockOn"))
 local PAD = InputHints.PAD
 local K = Enum.KeyCode
 local player = Players.LocalPlayer
@@ -90,6 +95,8 @@ end
 -- toggles
 local sprintOn, crouchOn = false, false
 local crouchDownAt, throwHeld = nil, false
+local r3At, r3Held = nil, false   -- (RS click: a tap locks on, a hold switches the view)
+local flickArmed = true            -- (locked: a flick of the right stick moves the lock)
 local selectAt = nil
 local boardUp = false
 
@@ -101,7 +108,14 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	local code = input.KeyCode
 	-- the menu / scoreboard button works everywhere
 	if code == PAD.Menu then selectAt = os.clock(); return end
-	if menuUp() or UserInputService:GetFocusedTextBox() then return end
+	-- in the menu: B back, LB / RB its screens
+	if menuUp() then
+		if code == K.ButtonB then if _G.HubMenuToggle then _G.HubMenuToggle() end
+		elseif code == K.ButtonL1 then if _G.HubMenuCycle then _G.HubMenuCycle(-1) end
+		elseif code == K.ButtonR1 then if _G.HubMenuCycle then _G.HubMenuCycle(1) end end
+		return
+	end
+	if UserInputService:GetFocusedTextBox() then return end
 	-- (a prompt shown on X takes X: that's the pickup, not a kick)
 	if gp and (code == K.ButtonX or code == K.ButtonA or code == K.ButtonB) then return end
 	if code == PAD.Swing then swingDown()
@@ -113,6 +127,12 @@ UserInputService.InputBegan:Connect(function(input, gp)
 		crouchDownAt, throwHeld = mine, false
 		task.delay(0.22, function()
 			if crouchDownAt == mine then throwHeld = true; TouchInput.press("Throw", true) end
+		end)
+	elseif code == K.ButtonR3 then
+		local mine = os.clock()
+		r3At, r3Held = mine, false
+		task.delay(0.35, function()
+			if r3At == mine then r3Held = true; TouchInput.press("View", true) end
 		end)
 	elseif code == PAD.Emote then
 		-- a tap is the power; held a moment, the emote wheel
@@ -143,6 +163,9 @@ UserInputService.InputEnded:Connect(function(input)
 	elseif code == PAD.Emote then
 		if emoteOpened then TouchInput.press("Emote", false) else TouchInput.press("Power", true) end
 		emoteDownAt, emoteOpened = nil, false
+	elseif code == K.ButtonR3 then
+		if r3At and not r3Held then TouchInput.press("Lock", true) end
+		r3At, r3Held = nil, false
 	elseif code == PAD.Crouch then
 		if throwHeld then TouchInput.press("Throw", false)
 		elseif crouchDownAt then crouchOn = not crouchOn; TouchInput.press("Crouch", crouchOn) end
@@ -174,6 +197,13 @@ RunService:BindToRenderStep("GamepadControls", Enum.RenderPriority.Input.Value, 
 			local k = (ClientSettings.get("PadLook") or 1) / math.max(SENS * ms, 1e-4)
 			TouchInput.addLook(v.X * math.rad(YAW_RATE) * dt * k, -v.Y * math.rad(PITCH_RATE) * dt * k)
 		end
+	end
+	-- locked on: a flick of the right stick moves the lock to the next foe that way
+	if LockOn.target and not menuUp() then
+		if flickArmed and math.abs(r.X) > 0.75 then
+			flickArmed = false
+			TouchInput.press("Lock", true, r.X > 0 and "Next" or "Prev")
+		elseif math.abs(r.X) < 0.3 then flickArmed = true end
 	end
 	-- sprint switches itself off when you stop moving
 	if sprintOn and l.Magnitude < 0.2 then sprintOn = false; TouchInput.press("Sprint", false) end

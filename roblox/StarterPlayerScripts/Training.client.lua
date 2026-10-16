@@ -276,7 +276,11 @@ local function refreshCard()
 	skipB.Text = basic and "SKIP TRAINING  ·  M" or "STOP THE COURSE"
 	menuB.Visible = not basic
 	-- a course's card (a newcomer's, or the full course again) sits up top, where they can't miss it
-	card.Position = course and UDim2.new(0.5, -165, 0, 64) or UDim2.new(1, -346, 0.5, -96)
+	-- (a touch screen: top right, a little smaller, clear of the bars and the thumbs)
+	local touch = TouchInput.active()
+	card.Position = touch and UDim2.new(1, -12 - 330 * 0.8, 0, 62) or (course and UDim2.new(0.5, -165, 0, 64) or UDim2.new(1, -346, 0.5, -96))
+	local cs = card:FindFirstChild("TouchSize") or Instance.new("UIScale")
+	cs.Name = "TouchSize"; cs.Scale = touch and 0.8 or 1; cs.Parent = card
 	if course then
 		cardHead.Text = string.format("%s  ·  STEP %d / %d", basic and "BASIC TRAINING" or "THE FULL COURSE", player:GetAttribute("CourseStep") or 1, player:GetAttribute("CourseSteps") or 14)
 	else
@@ -401,6 +405,11 @@ local function refreshFeet()
 	local on = inYard() and player:GetAttribute("Drill") == "basics" and not hubMenuUp()
 	if on and not feet.Visible then tried = {}; buildFeet() end
 	feet.Visible = on
+	-- (a touch screen: right of the SPRINT and JUMP buttons it asks for, a little smaller)
+	local touch = TouchInput.active()
+	feet.Position = touch and UDim2.new(0, 120, 0.5, -110) or UDim2.new(0, 16, 0.5, -150)
+	local fs = feet:FindFirstChild("TouchSize") or Instance.new("UIScale")
+	fs.Name = "TouchSize"; fs.Scale = touch and 0.75 or 1; fs.Parent = feet
 end
 UserInputService.InputBegan:Connect(function(input)
 	if not feet.Visible or UserInputService:GetFocusedTextBox() then return end

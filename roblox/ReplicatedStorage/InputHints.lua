@@ -29,7 +29,7 @@ InputHints.PAD = {
 	Jump = K.ButtonA, Dodge = K.ButtonB, Kick = K.ButtonX, Feint = K.ButtonY,
 	Sprint = K.ButtonL3, View = K.ButtonR3, Emote = K.DPadUp, Crouch = K.DPadDown,
 	Menu = K.ButtonSelect, Board = K.ButtonSelect, Pickup = K.ButtonX, Reload = K.ButtonR2, Stance = K.DPadLeft,
-	Power = K.DPadUp, Throw = K.DPadDown,
+	Power = K.DPadUp, Throw = K.DPadDown, Lock = K.ButtonR3,
 }
 -- what the button is called (Xbox / PlayStation)
 local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", ButtonL1 = "LB", ButtonR1 = "RB", ButtonL2 = "LT", ButtonR2 = "RT",
@@ -37,11 +37,11 @@ local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", Button
 local PS = {ButtonA = "✕", ButtonB = "○", ButtonX = "□", ButtonY = "△", ButtonL1 = "L1", ButtonR1 = "R1", ButtonL2 = "L2", ButtonR2 = "R2",
 	ButtonL3 = "L3", ButtonR3 = "R3", DPadUp = "D-PAD ↑", DPadDown = "D-PAD ↓", DPadLeft = "D-PAD ←", DPadRight = "D-PAD →", ButtonSelect = "TOUCHPAD"}
 -- (special cases said in words)
-local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s"}
+local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s"}
 -- the touch buttons' names (StarterPlayerScripts ▸ TouchControls)
 local TOUCH = {Swing = "SWING", Stab = "STAB", Overhead = "OVERHEAD", Underhand = "SWING", Block = "BLOCK", Feint = "FEINT", Kick = "KICK",
 	Dodge = "DODGE", Jump = "JUMP", Sprint = "SPRINT", Crouch = "CROUCH", View = "VIEW", Emote = "EMOTE", Menu = "MENU", Board = "SCORES",
-	Pickup = "PICK UP", Weapons = "weapon", Cursor = "MENU", Reload = "SWING", Power = "the orb", Throw = "hold the throw orb"}
+	Pickup = "PICK UP", Weapons = "weapon", Cursor = "MENU", Reload = "SWING", Power = "the orb", Throw = "hold the throw orb", Lock = "LOCK"}
 -- keyboard binds, the way a player says them
 local NICE = {MouseButton1 = "LEFT MOUSE", MouseButton3 = "MIDDLE MOUSE", MouseWheelUp = "SCROLL UP", MouseWheelDown = "SCROLL DOWN",
 	LeftAlt = "LEFT ALT", RightAlt = "RIGHT ALT", LeftShift = "LEFT SHIFT", LeftControl = "LEFT CTRL", Space = "SPACE"}
@@ -96,10 +96,17 @@ local function ensureWatch()
 end
 ensureWatch()
 
-function InputHints.mode() ensureWatch(); return mode end
+local Device
+function InputHints.mode()
+	ensureWatch()
+	-- (Studio's phone preview speaks touch: ReplicatedStorage ▸ Device)
+	Device = Device or require(script.Parent:WaitForChild("Device"))
+	if Device.sim() then return "Touch" end
+	return mode
+end
 
 function InputHints.name(action)
-	ensureWatch()
+	local mode = InputHints.mode()
 	if mode == "Gamepad" then
 		local names = isPlayStation() and PS or XBOX
 		local code = InputHints.PAD[action]
@@ -116,7 +123,7 @@ function InputHints.name(action)
 end
 
 function InputHints.say(action)
-	if mode == "Touch" then return "the " .. InputHints.name(action) .. " button" end
+	if InputHints.mode() == "Touch" then return "the " .. InputHints.name(action) .. " button" end
 	return "[" .. InputHints.name(action) .. "]"
 end
 

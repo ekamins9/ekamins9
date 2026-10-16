@@ -290,15 +290,32 @@ so all its maps take turns. Each vote offers three maps the last one didn't.)
 
 ## Touch screens (phones, tablets)
 
-On a touch screen with no keyboard, `TouchControls` puts the fight under the right thumb:
-**BLOCK** (hold) in the corner, **◀ SWING** and **SWING ▶** (the side), **STAB**, **OVERHEAD**,
-**KICK**, **FEINT** and **DODGE** around it; **SPRINT** (hold) and **JUMP** above Roblox's
-movement stick, with **EMOTE**, **VIEW** (first / third person) and **CROUCH** (on / off) above
-them; **☰ MENU** and **🏆 SCORES** (the board, on / off) top left; tap a card on the weapon bar
-to switch weapons. A drag on open screen (right of the stick) turns the camera. Buttons go
-through `ReplicatedStorage ▸ TouchInput` (the action bus), so each does exactly what its key does
-(`CombatClient`, `RangedClient`, `Movement`, `CameraRig`, `Cosmetics`, `Scoreboard` listen). They
-scale with the screen and hide while you're dead or in the menu; Roblox's own jump button is hidden.
+On a touch screen with no keyboard, `TouchControls` puts the fight under the right thumb, few
+buttons, out of the fight's way:
+- **ATTACK** (big, in the corner): a tap swings (the sides take turns); a **swipe** from it picks
+  the blow: ↑ overhead, ↓ stab, ← → a swing from that side (arrows round it light up). A bow or a
+  crossbow: held to draw, let go to loose. A staff: held to cast, swiped ↑ ↓ for the spell.
+- **BLOCK** (held) beside it, **DODGE**, **KICK** (it turns into **FEINT** while your own swing is
+  coming; with a staff, **MEDITATE**), **LOCK**, and the **POWER** and **THROW** orbs in the arc
+  (Powers.client moves them into TouchControls' PowerSlot / ThrowSlot).
+- **SPRINT** (on until you stop) and **JUMP** above Roblox's movement stick.
+- **MENU** and **⋯** top left (⋯: EMOTE, VIEW, CROUCH, SCORES, and STAFF ⇄ with a staff); the gift
+  chip beside them.
+- The health and energy bars move to the top, smaller; the weapon chip's key hints hide.
+- A drag on open screen (right of the stick) turns the camera (SETTINGS ▸ Touch look speed).
+- **LOCK-ON** (`ReplicatedStorage ▸ LockOn`, `LockOn.client`): LOCK locks onto the foe nearest the
+  middle of your view; your camera and body keep them in front of you (CameraRig, under the
+  swing's turn cap); a red reticle marks them; a swipe across the screen moves the lock to the next
+  foe. It lets go when they fall, hide or get away. **AIM ASSIST** (SETTINGS ▸ Aim assist, on by
+  default; touch and controllers only): as you attack, the foe close in front of you draws your aim
+  a little. Anyone can lock on: middle mouse (rebindable), a controller's right-stick click.
+- **Sizes** (`ReplicatedStorage ▸ Device`): every game screen is drawn smaller on a phone (`UIFit`
+  puts a UIScale on each ScreenGui: Device.hudScale), the buttons by Device.touchScale ×
+  SETTINGS ▸ Touch button size; the class picker gives its fighters the room on a phone; the
+  third-person camera sits a little further back on a phone.
+
+Buttons go through `ReplicatedStorage ▸ TouchInput` (the action bus), so each does exactly what its
+key does. Roblox's own jump button is hidden.
 
 **The menu on a phone** (`HubMenu`, `LAYOUT.compact`: a screen under 560 px tall). The design
 canvas shrinks to 1300×600 (everything is drawn bigger), text of 16 and under is 1.22× larger,
@@ -307,7 +324,8 @@ and today's shop above it, no tasks panel: they're behind TASKS), screens keep t
 and scroll (a **▼ MORE BELOW** chip until you do), screens that scroll inside themselves (the egg
 shop, the inventory, the crate gallery) fit the screen instead (`HX.fitScreen`), and pop-ups shrink
 until they fit. To look at it in Studio: set the attribute `PhoneSim = true` on ReplicatedStorage
-before pressing Play (a phone's 19.5:9 shape, letterboxed) — **and clear it before saving**.
+before pressing Play: the menu letterboxes to a phone's 19.5:9 and everything else (Device) treats
+this client as a phone 390 points tall, the touch controls on — **and clear it before saving**.
 
 ## Controllers (Xbox, PlayStation)
 
@@ -321,13 +339,19 @@ so the fight code needs nothing of its own. The layout lives in `InputHints.PAD`
 | LT / L2 | block (hold; a bow's let-down, a crossbow's aim) |
 | A / ✕ · B / ○ | jump · dodge |
 | X / □ · Y / △ | kick (or pick up, when a prompt shows) · feint |
-| LS click · RS click | sprint (on until you stop) · first / third person |
-| D-pad ↑ · ↓ · ← → | emote wheel (hold, aim with the right stick, let go) · crouch (toggle) · weapons |
+| LS click | sprint (on until you stop) |
+| RS click | tap: **lock on** (flick the right stick to move to the next foe) · hold: first / third person |
+| D-pad ↑ | tap: your power · hold: the emote wheel (aim with the right stick, let go) |
+| D-pad ↓ | tap: crouch (toggle) · hold: aim your throwable, let go to throw |
+| D-pad ← → | weapons |
 | VIEW / TOUCHPAD | tap: the menu · hold: the scoreboard |
 | right stick | look (SETTINGS ▸ Controller look speed) |
 
 Anywhere the game frees the mouse (the menu, the class screen, the vote, a pop-up), Roblox's
-virtual cursor turns on: the left stick moves it, A clicks. Every hint on screen asks
+virtual cursor turns on: the left stick moves it, A clicks. In the menu **B goes back** (a pop-up,
+then a screen, then the menu) and **LB / RB step through its screens** (`_G.HubMenuCycle`). Aim
+assist and lock-on as on a touch screen (above). On a TV (Roblox's ten-foot interface) every game
+screen is drawn a little bigger (Device.hudScale). Every hint on screen asks
 `ReplicatedStorage ▸ InputHints` what to call a control: your key bind, the controller's button
 (Xbox letters or PlayStation shapes) or the touch button, and it switches the moment you pick
 up a different device (the tutorial, the intro's tips, the travel screen's tips, the menu tour,

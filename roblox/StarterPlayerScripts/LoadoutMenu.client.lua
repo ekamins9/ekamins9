@@ -151,6 +151,11 @@ for i, tab in ipairs({"MENU", "LOADOUT", "SETTINGS"}) do
 	b.Activated:Connect(function() bus:Fire("OpenHub", tab == "MENU" and "PLAY" or tab) end)
 end
 
+-- (a phone: the panel nearly the whole screen, and each card's fighter where its description
+-- was, or there'd be no room for them: ReplicatedStorage ▸ Device; applied once the cards exist)
+local Device = require(ReplicatedStorage:WaitForChild("Device"))
+local fitCards   -- (below)
+
 -- class cards
 local cardRow = Instance.new("Frame")
 cardRow.BackgroundTransparency = 1
@@ -162,7 +167,7 @@ crl.FillDirection = Enum.FillDirection.Horizontal
 crl.Padding = UDim.new(0, 14)
 crl.SortOrder = Enum.SortOrder.LayoutOrder
 
-local cards = {}   -- [classId] = {btn, sum, tag}
+local cards = {}   -- [classId] = {btn, sum, tag, vp, desc}
 local selected = GameConfig.DEFAULT_CLASS
 -- is this class open to you yet? (the Archer and the Mage wait for level 5)
 local lockVeils = {}
@@ -230,7 +235,7 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 		lt.Size = UDim2.new(1, 0, 0, 30); lt.Position = UDim2.new(0, 0, 0.5, -15); lt.TextXAlignment = Enum.TextXAlignment.Center; lt.ZIndex = 21
 		lockVeils[id] = veil
 	end
-	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s, vp = vp, cam = cam}
+	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s, vp = vp, cam = cam, desc = d}
 end
 
 -- each class's fighter: dressed by the same Dresser as a real spawn
@@ -497,3 +502,14 @@ end)
 
 -- tell the server we're listening; it answers "Show" if we have no body yet
 event:FireServer("Ready")
+
+fitCards = function()
+	local phone = Device.kind() == "phone"
+	panel.Size = phone and UDim2.fromScale(0.96, 0.94) or UDim2.fromScale(0.8, 0.72)
+	for _, c in pairs(cards) do
+		if c.desc then c.desc.Visible = not phone end
+		c.vp.Size = phone and UDim2.new(1, 16, 1, -50 - 64) or UDim2.new(1, 16, 1, -50 - 122)
+	end
+end
+Device.changed:Connect(fitCards)
+fitCards()

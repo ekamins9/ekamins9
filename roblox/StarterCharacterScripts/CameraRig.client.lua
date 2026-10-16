@@ -40,6 +40,8 @@ local SoundConfig    = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local RigPose        = require(ReplicatedStorage:WaitForChild("RigPose"))
 local TouchInput = require(game:GetService("ReplicatedStorage"):WaitForChild("TouchInput"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local LockOn         = require(ReplicatedStorage:WaitForChild("LockOn"))
+local InputHints     = require(ReplicatedStorage:WaitForChild("InputHints"))
 local GameSettings   = UserSettings():GetService("UserGameSettings")
 ClientSettings.load()
 
@@ -117,7 +119,8 @@ local CAM_SMOOTH  = 100
 
 -- third-person: the View key (settings, default Z) toggles first / third
 -- person; the scroll wheel is for attacks now, so there's no zooming
-local DEFAULT_DIST= 9
+-- (a phone's small screen: a little further back, so more of the fight is in view)
+local DEFAULT_DIST= require(ReplicatedStorage:WaitForChild("Device")).kind() == "phone" and 11 or 9
 local FP_ENTER    = 0.75
 local ZOOM_SMOOTH = 14
 local SHOULDER_X  = 2.2   -- over the right shoulder
@@ -561,9 +564,19 @@ local function loopBody(dt)
 	local tdx, tdy = TouchInput.takeLook()
 	rawDX, rawDY = rawDX + tdx, rawDY + tdy
 	if loose then rawDX, rawDY = 0, 0 end
+	-- (locked on: your own look is only a nudge; the lock does the turning)
+	if LockOn.target then rawDX, rawDY = rawDX * 0.2, rawDY * 0.2 end
 	local sens   = SENSITIVITY * GameSettings.MouseSensitivity
 	local dYaw   = -rawDX * sens
 	local dPitch = -rawDY * sens
+	-- LOCK-ON / AIM ASSIST (ReplicatedStorage ▸ LockOn): the turn toward the foe, added before
+	-- the swing's turn cap so it can't turn you faster than a swing allows. The assist is for
+	-- thumbs and sticks only (the Aim assist setting)
+	if not loose and not cursorFree then
+		local assist = InputHints.mode() ~= "Keyboard" and ClientSettings.get("AimAssist") ~= "Off"
+		local ly, lp = LockOn.steer(dt, HRP.Position + Vector3.new(0, 1.5, 0), rot.Y, rot.X, assist)
+		dYaw, dPitch = dYaw + ly, dPitch + lp
+	end
 	if capped then
 		local maxStep = math.rad(TURN_CAP_DPS) * dt
 		local mag = math.sqrt(dYaw*dYaw + dPitch*dPitch)

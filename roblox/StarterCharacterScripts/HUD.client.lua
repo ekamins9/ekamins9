@@ -191,13 +191,35 @@ character:GetAttributeChangedSignal("TakenTick"):Connect(function()
 end)
 
 local hubMenu = nil
+local Device = require(game:GetService("ReplicatedStorage"):WaitForChild("Device"))
+local Hints = require(game:GetService("ReplicatedStorage"):WaitForChild("InputHints"))
+local laidTouch, hintMode = nil, nil
 local conn = RunService.RenderStepped:Connect(function(dt)
 	local a = math.clamp(dt * LERP_SPEED, 0, 1)
 	local t = os.clock()
 	-- the main menu covers the screen: the bars step aside while it is up
 	hubMenu = hubMenu or (gui.Parent and gui.Parent:FindFirstChild("HubMenu"))
 	local menuUp = hubMenu ~= nil and hubMenu.Enabled
-	if root.Visible == menuUp then root.Visible = not menuUp; chip.Visible = not menuUp end
+	if root.Visible == menuUp then root.Visible = not menuUp end
+	-- (a touch screen: the bars at the top, out of the thumbs' way; no keyboard hints)
+	local touch = Device.touch()
+	chip.Visible = not menuUp and not touch
+	-- (the hints in the controls you're holding: a controller's buttons, or keys)
+	local hm = Hints.mode()
+	if hm ~= hintMode then
+		hintMode = hm
+		chipSub.Text = hm == "Gamepad" and (Hints.name("Weapons") .. " switch  ·  " .. Hints.name("Kick") .. " kick  ·  " .. Hints.name("Lock") .. " lock on  ·  " .. Hints.name("Menu") .. " menu")
+			or ("1 · 2 to switch  ·  " .. Hints.name("Kick") .. " kick  ·  " .. Hints.name("Menu") .. " menu")
+	end
+	if touch ~= laidTouch then
+		laidTouch = touch
+		root.AnchorPoint = touch and Vector2.new(0.5, 0) or Vector2.new(0.5, 1)
+		root.Position = touch and UDim2.new(0.5, 0, 0, 60) or UDim2.new(0.5, 0, 1, -100)
+		local sc = root:FindFirstChild("TouchSize") or Instance.new("UIScale")
+		sc.Name = "TouchSize"
+		sc.Scale = touch and 0.72 or 1
+		sc.Parent = root
+	end
 
 	local hp = Humanoid.MaxHealth > 0 and math.clamp(Humanoid.Health / Humanoid.MaxHealth, 0, 1) or 0
 	hpShown = hpShown + (hp - hpShown) * a

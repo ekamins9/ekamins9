@@ -449,8 +449,29 @@ RunService.RenderStepped:Connect(function()
 	local hub = inHub()
 	powerOrb.frame.Visible = power ~= nil and not hub
 	throwOrb.frame.Visible = thr ~= nil and not hub
-	-- (the two side by side; one alone sits where the first would)
-	throwOrb.frame.Position = UDim2.new(0.5, power and 428 or 352, 1, -96)
+	-- (on a touch screen the orbs sit in the right thumb's arc: TouchControls' PowerSlot and
+	-- ThrowSlot; else side by side right of the energy bar, one alone where the first would be)
+	local tc = TouchInput.active() and player.PlayerGui:FindFirstChild("TouchControls")
+	local function place(o, slotName, x)
+		local slotF = tc and tc:FindFirstChild(slotName, true)
+		if slotF then
+			if o.frame.Parent ~= slotF then
+				o.frame.Parent = slotF
+				o.frame.AnchorPoint = Vector2.new(0.5, 0.5)
+				o.frame.Position = UDim2.fromScale(0.5, 0.5)
+				o.frame.Size = UDim2.fromScale(1, 1)
+			end
+		else
+			if o.frame.Parent ~= gui then
+				o.frame.Parent = gui
+				o.frame.AnchorPoint = Vector2.new(0, 1)
+				o.frame.Size = UDim2.fromOffset(64, 64)
+			end
+			o.frame.Position = UDim2.new(0.5, x, 1, -96)
+		end
+	end
+	place(powerOrb, "PowerSlot", 352)
+	place(throwOrb, "ThrowSlot", power and 428 or 352)
 	local pad = UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled
 	local touch = TouchInput.active()
 	local t = snow()

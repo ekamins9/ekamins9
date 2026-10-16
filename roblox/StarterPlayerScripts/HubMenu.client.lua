@@ -8259,6 +8259,15 @@ local function menuKey()
 end
 _G.HubMenuToggle = menuKey
 _G.HubMenuOpen = function() return open end
+-- a controller's LB / RB: the lobby and the dock's screens in turn (GamepadControls); not while
+-- a pop-up is up
+local CYCLE = {"PLAY", "CLASSES", "ARMORY", "INVENTORY", "SHOP", "PASS", "HATCHERY", "TRADE", "GIFTS", "TASKS", "RANKS", "SETTINGS"}
+_G.HubMenuCycle = function(dir)
+	if not open or modalBack.Visible or _G.IntroActive then return end
+	if HX.closeInspect and HX.closeInspect() then return end
+	local at = table.find(CYCLE, currentTab) or 1
+	selectTab(CYCLE[(at - 1 + dir) % #CYCLE + 1])
+end
 -- open the menu on a screen (the menu tour, the recruit's gift): shopTab picks the shop's page
 _G.HubMenuGo = function(tab, shopTab)
 	if shopTab then ui.shopTab = shopTab; ui.crate = nil; ui.crateItem = nil end

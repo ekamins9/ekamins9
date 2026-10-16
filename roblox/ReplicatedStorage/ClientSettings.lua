@@ -30,6 +30,8 @@ ClientSettings.SLIDERS = {
 	{key = "Music",   label = "Music volume",   min = 0,  max = 2,   hint = "the score: the courtyard, battles, the horde, bosses"},
 	{key = "UISounds", label = "Menu sounds",   min = 0,  max = 2,   hint = "clicks, crate spins, eggs cracking, reveals"},
 	{key = "PadLook", label = "Controller look speed", min = 0.3, max = 2.5, hint = "how fast the right stick turns you (a controller)"},
+	{key = "TouchLook", label = "Touch look speed", min = 0.3, max = 2.5, hint = "how fast a drag on the screen turns you (a phone or a tablet)"},
+	{key = "TouchSize", label = "Touch button size", min = 0.75, max = 1.35, hint = "the fight buttons on a phone or a tablet: smaller shows more of the fight, bigger is easier to hit"},
 	{key = "FOV",     label = "First-person FOV", min = 70, max = 110, step = 1, hint = "70 is already wide; higher pulls the view back to show more of the sword (looking down slides the eye forward again, so you see your front, never the top of your chest)"},
 }
 
@@ -63,6 +65,7 @@ ClientSettings.KEYS = {
 	{key = "Stance",     label = "Staff: magic / melee", default = "H"},
 	{key = "Power",      label = "Power (your class's magic)", default = "E"},
 	{key = "Throw",      label = "Throw (hold to aim, let go to throw)", default = "C"},
+	{key = "Lock",       label = "Lock on (to the foe in front of you)", default = "MouseButton3"},
 }
 ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}
 
@@ -80,6 +83,8 @@ ClientSettings.CHOICES = {
 		hint = "When you fall, the view turns to whoever got you and closes in on them for a moment."},
 	{key = "DrawAnim",   label = "Draw animation", options = {"On", "Off"},
 		hint = "Taking a weapon in hand: the arm reaches over the shoulder or to the hip and pulls it out. Off: it simply appears (the moment it takes to draw stays the same)."},
+	{key = "AimAssist",  label = "Aim assist (touch, controller)", options = {"On", "Off"},
+		hint = "On a phone or a controller: as you attack, the foe right in front of you draws your aim a little. Lock-on (the LOCK button, or click the right stick) works either way."},
 	{key = "ShowLocked", label = "Locked items in menus", options = {"Show", "Hide"},
 		hint = "Show everything there is to get (with how to get it), or only what you own. The 🔒 switch in the Loadout and the Armory flips it too."},
 	-- PRIVACY: the server checks these (SettingsServer puts them on the player as Priv_<key>)
@@ -96,7 +101,7 @@ ClientSettings.CHOICES = {
 ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests", "Gifts", "Pulls"}
 
 ClientSettings.DEFAULTS = {
-	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1,
+	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1, TouchLook = 1, TouchSize = 1, AimAssist = "On",
 	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
 	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone", Pulls = "Show",
 }

@@ -157,6 +157,20 @@ chip.Size = UDim2.fromOffset(212, 44)
 chip.BackgroundColor3 = Theme.GLASS
 chip.BackgroundTransparency = 0.15
 chip.Parent = hud
+-- (a touch screen: right of the ☰ and ⋯ buttons, TouchControls', which are drawn at the touch
+-- buttons' size while this is drawn at the screens' size: ReplicatedStorage ▸ Device)
+do
+	local Device = require(ReplicatedStorage:WaitForChild("Device"))
+	local function place()
+		if Device.touch() then
+			chip.Position = UDim2.fromOffset(128 * Device.touchScale() / math.max(Device.hudScale(), 0.05), 6 * Device.touchScale() / math.max(Device.hudScale(), 0.05))
+		else
+			chip.Position = UDim2.fromOffset(14, 10)
+		end
+	end
+	Device.changed:Connect(place)
+	place()
+end
 Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 12)
 local chipStroke = Instance.new("UIStroke", chip); chipStroke.Color = Color3.new(1, 1, 1); chipStroke.Transparency = 0.8; chipStroke.Thickness = 1.5
 local chipIcon = Instance.new("TextLabel")

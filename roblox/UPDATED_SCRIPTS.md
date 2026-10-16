@@ -1,4 +1,57 @@
-# Updated scripts: shields strapped to the arm, a real shield block, shield skins rebuilt, imbued blows through a guard
+# Updated scripts: phones and controllers — a new touch layout, lock-on and aim assist, everything sized for the screen
+
+- **Phone fight controls rebuilt.** There were 14 crowded buttons, some off the screen. Now:
+  - **ATTACK** (one big button: tap to swing, swipe ↑ ↓ ← → for overhead / stab / a side);
+  - **BLOCK**, **DODGE**, **KICK** (FEINT while your swing is coming; MEDITATE with a staff);
+  - **LOCK**;
+  - the power and throw orbs, in a tight arc under the right thumb;
+  - **SPRINT** (stays on until you stop) and **JUMP** on the left;
+  - **MENU** and **⋯** top left (⋯: emote, view, crouch, scores, staff swap).
+
+  Bows hold to draw, staffs hold to cast and swipe for spells.
+- **Lock-on** for everyone: the LOCK button, a controller's right-stick click, or middle mouse.
+  - Your camera and body track the locked foe (no faster than a swing's turn cap); a red reticle marks them.
+  - Swipe (or flick the stick) to move to the next foe. It lets go when they fall, hide or get away.
+- **Aim assist** (touch and controller, on by default, in Settings): as you attack, the foe close in front of you draws your aim a little.
+- **Everything sized for the screen** (new Device and UIFit):
+  - On a phone every game screen is drawn smaller so the fight shows. The health and energy bars move to the top, thinner.
+  - The gift chip, the lesson card and the Find Your Feet list move out of the thumbs' way.
+  - The class picker shows big fighter previews instead of squashed ones.
+  - The camera sits a bit further back.
+  - New settings: **Touch look speed** and **Touch button size**.
+- **Controller**:
+  - B goes back in the menu; LB / RB switch menu screens.
+  - RS click: tap to lock on, hold to change the view; flick the stick to move the lock.
+  - The weapon chip shows controller buttons.
+  - A TV draws everything a little bigger.
+- **Studio's phone preview** (ReplicatedStorage attribute `PhoneSim = true`) now runs the whole game as a 390-point-tall phone, touch controls and all. Cleared before saving.
+- **Checked in Play** (phone preview):
+  - the match HUD;
+  - lock-on turning the camera onto a bot (LOCKED);
+  - the class picker, the hub menu;
+  - the training yard's card and checklist.
+
+  On desktop: nothing changed.
+- **Not checked yet**:
+  - on a real phone or controller (no device here);
+  - swipe timing by feel;
+  - the lock-on reticle on screen (Studio's screenshots don't draw always-on-top markers; the reticle exists and is on the target);
+  - B / LB / RB in the menu.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Device.lua](ReplicatedStorage/Device.lua), [LockOn.lua](ReplicatedStorage/LockOn.lua) (new) | ReplicatedStorage | ModuleScript | screen sizes, the phone preview; lock-on and aim assist |
+| [TouchInput.lua](ReplicatedStorage/TouchInput.lua), [InputHints.lua](ReplicatedStorage/InputHints.lua), [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | the preview counts as touch; Lock; new settings |
+| [UIFit.client.lua](StarterPlayerScripts/UIFit.client.lua), [LockOn.client.lua](StarterPlayerScripts/LockOn.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | screens sized; lock-on's key and reticle |
+| [TouchControls.client.lua](StarterPlayerScripts/TouchControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | rebuilt |
+| [GamepadControls.client.lua](StarterPlayerScripts/GamepadControls.client.lua), [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | lock on, B back, LB / RB screens |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua), [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua), [Training.client.lua](StarterPlayerScripts/Training.client.lua), [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | phone placement |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | lock-on steering, phone camera; bars on top, pad hints |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: shields strapped to the arm, a real shield block, shield skins rebuilt, imbued blows through a guard
 
 - **The shield is strapped to the left arm** (welded to it, not the torso), against the arm's armor: no more floating gap. It goes wherever the arm goes (gestures, emotes, a fall), in game and on the class-screen mannequin.
 - **Blocking with a shield**: the arm comes up across your chest and the shield turns upright on it, right in front of you. No more held out at arm's length. The guard that catches blades moved with it.
