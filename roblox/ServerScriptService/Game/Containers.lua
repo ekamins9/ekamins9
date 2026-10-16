@@ -29,7 +29,7 @@ Containers.__index = Containers
 
 local REACH = 14
 local HOLD = {crate = 0.8, barrel = 0.6, sack = 0.6, urn = 0.7, rack = 0.6, stand = 0.6, shelf = 1, coffin = 1.6, remains = 0.8,
-	chest = 1.2, ornate = 2, hoard = 2.6, pack = 1.2}
+	chest = 1.2, ornate = 2, hoard = 2.6, pack = 1.2, corpse = 1}
 local LOUD = {chest = 22, ornate = 30, hoard = 40, coffin = 18}
 local WOOD, DARKWOOD, IRON = Color3.fromRGB(124, 86, 52), Color3.fromRGB(84, 58, 34), Color3.fromRGB(70, 70, 76)
 local BONE = Color3.fromRGB(226, 218, 196)
@@ -147,6 +147,12 @@ LOOKS.remains = function(m, cf)
 	part(m, "Rust", Vector3.new(0.3, 0.12, 3), cf * CFrame.new(-0.4, 0.08, 1.3) * CFrame.Angles(0, 0.5, 0), Color3.fromRGB(120, 90, 70), Enum.Material.CorrodedMetal).CanCollide = false
 	return b
 end
+-- a monster's body (it lies there itself: this is only where you search it)
+LOOKS.corpse = function(m, cf)
+	local b = part(m, "Body", Vector3.new(4, 2.4, 4), cf * CFrame.new(0, 1.2, 0), Color3.new(0, 0, 0))
+	b.Transparency, b.CanCollide = 1, false
+	return b
+end
 LOOKS.pack = function(m, cf)
 	local b = ellipsoid(m, "Body", Vector3.new(2, 1.6, 1.4), cf * CFrame.new(0, 0.8, 0), Color3.fromRGB(96, 70, 46), Enum.Material.Leather)
 	part(m, "Strap", Vector3.new(0.3, 1.7, 1.5), cf * CFrame.new(0.4, 0.85, 0), Color3.fromRGB(60, 42, 28), Enum.Material.Leather).CanCollide = false
@@ -171,7 +177,7 @@ function Containers:add(kind, cf, opts)
 	local box = {id = id, kind = kind, cf = cf, pos = cf.Position, items = opts.items, luck = opts.luck or 0, name = name, opened = {}}
 	local body, model, chest
 	if kind == "chest" or kind == "ornate" or kind == "hoard" then
-		chest = Loot.chest(cf, {rarity = kind == "hoard" and "Legendary" or (kind == "ornate" and "Epic" or "Uncommon"), gilded = kind ~= "chest",
+		chest = Loot.chest(cf, {rarity = kind == "hoard" and "Legendary" or (kind == "ornate" and "Epic" or "Uncommon"), gilded = kind ~= "chest", los = true,
 			label = name, hold = HOLD[kind], onOpen = function(plr) self:open(plr, box); return false end})
 		model = chest.model
 		body = model:FindFirstChild("Body")
@@ -184,13 +190,13 @@ function Containers:add(kind, cf, opts)
 		model.Parent = folder
 		local pr = Instance.new("ProximityPrompt")
 		pr.Name = "SearchPrompt"
-		pr.ActionText = kind == "remains" and "Search" or (kind == "pack" and "Loot" or "Search")
+		pr.ActionText = (kind == "pack" or kind == "corpse") and "Loot" or "Search"
 		pr.ObjectText = name
 		pr.KeyboardKeyCode = Enum.KeyCode.V
 		pr:SetAttribute("PickupKey", true)
 		pr.HoldDuration = HOLD[kind] or 0.8
 		pr.MaxActivationDistance = 9
-		pr.RequiresLineOfSight = false
+		pr.RequiresLineOfSight = true
 		pr.Parent = body
 		pr.Triggered:Connect(function(plr) self:open(plr, box) end)
 		box.prompt = pr

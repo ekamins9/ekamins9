@@ -764,6 +764,10 @@ it should be heard standing next to someone, never across the yard. Licensed lib
   themes have it (`ARCH_W`).
 - **The vault's merchants**: `Game ▸ Vault` `MERCHANTS` (wares and prices) and `WORK` (the Smith's
   reforge / temper prices by rarity).
+- **A perk** (the dungeon game): a line in `Catalog ▸ Perks` (class, name, text, look = an icon's
+  card, and what it does: mods, health, quiet, ambush, secondWind, bag, luck).
+- **An item's 3D icon** (DarkUI): a new relic or valuable gets its look in `RELIC_LOOK` /
+  `TREASURE_LOOK` (a few parts); without one it shows a jewelled pendant or a glowing gem.
 - **A new adventure door**: `GameConfig.DOORS` (`party = true` or `matchmade = true`, `page = 2`),
   `ADVENTURE_ORDER`, and its tile in HubMenu's page 2 (`ADV`; a scene in `SCENES`).
 

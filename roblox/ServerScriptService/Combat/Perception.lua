@@ -99,6 +99,7 @@ function Perception:sense(b, s, foe)
 	if speed > 17 then loud = 30 elseif speed > 5 then loud = crouch and 5 or 15 end
 	if now() - (foe:GetAttribute("LastCombatAt") or -1e9) < 1.5 then loud = math.max(loud, 42) end
 	loud = math.max(loud, crouch and s.hearing * 0.4 or s.hearing)
+	if foe:GetAttribute("Quiet") then loud *= 0.5 end   -- (a perk: Light Step)
 	if s.asleep then loud *= 0.45 end
 	if d < loud then
 		if d < loud * 0.6 or clearLine(eye, theirs) then return true end
@@ -234,6 +235,7 @@ do
 			local a = target:GetAttribute("Alert")
 			if a == "!" then return dmg end
 			local k = a == "z" and Perception.SNEAK_ASLEEP or Perception.SNEAK
+			if attacker:GetAttribute("Ambusher") then k += 1 end   -- (a perk: Ambusher)
 			attacker:SetAttribute("GuardText", string.format("SNEAK ATTACK  ×%s", k))
 			attacker:SetAttribute("GuardTick", (attacker:GetAttribute("GuardTick") or 0) + 1)
 			return dmg * k

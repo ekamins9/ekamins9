@@ -304,7 +304,8 @@ end
 function Loot.card(item)
 	if not item then return nil end
 	local r = CFG[item.rarity] or CFG.RARITIES[1]
-	local c = {kind = item.kind, uid = item.uid, name = item.name, rarity = r.id, color = r.color, lines = {}}
+	local c = {kind = item.kind, uid = item.uid, name = item.name, rarity = r.id, color = r.color, lines = {},
+		potion = item.potion, relic = item.relic, treasure = item.treasure, armor = item.armor, power = item.power, free = item.free}
 	if item.kind == "weapon" then
 		local w = Catalog.WEAPON[item.weapon]
 		c.weapon, c.skin = item.weapon, item.skin
@@ -489,7 +490,31 @@ function Loot.drink(char, potionId)
 	return true
 end
 
-function Loot.luckOf(char) return state[char] and state[char].luck or 0 end
+-- DRINKING (the dungeon game's belt): a moment with the bottle at your lips, slowed, then it
+-- works (a healing draught over a few seconds, not at once)
+function Loot.drinkSlow(char, potionId, onDone)
+	local p = CFG.POTION[potionId]
+	local hum = humOf(char)
+	if not (p and hum and hum.Health > 0) then return false end
+	local t = workspace:GetServerTimeNow()
+	if (char:GetAttribute("DrinkingUntil") or 0) > t then return false end
+	char:SetAttribute("DrinkingUntil", t + 1)
+	char:SetAttribute("DrinkingWhat", potionId)
+	Powers.addMods(char, {speed = 0.55}, 1, "Drinking")
+	task.delay(1, function()
+		char:SetAttribute("DrinkingWhat", nil)
+		if not (hum.Parent and hum.Health > 0) then return end
+		if p.heal then MagicServer.heal(char, hum.MaxHealth * p.heal, 4) end
+		if p.mods then Powers.addMods(char, p.mods, p.time or 30, "Potion_" .. p.id) end
+		local r = rootOf(char)
+		if r then Loot.sparkle(r.Position, (CFG[p.rarity] or CFG.Common).color) end
+		if onDone then onDone() end
+	end)
+	return true
+end
+
+function Loot.luckOf(char) return (state[char] and state[char].luck or 0) + (char and char:GetAttribute("PerkLuck") or 0) end
+Loot.setBonusHealth = setBonusHealth
 
 function Loot.tryRise(char)
 	local s = state[char]
@@ -779,7 +804,7 @@ function Loot.drop(item, pos, opts)
 	prompt:SetAttribute("PickupKey", true)
 	prompt.HoldDuration = opts.hold or 0.2
 	prompt.MaxActivationDistance = 8
-	prompt.RequiresLineOfSight = false
+	prompt.RequiresLineOfSight = opts.los == true
 	prompt.Parent = anchor
 	model.Parent = opts.parent or dropsFolder
 	local drop = {item = item, model = model, prompt = prompt}
@@ -858,7 +883,7 @@ function Loot.chest(cf, opts)
 	prompt:SetAttribute("PickupKey", true)
 	prompt.HoldDuration = opts.hold or 0.6
 	prompt.MaxActivationDistance = 9
-	prompt.RequiresLineOfSight = false
+	prompt.RequiresLineOfSight = opts.los == true
 	prompt.Parent = body
 	m:SetAttribute("Rarity", r.id)
 	m.Parent = opts.parent or dropsFolder

@@ -839,9 +839,11 @@ local function makeMarker(part, info)
 	bb.Adornee = part
 	bb.Size = UDim2.fromOffset(220, 64)
 	bb.StudsOffsetWorldSpace = Vector3.new(0, info.up or 4, 0)
-	bb.AlwaysOnTop = true
+	-- (the dungeon game's: hidden by walls, like the things they mark)
+	local dark = round:GetAttribute("Mode") == "Deadvault" or round:GetAttribute("Mode") == "Depths"
+	bb.AlwaysOnTop = not dark
 	bb.LightInfluence = 0
-	bb.MaxDistance = info.range or 150
+	bb.MaxDistance = dark and math.min(info.range or 150, 70) or (info.range or 150)
 	bb.Parent = guideGui
 	local label = text(bb, info.text, info.small and 14 or 18, info.color or Theme.TEXT, TITLE)
 	label.Size = UDim2.new(1, 0, 0, 22)
@@ -974,7 +976,8 @@ RunService.RenderStepped:Connect(function()
 		else hintLine.Text = MODE_HINT[round:GetAttribute("Mode") or ""] or "" end
 	end
 	edge.Visible = false
-	if own and best and cam and state ~= "fight" then
+	-- (no arrow to things through the walls in a raid: find your way)
+	if own and best and cam and state ~= "fight" and round:GetAttribute("Mode") ~= "Deadvault" then
 		local p, onScreen = cam:WorldToViewportPoint(best.part.Position)
 		local vs = cam.ViewportSize
 		if not onScreen or p.Z < 0 then
@@ -1067,7 +1070,7 @@ do
 					bb.Name = "AlertSign"
 					bb.Size = UDim2.fromOffset(60, 40)
 					bb.StudsOffsetWorldSpace = Vector3.new(0, 2.6 * (m:GetAttribute("MonsterScale") or 1), 0)
-					bb.AlwaysOnTop = true
+					bb.AlwaysOnTop = false
 					bb.LightInfluence = 0
 					bb.MaxDistance = 90
 					bb.Adornee = head

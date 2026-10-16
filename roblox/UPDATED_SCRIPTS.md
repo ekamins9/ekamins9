@@ -1,4 +1,41 @@
-# Updated scripts: The Depths' monsters wait, perceive, and can be caught asleep
+# Updated scripts: the dungeon game's own lobby, perks, the belt, looting bodies
+
+- **A lobby of its own** (new DungeonMenu.client on new ReplicatedStorage ▸ DarkUI), after Dark and Darker: dark gold-lined panels, Merriweather, every item in 3D (no emoji).
+  - Play: your party at a candle-lit tavern table.
+  - Class: faces, you as the class, its story, its skill, its perks.
+  - Stash: you in your kit, your stats, the kit and the belt, the stash, drag and drop.
+  - Merchants: their faces and wares, your stash to sell from.
+- **Perks** (new Catalog ▸ Perks, Game ▸ Perks): two per class go in with you (Iron Will, Second Wind, Pack Mule, Light Step, Ambusher, Eagle Eye, Arcane Flow…).
+- **The belt**: four draughts on keys 3–6, always on screen; drinking takes a moment and slows you; healing comes over four seconds.
+- **Bodies are looted**: a raid's monster leaves its corpse to search (no more things spilling on the floor).
+- **No markers or prompts through walls** in the dungeon modes; no edge arrow in a raid.
+- Loot armour now has a set's look (Catalog ▸ Loot ARMOR `set`); item cards carry their item's id for the icons.
+- The Courtyard menu's Depths and Deadvault tiles open the lobby; HubMenu exports `_G.HubDressed`, `_G.HubMenuHide`, and steps aside while the lobby is up. The old VaultMenu is gone.
+- **Checked in Play**: every lobby tab on screen (stash with 19 test items, class, merchants, the tavern scene); a raid: a monster's corpse searched (its gold), the belt with its draught; compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DarkUI.lua](ReplicatedStorage/DarkUI.lua) | ReplicatedStorage | ModuleScript | new |
+| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| VaultMenu.client.lua | StarterPlayer ▸ StarterPlayerScripts | LocalScript | removed |
+| [RaidInventory.client.lua](StarterPlayerScripts/RaidInventory.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | rebuilt in DarkUI, the belt |
+| [Perks.lua](ReplicatedStorage/Catalog/Perks.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | new |
+| [init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | PERKS, `perkFits` |
+| [Loot.lua (catalog)](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | armour sets |
+| [Perks.lua](ServerScriptService/Game/Perks.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | `drinkSlow`, card ids, perk luck, `los` |
+| [Vault.lua](ServerScriptService/Game/Vault.lua) | ServerScriptService ▸ Game | ModuleScript | perks in the view |
+| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | corpses, line of sight |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the belt, perks, bodies, line of sight |
+| [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | Quiet, Ambusher |
+| [VaultServer.server.lua](ServerScriptService/Hub/VaultServer.server.lua) | ServerScriptService ▸ Hub | Script | Perk |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the lobby's hooks |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | markers behind walls |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: The Depths' monsters wait, perceive, and can be caught asleep
 
 - **The Depths' monsters wait in their rooms** before the gates drop (some asleep, the rest standing about), with the same senses as Deadvault's (Combat ▸ Perception): they come when they see or hear you, and the gates drop the moment one does.
 - **Sneak attacks**: a blow on a monster that hasn't noticed you lands double (×2.5 on a sleeper), and says so on your screen. Kill a whole room in its sleep and it's yours.
@@ -45,39 +82,3 @@
 | [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | alert signs, known exits, raid guides |
 | [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Deadvault's text |
 | [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
-
----
-
-## Before that: loot for your own class; an easier Depths; guides to what's worth walking to
-
-- **Your own class's loot**: nobody sees another class's things.
-  - A tome only teaches one of your class's powers (no Storm Arrow for a Knight).
-  - A relic with a `class` only rolls for that class: the Eagle Feather (draw) for Archers, the Mana Pearl (cast) for Mages.
-  - Deadvault's elite drops are fitted to whoever felled the monster.
-- **An easier Depths**:
-  - fewer monsters in a room, starting at 80% health and damage on the first floor;
-  - how well they fight is capped by the floor (Squires on the first, Knights on the second; the boss never better than a Knight);
-  - elites rarer (5% a floor past the first, from 8%); the boss at 75% of its health pool;
-  - every boss move hits at 85% (`BossMoves.DAMAGE`);
-  - a cleared room mends 40% (from 25%).
-- **Guides** (Adventure.client): a marker over what's worth walking to (OPEN CHEST, PRAY, DRINK, DESCEND, a find's name; EXTRACT, TAKE THE CROWN), an arrow at the screen's edge to the nearest one off screen (one behind you points to a side), an UP NEXT line under the run panel, a gift on the map's rooms with a chest.
-- **A weapon from a chest** with both hands full swaps out the one in your hand, and that one drops at your feet instead of vanishing (The Depths; Crownfall and Deadvault drop it too).
-- **Chests** in a room with a centrepiece (the start's brazier, an altar, a fountain) stand on open floor, not inside it.
-- **Checked in Play**:
-  - 300 tomes and relics rolled per class: Knights only Knight powers and no class relic, Archers only Archer powers + the Eagle Feather, Mages only Mage powers + the Mana Pearl;
-  - a first-floor room: 2 monsters at Squire skill, ~60 health; a third-floor room: 5;
-  - markers on a chest, the fountain and a find; a find swapped out the held weapon and the old one lay on the floor;
-  - compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Loot.lua](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `class` on the Eagle Feather and Mana Pearl |
-| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | tomes and relics for the finder's class; `toolItem`; `giveWeapon` returns what it swapped out |
-| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | difficulty; chests off centrepieces; the old weapon drops; the shrine's relics for your class; `hasChest` on the map |
-| [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | drops the weapon `giveWeapon` swapped out |
-| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | same; elite drops for the killer's class |
-| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | `opts.skillCap` |
-| [BossMoves.lua](ServerScriptService/Combat/BossMoves.lua) | ServerScriptService ▸ Combat | ModuleScript | `Moves.DAMAGE` |
-| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | guides, edge arrow, UP NEXT, chest rooms on the map |
-| [README.md](README.md) | | doc | |
-| [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | a relic's `class` |

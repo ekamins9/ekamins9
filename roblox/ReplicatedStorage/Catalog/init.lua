@@ -70,6 +70,16 @@ Catalog.CALENDAR  = child("Calendar")
 Catalog.BESTIARY  = child("Bestiary")   -- every monster (Combat ▸ Monsters)
 Catalog.DUNGEONS  = child("Dungeons")   -- the procedural dungeons' themes (Game ▸ Dungeon)
 Catalog.LOOT      = child("Loot")       -- a run's or a raid's gear (Game ▸ Loot)
+Catalog.PERKS     = child("Perks")      -- the dungeon game's class perks (Game ▸ Perks)
+Catalog.PERK = {}
+for _, pk in ipairs(Catalog.PERKS and Catalog.PERKS.list or {}) do Catalog.PERK[pk.id] = pk end
+-- may this class take that perk?
+function Catalog.perkFits(pk, classId)
+	if not pk then return false end
+	if pk.class == "any" then return true end
+	if type(pk.class) == "table" then return table.find(pk.class, classId) ~= nil end
+	return pk.class == classId
+end
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears

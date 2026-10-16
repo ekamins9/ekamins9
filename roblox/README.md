@@ -1730,7 +1730,26 @@ Three floors; floor 3 ends in the theme's boss.
   screen, an UP NEXT line under the run panel, a gift on the map's rooms with a chest. Objectives
   steps aside for an OwnHud mode.
 
-### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `Game ▸ Containers`, `VaultMenu.client`, `RaidInventory.client`)
+### The dungeon game's lobby (`DungeonMenu.client`, `ReplicatedStorage ▸ DarkUI`)
+The Depths and Deadvault are a game of their own, after Dark and Darker, with a lobby of their own:
+dark panels with a worn edge and a gold line, Merriweather type, and every item shown as itself
+in 3D (DarkUI.icon: the weapon in its skin, armour's coat, a corked bottle, a goblet, a ring, a
+gem, a tome, coin; never an emoji). Tabs (Q / E step through them):
+- **Play**: your party round a candle-lit table in a tavern's back room (a scene built on your
+  screen; the light goes dark and warm while you're in it), the dungeon (The Depths or Deadvault,
+  its picture), READY (the leader: ENTER), Invite (online friends), Exit Party.
+- **Class**: the class list (their faces), you as that class, its story, its skill, and its
+  **perks** (Catalog ▸ Perks: two go into the dungeon with you; Game ▸ Perks puts them on: less
+  damage, more health, a bigger bag, quiet steps, harder sneak attacks, a second wind, luck…).
+- **Stash**: you in your kit (its weapon in hand, its armour's set on you), what you are
+  (health, damage taken and dealt, speed, perks), the kit (weapon, sidearm, armour, three relics,
+  the **belt**'s four draughts) and the stash (60). Drag a thing onto a slot, or click it: EQUIP,
+  TAKE OFF, SELL, the Smith's REFORGE and TEMPER.
+- **Merchants**: their faces, their wares (BUY), your stash beside them to sell from.
+It opens from PLAY ▸ ADVENTURES (The Depths, Deadvault) and over the Courtyard's menu, which steps
+aside while it's up (`_G.DungeonMenuUp`). `_G.OpenDungeon(tab, mode)`, `_G.OpenVault()`.
+
+### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `Game ▸ Containers`, `DungeonMenu.client`, `RaidInventory.client`)
 An extraction raid after Dark and Darker, for up to 12 raiders in parties. Go in with your party
 and the kit you dare to risk, search a great dark dungeon, keep quiet past what sleeps there, and
 get out with what you found, or lose it all.
@@ -1752,9 +1771,15 @@ get out with what you found, or lose it all.
   hoard). Search one (V) and a **loot window** shows what's in it, rolled for the first opener's
   class and shared: TAKE one, or TAKE ALL (Y). **Valuables** (`TREASURES`: cups, rings, idols,
   gems) only sell, at their full worth to the Treasurer.
-- **Your gear** (I, or the 🎒 button): what you wear (a weapon, a sidearm, armour, a tome's power,
-  three relics) and your **bag** (20): EQUIP, TAKE OFF, DRINK, DROP; what you carry is worth (to the
-  vault) at the top. A find goes on if there's room on you, else into the bag.
+- **Your gear** (I, or the Bag button): what you wear (a weapon, a sidearm, armour, a tome's power,
+  three relics), your **belt** (four draughts: keys **3 – 6**, on screen bottom left; drinking takes
+  a moment and slows you, then a healing draught mends over four seconds) and your **bag** (20;
+  Pack Mule +6): EQUIP, TAKE OFF, DRINK, DROP; what you carry is worth (to the vault) at the top. A
+  find goes on if there's room on you, else into the bag.
+- **Bodies**: a monster's corpse stays where it fell; **loot it** (its gold, and what it carried:
+  a valuable, a draught, an elite's weapon, the lord's hoard) the way you search a chest.
+- **Nothing through walls**: a chest's or a way out's marker hides behind walls, its prompt wants
+  you to see it, and there's no arrow at the screen's edge in a raid. Find your way (the map).
 - **In**: your kit leaves the vault with you; an empty weapon slot goes in as the **free kit**
   (your class's plain weapons and a draught: never lost, never sold, never banked). Your class's
   own power comes too (a tome replaces it). A **party** comes in together at one haven and fights

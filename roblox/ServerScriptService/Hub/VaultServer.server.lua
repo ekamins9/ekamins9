@@ -38,6 +38,8 @@ remote.OnServerInvoke = function(plr, kind, arg)
 		ok, it = Vault.work(plr, arg[1], arg[2])
 		msg = ok and ((arg[2] == "temper" and "Tempered: " or "Reforged: ") .. tostring(it and it.name or "")) or it
 	elseif kind == "Class" and type(arg) == "string" then ok, msg = Vault.setClass(plr, arg)
+	elseif kind == "Perk" and type(arg) == "table" and type(arg[1]) == "string" and type(arg[2]) == "string" then
+		ok, msg = require(ServerScriptService.Game:WaitForChild("Perks")).set(plr, arg[1], arg[2])
 	else ok, msg = false, "?" end
 	return {ok = ok, msg = msg, view = Vault.view(plr)}
 end

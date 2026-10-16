@@ -44,11 +44,13 @@ local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
 local Powers = require(Combat:WaitForChild("Powers"))
 local Perception = require(Combat:WaitForChild("Perception"))
+local Perks = require(script.Parent.Parent:WaitForChild("Perks"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local MapLoader = Game.MapLoader
 local node = Game.node
 
 local BAG_MAX = 20
+local BELT = 4            -- draughts on your belt: keys 3–6 (RaidInventory.client)
 local RELICS = 3
 local STAIRS_AT = 2 * 60
 local PORTALS = {{at = 5 * 60, n = 2}, {at = 9 * 60, n = 2}, {at = 12 * 60, n = 3}}
@@ -105,7 +107,7 @@ end
 --------------------------------------------------------------------
 function Deadvault:mobOpts(extra)
 	local players = math.max(1, #Players:GetPlayers())
-	local o = {team = "B", startDelay = 1, corpseTime = 4, hpMult = 1 + (players - 1) * 0.04, dealt = 0.9,
+	local o = {team = "B", startDelay = 1, corpseTime = 600, hpMult = 1 + (players - 1) * 0.04, dealt = 0.9,
 		engage = self.senses.engage, goal = self.senses.goal,
 		onSpawn = function(mob)
 			self.mobs[mob] = true
@@ -118,18 +120,26 @@ function Deadvault:mobOpts(extra)
 			local r = mob.model and rootOf(mob.model)
 			local at = r and r.Position or Vector3.zero
 			local tier = mob.def.tier or 1
-			self:dropItem(Loot.gold((GOLD_OF[tier] or 3) * (0.7 + math.random() * 0.6)), at)
-			-- (fitted to whoever felled it: an Archer's kill drops an Archer's find)
+			-- WHAT IT CARRIED stays on its body: search the corpse (Game ▸ Containers), fitted to
+			-- whoever felled it (an Archer's kill, an Archer's find)
 			local kc = typeof(killer) == "Instance" and killer:IsA("Player") and killer.Character or nil
 			local classId = (kc and kc:GetAttribute("Class")) or "Knight"
+			local items = {Loot.gold((GOLD_OF[tier] or 3) * (0.7 + math.random() * 0.6))}
 			if mob.boss then
-				for i = 1, 3 do self:dropItem(Loot.roll("boss", classId, 2.5), at + Vector3.new(math.cos(i * 2.1) * 3, 0, math.sin(i * 2.1) * 3)) end
-				banner({text = string.upper(mob.def.name or "THE LORD") .. " IS SLAIN", sub = "ITS HOARD IS UNGUARDED", kind = "victory"})
+				for _ = 1, 3 do table.insert(items, Loot.roll("boss", classId, 2.5)) end
+				table.insert(items, Loot.treasure(2.5, "Epic"))
+				banner({text = string.upper(mob.def.name or "THE LORD") .. " IS SLAIN", sub = "LOOT ITS BODY  ·  ITS HOARD IS UNGUARDED", kind = "victory"})
 			elseif tier >= 3 or mob.elite then
-				self:dropItem(Loot.roll("elite", classId, 1.5), at)
-			elseif math.random() < 0.25 then
-				self:dropItem(Loot.treasure(0.3), at)
+				table.insert(items, Loot.roll("elite", classId, 1.5))
+				if math.random() < 0.5 then table.insert(items, Loot.treasure(1)) end
+			else
+				if math.random() < 0.3 then table.insert(items, Loot.treasure(0.3)) end
+				if math.random() < 0.12 then table.insert(items, Loot.roll("vault", classId, 0.3, {skip = {gold = true}})) end
 			end
+			if math.random() < 0.18 then table.insert(items, Loot.potion(0)) end
+			local ground = workspace:Raycast(at + Vector3.new(0, 2, 0), Vector3.new(0, -14, 0), self.groundParams)
+			local y = ground and ground.Position.Y or (at.Y - 3)
+			self.boxes:add("corpse", CFrame.new(at.X, y, at.Z), {items = items, name = mob.def.name or "Body"})
 			if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (KILL_RANK[tier] or "Squire")) end
 		end}
 	for k, v in pairs(extra or {}) do o[k] = v end
@@ -273,7 +283,7 @@ local function extractPrompt(self, part, text, hold)
 	local pr = Instance.new("ProximityPrompt")
 	pr.Name = "ExtractPrompt"
 	pr.ActionText = "Extract"; pr.ObjectText = text
-	pr.HoldDuration = hold; pr.MaxActivationDistance = 11; pr.RequiresLineOfSight = false
+	pr.HoldDuration = hold; pr.MaxActivationDistance = 11; pr.RequiresLineOfSight = true
 	pr:SetAttribute("PickupKey", true)
 	pr.Enabled = false
 	pr.Parent = part
@@ -373,7 +383,8 @@ end
 --------------------------------------------------------------------
 function Deadvault:runOf(plr)
 	local r = self.runs[plr]
-	if not r then r = {weapons = {}, armor = nil, relics = {}, bag = {}, gold = 0, power = nil}; self.runs[plr] = r end
+	if not r then r = {weapons = {}, armor = nil, relics = {}, bag = {}, belt = {}, gold = 0, power = nil}; self.runs[plr] = r end
+	r.belt = r.belt or {}
 	return r
 end
 local function relicIds(r) local out = {}; for _, it in ipairs(r.relics) do table.insert(out, it.relic) end; return out end
@@ -383,6 +394,7 @@ local function carried(r)
 	if r.armor then table.insert(all, r.armor) end
 	if r.power then table.insert(all, r.power) end
 	for _, it in ipairs(r.relics) do table.insert(all, it) end
+	for _, it in ipairs(r.belt or {}) do table.insert(all, it) end
 	for _, it in ipairs(r.bag) do table.insert(all, it) end
 	return all
 end
@@ -401,21 +413,19 @@ function Deadvault:sendRun(plr)
 	if r.armor then equip.armor = card(r.armor, "armor") end
 	if r.power then equip.power = card(r.power, "power") end
 	for i, it in ipairs(r.relics) do equip["relic" .. i] = card(it, "relic" .. i) end
-	local bag, worth = {}, 0
+	local bag, belt, worth = {}, {}, 0
 	for _, it in ipairs(r.bag) do table.insert(bag, card(it, "bag")) end
+	for i, it in ipairs(r.belt) do table.insert(belt, card(it, "belt" .. i)) end
 	for _, it in ipairs(carried(r)) do if not it.free then worth += Vault.value(it) end end
 	local e = event()
 	if e then
-		e:FireClient(plr, "Inv", {equip = equip, bag = bag, gold = r.gold, max = BAG_MAX, worth = worth + r.gold})
-		-- (the relic bar: what you wear, and the draughts in your bag to drink with a click)
+		e:FireClient(plr, "Inv", {equip = equip, bag = bag, belt = belt, beltMax = BELT, gold = r.gold, max = r.bagMax or BAG_MAX, worth = worth + r.gold})
+		-- (the relic bar: what you wear)
 		local bar = {}
 		for _, it in ipairs(r.relics) do local c = Loot.card(it); table.insert(bar, {uid = it.uid, name = it.name, glyph = c.glyph, rarity = it.rarity, text = "worn · " .. table.concat(c.lines or {}, " · ")}) end
-		for _, it in ipairs(r.bag) do
-			if it.kind == "potion" then local c = Loot.card(it); table.insert(bar, {uid = it.uid, name = it.name, glyph = c.glyph, rarity = it.rarity, text = "click to drink · " .. table.concat(c.lines or {}, " · "), use = true}) end
-		end
 		e:FireClient(plr, "Run", {gold = r.gold, relics = bar, kind = "bag"})
 	end
-	plr:SetAttribute("AdvChip", string.format("💰 %d  ·  🎒 %d/%d", r.gold, #r.bag, BAG_MAX))
+	plr:SetAttribute("AdvChip", string.format("💰 %d  ·  BAG %d/%d", r.gold, #r.bag, r.bagMax or BAG_MAX))
 end
 
 -- THE FREE KIT: your class's plain weapons and a draught (never lost, never sold)
@@ -433,11 +443,11 @@ function Deadvault:adjustLoadout(plr, lo, classId)
 		if kit.weapon2 then r.weapons[2] = kit.weapon2; kit.weapon2.slot = 2 end
 		r.armor = kit.armor
 		for _, it in ipairs(kit.relics or {}) do if #r.relics < RELICS then table.insert(r.relics, it) else table.insert(r.bag, it) end end
-		for _, it in ipairs(kit.potions or {}) do table.insert(r.bag, it) end
+		for _, it in ipairs(kit.potions or {}) do if #r.belt < BELT then table.insert(r.belt, it) else table.insert(r.bag, it) end end
 		local cls = GameConfig.CLASSES[classId]
 		if not r.weapons[1] and cls then r.weapons[1] = freeWeapon(cls.primary, 1) end
 		if not r.weapons[2] and cls and cls.secondary and cls.secondary ~= (r.weapons[1] and r.weapons[1].weapon) then r.weapons[2] = freeWeapon(cls.secondary, 2) end
-		if #r.bag == 0 then table.insert(r.bag, {kind = "potion", uid = uid(), potion = "Healing", rarity = "Common", name = "Healing Draught", free = true}) end
+		if #r.belt == 0 then table.insert(r.belt, {kind = "potion", uid = uid(), potion = "Healing", rarity = "Common", name = "Healing Draught", free = true}) end
 	end
 	local w1, w2 = r.weapons[1], r.weapons[2]
 	lo.weapon, lo.weaponSkin = w1 and w1.weapon or nil, w1 and w1.skin or nil
@@ -463,6 +473,9 @@ function Deadvault:noteSpawn(plr)
 		if not char then return end
 		-- a party fights side by side (CombatServer.friendlyMult: their blows barely touch)
 		char:SetAttribute("Team", partyKey(plr))
+		-- your class's perks (the lobby's CLASS tab)
+		local pk = Perks.apply(plr, char, char:GetAttribute("Class") or Profile.get(plr).active)
+		r.bagMax = BAG_MAX + (pk.bag or 0)
 		for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
 			for _, t in ipairs(holder and holder:GetChildren() or {}) do
 				local it = t:IsA("Tool") and r.weapons[t:GetAttribute("Slot") or 0]
@@ -487,7 +500,7 @@ function Deadvault:take(plr, item, at, quiet)
 	if not alive(char) then return false end
 	local r = self:runOf(plr)
 	local function toBag(it)
-		if #r.bag >= BAG_MAX then return false end
+		if #r.bag >= (r.bagMax or BAG_MAX) then return false end
 		table.insert(r.bag, it)
 		return true
 	end
@@ -507,6 +520,8 @@ function Deadvault:take(plr, item, at, quiet)
 	elseif item.kind == "tome" and not r.power then
 		r.power = item
 		Powers.equip(char, plr, {power = item.power})
+	elseif item.kind == "potion" and #r.belt < BELT then
+		table.insert(r.belt, item)
 	elseif not toBag(item) then
 		return bagFull(self, plr, quiet)
 	end
@@ -516,7 +531,7 @@ end
 
 function Deadvault:dropItem(item, pos)
 	if not item then return end
-	Loot.drop(item, pos - Vector3.new(0, 2.5, 0), {life = 900, onTake = function(plr, it) return self:take(plr, it, pos) end})
+	Loot.drop(item, pos - Vector3.new(0, 2.5, 0), {life = 900, los = true, onTake = function(plr, it) return self:take(plr, it, pos) end})
 end
 
 local function removeTools(plr, slot)
@@ -570,10 +585,14 @@ function Deadvault:inv(plr, what, a)
 			r.power = it
 			Powers.equip(char, plr, {power = it.power})
 		elseif it.kind == "potion" then
-			return self:inv(plr, "Use", a)
+			-- (onto your belt, if there's room on it; else drunk)
+			if #r.belt < BELT then table.remove(r.bag, i); table.insert(r.belt, it)
+			else return self:inv(plr, "Use", a) end
 		end
 	elseif what == "Unequip" then
-		if #r.bag >= BAG_MAX then bagFull(self, plr); return end
+		if #r.bag >= (r.bagMax or BAG_MAX) then bagFull(self, plr); return end
+		local bn = tonumber(a:match("^belt(%d)$") or "")
+		if bn and r.belt[bn] then table.insert(r.bag, table.remove(r.belt, bn)); self:sendRun(plr); return end
 		if a == "weapon1" or a == "weapon2" then
 			local slot = a == "weapon1" and 1 or 2
 			local it = r.weapons[slot]
@@ -595,17 +614,23 @@ function Deadvault:inv(plr, what, a)
 			end
 		end
 	elseif what == "Use" then
-		local i, it = findIn(r.bag, a)
-		if it and it.kind == "potion" then
-			table.remove(r.bag, i)
-			Loot.drink(char, it.potion)
+		-- (a draught: from your belt or your bag; a moment to drink it, slowed)
+		local list = r.bag
+		local i, it = findIn(r.belt, a)
+		if it then list = r.belt else i, it = findIn(r.bag, a) end
+		if it and it.kind == "potion" and Loot.drinkSlow(char, it.potion) then
+			table.remove(list, i)
 		end
 	elseif what == "Drop" then
 		local here = rootOf(char).Position + rootOf(char).CFrame.LookVector * 3
 		local i, it = findIn(r.bag, a)
+		local bi, bt = findIn(r.belt, a)
 		if it then
 			table.remove(r.bag, i)
 			self:dropItem(it, here)
+		elseif bt then
+			table.remove(r.belt, bi)
+			self:dropItem(bt, here)
 		else
 			-- (something worn: off, and down)
 			for _, k in ipairs({"weapon1", "weapon2", "armor", "power", "relic1", "relic2", "relic3"}) do
@@ -642,7 +667,7 @@ function Deadvault:extract(plr)
 	for _, it in ipairs(items) do worth += Vault.value(it) end
 	banner({text = "EXTRACTED", sub = string.format("%d THINGS AND %d GOLD INTO YOUR VAULT  ·  WORTH %d%s", #items, r.gold, worth, sold > 0 and string.format("  ·  A FULL STASH: %d SOLD", sold) or ""), kind = "victory"}, plr)
 	banner({text = string.upper(plr.DisplayName) .. " GOT OUT", kind = "clear"})
-	self.runs[plr] = {weapons = {}, relics = {}, bag = {}, gold = 0, kitTaken = true}
+	self.runs[plr] = {weapons = {}, relics = {}, bag = {}, belt = {}, gold = 0, kitTaken = true}
 	char:Destroy()
 	plr:SetAttribute("AdvChip", "🚪 EXTRACTED")
 	local e = event()
@@ -667,6 +692,9 @@ function Deadvault:start(map)
 		MapLoader.load(name)
 	end
 	self.senses = Perception.new({sight = 46, hearing = 12, memory = 8, shout = 30, leash = 170})
+	self.groundParams = RaycastParams.new()
+	self.groundParams.FilterType = Enum.RaycastFilterType.Include
+	self.groundParams.FilterDescendantsInstances = {MapLoader.current}
 	self.boxes = Containers.new(self)
 	self:stairs()
 	self:dressRooms()
@@ -679,6 +707,10 @@ function Deadvault:start(map)
 			local mode = Game.current
 			if mode ~= self or not mode.boxes then return end
 			if kind == "Use" and type(a) == "string" then mode:inv(plr, "Use", a)
+			elseif kind == "Belt" and type(a) == "number" then
+				local r = mode.runs[plr]
+				local it = r and r.belt and r.belt[math.floor(a)]
+				if it then mode:inv(plr, "Use", it.uid) end
 			elseif kind == "Inv" and type(a) == "string" then mode:inv(plr, a, b)
 			elseif kind == "Take" and type(a) == "number" and type(b) == "string" then mode.boxes:take(plr, a, b)
 			elseif kind == "TakeAll" and type(a) == "number" then mode.boxes:takeAll(plr, a)
@@ -753,7 +785,7 @@ function Deadvault:onDeath(victimPlr)
 			local y = ground and ground.Position.Y or (at.Y - 3)
 			self.boxes:add("pack", CFrame.new(at.X, y, at.Z), {items = items, name = victimPlr.DisplayName .. "'s pack"})
 		end
-		self.runs[victimPlr] = {weapons = {}, relics = {}, bag = {}, gold = 0, kitTaken = true}
+		self.runs[victimPlr] = {weapons = {}, relics = {}, bag = {}, belt = {}, gold = 0, kitTaken = true}
 		banner({text = "YOU FELL", sub = "EVERYTHING YOU CARRIED LIES IN YOUR PACK WHERE YOU FELL", kind = "boss"}, victimPlr)
 		victimPlr:SetAttribute("AdvChip", "💀 FALLEN")
 		local e = event()

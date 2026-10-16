@@ -1625,6 +1625,15 @@ function HX.lookOf(userId, base)
 	return a
 end
 function HX.myLook() return HX.lookOf(player.UserId, state.profile and state.profile.appearance) end
+-- (the dungeon game's mannequins: you, or someone in your party, dressed as a class: DungeonMenu.client)
+_G.HubDressed = function(userId, classId, o)
+	o = o or {}
+	local mine = userId == player.UserId
+	local lo = {}
+	for k, v in pairs(mine and classLoadout(classId) or {}) do lo[k] = v end
+	for k, v in pairs(o.loadout or {}) do lo[k] = v end
+	return dressedRig({loadout = lo, appearance = mine and HX.myLook() or HX.lookOf(userId), weight = weightOf(classId), weapon = o.weapon == true, pose = o.pose})
+end
 
 -- (you, as you are: your active class's armor and look. Dressed once per look and
 -- copied after, so a screenful of looping thumbnails stays cheap; `light` = no weapon)
@@ -4093,10 +4102,9 @@ do
 			tag = a.tag, tagColor = COL.GOLD, ambient = a.ambient, light = a.light, parent = HX.modesPage2,
 			onClick = function()
 				if not GameConfig.DOORS[a.door] then toast("Coming soon", COL.BAD); return end
-				if a.key == "Deadvault" then
-					modal("DEADVAULT", "Go in with your party and the kit you dare to risk. Search the dark, keep quiet past what sleeps, get out by the escape stairs or a blue portal with it all. Fall, and it's all gone.",
-						{{"ENTER THE RAID", COL.GREEN, function() closeModal(); goDoor("Deadvault") end},
-						 {"YOUR VAULT  ·  KIT, STASH, MERCHANTS", COL.BLUE, function() closeModal(); if _G.OpenVault then _G.OpenVault() end end}})
+				-- (the dungeon game has a lobby of its own: DungeonMenu.client)
+				if (a.key == "Deadvault" or a.key == "Depths") and _G.OpenDungeon then
+					_G.OpenDungeon("Play", a.key)
 					return
 				end
 				if a.key == "Invasion" then
@@ -7931,7 +7939,7 @@ do
 	RunService.RenderStepped:Connect(function(dt)
 		local cam = workspace.CurrentCamera
 		if not cam then return end
-		local wantCine = not alive() and not deathFadeUp() and not _G.SpectateActive and not _G.IntroCamera and not _G.ShowcaseActive
+		local wantCine = not alive() and not deathFadeUp() and not _G.SpectateActive and not _G.IntroCamera and not _G.ShowcaseActive and not _G.DungeonLobby
 		if wantCine then
 			cam.CameraType = Enum.CameraType.Scriptable
 			local target = cinematicCFrame(os.clock())
@@ -8477,9 +8485,13 @@ _G.HubMenuGo = function(tab, shopTab)
 	if shopTab then ui.shopTab = shopTab; ui.crate = nil; ui.crateItem = nil end
 	show(tab or "PLAY")
 end
+-- (the dungeon game's menu over this one: DungeonMenu.client puts this away while it's up)
+_G.HubMenuHide = function() if open then hide() end end
 UserInputService.InputBegan:Connect(function(input)
 	if input.KeyCode ~= LAYOUT.menuKey or listening then return end
 	if UserInputService:GetFocusedTextBox() then return end
+	-- (the Tavern has the dungeon game's own menu: DungeonMenu.client takes M there)
+	if roundNode:GetAttribute("Mode") == "Tavern" and _G.OpenDungeon then return end
 	menuKey()
 end)
 
@@ -9143,6 +9155,6 @@ task.spawn(function()
 		local a = alive()
 		if a and not wasAlive then autoOpen = true end
 		wasAlive = a
-		if autoOpen and not a and not open and inHub() and not deathFadeUp() and not classScreenUp() and not _G.IntroActive then show("PLAY") end
+		if autoOpen and not a and not open and inHub() and not deathFadeUp() and not classScreenUp() and not _G.IntroActive and not _G.DungeonMenuUp then show("PLAY") end
 	end
 end)

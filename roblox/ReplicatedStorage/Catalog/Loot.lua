@@ -92,12 +92,13 @@ L.POTIONS = {
 L.POTION = {}
 for _, p in ipairs(L.POTIONS) do L.POTION[p.id] = p end
 
+-- (`set`: the armour set it looks like when worn in a raid: ServerStorage ▸ Armor ▸ <set>)
 L.ARMOR = {
-	{id = "Padded",     name = "Padded Jack",       rarity = "Common",    taken = 0.95, health = 0},
-	{id = "Mail",       name = "Mail Hauberk",      rarity = "Uncommon",  taken = 0.9,  health = 5},
-	{id = "Brigandine", name = "Brigandine",        rarity = "Rare",      taken = 0.85, health = 10},
-	{id = "Plate",      name = "Plate Harness",     rarity = "Epic",      taken = 0.8,  health = 15},
-	{id = "Kingsguard", name = "Kingsguard Plate",  rarity = "Legendary", taken = 0.74, health = 25},
+	{id = "Padded",     name = "Padded Jack",       rarity = "Common",    taken = 0.95, health = 0,  set = "RoadLevy"},
+	{id = "Mail",       name = "Mail Hauberk",      rarity = "Uncommon",  taken = 0.9,  health = 5,  set = "Sellswords"},
+	{id = "Brigandine", name = "Brigandine",        rarity = "Rare",      taken = 0.85, health = 10, set = "IronCrow"},
+	{id = "Plate",      name = "Plate Harness",     rarity = "Epic",      taken = 0.8,  health = 15, set = "Blackguard"},
+	{id = "Kingsguard", name = "Kingsguard Plate",  rarity = "Legendary", taken = 0.74, health = 25, set = "Lionheart"},
 }
 L.ARMOR_BY = {}
 for _, a in ipairs(L.ARMOR) do L.ARMOR_BY[a.id] = a end

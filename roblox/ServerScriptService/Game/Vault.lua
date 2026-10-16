@@ -32,6 +32,7 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local Loot = require(script.Parent:WaitForChild("Loot"))
+local Perks = require(script.Parent:WaitForChild("Perks"))
 
 local Vault = {}
 Vault.STASH_MAX = 60
@@ -149,9 +150,20 @@ function Vault.view(plr)
 	end
 	local cls = GameConfig.CLASSES[p.active]
 	local function wname(id) local w = id and Catalog.WEAPON[id]; return w and (w.name or id) or nil end
+	-- every class's perks, and which are chosen
+	local perks = {}
+	for _, cl in ipairs(classes) do
+		local chosen = {}
+		for _, pk in ipairs(Perks.chosen(plr, cl.id)) do chosen[pk.id] = true end
+		local list = {}
+		for _, pk in ipairs(Catalog.PERKS and Catalog.PERKS.list or {}) do
+			if Catalog.perkFits(pk, cl.id) then table.insert(list, {id = pk.id, name = pk.name, text = pk.text, look = pk.look, on = chosen[pk.id] == true}) end
+		end
+		perks[cl.id] = list
+	end
 	return {stash = stash, kit = kit, gold = v.gold, raids = v.raids, out = v.out, max = Vault.STASH_MAX, merchants = merchants,
-		class = p.active, classes = classes, relicsMax = Vault.RELICS, potionsMax = Vault.POTIONS,
-		free = cls and {wname(cls.primary), wname(cls.secondary)} or {}}
+		class = p.active, classes = classes, relicsMax = Vault.RELICS, potionsMax = Vault.POTIONS, perks = perks, perkPick = Catalog.PERKS and Catalog.PERKS.PICK or 2,
+		free = cls and {wname(cls.primary), wname(cls.secondary)} or {}, freeIds = cls and {cls.primary, cls.secondary} or {}}
 end
 
 local function findStash(v, id)
