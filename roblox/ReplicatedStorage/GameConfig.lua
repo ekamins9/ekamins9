@@ -50,6 +50,9 @@ GameConfig.DOORS = {
 	-- matchmade: a public server for that mode (HubServer)
 	Depths    = {name = "The Depths", mode = "Depths",  access = "Friends", maxPlayers = 4, party = true, page = 2,
 		blurb = "A dungeon built fresh every run. Three floors, chests, relics, a boss at the bottom."},
+	-- THE DUNGEON GAME's own world (Game ▸ Modes ▸ Tavern): Deadvault and The Depths start there
+	Tavern    = {name = "The Gilded Rat", mode = "Tavern", access = "Public", maxPlayers = 24, matchmade = true, page = 2,
+		blurb = "The dungeon game's own lodge: your stash, the merchants, your party, the gate down into the dark."},
 	Deadvault = {name = "Deadvault", mode = "Deadvault", access = "Public", maxPlayers = 12, matchmade = true, page = 2,
 		blurb = "Raid a vast dark dungeon with your party. Search it, sneak past what sleeps, get out with the loot. Die, and lose it all."},
 	Crownfall = {name = "Crownfall", mode = "Crownfall", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
@@ -76,6 +79,13 @@ GameConfig.MODES = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
 		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+	},
+	-- the dungeon game's lodge (Game ▸ Modes ▸ Tavern): walk about, trade, ready up
+	Tavern = {
+		name = "The Gilded Rat", category = "Hub", teams = 0, maxPlayers = 24,
+		description = "The dungeon game's lodge: your stash, the merchants, your party, and the gate down into the dark.",
+		maps = {"Tavern"}, procedural = true, roundLength = 0, intermission = 0, hidden = true, respawnDelay = 1,
+		pvp = false,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -198,7 +208,7 @@ GameConfig.MODES = {
 	},
 }
 -- a map's name on screen (the key is its name in ServerStorage ▸ Maps)
-GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Frostgate = "Frostgate",
+GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Courtyard", Tavern = "The Gilded Rat", Frostgate = "Frostgate",
 	Sandpit = "The Sandpit", Highbridge = "Highbridge", Millfield = "Millfield", Colosseum = "The Colosseum", RoseCourt = "The Rose Court",
 	Wildwood = "The Wildwood", Ravenhold = "Ravenhold", Stormbreak = "Stormbreak",
 	-- the themed maps (Build ▸ MapForge)

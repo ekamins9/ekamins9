@@ -32,6 +32,7 @@ local vaultRemote = ReplicatedStorage:WaitForChild("VaultRemote")
 local hubRemote = ReplicatedStorage:WaitForChild("HubRemote")
 local hubEvent = ReplicatedStorage:WaitForChild("HubEvent")
 local round = ReplicatedStorage:WaitForChild("Round")
+local advEvent = ReplicatedStorage:WaitForChild("AdventureEvent")
 
 local C = DarkUI.C
 local RAR = DarkUI.RARITY
@@ -1079,6 +1080,7 @@ local function setOpen(on)
 	end
 end
 leaveBtn.Activated:Connect(function() setOpen(false) end)
+-- (in the lodge, LEAVE shuts the menu and you walk about; its door goes home to the Courtyard)
 _G.OpenDungeon = function(t, m)
 	tab = (t and pages[t]) and t or "Play"
 	if m == "Depths" or m == "Deadvault" then mode = m end
@@ -1090,6 +1092,35 @@ _G.DungeonMenuOpen = function() return open end
 -- (test hooks: the Open and Tab attributes)
 gui:GetAttributeChangedSignal("Open"):Connect(function() if gui:GetAttribute("Open") then _G.OpenDungeon(gui:GetAttribute("Tab")) else setOpen(false) end end)
 gui:GetAttributeChangedSignal("Tab"):Connect(function() if open then tab = gui:GetAttribute("Tab") or tab; render() end end)
+
+-- the lodge's places open it where you stand (Game ▸ Modes ▸ Tavern): a merchant, the stash, the gate…
+advEvent.OnClientEvent:Connect(function(kind, data)
+	if kind == "OpenDungeon" and type(data) == "table" then
+		if data.merchant then merchant = data.merchant end
+		_G.OpenDungeon(data.tab or "Play")
+	end
+end)
+-- arriving in the lodge: the lobby opens on its PLAY (once a visit)
+task.spawn(function()
+	local greeted = false
+	while true do
+		task.wait(1)
+		local inTavern = round:GetAttribute("Mode") == "Tavern"
+		if inTavern and not greeted then
+			-- (the Courtyard's menu has no place here: put away once, on arrival)
+			if _G.HubMenuHide then pcall(_G.HubMenuHide) end
+			local c = player.Character
+			local h = c and c:FindFirstChildOfClass("Humanoid")
+			if h and h.Health > 0 then
+				greeted = true
+				task.wait(1.5)
+				if not open then _G.OpenDungeon("Play") end
+			end
+		elseif not inTavern then
+			greeted = false
+		end
+	end
+end)
 
 hubEvent.OnClientEvent:Connect(function(what, a)
 	if what == "Party" then
@@ -1115,6 +1146,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 RunService:BindToRenderStep("DungeonMenu", Enum.RenderPriority.Camera.Value + 25, function()
 	if not open then return end
+	-- (a body arriving while it's up brings its bar: that steps aside too)
+	local hb = player.PlayerGui:FindFirstChild("Hotbar")
+	if hb and hb.Enabled and hiddenGuis then hb.Enabled = false; hiddenGuis[hb] = true end
 	UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	UserInputService.MouseIconEnabled = true
 	local vs = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1600, 900)

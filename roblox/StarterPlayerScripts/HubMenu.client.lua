@@ -4102,9 +4102,9 @@ do
 			tag = a.tag, tagColor = COL.GOLD, ambient = a.ambient, light = a.light, parent = HX.modesPage2,
 			onClick = function()
 				if not GameConfig.DOORS[a.door] then toast("Coming soon", COL.BAD); return end
-				-- (the dungeon game has a lobby of its own: DungeonMenu.client)
-				if (a.key == "Deadvault" or a.key == "Depths") and _G.OpenDungeon then
-					_G.OpenDungeon("Play", a.key)
+				-- (the dungeon game is a world of its own: its lodge, the Tavern, and its lobby there)
+				if (a.key == "Deadvault" or a.key == "Depths") and GameConfig.DOORS.Tavern then
+					if roundNode:GetAttribute("Mode") == "Tavern" and _G.OpenDungeon then _G.OpenDungeon("Play", a.key) else goDoor("Tavern") end
 					return
 				end
 				if a.key == "Invasion" then

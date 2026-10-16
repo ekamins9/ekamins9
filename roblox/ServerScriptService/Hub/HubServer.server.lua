@@ -487,8 +487,12 @@ local function studioSwitch(plr, modeId, extra)
 	return ok, ok and ("Studio: switching this server — " .. msg) or msg
 end
 
+local play   -- forward
 local function goHub(plr)
 	local group = groupFor(plr, false)
+	-- (out of the dungeon game: back to its lodge, the Tavern; its door leads on to the Courtyard)
+	local d = Game.server.door
+	if (d == "Deadvault" or d == "Depths") and GameConfig.DOORS.Tavern and play then return play(plr, "Tavern") end
 	if STUDIO then
 		-- (Studio switches one server's mode: what's running now, not what it started as)
 		if Game.modeId == "Hub" then return false, "you're in the Courtyard" end
@@ -499,7 +503,7 @@ local function goHub(plr)
 end
 
 local joinQueue   -- forward
-local function play(plr, doorId, opts)
+function play(plr, doorId, opts)
 	local door = GameConfig.DOORS[doorId]
 	if not door then return false, "no such door" end
 	opts = type(opts) == "table" and opts or {}

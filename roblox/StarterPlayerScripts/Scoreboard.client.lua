@@ -561,7 +561,7 @@ local function refreshRound()
 		end
 	else
 		myVote = nil
-		local clock = (roundNode:GetAttribute("Mode") == "Hub" or roundNode:GetAttribute("Mode") == "Tiltyard") and "" or string.format("   %d:%02d", m, sec)
+		local clock = (roundNode:GetAttribute("Mode") == "Hub" or roundNode:GetAttribute("Mode") == "Tiltyard" or roundNode:GetAttribute("Mode") == "Tavern") and "" or string.format("   %d:%02d", m, sec)
 		local bracket = roundNode:GetAttribute("Bracket") or ""
 		local tag = bracket ~= "" and ("  ·  " .. bracket .. (roundNode:GetAttribute("Ranked") == true and " RANKED" or "")) or ""
 		local server = roundNode:GetAttribute("ServerName") or ""
@@ -629,7 +629,7 @@ end)
 -- weapon, the menus), so whoever had it last can't keep it hidden or locked
 RunService:BindToRenderStep("VoteCursor", Enum.RenderPriority.Last.Value + 50, function()
 	local mode = roundNode:GetAttribute("Mode")
-	if intermission() and mode ~= "Hub" and mode ~= "Tiltyard" and not hubMenuUp() then
+	if intermission() and mode ~= "Hub" and mode ~= "Tiltyard" and mode ~= "Tavern" and not hubMenuUp() then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 		UserInputService.MouseIconEnabled = true
 		if UserInputService.MouseIcon ~= "" then UserInputService.MouseIcon = "" end

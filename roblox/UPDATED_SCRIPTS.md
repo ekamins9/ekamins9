@@ -1,4 +1,27 @@
-# Updated scripts: the dungeon game's own lobby, perks, the belt, looting bodies
+# Updated scripts: The Gilded Rat, the dungeon game's own world
+
+- **A world of its own** for The Depths and Deadvault: **The Gilded Rat**, an adventurers' lodge (new Tavern mode, its own public servers).
+  - The Courtyard's Deadvault and Depths tiles take you there; leaving a raid brings you back there; its door goes home to the Courtyard.
+- **The lodge** (new TavernMap, built fresh): a long timbered hall, candle-lit tables, chandeliers, a great hearth, the Treasurer's counter, the Smith's forge, the Armourer's stands, the Alchemist's bottles and cauldron, your stash's chest, the notice board, the Dungeon Gate, the door home.
+- **The merchants stand at their stalls** as dressed people with names over their heads; TRADE opens their wares in the lobby. The chest opens the stash, the board the class tab, the gate PLAY.
+- **You walk in** as your class; the lobby opens on arrival; M is the lobby there.
+- **Checked in Play**: switched to the Tavern: the lodge built (431 parts), a body walked in, the lobby opened by itself on PLAY; the hall on screen with its merchants; compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Tavern.lua](ServerScriptService/Game/Modes/Tavern.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
+| [TavernMap.lua](ServerScriptService/Game/TavernMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS.Tavern, MODES.Tavern, its title |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | out of a raid: to the Tavern |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | extraction: to the Tavern |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the tiles go to the Tavern; M there is the lobby's |
+| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | opened by the lodge's places and on arrival |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no clock in the Tavern |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the dungeon game's own lobby, perks, the belt, looting bodies
 
 - **A lobby of its own** (new DungeonMenu.client on new ReplicatedStorage ▸ DarkUI), after Dark and Darker: dark gold-lined panels, Merriweather, every item in 3D (no emoji).
   - Play: your party at a candle-lit tavern table.
@@ -47,38 +70,3 @@
 | [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `prepare`, `roomOpts`, the waiting rooms' trigger |
 | [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | the sneak attack hook, `Perceives` |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: Deadvault rebuilt after Dark and Darker
-
-- **A vast, quiet, detailed dungeon** (Dungeon `raid = true`): 30 rooms, each something it once was (great halls, crypts, cells, libraries, armouries, storerooms, chapels, caverns, treasure vaults, the lair), furnished to match, with pilasters, skirting and fewer torches.
-- **Monsters that perceive** (new Combat ▸ Perception): they see (in front, in range, nothing in the way) and hear (running, fighting; crouching is quiet), shout for friends, hunt where they last saw you and go back. Many rooms are empty, some monsters sleep, pairs patrol. **!**, **?** and **z z** over their heads.
-- **Search everything** (new Game ▸ Containers): crates, barrels, sacks, urns, racks, stands, shelves, sarcophagi, remains and chests, with a loot window (TAKE / TAKE ALL). New **valuables** to carry out and sell.
-- **Your gear** (new RaidInventory.client, I): worn gear and a 20-slot bag; equip, take off, drink, drop.
-- **Ways out on the map**: two escape stairs (open at 2:00) and blue portals in waves (5:00, 9:00, 12:00); hold to extract, interrupted if struck. 15-minute raids.
-- **Parties** come in together and fight side by side; a **free kit** for your class (never lost); your class power comes along; a fallen raider leaves a **pack**.
-- **The vault**: a 60-slot stash, a kit with 4 draughts, the class you raid as, and **merchants**: the Smith (daily weapons, REFORGE, TEMPER), the Armourer, the Alchemist, the Treasurer.
-- **Checked in Play**:
-  - a raid built in 9 s: 30 rooms, 55 containers, 39 monsters (11 asleep), 2 escape stairs, 4 havens;
-  - a skeleton noticed and hunted the test character;
-  - containers opened and emptied into the bag; a find equipped (the held weapon went to the bag); extraction banked everything but the free kit;
-  - the loot window, the gear screen, the vault and the Smith's wares on screen;
-  - compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | raid rooms, havens, escape stairs, containers |
-| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | new |
-| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | rebuilt |
-| [Vault.lua](ServerScriptService/Game/Vault.lua) | ServerScriptService ▸ Game | ModuleScript | merchants, stock, the Smith's work, class |
-| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | treasure, containers, reforge |
-| [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | new |
-| [VaultServer.server.lua](ServerScriptService/Hub/VaultServer.server.lua) | ServerScriptService ▸ Hub | Script | Buy, Work, Class |
-| [Loot.lua](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | TREASURES, CONTAINERS |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Deadvault 15 min, its text |
-| [RaidInventory.client.lua](StarterPlayerScripts/RaidInventory.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [VaultMenu.client.lua](StarterPlayerScripts/VaultMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | rebuilt |
-| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | alert signs, known exits, raid guides |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Deadvault's text |
-| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |

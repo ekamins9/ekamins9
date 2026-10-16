@@ -1730,6 +1730,24 @@ Three floors; floor 3 ends in the theme's boss.
   screen, an UP NEXT line under the run panel, a gift on the map's rooms with a chest. Objectives
   steps aside for an OwnHud mode.
 
+### The Gilded Rat: the dungeon game's world (`Game ▸ Modes ▸ Tavern`, `Game ▸ TavernMap`)
+The Depths and Deadvault start somewhere of their own: **The Gilded Rat**, an adventurers' lodge
+at the top of the stairs to the dark (GameConfig.DOORS.Tavern, MODES.Tavern: public servers of
+their own, like the Courtyard's). The Courtyard's PLAY ▸ ADVENTURES ▸ Deadvault / The Depths take
+you (and your party) there; leaving a raid brings you back there (HubServer's goHub and
+Deadvault's extraction); its door goes home to the Courtyard.
+- **The lodge** (built fresh when its server starts): a long timbered hall, candle-lit tables
+  under iron chandeliers, a great hearth, banners, torches; the Treasurer's counter (coin, scales),
+  Hrothgar the Smith's forge (glowing coals, anvil, racks), Old Brenna's armour stands, Wendel the
+  Alchemist's shelves of coloured bottles and his bubbling cauldron, your stash's iron-bound chest
+  by a strongroom door, the notice board, the **Dungeon Gate** (a stone arch over stairs down into
+  the dark, cold torches, mist) and the door home (daylight). No ale: the lodge serves bread and
+  stew.
+- **You walk in** as your class (no fighting there; anyone without a body is walked back in).
+  M opens the dungeon game's lobby (below; the Courtyard's menu has no place there), and it opens
+  by itself as you arrive. Its places open it where you stand: a merchant (TRADE: their wares),
+  the chest (STASH), the board (CLASS and perks), the gate (PLAY), the door (the Courtyard).
+
 ### The dungeon game's lobby (`DungeonMenu.client`, `ReplicatedStorage ▸ DarkUI`)
 The Depths and Deadvault are a game of their own, after Dark and Darker, with a lobby of their own:
 dark panels with a worn edge and a gold line, Merriweather type, and every item shown as itself

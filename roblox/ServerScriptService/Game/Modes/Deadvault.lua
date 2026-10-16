@@ -673,7 +673,7 @@ function Deadvault:extract(plr)
 	local e = event()
 	if e then e:FireClient(plr, "Inv", nil) end
 	if not game:GetService("RunService"):IsStudio() and _G.HubTravel then
-		task.delay(4, function() if plr.Parent then pcall(_G.HubTravel, plr, "Courtyard", {}) end end)
+		task.delay(4, function() if plr.Parent then pcall(_G.HubTravel, plr, "Tavern", {}) end end)
 	end
 end
 
