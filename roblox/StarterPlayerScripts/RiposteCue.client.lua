@@ -3,12 +3,13 @@
 
        YOURS     a gold flash round the screen as it opens; under the crosshair RIPOSTE · STRIKE
                  NOW, how much quicker, and a bar running out with the window; swing into it
-                 and RIPOSTE! lands, the blade trailing gold through the quick swing
+                 and it turns to RIPOSTE! (the blade trailing gold through the quick swing, no
+                 stamina spent); land it and RIPOSTE LANDED +25% stays up a moment, with a flash
        ANYONE'S  (players and bots) their blade glows gold while their window's open — guard
                  up — and trails gold through the riposte itself
 
-     From the character attributes RiposteUntil / RiposteLen / RiposteSpeed (the shared clock)
-     and RiposteTick (a riposte swung). ]]
+     From the character attributes RiposteUntil / RiposteLen / RiposteSpeed (the shared clock),
+     RiposteTick (a riposte swung) and RiposteHitTick (it landed). ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -94,23 +95,54 @@ shout.TextTransparency = 1
 shout.TextStrokeTransparency = 1
 local shoutScale = Instance.new("UIScale"); shoutScale.Parent = shout
 
-local function opened(c)
-	edgeStroke.Transparency = 0.15
-	TweenService:Create(edgeStroke, TweenInfo.new(0.55, Enum.EasingStyle.Quad), {Transparency = 1}):Play()
-	scale.Scale = 1.35
+-- the HUD's three moments: the window OPEN, the riposte SWUNG, the riposte HIT
+local phase, phaseAt = nil, 0
+local SWING_HOLD, HIT_HOLD = 1.1, 1.8
+local function pop(s)
+	scale.Scale = s or 1.35
 	TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Scale = 1}):Play()
-	local mult = c:GetAttribute("RiposteSpeed") or 1.6
-	sub.Text = string.format("YOUR NEXT SWING  +%d%% FASTER", math.floor((mult - 1) * 100 + 0.5))
 end
-local spent = nil   -- (the window you've swung into: its bar goes)
-local function riposted(c)
-	spent = c:GetAttribute("RiposteUntil")
+local function edgeFlash(strength)
+	edgeStroke.Transparency = 1 - strength
+	TweenService:Create(edgeStroke, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {Transparency = 1}):Play()
+end
+local function shoutOut(text, secs)
+	shout.Text = text
 	shout.TextTransparency, shout.TextStrokeTransparency = 0, 0.3
-	shoutScale.Scale = 1.6
-	TweenService:Create(shoutScale, TweenInfo.new(0.2, Enum.EasingStyle.Back), {Scale = 1}):Play()
-	task.delay(0.45, function()
-		TweenService:Create(shout, TweenInfo.new(0.35), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+	shoutScale.Scale = 1.7
+	TweenService:Create(shoutScale, TweenInfo.new(0.22, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	local mine = os.clock()
+	shout:SetAttribute("At", mine)
+	task.delay(secs or 0.6, function()
+		if shout:GetAttribute("At") ~= mine then return end
+		TweenService:Create(shout, TweenInfo.new(0.4), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
 	end)
+end
+local function opened(c)
+	phase, phaseAt = "open", os.clock()
+	edgeFlash(0.85)
+	pop(1.35)
+	local mult = c:GetAttribute("RiposteSpeed") or 1.6
+	title.Text = "⚔  RIPOSTE  ·  STRIKE NOW"
+	sub.Text = string.format("+%d%% SWING SPEED  ·  NO STAMINA", math.floor((mult - 1) * 100 + 0.5))
+	back.Visible = true
+end
+local function riposted(c)
+	phase, phaseAt = "swing", os.clock()
+	title.Text = "⚔  RIPOSTE!"
+	sub.Text = "LAND IT  ·  +25% DAMAGE"
+	back.Visible = false
+	pop(1.25)
+	shoutOut("RIPOSTE!", 0.5)
+end
+local function riposteHit(c)
+	phase, phaseAt = "hit", os.clock()
+	title.Text = "RIPOSTE LANDED"
+	sub.Text = "+25% DAMAGE  ·  NO STAMINA SPENT"
+	back.Visible = false
+	pop(1.5)
+	edgeFlash(0.9)
+	shoutOut("RIPOSTE LANDED!", 1.0)
 end
 
 --------------------------------------------------------------------
@@ -185,7 +217,7 @@ RunService.RenderStepped:Connect(function()
 	local mine = false
 	for _, c in ipairs(bodies()) do
 		local L = looks[c]
-		if not L then L = {tick = c:GetAttribute("RiposteTick")}; looks[c] = L end
+		if not L then L = {tick = c:GetAttribute("RiposteTick"), hit = c:GetAttribute("RiposteHitTick")}; looks[c] = L end
 		local untilT = c:GetAttribute("RiposteUntil") or 0
 		local open = untilT > now
 		if open and not L.open then
@@ -205,10 +237,32 @@ RunService.RenderStepped:Connect(function()
 			pcall(trail, c)
 			if c == me then riposted(c) end
 		end
-		if c == me and open and untilT ~= spent then
-			mine = true
-			local len = c:GetAttribute("RiposteLen") or 1.2
-			fill.Size = UDim2.fromScale(math.clamp((untilT - now) / len, 0, 1), 1)
+		local hit = c:GetAttribute("RiposteHitTick")
+		if hit ~= L.hit then
+			L.hit = hit
+			if c == me then riposteHit(c) end
+		end
+		if c == me then
+			local t = os.clock() - phaseAt
+			if phase == "open" and open then
+				mine = true
+				local len = c:GetAttribute("RiposteLen") or 1.5
+				fill.Size = UDim2.fromScale(math.clamp((untilT - now) / len, 0, 1), 1)
+			elseif phase == "swing" and t < SWING_HOLD then
+				mine = true
+				title.TextTransparency = 0
+			elseif phase == "hit" and t < HIT_HOLD then
+				mine = true
+				-- (it fades over its last half second)
+				local f = math.clamp((t - (HIT_HOLD - 0.5)) / 0.5, 0, 1)
+				title.TextTransparency, sub.TextTransparency = f, f
+				title.TextStrokeTransparency, sub.TextStrokeTransparency = 0.35 + 0.65 * f, 0.35 + 0.65 * f
+			end
+			if not mine and phase then
+				phase = nil
+				title.TextTransparency, sub.TextTransparency = 0, 0
+				title.TextStrokeTransparency, sub.TextStrokeTransparency = 0.35, 0.35
+			end
 		end
 	end
 	panel.Visible = mine

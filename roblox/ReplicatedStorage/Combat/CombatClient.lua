@@ -547,7 +547,9 @@ function CombatClient.attach(Tool, weaponConfig)
 
 		elseif what == "Block" then
 			if a == true then
-				if blockTrack then blockTrack:Play(0.12) end
+				-- (with a shield the weapon stays in its guard: the shield arm comes up instead, RigPose)
+				local char = player.Character
+				if blockTrack and not (char and char:GetAttribute("ShieldId")) then blockTrack:Play(0.12) end
 			else
 				if blockTrack then blockTrack:Stop(0.15) end
 			end

@@ -594,7 +594,7 @@ function Dresser.attachWeapon(rig, weaponId, skinId, variant)
 end
 
 -- preview rig: a SHIELD on the left arm, as a body wears it (Combat ▸ Shields' idle place)
-local SHIELD_IDLE = CFrame.new(-1.55, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
+local SHIELD_IDLE = CFrame.new(-2.05, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)   -- (outside the arm's armor)
 function Dresser.attachShield(rig, shieldId, skinId)
 	local old = rig:FindFirstChild("ShieldPreview"); if old then old:Destroy() end
 	local torso = rig:FindFirstChild("Torso")

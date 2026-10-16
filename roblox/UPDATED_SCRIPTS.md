@@ -1,4 +1,41 @@
-# Updated scripts: a power AND a throwable for every class, hold-to-aim throws with an arc, armor sets whole in crates, every power visible on you
+# Updated scripts: shields off the arm, a shield block raises only the shield arm, one-handers keep the off arm still, stronger ripostes
+
+- **Shields no longer clip into the arm.** The board sat on the arm's centre line, so the arm (and its armor) went through it. It now sits 2.05 studs out, just outside a heavy set's pauldrons and bracers, with the straps on the forearm. This applies in game and on the class screen mannequin.
+- **Blocking with a shield**: the weapon keeps its normal upright guard (no block animation is played with a shield). Only the shield arm comes up, its hand behind the board. The raised shield sits a little further forward so the arm doesn't poke through it.
+- **One-handed weapons keep the free arm still.** Every animation plays as it is, but the left arm doesn't move: Roblox can't mask a limb out of a clip, so a new OffHand script cancels the left shoulder's animated motion every frame, on every screen, for anyone holding a one-handed weapon. Gestures, a raised shield and the look's bend still pose it.
+- **Stronger ripostes**:
+  - a riposte costs **no stamina**;
+  - it hits **25% harder** if it lands;
+  - the window is **1.5 s** (was 1.2).
+- **The riposte cue stays up through the whole thing**:
+  1. RIPOSTE · STRIKE NOW (+60% SWING SPEED · NO STAMINA) with the bar;
+  2. when you swing, RIPOSTE! with LAND IT · +25% DAMAGE;
+  3. when it lands, RIPOSTE LANDED! with a gold flash, held about 1.8 s.
+
+  The riposte lesson says so.
+- **Checked in Play** (a Knight with an Arming Sword and a Heater):
+  - the shield outside the arm;
+  - the block pose with the sword upright and the arm behind the board;
+  - the left arm's animation cancelled;
+  - all three riposte HUD stages.
+- **Not checked yet**:
+  - a real block's input path (the block clip skipped);
+  - a real parry into a riposte in a fight;
+  - the left arm through a full swing on screen.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [OffHand.client.lua](StarterPlayerScripts/OffHand.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a one-hander's free arm keeps still |
+| [RigPose.lua](ReplicatedStorage/RigPose.lua) | ReplicatedStorage | ModuleScript | the shield arm raised while blocking |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | the preview shield off the arm |
+| [Combat/CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | no block clip with a shield |
+| [Combat/Shields.lua](ServerScriptService/Combat/Shields.lua), [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | shield idle / block places; free, harder, longer ripostes |
+| [RiposteCue.client.lua](StarterPlayerScripts/RiposteCue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | open → RIPOSTE! → RIPOSTE LANDED |
+| [Catalog/Drills.lua](ReplicatedStorage/Catalog/Drills.lua), [README.md](README.md) | | ModuleScript / doc | the riposte lesson, docs |
+
+---
+
+## Before that: a power AND a throwable for every class, hold-to-aim throws with an arc, armor sets whole in crates, every power visible on you
 
 - **Powers and throwables are separate now**: every class carries one of each.
   - **E** uses your power, as before.

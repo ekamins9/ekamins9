@@ -53,7 +53,7 @@ return {
 		{id = "parry", title = "The Parry", goal = 1, event = "parry", setup = "attacker", basic = true,
 			text = "Raise your guard at the last moment, just before the blow lands: that's a parry, and it costs you nothing. Parry once!"},
 		{id = "riposte", title = "The Riposte", goal = 1, event = "riposte", setup = "attacker", basic = true,
-			text = "A parry makes your blade glow gold: a RIPOSTE, your next strike much faster. Parry the dummy, then hit back while it glows!"},
+			text = "A parry makes your blade glow gold: a RIPOSTE. Your next strike is faster, free, and hits harder. Parry the dummy, then hit back!"},
 		{id = "feint", title = "The Feint", goal = 2, event = "feint", basic = true,
 			text = "Start a swing, then press {Feint} before it lands to pull it back. Make them flinch at nothing. Feint twice."},
 		{id = "morph", title = "The Morph", goal = 2, event = "morph", basic = true,

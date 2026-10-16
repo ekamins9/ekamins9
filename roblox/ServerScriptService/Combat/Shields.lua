@@ -22,8 +22,11 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 
 local Shields = {}
-local IDLE = CFrame.new(-1.55, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)    -- on the left arm, face out
-local BLOCK = CFrame.new(-0.35, 0.2, -1.3) * CFrame.Angles(0, math.rad(12), 0)     -- up in front of you
+-- on the left arm, face out: the board just outside the arm and its armor (a heavy set's
+-- pauldrons and bracers reach 2.15 studs out from the torso's middle), the straps on the forearm
+local IDLE = CFrame.new(-2.05, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
+-- up in front of you, far enough out that the raised arm's hand is behind the board (RigPose)
+local BLOCK = CFrame.new(-0.35, 0.2, -1.75) * CFrame.Angles(0, math.rad(12), 0)
 local ATTRS = {"ShieldId", "ShieldCone", "ShieldBlock", "ShieldParry", "ShieldArrows", "ShieldBash", "ShieldStun", "SpeedMult_Shield"}
 
 local function template(id)

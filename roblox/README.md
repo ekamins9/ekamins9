@@ -94,6 +94,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedFirst/Loading.client.lua` | `ReplicatedFirst` → `Loading` (the first thing anyone sees: the name while the game loads, or the travel screen carried over) | LocalScript |
 | `StarterPlayerScripts/DeathScreen.client.lua`, `Celebrate.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `DeathScreen` (the fall and the way back), `Celebrate` (FIGHT!, LEVEL UP, a class unlocked, spawn embers) | LocalScript each |
 | `StarterPlayerScripts/RiposteCue.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RiposteCue` (the riposte window: your HUD, everyone's gold blade) | LocalScript |
+| `StarterPlayerScripts/OffHand.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `OffHand` (a one-handed weapon's free arm keeps still: the left shoulder's animated turn taken out each frame) | LocalScript |
 | `StarterPlayerScripts/LocaleText.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `LocaleText` (English readers skip automatic translation: cheaper screens) | LocalScript |
 | `ReplicatedStorage/Ballistics.lua` | `ReplicatedStorage` → `Ballistics` (the arc that lands an arrow on its aim) | ModuleScript |
 | `StarterPlayerScripts/Intro.client.lua`, `MenuTour.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Intro`, `MenuTour` (a newcomer's welcome, first battle and menu tour) | LocalScript each |
@@ -592,7 +593,9 @@ fighting as (`Economy.addClassXP`, `p.classXP`), 250 XP to level 2, rising to 2,
 Knight-Commander…), a mastery power skin (15, 25; bound) and a Key every 5. A banner says what
 opened. The class screen shows the level, the bar and what's next.
 
-**Shields** (`Catalog ▸ Arsenal` shields; `Combat ▸ Shields`): Buckler, Targe, Round Shield,
+**Shields** (`Catalog ▸ Arsenal` shields; `Combat ▸ Shields`; worn just outside the left arm's armor;
+blocking raises only the shield and its arm (`RigPose`), the weapon keeping its guard: no block clip
+with a shield, CombatClient): Buckler, Targe, Round Shield,
 Heater, Spiked Shield, Kite, Scutum, Tower Pavise, unlocked by level or bought with Marks like
 any weapon. Worn on the left arm (a copy of the Tool's body), raised in front of you on every
 screen while you block; a GuardHull in front of you is there to blades only while you block.
@@ -1520,10 +1523,12 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - **Parry chain**: after a *successful* parry you can re-guard instantly with a fresh parry window
   for `PARRY_CHAIN_WINDOW` (1.5 s) — no `BLOCK_COOLDOWN`, no `PARRY_RETRY`. A guard that comes
   down without having parried **breaks the chain** (and the streak): back to the normal cooldown. Riposte (`FastUntil`) makes your **windup** `RIPOSTE_SPEED`× quicker; the swing
-  itself plays at normal speed. **You can see it** (`RiposteCue.client`, from `RiposteUntil` /
+  itself plays at normal speed. A riposte **costs no stamina** and, if it lands, hits
+  `RIPOSTE_DAMAGE` (1.25×) harder; the window is `RIPOSTE_DURATION` 1.5 s. **You can see it** (`RiposteCue.client`, from `RiposteUntil` /
   `RiposteLen` / `RiposteSpeed` in the shared clock and `RiposteTick`): a gold flash round the
   screen as it opens, RIPOSTE · STRIKE NOW under the crosshair with how much quicker and a bar
-  running out with the window, RIPOSTE! and a gold trail as you swing into it; anyone's blade
+  running out with the window, RIPOSTE! and a gold trail as you swing into it, RIPOSTE LANDED +25% (and
+  a flash) held a moment when it lands (`RiposteHitTick`); anyone's blade
   (bots too) glows gold while their window's open, so you know to guard.
 - **Walls**: hits are rejected when the line from your head to the hit point passes through solid
   geometry (`WALL_CHECK`), so nobody gets stabbed through a wall.

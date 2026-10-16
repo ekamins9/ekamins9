@@ -263,15 +263,36 @@ function RigPose.calm(char, inputs)
 	return out
 end
 
+-- A SHIELD UP: while you block with one (ShieldId, Blocking) its arm comes up before you, the
+-- hand behind the board (the shield itself rises on its own weld: Powers.client); the weapon
+-- keeps its guard (CombatClient plays no block clip with a shield). Eased in and out per body.
+local SHIELD_RAISE, SHIELD_ACROSS = 1.05, 0.5
+local shieldUp = setmetatable({}, {__mode = "k"})
+local function shieldArm(char, target)
+	if not char:GetAttribute("ShieldId") then shieldUp[char] = nil; return target end
+	local want = char:GetAttribute("Blocking") == true and 1 or 0
+	local k = shieldUp[char] or 0
+	k += (want - k) * 0.3
+	shieldUp[char] = k
+	local cf = target["Left Shoulder"]
+	if k < 0.005 or not cf then return target end
+	local out = table.clone(target)
+	out["Left Shoulder"] = CFrame.new(cf.Position) * CFrame.Angles(0, -SHIELD_ACROSS * k * C.SWING_DIR, 0) * cf.Rotation
+		* CFrame.Angles(0, 0, SHIELD_RAISE * k * C.LEFT_ARM_DIR)
+	return out
+end
+
 -- lerps each joint's C0 toward the target; legAlpha lets kicks snap faster
 function RigPose.apply(j, target, alpha, legAlpha)
 	legAlpha = legAlpha or alpha
 	local E = emotes()
 	local char = j.Neck and j.Neck.Parent and j.Neck.Parent.Parent
+	local emoting = false
 	if E and char then
 		local t2 = E.modify(char, target)
-		if t2 then target = t2; alpha = 1; legAlpha = 1 end
+		if t2 then target = t2; alpha = 1; legAlpha = 1; emoting = true end
 	end
+	if char and not emoting then target = shieldArm(char, target) end
 	for name, cf in pairs(target) do
 		local m = j[name]
 		if m and m.Parent then

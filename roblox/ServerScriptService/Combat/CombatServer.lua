@@ -576,8 +576,10 @@ CombatServer.DEFAULTS = {
 	                           --    the riposte itself (quicker windup) plus their stamina refund.
 	PARRIED_GUARD_WINDOW = 0.8,-- for this long after being parried your guard comes up at once (no
 	                           --    cooldown) with a fresh parry window: the riposte can be parried back
-	RIPOSTE_DURATION  = 1.20,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
+	RIPOSTE_DURATION  = 1.50,  -- after a parry, your attacks' WINDUP is RIPOSTE_SPEED × faster (the swing
 	RIPOSTE_SPEED     = 1.6,   --    itself plays at normal speed — there's still a windup, just a quick one)
+	RIPOSTE_DAMAGE    = 1.25,  --    a riposte that lands hits this much harder, and it costs no stamina
+	                           --    (RiposteTick when it's swung, RiposteHitTick when it lands: RiposteCue)
 	FEINT_COST        = 18,    -- a feint is a real stamina gamble next to a 10-stamina swing
 	FEINT_RECOVERY    = 0.25,
 
@@ -1117,6 +1119,11 @@ function CombatServer.attach(Tool, weaponConfig)
 			local ok, P = pcall(require, script.Parent:WaitForChild("Powers"))
 			if ok and P then dmg = P.onMelee(character, target, dmg, hitPos) end
 		end
+		-- a riposte that lands bites deeper (and says so: RiposteCue)
+		if state.riposte then
+			dmg = dmg * (cfg.RIPOSTE_DAMAGE or 1)
+			setAttr("RiposteHitTick", (character:GetAttribute("RiposteHitTick") or 0) + 1)
+		end
 		-- a stab through the face is a finisher, not a damage roll
 		if isStab and region == "head" and cfg.STAB_HEAD_EXECUTE then
 			dmg = math.max(dmg, hum.Health)
@@ -1506,8 +1513,10 @@ function CombatServer.attach(Tool, weaponConfig)
 		local now = os.clock()
 		local speed, windup, active, recovery = attackTimes(info, name)
 		if combo then windup = 0 end   -- straight into the next swing
-		-- a riposte: the quick windup, seen (RiposteCue.client: RIPOSTE!, a gold trail)
-		if (attr("FastUntil") or 0) > now then setAttr("RiposteTick", (character:GetAttribute("RiposteTick") or 0) + 1) end
+		-- a riposte: the quick windup, seen (RiposteCue.client: RIPOSTE!, a gold trail); free, and it
+		-- hits harder if it lands
+		local riposte = (attr("FastUntil") or 0) > now
+		if riposte then setAttr("RiposteTick", (character:GetAttribute("RiposteTick") or 0) + 1) end
 
 		state.token += 1
 		local token = state.token
@@ -1518,7 +1527,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.releaseEnd  = state.windupEnd + active
 		state.nextActionTime = state.releaseEnd + recovery
 		state.morphs, state.landed, state.chambered = 0, false, false
-		spend(info.staminaCost or 0)
+		state.riposte = riposte
+		spend(riposte and 0 or (info.staminaCost or 0))
 		CombatServer.dropProtection(character)
 
 		setSwinging(true)
