@@ -10,6 +10,9 @@
      takes its slot and drops the old one; so does armour. Whoever falls drops everything they found.
      THE RING. A ring of fire closes in phases (RING), each tighter and hotter: outside it you burn.
      The next ring shows on your map before it moves. Bots fill the island (BotFill, fillAnywhere).
+     ROYAL CACHES. As each of the first rings starts to close, a gilded chest comes down out of
+     the sky under a canopy somewhere inside the next ring, a gold flare over it the whole way (and
+     till someone opens it): four things inside, rolled with a king's luck. Worth the fight.
      No coming back: the last one standing wins the crown (stats.crownfallWins).
 
      On screen (Adventure.client, OwnHud): how many are left, the ring's clock, the island's map
@@ -43,6 +46,10 @@ local RING = {
 	{wait = 25, shrink = 20, to = 0.0, dps = 18},
 }
 local SEGMENTS = 64
+local CACHES = 3           -- royal caches: one as each of the first rings closes
+local CACHE_FALL = 9       -- seconds it takes to come down
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 local BASIC = {Knight = "Shortsword", Footman = "Shortsword", Vanguard = "Shortsword", Archer = "Bow", Mage = "Staff"}
 local CHEST_KIND = "crownfall"
 
@@ -163,6 +170,88 @@ function Crownfall:placeChests()
 	end
 end
 
+-- A ROYAL CACHE: down out of the sky inside the next ring under a canopy, a gold flare over it
+function Crownfall:cache()
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = {MapLoader.current, workspace.Terrain}
+	local c, r = self.nextC or self.ringC, math.max(20, (self.nextR or self.ringR) * 0.6)
+	local ground
+	for _ = 1, 16 do
+		local a, d = math.random() * math.pi * 2, math.random() * r
+		local probe = c + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+		local hit = workspace:Raycast(Vector3.new(probe.X, 260, probe.Z), Vector3.new(0, -520, 0), rp)
+		if hit and hit.Normal.Y > 0.8 and hit.Material ~= Enum.Material.Water then ground = hit.Position; break end
+	end
+	if not ground then return end
+	local GOLD = Color3.fromRGB(255, 190, 60)
+	local fx = MapLoader.current or workspace
+	-- the flare: a gold column over where it'll land (it stays till the cache is opened)
+	local flare = Instance.new("Part")
+	flare.Name = "CacheFlare"
+	flare.Anchored, flare.CanCollide, flare.CanQuery, flare.CanTouch, flare.CastShadow = true, false, false, false, false
+	flare.Shape = Enum.PartType.Cylinder
+	flare.Size = Vector3.new(160, 1.4, 1.4)
+	flare.CFrame = CFrame.new(ground + Vector3.new(0, 80, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	flare.Color, flare.Material, flare.Transparency = GOLD, Enum.Material.Neon, 0.45
+	flare.Parent = fx
+	-- the crate under its canopy, coming down
+	local top = CFrame.new(ground + Vector3.new(0, 130, 0))
+	local crate = Instance.new("Part")
+	crate.Name = "FallingCache"
+	crate.Anchored, crate.CanCollide, crate.CanQuery, crate.CanTouch = true, false, false, false
+	crate.Size = Vector3.new(4, 2.6, 3)
+	crate.Color, crate.Material = Color3.fromRGB(110, 72, 40), Enum.Material.WoodPlanks
+	crate.CFrame = top
+	crate.Parent = fx
+	local canopy = Instance.new("Part")
+	canopy.Anchored, canopy.CanCollide, canopy.CanQuery, canopy.CanTouch = true, false, false, false
+	canopy.Size = Vector3.new(12, 0.5, 9)
+	canopy.Color, canopy.Material = Color3.fromRGB(200, 40, 40), Enum.Material.Fabric
+	canopy.CFrame = top * CFrame.new(0, 10, 0)
+	canopy.Parent = fx
+	local stripe = canopy:Clone(); stripe.Size = Vector3.new(12.1, 0.52, 2.2); stripe.Color = GOLD; stripe.Parent = fx
+	local spark = Instance.new("ParticleEmitter")
+	spark.Color = ColorSequence.new(GOLD); spark.LightEmission = 1; spark.Rate = 30
+	spark.Lifetime = NumberRange.new(1, 2); spark.Speed = NumberRange.new(1, 3); spark.Size = NumberSequence.new(0.5, 0)
+	spark.Parent = crate
+	local info = TweenInfo.new(CACHE_FALL, Enum.EasingStyle.Linear)
+	local land = CFrame.new(ground + Vector3.new(0, 1.3, 0))
+	TweenService:Create(crate, info, {CFrame = land}):Play()
+	TweenService:Create(canopy, info, {CFrame = land * CFrame.new(0, 10, 0)}):Play()
+	TweenService:Create(stripe, info, {CFrame = land * CFrame.new(0, 10, 0)}):Play()
+	banner({text = "A ROYAL CACHE FALLS", sub = "FOLLOW THE GOLD FLARE  ·  INSIDE THE NEXT RING", kind = "victory"})
+	local me = self
+	task.delay(CACHE_FALL, function()
+		crate:Destroy()
+		for _, p in ipairs({canopy, stripe}) do
+			p.Anchored = false
+			TweenService:Create(p, TweenInfo.new(1.6), {Transparency = 1}):Play()
+			Debris:AddItem(p, 1.7)
+		end
+		if Game.current ~= me then flare:Destroy(); return end
+		Loot.sparkle(ground + Vector3.new(0, 2, 0), GOLD)
+		Loot.chest(CFrame.new(ground) * CFrame.Angles(0, math.random() * math.pi * 2, 0), {rarity = "Legendary", gilded = true, label = "Royal cache", hold = 1.2,
+			onOpen = function(plr, chest)
+				local char = plr.Character
+				if not alive(char) then return false end
+				flare:Destroy()
+				local classId = char:GetAttribute("Class") or "Knight"
+				for i = 1, 4 do
+					local item = Loot.roll(CHEST_KIND, classId, 4.5 + Loot.luckOf(char))
+					local a = (i / 4) * math.pi * 2
+					local at = ground + Vector3.new(math.cos(a) * 3.4, 0, math.sin(a) * 3.4)
+					task.delay(0.15 * i, function()
+						Loot.drop(item, at, {life = 240, onTake = function(p2, it) return self:grant(p2, it, at) end})
+					end)
+				end
+				banner({text = string.upper(plr.DisplayName) .. " TOOK A ROYAL CACHE", kind = "elite"})
+				return true
+			end})
+	end)
+	table.insert(self.cacheParts, flare)
+end
+
 --------------------------------------------------------------------
 --  THE RING
 --------------------------------------------------------------------
@@ -215,6 +304,7 @@ function Crownfall:start(map)
 	Game.Mode.start(self, map)
 	if not self.layout then local name = self:buildMap(map); MapLoader.load(name) end
 	self.runs, self.spawned = {}, {}
+	self.caches, self.cacheParts = 0, {}
 	self.dropAt = os.clock() + DROP_AT
 	self.dropped = false
 	self.over = nil
@@ -239,6 +329,8 @@ end
 
 function Crownfall:stop()
 	Loot.clear()
+	for _, p in ipairs(self.cacheParts or {}) do if p.Parent then p:Destroy() end end
+	self.cacheParts = {}
 	for _, k in ipairs({"OwnHud", "ObjKind", "ObjLabel", "ObjNote", "RingCentre", "RingRadius", "RingNextCentre", "RingNextRadius"}) do node:SetAttribute(k, nil) end
 	for _, p in ipairs(Players:GetPlayers()) do
 		local c = p.Character
@@ -363,6 +455,10 @@ function Crownfall:tick(dt)
 			self.shrinking = true
 			self.shrinkAt = now
 			banner({text = "THE RING CLOSES", sub = "GET INSIDE THE NEXT RING", kind = "boss"})
+			if self.caches < CACHES and self.nextR and self.nextR > 12 then
+				self.caches += 1
+				task.delay(4, function() if Game.current == self then self:cache() end end)
+			end
 		end
 		if self.shrinking then
 			local k = math.clamp((now - self.shrinkAt) / ph.shrink, 0, 1)

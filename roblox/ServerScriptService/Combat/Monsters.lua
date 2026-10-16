@@ -838,8 +838,9 @@ function spawnMob(id, opts, over)
 			local pos = r and r.Position
 			-- explode: embers burst where it fell (stand clear)
 			if has(mob, "explode") and pos then
-				ring(pos - Vector3.new(0, 2.8, 0), 8, Color3.fromRGB(255, 120, 40), 0.6)
-				task.delay(0.6, function() Monsters.slam(mob, pos, 8, 16, Color3.fromRGB(255, 130, 40)) end)
+				local col = def.burst or Color3.fromRGB(255, 130, 40)
+				ring(pos - Vector3.new(0, 2.8, 0), 8, col, 0.6)
+				task.delay(0.6, function() Monsters.slam(mob, pos, 8, 16, col) end)
 			end
 			-- reassemble: the bones pull themselves back together (once)
 			if has(mob, "reassemble") and not o.risen and pos and math.random() < 0.55 and not mob.dropped then

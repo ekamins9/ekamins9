@@ -7,6 +7,11 @@
      KILL THE KING AND YOU ARE THE KING (and 10 points for it). If the King falls to anything else
      — a bot, the world — the crown drops where they fell, for anyone to take.
 
+     EVERYONE AGAINST THE KING: the bots (BotFill) go for the King when they're within reach of
+     them (anyone else only when they're in the way), and gather on the crown when it's lying on
+     the ground. The longer someone's King, the brighter they burn: every 30 seconds of a reign
+     the King's glow goes up a step and the field is told (THE KING HAS REIGNED 1:00…).
+
      First to `pointsToWin`, or the most when the clock runs out, rules the field.
      On screen: Adventure.client (OwnHud): who's King, the leader, your points (your chip). ]]
 
@@ -100,6 +105,7 @@ function Kingslayer:crown(plr)
 	hum.MaxHealth += KING_HEALTH
 	hum.Health = hum.MaxHealth
 	if self.drop then self.drop:Destroy(); self.drop = nil end
+	self.reignAt, self.reignStep = os.clock(), 0
 	node:SetAttribute("KingName", plr.DisplayName)
 	banner({text = string.upper(plr.DisplayName) .. " IS KING", sub = "KILL THE KING TO TAKE THE CROWN", kind = "victory"})
 	return true
@@ -158,6 +164,29 @@ function Kingslayer:dropCrown(pos)
 	m.Parent = MapLoader.current or workspace
 	self.drop = m
 	node:SetAttribute("CrownPos", pos)
+end
+
+-- EVERYONE AGAINST THE KING: the bots' say (BotFill asks before each one comes in)
+local HUNT = 110   -- a bot this near the King goes for them
+function Kingslayer:botOpts(opts)
+	opts.goal = function(bot)
+		if Game.current ~= self then return nil end
+		local kc = self.kingChar
+		local kr = kc and kc.Parent and kc:FindFirstChild("HumanoidRootPart")
+		if kr and bot.model ~= kc and bot.hrp and (kr.Position - bot.hrp.Position).Magnitude < HUNT then return kr.Position end
+		local c = self.drop and self.drop:FindFirstChild("Base")
+		return c and c.Position or nil
+	end
+	opts.engage = function(bot, foe)
+		if Game.current ~= self then return true end
+		local kc = self.kingChar
+		if not (kc and kc.Parent) or foe == kc then return true end
+		local kr = kc:FindFirstChild("HumanoidRootPart")
+		local fr = foe and foe:FindFirstChild("HumanoidRootPart")
+		if not (kr and fr and bot.hrp) then return true end
+		-- (someone in the way, or the King too far off to bother: fight them)
+		return (fr.Position - bot.hrp.Position).Magnitude < 12 or (kr.Position - bot.hrp.Position).Magnitude >= HUNT
+	end
 end
 
 function Kingslayer:start(map)
@@ -229,7 +258,18 @@ function Kingslayer:tick(dt)
 		self:uncrown()
 		if pos then self:dropCrown(pos) end
 	end
-	if self.king then self:addPoints(self.king, dt) end
+	if self.king then
+		self:addPoints(self.king, dt)
+		-- a long reign burns brighter (and the field hears of it)
+		local step = math.floor((os.clock() - (self.reignAt or os.clock())) / 30)
+		if step > (self.reignStep or 0) then
+			self.reignStep = step
+			local hl = self.kingChar and self.kingChar:FindFirstChild("KingGlow")
+			if hl then hl.FillTransparency = math.max(0.35, 0.75 - step * 0.1) end
+			local secs = step * 30
+			banner({text = string.format("THE KING HAS REIGNED %d:%02d", secs // 60, secs % 60), sub = string.upper(self.king.DisplayName) .. "  ·  BRING THEM DOWN", kind = "elite"})
+		end
+	end
 	-- the screen
 	local best, bestN = nil, -1
 	for p, n in pairs(self.points) do if p.Parent and n > bestN then best, bestN = p, n end end

@@ -1,4 +1,31 @@
-# Updated scripts: The Gilded Rat, the dungeon game's own world
+# Updated scripts: Plague Night rebuilt, a King everyone hunts, royal caches, darker raids
+
+- **Plague Night: the dead never come from one place.** Each ghoul claws up out of the ground (grave-mist, broken earth) on open ground 45–80 studs from someone living, inside the town, never on a roof or inside anything; a turned player rises where they fell. Before, every ghoul and every turned player came in at the plague side's spawns, all in one spot.
+  - **The dead surge** every 70 seconds from all sides at once.
+  - **Worse things as the night deepens**: Plague Runners (quick), Bloaters (they burst green when they fall), Plague Brutes (huge). New Bestiary entries; a monster's `burst` colours its blast.
+  - **Lanterns** on the living; the last of them **stands alone** (mended, +50 health, quicker).
+  - **Toward dawn**: the sky pales and the mist lifts as the clock runs (the map's Atmosphere too, put back at the end).
+- **Kingslayer: everyone against the King.** Bots within 110 studs of the King go for them; the crown on the ground draws the bots. A long reign burns brighter and the field hears of it every 30 seconds.
+- **Crownfall: royal caches.** As each of the first three rings closes, a gilded chest falls out of the sky under a canopy inside the next ring, with a gold flare over it till it's opened: four things rolled with a king's luck.
+- **Deadvault: darker and lived-in.** Every raid room gets cracks, rubble, cobwebs strung where wall meets ceiling, damp streaks, puddles, chains or a hanging cage, bones, guttering candles and dust drifting in the torchlight. The raid's light is dimmer (less ambient and sky light, a thicker haze). Fire lights now **flicker** (new TorchFlicker client script), in the dungeons and the Gilded Rat.
+- **Checked in Play**: Plague on Millfield (ghouls came up 45–120 studs out on all sides, villagers fought them, a Bloater turned up, the night lightened on schedule); Kingslayer (with the player crowned, the bots within reach closed from 64 studs to 3–7 in 20 seconds); Crownfall (a cache fell from 130 studs in 9 seconds and became an openable Royal cache); Deadvault (raid built in about 6 seconds, every room dressed); compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Plague.lua](ServerScriptService/Game/Modes/Plague.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | spawns out of the ground round the living, surges, kinds, lanterns, last stand, dawn |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Plague Runner, Bloater, Plague Brute; `burst` |
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | an explode's colour from `burst` |
+| [Kingslayer.lua](ServerScriptService/Game/Modes/Kingslayer.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | bots hunt the King; a long reign burns brighter |
+| [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | royal caches |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | raid grime, hanging cages, new cobwebs, darker raid light, flickering fire lights |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | resets the sky light scales between maps |
+| [TavernMap.lua](ServerScriptService/Game/TavernMap.lua) | ServerScriptService ▸ Game | ModuleScript | its fires flicker |
+| [TorchFlicker.client.lua](StarterPlayerScripts/TorchFlicker.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: The Gilded Rat, the dungeon game's own world
 
 - **A world of its own** for The Depths and Deadvault: **The Gilded Rat**, an adventurers' lodge (new Tavern mode, its own public servers).
   - The Courtyard's Deadvault and Depths tiles take you there; leaving a raid brings you back there; its door goes home to the Courtyard.
@@ -55,18 +82,3 @@
 | [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the lobby's hooks |
 | [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | markers behind walls |
 | [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
-
----
-
-## Before that: The Depths' monsters wait, perceive, and can be caught asleep
-
-- **The Depths' monsters wait in their rooms** before the gates drop (some asleep, the rest standing about), with the same senses as Deadvault's (Combat ▸ Perception): they come when they see or hear you, and the gates drop the moment one does.
-- **Sneak attacks**: a blow on a monster that hasn't noticed you lands double (×2.5 on a sleeper), and says so on your screen. Kill a whole room in its sleep and it's yours.
-- Going down a floor takes the monsters of the rooms you passed by with it. The boss still comes with its fight.
-- **Checked in Play**: a floor with 4 rooms waiting (11 monsters, 4 asleep); walking into a doorway, its monsters noticed and the room sealed in half a second; compile of both scripts.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `prepare`, `roomOpts`, the waiting rooms' trigger |
-| [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | the sneak attack hook, `Perceives` |
-| [README.md](README.md) | | doc | |

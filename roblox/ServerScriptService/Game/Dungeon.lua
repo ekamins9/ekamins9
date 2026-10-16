@@ -211,7 +211,7 @@ local function sconce(ctx, th, pos, facing)
 	K.cyl(ctx, "Cup", 0.9, 0.5, f * CFrame.new(0, 0.3, -1), iron, Enum.Material.Metal, ctx.Props)
 	local flame = K.ball(ctx, "Flame", 0.8, f * CFrame.new(0, 0.85, -1), th.torch, Enum.Material.Neon, ctx.Props)
 	flame.CanCollide = false
-	local l = Instance.new("PointLight"); l.Color = th.torch; l.Range = 18; l.Brightness = 1.5; l.Shadows = true; l.Parent = flame
+	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = th.torch; l.Range = 18; l.Brightness = 1.5; l.Shadows = true; l.Parent = flame
 	local fire = Instance.new("Fire"); fire.Size = 2; fire.Heat = 5; fire.Color = th.torch; fire.SecondaryColor = shade(th.torch, 0.6); fire.Parent = flame
 end
 
@@ -237,10 +237,13 @@ P.bones = function(ctx, th, cf, rng)
 	end
 	K.ball(ctx, "Skull", 0.9, cf * CFrame.new(0.3, 0.4, 0.2), BONE, Enum.Material.SmoothPlastic, ctx.Props).CanCollide = false
 end
-P.cobweb = function(ctx, th, cf)
-	local p = box(ctx, "Cobweb", Vector3.new(5, 5, 0.05), cf * CFrame.new(0, (ctx.H or WALL_H) - 3, 0) * CFrame.Angles(0, 0, math.rad(45)), Color3.fromRGB(230, 230, 230), Enum.Material.Fabric, false)
-	p.Transparency = 0.6
-	p.CanQuery = false
+-- a cobweb: a pale triangle strung across where the wall meets the ceiling (cf: 1 stud out from the wall)
+P.cobweb = function(ctx, th, cf, rng)
+	local H = ctx.H or WALL_H
+	local s = rng and rng:NextNumber(3, 5.5) or 4.5
+	local p = K.wedge(ctx, "Cobweb", Vector3.new(0.05, s, s), cf * CFrame.new(rng and rng:NextNumber(-1, 1) or 0, H - s / 2 - 0.05, 1 - s / 2) * CFrame.Angles(0, 0, math.pi), Color3.fromRGB(226, 226, 226), Enum.Material.Fabric, ctx.Props)
+	p.Transparency = 0.62
+	p.CanCollide, p.CanQuery, p.CastShadow = false, false, false
 end
 P.candles = function(ctx, th, cf, rng)
 	for i = 1, 4 do
@@ -249,7 +252,7 @@ P.candles = function(ctx, th, cf, rng)
 		K.cyl(ctx, "Candle", 0.35, h, at * CFrame.new(0, h / 2, 0), Color3.fromRGB(236, 228, 200), Enum.Material.SmoothPlastic, ctx.Props).CanCollide = false
 		local f = K.ball(ctx, "Flame", 0.25, at * CFrame.new(0, h + 0.15, 0), Color3.fromRGB(255, 200, 110), Enum.Material.Neon, ctx.Props)
 		f.CanCollide = false
-		if i == 1 then local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 190, 110); l.Range = 9; l.Brightness = 1; l.Parent = f end
+		if i == 1 then local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = Color3.fromRGB(255, 190, 110); l.Range = 9; l.Brightness = 1; l.Parent = f end
 	end
 end
 P.pillar = function(ctx, th, cf)
@@ -279,7 +282,7 @@ P.brazier = function(ctx, th, cf)
 	K.cyl(ctx, "BrazierBowl", 2.6, 0.9, cf * CFrame.new(0, 3.2, 0), iron, Enum.Material.Metal, ctx.Props)
 	local coal = K.cyl(ctx, "Coals", 2.2, 0.3, cf * CFrame.new(0, 3.65, 0), th.accent, Enum.Material.Neon, ctx.Props)
 	coal.CanCollide = false
-	local l = Instance.new("PointLight"); l.Color = th.torch; l.Range = 20; l.Brightness = 1.6; l.Parent = coal
+	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = th.torch; l.Range = 20; l.Brightness = 1.6; l.Parent = coal
 	local fire = Instance.new("Fire"); fire.Size = 3.5; fire.Heat = 6; fire.Color = th.torch; fire.SecondaryColor = shade(th.torch, 0.6); fire.Parent = coal
 end
 P.mushroom = function(ctx, th, cf, rng)
@@ -412,6 +415,24 @@ P.chains = function(ctx, th, cf)
 		for i = 0, 6 do
 			box(ctx, "Link", Vector3.new(0.2, 0.9, 0.5), cf * CFrame.new(x, (ctx.H or WALL_H) - 1 - i * 0.85, 0) * CFrame.Angles(0, (i % 2) * math.pi / 2, 0), Color3.fromRGB(70, 70, 74), Enum.Material.Metal, false)
 		end
+	end
+end
+
+P.cage = function(ctx, th, cf, rng)
+	local iron = Color3.fromRGB(52, 50, 54)
+	local H = ctx.H or WALL_H
+	local hang = rng:NextNumber(3, 6)
+	local top = cf * CFrame.new(0, H - hang, 0)
+	K.cyl(ctx, "CageChain", 0.18, hang, cf * CFrame.new(0, H - hang / 2, 0), iron, Enum.Material.Metal, ctx.Props).CanCollide = false
+	K.cyl(ctx, "CageTop", 3.2, 0.3, top, iron, Enum.Material.Metal, ctx.Props).CanCollide = false
+	K.cyl(ctx, "CageFloor", 3.2, 0.3, top * CFrame.new(0, -4.2, 0), iron, Enum.Material.Metal, ctx.Props).CanCollide = false
+	for i = 0, 7 do
+		local a = i / 8 * math.pi * 2
+		box(ctx, "CageBar", Vector3.new(0.14, 4.2, 0.14), top * CFrame.new(math.cos(a) * 1.5, -2.1, math.sin(a) * 1.5), iron, Enum.Material.Metal, false).CanQuery = false
+	end
+	if rng:NextNumber() < 0.6 then
+		K.ball(ctx, "Skull", 0.8, top * CFrame.new(0.4, -3.7, 0.2), BONE, Enum.Material.SmoothPlastic, ctx.Props).CanCollide = false
+		box(ctx, "Bone", Vector3.new(0.25, 0.25, 1.6), top * CFrame.new(-0.3, -3.95, -0.2) * CFrame.Angles(0, 0.7, 0), BONE, Enum.Material.SmoothPlastic, false).CanQuery = false
 	end
 end
 
@@ -774,6 +795,123 @@ A.lair = function(ctx, th, r, c, rng, keep)
 	keep("hoard", CFrame.lookAt(c + Vector3.new(0, 0, r.d / 2 - 7), c))
 	for _, s in ipairs({-1, 1}) do P.goldpile(ctx, th, CFrame.new(c + Vector3.new(s * 8, 0, r.d / 2 - 6)), rng) end
 end
+-- THE GRIME (a raid's rooms: Deadvault): cracks across the flags, rubble fallen into the corners,
+-- cobwebs up the walls, damp streaks down them, a puddle, chains or a cage hanging out of the
+-- dark, someone's bones, now and then guttering candles (a pool of light), and dust drifting in
+-- the torchlight. Nothing of it is in the way (none of it collides).
+local function grime(ctx, th, r, c, rng)
+	local RH = r.h or WALL_H
+	local taken = {}
+	for _, k in ipairs(r.containers) do table.insert(taken, k.cf.Position) end
+	local function deco(name, size, cf, color, m)
+		local p = box(ctx, name, size, cf, color, m or Enum.Material.Slate, false)
+		p.CanQuery = false; p.CastShadow = false
+		return p
+	end
+	-- cracks
+	local crack = shade(th.floor, 0.42)
+	for _ = 1, rng:NextInteger(3, 6) do
+		local at = c + Vector3.new(rng:NextNumber(-r.w / 2 + 4, r.w / 2 - 4), 0.04, rng:NextNumber(-r.d / 2 + 4, r.d / 2 - 4))
+		local a = rng:NextNumber(0, math.pi * 2)
+		for _ = 1, rng:NextInteger(2, 3) do
+			local len = rng:NextNumber(1.4, 3.4)
+			local f = CFrame.new(at) * CFrame.Angles(0, a, 0)
+			deco("Crack", Vector3.new(0.16, 0.08, len), f * CFrame.new(0, 0, -len / 2), crack)
+			at = (f * CFrame.new(0, 0, -len)).Position
+			a += rng:NextNumber(-0.8, 0.8)
+		end
+	end
+	-- rubble in a corner or two
+	local corners = {{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}
+	for _ = 1, rng:NextInteger(1, 2) do
+		local k = table.remove(corners, rng:NextInteger(1, #corners))
+		local base = c + Vector3.new(k[1] * (r.w / 2 - 5), 0, k[2] * (r.d / 2 - 5))
+		if clearSpot(r, c, base, taken, 4.5) then
+			for _ = 1, rng:NextInteger(4, 6) do
+				local s = rng:NextNumber(0.6, 1.9)
+				deco("Rubble", Vector3.new(s, s * 0.7, s * rng:NextNumber(0.8, 1.3)),
+					CFrame.new(base + Vector3.new(rng:NextNumber(-2.2, 2.2), s * 0.3, rng:NextNumber(-2.2, 2.2))) * CFrame.Angles(rng:NextNumber(-0.5, 0.5), rng:NextNumber(0, 6.28), rng:NextNumber(-0.5, 0.5)),
+					shade(th.wall, rng:NextNumber(0.68, 0.95)), mat(th.wallMat)).CastShadow = true
+			end
+		end
+	end
+	-- cobwebs up the walls; damp streaks down them
+	for _ = 1, rng:NextInteger(1, 3) do
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local len = wallLen(r, d)
+		P.cobweb(ctx, th, wallFrame(r, c, d, 1, rng:NextNumber(-len / 2 + 4, len / 2 - 4)), rng)
+	end
+	local damp = shade(th.wall, 0.62)
+	for _ = 1, rng:NextInteger(2, 4) do
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local len = wallLen(r, d)
+		local u = rng:NextNumber(-len / 2 + 4, len / 2 - 4)
+		if not (r.doors[d] and math.abs(u) < DOOR_W / 2 + 2) then
+			-- a stain spreading down from a seep, and a thinner drip running on below it
+			local h = rng:NextNumber(RH * 0.2, RH * 0.45)
+			local w = rng:NextNumber(0.8, 1.8)
+			local f = wallFrame(r, c, d, 0.03, u)
+			local top = RH - rng:NextNumber(0, 3)
+			deco("Damp", Vector3.new(w, h, 0.06), f * CFrame.new(0, top - h / 2, 0), damp, mat(th.wallMat))
+			local drip = rng:NextNumber(2, RH * 0.3)
+			deco("Damp", Vector3.new(w * 0.35, drip, 0.07), f * CFrame.new(rng:NextNumber(-w * 0.25, w * 0.25), top - h - drip / 2 + 0.2, 0), shade(damp, 0.9), mat(th.wallMat))
+		end
+	end
+	-- a puddle
+	if rng:NextNumber() < 0.45 then
+		local p = floorSpot(r, c, rng, taken, 6)
+		if p then
+			local s = rng:NextNumber(3, 6)
+			local pd = K.cyl(ctx, "Puddle", s, 0.06, CFrame.new(p + Vector3.new(0, 0.05, 0)), Color3.fromRGB(28, 32, 36), Enum.Material.Glass, ctx.Props)
+			pd.Size = Vector3.new(0.06, s, s * rng:NextNumber(0.6, 0.9))
+			pd.CanCollide, pd.CanQuery, pd.Reflectance, pd.Transparency = false, false, 0.35, 0.15
+		end
+	end
+	-- chains, or a cage, hanging out of the dark
+	local roll = rng:NextNumber()
+	if roll < 0.25 then
+		local p = floorSpot(r, c, rng, taken, 7)
+		if p then P.cage(ctx, th, CFrame.new(p), rng) end
+	elseif roll < 0.5 then
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local len = wallLen(r, d)
+		P.chains(ctx, th, wallFrame(r, c, d, 0.8, rng:NextNumber(-len / 2 + 5, len / 2 - 5)))
+	end
+	-- someone's bones
+	if rng:NextNumber() < 0.4 then
+		local p = floorSpot(r, c, rng, taken, 5)
+		if p then P.bones(ctx, th, CFrame.new(p), rng) end
+	end
+	-- guttering candles by a wall (a pool of light)
+	if rng:NextNumber() < 0.35 then
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local len = wallLen(r, d)
+		local f = wallFrame(r, c, d, 2, rng:NextNumber(-len / 2 + 4, len / 2 - 4))
+		if clearSpot(r, c, f.Position, taken, 4) then P.candles(ctx, th, f, rng) end
+	end
+	-- dust in the torchlight
+	local dust = Instance.new("Part")
+	dust.Name = "Dust"
+	dust.Anchored, dust.CanCollide, dust.CanQuery, dust.CanTouch, dust.Transparency = true, false, false, false, 1
+	dust.Size = Vector3.new(r.w - 4, RH * 0.7, r.d - 4)
+	dust.CFrame = CFrame.new(c + Vector3.new(0, RH * 0.4, 0))
+	dust.Parent = ctx.Props or ctx.model
+	local pe = Instance.new("ParticleEmitter")
+	pe.Shape = Enum.ParticleEmitterShape.Box
+	pe.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	pe.Color = ColorSequence.new(Color3.fromRGB(230, 214, 190))
+	pe.LightInfluence = 1
+	pe.Brightness = 2
+	pe.Size = NumberSequence.new(0.09)
+	pe.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.35), NumberSequenceKeypoint.new(0.7, 0.35), NumberSequenceKeypoint.new(1, 1)})
+	pe.Lifetime = NumberRange.new(8, 12)
+	pe.Speed = NumberRange.new(0.15, 0.45)
+	pe.SpreadAngle = Vector2.new(180, 180)
+	pe.Acceleration = Vector3.new(0, -0.03, 0)
+	pe.Rate = math.clamp(r.w * r.d / 400, 3, 10)
+	pe.Parent = dust
+end
+
 -- THE WAY OUT (a raid's exit): stone steps climbing a wall to a door full of daylight
 local function escapeStairs(ctx, th, r, c, rng)
 	local qw = quietWall(r, rng) or "N"
@@ -1043,6 +1181,10 @@ function Dungeon.build(themeKey, opts)
 				end
 			end
 		end
+		if opts.raid and r.kind ~= "exit" then
+			local okG, errG = pcall(grime, ctx, th, r, c, rng)
+			if not okG then warn("[Dungeon] grime", errG) end
+		end
 		-- where monsters stand: spread about the room, away from its doors
 		local n = r.kind == "boss" and 10 or 8
 		for i = 1, n do
@@ -1113,8 +1255,19 @@ function Dungeon.build(themeKey, opts)
 	local fin = finalId and list[finalId] or s
 	K.camera(ctx, Vector3.new(s.cx + s.w * 0.35, 12, s.cz + s.d * 0.35), Vector3.new(s.cx, 3, s.cz))
 	K.camera(ctx, Vector3.new(fin.cx - fin.w * 0.4, 14, fin.cz - fin.d * 0.4), Vector3.new(fin.cx, 4, fin.cz))
-	K.lighting(ctx, th.light)
-	K.atmosphere(ctx, {Density = 0.32, Offset = 0, Color = th.light.FogColor, Decay = th.light.FogColor, Glare = 0, Haze = 1.5})
+	local light = th.light
+	if opts.raid then
+		light = table.clone(th.light)
+		light.Ambient = shade(th.light.Ambient, 0.62)
+		light.OutdoorAmbient = shade(th.light.OutdoorAmbient, 0.62)
+		light.Brightness = math.min(th.light.Brightness, 0.4)
+		light.FogEnd = math.min(th.light.FogEnd or 260, 210)
+		light.ExposureCompensation = -0.3
+		light.EnvironmentDiffuseScale = 0.2
+		light.EnvironmentSpecularScale = 0.35
+	end
+	K.lighting(ctx, light)
+	K.atmosphere(ctx, {Density = opts.raid and 0.4 or 0.32, Offset = 0, Color = th.light.FogColor, Decay = th.light.FogColor, Glare = 0, Haze = opts.raid and 2 or 1.5})
 	ctx.model:SetAttribute("Theme", themeKey)
 	ctx.model:SetAttribute("Generated", true)
 	local okF, errF = pcall(K.finish, ctx)

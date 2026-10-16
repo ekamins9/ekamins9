@@ -1779,6 +1779,13 @@ get out with what you found, or lose it all.
   under coloured glass, statues, pews), a CAVERN (rough rock, stalagmites, an old camp), a
   TREASURE VAULT, THE LAIR (the theme's lord and its hoard). Each theme has its own mix
   (`ARCH_W`). Pilasters and skirting on the walls, fewer torches: the dark is the point.
+- **Darker than the Depths, and lived-in** (`grime`, every raid room but the exits): cracks across
+  the flags, rubble fallen into the corners, cobwebs up the walls, damp streaks down them, a puddle,
+  chains or a hanging cage (`P.cage`), someone's bones, now and then guttering candles (a pool of
+  light), and dust drifting in the torchlight. None of it collides. The raid's light is the
+  theme's, dimmer (ambient ×0.62, brightness ≤ 0.4, a thicker haze): the torches are what you see
+  by, and they **flicker** (`TorchFlicker.client`: any PointLight named "Flicker" wavers about how
+  it was built; the dungeons' sconces, braziers and candles and the Gilded Rat's fires are named so).
 - **Its monsters** keep to their rooms (many rooms hold none), some **asleep**, pairs **on patrol**
   between rooms; they come when they **see or hear** you (`Combat ▸ Perception`: a run is loud, a
   fight louder, a crouch is quiet and half as visible), shout for those near, hunt where they
@@ -1829,6 +1836,9 @@ camps, a chapel with graves, ruins, each with a name and chests; forests and roc
   its slot and drops the old one. Whoever falls drops what they found.
 - **The ring of fire** closes in phases (`RING`: wait, shrink, tighter, hotter); outside it you burn
   (the Burning look). Bots head into the next ring when they're outside it (`botOpts`, BotFill's hook).
+- **Royal caches**: as each of the first three rings starts to close, a gilded chest comes down out
+  of the sky under a canopy inside the next ring (`Crownfall:cache`), a gold flare over it the whole
+  way and till it's opened: four things rolled with a king's luck (4.5). Worth fighting over.
 - No respawns; the last one standing wins (`stats.crownfallWins`).
 - HUD: how many are left, the ring's clock, the island map (its places, the ring, the next ring,
   you), the place you're in. Vote picture: MapShots ▸ Crownlands.
@@ -1857,6 +1867,11 @@ through walls, taking 60% of the damage, +150 health, unflinching, a little hard
 slower. A point a second as King, 5 for a kill as King; killing the King makes you the King (+10).
 A King who falls to a bot or the world drops the crown for anyone. First to 150, or the most at
 the end. HUD: Adventure.client (who's King, the leader, your points on your chip).
+- **Everyone against the King** (`Kingslayer:botOpts`, BotFill's hook): a bot within 110 studs of
+  the King goes for them (anyone else only when they're in its way); the crown on the ground draws
+  the bots to it, so taking it back means a fight.
+- **A long reign burns brighter**: every 30 seconds of one the King's glow deepens and the field
+  is told (THE KING HAS REIGNED 1:00 · BRING THEM DOWN).
 
 ### Plague Night (`Game ▸ Modes ▸ Plague`)
 Two sides, at night: THE LIVING (A) and THE PLAGUE (B). Patient zero turns after a few seconds (one
@@ -1866,6 +1881,20 @@ clawed (`Monsters.decorate`), a cleaver, Bloodlust, more health, a quicker step,
 (the Troll Heart relic). With few players, villager bots stand with the living, and rise as
 ghouls when they fall. Dawn with anyone living: the living win; nobody left: the plague takes the
 town. A ghoul sees the living near it outlined through walls.
+- **Out of the ground, all round you** (`Plague:darkSpot`): the dead never come from one place.
+  Each one claws up (a breath of grave-mist, broken earth: `emerge`) on open ground 45–80 studs
+  from someone living (nearer none than 38), at their level (not a roof), inside the town (the
+  map's spawns and zones and a margin), never inside anything. A turned player rises **where they
+  fell**; the plague's others come up out of the dark the same way.
+- **The dead surge** every 70 seconds: several at once (more with more players, more as the night
+  deepens), from all sides, with a banner.
+- **Worse things as the night deepens** (`pickKind`, Catalog ▸ Bestiary): Plague Runners from the
+  first (quick, frail), Bloaters after a fifth of the night (slow, fat; they burst in a green blast
+  when they fall: stand clear), Plague Brutes after two fifths (huge, mending, enraged; a few at once).
+- **The living carry a lantern's glow**; the last of them **stands alone** (mended, +50 health,
+  quicker, and everyone's told).
+- **Toward dawn**: the clock is the night. The sky pales, the mist thins, the fog lifts (the map's
+  Atmosphere too: it's thickened to a night mist at the start and put back at the end).
 
 ### Monsters (`Combat ▸ Monsters`, `Catalog ▸ Bestiary`)
 Every monster is a combat bot (it blocks, parries, feints like anyone), dressed and **built into its

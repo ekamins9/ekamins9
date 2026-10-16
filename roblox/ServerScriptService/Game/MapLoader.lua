@@ -83,7 +83,7 @@ local atmoBefore = nil
 local function applyLighting(m)
 	if not lightingBefore then
 		lightingBefore = {}
-		for _, k in ipairs({"ClockTime", "FogEnd", "FogStart", "FogColor", "Ambient", "OutdoorAmbient", "Brightness", "ColorShift_Top", "ColorShift_Bottom", "ExposureCompensation"}) do lightingBefore[k] = Lighting[k] end
+		for _, k in ipairs({"ClockTime", "FogEnd", "FogStart", "FogColor", "Ambient", "OutdoorAmbient", "Brightness", "ColorShift_Top", "ColorShift_Bottom", "ExposureCompensation", "EnvironmentDiffuseScale", "EnvironmentSpecularScale"}) do lightingBefore[k] = Lighting[k] end
 	end
 	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
 	if atmo and not atmoBefore then

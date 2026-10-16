@@ -21,6 +21,7 @@
                       summon (calls up its kind) · frostbite (its hits chill) · burning (its hits
                       burn) · thief (Horde: steals gold) · drummer (Horde: hastens its side) ·
                       regen (mends itself)
+       burst          the colour of an explode's blast (default: embers; a Bloater's is grave-green)
        power          a power it uses (Catalog ▸ Powers)
        moves          its big moves (Combat ▸ BossMoves: telegraphed slams, charges, leaps,
                       shockwaves, eruptions, rains, beams, blinks, barrages), moveFx their look ·
@@ -318,5 +319,14 @@ add("OrcWarchief", {name = "Gorzak the Warchief", faction = "Orc", skill = "Cham
 --------------------------------------------------------------------
 add("PlagueGhoul", {name = "Ghoul", faction = "Undead", skill = "Knight", weapon = "Cleaver", hp = 150, speed = 1.1, weight = "Light",
 	look = {body = "ghoul", skin = C(118, 140, 104), eyes = C(170, 255, 90), armor = "none", aura = "toxic"}, traits = {"regen"}, tier = 2})
+-- what else comes up out of the ground on Plague Night (Game ▸ Modes ▸ Plague picks them as the night deepens)
+add("PlagueRunner", {name = "Plague Runner", faction = "Undead", skill = "Squire", weapon = {"Dagger", "Cleaver"}, hp = 75, speed = 1.32, weight = "Light",
+	look = {body = "ghoul", skin = C(134, 152, 112), eyes = C(200, 255, 110), armor = "none", extras = {"claws", "rags"}, aura = "toxic"}, traits = {"regen"}, tier = 1})
+add("PlagueBloater", {name = "Bloater", faction = "Undead", skill = "Squire", weapon = "Cleaver", hp = 190, scale = 1.3, speed = 0.82, weight = "Heavy",
+	look = {body = "ghoul", skin = C(146, 156, 98), eyes = C(220, 255, 80), armor = "none", extras = {"belly", "rags"}, aura = "toxic"},
+	traits = {"explode"}, burst = C(150, 230, 80), tier = 2})
+add("PlagueBrute", {name = "Plague Brute", faction = "Undead", skill = "Knight", weapon = {"Maul", "BattleAxe"}, hp = 330, scale = 1.55, speed = 0.9, weight = "Heavy",
+	look = {body = "ghoul", skin = C(98, 122, 90), eyes = C(170, 255, 90), armor = "none", extras = {"claws", "ribs", "spikes", "rags"}, aura = "toxic"},
+	traits = {"regen", "enrage"}, tier = 3})
 
 return M

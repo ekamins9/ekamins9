@@ -33,7 +33,7 @@ local FLAME = Color3.fromRGB(255, 170, 90)
 local function flame(ctx, at, size, range, bright, color)
 	local f = K.ball(ctx, "Flame", size or 0.4, at, color or Color3.fromRGB(255, 200, 110), Enum.Material.Neon, ctx.Props)
 	f.CanCollide = false
-	local l = Instance.new("PointLight"); l.Color = color or FLAME; l.Range = range or 12; l.Brightness = bright or 1.3; l.Shadows = true; l.Parent = f
+	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = color or FLAME; l.Range = range or 12; l.Brightness = bright or 1.3; l.Shadows = true; l.Parent = f
 	local fire = Instance.new("Fire"); fire.Size = (size or 0.4) * 2; fire.Heat = 4; fire.Color = color or FLAME; fire.SecondaryColor = Color3.fromRGB(255, 90, 30); fire.Parent = f
 	return f
 end
@@ -53,7 +53,7 @@ local function chandelier(ctx, at)
 		local f = K.ball(ctx, "Flame", 0.25, p + V3(0, 0.95, 0), Color3.fromRGB(255, 200, 110), Enum.Material.Neon, ctx.Props)
 		f.CanCollide = false
 	end
-	local l = Instance.new("PointLight"); l.Color = FLAME; l.Range = 30; l.Brightness = 1.4; l.Shadows = true; l.Parent = ring
+	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = FLAME; l.Range = 30; l.Brightness = 1.4; l.Shadows = true; l.Parent = ring
 end
 local function table_(ctx, cf, len)
 	K.box(ctx, "Table", V3(5, 0.6, len), cf * CFrame.new(0, 3, 0), WOOD, Enum.Material.WoodPlanks, ctx.Props)
@@ -123,7 +123,7 @@ function TavernMap.build()
 	for i = -1, 1 do K.box(ctx, "Log", V3(0.8, 0.8, 4), CFrame.new(hx - 2.6, 0.6, i * 1.4) * CFrame.Angles(0, 0.3 * i, 0), Color3.fromRGB(70, 44, 28), Enum.Material.Wood, ctx.Props) end
 	local coals = K.box(ctx, "Coals", V3(2.4, 0.4, 5), CFrame.new(hx - 2.4, 0.3, 0), Color3.fromRGB(200, 70, 20), Enum.Material.Neon, ctx.Props)
 	coals.CanCollide = false
-	local hl = Instance.new("PointLight"); hl.Color = Color3.fromRGB(255, 120, 50); hl.Range = 40; hl.Brightness = 2; hl.Shadows = true; hl.Parent = coals
+	local hl = Instance.new("PointLight"); hl.Name = "Flicker"; hl.Color = Color3.fromRGB(255, 120, 50); hl.Range = 40; hl.Brightness = 2; hl.Shadows = true; hl.Parent = coals
 	local hf = Instance.new("Fire"); hf.Size = 9; hf.Heat = 10; hf.Color = Color3.fromRGB(255, 140, 50); hf.SecondaryColor = Color3.fromRGB(255, 60, 20); hf.Parent = coals
 	for _, z in ipairs({-6, 6}) do candle(ctx, V3(hx - 1.6, 9.6, z), 1.2) end
 	K.banner(ctx, V3(hx - 2.2, 11, -14), 10, Color3.fromRGB(120, 30, 30))
@@ -152,7 +152,7 @@ function TavernMap.build()
 	K.box(ctx, "Forge", V3(8, 4, 6), CFrame.new(sx - 4, 2, sz - 4), STONE2, Enum.Material.Cobblestone)
 	local fc = K.box(ctx, "ForgeCoals", V3(5, 0.4, 3.6), CFrame.new(sx - 4, 4.2, sz - 4), Color3.fromRGB(230, 90, 20), Enum.Material.Neon, ctx.Props)
 	fc.CanCollide = false
-	local fl = Instance.new("PointLight"); fl.Color = Color3.fromRGB(255, 120, 40); fl.Range = 26; fl.Brightness = 2.2; fl.Shadows = true; fl.Parent = fc
+	local fl = Instance.new("PointLight"); fl.Name = "Flicker"; fl.Color = Color3.fromRGB(255, 120, 40); fl.Range = 26; fl.Brightness = 2.2; fl.Shadows = true; fl.Parent = fc
 	local ff = Instance.new("Fire"); ff.Size = 4; ff.Heat = 8; ff.Parent = fc
 	K.box(ctx, "ForgeHood", V3(9, 2, 7), CFrame.new(sx - 4, 11, sz - 4), STONE2, Enum.Material.Slate)
 	K.box(ctx, "ForgeFlue", V3(3, H - 12, 3), CFrame.new(sx - 4, 12 + (H - 12) / 2, sz - 4), STONE2, Enum.Material.Slate)
