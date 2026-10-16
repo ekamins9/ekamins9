@@ -50,11 +50,15 @@ GameConfig.DOORS = {
 	-- matchmade: a public server for that mode (HubServer)
 	Depths    = {name = "The Depths", mode = "Depths",  access = "Friends", maxPlayers = 4, party = true, page = 2,
 		blurb = "A dungeon built fresh every run. Three floors, chests, relics, a boss at the bottom."},
+	Kingslayer = {name = "Kingslayer", mode = "Kingslayer", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
+		blurb = "Take the crown. Kill the king to be the king. Hold it to win."},
+	Plague    = {name = "Plague Night", mode = "Plague", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
+		blurb = "Survive until dawn. The fallen rise as ghouls and hunt the living."},
 	Invasion  = {name = "Invasions", mode = "InvGoblin", modes = {"InvGoblin", "InvElf", "InvUndead", "InvOrc"}, access = "Friends", maxPlayers = 6, party = true, page = 2,
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
-GameConfig.ADVENTURE_ORDER = {"Depths", "Invasion"}
+GameConfig.ADVENTURE_ORDER = {"Depths", "Invasion", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -128,6 +132,20 @@ GameConfig.MODES = {
 		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
 		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,
+	},
+	-- KINGSLAYER (Game ▸ Modes ▸ Kingslayer): everyone against the King
+	Kingslayer = {
+		name = "Kingslayer", category = "Adventure", teams = 0, maxPlayers = 16, minPlayers = 1,
+		description = "Take the crown and you're the King: tough, gold, and everyone's target. Kill the King to take it. A point a second while you hold it; first to 150.",
+		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum", "Moonring", "Dustbowl", "Cinderfall", "Duneshrine", "HollowGrove", "Harvestvale", "Abbeyfield", "Pinewatch"},
+		roundLength = 6 * 60, intermission = 15, respawnDelay = 4, hidden = true, botFill = 6, fillAnywhere = true, pointsToWin = 150,
+	},
+	-- PLAGUE NIGHT (Game ▸ Modes ▸ Plague): the living against the plague, till dawn
+	Plague = {
+		name = "Plague Night", category = "Adventure", teams = 2, maxPlayers = 16, minPlayers = 1,
+		description = "Night. The fallen rise as ghouls and hunt the living; more come out of the dark as the night deepens. Survive until dawn.",
+		maps = {"Millfield", "Harvestvale", "Abbeyfield", "Blackwater", "Marshfen", "Mistbridge", "HollowGrove", "Pinewatch", "Frosthollow", "Redgorge"},
+		roundLength = 5 * 60, intermission = 15, respawnDelay = 3, hidden = true,
 	},
 	-- THE INVASIONS (Game ▸ Modes ▸ Invasion, on the Horde's rules): an army, what you defend
 	InvGoblin = {

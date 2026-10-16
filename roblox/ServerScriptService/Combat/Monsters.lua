@@ -942,6 +942,17 @@ function Monsters.display(id)
 	model:SetAttribute("MonsterScale", def.scale or 1)
 	return model
 end
+-- a monster's look on someone else's body (Plague Night: a player turned ghoul): its skin,
+-- its bits, its aura (none of its clothes or its weapon)
+function Monsters.decorate(model, id)
+	local def = BEST[id]
+	if not (def and model) then return false end
+	local old = model:FindFirstChild("MonsterLook")
+	if old then old:Destroy() end
+	local ok, err = pcall(build, model, def)
+	if not ok then warn("[Monsters] decorate", id, err) end
+	return ok
+end
 -- the menu's copies (ReplicatedStorage ▸ MonsterDisplays ▸ <id>)
 function Monsters.publishDisplays(ids)
 	local f = ReplicatedStorage:FindFirstChild("MonsterDisplays") or Instance.new("Folder")

@@ -1,4 +1,35 @@
-# Updated scripts: Invasions — four themed hordes (goblins after your gold, the elven host, the dead at night, an orc warband)
+# Updated scripts: Kingslayer (kill the king to be the king) and Plague Night (the fallen rise as ghouls)
+
+- **KINGSLAYER** (PLAY ▸ ADVENTURES):
+  - The crown appears in the middle of the field. Take it and you're the King: crowned, glowing gold through walls, much tougher, hunted by everyone.
+  - Kill the King to take the crown. A point a second while you hold it; first to 150.
+  - Bots fill it.
+- **PLAGUE NIGHT**:
+  - Night falls. Patient zero turns, ghouls come out of the dark.
+  - Anyone who falls rises as a ghoul (green, clawed, a cleaver and Bloodlust, quick, mending) and hunts the rest.
+  - Survive until dawn. Villager bots stand with the living when players are few, and turn too.
+  - A ghoul sees the living near it through walls.
+- Bot fill can now serve an adventure (`fillAnywhere`); the adventure HUD's chip shows a mode's own line (your points, your side).
+- **Checked in Play**:
+  - Kingslayer: the crown drops, crowning, points, the bots;
+  - Plague Night: patient zero, the dark's ghouls, a fallen player rising as a ghoul with the ghoul's kit, the counts, the night.
+- **Not checked yet**:
+  - with real players on both sides;
+  - the crown passing on a kill by hand;
+  - dawn.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Modes/Kingslayer.lua](ServerScriptService/Game/Modes/Kingslayer.lua), [Modes/Plague.lua](ServerScriptService/Game/Modes/Plague.lua) (new) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the two modes |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | `fillAnywhere` |
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | `decorate` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the modes and their doors |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the chip; a ghoul's sight |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Invasions — four themed hordes (goblins after your gold, the elven host, the dead at night, an orc warband)
 
 - **INVASIONS** on PLAY's second page (pick the army):
   - **Goblin Raid**: defend THE HOARD. Thieves grab a sack of gold and run for their gate (a glowing sack on their backs). Kill one and the gold comes back; let it escape and it's gone. Bombers lob fire-pots.

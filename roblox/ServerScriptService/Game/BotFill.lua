@@ -106,8 +106,9 @@ end
 -- is this server one that gets bots?
 local function wanted(def)
 	local sv = Game.server
-	if sv.ranked or sv.door ~= "Warfront" then return nil end
 	def = def or (Game.current and Game.current.def)
+	-- (Warfront's; and an adventure that asks for them: Kingslayer, Crownfall)
+	if sv.ranked or (sv.door ~= "Warfront" and not (def and def.fillAnywhere)) then return nil end
 	if rosterOf() then local n = rosterTotal(rosterOf()); return n > 0 and n or nil end
 	if sv.custom then
 		local s = sv.settings

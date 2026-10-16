@@ -648,6 +648,30 @@ RunService.RenderStepped:Connect(function(dt)
 	if own then
 		runLabel.Text = round:GetAttribute("ObjLabel") or ""
 		runNote.Text = round:GetAttribute("ObjNote") or ""
+		-- the chip: a mode's word for you (your crown points, your side), else the run's gold
+		local chip = player:GetAttribute("AdvChip")
+		if chip then goldText.Text = chip; goldChip.Size = UDim2.fromOffset(170, 36)
+		else goldChip.Size = UDim2.fromOffset(122, 36); goldText.Text = "💰 " .. tostring(runData and runData.gold or 0) end
+	end
+	-- a ghoul (Plague Night) sees the living near it through walls
+	local me = player.Character
+	local ghoul = me and me:GetAttribute("Ghoul") == true and round:GetAttribute("Mode") == "Plague"
+	local myRoot = me and me:FindFirstChild("HumanoidRootPart")
+	for _, p in ipairs(Players:GetPlayers()) do
+		local c = p.Character
+		local r = c and c:FindFirstChild("HumanoidRootPart")
+		local hl = c and c:FindFirstChild("ScentOfTheLiving")
+		local want = ghoul and p ~= player and c and not c:GetAttribute("Ghoul") and r and myRoot and (r.Position - myRoot.Position).Magnitude < 70
+		if want and not hl then
+			hl = Instance.new("Highlight")
+			hl.Name = "ScentOfTheLiving"
+			hl.FillTransparency, hl.OutlineTransparency = 1, 0.1
+			hl.OutlineColor = Color3.fromRGB(255, 70, 60)
+			hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			hl.Parent = c
+		elseif hl and not want then
+			hl:Destroy()
+		end
 	end
 	-- the map: where you are, your party
 	if layout and mapPanel.Visible then

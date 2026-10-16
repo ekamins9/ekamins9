@@ -1730,6 +1730,23 @@ new kinds) and a lord every fifth wave with its big moves:
 Pay and stats as the Horde; your best wave per army is `stats.invasionBest_<army>`. The Horde
 gained hooks for this (`roster`, `aliveCount`, `removeLive`, a forced `objective`).
 
+### Kingslayer (`Game ▸ Modes ▸ Kingslayer`)
+A free-for-all with bots (`fillAnywhere`: BotFill fills it like the Warfront). A few seconds in, the
+crown appears on open ground in the middle: whoever takes it is the King, crowned and glowing gold
+through walls, taking 60% of the damage, +150 health, unflinching, a little harder hitting and
+slower. A point a second as King, 5 for a kill as King; killing the King makes you the King (+10).
+A King who falls to a bot or the world drops the crown for anyone. First to 150, or the most at
+the end. HUD: Adventure.client (who's King, the leader, your points on your chip).
+
+### Plague Night (`Game ▸ Modes ▸ Plague`)
+Two sides, at night: THE LIVING (A) and THE PLAGUE (B). Patient zero turns after a few seconds (one
+in six players; with fewer than four, only the dark's ghouls), and ghouls (PlagueGhoul) come out
+of the dark, more as the night deepens. Anyone of the living who falls rises as a ghoul: green and
+clawed (`Monsters.decorate`), a cleaver, Bloodlust, more health, a quicker step, the dead's mending
+(the Troll Heart relic). With few players, villager bots stand with the living, and rise as
+ghouls when they fall. Dawn with anyone living: the living win; nobody left: the plague takes the
+town. A ghoul sees the living near it outlined through walls.
+
 ### Monsters (`Combat ▸ Monsters`, `Catalog ▸ Bestiary`)
 Every monster is a combat bot (it blocks, parries, feints like anyone), dressed and **built into its
 shape** with welded parts: skeletons (the limbs hidden, bones in their place), wraiths (a robe
