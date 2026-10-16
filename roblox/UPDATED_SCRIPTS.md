@@ -1,4 +1,19 @@
-# Updated scripts: any two weapons; no more monsters stuck outside a Depths room
+# Updated scripts: a shield slings onto your back for a two-hander
+
+- **Shields and two-handers**: picking up (or switching to) a weapon that can't go beside a shield used to leave the shield on your arm, half working and fighting the two-hander's animations.
+  - Now a two-hander, a polearm, a bow or a staff in your hand slings the shield onto your back, face out, all of its effects off.
+  - A one-hander back in your hand puts it back on your arm, block and all.
+- **Checked in Play**: a Buckler with an Arming Sword (on the arm), a Zweihander equipped (on the back, the shield's block off), back to the Arming Sword (on the arm again).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | `sling`, watching what's in your hand |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | leaves a slung shield's weld alone |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: any two weapons; no more monsters stuck outside a Depths room
 
 - **Weapons**: you can carry any two, a primary or a sidearm alike.
   - Picking one up (off the floor, or as loot in The Depths, Crownfall and Deadvault) with a free slot puts it there.

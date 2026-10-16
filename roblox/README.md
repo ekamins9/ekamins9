@@ -636,6 +636,10 @@ Each widens the guard (ShieldCone), cheapens blocks (ShieldBlock), changes the p
 (ShieldParry), stops arrows, bolts and thrown things from the front (ShieldArrows:
 RangedServer, MagicServer, Throwing ask `Shields.stops`), makes the kick a bash (ShieldBash /
 ShieldStun), and the big ones slow you (SpeedMult_Shield). Not for the Archer or the Mage.
+**A two-hander in hand slings it onto your back** (`Shields.sling`: a Zweihander picked up off
+the floor, a looted polearm, a bow): it hangs there face out and does nothing (no shield block,
+cone, bash or arrows: ShieldSlung) until a one-handed weapon is back in your hand, when it's back on
+the arm.
 
 **Throwables** (`Catalog ▸ Arsenal` throwables; `Combat ▸ Throwing`): Throwing Knives (free),
 Throwing Axe, War Darts, Javelin (pierces armour), Firebomb, Frost Flask, Smoke Bomb,

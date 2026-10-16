@@ -766,7 +766,8 @@ local function drawOn(c, isMe)
 	-- a shield up while they block
 	local sm = c:FindFirstChild("ShieldModel")
 	local grip = sm and sm.PrimaryPart and sm.PrimaryPart:FindFirstChild("ShieldGrip")
-	if grip then
+	-- (slung on the back while a two-hander's in hand: Combat ▸ Shields, its weld is the server's)
+	if grip and not c:GetAttribute("ShieldSlung") then
 		local idle, block = grip:GetAttribute("IdleC0"), grip:GetAttribute("BlockC0")
 		if typeof(idle) == "CFrame" and typeof(block) == "CFrame" then
 			local want = c:GetAttribute("Blocking") and 1 or 0
