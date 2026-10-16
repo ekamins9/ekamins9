@@ -50,6 +50,8 @@ GameConfig.DOORS = {
 	-- matchmade: a public server for that mode (HubServer)
 	Depths    = {name = "The Depths", mode = "Depths",  access = "Friends", maxPlayers = 4, party = true, page = 2,
 		blurb = "A dungeon built fresh every run. Three floors, chests, relics, a boss at the bottom."},
+	Deadvault = {name = "Deadvault", mode = "Deadvault", access = "Public", maxPlayers = 12, matchmade = true, page = 2,
+		blurb = "Raid a dungeon with what you dare to bring. Loot it, extract, keep it. Die, and lose it all."},
 	Crownfall = {name = "Crownfall", mode = "Crownfall", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
 		blurb = "A battle royale on an island built fresh every match. Drop in, loot, outlast the ring."},
 	Kingslayer = {name = "Kingslayer", mode = "Kingslayer", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
@@ -60,7 +62,7 @@ GameConfig.DOORS = {
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
-GameConfig.ADVENTURE_ORDER = {"Depths", "Crownfall", "Invasion", "Kingslayer", "Plague"}
+GameConfig.ADVENTURE_ORDER = {"Depths", "Deadvault", "Crownfall", "Invasion", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -134,6 +136,13 @@ GameConfig.MODES = {
 		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
 		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,
+	},
+	-- DEADVAULT (Game ▸ Modes ▸ Deadvault, Game ▸ Vault): an extraction raid, after Dark and Darker
+	Deadvault = {
+		name = "Deadvault", category = "Adventure", teams = 0, maxPlayers = 12, minPlayers = 1,
+		description = "Go in with the kit you dare to risk. Loot the dungeon's chests and guards, watch for other raiders, and get out through a blue portal with it all. Fall, or stay too long, and it's gone.",
+		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
+		roundLength = 12 * 60, intermission = 15, respawnDelay = 3, hidden = true,
 	},
 	-- CROWNFALL (Game ▸ Modes ▸ Crownfall): a battle royale on an island built fresh (Game ▸ Realm)
 	Crownfall = {

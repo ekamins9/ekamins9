@@ -2011,6 +2011,8 @@ goDoor = function(doorId, opts)
 	toast((GameConfig.DOORS[doorId] and GameConfig.DOORS[doorId].name or doorId) .. ":  " .. (r.msg or ""), r.ok and COL.GOOD or COL.BAD)
 	return r.ok
 end
+-- (the vault screen's ENTER THE RAID: StarterPlayerScripts ▸ VaultMenu)
+_G.HubGoDoor = function(doorId, opts) return goDoor(doorId, opts) end
 local function enterCourtyard()
 	loadoutEvent:FireServer("Spawn", state.activeClass)
 end
@@ -4091,6 +4093,12 @@ do
 			tag = a.tag, tagColor = COL.GOLD, ambient = a.ambient, light = a.light, parent = HX.modesPage2,
 			onClick = function()
 				if not GameConfig.DOORS[a.door] then toast("Coming soon", COL.BAD); return end
+				if a.key == "Deadvault" then
+					modal("DEADVAULT", "Go in with the kit you dare to risk. Loot it, extract through a blue portal, keep it. Fall, and it's all gone.",
+						{{"ENTER THE RAID", COL.GREEN, function() closeModal(); goDoor("Deadvault") end},
+						 {"YOUR VAULT  ·  KIT, STASH, MERCHANT", COL.BLUE, function() closeModal(); if _G.OpenVault then _G.OpenVault() end end}})
+					return
+				end
 				if a.key == "Invasion" then
 					local buttons = {}
 					for _, inv in ipairs(INVASIONS) do

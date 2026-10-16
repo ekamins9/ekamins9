@@ -1713,6 +1713,24 @@ Three floors; floor 3 ends in the theme's boss.
   boss bar (any Boss near you, the Horde's Warlord too), banners and the fade going down. Objectives
   steps aside for an OwnHud mode.
 
+### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `VaultMenu.client`)
+An extraction raid after Dark and Darker, for up to 12 raiders. A big dungeon built fresh (16 rooms
+in the vote's theme), its rooms **guarded** by the theme's monsters (they stay by their room: past
+LEASH they let you go), chests of the raids' loot (CHESTS.vault), gold from every kill, and the
+other raiders.
+- **Your vault** (Profile ▸ vault, kept): a stash (30), a **kit** (a weapon, a sidearm, armour, 3
+  relics, 3 potions) and vault gold. The vault screen (PLAY ▸ ADVENTURES ▸ DEADVAULT ▸ YOUR VAULT):
+  equip, take off, sell to the merchant (Loot VALUE by rarity), buy potions, plain armour, a plain
+  or fine weapon for your class. The server decides (Hub ▸ VaultServer, VaultRemote).
+- **In**: your kit leaves the vault with you (no kit: your class's plain weapon). Raiders come in at
+  havens far apart (no guards). **One life.** Finds go on (a better weapon, armour, up to 3 relics,
+  a tome) or into the bag (12); a potion in the bag is drunk by clicking it on the relic bar.
+- **Out**: after 4 minutes the exit rooms' blue portals open: hold your pickup key 3 s to EXTRACT.
+  Everything you carry and your gold go into the vault (no room: sold), and you're out
+  (`vault_extract` pays a little Marks, once a raid, under the daily cap; stats.vaultOut).
+- **Fall**, and it all spills where you fell. Still inside when it collapses (the round's 12
+  minutes): lost. Everyone out or down ends it early.
+
 ### Crownfall (`Game ▸ Modes ▸ Crownfall`, `Game ▸ Realm`)
 A battle royale for up to 16, bots filling the rest (`fillAnywhere`). **The island is built fresh
 every match** (`Realm.build`): terrain (grass on a beach in a sea, round hills, dirt roads to the

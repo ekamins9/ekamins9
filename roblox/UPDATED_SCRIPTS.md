@@ -1,4 +1,34 @@
-# Updated scripts: Crownfall — a battle royale on an island built fresh every match
+# Updated scripts: Deadvault — an extraction raid with a vault you keep (after Dark and Darker)
+
+- **DEADVAULT** (PLAY ▸ ADVENTURES): a 16-room dungeon built fresh each raid, guarded room by room, full of chests and gold, shared with other raiders.
+  - Go in with the **kit** you choose to risk from **your vault** (or your class's plain weapon).
+  - One life. Loot goes on you or into your bag (12); drink a potion by clicking it.
+  - After 4 minutes the **blue portals** open: extract and everything you carry goes into your vault.
+  - Fall, and it all lies where you fell. Stay until it collapses (12 minutes), and it's gone.
+- **The vault screen** (DEADVAULT ▸ YOUR VAULT): your kit, your stash (30), equip / take off / sell, and the merchant (potions, armour, plain or fine weapons) for vault gold.
+- Pay: a little Marks for getting out (once a raid, capped); monster kills by rank. Vault gold is the raids' own coin.
+- **Checked in Play**:
+  - the vault (banking, equipping, the screen);
+  - a raid: the kit taken in, the guards, a find, the portals opening, an extraction banking it all, the raid ending when nobody's left inside.
+- **Not checked yet**:
+  - two raiders meeting;
+  - a death's spill by hand;
+  - the merchant's buttons by hand;
+  - the collapse at 12 minutes.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Vault.lua](ServerScriptService/Game/Vault.lua), [Modes/Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) (new) | ServerScriptService ▸ Game | ModuleScript | the vault; the raid |
+| [VaultServer.server.lua](ServerScriptService/Hub/VaultServer.server.lua) (new) | ServerScriptService ▸ Hub | Script | the vault screen's remote |
+| [VaultMenu.client.lua](StarterPlayerScripts/VaultMenu.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the vault screen |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Deadvault tile; potions from the bag |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | `vault` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua), [Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage | ModuleScript | the mode and door; `vault_extract` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Crownfall — a battle royale on an island built fresh every match
 
 - **CROWNFALL** (PLAY ▸ ADVENTURES):
   - Every match a new island: grass, hills, a beach and the sea; the Crown Keep in the middle; villages, a mill, watchtowers, camps, a chapel, ruins, each with its name and chests; forests between.

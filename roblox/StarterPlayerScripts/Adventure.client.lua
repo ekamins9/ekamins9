@@ -168,6 +168,8 @@ local function drawRun()
 		b.MouseEnter:Connect(function() showTip(true, r.name, r.text or "", col, UserInputService:GetMouseLocation()) end)
 		b.MouseLeave:Connect(function() showTip(false) end)
 		b.Activated:Connect(function()
+			-- (a potion in a raider's bag: drink it)
+			if r.use and r.uid and event then event:FireServer("Use", r.uid); return end
 			showTip(true, r.name, r.text or "", col, Vector2.new(b.AbsolutePosition.X, b.AbsolutePosition.Y + 30))
 			task.delay(2.5, function() showTip(false) end)
 		end)

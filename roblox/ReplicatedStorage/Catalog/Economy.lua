@@ -39,6 +39,7 @@ return {
 		depths_room  = {marks = 4,  xp = 12},    -- The Depths: a room the party cleared (everyone)
 		depths_floor = {marks = 40, xp = 80},    -- …a floor gone down (or the last one won)
 		depths_boss  = {marks = 120, xp = 220},  -- …the boss at the bottom
+		vault_extract = {marks = 30, xp = 80},   -- Deadvault: out alive (once a raid)
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
 	daily = {full = 2500, rest = 0.4},
