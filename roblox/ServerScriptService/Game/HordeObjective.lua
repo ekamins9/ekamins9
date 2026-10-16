@@ -4,9 +4,13 @@
      wins over the mode's `objectives` list), else on the clearest open ground near the
      middle of the map (the centre of its Horde gates).
 
-       HordeObjective.build(kind, map, maxHp) -> obj
+       HordeObjective.build(kind, map, maxHp[, force]) -> obj
            kind  "Campfire" (a camp: the fire, benches, bedrolls, a tent) | "Caravan" (a
-                 covered wagon and its cargo) | "Villagers" (four villagers round a well)
+                 covered wagon and its cargo) | "Villagers" (four villagers round a well) |
+                 "Hoard" (a heap of gold, chests and a golden idol: the Goblin Raid) |
+                 "Flame" (a wayside chapel's holy flame: Undead Night) | "Camp" (a logging
+                 camp: log stacks, a saw-pit, a hut: the Elven Host)
+           force: the kind wins over the map's own spot
        obj.pos, obj.radius (how far out the horde stands to strike it), obj.name ("THE CAMPFIRE")
        obj.hp, obj.max, obj.lastHitAt (os.clock)
        obj:hit(n, from)     a blow (from = where it came from: sparks there, a thump)
@@ -33,8 +37,8 @@ local function kit()
 	return K
 end
 
-local NAMES = {Campfire = "THE CAMPFIRE", Caravan = "THE CARAVAN", Villagers = "THE VILLAGERS"}
-local RADIUS = {Campfire = 3.6, Caravan = 6.4, Villagers = 5.2}
+local NAMES = {Campfire = "THE CAMPFIRE", Caravan = "THE CARAVAN", Villagers = "THE VILLAGERS", Hoard = "THE HOARD", Flame = "THE HOLY FLAME", Camp = "THE LOGGING CAMP"}
+local RADIUS = {Campfire = 3.6, Caravan = 6.4, Villagers = 5.2, Hoard = 5.2, Flame = 4.6, Camp = 6.6}
 local V3 = Vector3.new
 local DEG = math.rad
 
@@ -247,13 +251,79 @@ local function villagers(self, ctx, pos)
 	end
 end
 
+-- THE HOARD: heaps of coin, open chests, a golden idol; it shrinks as it's carried off
+local function hoard(self, ctx, pos)
+	local Kt = kit()
+	local gold = Color3.fromRGB(240, 196, 70)
+	self.coins = {}
+	for i = 1, 16 do
+		local a = i * 2.4
+		local d = (i % 4) * 1.1
+		local s = 1.4 + (i % 3) * 0.6
+		local b = Kt.ball(ctx, "Coins", s, pos + V3(math.cos(a) * d, s * 0.18, math.sin(a) * d), gold, Enum.Material.Metal, ctx.Props)
+		b.Size = V3(s * 1.4, s * 0.55, s * 1.4)
+		table.insert(self.coins, {part = b, size = b.Size})
+	end
+	for _, a in ipairs({40, 200}) do
+		local d = DEG(a)
+		local f = CFrame.new(pos + V3(math.cos(d) * 3.6, 0, math.sin(d) * 3.6)) * CFrame.Angles(0, -d, 0)
+		Kt.box(ctx, "HoardChest", V3(2.4, 1.4, 1.6), f * CFrame.new(0, 0.7, 0), Color3.fromRGB(110, 70, 40), Enum.Material.WoodPlanks, ctx.Props)
+		Kt.box(ctx, "HoardLid", V3(2.4, 0.4, 1.6), f * CFrame.new(0, 1.8, -0.6) * CFrame.Angles(DEG(-60), 0, 0), Color3.fromRGB(120, 76, 44), Enum.Material.WoodPlanks, ctx.Props)
+		local spill = Kt.box(ctx, "HoardSpill", V3(2.1, 0.3, 1.3), f * CFrame.new(0, 1.35, 0), gold, Enum.Material.Neon, ctx.Props)
+		spill.CanCollide = false
+	end
+	-- the idol on a plinth
+	Kt.box(ctx, "Plinth", V3(2.2, 1.6, 2.2), CFrame.new(pos + V3(0, 0.8, 0)), Kt.C.STONE, Enum.Material.Slate, ctx.Props)
+	self.idol = Kt.box(ctx, "Idol", V3(1.2, 2.6, 1), CFrame.new(pos + V3(0, 2.9, 0)), gold, Enum.Material.Metal, ctx.Props)
+	Kt.ball(ctx, "IdolHead", 1.2, pos + V3(0, 4.6, 0), gold, Enum.Material.Metal, ctx.Props)
+	local glow = Instance.new("PointLight"); glow.Color = gold; glow.Range = 16; glow.Brightness = 1.2; glow.Parent = self.idol
+	Kt.banner(ctx, pos + V3(6.5, 0, -5), 9, Color3.fromRGB(150, 110, 40))
+end
+
+-- THE HOLY FLAME: a little chapel of stone round a white-gold flame on an altar
+local function holyFlame(self, ctx, pos)
+	local Kt = kit()
+	local stone = Color3.fromRGB(196, 190, 176)
+	Kt.box(ctx, "ChapelFloor", V3(12, 0.6, 12), CFrame.new(pos + V3(0, 0.3, 0)), Color3.fromRGB(150, 144, 132), Enum.Material.Cobblestone, ctx.Props)
+	for _, c in ipairs({V3(-5.4, 0, -5.4), V3(5.4, 0, -5.4), V3(-5.4, 0, 5.4), V3(5.4, 0, 5.4)}) do
+		Kt.cyl(ctx, "ChapelPillar", 1.2, 9, pos + c + V3(0, 4.8, 0), stone, Enum.Material.Marble, ctx.Props)
+	end
+	Kt.box(ctx, "ChapelRoof", V3(13, 0.8, 13), CFrame.new(pos + V3(0, 9.6, 0)), Color3.fromRGB(110, 70, 50), Enum.Material.WoodPlanks, ctx.Props)
+	Kt.box(ctx, "ChapelBack", V3(12, 9, 0.8), CFrame.new(pos + V3(0, 5, 5.6)), stone, Enum.Material.Marble, ctx.Props)
+	Kt.box(ctx, "Altar", V3(3.4, 2.4, 2), CFrame.new(pos + V3(0, 1.8, 0)), stone, Enum.Material.Marble, ctx.Props)
+	self.embers = Kt.ball(ctx, "HolyFlame", 1.4, pos + V3(0, 3.6, 0), Color3.fromRGB(255, 236, 170), Enum.Material.Neon, ctx.Props)
+	self.embers.CanCollide = false
+	local fire = Instance.new("Fire"); fire.Color = Color3.fromRGB(255, 240, 190); fire.SecondaryColor = Color3.fromRGB(255, 200, 90); fire.Size = 5; fire.Heat = 8; fire.Parent = self.embers
+	local light = Instance.new("PointLight"); light.Color = Color3.fromRGB(255, 230, 160); light.Range = 26; light.Brightness = 2; light.Parent = self.embers
+	local smoke = Instance.new("Smoke"); smoke.Opacity = 0; smoke.Parent = self.embers
+	self.fire, self.light, self.smoke = fire, light, smoke
+	self.holy = true
+	for _, x in ipairs({-1.2, 1.2}) do Kt.cyl(ctx, "AltarCandle", 0.4, 1.2, pos + V3(x, 3.6, -0.4), Color3.fromRGB(240, 232, 210), Enum.Material.SmoothPlastic, ctx.Props) end
+end
+
+-- THE LOGGING CAMP: stacked logs, a saw-pit, a hut, tools; it burns as it's hacked at
+local function loggingCamp(self, ctx, pos)
+	local Kt = kit()
+	for row = 0, 2 do
+		for k = 0, 3 - row do
+			Kt.cyl(ctx, "Log", 1.3, 8, CFrame.new(pos + V3(-4 + k * 1.3 + row * 0.65, 0.65 + row * 1.15, -3)) * CFrame.Angles(DEG(90), 0, 0), Kt.C.WOOD, Enum.Material.Wood, ctx.Props)
+		end
+	end
+	Kt.box(ctx, "Sawhorse", V3(0.5, 2.4, 3), CFrame.new(pos + V3(4, 1.2, 2)), Kt.C.DARKWOOD, Enum.Material.Wood, ctx.Props)
+	Kt.cyl(ctx, "CutLog", 1.2, 6, CFrame.new(pos + V3(4, 2.7, 2)) * CFrame.Angles(0, DEG(90), DEG(90)), Kt.C.WOOD, Enum.Material.Wood, ctx.Props)
+	Kt.box(ctx, "Saw", V3(0.1, 0.9, 3.4), CFrame.new(pos + V3(4.3, 3.4, 2)), Color3.fromRGB(180, 184, 190), Enum.Material.Metal, ctx.Props).CanCollide = false
+	Kt.house(ctx, CFrame.new(pos + V3(0, 0, 8)) * CFrame.Angles(0, DEG(180), 0), 7, 6, 4.5, Color3.fromRGB(160, 130, 96), Kt.C.DARKWOOD)
+	self.bed = ctx.Props:FindFirstChild("Log")
+	Kt.torchPost(ctx, pos + V3(-6, 0, 3), 5)
+end
+
 --------------------------------------------------------------------
 --  BUILD
 --------------------------------------------------------------------
-function HordeObjective.build(kind, map, maxHp)
+function HordeObjective.build(kind, map, maxHp, force)
 	local Kt = kit()
-	local pos, spotKind = HordeObjective.place(map, kind == "Caravan" and 14 or 11)
-	kind = spotKind or kind
+	local pos, spotKind = HordeObjective.place(map, (kind == "Caravan" or kind == "Camp") and 15 or 12)
+	if not force then kind = spotKind or kind end
 	if not NAMES[kind] then kind = "Campfire" end
 	local ctx = Kt.new("HordeObjective")
 	local self = setmetatable({kind = kind, name = NAMES[kind], pos = pos, radius = RADIUS[kind], max = maxHp or 1500,
@@ -261,6 +331,9 @@ function HordeObjective.build(kind, map, maxHp)
 	self.hp = self.max
 	if kind == "Campfire" then campfire(self, ctx, pos)
 	elseif kind == "Caravan" then caravan(self, ctx, pos)
+	elseif kind == "Hoard" then hoard(self, ctx, pos)
+	elseif kind == "Flame" then holyFlame(self, ctx, pos)
+	elseif kind == "Camp" then loggingCamp(self, ctx, pos)
 	else villagers(self, ctx, pos) end
 	ctx.model.Parent = map or workspace
 	-- the bar over it, and where the sparks fly from
@@ -287,7 +360,7 @@ function HordeObjective.build(kind, map, maxHp)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "ObjectiveBar"
 	bb.Size = UDim2.fromOffset(200, 44)
-	bb.StudsOffsetWorldSpace = V3(0, (kind == "Villagers" and 8.5 or (kind == "Caravan" and 7.5 or 6.5)), 0)
+	bb.StudsOffsetWorldSpace = V3(0, (kind == "Villagers" and 8.5 or ((kind == "Caravan" or kind == "Flame") and 11 or (kind == "Camp" and 7.5 or 6.5))), 0)
 	bb.MaxDistance = 160
 	bb.LightInfluence = 0
 	bb.Adornee = anchor
@@ -318,7 +391,34 @@ function Obj:wear()
 		self.barFill.Size = UDim2.fromScale(h, 1)
 		self.barFill.BackgroundColor3 = h > 0.6 and Color3.fromRGB(120, 220, 110) or (h > 0.3 and Color3.fromRGB(240, 190, 70) or Color3.fromRGB(240, 80, 70))
 	end
-	if self.kind == "Campfire" and self.fire then
+	if self.kind == "Hoard" then
+		-- the heaps go, one by one
+		local n = #self.coins
+		for k, c in ipairs(self.coins) do
+			local keep = h > (k - 1) / n
+			c.part.Transparency = keep and 0 or 1
+			c.part.CanCollide = keep
+		end
+	elseif self.kind == "Flame" and self.fire then
+		self.fire.Enabled = h > 0
+		self.fire.Size = 2 + 5 * h
+		self.light.Range = 10 + 20 * h
+		self.light.Brightness = h > 0 and (0.6 + 1.6 * h) or 0
+		self.embers.Color = h > 0 and Color3.fromRGB(255, 236, 170):Lerp(Color3.fromRGB(120, 140, 170), 1 - h) or Color3.fromRGB(60, 64, 76)
+		self.embers.Material = h > 0 and Enum.Material.Neon or Enum.Material.Slate
+	elseif self.kind == "Camp" and self.bed then
+		local function ensure(class, name)
+			local x = self.bed:FindFirstChild(name)
+			if not x then x = Instance.new(class); x.Name = name; x.Parent = self.bed end
+			return x
+		end
+		local smoke = ensure("Smoke", "HurtSmoke")
+		smoke.Enabled = h < 0.75
+		smoke.Opacity = 0.15 + 0.35 * (1 - h); smoke.Size = 4 + 6 * (1 - h); smoke.RiseVelocity = 6
+		local fire = ensure("Fire", "HurtFire")
+		fire.Enabled = h < 0.45
+		fire.Size = h > 0.2 and 6 or 10
+	elseif self.kind == "Campfire" and self.fire then
 		self.fire.Enabled = h > 0
 		self.fire.Size = 1.5 + 4 * h
 		self.fire.Heat = 3 + 6 * h

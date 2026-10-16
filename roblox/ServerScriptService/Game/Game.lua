@@ -212,7 +212,8 @@ end
 function Game.load(id)
 	local def = GameConfig.MODES[id]
 	if not def then return nil end
-	local mod = script.Parent:FindFirstChild("Modes") and script.Parent.Modes:FindFirstChild(id)
+	-- (def.impl: several modes on one module, the Invasions on Modes ▸ Invasion)
+	local mod = script.Parent:FindFirstChild("Modes") and script.Parent.Modes:FindFirstChild(def.impl or id)
 	local impl = mod and require(mod) or nil
 	local mode = impl and impl.new(def, id) or Mode.new(def, id)
 	Game.current, Game.modeId = mode, id

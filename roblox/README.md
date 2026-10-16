@@ -1713,6 +1713,23 @@ Three floors; floor 3 ends in the theme's boss.
   boss bar (any Boss near you, the Horde's Warlord too), banners and the fade going down. Objectives
   steps aside for an OwnHud mode.
 
+### Invasions (`Game ▸ Modes ▸ Invasion`, on the Horde's rules)
+Four themed hordes behind one door (the tile asks which army): `InvGoblin`, `InvElf`, `InvUndead`,
+`InvOrc` in `GameConfig.MODES`, all `impl = "Invasion"` (Game.load takes a mode's module from
+`impl`). Each brings its own army (the Bestiary's monsters), its own objective (HordeObjective's
+new kinds) and a lord every fifth wave with its big moves:
+- **Goblin Raid** — THE HOARD. Goblin Thieves don't fight: they grab a sack of gold and run for
+  their gate. Kill a carrier and the gold comes back; let it through and it's gone. Bombers lob
+  fire-pots. Lord: the Goblin King.
+- **The Elven Host** — THE LOGGING CAMP. Mostly archers and rangers, more of them shooting at once
+  than any horde; blademasters, spellweavers, wardens. Lord: Sylvara, Queen of the Wood.
+- **Undead Night** — THE HOLY FLAME (a wayside chapel). It's night. Skeletons stand back up,
+  necromancers raise more, wraiths blink. Lords: the Lich King, the Bone Colossus.
+- **The Orc Warband** — THE VILLAGERS. War-Drummers make every orc 15% faster and harder while they
+  live (a beat you can see): kill them first. Lord: Gorzak the Warchief.
+Pay and stats as the Horde; your best wave per army is `stats.invasionBest_<army>`. The Horde
+gained hooks for this (`roster`, `aliveCount`, `removeLive`, a forced `objective`).
+
 ### Monsters (`Combat ▸ Monsters`, `Catalog ▸ Bestiary`)
 Every monster is a combat bot (it blocks, parries, feints like anyone), dressed and **built into its
 shape** with welded parts: skeletons (the limbs hidden, bones in their place), wraiths (a robe

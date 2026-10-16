@@ -50,9 +50,11 @@ GameConfig.DOORS = {
 	-- matchmade: a public server for that mode (HubServer)
 	Depths    = {name = "The Depths", mode = "Depths",  access = "Friends", maxPlayers = 4, party = true, page = 2,
 		blurb = "A dungeon built fresh every run. Three floors, chests, relics, a boss at the bottom."},
+	Invasion  = {name = "Invasions", mode = "InvGoblin", modes = {"InvGoblin", "InvElf", "InvUndead", "InvOrc"}, access = "Friends", maxPlayers = 6, party = true, page = 2,
+		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
-GameConfig.ADVENTURE_ORDER = {"Depths"}
+GameConfig.ADVENTURE_ORDER = {"Depths", "Invasion"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -126,6 +128,31 @@ GameConfig.MODES = {
 		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
 		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,
+	},
+	-- THE INVASIONS (Game ▸ Modes ▸ Invasion, on the Horde's rules): an army, what you defend
+	InvGoblin = {
+		name = "Goblin Raid", category = "Horde", impl = "Invasion", army = "Goblin", objective = "Hoard", objectiveHealth = 1500,
+		teams = 0, maxPlayers = 6, minPlayers = 1, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true, pvp = false,
+		description = "Goblins want your gold. Thieves grab a sack and run for their gate: cut them down and it comes back. Every fifth wave, the Goblin King.",
+		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak", "HollowGrove", "Pinewatch", "Marshfen", "Cinderfall", "Bloodpit", "Frosthollow"},
+	},
+	InvElf = {
+		name = "The Elven Host", category = "Horde", impl = "Invasion", army = "Elf", objective = "Camp", objectiveHealth = 1500,
+		teams = 0, maxPlayers = 6, minPlayers = 1, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true, pvp = false,
+		description = "Arrows from every tree. Archers and rangers by the dozen, blademasters to run you down. Hold the logging camp. Every fifth wave, their Queen.",
+		maps = {"Wildwood", "HollowGrove", "Pinewatch", "Marshfen", "Ravenhold", "Stormbreak", "Frosthollow"},
+	},
+	InvUndead = {
+		name = "Undead Night", category = "Horde", impl = "Invasion", army = "Undead", objective = "Flame", objectiveHealth = 1500,
+		teams = 0, maxPlayers = 6, minPlayers = 1, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true, pvp = false,
+		description = "Night falls and the dead walk. Skeletons stand back up, necromancers raise more. Keep the chapel's holy flame alight. Every fifth wave, a lord of the dead.",
+		maps = {"Ravenhold", "Colosseum", "Bloodpit", "Stormbreak", "HollowGrove", "Marshfen", "Cinderfall", "Frosthollow"},
+	},
+	InvOrc = {
+		name = "The Orc Warband", category = "Horde", impl = "Invasion", army = "Orc", objective = "Villagers", objectiveHealth = 1500,
+		teams = 0, maxPlayers = 6, minPlayers = 1, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true, pvp = false,
+		description = "Brutes, berserkers and war-drummers who drive the rest on: kill the drummers first. Save the villagers. Every fifth wave, the Warchief.",
+		maps = {"Colosseum", "Stormbreak", "Wildwood", "Pinewatch", "Cinderfall", "Bloodpit", "Ravenhold", "Marshfen"},
 	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,

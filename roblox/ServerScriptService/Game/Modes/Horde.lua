@@ -58,7 +58,8 @@ local FIRE_LIMIT, FIRE_TWO = 1, 10
 local SPELL_POWER = 0.65
 local CAST_SLOW = 1.5     -- a Horde mage takes this much longer over each spell (time to see it coming)
 local MAGE_MANA = 60      -- …and comes in with this much mana, so it has to stop and meditate sooner
-local LOST = {Campfire = "THE CAMPFIRE WENT OUT", Caravan = "THE CARAVAN BURNED", Villagers = "THE VILLAGERS FELL"}
+local LOST = {Campfire = "THE CAMPFIRE WENT OUT", Caravan = "THE CARAVAN BURNED", Villagers = "THE VILLAGERS FELL",
+	Hoard = "THE HOARD WAS PLUNDERED", Flame = "THE HOLY FLAME WENT OUT", Camp = "THE CAMP BURNED"}
 local WEAPONS = {"Longsword", "ArmingSword", "Mace", "Spear", "WarAxe", "Falchion", "Halberd", "MorningStar"}
 
 local Horde = setmetatable({}, {__index = Game.Mode})
@@ -124,7 +125,7 @@ function Horde:start(map)
 	local kinds = self.def.objectives or {}
 	if self.obj then self.obj:destroy() end
 	local mapName = map or node:GetAttribute("Map") or ""   -- (the loaded model is always called "Map")
-	local ok, obj = pcall(HordeObjective.build, kinds[mapName] or "Campfire", mapModel, self.def.objectiveHealth or 1500)
+	local ok, obj = pcall(HordeObjective.build, self.def.objective or kinds[mapName] or "Campfire", mapModel, self.def.objectiveHealth or 1500, self.def.objective ~= nil)
 	if ok then self.obj = obj else warn("[Horde] objective:", obj); self.obj = nil end
 	self.ring, self.lost, self.alertAt, self.warned = 0, nil, -1e9, {}
 	if self.obj then
@@ -135,8 +136,17 @@ function Horde:start(map)
 	self:publishScores()
 end
 
+-- (hooks a kind of horde can change: Game ▸ Modes ▸ Invasion)
+function Horde:removeLive(b) if b.model and b.model.Parent then b:destroy() end end
+function Horde:aliveCount()
+	local n = 0
+	for _ in pairs(self.live) do n += 1 end
+	return n
+end
+function Horde:roster(n, players) return roster(n, players) end
+
 function Horde:stop()
-	for b in pairs(self.live or {}) do if b.model.Parent then b:destroy() end end
+	for b in pairs(self.live or {}) do self:removeLive(b) end
 	self.live, self.queue = {}, {}
 	if self.obj then self.obj:destroy(); self.obj = nil end
 	for _, k in ipairs(ATTRS) do node:SetAttribute(k, nil) end
@@ -201,7 +211,7 @@ end
 function Horde:startWave()
 	self.wave += 1
 	self.phase = "wave"
-	self.queue = roster(self.wave, math.max(1, #Players:GetPlayers()))
+	self.queue = self:roster(self.wave, math.max(1, #Players:GetPlayers()))
 	self.total, self.killed = #self.queue, 0
 	event:FireAllClients("Stage", {text = "WAVE " .. self.wave, add = 0, team = "B", final = false, horde = true, count = self.total})
 end
@@ -278,8 +288,7 @@ function Horde:tick(dt)
 		end
 	elseif self.phase == "wave" then
 		-- feed the field from the queue, a few at a time, through the gates
-		local alive = 0
-		for _ in pairs(self.live) do alive += 1 end
+		local alive = self:aliveCount()
 		if #self.queue > 0 and alive < MAX_ALIVE and (self.lastSpawn or 0) + 0.6 < now then
 			local g = gates()
 			local skill = table.remove(self.queue, 1)

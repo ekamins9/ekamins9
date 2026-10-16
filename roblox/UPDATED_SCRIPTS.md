@@ -1,4 +1,30 @@
-# Updated scripts: the Play screen's second page, The Depths (a procedural dungeon crawl), monsters, boss moves, loot
+# Updated scripts: Invasions — four themed hordes (goblins after your gold, the elven host, the dead at night, an orc warband)
+
+- **INVASIONS** on PLAY's second page (pick the army):
+  - **Goblin Raid**: defend THE HOARD. Thieves grab a sack of gold and run for their gate (a glowing sack on their backs). Kill one and the gold comes back; let it escape and it's gone. Bombers lob fire-pots.
+  - **The Elven Host**: defend THE LOGGING CAMP from archers by the dozen, blademasters and spellweavers.
+  - **Undead Night**: it's night. Keep the chapel's HOLY FLAME alight against skeletons that stand back up and necromancers raising more.
+  - **The Orc Warband**: save THE VILLAGERS. War-drummers make every orc faster and harder while they live (you see the beat): kill them first.
+  - Every fifth wave, the army's lord, with its own big moves and a boss bar.
+- New objectives (HordeObjective): the Hoard (its heaps vanish as it's plundered), the Holy Flame (a chapel; the flame dims), the Logging Camp (smokes, then burns).
+- **Checked in Play**:
+  - the Goblin Raid (thieves stealing and escaping, the hoard bar, the HUD);
+  - the Orc Warband (the drums' buff on every orc while a drummer lives).
+- **Not checked yet**:
+  - the Elven Host and Undead Night by hand;
+  - a full run to wave 5 (the lords);
+  - with a party.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Modes/Invasion.lua](ServerScriptService/Game/Modes/Invasion.lua) (new) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the four invasions |
+| [Modes/Horde.lua](ServerScriptService/Game/Modes/Horde.lua), [HordeObjective.lua](ServerScriptService/Game/HordeObjective.lua), [Game.lua](ServerScriptService/Game/Game.lua) | ServerScriptService ▸ Game | ModuleScript | hooks; three new objectives; `impl` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the modes, the Invasion door |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Play screen's second page, The Depths (a procedural dungeon crawl), monsters, boss moves, loot
 
 - **PLAY has a second page: ADVENTURES** (the gold button in the bottom strip).
   - Seven tiles with 3D scenes: The Depths, Deadvault, Crownfall, Invasions, Dragonfall, Plague Night, Kingslayer.
