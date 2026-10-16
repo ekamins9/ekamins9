@@ -1,4 +1,39 @@
-# Updated scripts: loot for your own class; an easier Depths; guides to what's worth walking to
+# Updated scripts: Deadvault rebuilt after Dark and Darker
+
+- **A vast, quiet, detailed dungeon** (Dungeon `raid = true`): 30 rooms, each something it once was (great halls, crypts, cells, libraries, armouries, storerooms, chapels, caverns, treasure vaults, the lair), furnished to match, with pilasters, skirting and fewer torches.
+- **Monsters that perceive** (new Combat ▸ Perception): they see (in front, in range, nothing in the way) and hear (running, fighting; crouching is quiet), shout for friends, hunt where they last saw you and go back. Many rooms are empty, some monsters sleep, pairs patrol. **!**, **?** and **z z** over their heads.
+- **Search everything** (new Game ▸ Containers): crates, barrels, sacks, urns, racks, stands, shelves, sarcophagi, remains and chests, with a loot window (TAKE / TAKE ALL). New **valuables** to carry out and sell.
+- **Your gear** (new RaidInventory.client, I): worn gear and a 20-slot bag; equip, take off, drink, drop.
+- **Ways out on the map**: two escape stairs (open at 2:00) and blue portals in waves (5:00, 9:00, 12:00); hold to extract, interrupted if struck. 15-minute raids.
+- **Parties** come in together and fight side by side; a **free kit** for your class (never lost); your class power comes along; a fallen raider leaves a **pack**.
+- **The vault**: a 60-slot stash, a kit with 4 draughts, the class you raid as, and **merchants**: the Smith (daily weapons, REFORGE, TEMPER), the Armourer, the Alchemist, the Treasurer.
+- **Checked in Play**:
+  - a raid built in 9 s: 30 rooms, 55 containers, 39 monsters (11 asleep), 2 escape stairs, 4 havens;
+  - a skeleton noticed and hunted the test character;
+  - containers opened and emptied into the bag; a find equipped (the held weapon went to the bag); extraction banked everything but the free kit;
+  - the loot window, the gear screen, the vault and the Smith's wares on screen;
+  - compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | raid rooms, havens, escape stairs, containers |
+| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | rebuilt |
+| [Vault.lua](ServerScriptService/Game/Vault.lua) | ServerScriptService ▸ Game | ModuleScript | merchants, stock, the Smith's work, class |
+| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | treasure, containers, reforge |
+| [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | new |
+| [VaultServer.server.lua](ServerScriptService/Hub/VaultServer.server.lua) | ServerScriptService ▸ Hub | Script | Buy, Work, Class |
+| [Loot.lua](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | TREASURES, CONTAINERS |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Deadvault 15 min, its text |
+| [RaidInventory.client.lua](StarterPlayerScripts/RaidInventory.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [VaultMenu.client.lua](StarterPlayerScripts/VaultMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | rebuilt |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | alert signs, known exits, raid guides |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Deadvault's text |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: loot for your own class; an easier Depths; guides to what's worth walking to
 
 - **Your own class's loot**: nobody sees another class's things.
   - A tome only teaches one of your class's powers (no Storm Arrow for a Knight).
@@ -45,27 +80,4 @@
 |---|---|---|---|
 | [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | `sling`, watching what's in your hand |
 | [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | leaves a slung shield's weld alone |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: any two weapons; no more monsters stuck outside a Depths room
-
-- **Weapons**: you can carry any two, a primary or a sidearm alike.
-  - Picking one up (off the floor, or as loot in The Depths, Crownfall and Deadvault) with a free slot puts it there.
-  - With both full, it swaps for the one in your hand (that one drops; in Deadvault it goes into your bag).
-  - Before, a "secondary" could only replace your secondary: a Rapier sidearm and a Zweihander meant a Falchion could never come in.
-- **The Depths**: a monster could end up outside its room, behind the shut gates, and the room never cleared.
-  - Summons now always appear inside the room's walls.
-  - A blink never lands through a wall.
-  - The room puts back any monster it finds outside its walls.
-- **Checked in Play**:
-  - a find going into the free slot, then swapping for the held weapon;
-  - a Zweihander off the floor swapping out a held Rapier;
-  - compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Pickup.lua](ServerScriptService/Combat/Pickup.lua), [Monsters.lua](ServerScriptService/Combat/Monsters.lua), [BossMoves.lua](ServerScriptService/Combat/BossMoves.lua) | ServerScriptService ▸ Combat | ModuleScript | any two weapons; summons in the room; blinks not through walls |
-| [Loot.lua](ServerScriptService/Game/Loot.lua), [Modes/Depths.lua](ServerScriptService/Game/Modes/Depths.lua), [Modes/Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua), [Modes/Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game | ModuleScript | `Loot.slotFor`; the room's watchdog |
 | [README.md](README.md) | | doc | |

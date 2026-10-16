@@ -1,24 +1,37 @@
---[[ DEADVAULT — raid it, loot it, get out alive (GameConfig.MODES.Deadvault), after Dark and
-     Darker. A big dungeon built fresh every raid (Game ▸ Dungeon, the vote's theme), its rooms
-     guarded by the theme's monsters (they stay by their room unless you come close), its
-     chests full of the raids' loot (Game ▸ Loot, CHESTS.vault: weapons, armour, relics, potions,
-     gold), and other raiders, who want it too.
+--[[ DEADVAULT — go in with your party, loot it, get out alive (GameConfig.MODES.Deadvault), after
+     Dark and Darker. A great dungeon built fresh every raid (Game ▸ Dungeon, opts.raid: thirty
+     rooms that were something once — great halls, crypts, cells, libraries, armouries, chapels,
+     caverns, treasure vaults, a lair), dark between its torches.
 
-     YOU GO IN with your KIT from your vault (Game ▸ Vault: what you chose to risk), or, with no
-     kit, the free one: your class and a plain weapon. ONE LIFE. Everything you find goes into
-     your BAG (BAG_MAX), or straight on (a better weapon, armour, a relic); potions are drunk from
-     the bag (your relic bar: click one).
-     THE WAYS OUT (the exit rooms' blue portals) open after OPEN_AT seconds: hold E… (your pickup
-     key) at one to EXTRACT: everything you carry goes into your vault, with your gold, and you're
-     out. FALL and it all spills where you fell, for whoever finds it. Still inside when the
-     dungeon COLLAPSES (the round's end)? Lost, with all of it.
+     THE DARK IS QUIET until you make it loud. Its monsters (Combat ▸ Monsters) keep to their
+     rooms, some asleep, a few walking the halls in pairs; they come for you when they SEE or
+     HEAR you (Combat ▸ Perception: a run is loud, a fight louder, a crouch is quiet), shout for
+     their friends, and hunt where they last saw you. Many rooms hold nothing but what's worth
+     taking. The lair holds the theme's lord and its hoard.
 
-     Pay: Marks only for getting out (`vault_extract`, once a raid, under the daily cap), and a
-     monster's kill by its rank, like any battle; the vault gold is the raids' own coin. ]]
+     EVERYTHING IS IN SOMETHING (Game ▸ Containers): crates, barrels, sacks, urns, weapon racks,
+     armour stands, shelves, sarcophagi, the remains of those who came before, chests. Search
+     one and its things show in a window: take what you want into your BAG (BAG_MAX), or wear it.
+     VALUABLES (cups, rings, idols, gems) are worth gold to the Treasurer, if you get them out.
+     Your inventory (I): what you wear, what you carry; equip, drink, drop.
+
+     YOU GO IN with your KIT from the vault (Game ▸ Vault: what you chose to risk), or the free
+     one (your class's plain weapons and a draught: never lost, never sold). ONE LIFE: fall and
+     everything you carry lies in your pack where you fell, for whoever finds it. A PARTY goes in
+     together, from one haven, and fights side by side (their blows barely touch each other).
+
+     THE WAYS OUT: the ESCAPE STAIRS (two, on the map from the start) open after STAIRS_AT;
+     BLUE PORTALS open in waves (PORTALS) about the dungeon. Hold your pickup key at one: out, and
+     everything you carry and your gold go into your vault. Still inside when it COLLAPSES (the
+     round's end)? Lost.
+
+     Pay: Marks for getting out (`vault_extract`, once a raid, under the daily cap) and a
+     monster's kill by its rank; the vault gold is the raids' own coin. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local HttpService = game:GetService("HttpService")
 
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
@@ -26,18 +39,21 @@ local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
 local Vault = require(script.Parent.Parent:WaitForChild("Vault"))
+local Containers = require(script.Parent.Parent:WaitForChild("Containers"))
 local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
 local Powers = require(Combat:WaitForChild("Powers"))
+local Perception = require(Combat:WaitForChild("Perception"))
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local MapLoader = Game.MapLoader
 local node = Game.node
 
-local OPEN_AT = 4 * 60
-local BAG_MAX = 12
-local LEASH = 34          -- a guard leaves you be past this from its room
-local GOLD_OF = {4, 10, 26, 80}
-local BASIC = {Knight = "Shortsword", Footman = "Shortsword", Vanguard = "Shortsword", Archer = "Bow", Mage = "Staff"}
+local BAG_MAX = 20
+local RELICS = 3
+local STAIRS_AT = 2 * 60
+local PORTALS = {{at = 5 * 60, n = 2}, {at = 9 * 60, n = 2}, {at = 12 * 60, n = 3}}
+local GOLD_OF = {3, 8, 20, 70}
+local KILL_RANK = {"Squire", "Knight", "Champion", "Champion"}
 
 local Deadvault = setmetatable({}, {__index = Game.Mode})
 Deadvault.__index = Deadvault
@@ -49,30 +65,19 @@ local function alive(c) local h = humOf(c); return h ~= nil and h.Health > 0 end
 local function flat(v) return Vector3.new(v.X, 0, v.Z) end
 local function event() return ReplicatedStorage:FindFirstChild("AdventureEvent") end
 local function banner(t, plr) local e = event(); if e then if plr then e:FireClient(plr, "Banner", t) else e:FireAllClients("Banner", t) end end end
+local function uid() return HttpService:GenerateGUID(false):sub(1, 8) end
+local function clock(t) t = math.max(0, math.floor(t)); return string.format("%d:%02d", t // 60, t % 60) end
 
 --------------------------------------------------------------------
 --  THE DUNGEON
 --------------------------------------------------------------------
 function Deadvault:buildMap(theme)
 	self.theme = Catalog.DUNGEONS[theme] and theme or "BoneCrypt"
-	local name, layout = Dungeon.build(self.theme, {rooms = 16, grid = {5, 5}, final = "none", exits = 3, loops = 3,
-		special = {treasure = 2, shrine = 0, fountain = 1, elite = 2}})
+	local name, layout = Dungeon.build(self.theme, {rooms = 30, grid = {7, 6}, final = "boss", exits = 2, havens = 3, loops = 6, raid = true,
+		special = {treasure = 3, shrine = 1, fountain = 1, elite = 3}})
 	self.layout = layout
-	-- three HAVENS beside the start (no guards): where raiders come in, far from each other
-	local havens = {layout.rooms[layout.start]}
-	for _ = 1, 3 do
-		local best, bestD
-		for _, r in ipairs(layout.rooms) do
-			if r.kind == "combat" and not r.haven then
-				local d = math.huge
-				for _, h in ipairs(havens) do d = math.min(d, math.abs(h.gx - r.gx) + math.abs(h.gy - r.gy)) end
-				for _, e in ipairs(layout.exits or {}) do local x = layout.rooms[e]; d = math.min(d, (math.abs(x.gx - r.gx) + math.abs(x.gy - r.gy)) * 1.5) end
-				if not bestD or d > bestD then best, bestD = r, d end
-			end
-		end
-		if best then best.haven = true; table.insert(havens, best) end
-	end
-	self.havens = havens
+	self.havens = {}
+	for _, r in ipairs(layout.rooms) do if r.kind == "start" then table.insert(self.havens, r) end end
 	Dungeon.sweep(name)
 	return name
 end
@@ -85,107 +90,286 @@ function Deadvault:sendLayout(plr)
 		local doors = {}
 		for d, nid in pairs(r.doors) do doors[d] = nid end
 		local kind = r.kind
-		if kind == "exit" and not self.open then kind = "combat" end
-		rooms[r.id] = {id = r.id, cx = r.cx, cz = r.cz, w = r.w, d = r.d, kind = kind, state = "clear", doors = doors}
+		if r.portal then kind = "exit" end
+		rooms[r.id] = {id = r.id, cx = r.cx, cz = r.cz, w = r.w, d = r.d, kind = kind, state = "clear", doors = doors,
+			known = r.kind == "exit" or r.portal ~= nil, name = r.arch and Dungeon.ARCH_NAMES[r.arch] or nil,
+			open = (r.kind == "exit" and self.stairsOpen) or r.portal == "open"}
 	end
 	local data = {rooms = rooms, floor = 1, theme = self.theme, themeName = "DEADVAULT  ·  " .. string.upper(Catalog.DUNGEONS[self.theme].name)}
 	local e = event()
 	if e then if plr then e:FireClient(plr, "Layout", data) else e:FireAllClients("Layout", data) end end
 end
 
--- every room's guards and chests, from the start
+--------------------------------------------------------------------
+--  ITS MONSTERS: in their rooms (some asleep), pairs on patrol, the lord in its lair
+--------------------------------------------------------------------
+function Deadvault:mobOpts(extra)
+	local players = math.max(1, #Players:GetPlayers())
+	local o = {team = "B", startDelay = 1, corpseTime = 4, hpMult = 1 + (players - 1) * 0.04, dealt = 0.9,
+		engage = self.senses.engage, goal = self.senses.goal,
+		onSpawn = function(mob)
+			self.mobs[mob] = true
+			local how = mob.over and mob.over.sense
+			if how and mob.bot then self.senses:add(mob.bot, how) end
+		end,
+		onDeath = function(mob, killer)
+			self.mobs[mob] = nil
+			if mob.bot then self.senses:remove(mob.bot) end
+			local r = mob.model and rootOf(mob.model)
+			local at = r and r.Position or Vector3.zero
+			local tier = mob.def.tier or 1
+			self:dropItem(Loot.gold((GOLD_OF[tier] or 3) * (0.7 + math.random() * 0.6)), at)
+			-- (fitted to whoever felled it: an Archer's kill drops an Archer's find)
+			local kc = typeof(killer) == "Instance" and killer:IsA("Player") and killer.Character or nil
+			local classId = (kc and kc:GetAttribute("Class")) or "Knight"
+			if mob.boss then
+				for i = 1, 3 do self:dropItem(Loot.roll("boss", classId, 2.5), at + Vector3.new(math.cos(i * 2.1) * 3, 0, math.sin(i * 2.1) * 3)) end
+				banner({text = string.upper(mob.def.name or "THE LORD") .. " IS SLAIN", sub = "ITS HOARD IS UNGUARDED", kind = "victory"})
+			elseif tier >= 3 or mob.elite then
+				self:dropItem(Loot.roll("elite", classId, 1.5), at)
+			elseif math.random() < 0.25 then
+				self:dropItem(Loot.treasure(0.3), at)
+			end
+			if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (KILL_RANK[tier] or "Squire")) end
+		end}
+	for k, v in pairs(extra or {}) do o[k] = v end
+	return o
+end
+
+function Deadvault:spawnMob(id, at, how, extra)
+	local over = {at = at, elite = extra and extra.elite or nil, sense = how}
+	local mob = Monsters.spawn(id, self.opts, over)
+	if mob then
+		self.mobs[mob] = true
+		if mob.bot and not self.senses.bots[mob.bot] then self.senses:add(mob.bot, how) end
+	end
+	return mob
+end
+
+-- a walk of a few rooms, there and back (corridor to corridor)
+local function route(L, from, rng)
+	local path = {from}
+	local cur = from
+	for _ = 1, 3 do
+		local opts = {}
+		for _, nid in pairs(cur.doors) do
+			local o = L.rooms[nid]
+			if o and o.kind ~= "start" and o.kind ~= "exit" and o.kind ~= "boss" and not table.find(path, o) then table.insert(opts, o) end
+		end
+		if #opts == 0 then break end
+		cur = opts[rng:NextInteger(1, #opts)]
+		table.insert(path, cur)
+	end
+	local pts = {}
+	for _, r in ipairs(path) do table.insert(pts, Vector3.new(r.cx, 3, r.cz)) end
+	for i = #path - 1, 2, -1 do table.insert(pts, Vector3.new(path[i].cx, 3, path[i].cz)) end
+	return pts
+end
+
 function Deadvault:populate()
 	local th = Catalog.DUNGEONS[self.theme]
-	local players = math.max(1, #Players:GetPlayers())
-	for _, room in ipairs(self.layout.rooms) do
-		if room.kind ~= "start" and room.kind ~= "exit" and not room.haven then
-			local home = Vector3.new(room.cx, 3, room.cz)
-			local opts = {team = "B", startDelay = 1, corpseTime = 4, hpMult = 1 + (players - 1) * 0.12,
-				goal = function(b)
-					local r = b.hrp
-					if r and flat(r.Position - home).Magnitude > 6 then return home end
-					return nil
-				end,
-				engage = function(b, foe)
-					local fr = foe:FindFirstChild("HumanoidRootPart")
-					return fr ~= nil and flat(fr.Position - home).Magnitude < LEASH and math.abs(fr.Position.Y - b.hrp.Position.Y) < 8
-				end,
-				arena = {centre = home, radius = math.max(room.w, room.d) / 2 + 6},
-				onDeath = function(mob, killer)
-					self.mobs[mob] = nil
-					local r = mob.model and rootOf(mob.model)
-					local at = r and r.Position or home
-					local tier = mob.def.tier or 1
-					self:dropItem(Loot.gold((GOLD_OF[tier] or 4) * (0.7 + math.random() * 0.6)), at)
-					-- (fitted to whoever felled it: an Archer's kill drops an Archer's find)
-					local kc = typeof(killer) == "Instance" and killer:IsA("Player") and killer.Character or nil
-					if tier >= 3 or mob.elite then self:dropItem(Loot.roll("elite", (kc and kc:GetAttribute("Class")) or "Knight", 1.5), at) end
-					if killer and _G.RoundBump then _G.RoundBump(killer, "kill_" .. (tier >= 3 and "Champion" or (tier == 2 and "Knight" or "Squire"))) end
-				end,
-				onSpawn = function(m) self.mobs[m] = true end}
+	local L = self.layout
+	local rng = Random.new()
+	self.opts = self:mobOpts()
+	local function pick(pool) return pool[rng:NextInteger(1, #pool)] end
+	for _, room in ipairs(L.rooms) do
+		local home = Vector3.new(room.cx, 3, room.cz)
+		local face = function(spot) return CFrame.new(spot, Vector3.new(room.cx + rng:NextNumber(-6, 6), spot.Y, room.cz + rng:NextNumber(-6, 6))) end
+		local function spot(i) return room.spots[((i - 1) % #room.spots) + 1] end
+		if room.kind == "boss" then
+			-- the lord of the place, in its lair: it fights whoever comes in
+			local bounds = {centre = home, hw = room.w / 2, hd = room.d / 2}
+			local bossOpts = self:mobOpts({hpMult = 0.85 * (1 + (math.max(1, #Players:GetPlayers()) - 1) * 0.2), skillCap = "Knight",
+				arena = {centre = Vector3.new(room.cx, 0, room.cz), radius = math.max(room.w, room.d) / 2 + 4}, bounds = bounds,
+				engage = function(_, foe)
+					local fr = rootOf(foe)
+					return fr ~= nil and math.abs(fr.Position.X - room.cx) < room.w / 2 + 2 and math.abs(fr.Position.Z - room.cz) < room.d / 2 + 2
+				end, goal = function(b) if b.hrp and flat(b.hrp.Position - home).Magnitude > 6 then return home end; return nil end})
+			local boss = Monsters.spawn(th.boss, bossOpts, {at = CFrame.new(room.feature + Vector3.new(0, 3, 0))})
+			if boss then self.mobs[boss] = true; boss.model:SetAttribute("BossName", th.bossName) end
+			for i = 1, 2 do self:spawnMob(pick(th.monsters.common), face(spot(i * 3)), {home = home}) end
+		elseif room.kind ~= "start" and room.kind ~= "exit" then
 			local list = {}
 			if room.kind == "elite" then
-				table.insert(list, {id = th.monsters.elite[math.random(#th.monsters.elite)], elite = true})
-				table.insert(list, {id = th.monsters.common[math.random(#th.monsters.common)]})
-			elseif room.kind == "combat" or room.kind == "treasure" then
-				for _ = 1, math.random(2, 3) do
-					local pool = math.random() < 0.3 and th.monsters.ranged or th.monsters.common
-					table.insert(list, {id = pool[math.random(#pool)], elite = math.random() < 0.06})
-				end
+				table.insert(list, {id = pick(th.monsters.elite), elite = true})
+				table.insert(list, {id = pick(th.monsters.common)})
+				if rng:NextNumber() < 0.5 then table.insert(list, {id = pick(th.monsters.ranged)}) end
+			elseif room.kind == "treasure" then
+				for _ = 1, rng:NextInteger(2, 3) do table.insert(list, {id = pick(rng:NextNumber() < 0.3 and th.monsters.ranged or th.monsters.common), elite = rng:NextNumber() < 0.15}) end
+			elseif room.kind == "combat" then
+				-- many rooms are empty: the dark is quiet till it isn't
+				local x = rng:NextNumber()
+				local n = (x < 0.42 and 0) or (x < 0.8 and 1) or 2
+				for _ = 1, n do table.insert(list, {id = pick(rng:NextNumber() < 0.3 and th.monsters.ranged or th.monsters.common), elite = rng:NextNumber() < 0.05}) end
 			end
+			local sleepy = rng:NextNumber() < 0.35
 			for i, e in ipairs(list) do
-				local spot = room.spots[((i - 1) % #room.spots) + 1]
-				local m = Monsters.spawn(e.id, opts, {at = CFrame.new(spot, home), elite = e.elite})
-				if m then self.mobs[m] = true end
+				self:spawnMob(e.id, face(spot(i * 2)), {home = home, asleep = sleepy and not e.elite}, {elite = e.elite})
 			end
-			-- chests: a treasure room's two, an elite's one, now and then elsewhere
-			local nChests = (room.kind == "treasure" and 2) or (room.kind == "elite" and 1) or (math.random() < 0.45 and 1 or 0)
-			for c = 1, nChests do
-				local at = Vector3.new(room.cx + (c == 1 and -6 or 6), 0.5, room.cz + room.d / 2 - 5)
-				local rarity = room.kind == "treasure" and "Epic" or (room.kind == "elite" and "Rare" or "Uncommon")
-				Loot.chest(CFrame.lookAt(at, Vector3.new(room.cx, 0.5, room.cz)), {rarity = rarity, gilded = rarity ~= "Uncommon", label = "Chest",
-					onOpen = function(plr)
-						local char = plr.Character
-						if not alive(char) then return false end
-						local classId = char:GetAttribute("Class") or "Knight"
-						local luck = (rarity == "Epic" and 2) or (rarity == "Rare" and 1.2) or 0.4
-						for i = 1, 3 do
-							local a = (i / 3) * math.pi * 2
-							task.delay(0.15 * i, function()
-								self:dropItem(Loot.roll("vault", classId, luck + Loot.luckOf(char), {goldBase = 18}), at + Vector3.new(math.cos(a) * 3, 0, -2.5 + math.sin(a) * 1.5))
-							end)
-						end
-						return true
-					end})
+		end
+		-- its containers
+		for _, k in ipairs(room.containers or {}) do
+			local luck = (room.kind == "treasure" and 0.8) or (room.kind == "elite" and 0.5) or (room.kind == "boss" and 1) or 0
+			self.boxes:add(k.kind, k.cf, {luck = luck})
+		end
+	end
+	-- patrols: pairs walking the halls
+	local starts = {}
+	for _, r in ipairs(L.rooms) do if r.kind == "combat" then table.insert(starts, r) end end
+	local players = math.max(1, #Players:GetPlayers())
+	for _ = 1, math.min(#starts, 3 + math.floor(players / 3)) do
+		local r = table.remove(starts, rng:NextInteger(1, #starts))
+		local pts = route(L, r, rng)
+		if #pts >= 3 then
+			for k = 1, 2 do
+				local at = Vector3.new(r.cx + (k == 1 and -3 or 3), 3, r.cz)
+				self:spawnMob(pick(k == 2 and rng:NextNumber() < 0.4 and th.monsters.ranged or th.monsters.common), CFrame.new(at), {patrol = pts, sight = 52})
 			end
 		end
 	end
 end
 
--- the exits: shut portals until OPEN_AT, then a prompt each
-function Deadvault:exits(open)
-	local m = MapLoader.current
-	local geo = m and m:FindFirstChild("Props")
-	for _, d in ipairs(geo and geo:GetChildren() or {}) do
-		if d.Name == "ExitPortal" then
-			d.Transparency = open and 0.25 or 0.9
-			local l = d:FindFirstChildOfClass("PointLight"); if l then l.Enabled = open end
-			local pe = d:FindFirstChildOfClass("ParticleEmitter"); if pe then pe.Enabled = open end
-			if open and not d:FindFirstChild("ExtractPrompt") then
-				local pr = Instance.new("ProximityPrompt")
-				pr.Name = "ExtractPrompt"
-				pr.ActionText = "Extract"; pr.ObjectText = "The way out"
-				pr.HoldDuration = 3; pr.MaxActivationDistance = 10; pr.RequiresLineOfSight = false
-				pr:SetAttribute("PickupKey", true)
-				pr.Parent = d
-				pr.Triggered:Connect(function(plr) self:extract(plr) end)
-			end
+-- the kind rooms: a fountain (whole again, once), a shrine (a blessing, once)
+function Deadvault:dressRooms()
+	for _, room in ipairs(self.layout.rooms) do
+		if room.kind == "fountain" or room.kind == "shrine" then
+			local p = Instance.new("Part")
+			p.Name = room.kind == "fountain" and "FountainPrompt" or "ShrinePrompt"
+			p.Anchored, p.CanCollide, p.Transparency = true, false, 1
+			p.Size = Vector3.new(2, 2, 2); p.Position = room.feature + Vector3.new(0, 4, 0)
+			p.Parent = MapLoader.current
+			local pr = Instance.new("ProximityPrompt")
+			pr.ActionText = room.kind == "fountain" and "Drink" or "Pray"; pr.ObjectText = room.kind == "fountain" and "Fountain" or "Shrine"
+			pr.HoldDuration = 1; pr.MaxActivationDistance = 12; pr.RequiresLineOfSight = false
+			pr:SetAttribute("PickupKey", true)
+			pr.Parent = p
+			local used = {}
+			pr.Triggered:Connect(function(plr)
+				local c = plr.Character
+				if used[plr] or not alive(c) then return end
+				used[plr] = true
+				p:SetAttribute("OpenedBy_" .. plr.UserId, true)
+				local h = humOf(c)
+				if room.kind == "fountain" then
+					h.Health = h.MaxHealth
+					for _, a in ipairs({"Burning", "Poisoned", "Frosted"}) do c:SetAttribute(a, nil) end
+					Loot.sparkle(room.feature + Vector3.new(0, 3, 0), Color3.fromRGB(120, 255, 210))
+					banner({text = "REFRESHED", sub = "WHOLE AGAIN", kind = "clear"}, plr)
+				else
+					h.Health = math.min(h.MaxHealth, h.Health + h.MaxHealth * 0.3)
+					Powers.addMods(c, {dealt = 1.15, taken = 0.88}, 120, "Blessed")
+					Loot.sparkle(room.feature + Vector3.new(0, 3, 0), Color3.fromRGB(255, 226, 130))
+					banner({text = "BLESSED", sub = "STRONGER AND HARDER TO HURT, FOR TWO MINUTES", kind = "clear"}, plr)
+				end
+			end)
 		end
 	end
 end
 
 --------------------------------------------------------------------
---  A RAIDER: what they carry
+--  THE WAYS OUT
+--------------------------------------------------------------------
+local function extractPrompt(self, part, text, hold)
+	local pr = Instance.new("ProximityPrompt")
+	pr.Name = "ExtractPrompt"
+	pr.ActionText = "Extract"; pr.ObjectText = text
+	pr.HoldDuration = hold; pr.MaxActivationDistance = 11; pr.RequiresLineOfSight = false
+	pr:SetAttribute("PickupKey", true)
+	pr.Enabled = false
+	pr.Parent = part
+	pr.Triggered:Connect(function(plr) self:extract(plr) end)
+	return pr
+end
+
+-- the escape stairs (built shut: their prompts wake at STAIRS_AT)
+function Deadvault:stairs()
+	self.exitParts = {}
+	for _, room in ipairs(self.layout.rooms) do
+		if room.kind == "exit" and room.escape then
+			local p = Instance.new("Part")
+			p.Name = "ExitPortal"
+			p.Anchored, p.CanCollide, p.CanQuery, p.Transparency = true, false, false, 1
+			p.Size = Vector3.new(4, 6, 4); p.Position = room.escape + Vector3.new(0, 3, 0)
+			p:SetAttribute("Escape", true)
+			local props = MapLoader.current and MapLoader.current:FindFirstChild("Props")
+			p.Parent = props or MapLoader.current
+			room.exitPrompt = extractPrompt(self, p, "The escape stairs", 4)
+			table.insert(self.exitParts, p)
+		end
+	end
+end
+function Deadvault:openStairs()
+	self.stairsOpen = true
+	for _, room in ipairs(self.layout.rooms) do if room.exitPrompt then room.exitPrompt.Enabled = true end end
+	self:sendLayout()
+	banner({text = "THE STAIRS ARE OPEN", sub = "THE ESCAPE STAIRS ARE ON YOUR MAP", kind = "descend"})
+end
+
+-- a blue portal: an oval of light on the floor of a room
+function Deadvault:portal(room)
+	local m = MapLoader.current
+	local props = m and m:FindFirstChild("Props")
+	local spot = room.spots[math.random(#room.spots)]
+	local base = CFrame.lookAt(Vector3.new(spot.X, 0, spot.Z), Vector3.new(room.cx, 0, room.cz))
+	local f = Instance.new("Model")
+	f.Name = "PortalModel"
+	local glow = Color3.fromRGB(90, 160, 255)
+	for i = 0, 23 do
+		local a = i / 24 * math.pi * 2
+		local seg = Instance.new("Part")
+		seg.Anchored, seg.CanCollide, seg.CanQuery = true, false, false
+		seg.Material, seg.Color = Enum.Material.Neon, glow
+		seg.Size = Vector3.new(0.5, 1.4, 0.5)
+		seg.CFrame = base * CFrame.new(math.cos(a) * 3.2, 5 + math.sin(a) * 4.6, 0) * CFrame.Angles(0, 0, a)
+		seg.Parent = f
+	end
+	-- (its face: an oval of blue light inside the ring; the guides look for it in Props)
+	local core = Instance.new("Part")
+	core.Name = "ExitPortal"
+	core.Anchored, core.CanCollide, core.CanQuery = true, false, false
+	core.Material, core.Color, core.Transparency = Enum.Material.Neon, Color3.fromRGB(60, 110, 230), 0.45
+	core.Size = Vector3.new(6.2, 9, 0.3)
+	core.CFrame = base * CFrame.new(0, 5, 0)
+	local mesh = Instance.new("SpecialMesh"); mesh.MeshType = Enum.MeshType.Sphere; mesh.Parent = core
+	core.Parent = props or m
+	local l = Instance.new("PointLight"); l.Color = glow; l.Range = 28; l.Brightness = 2.4; l.Parent = core
+	local pe = Instance.new("ParticleEmitter"); pe.Color = ColorSequence.new(Color3.fromRGB(150, 200, 255)); pe.LightEmission = 1
+	pe.Rate = 24; pe.Speed = NumberRange.new(0.5, 2); pe.Lifetime = NumberRange.new(1, 2); pe.Size = NumberSequence.new(0.35, 0)
+	pe.SpreadAngle = Vector2.new(180, 180); pe.Parent = core
+	local s = Instance.new("Sound"); s.SoundId = "rbxasset://sounds/electronicpingshort.wav"; s.Volume = 0.8; s.PlaybackSpeed = 0.5
+	s.RollOffMaxDistance = 180; s.Parent = core; s:Play()
+	f.Parent = props or m
+	local pr = extractPrompt(self, core, "A blue portal", 3)
+	pr.Enabled = true
+	room.portal = "open"
+	Perception.noise(core.Position, 40)
+	return core
+end
+function Deadvault:openPortals(n)
+	local L = self.layout
+	local cands = {}
+	for _, r in ipairs(L.rooms) do
+		if not r.portal and r.kind ~= "start" and r.kind ~= "exit" and r.kind ~= "boss" then table.insert(cands, r) end
+	end
+	-- spread apart, away from where portals already are
+	local opened = 0
+	for _ = 1, n do
+		local best, bestS
+		for _, r in ipairs(cands) do
+			if not r.portal then
+				local s = math.random() * 2
+				for _, o in ipairs(L.rooms) do if o.portal or o.kind == "exit" then s += math.min(6, math.abs(o.gx - r.gx) + math.abs(o.gy - r.gy)) end end
+				if not bestS or s > bestS then best, bestS = r, s end
+			end
+		end
+		if best then self:portal(best); opened += 1 end
+	end
+	self:sendLayout()
+	if opened > 0 then banner({text = opened == 1 and "A PORTAL OPENS" or (opened .. " PORTALS OPEN"), sub = "BLUE LIGHT ON YOUR MAP: A WAY OUT", kind = "descend"}) end
+end
+
+--------------------------------------------------------------------
+--  A RAIDER: what they wear, what they carry
 --------------------------------------------------------------------
 function Deadvault:runOf(plr)
 	local r = self.runs[plr]
@@ -193,51 +377,92 @@ function Deadvault:runOf(plr)
 	return r
 end
 local function relicIds(r) local out = {}; for _, it in ipairs(r.relics) do table.insert(out, it.relic) end; return out end
+local function carried(r)
+	local all = {}
+	for _, k in ipairs({1, 2}) do if r.weapons[k] then table.insert(all, r.weapons[k]) end end
+	if r.armor then table.insert(all, r.armor) end
+	if r.power then table.insert(all, r.power) end
+	for _, it in ipairs(r.relics) do table.insert(all, it) end
+	for _, it in ipairs(r.bag) do table.insert(all, it) end
+	return all
+end
 
+-- the inventory screen's picture of you, and the relic bar's
 function Deadvault:sendRun(plr)
 	local r = self:runOf(plr)
-	local items = {}
-	local function add(it, where)
+	local function card(it, slot)
 		local c = Loot.card(it)
-		local text = table.concat(c.lines or {}, " · ")
-		table.insert(items, {uid = it.uid, name = it.name, glyph = c.glyph, rarity = it.rarity, text = (where and (where .. " · ") or "") .. text, use = it.kind == "potion"})
+		c.slot, c.value, c.free = slot, it.free and 0 or Vault.value(it), it.free
+		return c
 	end
-	for _, it in pairs(r.weapons) do add(it, "in hand") end
-	if r.armor then add(r.armor, "worn") end
-	for _, it in ipairs(r.relics) do add(it, "carried") end
-	for _, it in ipairs(r.bag) do add(it, it.kind == "potion" and "click to drink" or "in your bag") end
+	local equip = {}
+	if r.weapons[1] then equip.weapon1 = card(r.weapons[1], "weapon1") end
+	if r.weapons[2] then equip.weapon2 = card(r.weapons[2], "weapon2") end
+	if r.armor then equip.armor = card(r.armor, "armor") end
+	if r.power then equip.power = card(r.power, "power") end
+	for i, it in ipairs(r.relics) do equip["relic" .. i] = card(it, "relic" .. i) end
+	local bag, worth = {}, 0
+	for _, it in ipairs(r.bag) do table.insert(bag, card(it, "bag")) end
+	for _, it in ipairs(carried(r)) do if not it.free then worth += Vault.value(it) end end
 	local e = event()
-	if e then e:FireClient(plr, "Run", {gold = r.gold, relics = items, kind = "bag"}) end
+	if e then
+		e:FireClient(plr, "Inv", {equip = equip, bag = bag, gold = r.gold, max = BAG_MAX, worth = worth + r.gold})
+		-- (the relic bar: what you wear, and the draughts in your bag to drink with a click)
+		local bar = {}
+		for _, it in ipairs(r.relics) do local c = Loot.card(it); table.insert(bar, {uid = it.uid, name = it.name, glyph = c.glyph, rarity = it.rarity, text = "worn · " .. table.concat(c.lines or {}, " · ")}) end
+		for _, it in ipairs(r.bag) do
+			if it.kind == "potion" then local c = Loot.card(it); table.insert(bar, {uid = it.uid, name = it.name, glyph = c.glyph, rarity = it.rarity, text = "click to drink · " .. table.concat(c.lines or {}, " · "), use = true}) end
+		end
+		e:FireClient(plr, "Run", {gold = r.gold, relics = bar, kind = "bag"})
+	end
 	plr:SetAttribute("AdvChip", string.format("💰 %d  ·  🎒 %d/%d", r.gold, #r.bag, BAG_MAX))
 end
 
--- the kit, or the free one
+-- THE FREE KIT: your class's plain weapons and a draught (never lost, never sold)
+local function freeWeapon(id, slot)
+	local w = Catalog.WEAPON[id]
+	if not w then return nil end
+	return {kind = "weapon", uid = uid(), weapon = id, rarity = "Common", name = "Plain " .. (w.name or id), power = 0, affixes = {}, slot = slot, free = true}
+end
 function Deadvault:adjustLoadout(plr, lo, classId)
 	local r = self:runOf(plr)
 	if not r.kitTaken then
 		r.kitTaken = true
 		local kit = Vault.takeKit(plr)
-		if kit.weapon1 then r.weapons[kit.weapon1.slot or 1] = kit.weapon1 end
-		if kit.weapon2 then r.weapons[kit.weapon2.slot or 2] = kit.weapon2 end
+		if kit.weapon1 then r.weapons[1] = kit.weapon1; kit.weapon1.slot = 1 end
+		if kit.weapon2 then r.weapons[2] = kit.weapon2; kit.weapon2.slot = 2 end
 		r.armor = kit.armor
-		for _, it in ipairs(kit.relics or {}) do table.insert(r.relics, it) end
+		for _, it in ipairs(kit.relics or {}) do if #r.relics < RELICS then table.insert(r.relics, it) else table.insert(r.bag, it) end end
 		for _, it in ipairs(kit.potions or {}) do table.insert(r.bag, it) end
+		local cls = GameConfig.CLASSES[classId]
+		if not r.weapons[1] and cls then r.weapons[1] = freeWeapon(cls.primary, 1) end
+		if not r.weapons[2] and cls and cls.secondary and cls.secondary ~= (r.weapons[1] and r.weapons[1].weapon) then r.weapons[2] = freeWeapon(cls.secondary, 2) end
+		if #r.bag == 0 then table.insert(r.bag, {kind = "potion", uid = uid(), potion = "Healing", rarity = "Common", name = "Healing Draught", free = true}) end
 	end
 	local w1, w2 = r.weapons[1], r.weapons[2]
-	lo.weapon, lo.weaponSkin = w1 and w1.weapon or (BASIC[classId] or "Shortsword"), w1 and w1.skin or nil
+	lo.weapon, lo.weaponSkin = w1 and w1.weapon or nil, w1 and w1.skin or nil
 	lo.secondary, lo.secondarySkin = w2 and w2.weapon or nil, w2 and w2.skin or nil
 	if lo.secondary == lo.weapon then lo.secondary, lo.secondarySkin = nil, nil end
 	lo.shield, lo.shieldSkin = nil, nil
-	lo.power = r.power and r.power.power or nil
-	lo.thirdKind, lo.thirdId = r.power and "power" or "none", r.power and r.power.power or nil
+	-- (your class's own power goes in with you; a tome found inside takes its place)
+	r.classPower = lo.power
+	if r.power then lo.power = r.power.power; lo.thirdKind, lo.thirdId = "power", r.power.power end
 	lo.throwable = nil
 end
+
+local function partyKey(plr)
+	local p = plr:GetAttribute("Party")
+	return p and ("P" .. tostring(p)) or nil
+end
+
 function Deadvault:noteSpawn(plr)
 	self.entered[plr] = true
 	local char = plr.Character
 	local r = self:runOf(plr)
 	task.defer(function()
 		if not char then return end
+		-- a party fights side by side (CombatServer.friendlyMult: their blows barely touch)
+		char:SetAttribute("Team", partyKey(plr))
 		for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
 			for _, t in ipairs(holder and holder:GetChildren() or {}) do
 				local it = t:IsA("Tool") and r.weapons[t:GetAttribute("Slot") or 0]
@@ -251,74 +476,152 @@ function Deadvault:noteSpawn(plr)
 	self:sendLayout(plr)
 end
 
-local function CFG_RANK(item) return Catalog.LOOT.RANK[item.rarity or "Common"] or 1 end
+local function bagFull(self, plr, quiet)
+	if not quiet then banner({text = "YOUR BAG IS FULL", sub = "DROP SOMETHING (I) TO MAKE ROOM", kind = "fight"}, plr) end
+	return false
+end
 
--- something picked up
-function Deadvault:take(plr, item, at)
+-- something taken (off the floor, out of a container): worn if there's room on you, else bagged
+function Deadvault:take(plr, item, at, quiet)
 	local char = plr.Character
 	if not alive(char) then return false end
 	local r = self:runOf(plr)
-	local here = rootOf(char) and rootOf(char).Position or at
 	local function toBag(it)
 		if #r.bag >= BAG_MAX then return false end
 		table.insert(r.bag, it)
 		return true
 	end
-	if item.kind == "gold" then r.gold += item.gold
-	elseif item.kind == "weapon" then
-		-- (a free slot, else the one in your hand is swapped out: into the bag, or dropped)
-		local _, old = Loot.giveWeapon(plr, item)
-		r.weapons[item.slot] = item
-		if old and not toBag(old) then self:dropItem(old, here) end
-	elseif item.kind == "armor" then
-		local better = not r.armor or (CFG_RANK(item) > CFG_RANK(r.armor))
-		if better then
-			local old = r.armor
-			r.armor = item
-			Loot.setArmor(char, item.armor)
-			if old and not toBag(old) then self:dropItem(old, here) end
-		elseif not toBag(item) then banner({text = "YOUR BAG IS FULL", kind = "fight"}, plr); return false end
-	elseif item.kind == "relic" then
-		if #r.relics < 3 then table.insert(r.relics, item); Loot.setRelics(char, relicIds(r))
-		elseif not toBag(item) then banner({text = "YOUR BAG IS FULL", kind = "fight"}, plr); return false end
-	elseif item.kind == "tome" then
-		local old = r.power
+	if item.kind == "gold" then
+		r.gold += item.gold
+	elseif item.kind == "weapon" and (not r.weapons[1] or not r.weapons[2]) then
+		local slot = not r.weapons[1] and 1 or 2
+		item.slot = slot
+		Loot.giveWeapon(plr, item)
+		r.weapons[item.slot or slot] = item
+	elseif item.kind == "armor" and not r.armor then
+		r.armor = item
+		Loot.setArmor(char, item.armor)
+	elseif item.kind == "relic" and #r.relics < RELICS then
+		table.insert(r.relics, item)
+		Loot.setRelics(char, relicIds(r))
+	elseif item.kind == "tome" and not r.power then
 		r.power = item
 		Powers.equip(char, plr, {power = item.power})
-		if old and not toBag(old) then self:dropItem(old, here) end
-	elseif not toBag(item) then banner({text = "YOUR BAG IS FULL", kind = "fight"}, plr); return false end
+	elseif not toBag(item) then
+		return bagFull(self, plr, quiet)
+	end
 	self:sendRun(plr)
 	return true
 end
 
 function Deadvault:dropItem(item, pos)
-	Loot.drop(item, pos - Vector3.new(0, 2.5, 0), {life = 600, onTake = function(plr, it) return self:take(plr, it, pos) end})
+	if not item then return end
+	Loot.drop(item, pos - Vector3.new(0, 2.5, 0), {life = 900, onTake = function(plr, it) return self:take(plr, it, pos) end})
 end
 
--- a potion from the bag
-function Deadvault:use(plr, id)
-	local r = self.runs[plr]
-	local char = plr.Character
-	if not (r and alive(char)) then return end
-	for i, it in ipairs(r.bag) do
-		if it.uid == id and it.kind == "potion" then
-			table.remove(r.bag, i)
-			Loot.drink(char, it.potion)
-			self:sendRun(plr)
-			return
+local function removeTools(plr, slot)
+	for _, holder in ipairs({plr.Character, plr:FindFirstChildOfClass("Backpack")}) do
+		for _, t in ipairs(holder and holder:GetChildren() or {}) do
+			if t:IsA("Tool") and t:GetAttribute("Slot") == slot then t:Destroy() end
 		end
 	end
 end
+local function findIn(list, id)
+	for i, it in ipairs(list) do if it.uid == id then return i, it end end
+	return nil
+end
 
--- everything they carry
-local function carried(r)
-	local all = {}
-	for _, it in pairs(r.weapons) do table.insert(all, it) end
-	if r.armor then table.insert(all, r.armor) end
-	if r.power then table.insert(all, r.power) end
-	for _, it in ipairs(r.relics) do table.insert(all, it) end
-	for _, it in ipairs(r.bag) do table.insert(all, it) end
-	return all
+-- THE INVENTORY'S ASKS (AdventureEvent "Inv", what, a): equip from the bag, take off into it, drink,
+-- drop at your feet
+function Deadvault:inv(plr, what, a)
+	local r = self.runs[plr]
+	local char = plr.Character
+	if not (r and alive(char)) or self.out[plr] or type(a) ~= "string" then return end
+	if what == "Equip" then
+		local i, it = findIn(r.bag, a)
+		if not it then return end
+		if it.kind == "weapon" then
+			table.remove(r.bag, i)
+			-- (a free hand first; else in place of the one you hold, which goes into the bag)
+			local slot = not r.weapons[1] and 1 or (not r.weapons[2] and 2 or nil)
+			if slot then
+				it.slot = slot
+				Loot.giveWeapon(plr, it)
+				r.weapons[it.slot or slot] = it
+			else
+				local _, old = Loot.giveWeapon(plr, it)
+				local oldItem = r.weapons[it.slot]
+				r.weapons[it.slot] = it
+				table.insert(r.bag, oldItem or old)
+			end
+		elseif it.kind == "armor" then
+			table.remove(r.bag, i)
+			if r.armor then table.insert(r.bag, r.armor) end
+			r.armor = it
+			Loot.setArmor(char, it.armor)
+		elseif it.kind == "relic" then
+			if #r.relics >= RELICS then banner({text = "THREE RELICS AT MOST", sub = "TAKE ONE OFF FIRST", kind = "fight"}, plr); return end
+			table.remove(r.bag, i)
+			table.insert(r.relics, it)
+			Loot.setRelics(char, relicIds(r))
+		elseif it.kind == "tome" then
+			table.remove(r.bag, i)
+			if r.power then table.insert(r.bag, r.power) end
+			r.power = it
+			Powers.equip(char, plr, {power = it.power})
+		elseif it.kind == "potion" then
+			return self:inv(plr, "Use", a)
+		end
+	elseif what == "Unequip" then
+		if #r.bag >= BAG_MAX then bagFull(self, plr); return end
+		if a == "weapon1" or a == "weapon2" then
+			local slot = a == "weapon1" and 1 or 2
+			local it = r.weapons[slot]
+			if not it then return end
+			removeTools(plr, slot)
+			r.weapons[slot] = nil
+			table.insert(r.bag, it)
+		elseif a == "armor" and r.armor then
+			table.insert(r.bag, r.armor); r.armor = nil
+			Loot.setArmor(char, nil)
+		elseif a == "power" and r.power then
+			table.insert(r.bag, r.power); r.power = nil
+			Powers.equip(char, plr, {power = r.classPower})
+		else
+			local n = tonumber(a:match("^relic(%d)$") or "")
+			if n and r.relics[n] then
+				table.insert(r.bag, table.remove(r.relics, n))
+				Loot.setRelics(char, relicIds(r))
+			end
+		end
+	elseif what == "Use" then
+		local i, it = findIn(r.bag, a)
+		if it and it.kind == "potion" then
+			table.remove(r.bag, i)
+			Loot.drink(char, it.potion)
+		end
+	elseif what == "Drop" then
+		local here = rootOf(char).Position + rootOf(char).CFrame.LookVector * 3
+		local i, it = findIn(r.bag, a)
+		if it then
+			table.remove(r.bag, i)
+			self:dropItem(it, here)
+		else
+			-- (something worn: off, and down)
+			for _, k in ipairs({"weapon1", "weapon2", "armor", "power", "relic1", "relic2", "relic3"}) do
+				local worn = (k == "weapon1" and r.weapons[1]) or (k == "weapon2" and r.weapons[2]) or (k == "armor" and r.armor) or (k == "power" and r.power) or r.relics[tonumber(k:match("%d") or "") or 0]
+				if worn and worn.uid == a then
+					if k == "weapon1" or k == "weapon2" then removeTools(plr, k == "weapon1" and 1 or 2); r.weapons[k == "weapon1" and 1 or 2] = nil
+					elseif k == "armor" then r.armor = nil; Loot.setArmor(char, nil)
+					elseif k == "power" then r.power = nil; Powers.equip(char, plr, {power = r.classPower})
+					else table.remove(r.relics, tonumber(k:match("%d"))); Loot.setRelics(char, relicIds(r)) end
+					self:dropItem(worn, here)
+					break
+				end
+			end
+		end
+	end
+	self:sendRun(plr)
 end
 
 -- OUT: into the vault
@@ -326,20 +629,26 @@ function Deadvault:extract(plr)
 	local char = plr.Character
 	local r = self.runs[plr]
 	if not (r and alive(char)) or self.out[plr] then return end
+	-- (struck while you held on: not yet)
+	if os.clock() - (char:GetAttribute("LastHitAt") or -1e9) < 2 then banner({text = "INTERRUPTED", sub = "YOU WERE STRUCK: HOLD AGAIN", kind = "fight"}, plr); return end
 	self.out[plr] = true
-	local items = carried(r)
+	local items = {}
+	for _, it in ipairs(carried(r)) do if not it.free then table.insert(items, it) end end
 	local sold = Vault.bank(plr, items, r.gold)
 	if _G.RoundBump then _G.RoundBump(plr, "vault_extract") end
 	local st = Profile.get(plr).stats
 	st.vaultOut = (st.vaultOut or 0) + 1
-	banner({text = "EXTRACTED", sub = string.format("%d THINGS AND %d GOLD INTO YOUR VAULT%s", #items, r.gold, sold > 0 and string.format(" (A FULL STASH: %d SOLD)", sold) or ""), kind = "victory"}, plr)
+	local worth = r.gold
+	for _, it in ipairs(items) do worth += Vault.value(it) end
+	banner({text = "EXTRACTED", sub = string.format("%d THINGS AND %d GOLD INTO YOUR VAULT  ·  WORTH %d%s", #items, r.gold, worth, sold > 0 and string.format("  ·  A FULL STASH: %d SOLD", sold) or ""), kind = "victory"}, plr)
 	banner({text = string.upper(plr.DisplayName) .. " GOT OUT", kind = "clear"})
 	self.runs[plr] = {weapons = {}, relics = {}, bag = {}, gold = 0, kitTaken = true}
-	-- off the field: back to the courtyard (Studio: they stay out of it, watching)
 	char:Destroy()
 	plr:SetAttribute("AdvChip", "🚪 EXTRACTED")
+	local e = event()
+	if e then e:FireClient(plr, "Inv", nil) end
 	if not game:GetService("RunService"):IsStudio() and _G.HubTravel then
-		task.delay(3, function() if plr.Parent then pcall(_G.HubTravel, plr, "Courtyard", {}) end end)
+		task.delay(4, function() if plr.Parent then pcall(_G.HubTravel, plr, "Courtyard", {}) end end)
 	end
 end
 
@@ -349,26 +658,37 @@ end
 function Deadvault:start(map)
 	Game.Mode.start(self, map)
 	node:SetAttribute("FriendlyFire", true)
-	self.runs, self.mobs, self.out, self.entered = {}, {}, {}, {}
-	self.open = false
+	self.runs, self.mobs, self.out, self.entered, self.havenOf = {}, {}, {}, {}, {}
+	self.stairsOpen = false
+	self.wave = 1
 	self.startedAt = os.clock()
 	if not self.layout or self.layout.theme ~= (Catalog.DUNGEONS[map] and map or self.theme) then
 		local name = self:buildMap(map)
 		MapLoader.load(name)
 	end
-	self:exits(false)
+	self.senses = Perception.new({sight = 46, hearing = 12, memory = 8, shout = 30, leash = 170})
+	self.boxes = Containers.new(self)
+	self:stairs()
+	self:dressRooms()
 	self:populate()
 	node:SetAttribute("OwnHud", true)
 	node:SetAttribute("ObjKind", "Deadvault")
 	self:sendLayout()
 	if not self.useConn and event() then
-		self.useConn = event().OnServerEvent:Connect(function(plr, kind, a)
-			if Game.current ~= self then return end
-			if kind == "Use" and type(a) == "string" then self:use(plr, a)
-			elseif kind == "Hello" then self:sendLayout(plr); if self.runs[plr] then self:sendRun(plr) end end
+		self.useConn = event().OnServerEvent:Connect(function(plr, kind, a, b)
+			local mode = Game.current
+			if mode ~= self or not mode.boxes then return end
+			if kind == "Use" and type(a) == "string" then mode:inv(plr, "Use", a)
+			elseif kind == "Inv" and type(a) == "string" then mode:inv(plr, a, b)
+			elseif kind == "Take" and type(a) == "number" and type(b) == "string" then mode.boxes:take(plr, a, b)
+			elseif kind == "TakeAll" and type(a) == "number" then mode.boxes:takeAll(plr, a)
+			elseif kind == "CloseLoot" and type(a) == "number" then mode.boxes:close(plr, a)
+			elseif kind == "Hello" then mode:sendLayout(plr); if mode.runs[plr] then mode:sendRun(plr) end end
 		end)
 	end
-	task.delay(2, function() banner({text = "DEADVAULT", sub = "LOOT IT, AND GET OUT ALIVE  ·  THE WAYS OUT OPEN IN " .. math.floor(OPEN_AT / 60) .. ":00", kind = "floor"}) end)
+	task.delay(2, function()
+		banner({text = "DEADVAULT", sub = "LOOT IT, AND GET OUT ALIVE  ·  THE STAIRS OPEN IN " .. clock(STAIRS_AT) .. "  ·  (I) YOUR BAG", kind = "floor"})
+	end)
 end
 
 function Deadvault:stop()
@@ -377,38 +697,40 @@ function Deadvault:stop()
 		if not self.out[plr] and plr.Parent and #carried(r) > 0 then banner({text = "LOST IN THE DARK", sub = "THE DEADVAULT KEEPS WHAT YOU CARRIED", kind = "boss"}, plr) end
 	end
 	for m in pairs(self.mobs or {}) do Monsters.despawn(m) end
+	if self.opts then Monsters.halt(self.opts) end
+	if self.boxes then self.boxes:clear() end
 	Loot.clear()
-	for _, k in ipairs({"OwnHud", "ObjKind", "ObjLabel", "ObjNote"}) do node:SetAttribute(k, nil) end
+	for _, k in ipairs({"OwnHud", "ObjKind", "ObjLabel", "ObjNote", "RaidersInside"}) do node:SetAttribute(k, nil) end
+	local e = event()
 	for _, p in ipairs(Players:GetPlayers()) do
 		p:SetAttribute("AdvChip", nil)
 		local c = p.Character
-		if c then Loot.setRelics(c, {}); Loot.setArmor(c, nil) end
+		if c then Loot.setRelics(c, {}); Loot.setArmor(c, nil); c:SetAttribute("Team", nil) end
+		if e then e:FireClient(p, "Inv", nil) end
 	end
 	self.layout = nil
-	local e = event()
 	if e then e:FireAllClients("Layout", nil) end
 end
 
--- in at a room far from the other raiders
+-- in at a haven: your party's, else the one farthest from the other raiders
 function Deadvault:spawnCFrame(plr)
 	local L = self.layout
 	if not L then return Game.Mode.spawnCFrame(self, plr) end
-	local others = {}
-	for _, p in ipairs(Players:GetPlayers()) do
-		local r = p ~= plr and p.Character and rootOf(p.Character)
-		if r then table.insert(others, r.Position) end
-	end
-	local best, bestD
-	for _, room in ipairs(self.havens or L.rooms) do
-		do
-			local c = Vector3.new(room.cx + math.random(-6, 6), 4, room.cz + math.random(-6, 6))
-			local d = math.huge
-			for _, o in ipairs(others) do d = math.min(d, (o - c).Magnitude) end
-			d += math.random() * 5
-			if not bestD or d > bestD then best, bestD = c, d end
+	local key = partyKey(plr) or ("U" .. plr.UserId)
+	local haven = self.havenOf[key]
+	if not haven then
+		local best, bestD
+		for _, h in ipairs(self.havens or {}) do
+			local d = 0
+			for _, o in pairs(self.havenOf) do d += (o == h) and -1000 or (math.abs(o.gx - h.gx) + math.abs(o.gy - h.gy)) end
+			d += math.random()
+			if not bestD or d > bestD then best, bestD = h, d end
 		end
+		haven = best or L.rooms[1]
+		self.havenOf[key] = haven
 	end
-	return CFrame.new(best or Vector3.new(0, 4, 0))
+	local c = Vector3.new(haven.cx + math.random(-7, 7), 4, haven.cz + math.random(-7, 7))
+	return CFrame.new(c, Vector3.new(haven.cx, 4, haven.cz))
 end
 
 function Deadvault:canSpawn(plr)
@@ -417,37 +739,55 @@ function Deadvault:canSpawn(plr)
 	return true
 end
 
--- a raider falls: it all spills out
+-- a raider falls: everything they carried is in their pack where they fell
 function Deadvault:onDeath(victimPlr)
 	if self.out[victimPlr] then return end
 	local r = self.runs[victimPlr]
 	local char = victimPlr.Character
 	local at = rootOf(char) and rootOf(char).Position
 	if r and at then
-		for _, it in ipairs(carried(r)) do self:dropItem(it, at + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3))) end
-		if r.gold > 0 then self:dropItem(Loot.gold(r.gold), at) end
+		local items = carried(r)
+		if r.gold > 0 then table.insert(items, Loot.gold(r.gold)) end
+		if #items > 0 then
+			local ground = workspace:Raycast(at, Vector3.new(0, -12, 0))
+			local y = ground and ground.Position.Y or (at.Y - 3)
+			self.boxes:add("pack", CFrame.new(at.X, y, at.Z), {items = items, name = victimPlr.DisplayName .. "'s pack"})
+		end
 		self.runs[victimPlr] = {weapons = {}, relics = {}, bag = {}, gold = 0, kitTaken = true}
-		banner({text = "YOU FELL", sub = "WHAT YOU CARRIED LIES WHERE YOU FELL", kind = "boss"}, victimPlr)
+		banner({text = "YOU FELL", sub = "EVERYTHING YOU CARRIED LIES IN YOUR PACK WHERE YOU FELL", kind = "boss"}, victimPlr)
 		victimPlr:SetAttribute("AdvChip", "💀 FALLEN")
+		local e = event()
+		if e then e:FireClient(victimPlr, "Inv", nil) end
 	end
 end
 
 function Deadvault:tick(dt)
-	local now = os.clock()
-	local t = now - self.startedAt
-	if not self.open and t >= OPEN_AT then
-		self.open = true
-		self:exits(true)
-		self:sendLayout()
-		banner({text = "THE WAYS OUT ARE OPEN", sub = "FIND A BLUE PORTAL AND EXTRACT", kind = "descend"})
+	if not self.layout then return end
+	local t = os.clock() - self.startedAt
+	if not self.stairsOpen and t >= STAIRS_AT then self:openStairs() end
+	local wave = PORTALS[self.wave]
+	if wave and t >= wave.at then
+		self.wave += 1
+		self:openPortals(wave.n)
 	end
 	local left = node:GetAttribute("TimeLeft") or 0
 	local inside = 0
 	for _, p in ipairs(Players:GetPlayers()) do if alive(p.Character) and not self.out[p] then inside += 1 end end
-	node:SetAttribute("ObjLabel", string.format("DEADVAULT  ·  %d:%02d UNTIL IT COLLAPSES", math.floor(left / 60), left % 60))
-	node:SetAttribute("ObjNote", self.open and string.format("THE WAYS OUT ARE OPEN  ·  %d RAIDER%s INSIDE", inside, inside == 1 and "" or "S")
-		or string.format("THE WAYS OUT OPEN IN %d:%02d", math.floor(math.max(0, OPEN_AT - t) / 60), math.floor(math.max(0, OPEN_AT - t)) % 60))
+	local ways = (self.stairsOpen and 2 or 0)
+	for _, r in ipairs(self.layout.rooms) do if r.portal == "open" then ways += 1 end end
+	node:SetAttribute("ObjLabel", string.format("IT COLLAPSES IN %s", clock(left)))
+	local nextWave = PORTALS[self.wave]
+	local note
+	if not self.stairsOpen then note = "THE STAIRS OPEN IN " .. clock(STAIRS_AT - t)
+	else note = string.format("%d WAY%s OUT", ways, ways == 1 and "" or "S") .. (nextWave and ("  ·  PORTALS IN " .. clock(nextWave.at - t)) or "") end
+	node:SetAttribute("ObjNote", note)
+	node:SetAttribute("RaidersInside", inside)
 	node:SetAttribute("Objective", self:objective())
+	-- the dark's last minute: it hunts
+	if left > 0 and left <= 60 and not self.lastCall then
+		self.lastCall = true
+		banner({text = "IT IS COLLAPSING", sub = "ONE MINUTE: GET OUT", kind = "boss"})
+	end
 end
 
 function Deadvault:isOver()

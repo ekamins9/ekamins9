@@ -1726,23 +1726,48 @@ Three floors; floor 3 ends in the theme's boss.
   screen, an UP NEXT line under the run panel, a gift on the map's rooms with a chest. Objectives
   steps aside for an OwnHud mode.
 
-### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `VaultMenu.client`)
-An extraction raid after Dark and Darker, for up to 12 raiders. A big dungeon built fresh (16 rooms
-in the vote's theme), its rooms **guarded** by the theme's monsters (they stay by their room: past
-LEASH they let you go), chests of the raids' loot (CHESTS.vault), gold from every kill, and the
-other raiders.
-- **Your vault** (Profile ▸ vault, kept): a stash (30), a **kit** (a weapon, a sidearm, armour, 3
-  relics, 3 potions) and vault gold. The vault screen (PLAY ▸ ADVENTURES ▸ DEADVAULT ▸ YOUR VAULT):
-  equip, take off, sell to the merchant (Loot VALUE by rarity), buy potions, plain armour, a plain
-  or fine weapon for your class. The server decides (Hub ▸ VaultServer, VaultRemote).
-- **In**: your kit leaves the vault with you (no kit: your class's plain weapon). Raiders come in at
-  havens far apart (no guards). **One life.** Finds go on (a better weapon, armour, up to 3 relics,
-  a tome) or into the bag (12); a potion in the bag is drunk by clicking it on the relic bar.
-- **Out**: after 4 minutes the exit rooms' blue portals open: hold your pickup key 3 s to EXTRACT.
-  Everything you carry and your gold go into the vault (no room: sold), and you're out
-  (`vault_extract` pays a little Marks, once a raid, under the daily cap; stats.vaultOut).
-- **Fall**, and it all spills where you fell. Still inside when it collapses (the round's 12
-  minutes): lost. Everyone out or down ends it early.
+### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `Game ▸ Containers`, `VaultMenu.client`, `RaidInventory.client`)
+An extraction raid after Dark and Darker, for up to 12 raiders in parties. Go in with your party
+and the kit you dare to risk, search a great dark dungeon, keep quiet past what sleeps there, and
+get out with what you found, or lose it all.
+- **The dungeon** (`Dungeon.build` with `raid = true`): 30 rooms on a 7 × 6 grid, each one
+  something before the dark took it (`r.arch`): a GREAT HALL (pillar rows, a runner, chandeliers,
+  banners, braziers, taller), a CRYPT (rows of sarcophagi, skulls in wall niches), THE CELLS
+  (barred cells along a wall, chains, what's left of their prisoners), a LIBRARY (aisles of
+  shelves, reading tables), an ARMOURY (racks, stands, an anvil), a STOREROOM, a CHAPEL (an altar
+  under coloured glass, statues, pews), a CAVERN (rough rock, stalagmites, an old camp), a
+  TREASURE VAULT, THE LAIR (the theme's lord and its hoard). Each theme has its own mix
+  (`ARCH_W`). Pilasters and skirting on the walls, fewer torches: the dark is the point.
+- **Its monsters** keep to their rooms (many rooms hold none), some **asleep**, pairs **on patrol**
+  between rooms; they come when they **see or hear** you (`Combat ▸ Perception`: a run is loud, a
+  fight louder, a crouch is quiet and half as visible), shout for those near, hunt where they
+  last saw you and go back. Over a monster's head: **!** (it knows), **?** (looking), **z z**
+  (asleep). Opening a chest is loud. The lair's lord fights whoever comes in.
+- **Containers** (`Game ▸ Containers`, Catalog ▸ Loot CONTAINERS): crates, barrels, sacks, urns,
+  weapon racks, armour stands, bookshelves, sarcophagi, remains, chests (plain, ornate, the
+  hoard). Search one (V) and a **loot window** shows what's in it, rolled for the first opener's
+  class and shared: TAKE one, or TAKE ALL (Y). **Valuables** (`TREASURES`: cups, rings, idols,
+  gems) only sell, at their full worth to the Treasurer.
+- **Your gear** (I, or the 🎒 button): what you wear (a weapon, a sidearm, armour, a tome's power,
+  three relics) and your **bag** (20): EQUIP, TAKE OFF, DRINK, DROP; what you carry is worth (to the
+  vault) at the top. A find goes on if there's room on you, else into the bag.
+- **In**: your kit leaves the vault with you; an empty weapon slot goes in as the **free kit**
+  (your class's plain weapons and a draught: never lost, never sold, never banked). Your class's
+  own power comes too (a tome replaces it). A **party** comes in together at one haven and fights
+  side by side (Team: their blows barely touch each other); other parties at havens far apart.
+- **Out**: the two **escape stairs** (on the map from the start: up the steps to a door of
+  daylight) open after 2 minutes; **blue portals** open in waves at 5, 9 and 12 minutes in rooms
+  about the dungeon (on the map). Hold your pickup key (4 s / 3 s); struck while you hold: not
+  yet. Everything you carry and your gold go into the vault (no room: sold); `vault_extract` pays
+  a little Marks (once a raid, under the daily cap; stats.vaultOut).
+- **Fall**, and everything you carried lies in your **pack** where you fell, for whoever finds it.
+  Still inside when it collapses (15 minutes): lost. Everyone out or down ends it early.
+- **The vault** (PLAY ▸ ADVENTURES ▸ DEADVAULT ▸ YOUR VAULT; Profile ▸ vault): KIT & STASH (a
+  stash of 60; the kit: weapon, sidearm, armour, 3 relics, 4 draughts; the class you raid as)
+  and MERCHANTS: **Hrothgar the Smith** (four weapons for your class, new each day, each sold
+  once; his work on any weapon: REFORGE its powers, TEMPER it a rarity higher), **Old Brenna** the
+  armourer, **Wendel the Alchemist**, **the Treasurer** (your valuables at their full worth). The
+  server decides (Hub ▸ VaultServer, VaultRemote).
 
 ### Crownfall (`Game ▸ Modes ▸ Crownfall`, `Game ▸ Realm`)
 A battle royale for up to 16, bots filling the rest (`fillAnywhere`). **The island is built fresh

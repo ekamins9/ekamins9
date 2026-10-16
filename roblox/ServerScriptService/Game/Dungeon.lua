@@ -8,6 +8,11 @@
                          "none"
          opts.special    {treasure = n, shrine = n, fountain = n, elite = n} (1, 1, 1, 1)
          opts.exits      n extraction rooms (Deadvault: kind "exit", far from the start)
+         opts.havens     n more ways in (kind "start", r.haven: Deadvault's raiders come in apart)
+         opts.raid       a raid's rooms (Deadvault): each was something (r.arch: hall crypt cells
+                         library armory storeroom chapel cavern vault lair: furnished to match, its
+                         own size and height r.h), with its CONTAINERS (r.containers = {{kind, cf}});
+                         fewer torches; an exit is stairs up to a door of daylight (r.escape)
          opts.seed       a number (random otherwise)
          opts.name       the map's name in ServerStorage ▸ Maps (Gen_<n> otherwise)
 
@@ -29,6 +34,7 @@ local TweenService = game:GetService("TweenService")
 
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local K = require(ServerScriptService:WaitForChild("Build"):WaitForChild("MapKit"))
+if not K.campfire then require(ServerScriptService.Build:WaitForChild("MapProps"))(K) end   -- (a cavern's camp: Build ▸ MapProps)
 
 local Dungeon = {}
 local CELL = 86
@@ -128,6 +134,21 @@ local function kinds(list, order, opts, rng)
 		end
 		if best then list[best].kind = "exit"; table.insert(exits, best) end
 	end
+	-- HAVENS (a raid's other ways in): far from the start, from each other and from the exits
+	for _ = 1, (opts.havens or 0) do
+		local best, bestScore
+		for _, r in ipairs(list) do
+			if not r.kind then
+				local s = math.huge
+				for _, o in ipairs(list) do
+					if o.kind == "start" or o.kind == "exit" then s = math.min(s, (math.abs(o.gx - r.gx) + math.abs(o.gy - r.gy)) * (o.kind == "exit" and 0.8 or 1)) end
+				end
+				s += rng:NextNumber() * 0.5
+				if not bestScore or s > bestScore then best, bestScore = r, s end
+			end
+		end
+		if best then best.kind = "start"; best.haven = true end
+	end
 	-- dead ends (one door) make good treasure rooms and shrines
 	local leaves, others = {}, {}
 	for _, r in ipairs(list) do
@@ -217,7 +238,7 @@ P.bones = function(ctx, th, cf, rng)
 	K.ball(ctx, "Skull", 0.9, cf * CFrame.new(0.3, 0.4, 0.2), BONE, Enum.Material.SmoothPlastic, ctx.Props).CanCollide = false
 end
 P.cobweb = function(ctx, th, cf)
-	local p = box(ctx, "Cobweb", Vector3.new(5, 5, 0.05), cf * CFrame.new(0, WALL_H - 3, 0) * CFrame.Angles(0, 0, math.rad(45)), Color3.fromRGB(230, 230, 230), Enum.Material.Fabric, false)
+	local p = box(ctx, "Cobweb", Vector3.new(5, 5, 0.05), cf * CFrame.new(0, (ctx.H or WALL_H) - 3, 0) * CFrame.Angles(0, 0, math.rad(45)), Color3.fromRGB(230, 230, 230), Enum.Material.Fabric, false)
 	p.Transparency = 0.6
 	p.CanQuery = false
 end
@@ -232,9 +253,10 @@ P.candles = function(ctx, th, cf, rng)
 	end
 end
 P.pillar = function(ctx, th, cf)
-	K.cyl(ctx, "Pillar", 3, WALL_H, cf * CFrame.new(0, WALL_H / 2, 0), th.trim, mat(th.trimMat))
+	local H = ctx.H or WALL_H
+	K.cyl(ctx, "Pillar", 3, H, cf * CFrame.new(0, H / 2, 0), th.trim, mat(th.trimMat))
 	box(ctx, "PillarBase", Vector3.new(4, 1.2, 4), cf * CFrame.new(0, 0.6, 0), shade(th.trim, 0.85), mat(th.trimMat))
-	box(ctx, "PillarCap", Vector3.new(4, 1, 4), cf * CFrame.new(0, WALL_H - 0.5, 0), shade(th.trim, 0.85), mat(th.trimMat))
+	box(ctx, "PillarCap", Vector3.new(4, 1, 4), cf * CFrame.new(0, H - 0.5, 0), shade(th.trim, 0.85), mat(th.trimMat))
 end
 P.statue = function(ctx, th, cf)
 	local stone = Color3.fromRGB(150, 150, 146)
@@ -294,9 +316,10 @@ end
 P.barrel = function(ctx, th, cf) K.barrel(ctx, cf.Position); K.barrel(ctx, (cf * CFrame.new(2.4, 0, 0.6)).Position) end
 P.banner = function(ctx, th, cf)
 	local c = th.accent
-	local p = box(ctx, "Banner", Vector3.new(4, 9, 0.12), cf * CFrame.new(0, WALL_H - 7.5, 0), shade(c, 0.55), Enum.Material.Fabric, false)
+	local H = ctx.H or WALL_H
+	local p = box(ctx, "Banner", Vector3.new(4, 9, 0.12), cf * CFrame.new(0, H - 7.5, 0), shade(c, 0.55), Enum.Material.Fabric, false)
 	box(ctx, "BannerStripe", Vector3.new(1, 9, 0.14), p.CFrame, shade(c, 0.9), Enum.Material.Fabric, false)
-	box(ctx, "BannerRod", Vector3.new(5, 0.4, 0.4), cf * CFrame.new(0, WALL_H - 2.8, 0), Color3.fromRGB(60, 50, 40), Enum.Material.Wood, false)
+	box(ctx, "BannerRod", Vector3.new(5, 0.4, 0.4), cf * CFrame.new(0, H - 2.8, 0), Color3.fromRGB(60, 50, 40), Enum.Material.Wood, false)
 end
 P.carpet = function(ctx, th, cf)
 	local p = box(ctx, "Carpet", Vector3.new(7, 0.1, 12), cf * CFrame.new(0, 0.05, 0), Color3.fromRGB(130, 24, 40), Enum.Material.Fabric, false)
@@ -324,7 +347,7 @@ P.bookcase = function(ctx, th, cf, rng)
 end
 P.chandelier = function(ctx, th, cf)
 	local gold = Color3.fromRGB(210, 170, 80)
-	local at = cf * CFrame.new(0, WALL_H - 5, 0)
+	local at = cf * CFrame.new(0, (ctx.H or WALL_H) - 5, 0)
 	K.cyl(ctx, "Chain", 0.2, 4, at * CFrame.new(0, 3, 0), gold, Enum.Material.Metal, ctx.Props).CanCollide = false
 	K.cyl(ctx, "Ring", 5, 0.4, at, gold, Enum.Material.Metal, ctx.Props).CanCollide = false
 	for i = 0, 5 do
@@ -345,7 +368,7 @@ end
 P.icicle = function(ctx, th, cf, rng)
 	for i = 1, 5 do
 		local h = rng:NextNumber(2, 5)
-		local p = K.wedge(ctx, "Icicle", Vector3.new(0.6, h, 0.6), cf * CFrame.new(rng:NextNumber(-3, 3), WALL_H - h / 2, rng:NextNumber(-1, 1)) * CFrame.Angles(0, 0, math.pi), Color3.fromRGB(200, 236, 255), Enum.Material.Ice, ctx.Props)
+		local p = K.wedge(ctx, "Icicle", Vector3.new(0.6, h, 0.6), cf * CFrame.new(rng:NextNumber(-3, 3), (ctx.H or WALL_H) - h / 2, rng:NextNumber(-1, 1)) * CFrame.Angles(0, 0, math.pi), Color3.fromRGB(200, 236, 255), Enum.Material.Ice, ctx.Props)
 		p.CanCollide = false; p.Transparency = 0.2
 	end
 end
@@ -387,7 +410,7 @@ end
 P.chains = function(ctx, th, cf)
 	for _, x in ipairs({-1.2, 1.2}) do
 		for i = 0, 6 do
-			box(ctx, "Link", Vector3.new(0.2, 0.9, 0.5), cf * CFrame.new(x, WALL_H - 1 - i * 0.85, 0) * CFrame.Angles(0, (i % 2) * math.pi / 2, 0), Color3.fromRGB(70, 70, 74), Enum.Material.Metal, false)
+			box(ctx, "Link", Vector3.new(0.2, 0.9, 0.5), cf * CFrame.new(x, (ctx.H or WALL_H) - 1 - i * 0.85, 0) * CFrame.Angles(0, (i % 2) * math.pi / 2, 0), Color3.fromRGB(70, 70, 74), Enum.Material.Metal, false)
 		end
 	end
 end
@@ -448,6 +471,330 @@ local function feature(ctx, th, room, cf)
 		P.brazier(ctx, th, cf)
 		for _, x in ipairs({-8, 8}) do P.banner(ctx, th, cf * CFrame.new(x, 0, (room.d / 2) - 0.6)) end
 	end
+end
+
+--------------------------------------------------------------------
+--  RAID ROOMS (opts.raid: Deadvault). A room was something before the dark took it — a great
+--  hall, a crypt, the cells, a library, an armoury, a storeroom, a chapel, a cavern, a vault —
+--  furnished to match, and it says where its CONTAINERS stand: r.containers = {{kind, cf}}
+--  (the mode builds them: crate barrel sack urn rack stand shelf coffin remains chest ornate hoard)
+--------------------------------------------------------------------
+local ARCH_W = {   -- by theme: which rooms its dungeon has, by weight
+	BoneCrypt = {crypt = 4, hall = 2, cells = 2, chapel = 2, library = 1, storeroom = 2, armory = 1},
+	GoblinWarrens = {cavern = 4, storeroom = 3, cells = 1, armory = 2, hall = 1},
+	CrimsonManor = {hall = 3, library = 3, chapel = 2, cells = 1, storeroom = 2, armory = 1},
+	FrozenDepths = {cavern = 3, crypt = 2, hall = 2, armory = 1, storeroom = 2},
+	EmberForge = {armory = 3, storeroom = 2, hall = 2, cells = 1, cavern = 2},
+}
+local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern"}
+-- the odd container by a raid room's walls, by theme
+local RAID_ODDS = {BoneCrypt = {"urn", "urn", "crate", "sack"}, GoblinWarrens = {"sack", "sack", "crate", "barrel"},
+	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"}}
+local ARCH_SIZE = {hall = {30, 36}, crypt = {19, 26}, cells = {21, 26}, library = {21, 27}, armory = {18, 24},
+	storeroom = {14, 19}, chapel = {21, 27}, cavern = {20, 27}, vault = {18, 22}, lair = {33, 35}}   -- ×2 studs
+local ARCH_H = {hall = 30, cavern = 26, chapel = 28, lair = 30}
+Dungeon.ARCH_NAMES = {hall = "Great Hall", crypt = "Crypt", cells = "The Cells", library = "Library", armory = "Armoury",
+	storeroom = "Storeroom", chapel = "Chapel", cavern = "Cavern", vault = "Treasure Vault", lair = "The Lair"}
+
+local function weighted(rng, t)
+	local total = 0
+	for _, k in ipairs(ARCH_ORDER) do total += t[k] or 0 end
+	local x = rng:NextNumber() * total
+	for _, k in ipairs(ARCH_ORDER) do
+		x -= t[k] or 0
+		if x <= 0 and (t[k] or 0) > 0 then return k end
+	end
+	return "storeroom"
+end
+
+local INWARD = {N = Vector3.new(0, 0, 1), S = Vector3.new(0, 0, -1), E = Vector3.new(-1, 0, 0), W = Vector3.new(1, 0, 0)}
+local DIR_LIST = {"N", "S", "E", "W"}
+local function wallLen(r, d) return (d == "N" or d == "S") and r.w or r.d end
+-- a frame on the floor by wall `d`, `inset` in from it and `u` along it, looking into the room
+local function wallFrame(r, c, d, inset, u)
+	local v = DIRS[d]
+	local half = (d == "N" or d == "S") and r.d / 2 or r.w / 2
+	local along = (d == "N" or d == "S") and Vector3.new(1, 0, 0) or Vector3.new(0, 0, 1)
+	local p = c + Vector3.new(v[1], 0, v[2]) * (half - inset) + along * u
+	return CFrame.lookAt(p, p + INWARD[d])
+end
+-- a wall with no doorway in it (shelves, cells, an altar go there), or nil
+local function quietWall(r, rng)
+	local free = {}
+	for _, d in ipairs(DIR_LIST) do if not r.doors[d] then table.insert(free, d) end end
+	if #free == 0 then return nil end
+	return free[rng:NextInteger(1, #free)]
+end
+-- clear of every doorway's way in, and of `taken`
+local function clearSpot(r, c, p, taken, gap)
+	for d in pairs(r.doors) do
+		local v = DIRS[d]
+		local door = c + Vector3.new(v[1] * r.w / 2, 0, v[2] * r.d / 2)
+		if (door - p).Magnitude < 10 then return false end
+	end
+	for _, q in ipairs(taken or {}) do if (q - p).Magnitude < (gap or 6) then return false end end
+	return true
+end
+local function floorSpot(r, c, rng, taken, edge)
+	for _ = 1, 20 do
+		local p = c + Vector3.new(rng:NextNumber(-r.w / 2 + (edge or 5), r.w / 2 - (edge or 5)), 0, rng:NextNumber(-r.d / 2 + (edge or 5), r.d / 2 - (edge or 5)))
+		if clearSpot(r, c, p, taken) then return p end
+	end
+	return nil
+end
+-- a room's long axis: at(u, v) with u along it, v across
+local function axes(r, c)
+	local long = r.w >= r.d
+	local L, S = long and r.w or r.d, long and r.d or r.w
+	return long, L, S, function(u, v) return long and (c + Vector3.new(u, 0, v)) or (c + Vector3.new(v, 0, u)) end
+end
+
+local A = {}
+-- a GREAT HALL: two rows of pillars down its length, a runner, chandeliers, banners, braziers
+A.hall = function(ctx, th, r, c, rng, keep)
+	local long, L, S, at = axes(r, c)
+	for u = -L / 2 + 9, L / 2 - 9, 11 do
+		if math.abs(u) > 7 then for _, v in ipairs({-S / 2 + 9, S / 2 - 9}) do P.pillar(ctx, th, CFrame.new(at(u, v))) end end
+	end
+	local run = box(ctx, "Runner", long and Vector3.new(L - 14, 0.1, 6) or Vector3.new(6, 0.1, L - 14), CFrame.new(c + Vector3.new(0, 0.05, 0)), shade(th.accent, 0.3), Enum.Material.Fabric, false)
+	run.CanQuery = false
+	for _, u in ipairs({-L / 4, L / 4}) do P.chandelier(ctx, th, CFrame.new(at(u, 0))) end
+	for _, d in ipairs(long and {"N", "S"} or {"E", "W"}) do
+		for _, u in ipairs({-L / 3, L / 3}) do P.banner(ctx, th, wallFrame(r, c, d, 1, u)) end
+	end
+	P.brazier(ctx, th, CFrame.new(at(L / 2 - 6, S / 2 - 5)))
+	P.brazier(ctx, th, CFrame.new(at(-L / 2 + 6, -S / 2 + 5)))
+	keep("urn", CFrame.new(at(-L / 2 + 5.5, S / 2 - 5)))
+	if rng:NextNumber() < 0.6 then keep("chest", CFrame.lookAt(at(L / 2 - 6, -S / 2 + 6), c)) else keep("urn", CFrame.new(at(L / 2 - 5.5, -S / 2 + 5))) end
+end
+-- a CRYPT: rows of sarcophagi (some to be opened), the dead stacked in niches along a wall
+local function sarcophagus(ctx, th, cf)
+	local stone = shade(th.trim, 1.35)
+	box(ctx, "Sarcophagus", Vector3.new(3.4, 2.4, 7), cf * CFrame.new(0, 1.2, 0), stone, Enum.Material.Marble)
+	box(ctx, "SarcLid", Vector3.new(3.8, 0.6, 7.4), cf * CFrame.new(0, 2.7, 0), shade(stone, 0.85), Enum.Material.Marble)
+	box(ctx, "Effigy", Vector3.new(1.6, 0.5, 4.6), cf * CFrame.new(0, 3.2, 0.4), shade(stone, 1.08), Enum.Material.Marble)
+	K.ball(ctx, "EffigyHead", 1.1, cf * CFrame.new(0, 3.45, -2.4), shade(stone, 1.08), Enum.Material.Marble, ctx.Props)
+end
+A.crypt = function(ctx, th, r, c, rng, keep)
+	local long, L, S, at = axes(r, c)
+	local yaw = long and CFrame.new() or CFrame.Angles(0, math.pi / 2, 0)
+	for u = -L / 2 + 8, L / 2 - 8, 9 do
+		if math.abs(u) > 6 then
+			for _, v in ipairs({-S / 4 - 1, S / 4 + 1}) do
+				local cf = CFrame.new(at(u, v)) * yaw
+				if rng:NextNumber() < 0.3 then keep("coffin", cf) else sarcophagus(ctx, th, cf) end
+			end
+		end
+	end
+	local qw = quietWall(r, rng)
+	if qw then
+		local len = wallLen(r, qw)
+		for u = -len / 2 + 6, len / 2 - 6, 5 do
+			local f = wallFrame(r, c, qw, 1.2, u)
+			for row = 0, 2 do
+				box(ctx, "Niche", Vector3.new(4, 0.4, 2), f * CFrame.new(0, 3 + row * 3.2, 0), shade(th.wall, 0.7), mat(th.wallMat))
+				local sk = K.ball(ctx, "Skull", 0.9, f * CFrame.new(rng:NextNumber(-1.2, 1.2), 3.65 + row * 3.2, 0), BONE, Enum.Material.SmoothPlastic, ctx.Props)
+				sk.CanCollide = false
+			end
+		end
+	end
+	for _, s in ipairs({-1, 1}) do P.candles(ctx, th, CFrame.new(at(s * (L / 2 - 5), -s * (S / 2 - 4))), rng) end
+	P.bones(ctx, th, CFrame.new(at(rng:NextNumber(-L / 3, L / 3), 0)), rng)
+end
+-- THE CELLS: barred cells along a wall (a few with what's left of their prisoners), the jailer's table
+A.cells = function(ctx, th, r, c, rng, keep)
+	local qw = quietWall(r, rng)
+	if not qw then return A.storeroom(ctx, th, r, c, rng, keep) end
+	local len = wallLen(r, qw)
+	local n = math.max(2, math.floor((len - 8) / 10))
+	local cw = (len - 8) / n
+	local depth = 8
+	local iron = Color3.fromRGB(56, 54, 58)
+	for i = 1, n do
+		local u0 = -len / 2 + 4 + (i - 1) * cw
+		local um = u0 + cw / 2
+		box(ctx, "CellWall", Vector3.new(1, 12, depth), wallFrame(r, c, qw, depth / 2, u0) * CFrame.new(0, 6, 0), shade(th.wall, 0.85), mat(th.wallMat))
+		if i == n then box(ctx, "CellWall", Vector3.new(1, 12, depth), wallFrame(r, c, qw, depth / 2, u0 + cw) * CFrame.new(0, 6, 0), shade(th.wall, 0.85), mat(th.wallMat)) end
+		for u = u0 + 0.7, u0 + cw - 0.7, 1.1 do
+			if math.abs(u - um) > 2.3 then box(ctx, "CellBar", Vector3.new(0.3, 10, 0.3), wallFrame(r, c, qw, depth, u) * CFrame.new(0, 5, 0), iron, Enum.Material.Metal) end
+		end
+		box(ctx, "CellRail", Vector3.new(cw, 0.4, 0.4), wallFrame(r, c, qw, depth, um) * CFrame.new(0, 10, 0), iron, Enum.Material.Metal)
+		box(ctx, "CellRail", Vector3.new(cw, 0.3, 0.3), wallFrame(r, c, qw, depth, um) * CFrame.new(0, 1, 0), iron, Enum.Material.Metal, false)
+		local inside = wallFrame(r, c, qw, depth / 2, um)
+		if rng:NextNumber() < 0.45 then keep("remains", inside) else P.bones(ctx, th, inside, rng) end
+		for _, x in ipairs({-1.4, 1.4}) do
+			for k = 0, 3 do box(ctx, "Link", Vector3.new(0.2, 0.9, 0.5), wallFrame(r, c, qw, 0.5, um + x) * CFrame.new(0, 8 - k * 0.85, 0) * CFrame.Angles(0, (k % 2) * math.pi / 2, 0), Color3.fromRGB(70, 70, 74), Enum.Material.Metal, false) end
+		end
+	end
+	local far = OPP[qw]
+	local flen = wallLen(r, far)
+	P.table(ctx, th, wallFrame(r, c, far, 5, flen / 2 - 10))
+	P.candles(ctx, th, wallFrame(r, c, far, 5, flen / 2 - 10) * CFrame.new(-2, 3.25, 0), rng)
+	keep("crate", wallFrame(r, c, far, 3, -flen / 2 + 6))
+end
+-- a LIBRARY: aisles of shelves (some worth searching), reading tables, a chandelier
+A.library = function(ctx, th, r, c, rng, keep)
+	local long, L, S, at = axes(r, c)
+	local rot = long and CFrame.Angles(0, math.pi / 2, 0) or CFrame.new()
+	for u = -L / 2 + 9, L / 2 - 9, 7 do
+		if math.abs(u) > 6 then
+			for _, v in ipairs({-S / 4 - 1, S / 4 + 1}) do
+				local cf = CFrame.new(at(u, v)) * rot
+				if rng:NextNumber() < 0.2 then keep("shelf", cf) else P.bookcase(ctx, th, cf, rng) end
+			end
+		end
+	end
+	for _, s in ipairs({-1, 1}) do
+		local cf = CFrame.new(at(s * (L / 2 - 7), s * (S / 2 - 5))) * (long and CFrame.new() or CFrame.Angles(0, math.pi / 2, 0))
+		P.table(ctx, th, cf)
+		P.candles(ctx, th, cf * CFrame.new(1.5, 3.25, 0), rng)
+	end
+	P.chandelier(ctx, th, CFrame.new(c))
+	if rng:NextNumber() < 0.35 then keep("chest", CFrame.lookAt(at(-L / 2 + 5, S / 2 - 5), c)) end
+end
+-- an ARMOURY: racks along the walls (some with something left on them), stands, an anvil
+A.armory = function(ctx, th, r, c, rng, keep)
+	for _, d in ipairs(DIR_LIST) do
+		local len = wallLen(r, d)
+		for _, u in ipairs({-len / 2 + 7, len / 2 - 7}) do
+			local f = wallFrame(r, c, d, 1.6, u)
+			local x = rng:NextNumber()
+			if x < 0.28 then keep("rack", f) elseif x < 0.42 then keep("stand", f) elseif x < 0.8 then K.rack(ctx, f) end
+		end
+	end
+	P.anvil(ctx, th, CFrame.new(c + Vector3.new(rng:NextNumber(-4, 4), 0, rng:NextNumber(-4, 4))) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0))
+	local p = floorSpot(r, c, rng, {c}, 7)
+	if p then P.crates(ctx, th, CFrame.new(p) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), rng) end
+	local q = floorSpot(r, c, rng, {c, p}, 7)
+	if q then keep("crate", CFrame.new(q) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)) end
+	P.brazier(ctx, th, CFrame.new(c + Vector3.new(r.w / 2 - 6, 0, -r.d / 2 + 6)))
+end
+-- a STOREROOM: crates, barrels and sacks stacked everywhere
+A.storeroom = function(ctx, th, r, c, rng, keep)
+	for _, s1 in ipairs({-1, 1}) do
+		for _, s2 in ipairs({-1, 1}) do
+			local p = c + Vector3.new(s1 * (r.w / 2 - 5.5), 0, s2 * (r.d / 2 - 5.5))
+			local x = rng:NextNumber()
+			local spin = CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)
+			if x < 0.32 then keep("crate", CFrame.new(p) * spin)
+			elseif x < 0.5 then keep("barrel", CFrame.new(p))
+			elseif x < 0.66 then keep("sack", CFrame.new(p) * spin)
+			else P.crates(ctx, th, CFrame.new(p) * spin, rng) end
+		end
+	end
+	local taken = {c}
+	for _ = 1, 3 do
+		local p = floorSpot(r, c, rng, taken, 6)
+		if p then
+			table.insert(taken, p)
+			if rng:NextNumber() < 0.5 then P.barrel(ctx, th, CFrame.new(p)) else P.crates(ctx, th, CFrame.new(p) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), rng) end
+		end
+	end
+end
+-- a CHAPEL: an altar under coloured glass, statues, pews facing it, an aisle up the middle
+A.chapel = function(ctx, th, r, c, rng, keep)
+	local qw = quietWall(r, rng)
+	if not qw then return A.hall(ctx, th, r, c, rng, keep) end
+	local len = wallLen(r, qw)
+	local deep = (qw == "N" or qw == "S") and r.d or r.w
+	local alt = wallFrame(r, c, qw, 4, 0)
+	box(ctx, "AltarStep", Vector3.new(12, 0.8, 7), alt * CFrame.new(0, 0.4, 0), shade(th.trim, 0.9), mat(th.trimMat))
+	box(ctx, "Altar", Vector3.new(6, 3, 2.6), alt * CFrame.new(0, 2.3, 0), Color3.fromRGB(200, 196, 186), Enum.Material.Marble)
+	box(ctx, "AltarCloth", Vector3.new(6.2, 0.1, 2.8), alt * CFrame.new(0, 3.85, 0), shade(th.accent, 0.5), Enum.Material.Fabric, false)
+	P.candles(ctx, th, alt * CFrame.new(-1.8, 3.85, 0), rng)
+	for _, x in ipairs({-8, 8}) do P.statue(ctx, th, alt * CFrame.new(x, 0, -1)) end
+	local glass = box(ctx, "StainedGlass", Vector3.new(7, 10, 0.3), wallFrame(r, c, qw, 0.4, 0) * CFrame.new(0, 15, 0), th.accent, Enum.Material.Neon, false)
+	glass.Transparency = 0.35
+	local gl = Instance.new("PointLight"); gl.Color = th.accent; gl.Range = 26; gl.Brightness = 1.2; gl.Parent = glass
+	local wood = Color3.fromRGB(86, 58, 36)
+	local sideDoor = r.doors[(qw == "N" or qw == "S") and "E" or "N"] or r.doors[(qw == "N" or qw == "S") and "W" or "S"]
+	for k = 1, math.floor((deep - 18) / 5) do
+		local dist = 12 + k * 5
+		if not (sideDoor and math.abs(dist - deep / 2) < 7) then
+			for _, s in ipairs({-1, 1}) do
+				local f = wallFrame(r, c, qw, dist, s * (len / 4 + 1.5))
+				box(ctx, "Pew", Vector3.new(len / 2 - 9, 0.5, 1.6), f * CFrame.new(0, 1.6, 0), wood, Enum.Material.WoodPlanks)
+				box(ctx, "PewBack", Vector3.new(len / 2 - 9, 2.4, 0.4), f * CFrame.new(0, 2.6, 0.9), wood, Enum.Material.WoodPlanks)
+				for _, x in ipairs({-(len / 4 - 5), len / 4 - 5}) do box(ctx, "PewLeg", Vector3.new(0.4, 1.4, 1.4), f * CFrame.new(x, 0.7, 0), shade(wood, 0.8), Enum.Material.Wood) end
+			end
+		end
+	end
+	keep("urn", wallFrame(r, c, qw, 3, -len / 2 + 5))
+	keep("urn", wallFrame(r, c, qw, 3, len / 2 - 5))
+	if rng:NextNumber() < 0.5 then keep("chest", alt * CFrame.new(0, 0, -5.5) * CFrame.Angles(0, math.pi, 0)) end
+end
+-- a CAVERN: the walls fall in rough rock, stalagmites, the theme's growths, someone's old camp
+A.cavern = function(ctx, th, r, c, rng, keep)
+	for _ = 1, 16 do
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local len = wallLen(r, d)
+		local u = rng:NextNumber(-len / 2 + 3, len / 2 - 3)
+		if not (r.doors[d] and math.abs(u) < 10) then
+			K.rock(ctx, wallFrame(r, c, d, rng:NextNumber(2, 4), u).Position, rng:NextNumber(3, 7), shade(th.wall, rng:NextNumber(0.7, 1)))
+		end
+	end
+	local taken = {}
+	for _ = 1, 6 do
+		local p = floorSpot(r, c, rng, taken, 7)
+		if p then
+			table.insert(taken, p)
+			K.cone(ctx, "Stalagmite", p, rng:NextNumber(0.9, 1.8), rng:NextNumber(3, 8), shade(th.wall, 0.8), mat(th.wallMat), ctx.Props, false, 6)
+		end
+	end
+	local grow = (th.props and (table.find(th.props, "mushroom") and "mushroom" or (table.find(th.props, "crystal") and "crystal" or (table.find(th.props, "snowpile") and "snowpile")))) or nil
+	for _ = 1, 3 do
+		local p = floorSpot(r, c, rng, taken, 6)
+		if p and grow and P[grow] then table.insert(taken, p); P[grow](ctx, th, CFrame.new(p), rng) end
+	end
+	local camp = floorSpot(r, c, rng, taken, 9)
+	if camp then
+		table.insert(taken, camp)
+		if K.campfire then K.campfire(ctx, camp) else P.brazier(ctx, th, CFrame.new(camp)) end
+		keep("sack", CFrame.new(camp + Vector3.new(4.5, 0, 1.5)))
+		if rng:NextNumber() < 0.5 then keep("crate", CFrame.new(camp + Vector3.new(-4.5, 0, -1)) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)) end
+	end
+end
+-- a TREASURE VAULT: the ornate chest on its dais, gold piled round it, its silent guardians
+A.vault = function(ctx, th, r, c, rng, keep)
+	box(ctx, "Dais", Vector3.new(10, 0.8, 8), CFrame.new(c + Vector3.new(0, 0.4, 0)), shade(th.trim, 0.9), mat(th.trimMat))
+	keep("ornate", CFrame.new(c + Vector3.new(0, 0.8, 0)))
+	for i = 0, 2 do
+		local a = i / 3 * math.pi * 2 + 0.5
+		P.goldpile(ctx, th, CFrame.new(c + Vector3.new(math.cos(a) * 9, 0, math.sin(a) * 9)), rng)
+	end
+	for _, s in ipairs({-1, 1}) do
+		P.statue(ctx, th, CFrame.lookAt(c + Vector3.new(s * (r.w / 2 - 5), 0, -r.d / 2 + 6), c))
+		keep("urn", CFrame.new(c + Vector3.new(s * (r.w / 2 - 5), 0, r.d / 2 - 5)))
+	end
+	P.chandelier(ctx, th, CFrame.new(c))
+end
+-- THE LAIR (a raid's boss): the dais, and the hoard behind it
+A.lair = function(ctx, th, r, c, rng, keep)
+	feature(ctx, th, {kind = "boss", id = r.id}, CFrame.new(c))
+	keep("hoard", CFrame.lookAt(c + Vector3.new(0, 0, r.d / 2 - 7), c))
+	for _, s in ipairs({-1, 1}) do P.goldpile(ctx, th, CFrame.new(c + Vector3.new(s * 8, 0, r.d / 2 - 6)), rng) end
+end
+-- THE WAY OUT (a raid's exit): stone steps climbing a wall to a door full of daylight
+local function escapeStairs(ctx, th, r, c, rng)
+	local qw = quietWall(r, rng) or "N"
+	local steps, run = 10, 1.5
+	local u0 = -steps * run / 2
+	for i = 1, steps do
+		box(ctx, "Step", Vector3.new(run, i * 1.2, 6), wallFrame(r, c, qw, 3.2, u0 + i * run) * CFrame.new(0, i * 0.6, 0), shade(th.trim, 1.15), mat(th.trimMat))
+	end
+	local top = wallFrame(r, c, qw, 3.2, u0 + steps * run + 3.5)
+	box(ctx, "Landing", Vector3.new(6, 12, 6), top * CFrame.new(0, 6, 0), shade(th.trim, 1.1), mat(th.trimMat))
+	local door = wallFrame(r, c, qw, 0.4, u0 + steps * run + 3.5)
+	for _, x in ipairs({-3, 3}) do box(ctx, "EscapePost", Vector3.new(1, 9, 1.2), door * CFrame.new(x, 16.5, 0.2), Color3.fromRGB(96, 70, 44), Enum.Material.Wood) end
+	box(ctx, "EscapeLintel", Vector3.new(7, 1, 1.2), door * CFrame.new(0, 21.5, 0.2), Color3.fromRGB(96, 70, 44), Enum.Material.Wood)
+	local light = box(ctx, "EscapeDoor", Vector3.new(5, 8.6, 0.3), door * CFrame.new(0, 16.4, 0), Color3.fromRGB(255, 240, 200), Enum.Material.Neon, false)
+	light.Transparency = 0.1
+	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 236, 190); l.Range = 34; l.Brightness = 2.6; l.Parent = light
+	local pe = Instance.new("ParticleEmitter"); pe.Color = ColorSequence.new(Color3.fromRGB(255, 244, 210)); pe.LightEmission = 0.6
+	pe.Rate = 8; pe.Speed = NumberRange.new(0.5, 1.5); pe.Lifetime = NumberRange.new(2, 3); pe.Size = NumberSequence.new(0.25, 0)
+	pe.SpreadAngle = Vector2.new(40, 40); pe.Parent = light
+	r.escape = (top * CFrame.new(0, 12.5, 0)).Position
+	r.escapeWall = qw
 end
 
 -- a portcullis in a doorway (Map ▸ Gates ▸ name); raised: up inside the lintel
@@ -532,14 +879,21 @@ function Dungeon.build(themeKey, opts)
 	local gatesFolder = Instance.new("Folder"); gatesFolder.Name = "Gates"; gatesFolder.Parent = ctx.model
 	local roomsFolder = Instance.new("Folder"); roomsFolder.Name = "Rooms"; roomsFolder.Parent = ctx.model
 
-	-- each room's size and place
+	-- each room's size and place (a raid's: what it was, and its size by that)
+	local archW = ARCH_W[themeKey] or ARCH_W.BoneCrypt
 	for _, r in ipairs(list) do
 		r.cx = (r.gx - (W - 1) / 2) * CELL
 		r.cz = (r.gy - (H - 1) / 2) * CELL
-		local big = r.kind == "boss" and 70 or (r.kind == "elite" and 52 or (r.kind == "start" and 40 or nil))
-		r.w = big or (rng:NextInteger(17, 25) * 2)
-		r.d = big or (rng:NextInteger(17, 25) * 2)
-		r.spots, r.gates = {}, {}
+		if opts.raid then
+			r.arch = (r.kind == "combat" and weighted(rng, archW)) or (r.kind == "elite" and "hall") or (r.kind == "treasure" and "vault") or (r.kind == "boss" and "lair") or nil
+		end
+		local sz = r.arch and ARCH_SIZE[r.arch]
+		local big = r.kind == "boss" and 70 or (r.kind == "elite" and 52 or (r.kind == "start" and 40 or (r.kind == "exit" and opts.raid and 40 or nil)))
+		r.w = (sz and rng:NextInteger(sz[1], sz[2]) * 2) or big or (rng:NextInteger(17, 25) * 2)
+		r.d = (sz and rng:NextInteger(sz[1], sz[2]) * 2) or big or (rng:NextInteger(17, 25) * 2)
+		if r.arch == "hall" and rng:NextNumber() < 0.5 then r.d = math.max(36, r.d - 16) end   -- (a long hall)
+		r.h = (r.arch and ARCH_H[r.arch]) or WALL_H
+		r.spots, r.gates, r.containers = {}, {}, {}
 	end
 
 	local floorC, floorM = th.floor, mat(th.floorMat)
@@ -554,9 +908,11 @@ function Dungeon.build(themeKey, opts)
 			p.CanCollide = false; p.CanQuery = false
 		end
 		-- the ceiling, its beams
-		K.box(ctx, "Ceiling", Vector3.new(fw, 1, fd), CFrame.new(c + Vector3.new(0, WALL_H + 0.5, 0)), shade(th.wall, 0.6), mat(th.wallMat))
+		local RH = r.h or WALL_H
+		ctx.H = RH
+		K.box(ctx, "Ceiling", Vector3.new(fw, 1, fd), CFrame.new(c + Vector3.new(0, RH + 0.5, 0)), shade(th.wall, 0.6), mat(th.wallMat))
 		for x = -r.w / 2 + 8, r.w / 2 - 8, 12 do
-			K.box(ctx, "Beam", Vector3.new(1.4, 1.4, r.d), CFrame.new(c + Vector3.new(x, WALL_H - 0.7, 0)), th.trim, mat(th.trimMat)).CanCollide = false
+			K.box(ctx, "Beam", Vector3.new(1.4, 1.4, r.d), CFrame.new(c + Vector3.new(x, RH - 0.7, 0)), th.trim, mat(th.trimMat)).CanCollide = false
 		end
 		-- the walls, a gap where a corridor comes in
 		local gapsN, gapsS, gapsE, gapsW = {}, {}, {}, {}
@@ -564,14 +920,30 @@ function Dungeon.build(themeKey, opts)
 		if r.doors.S then table.insert(gapsS, 0) end
 		if r.doors.E then table.insert(gapsE, 0) end
 		if r.doors.W then table.insert(gapsW, 0) end
-		wallRun(ctx, th, c + Vector3.new(0, 0, -r.d / 2 - T / 2), "x", fw, WALL_H, gapsN)
-		wallRun(ctx, th, c + Vector3.new(0, 0, r.d / 2 + T / 2), "x", fw, WALL_H, gapsS)
-		wallRun(ctx, th, c + Vector3.new(r.w / 2 + T / 2, 0, 0), "z", r.d, WALL_H, gapsE)
-		wallRun(ctx, th, c + Vector3.new(-r.w / 2 - T / 2, 0, 0), "z", r.d, WALL_H, gapsW)
+		wallRun(ctx, th, c + Vector3.new(0, 0, -r.d / 2 - T / 2), "x", fw, RH, gapsN)
+		wallRun(ctx, th, c + Vector3.new(0, 0, r.d / 2 + T / 2), "x", fw, RH, gapsS)
+		wallRun(ctx, th, c + Vector3.new(r.w / 2 + T / 2, 0, 0), "z", r.d, RH, gapsE)
+		wallRun(ctx, th, c + Vector3.new(-r.w / 2 - T / 2, 0, 0), "z", r.d, RH, gapsW)
 		-- the baseboard, pillars at the corners
 		for _, sx in ipairs({-1, 1}) do
 			for _, sz in ipairs({-1, 1}) do
-				K.box(ctx, "CornerPillar", Vector3.new(3, WALL_H, 3), CFrame.new(c + Vector3.new(sx * (r.w / 2 - 1.5), WALL_H / 2, sz * (r.d / 2 - 1.5))), th.trim, mat(th.trimMat))
+				K.box(ctx, "CornerPillar", Vector3.new(3, RH, 3), CFrame.new(c + Vector3.new(sx * (r.w / 2 - 1.5), RH / 2, sz * (r.d / 2 - 1.5))), th.trim, mat(th.trimMat))
+			end
+		end
+		-- (a raid's rooms: pilasters down the walls and a skirting of the trim, between the doorways)
+		if opts.raid then
+			for _, d in ipairs(DIR_LIST) do
+				local len = wallLen(r, d)
+				for u = -len / 2 + 7, len / 2 - 7, 11 do
+					if not (r.doors[d] and math.abs(u) < DOOR_W / 2 + 2.5) and math.abs(math.abs(u) - len * 0.3) > 2.5 then
+						box(ctx, "Pilaster", Vector3.new(1.8, RH, 0.9), wallFrame(r, c, d, 0.45, u) * CFrame.new(0, RH / 2, 0), shade(th.trim, 1.08), mat(th.trimMat))
+					end
+				end
+				local segs = r.doors[d] and {{-len / 2, -DOOR_W / 2 - 0.5}, {DOOR_W / 2 + 0.5, len / 2}} or {{-len / 2, len / 2}}
+				for _, sg in ipairs(segs) do
+					local slen = sg[2] - sg[1]
+					if slen > 1 then box(ctx, "Skirting", Vector3.new(slen, 1.1, 0.5), wallFrame(r, c, d, 0.25, (sg[1] + sg[2]) / 2) * CFrame.new(0, 0.55, 0), shade(th.trim, 0.8), mat(th.trimMat), false) end
+				end
 			end
 		end
 		-- doorway frames, gates, torches
@@ -595,7 +967,7 @@ function Dungeon.build(themeKey, opts)
 			local along = (d == "N" or d == "S") and r.w or r.d
 			for _, f in ipairs({-0.3, 0.3}) do
 				local off = f * along
-				if not (r.doors[d] and math.abs(off) < DOOR_W) then
+				if not (r.doors[d] and math.abs(off) < DOOR_W) and (not opts.raid or rng:NextNumber() < 0.75 or r.kind == "start" or r.kind == "exit") then
 					local pos
 					if d == "N" or d == "S" then pos = c + Vector3.new(off, 8, v[2] * (r.d / 2 - 0.2))
 					else pos = c + Vector3.new(v[1] * (r.w / 2 - 0.2), 8, off) end
@@ -603,12 +975,41 @@ function Dungeon.build(themeKey, opts)
 				end
 			end
 		end
-		-- the room's feature at its middle (the boss's dais, an altar…)
+		-- the room's feature at its middle (the boss's dais, an altar…); a raid's rooms are furnished
+		-- as what they were, and its exits are stairs up to the daylight
 		local mid = CFrame.new(c)
-		if r.kind ~= "combat" and r.kind ~= "elite" then feature(ctx, th, r, mid) end
+		local function keep(kind, cf) table.insert(r.containers, {kind = kind, cf = cf}) end
+		if r.arch and A[r.arch] then
+			local okA, errA = pcall(A[r.arch], ctx, th, r, c, rng, keep)
+			if not okA then warn("[Dungeon] room", r.arch, errA) end
+		elseif opts.raid and r.kind == "exit" then
+			escapeStairs(ctx, th, r, c, rng)
+		elseif r.kind ~= "combat" and r.kind ~= "elite" then
+			feature(ctx, th, r, mid)
+		end
+		-- (what's left of someone who came before; the odd crate, urn or sack by the walls)
+		if opts.raid and r.kind ~= "start" and r.kind ~= "exit" then
+			local taken = {c}
+			for _, k in ipairs(r.containers) do table.insert(taken, k.cf.Position) end
+			if rng:NextNumber() < 0.3 then
+				local p = floorSpot(r, c, rng, taken, 6)
+				if p then table.insert(taken, p); keep("remains", CFrame.new(p) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)) end
+			end
+			local odd = RAID_ODDS[themeKey] or RAID_ODDS.BoneCrypt
+			for _ = 1, rng:NextInteger(1, 2) do
+				local d = DIR_LIST[rng:NextInteger(1, 4)]
+				local len = wallLen(r, d)
+				local u = rng:NextNumber(-len / 2 + 5, len / 2 - 5)
+				local f = wallFrame(r, c, d, 2.2, u)
+				if clearSpot(r, c, f.Position, taken, 5) then
+					table.insert(taken, f.Position)
+					keep(odd[rng:NextInteger(1, #odd)], f * CFrame.Angles(0, rng:NextNumber(-0.3, 0.3), 0))
+				end
+			end
+		end
 		r.feature = c + Vector3.new(0, 0.5, 0)
 		-- scattered props, kept off the middle and out of the doorways
-		local nProps = (r.kind == "boss") and 6 or rng:NextInteger(3, 6)
+		local nProps = (r.kind == "boss") and 6 or (r.arch and rng:NextInteger(1, 3) or rng:NextInteger(3, 6))
 		local placed = {}
 		for _ = 1, nProps * 4 do
 			if #placed >= nProps then break end
@@ -622,6 +1023,7 @@ function Dungeon.build(themeKey, opts)
 				if (door - p).Magnitude < 10 then ok = false end
 			end
 			for _, q in ipairs(placed) do if (q - p).Magnitude < 7 then ok = false end end
+			for _, k in ipairs(r.containers) do if (k.cf.Position - p).Magnitude < 6 then ok = false end end
 			if ok then
 				-- a wall prop (a banner, a painting, a bookcase, chains) goes to the nearest wall
 				local kind = th.props[rng:NextInteger(1, #th.props)]
@@ -655,9 +1057,11 @@ function Dungeon.build(themeKey, opts)
 		local b = Instance.new("Part")
 		b.Name = "Room" .. r.id
 		b.Anchored, b.CanCollide, b.CanQuery, b.CanTouch, b.Transparency = true, false, false, false, 1
-		b.Size = Vector3.new(r.w, WALL_H, r.d)
-		b.CFrame = CFrame.new(c + Vector3.new(0, WALL_H / 2, 0))
+		b.Size = Vector3.new(r.w, RH, r.d)
+		b.CFrame = CFrame.new(c + Vector3.new(0, RH / 2, 0))
 		b:SetAttribute("RoomId", r.id); b:SetAttribute("Kind", r.kind); b:SetAttribute("Depth", r.depth)
+		if r.arch then b:SetAttribute("Arch", r.arch) end
+		ctx.H = nil
 		b.Parent = roomsFolder
 	end
 
@@ -677,7 +1081,7 @@ function Dungeon.build(themeKey, opts)
 						K.box(ctx, "CorridorWall", Vector3.new(len + 0.2, CORR_H, T), CFrame.new(mid + Vector3.new(0, CORR_H / 2, s * (DOOR_W / 2 + T / 2))), shade(th.wall, 0.92), mat(th.wallMat))
 					end
 					c = mid
-					if len > 18 then sconce(ctx, th, mid + Vector3.new(0, 8, -DOOR_W / 2 + 0.2), Vector3.new(0, 0, 1)) end
+					if len > 18 and (not opts.raid or rng:NextNumber() < 0.5) then sconce(ctx, th, mid + Vector3.new(0, 8, -DOOR_W / 2 + 0.2), Vector3.new(0, 0, 1)) end
 				else
 					local z0, z1 = r.cz + r.d / 2 + T, o.cz - o.d / 2 - T
 					local len = z1 - z0
@@ -688,7 +1092,7 @@ function Dungeon.build(themeKey, opts)
 						K.box(ctx, "CorridorWall", Vector3.new(T, CORR_H, len + 0.2), CFrame.new(mid + Vector3.new(s * (DOOR_W / 2 + T / 2), CORR_H / 2, 0)), shade(th.wall, 0.92), mat(th.wallMat))
 					end
 					c = mid
-					if len > 18 then sconce(ctx, th, mid + Vector3.new(-DOOR_W / 2 + 0.2, 8, 0), Vector3.new(1, 0, 0)) end
+					if len > 18 and (not opts.raid or rng:NextNumber() < 0.5) then sconce(ctx, th, mid + Vector3.new(-DOOR_W / 2 + 0.2, 8, 0), Vector3.new(1, 0, 0)) end
 				end
 			end
 		end
@@ -697,9 +1101,14 @@ function Dungeon.build(themeKey, opts)
 
 	-- the start: spawns round its middle, the menu's shot
 	local s = list[1]
-	for i = 0, 5 do
-		local a = i / 6 * math.pi * 2
-		K.spawn(ctx, Vector3.new(s.cx + math.cos(a) * 9, 1, s.cz + math.sin(a) * 9), nil, Vector3.new(s.cx, 1, s.cz))
+	for _, h in ipairs(list) do
+		if h.kind == "start" then
+			for i = 0, 5 do
+				local a = i / 6 * math.pi * 2
+				local sp = K.spawn(ctx, Vector3.new(h.cx + math.cos(a) * 9, 1, h.cz + math.sin(a) * 9), nil, Vector3.new(h.cx, 1, h.cz))
+				sp:SetAttribute("Room", h.id)
+			end
+		end
 	end
 	local fin = finalId and list[finalId] or s
 	K.camera(ctx, Vector3.new(s.cx + s.w * 0.35, 12, s.cz + s.d * 0.35), Vector3.new(s.cx, 3, s.cz))

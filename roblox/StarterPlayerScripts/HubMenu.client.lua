@@ -4094,9 +4094,9 @@ do
 			onClick = function()
 				if not GameConfig.DOORS[a.door] then toast("Coming soon", COL.BAD); return end
 				if a.key == "Deadvault" then
-					modal("DEADVAULT", "Go in with the kit you dare to risk. Loot it, extract through a blue portal, keep it. Fall, and it's all gone.",
+					modal("DEADVAULT", "Go in with your party and the kit you dare to risk. Search the dark, keep quiet past what sleeps, get out by the escape stairs or a blue portal with it all. Fall, and it's all gone.",
 						{{"ENTER THE RAID", COL.GREEN, function() closeModal(); goDoor("Deadvault") end},
-						 {"YOUR VAULT  ·  KIT, STASH, MERCHANT", COL.BLUE, function() closeModal(); if _G.OpenVault then _G.OpenVault() end end}})
+						 {"YOUR VAULT  ·  KIT, STASH, MERCHANTS", COL.BLUE, function() closeModal(); if _G.OpenVault then _G.OpenVault() end end}})
 					return
 				end
 				if a.key == "Invasion" then

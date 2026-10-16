@@ -756,7 +756,14 @@ it should be heard standing next to someone, never across the yard. Licensed lib
   (ReplicatedStorage ▸ MapShots ▸ <key>: shoot its boss room, upload, resolve the Decal).
 - **Loot**: `Catalog ▸ Loot`: rarities, affixes (a `kind` the hit hook knows), relics (`mods`,
   `health`, or an `effect`; `class = "Archer"` for one only that class can use, e.g. bow draw),
-  potions, armour, tomes (the finder's own class's powers), what each chest holds.
+  potions, armour, tomes (the finder's own class's powers), what each chest holds; Deadvault's
+  `TREASURES` (a valuable: name, glyph, rarity, value) and `CONTAINERS` (what each kind holds:
+  count, luck, empty chance, loot weights).
+- **A raid room** (Deadvault): an archetype in `Game ▸ Dungeon` (`A.<name>` furnishes it and calls
+  `keep(kind, cf)` for its containers), its size (`ARCH_SIZE`), height (`ARCH_H`) and which
+  themes have it (`ARCH_W`).
+- **The vault's merchants**: `Game ▸ Vault` `MERCHANTS` (wares and prices) and `WORK` (the Smith's
+  reforge / temper prices by rarity).
 - **A new adventure door**: `GameConfig.DOORS` (`party = true` or `matchmade = true`, `page = 2`),
   `ADVENTURE_ORDER`, and its tile in HubMenu's page 2 (`ADV`; a scene in `SCENES`).
 

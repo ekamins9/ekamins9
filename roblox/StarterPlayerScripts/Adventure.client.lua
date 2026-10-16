@@ -266,7 +266,7 @@ local function drawMap()
 		z0 = math.min(z0, r.cz - r.d / 2); z1 = math.max(z1, r.cz + r.d / 2)
 	end
 	bounds = {x0 = x0 - 6, z0 = z0 - 6, w = (x1 - x0) + 12, h = (z1 - z0) + 12}
-	mapTitle.Text = string.upper(layout.themeName or "") .. "  ·  FLOOR " .. tostring(layout.floor or 1)
+	mapTitle.Text = string.upper(layout.themeName or "") .. (layout.floors and ("  ·  FLOOR " .. tostring(layout.floor or 1)) or "")
 	-- corridors under the rooms
 	for _, r in pairs(layout.rooms) do
 		for d, nid in pairs(r.doors or {}) do
@@ -307,7 +307,12 @@ local function refreshRoom(id)
 	rf.frame.Visible = seen[id] == true
 	rf.frame.BackgroundTransparency = visited[id] and 0 or 0.45
 	-- (a chest in it, shown till the room's own icon matters more)
-	if rf.icon then rf.icon.Text = (rf.room.hasChest and (rf.room.kind == "combat" or rf.room.kind == "elite")) and "🎁" or (KIND_ICON[rf.room.kind] or "") end
+	if rf.icon then
+		local icon = KIND_ICON[rf.room.kind] or ""
+		-- (a way out: open, or shut for now)
+		if rf.room.kind == "exit" and rf.room.open == false then icon = "🔒" end
+		rf.icon.Text = (rf.room.hasChest and (rf.room.kind == "combat" or rf.room.kind == "elite")) and "🎁" or icon
+	end
 end
 local function see(id)
 	if not (layout and layout.rooms and layout.rooms[id]) then return end
@@ -618,11 +623,19 @@ end)
 if event then
 	event.OnClientEvent:Connect(function(kind, data)
 		if kind == "Layout" then
+			-- (the same dungeon again: what you've found stays found)
+			local same = layout and data and layout.themeName == data.themeName and layout.rooms and data.rooms and #layout.rooms == #data.rooms
 			layout = data
-			seen, visited = {}, {}
+			if not same then seen, visited = {}, {} end
+			-- (what everyone knows from the start: the ways out)
+			for id, r in pairs(layout and layout.rooms or {}) do if r.known then seen[id] = true end end
 			task.defer(function()
 				drawMap()
 				for id in pairs(roomFrames) do refreshRoom(id) end
+				for _, c in ipairs(mapArea:GetChildren()) do
+					local a, b = c:GetAttribute("A"), c:GetAttribute("B")
+					if a then c.Visible = (visited[a] or visited[b]) == true end
+				end
 			end)
 			placeName = nil
 		elseif kind == "Room" then
@@ -851,7 +864,9 @@ local function guideTargets()
 			local body = m:FindFirstChild("Body")
 			local pr = body and body:FindFirstChildOfClass("ProximityPrompt")
 			if body and pr and pr.Enabled then
-				table.insert(out, {part = body, text = "OPEN CHEST", color = RARITY_COLOR[m:GetAttribute("Rarity") or "Common"] or Theme.ACCENT, prio = 1, arrow = true, up = 4.5})
+				-- (a raid's dark keeps its chests till you're near them)
+				local raid = round:GetAttribute("Mode") == "Deadvault"
+				table.insert(out, {part = body, text = "OPEN CHEST", color = RARITY_COLOR[m:GetAttribute("Rarity") or "Common"] or Theme.ACCENT, prio = raid and 5 or 1, arrow = not raid, up = 4.5, range = raid and 45 or nil})
 			end
 		elseif m.Name == "LootDrop" then
 			local a = m:FindFirstChild("Anchor")
@@ -877,7 +892,7 @@ local function guideTargets()
 		for _, d in ipairs(props and props:GetChildren() or {}) do
 			if d.Name == "ExitPortal" then
 				local pr = d:FindFirstChild("ExtractPrompt")
-				if pr and pr.Enabled then table.insert(out, {part = d, text = "EXTRACT", color = Color3.fromRGB(110, 180, 255), prio = 1, arrow = true, up = 7}) end
+				if pr and pr.Enabled then table.insert(out, {part = d, text = d:GetAttribute("Escape") and "ESCAPE STAIRS" or "EXTRACT", color = d:GetAttribute("Escape") and Color3.fromRGB(255, 230, 170) or Color3.fromRGB(110, 180, 255), prio = 1, arrow = true, up = 7}) end
 			end
 		end
 		local crown = map:FindFirstChild("FallenCrown")
@@ -912,6 +927,7 @@ local lastGuideScan, guideList = 0, {}
 local MODE_HINT = {
 	Depths = "EXPLORE: FIND THE WAY DOWN", Deadvault = "LOOT THE ROOMS  ·  THE WAYS OUT OPEN SOON",
 	Crownfall = "FIND CHESTS  ·  STAY INSIDE THE RING", Kingslayer = "TAKE THE CROWN, OR TAKE IT FROM THE KING",
+	Deadvault = "SEARCH THE ROOMS (V)  ·  CROUCH TO STAY UNHEARD  ·  YOUR BAG (I)",
 	Plague = "SURVIVE UNTIL DAWN",
 }
 RunService.RenderStepped:Connect(function()
@@ -1022,3 +1038,58 @@ task.spawn(function()
 		end
 	end
 end)
+
+--------------------------------------------------------------------
+--  WHAT A MONSTER KNOWS (Combat ▸ Perception: its Alert attribute): "!" it has seen or heard
+--  you, "?" it's looking for you, "z" asleep. Over its head, for everyone.
+--------------------------------------------------------------------
+do
+	local ALERT = {["!"] = {text = "!", color = Color3.fromRGB(255, 70, 60), size = 34},
+		["?"] = {text = "?", color = Color3.fromRGB(255, 210, 63), size = 28},
+		z = {text = "z z", color = Color3.fromRGB(170, 200, 255), size = 18}}
+	local signs = setmetatable({}, {__mode = "k"})
+	local lastScan = 0
+	RunService.Heartbeat:Connect(function()
+		local t = os.clock()
+		if t - lastScan < 0.2 then return end
+		lastScan = t
+		local npcs = workspace:FindFirstChild("NPCs")
+		local live = {}
+		for _, m in ipairs(npcs and npcs:GetChildren() or {}) do
+			local a = m:GetAttribute("Alert")
+			local head = m:FindFirstChild("Head")
+			local h = m:FindFirstChildOfClass("Humanoid")
+			if a and ALERT[a] and head and h and h.Health > 0 then
+				live[m] = true
+				local s2 = signs[m]
+				if not s2 then
+					local bb = Instance.new("BillboardGui")
+					bb.Name = "AlertSign"
+					bb.Size = UDim2.fromOffset(60, 40)
+					bb.StudsOffsetWorldSpace = Vector3.new(0, 2.6 * (m:GetAttribute("MonsterScale") or 1), 0)
+					bb.AlwaysOnTop = true
+					bb.LightInfluence = 0
+					bb.MaxDistance = 90
+					bb.Adornee = head
+					local l = text(bb, "", 28, Theme.TEXT, TITLE)
+					l.Size = UDim2.fromScale(1, 1)
+					l.TextStrokeTransparency = 0.1
+					bb.Parent = gui
+					s2 = {bb = bb, label = l}
+					signs[m] = s2
+				end
+				if s2.state ~= a then
+					s2.state = a
+					local def = ALERT[a]
+					s2.label.Text, s2.label.TextColor3, s2.label.TextSize = def.text, def.color, def.size
+					if a == "!" then
+						-- (the moment it finds you: a pop)
+						s2.label.TextSize = def.size * 1.6
+						TweenService:Create(s2.label, TweenInfo.new(0.35, Enum.EasingStyle.Back), {TextSize = def.size}):Play()
+					end
+				end
+			end
+		end
+		for m, s2 in pairs(signs) do if not live[m] then s2.bb:Destroy(); signs[m] = nil end end
+	end)
+end

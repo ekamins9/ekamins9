@@ -9,8 +9,9 @@
                                                  affixes by rarity, a name ("Blazing Longsword of
                                                  Giants"; a Legendary has its own)
        Loot.relic(luck[, have]) · Loot.tome(classId, luck) · Loot.potion(luck) · Loot.armor(luck)
-       Loot.gold(n)
+       Loot.gold(n) · Loot.treasure(luck[, rarity])  (Deadvault's valuables)
        Loot.roll(chestKind, classId, luck) -> item          (Catalog ▸ Loot CHESTS)
+       Loot.container(kind, classId, luck) -> {item…}       (Deadvault's containers: CONTAINERS)
        Loot.choices(chestKind, classId, luck, n[, have]) -> {item…}   n different cards
        Loot.card(item) -> {kind, name, rarity, color, glyph, lines, weapon, skin}   (what a screen shows)
 
@@ -129,7 +130,12 @@ function Loot.weapon(classId, luck, rarity)
 	for _, tier in ipairs(r.skin) do for _, id in ipairs(sk[tier] or {}) do table.insert(choices, id) end end
 	if #choices == 0 and (CFG.RANK[r.id] or 1) >= 2 then choices = sk.all end
 	local skin = #choices > 0 and choices[math.random(#choices)] or nil
-	-- its affixes: different kinds; the rarer, the higher they roll
+	local affixes = Loot.rollAffixes(w, r)
+	return {kind = "weapon", uid = uid(), weapon = w.id, skin = skin, slot = pickd.slot, rarity = r.id, affixes = affixes, name = Loot.weaponName(w, r, affixes), power = r.power}
+end
+
+-- a weapon's affixes: different kinds; the rarer, the higher they roll
+function Loot.rollAffixes(w, r)
 	local affixes, used = {}, {}
 	local rank = CFG.RANK[r.id] or 1
 	for _ = 1, r.affixes do
@@ -148,19 +154,30 @@ function Loot.weapon(classId, luck, rarity)
 			end
 		end
 	end
-	-- its name
-	local name
-	if r.id == "Legendary" then
-		name = CFG.LEGENDARY_NAMES[math.random(#CFG.LEGENDARY_NAMES)]
-	else
-		local prefix, suffix
-		for _, af in ipairs(affixes) do
-			local a = CFG.AFFIX[af.id]
-			if a.suffix then suffix = suffix or a.suffix else prefix = prefix or a.id end
-		end
-		name = (prefix and (prefix .. " ") or "") .. (w.name or w.id) .. (suffix and (" " .. suffix) or "")
+	return affixes
+end
+-- its name: "Blazing Longsword of Giants"; a Legendary has its own
+function Loot.weaponName(w, r, affixes)
+	if r.id == "Legendary" then return CFG.LEGENDARY_NAMES[math.random(#CFG.LEGENDARY_NAMES)] end
+	local prefix, suffix
+	for _, af in ipairs(affixes) do
+		local a = CFG.AFFIX[af.id]
+		if a then if a.suffix then suffix = suffix or a.suffix else prefix = prefix or a.id end end
 	end
-	return {kind = "weapon", uid = uid(), weapon = w.id, skin = skin, slot = pickd.slot, rarity = r.id, affixes = affixes, name = name, power = r.power}
+	return (prefix and (prefix .. " ") or "") .. (w.name or w.id) .. (suffix and (" " .. suffix) or "")
+end
+-- THE SMITH'S WORK (Deadvault's vault): a weapon's affixes rolled again (`reforge`), or the
+-- weapon raised a rarity (`temper`: its damage, one more affix, all rolled again)
+function Loot.reforge(item, up)
+	local w = Catalog.WEAPON[item.weapon]
+	if not (w and item.kind == "weapon") then return false end
+	local rank = CFG.RANK[item.rarity or "Common"] or 1
+	if up then rank = math.min(rank + 1, #CFG.RARITIES) end
+	local r = CFG.RARITIES[rank]
+	item.rarity, item.power = r.id, r.power
+	item.affixes = Loot.rollAffixes(w, r)
+	item.name = Loot.weaponName(w, r, item.affixes)
+	return true
 end
 
 -- (classId: a class's own relics only for it — no Eagle Feather for a Knight)
@@ -206,6 +223,17 @@ function Loot.armor(luck, rarity)
 	return {kind = "armor", uid = uid(), armor = a.id, rarity = a.rarity, name = a.name}
 end
 
+-- a valuable (Deadvault): no use but what the Treasurer gives for it
+function Loot.treasure(luck, rarity)
+	local r = rarity and rarityOf(rarity) or Loot.rarity(luck)
+	local pool = {}
+	for _, t in ipairs(CFG.TREASURES or {}) do if t.rarity == r.id then table.insert(pool, t) end end
+	if #pool == 0 then for _, t in ipairs(CFG.TREASURES or {}) do if (CFG.RANK[t.rarity] or 1) <= (CFG.RANK[r.id] or 1) then table.insert(pool, t) end end end
+	if #pool == 0 then return nil end
+	local t = pool[math.random(#pool)]
+	return {kind = "treasure", uid = uid(), treasure = t.id, rarity = t.rarity, name = t.name}
+end
+
 function Loot.gold(n)
 	n = math.max(1, math.floor(n))
 	local rarity = n >= 120 and "Epic" or (n >= 60 and "Rare" or (n >= 25 and "Uncommon" or "Common"))
@@ -238,8 +266,22 @@ function Loot.roll(chestKind, classId, luck, opts)
 	elseif kind == "tome" then item = Loot.tome(classId, luck)
 	elseif kind == "potion" then item = Loot.potion(luck)
 	elseif kind == "armor" then item = Loot.armor(luck, floor and atLeast(Loot.rarity(luck), floor) or nil)
-	elseif kind == "gold" then item = Loot.gold((opts.goldBase or 20) * (1 + (luck or 0) * 0.5) * (0.6 + math.random() * 0.8)) end
+	elseif kind == "gold" then item = Loot.gold((opts.goldBase or 20) * (1 + (luck or 0) * 0.5) * (0.6 + math.random() * 0.8))
+	elseif kind == "treasure" then item = Loot.treasure(luck, floor and atLeast(Loot.rarity(luck), floor) or nil) end
 	return item or Loot.gold(10)
+end
+
+-- WHAT A CONTAINER HOLDS (Deadvault: Catalog ▸ Loot CONTAINERS): a list, maybe empty
+function Loot.container(kind, classId, luck)
+	local c = CFG.CONTAINERS and CFG.CONTAINERS[kind]
+	if not c then return {} end
+	if math.random() < (c.empty or 0) then return {} end
+	local out = {}
+	for _ = 1, math.random(c.count[1], c.count[2]) do
+		local k = pickKind(c.loot)
+		table.insert(out, Loot.roll(nil, classId, (luck or 0) + (c.luck or 0), {kind = k, goldBase = 12 + (c.luck or 0) * 10}))
+	end
+	return out
 end
 
 -- n cards, each a different kind where it can be (a weapon, a relic, a tome…)
@@ -303,8 +345,14 @@ function Loot.card(item)
 	elseif item.kind == "gold" then
 		c.sub = "Gold"
 		c.glyph = "💰"
-		table.insert(c.lines, item.gold .. " gold for the run")
+		table.insert(c.lines, item.gold .. " gold")
+	elseif item.kind == "treasure" then
+		local t = CFG.TREASURE and CFG.TREASURE[item.treasure]
+		c.sub = r.id .. " valuable"
+		c.glyph = t and t.glyph or "💎"
+		table.insert(c.lines, string.format("Worth %d gold to the Treasurer", t and t.value or 0))
 	end
+	if item.free then table.insert(c.lines, "The free kit's: worth nothing, never lost") end
 	return c
 end
 
@@ -655,6 +703,16 @@ local function shapeOf(item)
 			pages.CFrame = CFrame.new(0.05, 0, 0); pages.Parent = m
 			local rune = Instance.new("Part"); quiet(rune); rune.Size = Vector3.new(0.5, 0.42, 0.5); rune.Color = r.color; rune.Material = Enum.Material.Neon
 			rune.CFrame = CFrame.new(0, 0.02, 0) * CFrame.Angles(0, math.rad(45), 0); rune.Parent = m
+		elseif item.kind == "treasure" then
+			-- a gilded cup with a stone of its rarity's colour set in it
+			p.Shape = Enum.PartType.Cylinder; p.Size = Vector3.new(1.2, 0.9, 0.9)
+			p.CFrame = CFrame.Angles(0, 0, math.pi / 2)
+			p.Color = Color3.fromRGB(236, 190, 70); p.Material = Enum.Material.Metal
+			local gem = Instance.new("Part"); quiet(gem); gem.Size = Vector3.new(0.45, 0.45, 0.45); gem.Color = r.color; gem.Material = Enum.Material.Neon
+			gem.CFrame = CFrame.new(0, 0.15, -0.45) * CFrame.Angles(math.rad(45), 0, math.rad(45)); gem.Parent = m
+			local foot = Instance.new("Part"); quiet(foot); foot.Shape = Enum.PartType.Cylinder; foot.Size = Vector3.new(0.2, 1.1, 1.1)
+			foot.Color = Color3.fromRGB(210, 166, 60); foot.Material = Enum.Material.Metal
+			foot.CFrame = CFrame.new(0, -0.7, 0) * CFrame.Angles(0, 0, math.pi / 2); foot.Parent = m
 		elseif item.kind == "armor" then
 			p.Size = Vector3.new(1.8, 1.8, 0.8); p.Color = Color3.fromRGB(150, 156, 166); p.Material = Enum.Material.Metal
 			local trim = Instance.new("Part"); quiet(trim); trim.Size = Vector3.new(1.9, 0.25, 0.9); trim.Color = r.color; trim.Material = Enum.Material.Neon

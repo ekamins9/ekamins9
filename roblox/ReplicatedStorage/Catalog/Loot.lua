@@ -16,7 +16,12 @@
                   chill, lifesteal, storm, thorns, regen, berserk, rise, luck, thirst)
        POTIONS    drunk where you stand: heal (of your whole), or mods for `time` s
        ARMOR      worn over your class's (Crownfall, Deadvault): taken ×, health +
-       TOMES      one of your own class's powers: a tome teaches it for the run (Catalog ▸ Powers) ]]
+       TOMES      one of your own class's powers: a tome teaches it for the run (Catalog ▸ Powers)
+       TREASURES  Deadvault's valuables: no use but their worth (`value`, gold at the Treasurer):
+                  what fills your bag, and what you choose to carry out
+       CONTAINERS what Deadvault's crates, barrels, urns, racks, shelves, sarcophagi, remains and
+                  chests hold: `count` {min, max} things, `luck` (rarer the higher), `empty`
+                  (the chance there's nothing), `loot` (weights of each kind) ]]
 
 local C = Color3.fromRGB
 
@@ -114,5 +119,41 @@ L.CHESTS = {
 
 -- what an item is worth to Deadvault's merchant (vault gold), by rarity
 L.VALUE = {Common = 12, Uncommon = 30, Rare = 75, Epic = 180, Legendary = 450}
+
+-- DEADVAULT'S VALUABLES (worth `value` gold to the Treasurer, half to anyone else)
+L.TREASURES = {
+	{id = "BronzeBell",  name = "Bronze Bell",        glyph = "🔔", rarity = "Common",    value = 14},
+	{id = "SilverCup",   name = "Silver Cup",         glyph = "🏆", rarity = "Common",    value = 18},
+	{id = "Candelabra",  name = "Brass Candelabra",   glyph = "🕯️", rarity = "Common",    value = 16},
+	{id = "CoinPurse",   name = "Purse of Old Coins", glyph = "💰", rarity = "Common",    value = 22},
+	{id = "SilverRing",  name = "Silver Ring",        glyph = "💍", rarity = "Uncommon",  value = 40},
+	{id = "OldMap",      name = "Faded Map",          glyph = "📜", rarity = "Uncommon",  value = 38},
+	{id = "JadeFigure",  name = "Jade Figurine",      glyph = "🗿", rarity = "Uncommon",  value = 46},
+	{id = "GoldGoblet",  name = "Golden Goblet",      glyph = "🏆", rarity = "Rare",      value = 95},
+	{id = "Sapphire",    name = "Sapphire",           glyph = "💎", rarity = "Rare",      value = 110},
+	{id = "GildedUrn",   name = "Gilded Urn",         glyph = "⚱️", rarity = "Rare",      value = 90},
+	{id = "RubyCirclet", name = "Ruby Circlet",       glyph = "👑", rarity = "Epic",      value = 240},
+	{id = "GoldenIdol",  name = "Golden Idol",        glyph = "🗿", rarity = "Epic",      value = 260},
+	{id = "DragonPearl", name = "Dragon's Pearl",     glyph = "🔮", rarity = "Legendary", value = 600},
+	{id = "KingsSigil",  name = "The King's Sigil",   glyph = "🔱", rarity = "Legendary", value = 650},
+}
+L.TREASURE = {}
+for _, t in ipairs(L.TREASURES) do L.TREASURE[t.id] = t end
+
+-- WHAT DEADVAULT'S CONTAINERS HOLD (Game ▸ Loot.container)
+L.CONTAINERS = {
+	crate   = {name = "Crate",        count = {1, 2}, luck = 0,   empty = 0.25, loot = {gold = 30, treasure = 35, potion = 25, weapon = 10}},
+	barrel  = {name = "Barrel",       count = {1, 1}, luck = 0,   empty = 0.3,  loot = {potion = 45, gold = 35, treasure = 20}},
+	sack    = {name = "Sack",         count = {1, 2}, luck = 0,   empty = 0.2,  loot = {gold = 40, potion = 30, treasure = 30}},
+	urn     = {name = "Urn",          count = {1, 1}, luck = 0.3, empty = 0.2,  loot = {gold = 50, treasure = 50}},
+	rack    = {name = "Weapon Rack",  count = {1, 2}, luck = 0.4, empty = 0.1,  loot = {weapon = 100}},
+	stand   = {name = "Armour Stand", count = {1, 1}, luck = 0.4, empty = 0.1,  loot = {armor = 100}},
+	shelf   = {name = "Bookshelf",    count = {1, 2}, luck = 0.5, empty = 0.3,  loot = {tome = 40, treasure = 40, gold = 20}},
+	coffin  = {name = "Sarcophagus",  count = {1, 3}, luck = 0.8, empty = 0.1,  loot = {treasure = 40, relic = 20, weapon = 20, armor = 10, gold = 10}},
+	remains = {name = "Remains",      count = {1, 2}, luck = 0.2, empty = 0.15, loot = {gold = 35, potion = 25, weapon = 15, armor = 10, treasure = 15}},
+	chest   = {name = "Chest",        count = {2, 3}, luck = 0.6, empty = 0,    loot = {weapon = 25, armor = 15, relic = 15, potion = 15, treasure = 20, gold = 10}},
+	ornate  = {name = "Ornate Chest", count = {3, 4}, luck = 1.6, empty = 0,    loot = {weapon = 25, armor = 15, relic = 25, treasure = 25, tome = 10}},
+	hoard   = {name = "The Hoard",    count = {5, 6}, luck = 2.6, empty = 0,    loot = {weapon = 25, armor = 15, relic = 30, treasure = 30}},
+}
 
 return L
