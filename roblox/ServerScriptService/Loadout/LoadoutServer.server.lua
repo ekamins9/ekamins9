@@ -184,6 +184,7 @@ giveWeapon = function(plr, char, weaponId, skinId, equip, slot, lo)
 	local okc, cfg = pcall(function() return cfgMod and require(cfgMod) end)
 	local twinName = okc and type(cfg) == "table" and cfg.TWIN
 	local twinT = twinName and findWeapon(twinName)
+	local twinClone
 	if twinT then
 		local twin = twinT:Clone()
 		twin:SetAttribute("Skin", skinId); twin:SetAttribute("SkinId", skinId); twin:SetAttribute("Slot", slot)
@@ -191,11 +192,32 @@ giveWeapon = function(plr, char, weaponId, skinId, equip, slot, lo)
 		tool:SetAttribute("Twin", twin.Name)
 		if skinId then Dresser.applySkin(twin, skinId, nil) end
 		twin.Parent = tool.Parent
+		twinClone = twin
 	end
 	if equip then
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then task.defer(function() if tool.Parent and hum.Health > 0 then hum:EquipTool(tool) end end) end
 	end
+	return tool, twinClone
+end
+
+-- A WEAPON HANDED OVER MID-LIFE (a dungeon's loot, a raid's: Game ▸ Loot): into `slot` (1 the
+-- primary, 2 the sidearm), and whatever was in that slot goes. Returns the Tool (and its twin).
+_G.GiveWeapon = function(plr, weaponId, skinId, slot, equip)
+	local char = plr.Character
+	if not (char and isAlive(plr)) then return nil end
+	local classId = char:GetAttribute("Class") or Profile.get(plr).active
+	local lo = Profile.validateLoadout(plr, classId, Profile.get(plr).classes[classId])
+	local wasHeld = false
+	for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
+		for _, t in ipairs(holder and holder:GetChildren() or {}) do
+			if t:IsA("Tool") and t:GetAttribute("Slot") == slot then
+				if t.Parent == char then wasHeld = true end
+				t:Destroy()
+			end
+		end
+	end
+	return giveWeapon(plr, char, weaponId, skinId, equip or wasHeld, slot, lo)
 end
 
 -- THE STANCE BIND (H / D-pad ←: StarterPlayerScripts ▸ StanceSwap): the weapon in your hand
@@ -285,6 +307,11 @@ spawnAs = function(plr, classId, opts)
 	end
 	local p = Profile.get(plr)
 	local lo = Profile.validateLoadout(plr, classId, p.classes[classId])
+	-- (a mode's own say: a dungeon run's looted weapons and its tome's power, for this body)
+	if Game.current and Game.current.adjustLoadout then
+		local okA, errA = pcall(Game.current.adjustLoadout, Game.current, plr, lo, classId)
+		if not okA then warn("[Loadout] adjustLoadout:", errA) end
+	end
 	-- (handed a weapon for this body only: the training yard's lessons, a bow for the
 	-- Bowmaster's; your own skin for it if a loadout of yours carries one)
 	if opts.weapon and Catalog.WEAPON[opts.weapon] and lo.weapon ~= opts.weapon then

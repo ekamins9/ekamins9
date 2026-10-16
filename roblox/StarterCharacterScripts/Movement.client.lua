@@ -281,7 +281,8 @@ end))
 --  PICKUP PROMPTS use our keybind
 --------------------------------------------------------------------
 table.insert(conns, ProximityPromptService.PromptShown:Connect(function(prompt)
-	if prompt.Name == "PickupPrompt" then prompt.KeyboardKeyCode = ClientSettings.key("Pickup") end
+	-- (and the loot on a dungeon's floor, a chest: Game ▸ Loot marks them PickupKey)
+	if prompt.Name == "PickupPrompt" or prompt:GetAttribute("PickupKey") then prompt.KeyboardKeyCode = ClientSettings.key("Pickup") end
 end))
 -- a weapon you can't hold isn't offered: no right arm, nothing; one arm, no
 -- two-handers; nor one your class doesn't carry (a Knight and a bow or a wand, a Mage

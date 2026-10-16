@@ -526,6 +526,26 @@ local function play(plr, doorId, opts)
 		if Game.server.door == "Horde" then return false, "you're holding off the horde already" end
 		return reserve(group, modeId, "Friends", plr.DisplayName .. "'s Horde", false, "Horde", nil, "Horde")
 	end
+	-- THE ADVENTURES (the Play screen's second page: GameConfig.DOORS with party / matchmade).
+	-- A door with several modes (the Invasions: which army) takes opts.mode.
+	if door.party or door.matchmade then
+		local m = (door.modes and opts.mode and table.find(door.modes, opts.mode)) and opts.mode or modeId
+		if STUDIO then return studioSwitch(plr, m, {door = doorId, settings = nil, noRewards = false}) end
+		if Game.server.door == doorId and Game.modeId == m then return false, "you're already here" end
+		local mdef = GameConfig.MODES[m]
+		if door.party then
+			-- your party's own server
+			return reserve(group, m, "Friends", plr.DisplayName .. "'s " .. (mdef and mdef.name or door.name), false, doorId, nil, mdef and mdef.name or door.name)
+		end
+		-- a public one with room, else a new one
+		for _, e in ipairs(listServers()) do
+			if e.door == doorId and e.mode == m and not e.custom and e.access == "Public" and e.reserved and e.accessCode and not e.here
+				and (e.players or 0) + #group <= (e.max or 0) then
+				return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, (mdef and mdef.name or door.name) .. ((e.map or "") ~= "" and ("  ·  " .. e.map) or ""))
+			end
+		end
+		return reserve(group, m, "Public", "", false, doorId, nil, (mdef and mdef.name or door.name) .. "  ·  new server")
+	end
 	-- Warfront
 	if STUDIO then
 		local m = GameConfig.MODES[opts.mode] and opts.mode or modeId

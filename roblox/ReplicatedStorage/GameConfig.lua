@@ -46,8 +46,13 @@ GameConfig.DOORS = {
 		blurb = "You and your party defend the camp against waves of bots: keep the fire burning, the caravan whole, the villagers safe."},
 	Lists     = {name = "The Lists", mode = "Lists",    access = "Locked",  brackets = {"1v1", "2v2", "3v3"},
 		blurb = "1v1, 2v2, 3v3. Casual or ranked. Honor rules."},
+	-- THE ADVENTURES (the Play screen's second page). party: your party's own server ·
+	-- matchmade: a public server for that mode (HubServer)
+	Depths    = {name = "The Depths", mode = "Depths",  access = "Friends", maxPlayers = 4, party = true, page = 2,
+		blurb = "A dungeon built fresh every run. Three floors, chests, relics, a boss at the bottom."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
+GameConfig.ADVENTURE_ORDER = {"Depths"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -113,6 +118,15 @@ GameConfig.MODES = {
 		-- time a stage adds ×, ram speed ×, gate blows ×, capture time ×, champion health ×
 		attack = {addTime = 1.3, ramSpeed = 1.3, gateHits = 0.8, captureTime = 0.75, champion = 0.75},
 	},
+	-- THE DEPTHS (Game ▸ Modes ▸ Depths): the "maps" are the dungeon's themes (Catalog ▸ Dungeons),
+	-- each run built fresh (procedural: GameServer asks the mode to build the picked one)
+	Depths = {
+		name = "The Depths", category = "Adventure", teams = 0, maxPlayers = 4, minPlayers = 1,
+		description = "A party crawl through a dungeon built fresh every run: three floors, rooms that seal you in, chests of weapons, relics and tomes, and the theme's boss at the bottom.",
+		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
+		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
+		pvp = false,
+	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
@@ -129,7 +143,9 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Stormhold = "Stormhold", Ashenford = "Ashenford", Rimeholt = "Rimeholt", Blossomgate = "Blossomgate",
 	Bloodpit = "The Bloodpit", Moonring = "Moonring", Dustbowl = "The Dustbowl", Thornpit = "Thornpit", Mirepit = "Mirepit",
 	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
-	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch"}
+	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
+	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
+	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- how many fighters (players and bots together) a map suits: {fewest, most}. A

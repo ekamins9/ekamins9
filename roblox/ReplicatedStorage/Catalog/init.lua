@@ -67,6 +67,9 @@ Catalog.EGGS      = child("Eggs")
 Catalog.COMPANIONS = child("Companions")
 Catalog.DRILLS    = child("Drills")
 Catalog.CALENDAR  = child("Calendar")
+Catalog.BESTIARY  = child("Bestiary")   -- every monster (Combat ▸ Monsters)
+Catalog.DUNGEONS  = child("Dungeons")   -- the procedural dungeons' themes (Game ▸ Dungeon)
+Catalog.LOOT      = child("Loot")       -- a run's or a raid's gear (Game ▸ Loot)
 
 Catalog.SLOTS = {"helmet", "top", "bottom"}
 Catalog.SLOT_MODELS = {   -- which clothing models (Armor.lua names) each slot wears

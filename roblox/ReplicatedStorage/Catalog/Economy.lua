@@ -36,6 +36,9 @@ return {
 		drill   = {marks = 50,  xp = 60},    -- Tiltyard drill finished (once each)
 		objective = {marks = 25, xp = 50},   -- there when a siege stage fell (ram, gate, zone, champion)
 		wave    = {marks = 15,  xp = 30},    -- a Horde wave beaten (everyone in the server)
+		depths_room  = {marks = 4,  xp = 12},    -- The Depths: a room the party cleared (everyone)
+		depths_floor = {marks = 40, xp = 80},    -- …a floor gone down (or the last one won)
+		depths_boss  = {marks = 120, xp = 220},  -- …the boss at the bottom
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
 	daily = {full = 2500, rest = 0.4},

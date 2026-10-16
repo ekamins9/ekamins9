@@ -38,6 +38,22 @@ end)
 local node = Game.node
 local function log(...) DebugFlags.log("Game", ...) end
 
+-- the adventures' remotes, there from the start on every server (the client listens from its
+-- first frame: StarterPlayerScripts ▸ Adventure.client; Game ▸ Modes ▸ Depths, Combat ▸ BossMoves)
+for _, n in ipairs({"AdventureEvent", "BossFX"}) do
+	if not ReplicatedStorage:FindFirstChild(n) then
+		local r = Instance.new("RemoteEvent"); r.Name = n; r.Parent = ReplicatedStorage
+	end
+end
+-- the monsters the Play menu's adventure tiles show (Combat ▸ Monsters.display)
+task.delay(2, function()
+	local ok, err = pcall(function()
+		require(game:GetService("ServerScriptService"):WaitForChild("Combat"):WaitForChild("Monsters")).publishDisplays(
+			{"Skeleton", "SkeletonKnight", "Goblin", "GoblinBomber", "GoblinBrute", "Ghoul", "Wraith", "LichKing", "OrcGrunt", "OrcBerserker", "ElfArcher", "ElfBlademaster", "PlagueGhoul", "Thrall"})
+	end)
+	if not ok then warn("[Game] monster displays:", err) end
+end)
+
 -- map vote (client: Scoreboard sends "Vote", index)
 local voteRemote = Instance.new("RemoteEvent")
 voteRemote.Name = "VoteRemote"
@@ -92,7 +108,8 @@ local function candidates(def)
 	local sized = def.category ~= "Horde"
 	local fits = {{}, {}, {}}
 	for _, m in ipairs(def.maps or {}) do
-		if MapLoader.exists(m) then table.insert(fits[(sized and GameConfig.mapFit(m, players, bots) or 0) + 1], m) end
+		-- (a procedural mode's "maps" are themes: built when picked, Game ▸ Dungeon)
+		if MapLoader.exists(m) or def.procedural then table.insert(fits[(sized and not def.procedural and GameConfig.mapFit(m, players, bots) or 0) + 1], m) end
 	end
 	local start = (rotation[def] or 0)
 	rotation[def] = start + 3   -- (three fresh maps a vote, not the same two again)
@@ -182,7 +199,14 @@ task.spawn(function()
 		-- staff (Admin) or the host (HostServer) picked the next map
 		if Game.adminNextMap and MapLoader.exists(Game.adminNextMap) then map = Game.adminNextMap end
 		Game.adminNextMap = nil
-		MapLoader.load(map)
+		-- a procedural mode builds its map from the picked theme (The Depths, Crownfall…):
+		-- the mode's buildMap(theme) -> the built map's name in ServerStorage ▸ Maps
+		local loadName = map
+		if def.procedural and mode.buildMap then
+			local okB, built = pcall(mode.buildMap, mode, map)
+			if okB and built then loadName = built else warn("[Game] buildMap:", built) end
+		end
+		MapLoader.load(loadName)
 		node:SetAttribute("Map", map)
 		node:SetAttribute("MapName", GameConfig.mapTitle(map))
 		node:SetAttribute("Number", (node:GetAttribute("Number") or 0) + 1)

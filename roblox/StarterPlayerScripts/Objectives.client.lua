@@ -213,6 +213,8 @@ end
 
 RunService.RenderStepped:Connect(function()
 	local kind = round:GetAttribute("ObjKind")
+	-- (a mode with a HUD of its own: the Play menu's adventures, Adventure.client)
+	if round:GetAttribute("OwnHud") then kind = nil end
 	local live = kind ~= nil and round:GetAttribute("State") == "Round"
 	panel.Visible = live and not hubMenuUp()
 	bb.Enabled = live and (kind ~= "Horde" or typeof(round:GetAttribute("ObjPos")) == "Vector3")

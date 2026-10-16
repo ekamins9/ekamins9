@@ -1675,6 +1675,80 @@ fountains and rose trees stand in the corners, a tower with a rose-red spire at 
 fountains, cypresses and trees on the lawns outside. Terrain under the court is paving (grass
 blades grow up through thin floor parts). Used by the Lists and the Duel Yard.
 
+## The adventures (the Play screen's second page)
+
+PLAY has two pages now: the battles (page 1, as before) and **ADVENTURES** (the gold button in
+the bottom strip; `GameConfig.ADVENTURE_ORDER`, `DOORS` with `party` or `matchmade`). A door that
+isn't built yet shows COMING SOON. A `party` door reserves your party's own server (like the
+Horde); a `matchmade` one finds a public server for that mode with room, else reserves one
+(`HubServer` ▸ play). Studio has no teleports: PLAY switches the mode here, as always.
+
+### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
+A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone
+Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge: `Catalog ▸ Dungeons`).
+Three floors; floor 3 ends in the theme's boss.
+- **The generator** (`Dungeon.build`): rooms on a grid (a spanning tree plus a loop), typed by
+  how deep they are: start · combat · elite · treasure (dead ends) · shrine · fountain · stairs ·
+  boss. Walls, ceilings, corridors, door frames, sconces in the theme's light, and the theme's
+  props (coffins, cobwebs, mushrooms, gold, bookcases, chandeliers, icicles, lava…). Every
+  doorway has a portcullis (Map ▸ Gates). It lands in ServerStorage ▸ Maps like any map; the
+  mode gets the layout. `GameServer` asks a `procedural` mode to build the voted theme
+  (`mode:buildMap(theme)`) before loading it.
+- **A room seals** when you're well inside: its gates drop, stragglers are drawn in, its monsters
+  come. Kill them all and the gates rise; the fallen are back on their feet in the room; everyone
+  mends a quarter. A cleared room sometimes leaves a chest (an elite room always does).
+- **Chests** are per player: each opens it once and gets **three cards** (`Game ▸ Loot`): a weapon
+  your class carries with a skin and affixes, a relic, a tome (any class's power, for the run),
+  gold. The shrine offers three relics; the fountain makes you whole once a floor; the stairs room,
+  cleared, leads down (anyone starts a 5 s countdown; everyone goes).
+- Your **run** (looted weapons, relics, tome, gold) survives respawns: the mode's
+  `adjustLoadout` / `noteSpawn` hooks in `LoadoutServer` put it back on every new body.
+- Down in a fight, you watch until the room is cleared. The whole party down at once ends the run.
+  The **Phoenix Plume** relic brings you back where you fell, once.
+- **Pay** (under the daily cap): monster kills by rank (`kill_<rank>`), `depths_room` per cleared
+  room, `depths_floor`, `depths_boss` (Catalog ▸ Economy). Stats: `depthsBest`, `depthsClears`.
+- **On screen** (`StarterPlayerScripts ▸ Adventure.client`, any mode with Round ▸ OwnHud): the run
+  panel (floor, what's happening, gold), your relics (hover / tap for what they do), a fog-of-war
+  minimap with what each room is, the chest cards (1 / 2 / 3, a controller's A, LEAVE IT), the
+  boss bar (any Boss near you, the Horde's Warlord too), banners and the fade going down. Objectives
+  steps aside for an OwnHud mode.
+
+### Monsters (`Combat ▸ Monsters`, `Catalog ▸ Bestiary`)
+Every monster is a combat bot (it blocks, parries, feints like anyone), dressed and **built into its
+shape** with welded parts: skeletons (the limbs hidden, bones in their place), wraiths (a robe
+that thins to mist), golems, goblins, orcs, elves, vampires, trolls, cinder-men; crowns, capes,
+horns, antlers, wings, tusks, fur, loincloths, crystals, glowing cracks, auras; and scaled to size.
+A set worn as clothes can drop its helmet (`noHelm`) and dye its plain cloth (`cloth`). Traits:
+reassemble (a skeleton stands back up once), lifesteal, frostbite, burning, enrage (under half
+health), explode, summon, regen. An **elite** (`opts.elite`) gets an affix (Blazing, Frozen, Swift,
+Vampiric, Stoneskin, Savage, Undying), more health, a glow, and a big move if its kind has none.
+`Monsters.display(id)` is a still copy for screens: the menu's tiles show them
+(ReplicatedStorage ▸ MonsterDisplays, made by GameServer at start).
+
+### Boss moves (`Combat ▸ BossMoves`)
+Bosses (and elites, and a few casters) fight with **telegraphed big moves** on top of their blade,
+souls-style: the ground lights up where it will land and fills; the body winds up and glows; every
+move has a way out. Kinds: slam · shockwave (a rolling wall of force: **jump it**) · charge (a lane;
+into a wall it's **staggered** and takes more damage) · leap (lands where you stood) · sweep (a wide
+arc: block it or get behind) · spin · eruption (a line of bursts racing at you) · rain (rings all
+over the arena) · nova (a ring under each of you) · blink (vanishes, comes out behind you swinging)
+· barrage (a fan of bolts) · beam (a lance sweeping the room) · roar. A **dodge** passes through any
+of them (its first moment is untouchable); sweeps, charges and spins can be **blocked** (it costs a
+lot of stamina; out of stamina, the guard breaks). Under half health a boss enters its **second
+phase**: a roar, a banner, faster moves, new ones, and its arena turns on you (its `hazard`).
+Every screen draws the wind-up poses, flashes and camera shake (BossFX, Adventure.client).
+
+### Loot (`Game ▸ Loot`, `Catalog ▸ Loot`)
+Rarities Common · Uncommon · Rare · Epic · Legendary (a damage bonus and 0–3 affixes; a Legendary
+has its own name). Weapon affixes: burn, chill, poison, lifesteal, damage, storm (a bolt from the
+sky), execute, giant (elites and bosses), holy (the undead), speed, thirst (a kill heals), stagger.
+Relics (passive, carried): armour, speed, damage, health, dodges, stamina, luck, on-hit fire and
+frost, lifesteal, regen, a kill's heal, the Berserker's Totem, the Thorned Mantle, the Ring of
+Storms, the Phoenix Plume, the Shard of the Crown. Potions, armour tiers and gold for the other
+adventures. Loot never touches anyone's collection: a skin on a looted blade is the run's. In the
+world: `Loot.drop` (a turning thing in a beam of its rarity's colour), `Loot.chest` (per player or
+shared). Prompts use your pickup key (V).
+
 ## Rounds
 
 See *Game modes, maps, places* above. The top-centre strip shows the mode, the map, the

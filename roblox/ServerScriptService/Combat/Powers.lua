@@ -91,6 +91,11 @@ function Powers.addMods(c, mods, time, key)
 	st(c).mods[key or tostring(mods)] = {mods = mods, untilT = now() + time}
 	recompute(c)
 end
+-- take one set off again (a looted weapon put away: Game ▸ Loot)
+function Powers.clearMods(c, key)
+	local s = state[c]
+	if s and s.mods[key] then s.mods[key] = nil; recompute(c) end
+end
 local function aura(c, name, time, spellId, skin)
 	if not name then return end
 	c:SetAttribute("Aura", name); c:SetAttribute("AuraUntil", now() + time)
@@ -551,8 +556,15 @@ local function behind(attacker, target)
 	local to = flat(ar.Position - tr.Position)
 	return to.Magnitude > 0.1 and tr.CFrame.LookVector:Dot(to.Unit) < -0.3
 end
+-- other systems' say in a clean hit (a monster's traits: Combat ▸ Monsters; a looted blade's
+-- affixes: Game ▸ Loot): fn(attacker, target, dmg, hitPos) -> dmg
+Powers.meleeHooks = Powers.meleeHooks or {}
 function Powers.onMelee(attacker, target, dmg, hitPos)
 	if not (attacker and target and dmg) then return dmg end
+	for _, hook in ipairs(Powers.meleeHooks) do
+		local ok, r = pcall(hook, attacker, target, dmg, hitPos)
+		if ok and type(r) == "number" then dmg = r elseif not ok then warn("[Powers] hit hook:", r) end
+	end
 	local s = state[attacker]
 	local im = s and s.imbue
 	if im and im.untilT > now() then

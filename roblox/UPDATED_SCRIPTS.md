@@ -1,4 +1,59 @@
-# Updated scripts: phones and controllers — a new touch layout, lock-on and aim assist, everything sized for the screen
+# Updated scripts: the Play screen's second page, The Depths (a procedural dungeon crawl), monsters, boss moves, loot
+
+- **PLAY has a second page: ADVENTURES** (the gold button in the bottom strip).
+  - Seven tiles with 3D scenes: The Depths, Deadvault, Crownfall, Invasions, Dragonfall, Plague Night, Kingslayer.
+  - The Depths is live; the rest say COMING SOON until their modes land (they're next).
+- **The Depths**: a party of 1–4, a dungeon generated fresh every run in one of five themes (the vote picks):
+  the Bone Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge.
+  - Three floors of rooms that seal you in (portcullises drop) until their monsters are dead.
+  - Treasure rooms, shrines (pick a relic), fountains (whole again), elite rooms, stairs down, and the theme's boss on floor 3.
+  - Every player gets their own pick of three cards from each chest: weapons with skins and affixes, relics, tomes (any class's power), gold.
+  - The run survives respawns. The fallen come back when the room is cleared; a party wipe ends it.
+  - Pays like the Horde, under the daily cap: monster kills by rank, every room, every floor, the boss.
+- **Monsters**: about 50 in the Bestiary (undead, goblins, vampires, frost, the forge, elves, orcs).
+  - Each is a real combat bot, built into its shape: skeletons of bone, wraiths that thin to mist, goblins with ears, ogres with bellies and loincloths, vampires in high collars and capes, crowns, wings, horns, auras.
+  - Traits: skeletons stand back up, vampires drain life, frost chills, embers burn and burst, summoners call their kind, enraged under half health.
+  - Elites roll an affix (Blazing, Vampiric, Swift…) and a big move.
+- **Boss moves, souls-style**: telegraphed slams, rolling shockwaves you jump, charges that stagger the boss if they hit a wall, leaps, wide sweeps, spins, eruption lines, meteor rains, novas, blinks behind you, bolt barrages, sweeping beams.
+  - A dodge passes through any of them; sweeps, charges and spins can be blocked at a heavy stamina cost.
+  - Under half health: a second phase with a roar, faster moves, new moves, and an arena hazard.
+  - Every boss has its own moveset (the Lich King, the Goblin King, Countess Varnya, the Frost Giant, the Ashen Warlord, and the horde bosses to come); elites have one or two.
+- **Also fixed on the way**:
+  - The third-person camera no longer slides through a wall beside you (the shoulder offset is now inside the wall check). Felt in corridors.
+  - The round's pay now counts every key a mode bumps.
+- **Vote pictures**: one for each dungeon theme (ReplicatedStorage ▸ MapShots; **save the place** to keep them).
+- **Checked in Play**:
+  - generated floors in all five themes;
+  - a room sealing, its fight, its clearing and chest;
+  - chest cards and a looted weapon (skin, affixes, damage bonus);
+  - descending two floors;
+  - the Lich King's fight (boss bar, moves, phase two, the hoard);
+  - the vote pictures; page 2 of PLAY.
+- **Not checked yet**:
+  - a real party of several players;
+  - every boss's moveset by feel (the Lich King was the one fought);
+  - phones (the HUD uses the screens' UIFit);
+  - the shrine and fountain prompts by hand (no input driving in Studio).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua), [Catalog/Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua), [Catalog/Loot.lua](ReplicatedStorage/Catalog/Loot.lua) (new) | ReplicatedStorage ▸ Catalog | ModuleScript | monsters, dungeon themes, loot |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua), [Catalog/Economy.lua](ReplicatedStorage/Catalog/Economy.lua), [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | registers them; Depths pay; the Depths mode, door, map titles |
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua), [BossMoves.lua](ServerScriptService/Combat/BossMoves.lua) (new) | ServerScriptService ▸ Combat | ModuleScript | monsters built and spawned; telegraphed boss moves |
+| [Powers.lua](ServerScriptService/Combat/Powers.lua) | ServerScriptService ▸ Combat | ModuleScript | melee hit hooks; clearMods |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua), [Loot.lua](ServerScriptService/Game/Loot.lua), [Modes/Depths.lua](ServerScriptService/Game/Modes/Depths.lua) (new) | ServerScriptService ▸ Game | ModuleScript | the generator; loot; The Depths |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | procedural maps; the adventure remotes; monster displays |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | party / matchmade adventure doors |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | `_G.GiveWeapon`; a mode's adjustLoadout |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService | Script | every counted pay key |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) (new) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | run HUD, minimap, chest cards, boss bar, banners, boss FX |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua), [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | PLAY page 2; steps aside for an OwnHud mode |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua), [Movement.client.lua](StarterCharacterScripts/Movement.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | camera wall sweep; loot prompts on the pickup key |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: phones and controllers — a new touch layout, lock-on and aim assist, everything sized for the screen
 
 - **Phone fight controls rebuilt.** There were 14 crowded buttons, some off the screen. Now:
   - **ATTACK** (one big button: tap to swing, swipe ↑ ↓ ← → for overhead / stab / a side);

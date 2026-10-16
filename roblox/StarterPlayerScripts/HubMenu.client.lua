@@ -3815,9 +3815,135 @@ do
 		cam.CFrame = CFrame.lookAt(Vector3.new(0.4, 0.9, -11), Vector3.new(0, -0.2, 0))
 	end
 
+	-- TWO PAGES: the battles (page 1), the adventures (page 2: GameConfig.ADVENTURE_ORDER)
+	-- (on HX, as everything new in this chunk: the main chunk is at its locals limit)
+	HX.modesPage1 = clearFrame(f); HX.modesPage1.Name = "Battles"; HX.modesPage1.Size = UDim2.fromScale(1, 1)
+	HX.modesPage2 = clearFrame(f); HX.modesPage2.Name = "Adventures"; HX.modesPage2.Size = UDim2.fromScale(1, 1); HX.modesPage2.Visible = false
+
+	-- THE ADVENTURES' SCENES: the server's still copies of its monsters (ReplicatedStorage ▸
+	-- MonsterDisplays, Combat ▸ Monsters.display)
+	HX.adventureScenes = function()
+	local function monster(world, id, pos, yaw)
+		local src = ReplicatedStorage:FindFirstChild("MonsterDisplays")
+		src = src and src:FindFirstChild(id)
+		if not src then return nil end
+		local m = src:Clone()
+		m.Parent = world
+		local sc = m:GetAttribute("MonsterScale") or 1
+		m:PivotTo(CFrame.new(pos + Vector3.new(0, (sc - 1) * 3, 0)) * CFrame.Angles(0, math.rad(yaw or 0), 0))
+		return m
+	end
+	local function block(world, size, cf, color, mat, shape)
+		local q = Instance.new("Part"); q.Anchored = true; q.Size = size; q.CFrame = cf; q.Color = color; q.Material = mat or Enum.Material.SmoothPlastic
+		if shape then q.Shape = shape end
+		q.Parent = world
+		return q
+	end
+	local function chest(world, pos, yaw, glow)
+		local cf = CFrame.new(pos) * CFrame.Angles(0, math.rad(yaw or 0), 0)
+		block(world, Vector3.new(2.4, 1.3, 1.6), cf * CFrame.new(0, 0.65, 0), Color3.fromRGB(110, 72, 40), Enum.Material.WoodPlanks)
+		block(world, Vector3.new(2.4, 0.5, 1.6), cf * CFrame.new(0, 1.55, -0.5) * CFrame.Angles(math.rad(-50), 0, 0), Color3.fromRGB(120, 80, 44), Enum.Material.WoodPlanks)
+		block(world, Vector3.new(2.2, 0.15, 1.4), cf * CFrame.new(0, 1.32, 0), glow or Color3.fromRGB(255, 200, 80), Enum.Material.Neon)
+		for _, x in ipairs({-0.9, 0.9}) do block(world, Vector3.new(0.2, 1.35, 1.65), cf * CFrame.new(x, 0.65, 0), Color3.fromRGB(226, 182, 70), Enum.Material.Metal) end
+	end
+	SCENES.Depths = function(world, cam)
+		local g = ground(world, 34, Color3.fromRGB(70, 74, 72)); g.Material = Enum.Material.Slate
+		block(world, Vector3.new(30, 14, 1), CFrame.new(0, 3, 7), Color3.fromRGB(80, 90, 84), Enum.Material.Cobblestone)
+		for _, x in ipairs({-6, 6}) do block(world, Vector3.new(0.6, 0.6, 0.6), CFrame.new(x, 3, 6.3), Color3.fromRGB(140, 255, 190), Enum.Material.Neon, Enum.PartType.Ball) end
+		chest(world, Vector3.new(4.5, -3, 4), -20, Color3.fromRGB(255, 200, 80))
+		soldier(world, 2, {pos = Vector3.new(2.2, 0, -1), yaw = -70, team = "A", pose = POSE.swing})
+		monster(world, "SkeletonKnight", Vector3.new(-2, 0, 0.5), 80)
+		monster(world, "Skeleton", Vector3.new(-4.5, 0, 3), 60)
+		monster(world, "Wraith", Vector3.new(-0.8, 0, 4.2), 110)
+		cam.FieldOfView = 42
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 3.2, -14), Vector3.new(0, -0.4, 1.5))
+	end
+	SCENES.Deadvault = function(world, cam)
+		local g = ground(world, 30, Color3.fromRGB(56, 52, 60)); g.Material = Enum.Material.Slate
+		-- the way out: a blue portal in an arch
+		for _, x in ipairs({-2.6, 2.6}) do block(world, Vector3.new(1, 8, 1), CFrame.new(x - 3, 1, 5), Color3.fromRGB(90, 88, 96), Enum.Material.Slate) end
+		block(world, Vector3.new(6.2, 1, 1), CFrame.new(-3, 5.4, 5), Color3.fromRGB(90, 88, 96), Enum.Material.Slate)
+		local portal = block(world, Vector3.new(4.2, 7, 0.3), CFrame.new(-3, 1, 5), Color3.fromRGB(90, 170, 255), Enum.Material.Neon)
+		portal.Transparency = 0.2
+		soldier(world, 6, {pos = Vector3.new(1.2, 0, 0), yaw = 160, team = "A", pose = POSE.guard})
+		chest(world, Vector3.new(4, -3, 3), -35, Color3.fromRGB(90, 170, 255))
+		monster(world, "Wraith", Vector3.new(4.6, 0, -1.5), -120)
+		cam.FieldOfView = 42
+		cam.CFrame = CFrame.lookAt(Vector3.new(1.5, 3, -13), Vector3.new(0, 0, 2))
+	end
+	SCENES.Crownfall = function(world, cam)
+		ground(world, 40, Color3.fromRGB(96, 130, 70))
+		-- the ring of fire closing in behind them
+		for i = -7, 7 do
+			local a = i * 0.11
+			local q = block(world, Vector3.new(2.4, 6, 0.4), CFrame.new(math.sin(a) * 22, 0, 9 + (1 - math.cos(a)) * -22) * CFrame.Angles(0, -a, 0), Color3.fromRGB(255, 120, 40), Enum.Material.Neon)
+			q.Transparency = 0.35
+		end
+		soldier(world, 3, {pos = Vector3.new(-1.8, 0, 0), yaw = 80, team = "A", pose = POSE.swing})
+		soldier(world, 5, {pos = Vector3.new(1.8, 0, 0.4), yaw = -100, team = "B", pose = POSE.guard})
+		local crown = block(world, Vector3.new(1.6, 0.7, 1.6), CFrame.new(0, 4.6, 1), Color3.fromRGB(255, 205, 60), Enum.Material.Neon, Enum.PartType.Cylinder)
+		crown.CFrame = CFrame.new(0, 4.6, 1) * CFrame.Angles(0, 0, math.pi / 2)
+		cam.FieldOfView = 42
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 2.8, -13), Vector3.new(0, 0.6, 2))
+	end
+	SCENES.Invasion = function(world, cam)
+		ground(world, 34, Color3.fromRGB(150, 130, 90))
+		for i = 1, 7 do
+			local b = block(world, Vector3.new(1.4, 0.6, 1.4), CFrame.new(math.random(-15, 15) / 10 + 3.5, -2.7 + (i % 3) * 0.3, math.random(-10, 10) / 10 + 3), Color3.fromRGB(240, 196, 70), Enum.Material.Metal, Enum.PartType.Ball)
+			b.Size = Vector3.new(1.6, 0.8, 1.6)
+		end
+		soldier(world, 1, {pos = Vector3.new(2.6, 0, 0.4), yaw = 100, team = "A", pose = POSE.guard})
+		monster(world, "Goblin", Vector3.new(-0.8, 0, -0.8), -80)
+		monster(world, "GoblinBomber", Vector3.new(-3, 0, 1.5), -70)
+		monster(world, "GoblinBrute", Vector3.new(-4.6, 0, -1.6), -90)
+		cam.FieldOfView = 42
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 3, -13), Vector3.new(-0.5, -0.3, 1))
+	end
+	SCENES.Dragonfall = function(world, cam)
+		local g = ground(world, 40, Color3.fromRGB(70, 60, 56)); g.Material = Enum.Material.Basalt
+		local dragon = monster(world, "Dragon", Vector3.new(0, 0, 7), 180)
+		if not dragon then
+			-- (no copy yet: its shadow and its fire)
+			block(world, Vector3.new(12, 6, 6), CFrame.new(0, 2, 9), Color3.fromRGB(110, 30, 30), Enum.Material.Slate)
+			block(world, Vector3.new(3, 3, 6), CFrame.new(0, 4, 4.5), Color3.fromRGB(130, 36, 36), Enum.Material.Slate)
+		end
+		soldier(world, 4, {pos = Vector3.new(-2, 0, -2), yaw = 20, team = "A", pose = POSE.guard})
+		soldier(world, 7, {pos = Vector3.new(2, 0, -1.5), yaw = -20, team = "A", pose = POSE.cheer})
+		cam.FieldOfView = 46
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 2.5, -14), Vector3.new(0, 2.4, 3))
+	end
+	SCENES.Plague = function(world, cam)
+		local g = ground(world, 30, Color3.fromRGB(60, 70, 56))
+		soldier(world, 8, {pos = Vector3.new(2, 0, 0), yaw = -100, team = "A", pose = POSE.guard})
+		local torch = block(world, Vector3.new(0.6, 0.6, 0.6), CFrame.new(3.2, 1.6, -0.6), Color3.fromRGB(255, 170, 60), Enum.Material.Neon, Enum.PartType.Ball)
+		monster(world, "PlagueGhoul", Vector3.new(-1.5, 0, 0.5), 80)
+		monster(world, "PlagueGhoul", Vector3.new(-4, 0, 2.5), 60)
+		monster(world, "Thrall", Vector3.new(-3.4, 0, -2), 100)
+		cam.FieldOfView = 42
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 2.6, -13), Vector3.new(-0.5, -0.2, 1))
+	end
+	SCENES.Kingslayer = function(world, cam)
+		ground(world, 30, Color3.fromRGB(150, 140, 120))
+		local dais = block(world, Vector3.new(0.8, 6, 6), CFrame.new(0, -2.6, 2) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(255, 200, 60), Enum.Material.Neon, Enum.PartType.Cylinder)
+		dais.Transparency = 0.3
+		local king = soldier(world, 6, {pos = Vector3.new(0, 0.6, 2), yaw = 180, team = "A", pose = POSE.cheer})
+		if king then pcall(function() king:ScaleTo(1.3) end); king:PivotTo(CFrame.new(0, 1.6, 2) * CFrame.Angles(0, math.pi, 0)) end
+		for i = 0, 6 do
+			local a = i / 7 * math.pi * 2
+			block(world, Vector3.new(0.35, 0.6, 0.12), CFrame.new(math.cos(a) * 0.55, 4.9, 2 + math.sin(a) * 0.55) * CFrame.Angles(0, -a, 0), Color3.fromRGB(255, 210, 60), Enum.Material.Neon)
+		end
+		soldier(world, 2, {pos = Vector3.new(-3.2, 0, -1), yaw = 140, team = "B", pose = POSE.lunge})
+		soldier(world, 3, {pos = Vector3.new(3.2, 0, -0.6), yaw = -140, team = "B", pose = POSE.swing})
+		cam.FieldOfView = 42
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 2.6, -13), Vector3.new(0, 0.6, 1.5))
+	end
+
+	end
+	HX.adventureScenes()
+
 	-- a tile: a glossy coloured card with a 3D scene, a big title, a line
 	local function tile(o)
-		local holder = frame(f, darker(o.color, 0.45), 20)
+		local holder = frame(o.parent or HX.modesPage1, darker(o.color, 0.45), 20)
 		holder.Name = "Mode_" .. o.key
 		holder.Position, holder.Size = o.pos, o.size
 		local face = Instance.new("TextButton")
@@ -3836,8 +3962,8 @@ do
 		local vp = Instance.new("ViewportFrame")
 		vp.BackgroundTransparency = 1
 		vp.Size = UDim2.fromScale(1, 1)
-		vp.Ambient = Color3.fromRGB(160, 154, 146)
-		vp.LightColor = Color3.fromRGB(255, 244, 228)
+		vp.Ambient = o.ambient or Color3.fromRGB(160, 154, 146)
+		vp.LightColor = o.light or Color3.fromRGB(255, 244, 228)
 		vp.LightDirection = Vector3.new(-0.5, -1, 0.4)
 		vp.Parent = face
 		local world = Instance.new("WorldModel"); world.Parent = vp
@@ -3915,7 +4041,7 @@ do
 			else goDoor("Courtyard") end
 		end})
 	-- row 2: The Lists (casual) · Ranked
-	local listsLabel = title(f, "THE LISTS  ·  CASUAL", 16, COL.DIM)
+	local listsLabel = title(HX.modesPage1, "THE LISTS  ·  CASUAL", 16, COL.DIM)
 	listsLabel.Position = UDim2.new(0, 4, 0.46, 6)
 	listsLabel.Size = UDim2.new(0.6, 0, 0, 20)
 	local BRACKET_COL = {Color3.fromRGB(240, 150, 40), Color3.fromRGB(60, 170, 200), Color3.fromRGB(130, 90, 220)}
@@ -3935,6 +4061,55 @@ do
 	rkInfo.Size = UDim2.new(0.58, -16, 1, -28)
 	vlist(rkInfo, 6)
 
+	-- PAGE 2: THE ADVENTURES
+	HX.adventureTiles = function()
+	local ADV = {
+		{key = "Depths", door = "Depths", title = "THE DEPTHS", sub = "A dungeon built fresh every run  ·  loot, relics, a boss", color = Color3.fromRGB(46, 120, 96),
+			pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.4, -8, 0.46, -6), big = true, tag = "NEW", ambient = Color3.fromRGB(110, 140, 128), light = Color3.fromRGB(190, 255, 220), count = "YOU + PARTY  ·  1 – 4"},
+		{key = "Deadvault", door = "Deadvault", title = "DEADVAULT", sub = "Raid it, loot it, get out alive  ·  or lose it all", color = Color3.fromRGB(70, 80, 140),
+			pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.3, -8, 0.46, -6), tag = "NEW", ambient = Color3.fromRGB(120, 130, 170), light = Color3.fromRGB(200, 220, 255)},
+		{key = "Crownfall", door = "Crownfall", title = "CROWNFALL", sub = "Battle royale  ·  the last one standing", color = Color3.fromRGB(210, 120, 40),
+			pos = UDim2.new(0.7, 4, 0, 0), size = UDim2.new(0.3, -4, 0.46, -6), tag = "NEW"},
+		{key = "Invasion", door = "Invasion", title = "INVASIONS", sub = "Goblins, elves, the dead, orcs", color = Color3.fromRGB(150, 110, 50),
+			pos = UDim2.new(0, 0, 0.46, 6), size = UDim2.new(0.25, -8, 0.54, -72), count = "YOU + PARTY"},
+		{key = "Dragonfall", door = "Dragonfall", title = "DRAGONFALL", sub = "Bring down the dragon", color = Color3.fromRGB(170, 50, 50),
+			pos = UDim2.new(0.25, 2, 0.46, 6), size = UDim2.new(0.25, -8, 0.54, -72), count = "YOU + PARTY", ambient = Color3.fromRGB(170, 120, 110)},
+		{key = "Plague", door = "Plague", title = "PLAGUE NIGHT", sub = "Survive till dawn  ·  the fallen rise", color = Color3.fromRGB(80, 120, 60),
+			pos = UDim2.new(0.5, 4, 0.46, 6), size = UDim2.new(0.25, -8, 0.54, -72), ambient = Color3.fromRGB(90, 110, 130), light = Color3.fromRGB(170, 190, 255)},
+		{key = "Kingslayer", door = "Kingslayer", title = "KINGSLAYER", sub = "Slay the king, be the king", color = Color3.fromRGB(200, 160, 40),
+			pos = UDim2.new(0.75, 6, 0.46, 6), size = UDim2.new(0.25, -6, 0.54, -72)},
+	}
+	local INVASIONS = {
+		{mode = "InvGoblin", name = "GOBLIN RAID", line = "They want your gold. Thieves run it back to their gates: cut them down.", color = Color3.fromRGB(110, 160, 60)},
+		{mode = "InvElf", name = "THE ELVEN HOST", line = "Arrows from every tree. Hold the logging camp.", color = Color3.fromRGB(60, 150, 110)},
+		{mode = "InvUndead", name = "UNDEAD NIGHT", line = "Keep the chapel's holy flame alight till dawn.", color = Color3.fromRGB(110, 120, 160)},
+		{mode = "InvOrc", name = "THE ORC WARBAND", line = "Brutes and war drums. Kill the drummers first.", color = Color3.fromRGB(150, 70, 50)},
+	}
+	HX.advTiles = {}
+	for _, a in ipairs(ADV) do
+		local t = tile({key = a.key, title = a.title, sub = a.sub, color = a.color, pos = a.pos, size = a.size, big = a.big, scene = a.key,
+			tag = a.tag, tagColor = COL.GOLD, ambient = a.ambient, light = a.light, parent = HX.modesPage2,
+			onClick = function()
+				if not GameConfig.DOORS[a.door] then toast("Coming soon", COL.BAD); return end
+				if a.key == "Invasion" then
+					local buttons = {}
+					for _, inv in ipairs(INVASIONS) do
+						if GameConfig.MODES[inv.mode] then
+							table.insert(buttons, {inv.name, inv.color, function() closeModal(); goDoor("Invasion", {mode = inv.mode}) end})
+						end
+					end
+					modal("INVASIONS", "Pick the army that comes for you and your party.", buttons)
+					return
+				end
+				goDoor(a.door)
+			end})
+		t.spec = a
+		tiles["Adv_" .. a.key] = t
+		HX.advTiles[a.key] = t
+	end
+	end
+	HX.adventureTiles()
+
 	-- bottom strip
 	local strip = clearFrame(f)
 	strip.AnchorPoint = Vector2.new(0, 1)
@@ -3947,9 +4122,17 @@ do
 	customH.Position = UDim2.fromOffset(296, 0)
 	customH.Size = UDim2.fromOffset(280, 58)
 	customB.Activated:Connect(function() ui.customOpen = true; selectTab("SERVERS") end)
+	-- the page switch: the battles ⇄ the adventures
+	HX.pageSw = {fatButton(strip, "ADVENTURES  ▶", COL.GOLD, 20)}
+	HX.pageSw[1].Position = UDim2.fromOffset(592, 0)
+	HX.pageSw[1].Size = UDim2.fromOffset(300, 58)
+	HX.pageSw[2].Activated:Connect(function()
+		ui.modesPage = (ui.modesPage == 2) and 1 or 2
+		render.MODES()
+	end)
 	local note = title(strip, "", 14, COL.DIM)
-	note.Position = UDim2.fromOffset(600, 0)
-	note.Size = UDim2.new(1, -600, 1, 0)
+	note.Position = UDim2.fromOffset(908, 0)
+	note.Size = UDim2.new(1, -908, 1, 0)
 	note.TextWrapped = true
 
 	local built = false
@@ -3996,6 +4179,18 @@ do
 	render.MODES = function()
 		loadServers(false)
 		local counts, servers = doorCounts()
+		-- which page
+		local two = ui.modesPage == 2
+		HX.modesPage1.Visible, HX.modesPage2.Visible = not two, two
+		paintFat(HX.pageSw[1], HX.pageSw[2], two and "◀  BATTLES" or "ADVENTURES  ▶", two and COL.BLUE or COL.GOLD)
+		for key, t in pairs(HX.advTiles) do
+			local a = t.spec
+			local door = GameConfig.DOORS[a.door]
+			local why = (not door) and "COMING SOON" or partyLock(door and door.party and (door.maxPlayers or 4) or nil)
+			t.lock.Visible = why ~= nil
+			t.lockText.Text = why or ""
+			t.count.Text = a.count or string.format("%d PLAYING", counts[a.door] or 0)
+		end
 		tiles.Warfront.count.Text = string.format("%d FIGHTING  ·  %d SERVER%s", counts.Warfront or 0, servers.Warfront or 0, (servers.Warfront or 0) == 1 and "" or "S")
 		tiles.Courtyard.count.Text = string.format("%d HERE", counts.Courtyard or #Players:GetPlayers())
 		tiles.Training.count.Text = "YOU + PARTY"
@@ -7661,6 +7856,7 @@ gui:GetAttributeChangedSignal("EditClass"):Connect(function()
 	if type(id) == "string" and GameConfig.CLASSES[id] then ui.editing = id; selectTab("CLASSES") end
 end)
 gui:GetAttributeChangedSignal("ShopTab"):Connect(function() local t = gui:GetAttribute("ShopTab"); if t then ui.shopTab = t; if currentTab == "SHOP" and render.SHOP then task.spawn(render.SHOP) end end end)
+gui:GetAttributeChangedSignal("ModesPage"):Connect(function() local t = gui:GetAttribute("ModesPage"); if t then ui.modesPage = t; if currentTab == "MODES" and render.MODES then task.spawn(render.MODES) end end end)
 
 --------------------------------------------------------------------
 --  CINEMATIC CAMERA + MOUSE

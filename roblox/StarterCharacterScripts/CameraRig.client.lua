@@ -791,15 +791,18 @@ local function loopBody(dt)
 		eyePos = nil
 		local focus = HRP.Position + Vector3.new(0, ANCHOR_UP, 0)   -- HRP itself sinks when crouched
 		camRay.FilterDescendantsInstances = {character}
-		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X, 0, 0)
-		local back = orbit.LookVector * -1
-		local res = workspace:Raycast(focus, back * camDist, camRay)
-		local distNow = camDist
-		if res then distNow = math.max(0.6, (res.Position - focus).Magnitude - 0.4) end
-		Camera.CFrame = CFrame.new(focus)
-			* CFrame.Angles(0, rot.Y, 0)
-			* CFrame.Angles(rot.X + leanPitch + hitKick, 0, roll)
-			* CFrame.new(SHOULDER_X + hOff, SHOULDER_Y + vOff, distNow + zOff)
+		-- where the camera wants to be (over the shoulder, back), and a sweep from the body to it:
+		-- a wall in the way pulls the whole offset in, the shoulder too (a corridor, a dungeon's
+		-- walls: the shoulder offset alone used to slide it through the wall beside you)
+		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X + leanPitch + hitKick, 0, roll)
+		local off = Vector3.new(SHOULDER_X + hOff, SHOULDER_Y + vOff, camDist + zOff)
+		local seg = orbit:VectorToWorldSpace(off)
+		local k = 1
+		if seg.Magnitude > 0.05 then
+			local res = workspace:Spherecast(focus, 0.35, seg, camRay)
+			if res then k = math.clamp(((res.Position - focus).Magnitude - 0.35) / seg.Magnitude, 0.04, 1) end
+		end
+		Camera.CFrame = orbit * CFrame.new(off * k)
 	end
 	Humanoid.CameraOffset = Vector3.zero
 

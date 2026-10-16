@@ -739,6 +739,26 @@ it should be heard standing next to someone, never across the yard. Licensed lib
 - **Door:** `GameConfig.DOORS` + `DOOR_ORDER` (the four cards on PLAY).
 - **Class:** `GameConfig.CLASSES` — a name, a `weight`, optional weapon list.
 
+## 11c. Monsters, dungeon themes, loot, boss moves
+
+- **A monster**: a line in `ReplicatedStorage ▸ Catalog ▸ Bestiary` (`add("Id", {...})`): its name,
+  faction, fighting skill, class (nil, "Archer", "Mage"), weapon(s), health, scale, speed, weight,
+  its look (body shape, skin, eyes, a crate set or plain armour, `noHelm`, `cloth`, colours,
+  extras, aura), traits, a power, a tier (4 = a boss: boss bar, no flinching). The header lists
+  every body, extra, aura and trait. Armour sets must exist (ServerStorage ▸ Armor).
+- **Its big moves**: `moves = {{kind = "slam", name = "…", dmg = 30, cd = 9, radius = 8, range =
+  {0, 16}, phase = 2, …}}`, `moveFx` (bone ghost gold crimson ice ember holy nature shadow stone),
+  and for a boss `hazard = {kind = "rain", every = 8, count = 6, dmg = 16}` and `phaseLine`. Kinds
+  and their fields: `Combat ▸ BossMoves`' header. A new kind is code (a function in its `K`).
+- **A dungeon theme**: an entry in `Catalog ▸ Dungeons` (colours, materials, light, props, its
+  monsters by role, its boss). Its key is its "map" name: add it to the mode's `maps`
+  (`GameConfig.MODES.Depths`), `GameConfig.MAP_TITLES`, and give it a **vote picture**
+  (ReplicatedStorage ▸ MapShots ▸ <key>: shoot its boss room, upload, resolve the Decal).
+- **Loot**: `Catalog ▸ Loot`: rarities, affixes (a `kind` the hit hook knows), relics (`mods`,
+  `health`, or an `effect`), potions, armour, tomes (any power), what each chest holds.
+- **A new adventure door**: `GameConfig.DOORS` (`party = true` or `matchmade = true`, `page = 2`),
+  `ADVENTURE_ORDER`, and its tile in HubMenu's page 2 (`ADV`; a scene in `SCENES`).
+
 ## 11b. Staff roles
 
 `ServerScriptService ▸ Admin ▸ Roles`: `roles = {Name = {rank, color, perms}}` (perms `"*"` or a
