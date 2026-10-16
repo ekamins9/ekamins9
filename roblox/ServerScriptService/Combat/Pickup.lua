@@ -225,22 +225,34 @@ function Pickup.take(plr, tool)
 	local bp = plr:FindFirstChild("Backpack")
 	if not bp then return false end
 
-	-- make room: a primary replaces the primary, a secondary the secondary;
-	-- over MAX_WEAPONS the equipped one (or the last one) goes
-	local secondary = Pickup.isSecondary(tool)
-	local owned = Pickup.owned(plr, char)
+	-- make room: any two weapons (a primary or a sidearm alike). With both hands full, the
+	-- one in your hand goes and this takes its place on the bar; else it takes the free one
+	-- (a staff's hidden twin and the third slot's sidearm don't count)
+	local owned = {}
+	for _, t in ipairs(Pickup.owned(plr, char)) do
+		if not t:GetAttribute("TwinHidden") and t:GetAttribute("Slot") ~= 3 then table.insert(owned, t) end
+	end
 	local toDrop
-	for _, t in ipairs(owned) do
-		if Pickup.isSecondary(t) == secondary then toDrop = t; break end
-	end
-	if not toDrop and #owned >= C.MAX_WEAPONS then
+	if #owned >= C.MAX_WEAPONS then
 		toDrop = char:FindFirstChildOfClass("Tool") or owned[#owned]
+		if toDrop and toDrop:GetAttribute("Slot") == 3 then toDrop = owned[#owned] end
 	end
+	local slot
 	if toDrop then
+		slot = toDrop:GetAttribute("Slot")
+		-- (its twin goes with it: a staff's melee self)
+		local twinName = toDrop:GetAttribute("Twin")
+		local twin = twinName and bp:FindFirstChild(twinName)
+		if twin and twin:GetAttribute("TwinHidden") then twin:Destroy() end
 		Pickup.drop(toDrop, char, hrp.CFrame.LookVector, C.DROP_SPEED)
+	else
+		local used = {}
+		for _, t in ipairs(owned) do used[t:GetAttribute("Slot") or 0] = true end
+		slot = (not used[1]) and 1 or 2
 	end
 
 	restore(tool)
+	tool:SetAttribute("Slot", slot or tool:GetAttribute("Slot"))
 	tool.Parent = bp
 	-- straight into the hand when it was empty
 	if not char:FindFirstChildOfClass("Tool") then

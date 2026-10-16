@@ -1,4 +1,27 @@
-# Updated scripts: Deadvault — an extraction raid with a vault you keep (after Dark and Darker)
+# Updated scripts: any two weapons; no more monsters stuck outside a Depths room
+
+- **Weapons**: you can carry any two, a primary or a sidearm alike.
+  - Picking one up (off the floor, or as loot in The Depths, Crownfall and Deadvault) with a free slot puts it there.
+  - With both full, it swaps for the one in your hand (that one drops; in Deadvault it goes into your bag).
+  - Before, a "secondary" could only replace your secondary: a Rapier sidearm and a Zweihander meant a Falchion could never come in.
+- **The Depths**: a monster could end up outside its room, behind the shut gates, and the room never cleared.
+  - Summons now always appear inside the room's walls.
+  - A blink never lands through a wall.
+  - The room puts back any monster it finds outside its walls.
+- **Checked in Play**:
+  - a find going into the free slot, then swapping for the held weapon;
+  - a Zweihander off the floor swapping out a held Rapier;
+  - compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Pickup.lua](ServerScriptService/Combat/Pickup.lua), [Monsters.lua](ServerScriptService/Combat/Monsters.lua), [BossMoves.lua](ServerScriptService/Combat/BossMoves.lua) | ServerScriptService ▸ Combat | ModuleScript | any two weapons; summons in the room; blinks not through walls |
+| [Loot.lua](ServerScriptService/Game/Loot.lua), [Modes/Depths.lua](ServerScriptService/Game/Modes/Depths.lua), [Modes/Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua), [Modes/Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game | ModuleScript | `Loot.slotFor`; the room's watchdog |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Deadvault — an extraction raid with a vault you keep (after Dark and Darker)
 
 - **DEADVAULT** (PLAY ▸ ADVENTURES): a 16-room dungeon built fresh each raid, guarded room by room, full of chests and gold, shared with other raiders.
   - Go in with the **kit** you choose to risk from **your vault** (or your class's plain weapon).

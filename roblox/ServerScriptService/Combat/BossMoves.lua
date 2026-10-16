@@ -666,6 +666,12 @@ K.blink = function(mob, spec)
 	if not mob.alive then for d, t in pairs(hidden) do d.Transparency = t end; return end
 	local tr = rootOf(tgt)
 	local behind = tr and (tr.Position - tr.CFrame.LookVector * (5 + 2 * scaleOf(mob))) or me.Position
+	-- (not through a wall: a wall behind them, it comes out in front instead)
+	if tr then
+		local back = behind - tr.Position
+		local hit = workspace:Raycast(tr.Position, back + back.Unit * 2, wallParams(mob))
+		if hit then behind = tr.Position + tr.CFrame.LookVector * (5 + 2 * scaleOf(mob)) end
+	end
 	local land = groundUnder(behind, mob)
 	mob.model:PivotTo(CFrame.lookAt(land + Vector3.new(0, 3 * scaleOf(mob) + 0.2, 0), Vector3.new(tr.Position.X, land.Y + 3 * scaleOf(mob), tr.Position.Z)))
 	for d, t in pairs(hidden) do if d.Parent then d.Transparency = t end end

@@ -160,8 +160,9 @@ function Depths:grant(plr, item)
 	local r = self:runOf(plr)
 	local char = aliveChar(plr)
 	if item.kind == "weapon" then
-		r.weapons[item.slot or 1] = item
-		if char then Loot.giveWeapon(plr, item) end
+		-- (into a free slot, else in place of the one in your hand: Loot.slotFor)
+		if char then Loot.giveWeapon(plr, item) else item.slot = item.slot or 1 end
+		r.weapons[item.slot] = item
 	elseif item.kind == "relic" then
 		table.insert(r.relics, item.relic)
 		if char then Loot.setRelics(char, r.relics) end
@@ -295,6 +296,7 @@ function Depths:engage(room)
 	local opts = {team = "B", startDelay = 1.2, corpseTime = 3,
 		hpMult = hpMult, dealt = dealt,
 		arena = {centre = Vector3.new(room.cx, 0, room.cz), radius = math.max(room.w, room.d) / 2 + 4},
+		bounds = {centre = Vector3.new(room.cx, 0, room.cz), hw = room.w / 2, hd = room.d / 2},
 		onSpawn = function(mob) room.mobs[mob] = true end,
 		onDeath = function(mob, killer)
 			room.mobs[mob] = nil
@@ -597,6 +599,19 @@ function Depths:tick(dt)
 		for mob in pairs(room.mobs) do
 			-- (one that fell out of the world, or lost its body, is put back in the room's middle)
 			local r = mob.alive and mob.model and rootOf(mob.model)
+			-- (one outside the room's walls, behind its gates, is put back in: it could never be reached)
+			if r and r.Position.Y > -30 and (math.abs(r.Position.X - room.cx) > room.w / 2 + 1.5 or math.abs(r.Position.Z - room.cz) > room.d / 2 + 1.5) then
+				mob.outsideSince = mob.outsideSince or now
+				if now - mob.outsideSince > 1.5 then
+					mob.outsideSince = nil
+					local spot = room.spots[math.random(#room.spots)]
+					local sc = mob.model:GetAttribute("MonsterScale") or 1
+					local at = spot + Vector3.new(0, 3 * (sc - 1) + 0.5, 0)
+					mob.model:PivotTo(CFrame.new(at, Vector3.new(room.cx, at.Y, room.cz)))
+				end
+			else
+				mob.outsideSince = nil
+			end
 			if mob.alive and (not r or r.Position.Y < -30) then
 				if r then mob.model:PivotTo(CFrame.new(room.cx, 6, room.cz))
 				else

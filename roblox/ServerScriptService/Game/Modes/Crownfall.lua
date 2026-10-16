@@ -103,10 +103,11 @@ function Crownfall:grant(plr, item, at)
 	local r = self:runOf(plr)
 	local here = rootOf(char) and rootOf(char).Position or at
 	if item.kind == "weapon" then
-		local slot = item.slot or 1
+		-- (a free slot, else the one in your hand is swapped out and dropped)
+		local slot = Loot.slotFor(plr)
 		local old = r.weapons[slot]
-		r.weapons[slot] = item
 		Loot.giveWeapon(plr, item)
+		r.weapons[item.slot] = item
 		if old then self:dropItem(old, here) end
 	elseif item.kind == "armor" then
 		local old = r.armor

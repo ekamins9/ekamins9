@@ -264,10 +264,11 @@ function Deadvault:take(plr, item, at)
 	end
 	if item.kind == "gold" then r.gold += item.gold
 	elseif item.kind == "weapon" then
-		local slot = item.slot or 1
+		-- (a free slot, else the one in your hand is swapped out: into the bag, or dropped)
+		local slot = Loot.slotFor(plr)
 		local old = r.weapons[slot]
-		r.weapons[slot] = item
 		Loot.giveWeapon(plr, item)
+		r.weapons[item.slot] = item
 		if old and not toBag(old) then self:dropItem(old, here) end
 	elseif item.kind == "armor" then
 		local better = not r.armor or (CFG_RANK(item) > CFG_RANK(r.armor))

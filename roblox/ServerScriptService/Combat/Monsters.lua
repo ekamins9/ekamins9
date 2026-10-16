@@ -764,6 +764,12 @@ local function traitLoops(mob)
 					local kinds = mob.def.summons or Monsters.MINIONS[mob.def.faction] or {"Skeleton"}
 					for i = 1, mob.boss and 2 or 1 do
 						local at = me.CFrame * CFrame.new((i == 1 and -1 or 1) * 6, 0, 3)
+						-- (never outside its room: a boss by a wall would call them up behind it)
+						local bd = mob.opts and mob.opts.bounds
+						if bd then
+							local p = at.Position
+							at = CFrame.new(math.clamp(p.X, bd.centre.X - bd.hw + 3, bd.centre.X + bd.hw - 3), p.Y, math.clamp(p.Z, bd.centre.Z - bd.hd + 3, bd.centre.Z + bd.hd - 3))
+						end
 						ring(at.Position - Vector3.new(0, 2.8, 0), 3, (mob.def.look and mob.def.look.eyes) or Color3.fromRGB(150, 255, 150), 1)
 						pend(mob.opts, 1)
 						task.delay(1, function()

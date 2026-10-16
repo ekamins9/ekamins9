@@ -1874,7 +1874,9 @@ V) in `workspace.DroppedWeapons`, for `DESPAWN` (25) seconds. Only what you can 
 without a right arm nothing, with one arm only one-handed weapons (`Pickup.canHold`, the
 weapon Config's `TWO_HANDED`), and only what your class carries (`Pickup.fitsClass`: a Knight
 can't take up a bow or a wand, a Mage a sword; bots take up steel only); the prompt is hidden on your screen and the server refuses it
-(bots don't go for them either).
+(bots don't go for them either). **Any two weapons**, a primary or a sidearm alike: picking one up
+with a hand free puts it in the free slot; with both full, the one in your hand is dropped and the
+new one takes its place on the bar. Loot in the adventures works the same way (`Loot.slotFor`).
 
 **Corpses (`Combat ▸ Corpses`).** The dead stay on the field: 2.8 s after a death the body is
 laid out where it fell — a still copy of everything you could see of it (armor, hair, face), the

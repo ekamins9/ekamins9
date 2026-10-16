@@ -262,7 +262,7 @@ function Loot.card(item)
 	if item.kind == "weapon" then
 		local w = Catalog.WEAPON[item.weapon]
 		c.weapon, c.skin = item.weapon, item.skin
-		c.sub = r.id .. " " .. ((w and w.name) or item.weapon) .. (item.slot == 2 and "  ·  sidearm" or "")
+		c.sub = r.id .. " " .. ((w and w.name) or item.weapon)
 		if (item.power or 0) > 0 then table.insert(c.lines, string.format("+%d%% damage", math.floor(item.power * 100 + 0.5))) end
 		for _, af in ipairs(item.affixes or {}) do
 			local a = CFG.AFFIX[af.id]
@@ -323,9 +323,28 @@ function Loot.tagTool(tool, item)
 	tool:SetAttribute("DisplayName", item.name)
 end
 
+-- WHICH SLOT a found weapon takes: any weapon goes in either (a primary or a sidearm alike),
+-- two at most. A free slot first; both full: the one in your hand (it's swapped out)
+function Loot.slotFor(plr)
+	local char = plr.Character
+	local have = {}
+	for _, holder in ipairs({char, plr:FindFirstChildOfClass("Backpack")}) do
+		for _, t in ipairs(holder and holder:GetChildren() or {}) do
+			if t:IsA("Tool") and not t:GetAttribute("TwinHidden") then have[t:GetAttribute("Slot") or 0] = true end
+		end
+	end
+	local held = char and char:FindFirstChildOfClass("Tool")
+	local hs = held and held:GetAttribute("Slot")
+	if not have[1] then return 1 end
+	if not have[2] then return 2 end
+	if hs == 1 or hs == 2 then return hs end
+	return 1
+end
+
 function Loot.giveWeapon(plr, item)
 	if not (_G.GiveWeapon and item and item.kind == "weapon") then return nil end
-	local tool, twin = _G.GiveWeapon(plr, item.weapon, item.skin, item.slot or 1, item.slot == 1)
+	item.slot = Loot.slotFor(plr)
+	local tool, twin = _G.GiveWeapon(plr, item.weapon, item.skin, item.slot, true)
 	Loot.tagTool(tool, item)
 	if twin then Loot.tagTool(twin, item) end
 	return tool
