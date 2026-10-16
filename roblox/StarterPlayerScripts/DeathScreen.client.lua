@@ -56,6 +56,10 @@ local function nextStep()
 	if mode == "Hub" then return "BACK TO THE COURTYARD", delay end
 	if mode == "Tiltyard" then return "BACK ON YOUR FEET", delay end
 	if mode == "Horde" then return "THE NEXT WAVE BRINGS YOU BACK", nil end
+	-- (the dungeon game: DungeonMenu.client's own screen follows)
+	if mode == "Tavern" then return "BACK ON YOUR FEET", delay end
+	if mode == "Deadvault" then return "OUT OF THE RAID", nil end
+	if mode == "Depths" then return "BACK ON YOUR FEET WHEN THE ROOM IS CLEARED", nil end
 	if def and (def.respawnDelay == 0 or def.roundsToWin ~= nil) then return "OUT FOR THIS ROUND", nil end
 	return "BACK IN THE FIGHT", delay
 end

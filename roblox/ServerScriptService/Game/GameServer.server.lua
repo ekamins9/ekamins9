@@ -251,7 +251,10 @@ task.spawn(function()
 		else
 			local nextDef = GameConfig.MODES[node:GetAttribute("NextMode")] or def
 			pendingMaps = candidates(nextDef)
-			for i, m in ipairs(pendingMaps) do node:SetAttribute("Vote" .. i, m); node:SetAttribute("VoteMode" .. i, "") end
+			-- (the dungeon game has no map vote: everyone goes back to the Gilded Rat, HubServer)
+			if not def.ownSpawn then
+				for i, m in ipairs(pendingMaps) do node:SetAttribute("Vote" .. i, m); node:SetAttribute("VoteMode" .. i, "") end
+			end
 		end
 		node:SetAttribute("Objective", result)
 		node:SetAttribute("State", "Intermission")
@@ -265,7 +268,9 @@ task.spawn(function()
 			node:SetAttribute("TimeLeft", 0)
 			while node:GetAttribute("MatchOver") == true do task.wait(1) end   -- Studio: HubServer clears it to go home
 		end
-		countdown(inter, nil, nil)
+		-- (no break at all: a 0 here would be "no clock" to countdown, a wait that never ends —
+		-- the Gilded Rat's, whose intermission is 0)
+		if inter > 0 then countdown(inter, nil, nil) else node:SetAttribute("TimeLeft", 0) end
 		-- (a mode asked for outright — Studio's switch — isn't voted away)
 		local asked = node:GetAttribute("NextMode")
 		if cards and #cards > 0 and (asked == nil or asked == "" or asked == modeId) then

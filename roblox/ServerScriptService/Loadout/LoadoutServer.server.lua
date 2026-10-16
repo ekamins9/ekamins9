@@ -263,6 +263,21 @@ local function show(plr, reason)
 		task.defer(function() spawnAs(plr, Profile.get(plr).active) end)
 		return
 	end
+	-- THE DUNGEON GAME (the Gilded Rat, Deadvault, the Depths: a mode's ownSpawn) never shows the
+	-- battle's class screen: you go in as the class chosen in its lobby (DungeonMenu.client), and
+	-- when you can't, its own screen says why ("Down": out of the raid, back when the room's clear)
+	local def = Game.current and Game.current.def
+	if def and def.ownSpawn then
+		-- (between rounds, a mode change: nothing to say; the round's start brings you in)
+		if Game.node:GetAttribute("State") ~= "Round" then return end
+		local ok, why = Game.canSpawn(plr)
+		if ok then
+			task.defer(function() if plr.Parent and not isAlive(plr) and not spawning[plr] then spawnAs(plr, Profile.get(plr).active) end end)
+		else
+			event:FireClient(plr, "Down", why or reason, Game.modeId)
+		end
+		return
+	end
 	event:FireClient(plr, "Show", Profile.get(plr).active, reason)
 end
 

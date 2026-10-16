@@ -1,40 +1,66 @@
---[[ DARK UI — the look of the dungeon game (the Deadvault lobby: DungeonMenu.client; its raid
-     screens: RaidInventory.client): near-black panels with a worn edge and a thin gold line
-     inside it, small gold diamonds at the corners, Merriweather type, slots sunk into the panel,
-     and every item shown as ITSELF in 3D (no emoji): its weapon in its skin, its armour's coat,
-     a corked bottle of its colour, a goblet, a ring, a gem, a tome, a stack of coin.
+--[[ DARK UI — the look of the dungeon game's screens (its lobby: DungeonMenu.client; its raid
+     screens: RaidInventory.client). The game's own look (Theme: FredokaOne headings, Gotham
+     type, outlined white text, dark-glass rounded panels, chunky glossy buttons), warmed for the
+     dungeon: a gold accent line under a panel's title, gold for what's chosen, rarity colours
+     glowing up from the floor of a slot. And every item shown as ITSELF in 3D (no emoji): its
+     weapon in its skin, its armour's coat, a corked bottle of its colour, a goblet, a ring, a
+     gem, a tome, a stack of coin.
 
        DarkUI.C                          the colours · DarkUI.font(weight) a FontFace
-       DarkUI.text(parent, str, size, color, weight)
-       DarkUI.panel(parent, opts)        opts.title: a title band at its top · opts.corners
+                                         (Bold: the heading face · SemiBold / Regular: Gotham)
+       DarkUI.text(parent, str, size, color, weight)   outlined
+       DarkUI.panel(parent, opts)        opts.title: a title at its top, a gold line under it
        DarkUI.slot(parent, rarity)       a sunken square (a rarity tints its floor)
-       DarkUI.button(parent, str, kind)  "stone" (default) · "gold" · "red" · "green"
+       DarkUI.button(parent, str, kind)  "stone" (default) · "gold" · "red" · "green" · "blue"
        DarkUI.diamond(parent, size, color, filled)
-       DarkUI.rule(parent, y)            a gold line with a diamond in its middle
+       DarkUI.rule(parent, y)            a gold line across
+       DarkUI.parchment(parent)          a quieter glass page (the class screen's sides)
        DarkUI.icon(parent, card)         the item in 3D, framed to fit (cached per kind)
        DarkUI.tooltip(gui)               -> tip; tip:show(card, extra) / tip:hide() ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
+local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 
 local DarkUI = {}
 local C = {
-	BG = Color3.fromRGB(9, 8, 7), PANEL = Color3.fromRGB(21, 19, 17), PANEL2 = Color3.fromRGB(30, 27, 24), INSET = Color3.fromRGB(12, 11, 10),
-	EDGE = Color3.fromRGB(64, 57, 49), EDGE2 = Color3.fromRGB(96, 86, 72), GOLD = Color3.fromRGB(196, 160, 96), GOLD2 = Color3.fromRGB(236, 204, 136),
-	TEXT = Color3.fromRGB(228, 218, 198), DIM = Color3.fromRGB(150, 140, 122), FAINT = Color3.fromRGB(92, 86, 76),
-	GOOD = Color3.fromRGB(134, 206, 92), BAD = Color3.fromRGB(214, 74, 62), BLUE = Color3.fromRGB(110, 160, 230),
-	PARCH = Color3.fromRGB(122, 104, 80), PARCH2 = Color3.fromRGB(84, 70, 52), INK = Color3.fromRGB(34, 24, 14),
+	BG = Theme.BACK, PANEL = Theme.GLASS, PANEL2 = Theme.GLASS2, INSET = Color3.fromRGB(9, 12, 22),
+	EDGE = Color3.fromRGB(58, 70, 102), EDGE2 = Color3.fromRGB(92, 106, 146), GOLD = Color3.fromRGB(240, 186, 72), GOLD2 = Color3.fromRGB(255, 214, 112),
+	TEXT = Theme.TEXT, DIM = Theme.DIM, FAINT = Color3.fromRGB(108, 120, 150),
+	GOOD = Theme.GOOD, BAD = Theme.BAD, BLUE = Theme.BLUE,
+	-- (the old parchment's ink, now on glass: white)
+	PARCH = Theme.GLASS2, PARCH2 = Theme.GLASS, INK = Theme.TEXT,
 }
 DarkUI.C = C
 DarkUI.RARITY = {}
 for _, r in ipairs(Catalog.LOOT and Catalog.LOOT.RARITIES or {}) do DarkUI.RARITY[r.id] = r.color end
 
-local FAMILY = "rbxasset://fonts/families/Merriweather.json"
-function DarkUI.font(weight) return Font.new(FAMILY, weight or Enum.FontWeight.Regular) end
+local HEAD = Font.fromEnum(Theme.FONT_TITLE)
+local GOTHAM = "rbxasset://fonts/families/GothamSSm.json"
+function DarkUI.font(weight)
+	if weight == Enum.FontWeight.Bold or weight == Enum.FontWeight.Heavy then return HEAD end
+	if weight == Enum.FontWeight.SemiBold then return Font.new(GOTHAM, Enum.FontWeight.Bold) end
+	return Font.new(GOTHAM, Enum.FontWeight.Medium)
+end
+
+-- the dark outline round white text (Theme.OUTLINE), thicker for big type
+local function outline(t, size)
+	local s = t:FindFirstChild("Outline") or Instance.new("UIStroke")
+	s.Name = "Outline"
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	s.Color = Theme.OUTLINE
+	s.Thickness = size >= 30 and 2.6 or (size >= 18 and 1.8 or 1.2)
+	s.Transparency = 0.15
+	s.LineJoinMode = Enum.LineJoinMode.Round
+	s.Parent = t
+	return s
+end
+DarkUI.outline = outline
 
 function DarkUI.text(parent, str, size, color, weight)
 	local l = Instance.new("TextLabel")
@@ -43,12 +69,13 @@ function DarkUI.text(parent, str, size, color, weight)
 	l.TextSize = size or 16
 	l.TextColor3 = color or C.TEXT
 	l.FontFace = DarkUI.font(weight)
-	l.TextStrokeTransparency = 0.75
-	l.TextStrokeColor3 = Color3.new(0, 0, 0)
+	l.TextStrokeTransparency = 1
+	outline(l, size or 16)
 	l.Parent = parent
 	return l
 end
-local function corner(f, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 3); c.Parent = f; return c end
+local function corner(f, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 10); c.Parent = f; return c end
+DarkUI.corner = corner
 local function stroke(f, color, th, t)
 	local s = Instance.new("UIStroke")
 	s.Color, s.Thickness, s.Transparency = color, th or 1, t or 0
@@ -74,12 +101,13 @@ function DarkUI.diamond(parent, size, color, filled)
 	d.BackgroundColor3 = color or C.GOLD
 	d.BackgroundTransparency = filled == false and 1 or 0
 	d.BorderSizePixel = 0
+	corner(d, math.max(1, math.floor(size / 5)))
 	stroke(d, color or C.GOLD, 1, filled == false and 0 or 0.3)
 	d.Parent = parent
 	return d
 end
 
--- a gold line across, a diamond in its middle (under titles, between sections)
+-- a gold line across (under titles, between sections), fading at its ends
 function DarkUI.rule(parent, y, width)
 	local holder = Instance.new("Frame")
 	holder.BackgroundTransparency = 1
@@ -91,77 +119,40 @@ function DarkUI.rule(parent, y, width)
 	line.BorderSizePixel = 0
 	line.AnchorPoint = Vector2.new(0, 0.5)
 	line.Position = UDim2.fromScale(0, 0.5)
-	line.Size = UDim2.new(1, 0, 0, 1)
+	line.Size = UDim2.new(1, 0, 0, 2)
 	line.BackgroundColor3 = C.GOLD
+	corner(line, 1)
 	line.Parent = holder
 	local g = Instance.new("UIGradient")
-	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.15), NumberSequenceKeypoint.new(1, 1)})
+	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.1), NumberSequenceKeypoint.new(1, 1)})
 	g.Parent = line
-	local d = DarkUI.diamond(holder, 7, C.GOLD)
-	d.Position = UDim2.fromScale(0.5, 0.5)
 	return holder
 end
 
--- A PANEL: near-black, a worn edge, a thin gold line inside it, gold diamonds at the corners
+-- A PANEL: the game's dark glass, rounded, a faint white edge; a title with a gold line under it
 function DarkUI.panel(parent, opts)
 	opts = opts or {}
 	local f = Instance.new("Frame")
 	f.BackgroundColor3 = opts.color or C.PANEL
+	f.BackgroundTransparency = opts.transparency or 0.08
 	f.BorderSizePixel = 0
-	corner(f, 4)
-	gradient(f, Color3.new(1, 1, 1), Color3.fromRGB(150, 146, 140))
-	stroke(f, C.EDGE, 2, 0)
-	local inner = Instance.new("Frame")
-	inner.Name = "Inner"
-	inner.BackgroundTransparency = 1
-	inner.Position = UDim2.fromOffset(5, 5)
-	inner.Size = UDim2.new(1, -10, 1, -10)
-	corner(inner, 2)
-	stroke(inner, C.GOLD, 1, 0.72)
-	inner.Parent = f
-	if opts.corners ~= false then
-		for _, p in ipairs({{0, 0}, {1, 0}, {0, 1}, {1, 1}}) do
-			local d = DarkUI.diamond(f, 9, C.GOLD)
-			d.Position = UDim2.new(p[1], p[1] == 0 and 5 or -5, p[2], p[2] == 0 and 5 or -5)
-			d.ZIndex = 3
-		end
-	end
+	corner(f, 14)
+	gradient(f, Color3.new(1, 1, 1), Color3.fromRGB(196, 200, 214))
+	stroke(f, Color3.new(1, 1, 1), 1.5, 0.86)
 	if opts.title then
-		local t = DarkUI.text(f, opts.title, opts.titleSize or 20, C.GOLD2, Enum.FontWeight.Bold)
+		local t = DarkUI.text(f, string.upper(opts.title), opts.titleSize or 20, C.TEXT, Enum.FontWeight.Bold)
 		t.Name = "Title"
-		t.Position = UDim2.fromOffset(0, 10)
+		t.Position = UDim2.fromOffset(0, 12)
 		t.Size = UDim2.new(1, 0, 0, 26)
-		DarkUI.rule(f, 38)
+		DarkUI.rule(f, 40, 160)
 	end
 	f.Parent = parent
 	return f
 end
 
--- a parchment page (the class screen's sides)
+-- a quieter glass page (the class screen's sides)
 function DarkUI.parchment(parent)
-	local f = Instance.new("Frame")
-	f.BackgroundColor3 = Color3.fromRGB(196, 176, 140)
-	f.BorderSizePixel = 0
-	corner(f, 3)
-	local g = Instance.new("UIGradient")
-	g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 128, 98)), ColorSequenceKeypoint.new(0.12, Color3.fromRGB(226, 208, 172)),
-		ColorSequenceKeypoint.new(0.88, Color3.fromRGB(216, 196, 160)), ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 118, 90))})
-	g.Parent = f
-	-- (burnt at its top and bottom)
-	for _, top in ipairs({true, false}) do
-		local band = Instance.new("Frame")
-		band.BorderSizePixel = 0
-		band.BackgroundColor3 = Color3.fromRGB(40, 28, 18)
-		band.Size = UDim2.new(1, 0, 0, 40)
-		band.Position = top and UDim2.new() or UDim2.new(0, 0, 1, -40)
-		local bg = Instance.new("UIGradient")
-		bg.Rotation = top and 90 or -90
-		bg.Transparency = NumberSequence.new(0.2, 1)
-		bg.Parent = band
-		band.Parent = f
-	end
-	stroke(f, Color3.fromRGB(40, 32, 24), 3, 0)
-	f.Parent = parent
+	local f = DarkUI.panel(parent, {color = C.PANEL2, transparency = 0.12})
 	return f
 end
 
@@ -169,42 +160,61 @@ end
 function DarkUI.slot(parent, rarity)
 	local f = Instance.new("Frame")
 	f.BackgroundColor3 = C.INSET
+	f.BackgroundTransparency = 0.15
 	f.BorderSizePixel = 0
-	corner(f, 2)
-	stroke(f, C.EDGE, 1, 0)
+	corner(f, 8)
+	stroke(f, Color3.new(1, 1, 1), 1, 0.88)
 	local floor = Instance.new("Frame")
 	floor.Name = "Floor"
 	floor.BorderSizePixel = 0
 	floor.Size = UDim2.fromScale(1, 1)
-	floor.BackgroundColor3 = rarity and DarkUI.RARITY[rarity] or Color3.fromRGB(40, 36, 32)
-	floor.BackgroundTransparency = rarity and 0.55 or 0.85
+	floor.BackgroundColor3 = rarity and DarkUI.RARITY[rarity] or Color3.fromRGB(40, 52, 84)
+	floor.BackgroundTransparency = rarity and 0.5 or 0.8
 	local g = Instance.new("UIGradient")
 	g.Rotation = 90
-	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.55, 0.85), NumberSequenceKeypoint.new(1, 0.2)})
+	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.85), NumberSequenceKeypoint.new(1, 0.15)})
 	g.Parent = floor
-	corner(floor, 2)
+	corner(floor, 8)
 	floor.Parent = f
 	f.Parent = parent
 	return f
 end
 
+-- the game's chunky glossy button: a bright face, a darker rim, outlined white type
+local KIND = {gold = Theme.GOLD, red = Theme.RED, green = Theme.GREEN, blue = Theme.BLUE, stone = Color3.fromRGB(46, 58, 92)}
+DarkUI.BUTTON = KIND
 function DarkUI.button(parent, str, kind, size)
 	local b = Instance.new("TextButton")
 	b.AutoButtonColor = false
 	b.Text = str
 	b.TextSize = size or 16
-	b.FontFace = DarkUI.font(Enum.FontWeight.Bold)
-	local base = (kind == "gold" and Color3.fromRGB(120, 92, 46)) or (kind == "red" and Color3.fromRGB(110, 34, 28)) or (kind == "green" and Color3.fromRGB(56, 92, 38)) or C.PANEL2
+	b.FontFace = HEAD
+	local base = KIND[kind or "stone"] or KIND.stone
 	b.BackgroundColor3 = base
-	b.TextColor3 = kind == "gold" and C.GOLD2 or C.TEXT
-	b.TextStrokeTransparency = 0.6
-	corner(b, 3)
-	gradient(b, Color3.new(1, 1, 1), Color3.fromRGB(120, 116, 110))
-	local s = stroke(b, kind == "gold" and C.GOLD or C.EDGE2, 1.5, 0)
-	b.MouseEnter:Connect(function() b.BackgroundColor3 = base:Lerp(Color3.new(1, 1, 1), 0.12); s.Color = C.GOLD2 end)
-	b.MouseLeave:Connect(function() b.BackgroundColor3 = base; s.Color = kind == "gold" and C.GOLD or C.EDGE2 end)
+	b.TextColor3 = C.TEXT
+	b.TextStrokeTransparency = 1
+	outline(b, size or 16)
+	corner(b, 10)
+	gradient(b, Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 176))
+	local rim = Color3.new(base.R * 0.55, base.G * 0.55, base.B * 0.55)
+	stroke(b, rim, 2, 0)
+	local sc = Instance.new("UIScale"); sc.Parent = b
+	local function baseOf() return KIND[b:GetAttribute("Kind") or "stone"] or KIND.stone end
+	b.MouseEnter:Connect(function() b.BackgroundColor3 = baseOf():Lerp(Color3.new(1, 1, 1), 0.14); TweenService:Create(sc, TweenInfo.new(0.1), {Scale = 1.03}):Play() end)
+	b.MouseLeave:Connect(function() b.BackgroundColor3 = baseOf(); TweenService:Create(sc, TweenInfo.new(0.1), {Scale = 1}):Play() end)
+	b.MouseButton1Down:Connect(function() TweenService:Create(sc, TweenInfo.new(0.06), {Scale = 0.97}):Play() end)
+	b.MouseButton1Up:Connect(function() TweenService:Create(sc, TweenInfo.new(0.1), {Scale = 1.03}):Play() end)
+	b:SetAttribute("Kind", kind or "stone")
 	b.Parent = parent
 	return b
+end
+-- a button's colour, after the fact (the kind it shows)
+function DarkUI.paint(b, kind)
+	local base = KIND[kind or "stone"] or KIND.stone
+	b.BackgroundColor3 = base
+	local s = b:FindFirstChildOfClass("UIStroke")
+	if s then s.Color = Color3.new(base.R * 0.55, base.G * 0.55, base.B * 0.55) end
+	b:SetAttribute("Kind", kind)
 end
 
 --------------------------------------------------------------------

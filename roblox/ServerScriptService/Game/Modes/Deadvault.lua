@@ -670,6 +670,7 @@ function Deadvault:extract(plr)
 	self.runs[plr] = {weapons = {}, relics = {}, bag = {}, belt = {}, gold = 0, kitTaken = true}
 	char:Destroy()
 	plr:SetAttribute("AdvChip", "🚪 EXTRACTED")
+	plr:SetAttribute("RaidFate", "out")   -- (the round's end screen: RoundResult.client)
 	local e = event()
 	if e then e:FireClient(plr, "Inv", nil) end
 	if not game:GetService("RunService"):IsStudio() and _G.HubTravel then
@@ -681,6 +682,7 @@ end
 --  THE ROUND
 --------------------------------------------------------------------
 function Deadvault:start(map)
+	for _, p in ipairs(Players:GetPlayers()) do p:SetAttribute("RaidFate", nil) end
 	Game.Mode.start(self, map)
 	node:SetAttribute("FriendlyFire", true)
 	self.runs, self.mobs, self.out, self.entered, self.havenOf = {}, {}, {}, {}, {}
@@ -767,7 +769,7 @@ end
 
 function Deadvault:canSpawn(plr)
 	if self.out[plr] then return false, "You got out: your finds are in your vault" end
-	if self.entered[plr] then return false, "One life in the Deadvault: watch, or leave for the courtyard" end
+	if self.entered[plr] then return false, "One life in the Deadvault: watch, or go back to the Gilded Rat" end
 	return true
 end
 
@@ -788,6 +790,7 @@ function Deadvault:onDeath(victimPlr)
 		self.runs[victimPlr] = {weapons = {}, relics = {}, bag = {}, belt = {}, gold = 0, kitTaken = true}
 		banner({text = "YOU FELL", sub = "EVERYTHING YOU CARRIED LIES IN YOUR PACK WHERE YOU FELL", kind = "boss"}, victimPlr)
 		victimPlr:SetAttribute("AdvChip", "💀 FALLEN")
+		victimPlr:SetAttribute("RaidFate", "fell")
 		local e = event()
 		if e then e:FireClient(victimPlr, "Inv", nil) end
 	end
@@ -823,6 +826,9 @@ function Deadvault:tick(dt)
 end
 
 function Deadvault:isOver()
+	-- (Studio has no teleports: someone asked to leave, so the raid ends here)
+	local nxt = node:GetAttribute("NextMode")
+	if nxt and nxt ~= "" and nxt ~= "Deadvault" then return "BACK TO THE GILDED RAT" end
 	-- everyone out or down (after the start): nothing left to wait for
 	if os.clock() - self.startedAt < 30 then return nil end
 	local any = false

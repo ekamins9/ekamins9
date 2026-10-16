@@ -69,6 +69,38 @@ function Tavern:point(cf, action, object, fn)
 	return p
 end
 
+-- a sign over a place (seen across the hall, not through walls)
+function Tavern:sign(part, text, sub, color)
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "Sign"
+	bb.Size = UDim2.fromOffset(300, 70)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+	bb.AlwaysOnTop = false
+	bb.LightInfluence = 0
+	bb.MaxDistance = 140
+	bb.Adornee = part
+	local t = Instance.new("TextLabel")
+	t.BackgroundTransparency = 1
+	t.Size = UDim2.new(1, 0, 0, 36)
+	t.Font = Enum.Font.FredokaOne
+	t.TextSize = 30
+	t.TextColor3 = color or Color3.fromRGB(255, 214, 112)
+	t.Text = text
+	local st = Instance.new("UIStroke"); st.Color = Color3.fromRGB(8, 10, 20); st.Thickness = 2.4; st.Parent = t
+	t.Parent = bb
+	local s = Instance.new("TextLabel")
+	s.BackgroundTransparency = 1
+	s.Position = UDim2.fromOffset(0, 36); s.Size = UDim2.new(1, 0, 0, 22)
+	s.Font = Enum.Font.GothamBold
+	s.TextSize = 16
+	s.TextColor3 = Color3.fromRGB(220, 226, 240)
+	s.Text = sub or ""
+	local st2 = Instance.new("UIStroke"); st2.Color = Color3.fromRGB(8, 10, 20); st2.Thickness = 1.6; st2.Parent = s
+	s.Parent = bb
+	bb.Parent = part
+	return bb
+end
+
 function Tavern:merchant(id, cf)
 	local def = MERCHANTS[id]
 	if not def then return end
@@ -105,12 +137,14 @@ function Tavern:start(map)
 	end
 	local L = self.layout
 	for _, n in ipairs(L.npcs) do self:merchant(n.id, n.cf) end
-	self:point(L.points.stash, "Open", "Your Stash", function(plr) open(plr, "Stash") end)
 	self:point(L.points.board, "Read", "Class & Perks", function(plr) open(plr, "Class") end)
-	self:point(L.points.gate, "Descend", "The Dungeon Gate", function(plr) open(plr, "Play") end)
-	self:point(L.points.exit, "Leave", "To the Courtyard", function(plr)
+	local gate = self:point(L.points.gate, "Descend", "The Dungeon Gate", function(plr) open(plr, "Play") end)
+	self:sign(gate, "THE DUNGEON GATE", "Your party, the dungeon, READY")
+	local exit = self:point(L.points.exit, "Leave", "To the Courtyard", function(plr)
 		if _G.HubTravel then pcall(_G.HubTravel, plr, "Courtyard", {}) end
 	end)
+	self:sign(exit, "TO THE COURTYARD", "Back to the main game", Color3.fromRGB(255, 120, 120))
+	self:sign(self:point(L.points.stash, "Open", "Your Stash", function(plr) open(plr, "Stash") end), "YOUR STASH", "Kit and stash")
 	-- everyone walks in (and back in, should anything happen)
 	for _, p in ipairs(Players:GetPlayers()) do if _G.AutoSpawn then _G.AutoSpawn(p) end end
 	if not self.joinConn then

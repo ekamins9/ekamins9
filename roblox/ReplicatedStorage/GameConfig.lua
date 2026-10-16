@@ -87,7 +87,7 @@ GameConfig.MODES = {
 		name = "The Gilded Rat", category = "Hub", teams = 0, maxPlayers = 24,
 		description = "The dungeon game's lodge: your stash, the merchants, your party, and the gate down into the dark.",
 		maps = {"Tavern"}, procedural = true, roundLength = 0, intermission = 0, hidden = true, respawnDelay = 1,
-		pvp = false,
+		pvp = false, ownSpawn = true,
 	},
 	Hub = {
 		name = "Hub", category = "Hub", teams = 0, maxPlayers = 40,
@@ -147,14 +147,14 @@ GameConfig.MODES = {
 		description = "A party crawl through a dungeon built fresh every run: three floors, rooms that seal you in, chests of weapons, relics and tomes, and the theme's boss at the bottom.",
 		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
 		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
-		pvp = false,
+		pvp = false, ownSpawn = true,
 	},
 	-- DEADVAULT (Game ▸ Modes ▸ Deadvault, Game ▸ Vault): an extraction raid, after Dark and Darker
 	Deadvault = {
 		name = "Deadvault", category = "Adventure", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Go in with your party and the kit you dare to risk. Search a great dark dungeon for weapons, armour and valuables, keep quiet past what sleeps there, watch for other raiders, and get out by the escape stairs or a blue portal. Fall, or stay too long, and it's gone.",
 		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
-		roundLength = 15 * 60, intermission = 15, respawnDelay = 3, hidden = true,
+		roundLength = 15 * 60, intermission = 15, respawnDelay = 3, hidden = true, ownSpawn = true,
 	},
 	-- CROWNFALL (Game ▸ Modes ▸ Crownfall): a battle royale on an island built fresh (Game ▸ Realm)
 	Crownfall = {

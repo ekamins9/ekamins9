@@ -1749,13 +1749,17 @@ Deadvault's extraction); its door goes home to the Courtyard.
   the chest (STASH), the board (CLASS and perks), the gate (PLAY), the door (the Courtyard).
 
 ### The dungeon game's lobby (`DungeonMenu.client`, `ReplicatedStorage ▸ DarkUI`)
-The Depths and Deadvault are a game of their own, after Dark and Darker, with a lobby of their own:
-dark panels with a worn edge and a gold line, Merriweather type, and every item shown as itself
-in 3D (DarkUI.icon: the weapon in its skin, armour's coat, a corked bottle, a goblet, a ring, a
-gem, a tome, coin; never an emoji). Tabs (Q / E step through them):
-- **Play**: your party round a candle-lit table in a tavern's back room (a scene built on your
-  screen; the light goes dark and warm while you're in it), the dungeon (The Depths or Deadvault,
-  its picture), READY (the leader: ENTER), Invite (online friends), Exit Party.
+The Depths and Deadvault are a game of their own, after Dark and Darker, with a lobby of their own.
+It wears **the rest of the game's look** (DarkUI on Theme: FredokaOne headings, Gotham type,
+outlined white text, dark-glass rounded panels, chunky glossy buttons, the blue pill under the
+chosen tab), warmed for the dungeon (a gold line under each panel's title, gold for what's
+chosen, rarity glowing up from a slot's floor), with Dark and Darker's layouts, and every item
+shown as itself in 3D (DarkUI.icon: the weapon in its skin, armour's coat, a corked bottle, a
+goblet, a ring, a gem, a tome, coin; never an emoji). Mannequins are never naked: an empty armour
+slot takes the class's plain piece (HubMenu `_G.HubDressed`). Tabs (Q / E step through them):
+- **Play**: your party standing before a candle-lit table in a tavern's back room, facing you (a
+  scene built on your screen, lit warm), the dungeon (The Depths or Deadvault, its picture), READY
+  (the leader: ENTER), Invite (online friends), Exit Party.
 - **Class**: the class list (their faces), you as that class, its story, its skill, and its
   **perks** (Catalog ▸ Perks: two go into the dungeon with you; Game ▸ Perks puts them on: less
   damage, more health, a bigger bag, quiet steps, harder sneak attacks, a second wind, luck…).
@@ -1765,7 +1769,27 @@ gem, a tome, coin; never an emoji). Tabs (Q / E step through them):
   TAKE OFF, SELL, the Smith's REFORGE and TEMPER.
 - **Merchants**: their faces, their wares (BUY), your stash beside them to sell from.
 It opens from PLAY ▸ ADVENTURES (The Depths, Deadvault) and over the Courtyard's menu, which steps
-aside while it's up (`_G.DungeonMenuUp`). `_G.OpenDungeon(tab, mode)`, `_G.OpenVault()`.
+aside while it's up (`_G.DungeonMenuUp`). `_G.OpenDungeon(tab, mode)`, `_G.OpenVault()`. It shuts
+itself when a raid starts.
+- **The ways out, always in sight**: WALK AROUND [M] (shut it; you're on your feet in the Gilded
+  Rat, where a small bar at the top says LOBBY [M] / TO THE COURTYARD) and TO THE COURTYARD (asked
+  once: LEAVE / STAY). Signs over the Dungeon Gate, the door home and your stash (Tavern:sign).
+- **No battle class screen in the dungeon game** (a mode's `ownSpawn`: the Tavern, Deadvault, the
+  Depths): LoadoutServer never shows it there; you go in as the class chosen in the lobby. When
+  you can't come back mid-round its own screen says why: **YOU FELL** (Deadvault: your pack lies
+  where you fell) or **DOWN** (the Depths: back when the room is cleared), with SPECTATE (the
+  spectate bar's BACK returns here) and BACK TO THE GILDED RAT / LEAVE THE DUNGEON.
+- **When a raid or a run ends**: no map vote; the end screen is yours (YOU GOT OUT / YOU FELL /
+  VICTORY / DEFEAT, RoundResult.client reads `RaidFate`) and everyone goes back to the Gilded Rat,
+  each party together (HubServer `toTavern`: no "everyone ready" gate to go home).
+
+### Prompts (`Prompts.client`)
+Every ProximityPrompt is drawn in the game's own look instead of Roblox's default box: a
+dark-glass card, a key cap (your pickup key, E, a gamepad button, or TAP), the action in big
+outlined type and the thing under it, a bar along the bottom that fills while you hold. Loot (a
+model with `Rarity`: chests, drops, containers) tints the cap and bar its rarity. Each prompt is
+set to `Style = Custom` on the client only; the cards live straight in PlayerGui with
+ResetOnSpawn off (a respawn empties PlayerGui of anything else).
 
 ### Deadvault (`Game ▸ Modes ▸ Deadvault`, `Game ▸ Vault`, `Game ▸ Containers`, `DungeonMenu.client`, `RaidInventory.client`)
 An extraction raid after Dark and Darker, for up to 12 raiders in parties. Go in with your party

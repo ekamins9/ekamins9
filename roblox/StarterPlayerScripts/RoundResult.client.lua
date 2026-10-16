@@ -127,6 +127,23 @@ local function show()
 	if round:GetAttribute("MatchOver") == true then
 		reason = (reason ~= "" and (reason .. "   ·   ") or "") .. (verdict == "VICTORY" and "THE MATCH IS YOURS" or "THE MATCH IS OVER")
 	end
+	-- (the dungeon game: your own fate, and where you're going)
+	local mode = round:GetAttribute("Mode") or ""
+	local mdef = GameConfig.MODES[mode]
+	if mdef and mdef.ownSpawn and mode ~= "Tavern" then
+		local fate = player:GetAttribute("RaidFate")
+		if mode == "Deadvault" then
+			if fate == "out" then verdict, col = "YOU GOT OUT", COL_WIN
+			elseif fate == "fell" then verdict, col = "YOU FELL", COL_LOSE
+			else verdict, col = "THE RAID IS OVER", COL_DRAW end
+		else
+			if result:find("FELL") then verdict, col = "DEFEAT", COL_LOSE
+			elseif result:find("GILDED RAT") or result == "" then verdict, col = "THE RUN IS OVER", COL_DRAW
+			else verdict, col = "VICTORY", COL_WIN end
+		end
+		whoText = "BACK TO THE GILDED RAT"
+		if reason == "BACK TO THE GILDED RAT" then reason = "" end
+	end
 	if verdict == whoText then whoText = "" end
 
 	big.Text, big.TextColor3 = verdict, col

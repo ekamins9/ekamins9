@@ -753,6 +753,9 @@ function Depths:tick(dt)
 end
 
 function Depths:isOver()
+	-- (Studio has no teleports: someone asked to leave, so the run ends here)
+	local nxt = node:GetAttribute("NextMode")
+	if nxt and nxt ~= "" and nxt ~= "Depths" then return "BACK TO THE GILDED RAT" end
 	if self.wiped then
 		return string.format("YOUR PARTY FELL ON FLOOR %d OF %s", self.floor, string.upper(Catalog.DUNGEONS[self.theme].name))
 	end

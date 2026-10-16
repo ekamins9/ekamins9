@@ -510,6 +510,8 @@ local function refreshRound()
 	local number = roundNode:GetAttribute("Number") or 1
 	if intermission() then
 		timer.Text = string.format("NEXT ROUND IN %d", left)
+		local curDef = GameConfig.MODES[roundNode:GetAttribute("Mode") or ""]
+		if curDef and curDef.ownSpawn and roundNode:GetAttribute("Mode") ~= "Tavern" then timer.Text = "BACK TO THE GILDED RAT…" end
 		timer.TextColor3 = COL_ACCENT
 		local nxt = GameConfig.MODES[roundNode:GetAttribute("NextMode") or ""]
 		objective.Text = nxt and ("next:  " .. string.upper(nxt.name)) or ""
@@ -566,7 +568,10 @@ local function refreshRound()
 		local tag = bracket ~= "" and ("  ·  " .. bracket .. (roundNode:GetAttribute("Ranked") == true and " RANKED" or "")) or ""
 		local server = roundNode:GetAttribute("ServerName") or ""
 		if roundNode:GetAttribute("NoRewards") == true then tag = tag .. "  ·  NO REWARDS" end
-		timer.Text = string.format("%s%s%s%s%s", server ~= "" and (string.upper(server) .. "  ·  ") or "", string.upper(modeName), map ~= "" and ("  ·  " .. string.upper(map)) or "", tag, clock)
+		local mapPart = (map ~= "" and string.upper(map) ~= string.upper(modeName)) and ("  ·  " .. string.upper(map)) or ""
+		timer.Text = string.format("%s%s%s%s%s", server ~= "" and (string.upper(server) .. "  ·  ") or "", string.upper(modeName), mapPart, tag, clock)
+		-- (the Gilded Rat has its own bar at the top: DungeonMenu.client's TavernHud)
+		if roundNode:GetAttribute("Mode") == "Tavern" then timer.Text = ""; obj = "" end
 		timer.TextColor3 = COL_TEXT
 		objective.Text = obj
 		banner.Visible = false

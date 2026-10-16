@@ -1632,6 +1632,14 @@ _G.HubDressed = function(userId, classId, o)
 	local lo = {}
 	for k, v in pairs(mine and classLoadout(classId) or {}) do lo[k] = v end
 	for k, v in pairs(o.loadout or {}) do lo[k] = v end
+	-- (never naked: a slot left empty takes its class's plain piece, as a fresh profile has)
+	local cdef = GameConfig.CLASSES[classId]
+	for _, slot in ipairs({"helmet", "top", "bottom"}) do
+		if not lo[slot] then
+			local pc = Catalog.defaultPiece(slot, weightOf(classId), cdef and cdef.starter)
+			lo[slot] = pc and pc.id or nil
+		end
+	end
 	return dressedRig({loadout = lo, appearance = mine and HX.myLook() or HX.lookOf(userId), weight = weightOf(classId), weapon = o.weapon == true, pose = o.pose})
 end
 

@@ -487,12 +487,27 @@ local function studioSwitch(plr, modeId, extra)
 	return ok, ok and ("Studio: switching this server — " .. msg) or msg
 end
 
+-- OUT OF A RAID, BACK TO THE GILDED RAT: a group (a party, or one raider) to a public Tavern
+-- server with room, else a new one. No party gate here: nobody needs to be "ready" to go home.
+local function toTavern(group)
+	local door = GameConfig.DOORS.Tavern
+	if not door then return false, "no Tavern" end
+	if STUDIO then return studioSwitch(group[1], "Tavern", {door = "Tavern", settings = nil, noRewards = false}) end
+	for _, e in ipairs(listServers()) do
+		if e.door == "Tavern" and e.mode == "Tavern" and not e.custom and e.access == "Public" and e.reserved and e.accessCode and not e.here
+			and (e.players or 0) + #group <= (e.max or 0) then
+			return teleport(group, game.PlaceId, identityOf(e), nil, e.accessCode, door.name)
+		end
+	end
+	return reserve(group, "Tavern", "Public", "", false, "Tavern", nil, door.name)
+end
+
 local play   -- forward
 local function goHub(plr)
-	local group = groupFor(plr, false)
 	-- (out of the dungeon game: back to its lodge, the Tavern; its door leads on to the Courtyard)
 	local d = Game.server.door
-	if (d == "Deadvault" or d == "Depths") and GameConfig.DOORS.Tavern and play then return play(plr, "Tavern") end
+	if (d == "Deadvault" or d == "Depths") and GameConfig.DOORS.Tavern then return toTavern({plr}) end
+	local group = groupFor(plr, false)
 	if STUDIO then
 		-- (Studio switches one server's mode: what's running now, not what it started as)
 		if Game.modeId == "Hub" then return false, "you're in the Courtyard" end
@@ -1067,6 +1082,29 @@ local function routeNewcomer(plr)
 	if not plr.Parent then return end
 	play(plr, "Warfront", {mode = "TDM", first = true})
 end
+
+-- a raid or a Depths run is over: everyone still here goes back to the Gilded Rat (its lobby
+-- sends the next one in; there's no next round on this server to vote for)
+Game.roundEnded.Event:Connect(function(modeId)
+	if modeId ~= "Deadvault" and modeId ~= "Depths" then return end
+	-- (each party together, everyone else alone; in Studio, not if a way out was already asked for)
+	task.delay(STUDIO and 5 or 7, function()
+		local asked = Game.node:GetAttribute("NextMode")
+		if Game.modeId ~= modeId or not (asked == nil or asked == "" or asked == modeId) then return end
+		local sent = {}
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if not sent[plr] then
+				local party = partyOf(plr)
+				local group = {}
+				for _, m in ipairs(party and party.members or {plr}) do
+					if m.Parent and not sent[m] then sent[m] = true; table.insert(group, m) end
+				end
+				if #group > 0 then pcall(toTavern, group) end
+				if STUDIO then break end   -- (Studio: one server switch takes everyone)
+			end
+		end
+	end)
+end)
 
 -- the first battle is over: next stop, the menu
 Game.roundEnded.Event:Connect(function(modeId)

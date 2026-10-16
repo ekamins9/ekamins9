@@ -14,7 +14,13 @@
                    stash to sell from
 
      The server decides everything (VaultRemote: Hub ▸ VaultServer; the party: HubRemote). Opened by
-     _G.OpenDungeon(tab, mode); _G.OpenVault opens the stash. ]]
+     _G.OpenDungeon(tab, mode); _G.OpenVault opens the stash.
+
+     THE WAYS OUT are always in sight: WALK AROUND (M) shuts the lobby and you're on your feet in the
+     Gilded Rat (its own little bar at the top: LOBBY, TO THE COURTYARD); TO THE COURTYARD (asked
+     once) takes you home. And the dungeon game never shows the battle's class screen
+     (LoadoutServer: a mode's ownSpawn): when you can't go back in, its own screen says why (YOU
+     FELL · DOWN) with SPECTATE and BACK TO THE GILDED RAT. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -75,7 +81,7 @@ backdrop.ZIndex = 0
 backdrop.Parent = gui
 do
 	local g = Instance.new("UIGradient")
-	g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 24, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(18, 15, 12)), ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 5, 4))})
+	g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 30, 48)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(14, 18, 32)), ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 8, 16))})
 	g.Rotation = 90
 	g.Parent = backdrop
 end
@@ -92,52 +98,52 @@ do
 	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.75, 0.1), NumberSequenceKeypoint.new(1, 1)})
 	g.Parent = nav
 end
-local logo = left(T(nav, "DEADVAULT", 22, C.GOLD2, BOLD))
-logo.Position = UDim2.fromOffset(30, 18); logo.Size = UDim2.fromOffset(260, 28); logo.ZIndex = 6
+local logo = left(T(nav, "DEADVAULT", 30, C.GOLD2, BOLD))
+logo.Position = UDim2.fromOffset(30, 12); logo.Size = UDim2.fromOffset(260, 34); logo.ZIndex = 6
 local logoSub = left(T(nav, "THE DUNGEON GAME", 11, C.DIM, SEMI))
 logoSub.Position = UDim2.fromOffset(31, 46); logoSub.Size = UDim2.fromOffset(260, 14); logoSub.ZIndex = 6
 local navRule = DarkUI.rule(nav, 72, 1180)
 navRule.ZIndex = 6
 for _, d in ipairs(navRule:GetChildren()) do if d:IsA("Frame") and d.Rotation == 45 then d.Visible = false end end
 local tabBtns = {}
-local glow = frame(nav, C.GOLD, 0.6)
-glow.Size = UDim2.fromOffset(170, 66)
+local glow = frame(nav, C.BLUE, 0.05)
+glow.Size = UDim2.fromOffset(176, 54)
 glow.AnchorPoint = Vector2.new(0.5, 0)
 glow.ZIndex = 5
-do
-	local g = Instance.new("UIGradient")
-	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.55), NumberSequenceKeypoint.new(1, 1)})
-	g.Parent = glow
-	local g2 = Instance.new("UIGradient")
-end
-local glowDiamond = DarkUI.diamond(nav, 12, C.GOLD2)
-glowDiamond.ZIndex = 7
+DarkUI.corner(glow, 14)
+DarkUI.gradient(glow, Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 176))
+DarkUI.stroke(glow, Color3.fromRGB(20, 60, 140), 2, 0)
+local glowDiamond = frame(nav, C.GOLD2, 0)
+glowDiamond.AnchorPoint = Vector2.new(0.5, 0.5); glowDiamond.Size = UDim2.fromOffset(60, 4); glowDiamond.ZIndex = 7
+DarkUI.corner(glowDiamond, 2)
 for i, name in ipairs(TABS) do
 	local b = Instance.new("TextButton")
 	b.AutoButtonColor = false
 	b.BackgroundTransparency = 1
 	b.Text = name
-	b.FontFace = DarkUI.font(SEMI)
+	b.FontFace = DarkUI.font(BOLD)
 	b.TextSize = 26
 	b.TextColor3 = C.DIM
-	b.TextStrokeTransparency = 0.6
+	b.TextStrokeTransparency = 1
+	DarkUI.outline(b, 26)
 	b.AnchorPoint = Vector2.new(0.5, 0)
 	b.Position = UDim2.new(0.5, (i - (#TABS + 1) / 2) * 190, 0, 14)
 	b.Size = UDim2.fromOffset(180, 48)
 	b.ZIndex = 8
 	b.Parent = nav
 	tabBtns[name] = b
-	local d = DarkUI.diamond(nav, 6, C.GOLD)
-	d.Position = UDim2.new(0.5, (i - (#TABS + 1) / 2) * 190, 0, 77)
-	d.ZIndex = 7
 end
 local goldLabel = T(nav, "", 20, C.GOLD2, BOLD)
 goldLabel.AnchorPoint = Vector2.new(1, 0)
 goldLabel.Position = UDim2.new(1, -150, 0, 24); goldLabel.Size = UDim2.fromOffset(220, 26); goldLabel.ZIndex = 6
 goldLabel.TextXAlignment = Enum.TextXAlignment.Right
-local leaveBtn = DarkUI.button(nav, "Leave", "stone", 16)
+goldLabel.Position = UDim2.new(1, -24, 0, 62); goldLabel.Size = UDim2.fromOffset(300, 20); goldLabel.TextSize = 16
+local leaveBtn = DarkUI.button(nav, "WALK AROUND  [M]", "blue", 15)
 leaveBtn.AnchorPoint = Vector2.new(1, 0)
-leaveBtn.Position = UDim2.new(1, -28, 0, 18); leaveBtn.Size = UDim2.fromOffset(104, 38); leaveBtn.ZIndex = 8
+leaveBtn.Position = UDim2.new(1, -196, 0, 16); leaveBtn.Size = UDim2.fromOffset(170, 42); leaveBtn.ZIndex = 8
+local homeBtn = DarkUI.button(nav, "TO THE COURTYARD", "red", 15)
+homeBtn.AnchorPoint = Vector2.new(1, 0)
+homeBtn.Position = UDim2.new(1, -20, 0, 16); homeBtn.Size = UDim2.fromOffset(168, 42); homeBtn.ZIndex = 8
 local toast = T(root, "", 16, C.GOLD2, SEMI)
 toast.AnchorPoint = Vector2.new(0.5, 1)
 toast.Position = UDim2.new(0.5, 0, 1, -16); toast.Size = UDim2.fromOffset(900, 22); toast.ZIndex = 40
@@ -191,7 +197,12 @@ local function dressed(userId, classId, o)
 		local ok, m = pcall(_G.HubDressed, userId, classId, o)
 		if ok and m then return m end
 	end
-	local ok2, m2 = pcall(PreviewRig.dressedRig, {loadout = o and o.loadout or {}, appearance = Catalog.BODY.defaults, weight = (GameConfig.CLASSES[classId] or {}).weight or "Light", weapon = o and o.weapon == true})
+	local lo = table.clone(o and o.loadout or {})
+	local cdef = GameConfig.CLASSES[classId] or {}
+	for _, slot in ipairs({"helmet", "top", "bottom"}) do
+		if not lo[slot] then local pc = Catalog.defaultPiece(slot, cdef.weight or "Light", cdef.starter); lo[slot] = pc and pc.id or nil end
+	end
+	local ok2, m2 = pcall(PreviewRig.dressedRig, {loadout = lo, appearance = Catalog.BODY.defaults, weight = cdef.weight or "Light", weapon = o and o.weapon == true})
 	return ok2 and m2 or nil
 end
 -- your kit as a loadout to dress in: its first weapon in hand, its armour's set on
@@ -217,9 +228,9 @@ local function stage(parent, model, opts)
 	vp.BackgroundTransparency = 1
 	vp.Size = opts.size or UDim2.fromScale(1, 1)
 	vp.Position = opts.pos or UDim2.new()
-	vp.Ambient = Color3.fromRGB(96, 84, 70)
-	vp.LightColor = Color3.fromRGB(255, 220, 170)
-	vp.LightDirection = Vector3.new(-0.7, -0.6, -1)
+	vp.Ambient = Color3.fromRGB(150, 150, 162)
+	vp.LightColor = Color3.fromRGB(255, 246, 232)
+	vp.LightDirection = Vector3.new(-0.5, -0.7, -1)
 	vp.ZIndex = opts.z or 2
 	vp.Parent = parent
 	local world = Instance.new("WorldModel"); world.Parent = vp
@@ -249,7 +260,7 @@ local function stage(parent, model, opts)
 		end
 	end
 	-- a floor of light under them
-	local floor = frame(parent, C.GOLD, 0.92)
+	local floor = frame(parent, C.BLUE, 0.7)
 	floor.AnchorPoint = Vector2.new(0.5, 1)
 	floor.Position = UDim2.new(0.5, 0, 1, -6)
 	floor.Size = UDim2.new(0.7, 0, 0, 30)
@@ -286,21 +297,28 @@ local function buildTavern()
 	p(Vector3.new(60, 1, 60), CFrame.new(0, 20, 0), dark)
 	for x = -18, 18, 9 do p(Vector3.new(1.6, 1.6, 60), CFrame.new(x, 19, 0), dark, Enum.Material.Wood) end
 	-- the round table, the candles on it
-	p(Vector3.new(0.6, 10, 10), CFrame.new(0, 2.7, 4) * CFrame.Angles(0, 0, math.pi / 2), wood, Enum.Material.WoodPlanks, Enum.PartType.Cylinder)
-	p(Vector3.new(2.4, 2.2, 2.2), CFrame.new(0, 1.2, 4) * CFrame.Angles(0, 0, math.pi / 2), dark, Enum.Material.Wood, Enum.PartType.Cylinder)
+	p(Vector3.new(0.6, 10, 10), CFrame.new(0, 1.9, 8.5) * CFrame.Angles(0, 0, math.pi / 2), wood, Enum.Material.WoodPlanks, Enum.PartType.Cylinder)
+	p(Vector3.new(1.6, 2.2, 2.2), CFrame.new(0, 0.8, 8.5) * CFrame.Angles(0, 0, math.pi / 2), dark, Enum.Material.Wood, Enum.PartType.Cylinder)
 	local function candle(at, h)
 		p(Vector3.new(h, 0.5, 0.5), CFrame.new(at + Vector3.new(0, h / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(236, 226, 196), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
 		local f = p(Vector3.new(0.3, 0.45, 0.3), CFrame.new(at + Vector3.new(0, h + 0.25, 0)), Color3.fromRGB(255, 200, 110), Enum.Material.Neon)
 		local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 160, 80); l.Range = 13; l.Brightness = 1.25; l.Shadows = true; l.Parent = f
 		local fire = Instance.new("Fire"); fire.Size = 0.6; fire.Heat = 3; fire.Color = Color3.fromRGB(255, 170, 80); fire.SecondaryColor = Color3.fromRGB(255, 90, 30); fire.Parent = f
 	end
-	candle(Vector3.new(3.4, 3, 3.2), 1.2)
-	candle(Vector3.new(-3.6, 3, 2.8), 0.8)
+	candle(Vector3.new(3.4, 2.2, 7.7), 1.2)
+	candle(Vector3.new(-3.6, 2.2, 7.3), 0.8)
 	candle(Vector3.new(-12, 6.4, 15), 1.4)
 	candle(Vector3.new(14, 6.4, 15), 1)
+	-- (a lamp over the table: the faces round it lit warm)
+	local lamp = p(Vector3.new(1.4, 1.4, 1.4), CFrame.new(0, 11, 2.5), Color3.fromRGB(255, 200, 120), Enum.Material.Neon, Enum.PartType.Ball)
+	lamp.Transparency = 1
+	local ll = Instance.new("SpotLight"); ll.Face = Enum.NormalId.Bottom; ll.Angle = 80; ll.Range = 24; ll.Brightness = 2.4; ll.Color = Color3.fromRGB(255, 196, 130); ll.Shadows = true; ll.Parent = lamp
+	local fill = p(Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, 6, -3), Color3.fromRGB(255, 200, 120), Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+	fill.Transparency = 1
+	local fl = Instance.new("PointLight"); fl.Range = 18; fl.Brightness = 0.9; fl.Color = Color3.fromRGB(255, 190, 140); fl.Parent = fill
 	-- a helm on the table, a map, mugs
-	p(Vector3.new(2.2, 0.06, 1.6), CFrame.new(1.8, 3.03, 2.2) * CFrame.Angles(0, 0.4, 0), Color3.fromRGB(200, 180, 140), Enum.Material.SmoothPlastic)
-	p(Vector3.new(1.3, 1.3, 1.3), CFrame.new(-2.6, 3.6, 4.4), Color3.fromRGB(120, 124, 130), Enum.Material.Metal, Enum.PartType.Ball)
+	p(Vector3.new(2.2, 0.06, 1.6), CFrame.new(1.8, 2.23, 6.7) * CFrame.Angles(0, 0.4, 0), Color3.fromRGB(200, 180, 140), Enum.Material.SmoothPlastic)
+	p(Vector3.new(1.3, 1.3, 1.3), CFrame.new(-2.6, 2.8, 8.9), Color3.fromRGB(120, 124, 130), Enum.Material.Metal, Enum.PartType.Ball)
 	-- barrels, shelves, a hearth behind
 	for i, x in ipairs({-17, -13.5, 15}) do p(Vector3.new(3.4, 2.6, 2.6), CFrame.new(x, 1.7, 14 - (i % 2) * 2) * CFrame.Angles(0, 0, math.pi / 2), wood, Enum.Material.Wood, Enum.PartType.Cylinder) end
 	p(Vector3.new(10, 0.5, 2), CFrame.new(-14, 6, 16), dark, Enum.Material.Wood)
@@ -313,15 +331,15 @@ local function buildTavern()
 	local hearth = p(Vector3.new(3.6, 0.5, 1.6), CFrame.new(9, 0.4, 15.6), Color3.fromRGB(190, 70, 20), Enum.Material.Neon)
 	local hl = Instance.new("PointLight"); hl.Color = Color3.fromRGB(255, 110, 40); hl.Range = 22; hl.Brightness = 1; hl.Shadows = true; hl.Parent = hearth
 	local hf = Instance.new("Fire"); hf.Size = 5; hf.Heat = 8; hf.Parent = hearth
-	-- the seats round the far side of the table
+	-- where the party stands: before the table, facing you
 	seats = {}
-	for i, x in ipairs({0, -6.5, 6.5}) do
-		local z = i == 1 and 11.5 or 10.2
-		seats[i] = CFrame.new(TAV + Vector3.new(x, 0, z)) * CFrame.Angles(0, math.rad(180 + (i == 1 and 0 or (x < 0 and -24 or 24))), 0)
-		p(Vector3.new(2.6, 1, 2.6), CFrame.new(x, 1.6, z + 1.4), dark, Enum.Material.Wood)
+	for i, x in ipairs({0, -4.8, 4.8}) do
+		local z = i == 1 and 1.0 or 1.8
+		-- (each turned to face the camera: a rig looks down its -Z)
+		seats[i] = CFrame.lookAt(TAV + Vector3.new(x, 0, z), TAV + Vector3.new(0, 0, -8.5))
 	end
 	tavern.Parent = workspace
-	tavernCam = CFrame.lookAt(TAV + Vector3.new(0, 5, -6.5), TAV + Vector3.new(0, 4.5, 10))
+	tavernCam = CFrame.lookAt(TAV + Vector3.new(0, 4.4, -8.5), TAV + Vector3.new(0, 3.3, 3))
 end
 
 -- the scene's mood while you're in it (a client's own lighting: put back after)
@@ -332,8 +350,8 @@ local function moody(on)
 		local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
 		if atmo then savedLight.atmo = {atmo, atmo.Density, atmo.Haze, atmo.Glare} ; atmo.Density, atmo.Haze, atmo.Glare = 0.12, 0, 0 end
 		Lighting.ClockTime, Lighting.Brightness = 0, 0
-		Lighting.Ambient, Lighting.OutdoorAmbient = Color3.fromRGB(14, 11, 10), Color3.fromRGB(10, 9, 8)
-		Lighting.ExposureCompensation = -0.35
+		Lighting.Ambient, Lighting.OutdoorAmbient = Color3.fromRGB(62, 50, 42), Color3.fromRGB(40, 34, 30)
+		Lighting.ExposureCompensation = 0
 	elseif not on and savedLight then
 		local atmo = savedLight.atmo
 		savedLight.atmo = nil
@@ -344,16 +362,18 @@ local function moody(on)
 end
 
 local seatRigs, seatTags = {}, {}
-local tagFolder = Instance.new("Folder"); tagFolder.Name = "DungeonLobbyTags"; tagFolder.Parent = player.PlayerGui
 local function seatTag(i, line1, line2, crown, ready)
 	local bb = seatTags[i]
-	if not bb then
+	-- (a respawn empties PlayerGui of anything that resets: these don't, and are remade if gone)
+	if not (bb and bb.Parent) then
 		bb = Instance.new("BillboardGui")
+		bb.Name = "LobbySeatTag"
+		bb.ResetOnSpawn = false
 		bb.Size = UDim2.fromOffset(260, 64)
 		bb.StudsOffsetWorldSpace = Vector3.new(0, 3.6, 0)
 		bb.AlwaysOnTop = true
 		bb.LightInfluence = 0
-		bb.Parent = tagFolder
+		bb.Parent = player.PlayerGui
 		local a = T(bb, "", 15, C.GOLD, SEMI); a.Name = "A"; a.Size = UDim2.new(1, 0, 0, 20)
 		local b = T(bb, "", 18, C.TEXT, BOLD); b.Name = "B"; b.Position = UDim2.fromOffset(0, 22); b.Size = UDim2.new(1, 0, 0, 22)
 		local r = DarkUI.rule(bb, 50, 200)
@@ -593,8 +613,8 @@ local function drawClass()
 		cell.BackgroundTransparency = 1
 		cell.LayoutOrder = i
 		cell.Parent = listGrid
-		local name = T(cell, cl.name, 16, cl.id == classSel and C.INK or Color3.fromRGB(70, 56, 40), BOLD)
-		name.Size = UDim2.new(1, 0, 0, 20); name.TextStrokeTransparency = 1
+		local name = T(cell, cl.name, 18, cl.id == classSel and C.GOLD2 or C.DIM, BOLD)
+		name.Size = UDim2.new(1, 0, 0, 20)
 		local face = DarkUI.slot(cell)
 		face.Position = UDim2.fromOffset(10, 24); face.Size = UDim2.fromOffset(130, 156)
 		DarkUI.stroke(face, cl.id == classSel and C.GOLD2 or C.EDGE2, cl.id == classSel and 3 or 1.5)
@@ -624,9 +644,10 @@ local function drawClass()
 		local cell = Instance.new("TextButton")
 		cell.Text = ""; cell.BackgroundTransparency = 1
 		cell.Parent = perkGrid
-		local d = frame(cell, pk.on and Color3.fromRGB(70, 50, 24) or Color3.fromRGB(40, 32, 24))
+		local d = frame(cell, pk.on and Color3.fromRGB(86, 64, 22) or C.INSET)
 		d.AnchorPoint = Vector2.new(0.5, 0); d.Position = UDim2.new(0.5, 0, 0, 10); d.Size = UDim2.fromOffset(62, 62); d.Rotation = 45
-		DarkUI.stroke(d, pk.on and C.GOLD2 or Color3.fromRGB(110, 92, 70), pk.on and 3 or 2)
+		DarkUI.corner(d, 10)
+		DarkUI.stroke(d, pk.on and C.GOLD2 or C.EDGE2, pk.on and 3 or 1.5)
 		local ic = DarkUI.icon(cell, pk.look or {kind = "relic"}, {size = UDim2.fromOffset(58, 58), pos = UDim2.new(0.5, -29, 0, 13), z = 3})
 		local nm = T(cell, pk.name, 12, C.INK, BOLD); nm.Position = UDim2.fromOffset(0, 94); nm.Size = UDim2.new(1, 0, 0, 22); nm.TextWrapped = true; nm.TextStrokeTransparency = 1
 		cell.MouseEnter:Connect(function() tip:show({name = pk.name, sub = pk.on and "Chosen" or "Click to choose", lines = {pk.text}}) end)
@@ -664,7 +685,7 @@ local stl = Instance.new("UIListLayout"); stl.Padding = UDim.new(0, 2); stl.Sort
 
 local kitPanel = DarkUI.panel(STASHP)
 kitPanel.Position = UDim2.fromOffset(456, 6); kitPanel.Size = UDim2.fromOffset(500, 780)
-local kitTitle = T(kitPanel, "Your Kit", 20, C.GOLD2, BOLD)
+local kitTitle = T(kitPanel, "YOUR KIT", 20, C.TEXT, BOLD)
 kitTitle.Position = UDim2.fromOffset(0, 12); kitTitle.Size = UDim2.new(1, 0, 0, 26)
 DarkUI.rule(kitPanel, 40, 360)
 local SLOTDEF = {
@@ -680,6 +701,7 @@ beltLabel.Position = UDim2.fromOffset(0, 428); beltLabel.Size = UDim2.new(1, 0, 
 local slotFrames = {}
 local detail = frame(kitPanel, C.INSET, 0)
 detail.Position = UDim2.fromOffset(22, 462); detail.Size = UDim2.new(1, -44, 0, 220)
+DarkUI.corner(detail, 10)
 DarkUI.stroke(detail, C.EDGE, 1)
 local dTitleS = left(T(detail, "", 19, C.TEXT, BOLD)); dTitleS.Position = UDim2.fromOffset(14, 10); dTitleS.Size = UDim2.new(1, -28, 0, 24)
 local dSub = left(T(detail, "", 13, C.DIM, SEMI)); dSub.Position = UDim2.fromOffset(14, 36); dSub.Size = UDim2.new(1, -28, 0, 16)
@@ -692,6 +714,7 @@ actRow.Parent = detail
 local arl = Instance.new("UIListLayout"); arl.FillDirection = Enum.FillDirection.Horizontal; arl.Padding = UDim.new(0, 8); arl.Parent = actRow
 local goldBar = frame(kitPanel, C.INSET, 0)
 goldBar.Position = UDim2.fromOffset(22, 700); goldBar.Size = UDim2.new(1, -44, 0, 34)
+DarkUI.corner(goldBar, 10)
 DarkUI.stroke(goldBar, C.EDGE, 1)
 local goldBarL = left(T(goldBar, "Gold :", 15, C.DIM, SEMI)); goldBarL.Position = UDim2.fromOffset(12, 0); goldBarL.Size = UDim2.new(0.5, 0, 1, 0)
 local goldBarV = T(goldBar, "", 16, C.GOLD2, BOLD); goldBarV.AnchorPoint = Vector2.new(1, 0); goldBarV.Position = UDim2.new(1, -12, 0, 0); goldBarV.Size = UDim2.new(0.5, 0, 1, 0)
@@ -939,14 +962,15 @@ local function drawMerchants()
 		if m.id == merchant then cur = m end
 		local b = Instance.new("TextButton")
 		b.Text = ""; b.AutoButtonColor = false
-		b.BackgroundColor3 = m.id == merchant and Color3.fromRGB(48, 38, 26) or C.PANEL2
+		b.BackgroundColor3 = m.id == merchant and Color3.fromRGB(40, 54, 92) or C.PANEL2
+		DarkUI.corner(b, 12)
 		b.Size = UDim2.new(1, 0, 0, 120)
 		b.Parent = mListBox
 		DarkUI.stroke(b, m.id == merchant and C.GOLD2 or C.EDGE, m.id == merchant and 2 or 1)
 		local face = DarkUI.slot(b)
 		face.Position = UDim2.fromOffset(8, 8); face.Size = UDim2.fromOffset(90, 104)
 		local rig = merchantRig(m.id)
-		if rig then stage(face, rig, {bust = true, yaw = 196, fov = 24}) end
+		if rig then stage(face, rig, {bust = true, yaw = 12, fov = 24}) end
 		local n = left(T(b, m.name, 17, C.TEXT, BOLD)); n.Position = UDim2.fromOffset(110, 20); n.Size = UDim2.new(1, -120, 0, 22); n.TextWrapped = true
 		local role = left(T(b, ({Smith = "Weaponsmith", Armourer = "Armourer", Alchemist = "Alchemist", Treasurer = "Treasurer"})[m.id] or "", 13, C.GOLD, SEMI))
 		role.Position = UDim2.fromOffset(110, 70); role.Size = UDim2.new(1, -120, 0, 18)
@@ -1016,7 +1040,7 @@ render = function()
 	if not view then return end
 	goldLabel.Text = "Gold  " .. fmt(view.gold)
 	for name, b in pairs(tabBtns) do
-		b.TextColor3 = name == tab and C.GOLD2 or C.DIM
+		b.TextColor3 = name == tab and C.TEXT or C.DIM
 		b.TextSize = name == tab and 28 or 25
 		pages[name].Visible = name == tab
 	end
@@ -1087,6 +1111,156 @@ _G.OpenDungeon = function(t, m)
 	if open then render() else setOpen(true) end
 end
 _G.CloseDungeon = function() setOpen(false) end
+
+--------------------------------------------------------------------
+--  THE WAYS OUT
+--------------------------------------------------------------------
+local WAYS = {}
+do
+
+local loadoutEvent = ReplicatedStorage:WaitForChild("LoadoutEvent")
+local function menuBus() _G.MenuBus = _G.MenuBus or Instance.new("BindableEvent"); return _G.MenuBus end
+local function inDungeonGame()
+	local def = GameConfig.MODES[round:GetAttribute("Mode") or ""]
+	return def ~= nil and def.ownSpawn == true
+end
+
+-- TO THE COURTYARD: asked once, then home (HubRemote Play ▸ Courtyard)
+local confirmBox = DarkUI.panel(root, {title = "Leave for the Courtyard?"})
+confirmBox.AnchorPoint = Vector2.new(0.5, 0.5); confirmBox.Position = UDim2.fromScale(0.5, 0.5); confirmBox.Size = UDim2.fromOffset(480, 230)
+confirmBox.Visible = false; confirmBox.ZIndex = 40
+local cbLine = T(confirmBox, "You leave the Gilded Rat for the Courtyard. Your stash, your kit and your gold stay here, safe.", 16, C.DIM, SEMI)
+cbLine.Position = UDim2.fromOffset(28, 60); cbLine.Size = UDim2.new(1, -56, 0, 66); cbLine.TextWrapped = true
+local cbGo = DarkUI.button(confirmBox, "LEAVE", "red", 22)
+cbGo.AnchorPoint = Vector2.new(1, 1); cbGo.Position = UDim2.new(0.5, -8, 1, -22); cbGo.Size = UDim2.fromOffset(190, 56)
+local cbStay = DarkUI.button(confirmBox, "STAY", "stone", 22)
+cbStay.AnchorPoint = Vector2.new(0, 1); cbStay.Position = UDim2.new(0.5, 8, 1, -22); cbStay.Size = UDim2.fromOffset(190, 56)
+local function goCourtyard()
+	confirmBox.Visible = false
+	say("To the Courtyard…", true)
+	local r = hub("Play", "Courtyard")
+	if r and r.ok == false and r.msg then say(r.msg, false); return end
+	task.delay(0.4, function() if open then setOpen(false) end end)
+end
+cbGo.Activated:Connect(goCourtyard)
+cbStay.Activated:Connect(function() confirmBox.Visible = false end)
+homeBtn.Activated:Connect(function() confirmBox.Visible = true end)
+
+-- ON YOUR FEET IN THE GILDED RAT: a small bar at the top while the lobby is shut
+local hudGui = Instance.new("ScreenGui")
+hudGui.Name = "TavernHud"
+hudGui.ResetOnSpawn = false
+hudGui.DisplayOrder = 6
+hudGui.Enabled = false
+hudGui.Parent = player.PlayerGui
+local hudBar = DarkUI.panel(hudGui)
+hudBar.AnchorPoint = Vector2.new(0.5, 0); hudBar.Position = UDim2.new(0.5, 0, 0, 8); hudBar.Size = UDim2.fromOffset(600, 66)
+local hudTitle = left(T(hudBar, "THE GILDED RAT", 22, C.GOLD2, BOLD)); hudTitle.Position = UDim2.fromOffset(18, 8); hudTitle.Size = UDim2.fromOffset(240, 26)
+local hudSub = left(T(hudBar, "Walk to a merchant, your stash or the gate", 12, C.DIM, SEMI)); hudSub.Position = UDim2.fromOffset(18, 36); hudSub.Size = UDim2.fromOffset(250, 18)
+local hudLobby = DarkUI.button(hudBar, "LOBBY  [M]", "blue", 16)
+hudLobby.AnchorPoint = Vector2.new(1, 0.5); hudLobby.Position = UDim2.new(1, -190, 0.5, 0); hudLobby.Size = UDim2.fromOffset(130, 44)
+local hudHome = DarkUI.button(hudBar, "TO THE COURTYARD", "red", 15)
+hudHome.AnchorPoint = Vector2.new(1, 0.5); hudHome.Position = UDim2.new(1, -12, 0.5, 0); hudHome.Size = UDim2.fromOffset(170, 44)
+local hudScale = Instance.new("UIScale"); hudScale.Parent = hudBar
+hudLobby.Activated:Connect(function() _G.OpenDungeon("Play") end)
+hudHome.Activated:Connect(function() _G.OpenDungeon("Play"); confirmBox.Visible = true end)
+
+-- DOWN (out of the raid, waiting for the room to be cleared): the dungeon game's own screen,
+-- never the battle's class screen (LoadoutServer's "Down")
+local downGui = Instance.new("ScreenGui")
+downGui.Name = "DungeonDown"
+downGui.ResetOnSpawn = false
+downGui.IgnoreGuiInset = true
+downGui.DisplayOrder = 2050
+downGui.Enabled = false
+downGui.Parent = player.PlayerGui
+local downScale = Instance.new("UIScale"); downScale.Parent = downGui
+local downShade = frame(downGui, Color3.new(0, 0, 0), 0.45); downShade.Size = UDim2.fromScale(1, 1)
+local downBox = DarkUI.panel(downGui)
+downBox.AnchorPoint = Vector2.new(0.5, 0.5); downBox.Position = UDim2.fromScale(0.5, 0.5); downBox.Size = UDim2.fromOffset(600, 290)
+local downTitle = T(downBox, "", 44, C.BAD, BOLD); downTitle.Position = UDim2.fromOffset(0, 20); downTitle.Size = UDim2.new(1, 0, 0, 50)
+DarkUI.rule(downBox, 76, 260)
+local downWhy = T(downBox, "", 18, C.TEXT, SEMI); downWhy.Position = UDim2.fromOffset(30, 92); downWhy.Size = UDim2.new(1, -60, 0, 48); downWhy.TextWrapped = true
+local downHint = T(downBox, "", 14, C.DIM, SEMI); downHint.Position = UDim2.fromOffset(30, 140); downHint.Size = UDim2.new(1, -60, 0, 40); downHint.TextWrapped = true
+local downSpec = DarkUI.button(downBox, "SPECTATE", "stone", 20)
+downSpec.AnchorPoint = Vector2.new(1, 1); downSpec.Position = UDim2.new(0.5, -8, 1, -24); downSpec.Size = UDim2.fromOffset(220, 58)
+local downOut = DarkUI.button(downBox, "BACK TO THE GILDED RAT", "red", 18)
+downOut.AnchorPoint = Vector2.new(0, 1); downOut.Position = UDim2.new(0.5, 8, 1, -24); downOut.Size = UDim2.fromOffset(250, 58)
+local downReason = nil
+local function bodyUp()
+	local c = player.Character
+	local h = c and c:FindFirstChildOfClass("Humanoid")
+	return h ~= nil and h.Health > 0
+end
+local function hideDown() downGui.Enabled = false end
+local function showDown()
+	if not downReason or bodyUp() or not inDungeonGame() then hideDown(); return end
+	local m = round:GetAttribute("Mode")
+	local why = downReason
+	if m == "Deadvault" then
+		if why:find("got out") then
+			downTitle.Text, downTitle.TextColor3 = "YOU GOT OUT", C.GOOD
+			downHint.Text = "Everything you carried is in your vault. Back to the Gilded Rat to spend it."
+		else
+			downTitle.Text, downTitle.TextColor3 = "YOU FELL", C.BAD
+			downHint.Text = "What you carried lies in your pack where you fell, for whoever finds it. Your stash at the Gilded Rat is safe."
+		end
+		downOut.Text = "BACK TO THE GILDED RAT"
+	elseif m == "Depths" then
+		downTitle.Text, downTitle.TextColor3 = "DOWN", C.GOLD2
+		downHint.Text = "Your party fights on: you're back on your feet when the room is cleared."
+		downOut.Text = "LEAVE THE DUNGEON"
+	else
+		downTitle.Text, downTitle.TextColor3 = "WAITING", C.GOLD2
+		downHint.Text = ""
+		downOut.Text = "BACK TO THE GILDED RAT"
+	end
+	downWhy.Text = why
+	-- (the fall is seen first: DeathScreen's HoldUntil; then its veil lifts for this)
+	local fade = player.PlayerGui:FindFirstChild("DeathFade")
+	local hold = fade and fade:GetAttribute("HoldUntil")
+	if hold and os.clock() < hold then task.delay(hold - os.clock() + 0.05, showDown); return end
+	if fade and fade:GetAttribute("DeathScreen") then fade:SetAttribute("Lift", true) end
+	pcall(RunService.UnbindFromRenderStep, RunService, "DeathCam")
+	if not _G.SpectateActive then downGui.Enabled = true end
+end
+loadoutEvent.OnClientEvent:Connect(function(what, a)
+	if what == "Down" then
+		downReason = tostring(a or "")
+		showDown()
+	elseif what == "Spawned" or what == "Show" then
+		downReason = nil
+		hideDown()
+	end
+end)
+downSpec.Activated:Connect(function()
+	hideDown()
+	menuBus():Fire("Spectate", true)
+end)
+downOut.Activated:Connect(function()
+	hideDown()
+	downReason = nil
+	if _G.SpectateActive then menuBus():Fire("Spectate", false) end
+	local r = hub("Hub")
+	if r and r.ok == false and r.msg then say(r.msg, false) end
+end)
+-- (the spectate bar's BACK: this screen again, if still down)
+menuBus().Event:Connect(function(what)
+	if what == "SpectateEnd" and downReason then task.defer(showDown) end
+end)
+player.CharacterAdded:Connect(function(c)
+	local h = c:WaitForChild("Humanoid", 5)
+	if h and h.Health > 0 then downReason = nil; hideDown() end
+end)
+round:GetAttributeChangedSignal("Mode"):Connect(function()
+	if not inDungeonGame() then downReason = nil; hideDown() end
+	-- (into a raid: the lobby is the Gilded Rat's, it goes)
+	local m = round:GetAttribute("Mode")
+	if (m == "Deadvault" or m == "Depths") and _G.CloseDungeon then _G.CloseDungeon() end
+end)
+round:GetAttributeChangedSignal("State"):Connect(function() if round:GetAttribute("State") ~= "Round" then downReason = nil; hideDown() end end)
+WAYS.confirmBox, WAYS.hudGui, WAYS.hudScale, WAYS.downGui, WAYS.downScale, WAYS.bodyUp = confirmBox, hudGui, hudScale, downGui, downScale, bodyUp
+end
 _G.OpenVault = function() _G.OpenDungeon("Stash") end
 _G.DungeonMenuOpen = function() return open end
 -- (test hooks: the Open and Tab attributes)
@@ -1135,7 +1309,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	if not open then return end
-	if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.ButtonB then setOpen(false)
+	if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.ButtonB then
+		if WAYS.confirmBox.Visible then WAYS.confirmBox.Visible = false else setOpen(false) end
 	elseif input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.ButtonL1 then
 		local i = table.find(TABS, tab) or 1
 		tab = TABS[(i - 2) % #TABS + 1]; selected = nil; render()
@@ -1145,6 +1320,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 RunService:BindToRenderStep("DungeonMenu", Enum.RenderPriority.Camera.Value + 25, function()
+	local vs0 = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1600, 900)
+	local k0 = math.clamp(math.min(vs0.X / 1600, vs0.Y / 900), 0.45, 1.4)
+	WAYS.downScale.Scale = k0
+	WAYS.hudScale.Scale = math.clamp(vs0.X / 1300, 0.55, 1)
+	WAYS.hudGui.Enabled = not open and round:GetAttribute("Mode") == "Tavern" and WAYS.bodyUp() and not _G.SpectateActive
+	if WAYS.downGui.Enabled then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+	end
 	if not open then return end
 	-- (a body arriving while it's up brings its bar: that steps aside too)
 	local hb = player.PlayerGui:FindFirstChild("Hotbar")
