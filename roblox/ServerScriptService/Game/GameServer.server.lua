@@ -52,6 +52,9 @@ task.delay(2, function()
 			{"Skeleton", "SkeletonKnight", "Goblin", "GoblinBomber", "GoblinBrute", "Ghoul", "Wraith", "LichKing", "OrcGrunt", "OrcBerserker", "ElfArcher", "ElfBlademaster", "PlagueGhoul", "Thrall"})
 	end)
 	if not ok then warn("[Game] monster displays:", err) end
+	-- (and the dragon's, Combat ▸ Dragon: a body of its own)
+	local okD, errD = pcall(function() require(game:GetService("ServerScriptService"):WaitForChild("Combat"):WaitForChild("Dragon")).publishDisplay() end)
+	if not okD then warn("[Game] dragon display:", errD) end
 end)
 
 -- map vote (client: Scoreboard sends "Vote", index)

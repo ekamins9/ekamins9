@@ -71,6 +71,7 @@ end
 -- the killer's kill effect on the victim's body (only one they own)
 _G.KillFxHook = function(killer, victimChar)
 	if not (killer and victimChar and victimChar.Parent) then return end
+	if victimChar:GetAttribute("CustomBody") then return end   -- (the dragon: a body of its own, Combat ▸ Dragon)
 	local p = Profile.get(killer)
 	local id = p and p.killfx
 	if type(id) ~= "string" or not Catalog.KILLFX_BY[id] or not Profile.has(killer, "killfx", id) then return end

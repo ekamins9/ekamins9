@@ -36,6 +36,8 @@ local DROWN_TIME    = 1.2   -- seconds under a map's DrownY before you're gone
 local function setup(char)
 	local hum = char:WaitForChild("Humanoid", 10)
 	if not hum then return end
+	-- (a body of its own, not a person's: the dragon, Combat ▸ Dragon: no ragdoll, no corpse)
+	if char:GetAttribute("CustomBody") then hum.BreakJointsOnDeath = false; hum.RequiresNeck = false; return end
 	hum.BreakJointsOnDeath = false   -- Ragdoll needs the joints intact
 	hum.RequiresNeck = false         -- disabling the Neck motor for a ragdoll must not count as death
 	-- the short hop (the client keeps Roblox's own jump switched off between hops)

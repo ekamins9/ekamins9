@@ -61,11 +61,13 @@ GameConfig.DOORS = {
 		blurb = "Take the crown. Kill the king to be the king. Hold it to win."},
 	Plague    = {name = "Plague Night", mode = "Plague", access = "Public", maxPlayers = 16, matchmade = true, page = 2,
 		blurb = "Survive until dawn. The fallen rise as ghouls and hunt the living."},
+	Dragonfall = {name = "Dragonfall", mode = "Dragonfall", access = "Friends", maxPlayers = 6, party = true, page = 2,
+		blurb = "You and your party against Cindermaw, the Ashen Wyrm, in its burning caldera. Ballistae to bring it down, ward stones against its fire."},
 	Invasion  = {name = "Invasions", mode = "InvGoblin", modes = {"InvGoblin", "InvElf", "InvUndead", "InvOrc"}, access = "Friends", maxPlayers = 6, party = true, page = 2,
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
-GameConfig.ADVENTURE_ORDER = {"Depths", "Deadvault", "Crownfall", "Invasion", "Kingslayer", "Plague"}
+GameConfig.ADVENTURE_ORDER = {"Depths", "Deadvault", "Crownfall", "Invasion", "Dragonfall", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
 GameConfig.MODES = {
@@ -200,6 +202,13 @@ GameConfig.MODES = {
 		description = "Brutes, berserkers and war-drummers who drive the rest on: kill the drummers first. Save the villagers. Every fifth wave, the Warchief.",
 		maps = {"Colosseum", "Stormbreak", "Wildwood", "Pinewatch", "Cinderfall", "Bloodpit", "Ravenhold", "Marshfen"},
 	},
+	-- DRAGONFALL (Game ▸ Modes ▸ Dragonfall, Combat ▸ Dragon): you and your party against a dragon
+	Dragonfall = {
+		name = "Dragonfall", category = "Adventure", teams = 0, maxPlayers = 6, minPlayers = 1,
+		description = "Cindermaw, the Ashen Wyrm, in its burning caldera. Get to its side, man the ballistae when it takes to the sky, shelter behind the ward stones from its inferno. Bring it down.",
+		maps = {"Caldera"}, procedural = true,
+		roundLength = 14 * 60, intermission = 15, respawnDelay = 8, hidden = true, pvp = false,
+	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
@@ -218,7 +227,7 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
 	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
-	Crownlands = "The Crownlands",
+	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera",
 	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 

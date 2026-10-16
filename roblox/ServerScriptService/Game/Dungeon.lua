@@ -795,7 +795,7 @@ A.lair = function(ctx, th, r, c, rng, keep)
 	keep("hoard", CFrame.lookAt(c + Vector3.new(0, 0, r.d / 2 - 7), c))
 	for _, s in ipairs({-1, 1}) do P.goldpile(ctx, th, CFrame.new(c + Vector3.new(s * 8, 0, r.d / 2 - 6)), rng) end
 end
--- THE GRIME (a raid's rooms: Deadvault): cracks across the flags, rubble fallen into the corners,
+-- THE GRIME (every room but a way out: Deadvault's and the Depths'): cracks across the flags, rubble fallen into the corners,
 -- cobwebs up the walls, damp streaks down them, a puddle, chains or a cage hanging out of the
 -- dark, someone's bones, now and then guttering candles (a pool of light), and dust drifting in
 -- the torchlight. Nothing of it is in the way (none of it collides).
@@ -1181,7 +1181,7 @@ function Dungeon.build(themeKey, opts)
 				end
 			end
 		end
-		if opts.raid and r.kind ~= "exit" then
+		if r.kind ~= "exit" then
 			local okG, errG = pcall(grime, ctx, th, r, c, rng)
 			if not okG then warn("[Dungeon] grime", errG) end
 		end

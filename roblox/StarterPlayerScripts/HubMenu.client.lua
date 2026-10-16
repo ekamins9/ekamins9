@@ -3912,16 +3912,18 @@ do
 	end
 	SCENES.Dragonfall = function(world, cam)
 		local g = ground(world, 40, Color3.fromRGB(70, 60, 56)); g.Material = Enum.Material.Basalt
-		local dragon = monster(world, "Dragon", Vector3.new(0, 0, 7), 180)
+		local dragon = monster(world, "Dragon", Vector3.new(0, 0, 8), 18)   -- (built facing -Z: toward the camera, a little turned)
 		if not dragon then
 			-- (no copy yet: its shadow and its fire)
 			block(world, Vector3.new(12, 6, 6), CFrame.new(0, 2, 9), Color3.fromRGB(110, 30, 30), Enum.Material.Slate)
 			block(world, Vector3.new(3, 3, 6), CFrame.new(0, 4, 4.5), Color3.fromRGB(130, 36, 36), Enum.Material.Slate)
 		end
-		soldier(world, 4, {pos = Vector3.new(-2, 0, -2), yaw = 20, team = "A", pose = POSE.guard})
-		soldier(world, 7, {pos = Vector3.new(2, 0, -1.5), yaw = -20, team = "A", pose = POSE.cheer})
-		cam.FieldOfView = 46
-		cam.CFrame = CFrame.lookAt(Vector3.new(0, 2.5, -14), Vector3.new(0, 2.4, 3))
+		-- (lava glowing under it, two who came to fight it off to the sides: it fills the middle)
+		for _, x in ipairs({-5, 4.5}) do block(world, Vector3.new(3.4, 0.1, 2.2), CFrame.new(x, 0.02, 3.5), Color3.fromRGB(255, 110, 30), Enum.Material.Neon) end
+		soldier(world, 4, {pos = Vector3.new(-4.2, 0, -3.5), yaw = 25, team = "A", pose = POSE.guard})
+		soldier(world, 7, {pos = Vector3.new(4.2, 0, -3), yaw = -25, team = "A", pose = POSE.guard})
+		cam.FieldOfView = 52
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 1.8, -13), Vector3.new(0, 3.6, 4))
 	end
 	SCENES.Plague = function(world, cam)
 		local g = ground(world, 30, Color3.fromRGB(60, 70, 56))

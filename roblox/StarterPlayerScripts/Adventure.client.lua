@@ -897,6 +897,17 @@ local function guideTargets()
 				if pr and pr.Enabled then table.insert(out, {part = d, text = d:GetAttribute("Escape") and "ESCAPE STAIRS" or "EXTRACT", color = d:GetAttribute("Escape") and Color3.fromRGB(255, 230, 170) or Color3.fromRGB(110, 180, 255), prio = 1, arrow = true, up = 7}) end
 			end
 		end
+		for _, fname in ipairs({"Ballistae", "Wards"}) do
+			local fo = map:FindFirstChild(fname)
+			for _, m in ipairs(fo and fo:GetChildren() or {}) do
+				local gt = m:GetAttribute("GuideText")
+				local part = gt and (m:IsA("Model") and (m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)))
+				if part then
+					local ward = fname == "Wards"
+					table.insert(out, {part = part, text = gt, color = ward and Color3.fromRGB(150, 230, 255) or Color3.fromRGB(255, 200, 90), prio = ward and 1 or 2, arrow = true, up = ward and 10 or 6})
+				end
+			end
+		end
 		local crown = map:FindFirstChild("FallenCrown")
 		local base = crown and crown:FindFirstChild("Base")
 		if base then table.insert(out, {part = base, text = "TAKE THE CROWN", color = Color3.fromRGB(255, 205, 60), prio = 1, arrow = true}) end

@@ -40,6 +40,7 @@ return {
 		depths_floor = {marks = 40, xp = 80},    -- …a floor gone down (or the last one won)
 		depths_boss  = {marks = 120, xp = 220},  -- …the boss at the bottom
 		vault_extract = {marks = 30, xp = 80},   -- Deadvault: out alive (once a raid)
+		dragon_slain  = {marks = 150, xp = 300}, -- Dragonfall: Cindermaw brought down (everyone there)
 		firstWinOfDay = {marks = 200, xp = 0},
 	},
 	daily = {full = 2500, rest = 0.4},

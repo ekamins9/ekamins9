@@ -1,4 +1,34 @@
-# Updated scripts: Plague Night rebuilt, a King everyone hunts, royal caches, darker raids
+# Updated scripts: Dragonfall, a dragon raid for you and your party
+
+- **Dragonfall** (new mode, a party door on the Play menu's Adventures page, 1 – 6): **Cindermaw, the Ashen Wyrm**, in its burning caldera.
+  - **The Ashen Caldera** (new CalderaMap, built fresh): cracked basalt with glowing seams round an old paved ring, black cliffs with lava running down them into pools, lava pools on the floor (they burn), six ward stones with glowing runes, four ballistae on platforms, the bones of something huge, the swords and shields of those who came before, ash falling, a burning dusk. Vote picture: MapShots ▸ Caldera.
+  - **The fight**: on the ground it bites, claws, sweeps its tail, beats its wings, stomps, charges and breathes fire across the ground. At two thirds it **takes to the sky** (strafing fire, fireballs) and its **brood** climbs out of the lava; **man the ballistae** (hold to fire; guides over them) and three bolts bring it **crashing down**, open to everyone. Under a third it's **enraged**, fire rains, and its **Inferno** burns whoever it can see: get behind a **ward stone** (they light up and are marked as it winds up).
+  - **Win**: everyone there is paid (`dragon_slain`), counted, and your fastest kill kept. The clock (14 min) runs out first: it holds the caldera.
+- **The dragon's body on your screen** (new Dragon client script): its walk, wingbeats, tail whips, jaw, head tracking you, and fire streaming from its mouth, all from what the server says it's doing. Ragdolls, corpses and kill effects leave it alone.
+- **The Depths' floors get the dungeon grime too** (cracks, rubble, cobwebs, damp, cages, candles, dust).
+- **Checked in Play**: the caldera built (561 parts); the dragon came down, walked, charged, took to the sky at two thirds, its brood came out of the lava, three ballista bolts crashed it, it lay downed, enraged at a third, rose for an Inferno with the ward stones marked, died, and the fight was won; the Play menu's Dragonfall tile opens it (no longer "coming soon"); compile of every touched script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dragonfall.lua](ServerScriptService/Game/Modes/Dragonfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
+| [CalderaMap.lua](ServerScriptService/Game/CalderaMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Dragon.lua](ServerScriptService/Combat/Dragon.lua) | ServerScriptService ▸ Combat | ModuleScript | new: the dragon |
+| [Dragon.client.lua](StarterPlayerScripts/Dragon.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new: its joints and fire |
+| [CharacterSystems.server.lua](ServerScriptService/CharacterSystems.server.lua) | ServerScriptService | Script | a CustomBody gets no ragdoll setup |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub | Script | no kill effect on a CustomBody |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | the dragon's still copy for the menu |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS / MODES Dragonfall, its map title, the Adventures order |
+| [Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `dragon_slain` |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | guides over Map ▸ Ballistae / Wards (GuideText) |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Dragonfall tile's scene |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | grime on every floor |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ MapShots ▸ Caldera (the vote picture) — save the place to keep it.
+
+---
+
+## Before that: Plague Night rebuilt, a King everyone hunts, royal caches, darker raids
 
 - **Plague Night: the dead never come from one place.** Each ghoul claws up out of the ground (grave-mist, broken earth) on open ground 45–80 studs from someone living, inside the town, never on a roof or inside anything; a turned player rises where they fell. Before, every ghoul and every turned player came in at the plague side's spawns, all in one spot.
   - **The dead surge** every 70 seconds from all sides at once.
@@ -45,40 +75,3 @@
 | [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | opened by the lodge's places and on arrival |
 | [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no clock in the Tavern |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: the dungeon game's own lobby, perks, the belt, looting bodies
-
-- **A lobby of its own** (new DungeonMenu.client on new ReplicatedStorage ▸ DarkUI), after Dark and Darker: dark gold-lined panels, Merriweather, every item in 3D (no emoji).
-  - Play: your party at a candle-lit tavern table.
-  - Class: faces, you as the class, its story, its skill, its perks.
-  - Stash: you in your kit, your stats, the kit and the belt, the stash, drag and drop.
-  - Merchants: their faces and wares, your stash to sell from.
-- **Perks** (new Catalog ▸ Perks, Game ▸ Perks): two per class go in with you (Iron Will, Second Wind, Pack Mule, Light Step, Ambusher, Eagle Eye, Arcane Flow…).
-- **The belt**: four draughts on keys 3–6, always on screen; drinking takes a moment and slows you; healing comes over four seconds.
-- **Bodies are looted**: a raid's monster leaves its corpse to search (no more things spilling on the floor).
-- **No markers or prompts through walls** in the dungeon modes; no edge arrow in a raid.
-- Loot armour now has a set's look (Catalog ▸ Loot ARMOR `set`); item cards carry their item's id for the icons.
-- The Courtyard menu's Depths and Deadvault tiles open the lobby; HubMenu exports `_G.HubDressed`, `_G.HubMenuHide`, and steps aside while the lobby is up. The old VaultMenu is gone.
-- **Checked in Play**: every lobby tab on screen (stash with 19 test items, class, merchants, the tavern scene); a raid: a monster's corpse searched (its gold), the belt with its draught; compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [DarkUI.lua](ReplicatedStorage/DarkUI.lua) | ReplicatedStorage | ModuleScript | new |
-| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| VaultMenu.client.lua | StarterPlayer ▸ StarterPlayerScripts | LocalScript | removed |
-| [RaidInventory.client.lua](StarterPlayerScripts/RaidInventory.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | rebuilt in DarkUI, the belt |
-| [Perks.lua](ReplicatedStorage/Catalog/Perks.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | new |
-| [init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | PERKS, `perkFits` |
-| [Loot.lua (catalog)](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | armour sets |
-| [Perks.lua](ServerScriptService/Game/Perks.lua) | ServerScriptService ▸ Game | ModuleScript | new |
-| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | `drinkSlow`, card ids, perk luck, `los` |
-| [Vault.lua](ServerScriptService/Game/Vault.lua) | ServerScriptService ▸ Game | ModuleScript | perks in the view |
-| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | corpses, line of sight |
-| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the belt, perks, bodies, line of sight |
-| [Perception.lua](ServerScriptService/Combat/Perception.lua) | ServerScriptService ▸ Combat | ModuleScript | Quiet, Ambusher |
-| [VaultServer.server.lua](ServerScriptService/Hub/VaultServer.server.lua) | ServerScriptService ▸ Hub | Script | Perk |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the lobby's hooks |
-| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | markers behind walls |
-| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |

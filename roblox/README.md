@@ -1779,7 +1779,8 @@ get out with what you found, or lose it all.
   under coloured glass, statues, pews), a CAVERN (rough rock, stalagmites, an old camp), a
   TREASURE VAULT, THE LAIR (the theme's lord and its hoard). Each theme has its own mix
   (`ARCH_W`). Pilasters and skirting on the walls, fewer torches: the dark is the point.
-- **Darker than the Depths, and lived-in** (`grime`, every raid room but the exits): cracks across
+- **Darker than the Depths, and lived-in** (`grime`, every room but the ways out; the Depths' floors
+  get it too): cracks across
   the flags, rubble fallen into the corners, cobwebs up the walls, damp streaks down them, a puddle,
   chains or a hanging cage (`P.cage`), someone's bones, now and then guttering candles (a pool of
   light), and dust drifting in the torchlight. None of it collides. The raid's light is the
@@ -1859,6 +1860,35 @@ new kinds) and a lord every fifth wave with its big moves:
   live (a beat you can see): kill them first. Lord: Gorzak the Warchief.
 Pay and stats as the Horde; your best wave per army is `stats.invasionBest_<army>`. The Horde
 gained hooks for this (`roster`, `aliveCount`, `removeLive`, a forced `objective`).
+
+### Dragonfall (`Game ▸ Modes ▸ Dragonfall`, `Combat ▸ Dragon`, `Game ▸ CalderaMap`, `Dragon.client`)
+You and your party (1 – 6, a party door like the Depths) against **Cindermaw, the Ashen Wyrm**.
+- **The Ashen Caldera** (`CalderaMap.build`, fresh each match): a floor of cracked basalt with
+  glowing seams and scorch marks round an ancient paved ring, black cliffs all round with lava
+  running down them into pools, lava pools out on the floor (they burn), six **ward stones** with
+  glowing runes, four **ballistae** on platforms near the rim, the bones of something huge, the
+  swords and shields of those who came before, ash drifting down, a burning dusk.
+- **The dragon** (`Combat ▸ Dragon`): a body of its own (parts on Motor6Ds, no person's rig: the
+  `CustomBody` attribute keeps ragdolls, corpses and kill effects off it), held where the server
+  says by AlignPosition/AlignOrientation; a Humanoid in NPCs, so every weapon hits it; its blows are
+  the bosses' (telegraphed rings, arcs and lanes: Combat ▸ BossMoves). On the ground: bite, claw,
+  tail sweep (behind it), wing buffet (when crowded), stomp, a charge (into the cliffs: it reels),
+  fire breath swept across the ground. At **two thirds** it takes to the sky: strafing runs of fire
+  and fireballs, and its **brood** (Cinderlings) climbs out of the lava pools. **Ballistae** (hold to
+  fire, 6 s to wind; guides over them while it's up there): 3 bolts (one more for every two of you
+  past the first) and it **crashes**, downed for 9 s (it takes 50% more). Under **a third** it's
+  **enraged**: quicker, fire rains, and every 40 s it rises over the middle for an **Inferno**:
+  whoever its fire can see is burned; behind a ward stone you're sheltered (the stones light up
+  and are marked while it winds up).
+- **Its look on your screen** (`Dragon.client`): the server only moves its root and sets
+  attributes (`DragonState`, `Fly`, `Jaw`, `Rear`, `Look`, `Breath`, `BreathYaw`, the `Snap` /
+  `Swipe` / `Tail` / `Buffet` counters, `Reel`, `Downed`, `Enraged`, `Dead`); the client turns its
+  joints to match (walk off its speed, wings beating, the tail whipping, the head tracking you)
+  and streams fire off its mouth. The model streams whole (`ModelStreamingMode` Atomic).
+- **Win**: everyone there is paid `dragon_slain` (Catalog ▸ Economy) and counted
+  (`stats.dragonsSlain`, your fastest `stats.dragonBest`); its health is 3000 + 1800 a player. The
+  clock (14 min) runs out first: it holds the caldera. You come back at the south rim (8 s).
+- The Play menu's tile shows its still copy (`Dragon.publishDisplay`: MonsterDisplays ▸ Dragon).
 
 ### Kingslayer (`Game ▸ Modes ▸ Kingslayer`)
 A free-for-all with bots (`fillAnywhere`: BotFill fills it like the Warfront). A few seconds in, the
