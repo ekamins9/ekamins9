@@ -251,7 +251,16 @@ emote.OnServerEvent:Connect(function(plr, what, id)
 	if char:GetAttribute("Acting") or char:GetAttribute("Blocking") or Catalog.emoteBlock(char, id) then fx:FireAllClients("EmoteStop", plr, id); return end
 	fx:FireAllClients("Emote", plr, id, workspace:GetServerTimeNow())
 	if id == "HelmetToss" then task.spawn(helmetToss, plr, char) end
+	-- (an emote that means something: the Challenge starts an honor duel, Hub ▸ Duels)
+	if _G.EmotePlayed then pcall(_G.EmotePlayed, plr, id) end
 end)
+-- a player's emote played for them (an honor duel's end: the winner cheers, the loser kneels)
+_G.PlayerEmote = function(plr, id)
+	local char = plr and plr.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0 and Catalog.EMOTE[id]) then return end
+	fx:FireAllClients("Emote", plr, id, workspace:GetServerTimeNow())
+end
 Players.PlayerRemoving:Connect(function(plr) last[plr] = nil end)
 
 -- the emote wheel reads your equipped emotes from a player attribute

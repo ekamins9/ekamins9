@@ -94,6 +94,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads` (a skin's trim parts; its trail and aura; a staff skin's head) | ModuleScript each |
 | `ReplicatedStorage/KillFX.lua`, `Emotes.lua`, `PowerPoses.lua`, `PowerAuras.lua` | `ReplicatedStorage` → `KillFX`, `Emotes`, `PowerPoses`, `PowerAuras` (the effects and motions; a power's gesture; a lasting power's look on you) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
+| `ServerScriptService/Hub/Duels.server.lua` | `ServerScriptService` → `Hub` → `Duels` | Script |
 | `StarterPlayerScripts/Cosmetics.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Cosmetics` (kill effects, emotes, the emote wheel) | LocalScript |
 | `StarterPlayerScripts/HubMenu.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HubMenu` | LocalScript |
 | `StarterPlayerScripts/TravelScreen.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TravelScreen` | LocalScript |
@@ -136,6 +137,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/SwingArcs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SwingArcs` | LocalScript |
 | `StarterPlayerScripts/BattleEnd.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `BattleEnd` | LocalScript |
 | `StarterPlayerScripts/DodgeFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `DodgeFX` | LocalScript |
+| `StarterPlayerScripts/Duels.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Duels` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2047,6 +2049,20 @@ the animation), harder for a harder blow (the damage it took, `TakenText`; half 
 whoever is struck flashes white for a blink (a Highlight; six at most at once). A player's body
 already jolts through their own CameraRig and the pose relay, so only bots are rocked here; your
 own body isn't flashed (your screen flashes instead).
+
+## Honor duels (`Hub ▸ Duels`, `Duels.client`, `CombatServer.duelPair`)
+In the Courtyard (peaceful), play the **Challenge** emote facing someone within 18 studs and
+they're asked: ACCEPT [Y] / DECLINE [N] (or tap), 15 s. Accepted, the two are squared off five studs
+each side of where they stood, face to face; everyone near sees a ring of gold light on the ground
+(radius 20) with flame posts at its edge and a board over it (the names, the touches). A salute,
+3-2-1, FIGHT, and the **first to three clean touches** wins. While it's live (`DuelWith` and
+`DuelLive` on both bodies) their blades meet each other's and nobody else's: `CombatServer.duelPair`
+lets their melee through the Courtyard's peace (bows and spells stay peaceful), and a clean hit
+calls `CombatServer.onDuelTouch` and is scored, never dealt (a kick knocks them about without a
+wound), so nobody falls; blocks, parries, ripostes, chambers, kicks, clashes and disarms all play
+as in battle. Out of the ring (22 studs), a fall, leaving, or 90 seconds ends it (the leader at
+time wins, else a draw). The winner cheers and the loser kneels (`_G.PlayerEmote`, Cosmetics), and
+the rest of the Courtyard gets a toast. Honour only: no Marks.
 
 ## Dodge dust (`DodgeFX.client`, MovementServer `LastDodgeAt`)
 Anyone's dodge (players and bots) kicks up a burst of dust at their feet on every screen within 100

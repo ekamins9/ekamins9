@@ -1,4 +1,27 @@
-# Updated scripts: first person stays first person
+# Updated scripts: honor duels in the Courtyard
+
+- **Challenge someone to an honor duel**: in the Courtyard, face a player and play the **Challenge**
+  emote. They get a card (ACCEPT [Y] / DECLINE [N]). Accepted: you're squared off in a ring of gold
+  light everyone can see, a salute, 3-2-1, FIGHT, and the first to **three clean touches** wins. No
+  wounds, nobody falls (a touch is scored, not dealt), but every block, parry, riposte, kick and
+  clash plays as in battle. Leave the ring and you lose; 90 seconds and the leader wins. The winner
+  cheers, the loser kneels, the Courtyard hears of it. Honour only, no Marks.
+- The Courtyard's "No fighting here" note now mentions the Challenge.
+- **Needs a 2-player test** (Studio ▸ Test ▸ Clients and Servers, 2 players): the card, the ring,
+  the count, the touches and the end were checked with test events in a 1-player session.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Duels.server.lua](ServerScriptService/Hub/Duels.server.lua) | ServerScriptService ▸ Hub | Script | **new** |
+| [Duels.client.lua](StarterPlayerScripts/Duels.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `duelPair`, `onDuelTouch`; a duel pair's hits pass the peace and score instead of wounding |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub | Script | `_G.EmotePlayed` hook, `_G.PlayerEmote` |
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | the peace note: not mid-duel; mentions the Challenge |
+| [README.md](README.md) | | doc | "Honor duels" |
+
+---
+
+## Before that: first person stays first person
 
 - Stepping out of the tutorial's barracks pulls the view back to third person only if you don't
   play in first person (Settings ▸ Start in).

@@ -208,6 +208,14 @@ function CombatServer.peaceful(attacker, target)
 	if not (node and node:GetAttribute("Peaceful")) then return false end
 	return Players:GetPlayerFromCharacter(attacker) ~= nil and Players:GetPlayerFromCharacter(target) ~= nil
 end
+-- AN HONOR DUEL under way between these two (Hub ▸ Duels: DuelWith on both, DuelLive): their
+-- blades meet in the peaceful Courtyard, and a clean hit is a touch scored, never a wound
+-- (CombatServer.onDuelTouch, set by Duels). Steel only: bows and spells stay peaceful.
+function CombatServer.duelPair(a, b)
+	if not (a and b) or a:GetAttribute("DuelLive") ~= true or b:GetAttribute("DuelLive") ~= true then return false end
+	local pa, pb = Players:GetPlayerFromCharacter(a), Players:GetPlayerFromCharacter(b)
+	return pa ~= nil and pb ~= nil and a:GetAttribute("DuelWith") == pb.UserId and b:GetAttribute("DuelWith") == pa.UserId
+end
 -- a bot's blade passes through the bots on its own side (a match's fill bots
 -- fight in a crowd: they'd only cut each other down). Players keep friendly fire.
 function CombatServer.botFriends(attacker, target)
@@ -217,7 +225,7 @@ function CombatServer.botFriends(attacker, target)
 end
 function CombatServer.eachTarget(character, fn)
 	for _, p in ipairs(Players:GetPlayers()) do
-		if p.Character and p.Character ~= character and not CombatServer.peaceful(character, p.Character) then fn(p.Character) end
+		if p.Character and p.Character ~= character and (not CombatServer.peaceful(character, p.Character) or CombatServer.duelPair(character, p.Character)) then fn(p.Character) end
 	end
 	local npcs = workspace:FindFirstChild("NPCs")
 	if npcs then
@@ -439,8 +447,11 @@ function CombatServer.resolveKick(character, cfg, hooks)
 				m:SetAttribute("DazedUntil", workspace:GetServerTimeNow() + character:GetAttribute("ShieldStun"))
 			end
 			CombatServer.credit(m, character, hooks.weaponName or "", "kick")
-			CombatServer.showDamage(character, m, kd, "body", hum.Health - kd <= 0, ff < 1)
-			hum:TakeDamage(kd)
+			-- (a duel's kick knocks them about; it doesn't wound)
+			if not CombatServer.duelPair(character, m) then
+				CombatServer.showDamage(character, m, kd, "body", hum.Health - kd <= 0, ff < 1)
+				hum:TakeDamage(kd)
+			end
 			CombatServer.markCombat(m)
 			if hooks.dprint then hooks.dprint("kick hit", m.Name) end
 		end
@@ -1194,6 +1205,12 @@ function CombatServer.attach(Tool, weaponConfig)
 			dmg = dmg * friendly
 			dprint("friendly fire x" .. tostring(friendly), "on", target.Name)
 		end
+		-- AN HONOR DUEL (Hub ▸ Duels): a clean hit is a touch scored, not a wound
+		if CombatServer.duelPair(character, target) then
+			if CombatServer.onDuelTouch then pcall(CombatServer.onDuelTouch, character, target, region) end
+			tell("HitConfirm", region)
+			return
+		end
 		local lethal = hum.Health - dmg <= 0
 		CombatServer.showDamage(character, target, dmg, region, lethal, friendly < 1)
 		hitSounds(part, target, info.kind, (part.Parent == target and Injury.LIMBS[part.Name]) and part.Name
@@ -1244,7 +1261,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if typeof(model) ~= "Instance" or not model:IsA("Model") or model == character then return end
 		if typeof(part) ~= "Instance" or not part:IsA("BasePart") or not part:IsDescendantOf(model) then return end
 		if typeof(hitPos) ~= "Vector3" then return end
-		if CombatServer.peaceful(character, model) then dprint("hit rejected: no fighting here"); return end
+		if CombatServer.peaceful(character, model) and not CombatServer.duelPair(character, model) then dprint("hit rejected: no fighting here"); return end
 		if CombatServer.botFriends(character, model) then return end   -- (the blade goes on through)
 		local hum = model:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health <= 0 or state.alreadyHit[hum] then return end

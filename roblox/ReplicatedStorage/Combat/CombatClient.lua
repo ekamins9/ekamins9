@@ -632,10 +632,11 @@ function CombatClient.attach(Tool, weaponConfig)
 		if not name then return end
 		-- the Courtyard is peaceful: swing all you like, but say why nobody gets hurt
 		local round = game:GetService("ReplicatedStorage"):FindFirstChild("Round")
-		if round and round:GetAttribute("Peaceful") and round:GetAttribute("Mode") == "Hub" and os.clock() - (CombatClient.peaceNoticeAt or -1e9) > 20 then
+		local dueling = player.Character and player.Character:GetAttribute("DuelLive") == true
+		if round and round:GetAttribute("Peaceful") and round:GetAttribute("Mode") == "Hub" and not dueling and os.clock() - (CombatClient.peaceNoticeAt or -1e9) > 20 then
 			CombatClient.peaceNoticeAt = os.clock()
 			pcall(function()
-				game:GetService("StarterGui"):SetCore("SendNotification", {Title = "No fighting here", Text = "Players can't hurt each other here. Pick a mode from PLAY to fight.", Duration = 4})
+				game:GetService("StarterGui"):SetCore("SendNotification", {Title = "No fighting here", Text = "Players can't hurt each other here. Pick a mode from PLAY, or face someone and play the Challenge emote for an honor duel.", Duration = 5})
 			end)
 		end
 		local char = player.Character
