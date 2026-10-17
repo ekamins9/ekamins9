@@ -1832,6 +1832,11 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   with shields raised over their heads, two ladders against the wall and men swarming up them:
   at the top they go over (and fight on the walk a moment), now and then one is thrown off; every
   8–15 s the defenders hurl a pot of burning pitch down onto the shields.
+- **The siege towers**: a tower rolls slowly up to each side wall (from 12–22 s into the round,
+  about 50 s), pushed by its crew, docks with a crash and dust, and men climb up inside it and over
+  onto the walk (a WarCrowd ladder through the tower). The server keeps one tower model under the
+  map for the clients to copy (`Map ▸ TowerModel`, always streamed) and publishes where the side
+  walls are (`C_SideX`, `C_SideY`, `C_SideZ`, `C_TowerYaw`).
 - **The ram's crew**: six of the attackers under the ram's roof walk it up the road and lean into it
   when it stops (`WarCrowd:crew`, riding along with the ram's body); they cheer when the gate falls.
 - **The flanks**: on both sides of the castle the defenders' sally fights the attackers' lines

@@ -4,6 +4,8 @@
        the walls      the defenders' archers lining the front wall, loosing on the field
        the ladders    ladders against the wall, men swarming up them under a roof of raised
                       shields; some go over the top, some are thrown off
+       the towers     two siege towers roll slowly up to the side walls, pushed by their crews,
+                      dock against them, and men climb up inside and over onto the walls
        the flanks     the battle fought out on both sides before the walls: the defenders' sally
                       against the attackers' lines, charging, crashing, falling
        behind         the attackers' archers loosing on the walls, their reserves by the camp
@@ -52,7 +54,8 @@ local function readCastle()
 	if typeof(gate) ~= "Vector3" then return nil end
 	local function A(k) return m:GetAttribute("C_" .. k) end
 	local C = {gate = gate, att = A("Att"), f = A("F") or 1, faceZ = A("FaceZ"), top = A("Top"), ground = A("Ground") or 0,
-		half = A("Half") or 40, bound = A("Bound") or 300, spans = {}, towers = {}, fires = {}, defs = {}, roof = A("Roof")}
+		half = A("Half") or 40, bound = A("Bound") or 300, spans = {}, towers = {}, fires = {}, defs = {}, roof = A("Roof"),
+		sideX = A("SideX"), sideY = A("SideY"), sideZ = A("SideZ"), towerYaw = A("TowerYaw")}
 	if typeof(C.att) ~= "Vector3" or not C.faceZ or not C.top then return nil end
 	for i = 1, A("Spans") or 0 do
 		local a, x1 = A("Span" .. i), A("SpanEnd" .. i)
@@ -216,6 +219,86 @@ local function build(C)
 		end
 		crowd:crew(ram.PrimaryPart, {side = A, kind = "foot", spots = spots})
 	end)
+	-- THE SIEGE TOWERS: copies of the camp's (only on this screen, nothing solid) rolled up to the
+	-- side walls by their crews; docked, men climb up inside them and over onto the walk
+	if C.sideX and C.sideY and C.sideZ and C.towerYaw then
+		task.spawn(function()
+			local m = workspace:FindFirstChild("Map")
+			local src
+			for _ = 1, 30 do
+				src = m and m:FindFirstChild("TowerModel")
+				if src or siege.crowd ~= crowd then break end
+				task.wait(1)
+			end
+			if not src or siege.crowd ~= crowd then return end
+			siege.rollers = {}
+			for _, s in ipairs({-1, 1}) do
+				local ok, tw = pcall(function() return src:Clone() end)
+				if ok and tw then
+					for _, d in ipairs(tw:GetDescendants()) do
+						if d:IsA("BasePart") then d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch = true, false, false, false end
+					end
+					local _, size = tw:GetBoundingBox()
+					pcall(function() tw:ScaleTo(tw:GetScale() * (C.sideY + 6) / size.Y) end)
+					tw.Parent = siege.ladderHome
+					local _, sz = tw:GetBoundingBox()
+					local depth = math.min(sz.X, sz.Z)
+					local face = C.gate.X + s * C.sideX
+					local dock = V3(face + s * (depth / 2 + 0.6), 0, C.sideZ)
+					-- (from 32 studs out: the field beside a castle's walls is narrow, its edge hills close)
+					local start = dock + V3(s * 32, 0, 0)
+					local yawCF = CFrame.Angles(0, math.rad(C.towerYaw), 0)
+					local look = V3(-s, 0, 0)
+					local function placeAt(p)
+						local g = WarFX.ground(V3(p.X, C.sideY + 30, p.Z))
+						tw:PivotTo(CFrame.lookAt(g, g + look) * yawCF)
+						local bcf, bsz = tw:GetBoundingBox()
+						tw:PivotTo(tw:GetPivot() + V3(0, g.Y - (bcf.Position.Y - bsz.Y / 2), 0))
+					end
+					placeAt(start)
+					local body = tw:IsA("BasePart") and tw or tw:FindFirstChildWhichIsA("BasePart", true)
+					local r = {model = tw, body = body, start = start, dock = dock, placeAt = placeAt, s = s, t0 = os.clock() + 12 + math.random() * 10, T = 50}
+					table.insert(siege.rollers, r)
+					-- its crew, pushing from behind
+					if body then
+						local spots = {}
+						for k = -1, 1 do
+							local at = WarFX.ground(start + V3(s * (depth / 2 + 1.6), C.sideY + 30, k * 3))
+							table.insert(spots, body.CFrame:Inverse() * CFrame.lookAt(at, at + look))
+						end
+						r.crewSpots = spots
+					end
+				end
+			end
+			-- rolling (a few times a second: they're slow), then docked: the climb
+			while siege.on and siege.crowd == crowd do
+				local now = os.clock()
+				local moving = false
+				for _, r in ipairs(siege.rollers) do
+					if not r.docked then
+						local u = math.clamp((now - r.t0) / r.T, 0, 1)
+						if u > 0 then
+							r.placeAt(r.start:Lerp(r.dock, u * u * (3 - 2 * u)))
+							moving = true
+						end
+						if u >= 1 then
+							r.docked = true
+							local g = WarFX.ground(V3(r.dock.X, C.sideY + 30, r.dock.Z))
+							local lid = "tower" .. r.s
+							crowd:ladder(lid, {side = A, kind = "foot", from = V3(r.dock.X, g.Y, r.dock.Z), to = V3(C.gate.X + r.s * (C.sideX - 0.5), C.sideY + 1.2, r.dock.Z),
+								n = 6, rate = 0.02, speed = 4.5})
+							table.insert(siege.ladders, lid)
+							if siege.taken then crowd:overrun(lid) end
+							WarFX.sound("Gate", r.dock, {volume = 0.8, range = 500, near = 50, speed = 0.7})
+							WarFX.dust(g + V3(0, 1, 0), 3, DUST)
+						end
+					end
+					if r.crewSpots and not r.crew and r.body then r.crew = crowd:crew(r.body, {side = A, kind = "pike", spots = r.crewSpots}) end
+				end
+				task.wait(moving and 0.1 or 0.5)
+			end
+		end)
+	end
 	siege.crows = WarFX.crows(V3(C.gate.X, 0, C.gate.Z - f * 40), {n = small and 8 or 14, radius = 90, height = 70})
 	siege.charged = false
 	siege.chargeAt = os.clock() + 8

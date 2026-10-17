@@ -40,7 +40,10 @@
      ground before it), C_Half (the castle's half width), C_Bound (the field's edge in x),
      C_Spans + C_Span<i> (x0, walk y, z) / C_SpanEnd<i> (x1): the open stretches of the front
      walk; C_Towers + C_Tower<i>: the top of each tower's roof; C_Roof: the great hall's;
-     C_Defs + C_Def<i>: the defenders' first spawns. Only a castle facing along z. ]]
+     C_Defs + C_Def<i>: the defenders' first spawns; C_SideX / C_SideY / C_SideZ: the side walls'
+     outer face (|x| from the gate), walk top, and the middle of their walk in z (where the
+     siege towers dock); C_TowerYaw: the SiegeTower prop's own turn, and Map ▸ TowerModel (one,
+     under the map, always streamed) for the clients to copy. Only a castle facing along z. ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -179,9 +182,19 @@ function Siege.describeCastle(m)
 	local f = att.Z > gate.Z and 1 or -1
 	local faceZ, top, half, bound = gate.Z + f * 2, gate.Y + 10, 40, 400
 	local walks, towers, roof = {}, {}, nil
+	local side = nil   -- {face = |x| of the outer face, y = walk top, z = the walk's middle}
 	for _, p in ipairs(geo:GetDescendants()) do
 		if p:IsA("BasePart") then
 			local nm, e, pos = p.Name, extent(p), p.Position
+			if nm == "Walk" and e.Z > 40 and e.Z > e.X * 3 and math.abs(pos.X - gate.X) > 30 then
+				-- (a side wall's walk: its outer face is the wall's, a couple of studs further out)
+				side = side or {}
+				side.y, side.z = pos.Y + e.Y / 2, pos.Z
+				side.walk = math.abs(pos.X - gate.X) + e.X / 2
+			elseif nm == "Wall" and e.Z > 40 and e.Z > e.X * 3 and math.abs(pos.X - gate.X) > 30 then
+				side = side or {}
+				side.face = math.abs(pos.X - gate.X) + e.X / 2
+			end
 			if (nm == "Walk" or nm == "Wall") and e.X > e.Z * 3 and math.abs(pos.Z - gate.Z) < 6 then
 				if nm == "Walk" then table.insert(walks, {x0 = pos.X - e.X / 2, x1 = pos.X + e.X / 2, y = pos.Y + e.Y / 2, z = pos.Z})
 				else faceZ = pos.Z + f * e.Z / 2; top = pos.Y + e.Y / 2 end
@@ -234,6 +247,26 @@ function Siege.describeCastle(m)
 	m:SetAttribute("C_Towers", #towers)
 	for i, t in ipairs(towers) do m:SetAttribute("C_Tower" .. i, topAt(t.at)) end
 	if roof then m:SetAttribute("C_Roof", topAt(roof)) end
+	if side and side.y and side.z then
+		m:SetAttribute("C_SideX", side.face or side.walk)
+		m:SetAttribute("C_SideY", side.y)
+		m:SetAttribute("C_SideZ", side.z)
+	end
+	local props = game:GetService("ServerStorage"):FindFirstChild("WarProps")
+	local tpl = props and props:FindFirstChild("SiegeTower")
+	if tpl and side then
+		m:SetAttribute("C_TowerYaw", tpl:GetAttribute("Yaw") or 0)
+		-- a siege tower for the clients to copy (SiegeEpic rolls them up to the side walls): kept
+		-- far under the map, nothing solid, and always sent (the map streams; this mustn't)
+		local tm = WarProps.place("SiegeTower", CFrame.new(gate + Vector3.new(0, -400, 0)), (side.y or 18) + 6, m, false)
+		if tm then
+			tm.Name = "TowerModel"
+			pcall(function() tm.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end)
+			for _, d in ipairs(tm:GetDescendants()) do
+				if d:IsA("BasePart") then d.CanQuery, d.CanTouch, d.CastShadow = false, false, false end
+			end
+		end
+	end
 	m:SetAttribute("C_Defs", #defs)
 	for i, d in ipairs(defs) do m:SetAttribute("C_Def" .. i, d) end
 end
