@@ -1,4 +1,16 @@
-# Updated scripts: every battlefield strewn with the last fight
+# Updated scripts: What's New fits its card
+
+- **What's New** had eight lines, so the last sat under TO BATTLE! and two were cut off with
+  "…". Now seven, each on one line (the Courtyard banner folded into the coat-of-arms line, the
+  litter into "No map floats"); the script's header says the limit.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | seven one-line entries; the limit noted |
+
+---
+
+## Before that: every battlefield strewn with the last fight
 
 - **The last fight's leavings on every outdoor battle map** (TDM, KOTH, FFA, LTS, Kingslayer,
   Plague, the Lists, Siege…): volleys of arrows still standing in the turf, all leaning the same

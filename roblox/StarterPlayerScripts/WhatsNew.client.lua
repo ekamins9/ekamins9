@@ -4,7 +4,8 @@
      Escape, or a controller's B) puts it away, and the version you've seen is kept with your
      settings (ClientSettings ▸ SeenNews), so it never comes back for the same update.
 
-     A new update: change NEWS.version and its lines. Nothing else. ]]
+     A new update: change NEWS.version and its lines. Nothing else. (Seven lines at most, each
+     short enough for one line, about 85 letters: the card has room for no more.) ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,13 +21,12 @@ local NEWS = {
 	title = "ARMS, BANNERS AND THE LAND BEYOND",
 	lines = {
 		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn. 33 new"},
-		{"👑", "Your own coat of arms", "pick an emblem and colours in LOOK: your shield carries it, and the new Raise the Standard kill effect plants it on the field"},
-		{"🚩", "Two houses at war", "every banner flies its house's arms, and each side's plain shields carry them to battle"},
-		{"🏞", "No map floats", "the land runs on past every map's edge: hills, woods, camps, mountains to the horizon"},
+		{"👑", "Your own coat of arms", "in LOOK: on your shield, your Courtyard banner and the new Raise the Standard effect"},
+		{"🚩", "Two houses at war", "every banner flies its house's arms; each side's plain shields carry them to battle"},
+		{"🗺", "Ten new maps", "storm Frostmarch and Gloamhold, hold Snowcrest, fight in Witchfen's rain"},
+		{"🏞", "No map floats", "the land runs on past every edge, and the fields are strewn with the last fight"},
 		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
 		{"💥", "Shields take the fight", "each blow you catch chips its paint and knocks splinters off the board"},
-		{"🏰", "Your banner in the Courtyard", "bear your own arms and your banner flies over the Courtyard, your name under it"},
-		{"🗺", "Ten new maps", "storm Frostmarch and Gloamhold, hold Snowcrest's walls, fight across Frostford and in Witchfen's rain"},
 	},
 }
 
