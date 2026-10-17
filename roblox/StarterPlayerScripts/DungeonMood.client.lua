@@ -9,6 +9,8 @@
                         you, a whisper, an iron clank, a deep thud from far below, stone settling
        what comes       a monster doesn't just appear: grave-dust bursts up where it stands out
                         of the dark (and some of the dead whisper as they come)
+       what lurks       a monster near you (within 70 studs) groans or growls now and then, from
+                        where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
                         walks a few steps across your path and is gone (WarCrowd.ghost; never a
                         fighter, nothing anyone else sees)
@@ -232,6 +234,29 @@ local function arrives(m)
 		WarFX.sound("Whisper", root.Position, {volume = 0.5, speed = 0.75 + math.random() * 0.2, near = 10, range = 70})
 	end
 end
+-- what lurks: the nearest monsters groan or growl now and then, from where they stand
+local function lurk(token)
+	while mood.on and mood.token == token do
+		task.wait(2.5 + math.random() * 3)
+		local npcs = workspace:FindFirstChild("NPCs")
+		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if npcs and me then
+			local near = {}
+			for _, m in ipairs(npcs:GetChildren()) do
+				local r = m:FindFirstChild("HumanoidRootPart")
+				local h = m:FindFirstChildOfClass("Humanoid")
+				if r and h and h.Health > 0 and m:GetAttribute("Monster") and (r.Position - me.Position).Magnitude < 70 then table.insert(near, m) end
+			end
+			if #near > 0 then
+				local m = near[math.random(#near)]
+				local scale = m:GetAttribute("MonsterScale") or 1
+				local undead = m:GetAttribute("Faction") == "Undead"
+				WarFX.sound(undead and "Groan" or "Growl", m.HumanoidRootPart.Position, {volume = 0.7, speed = (0.95 + math.random() * 0.15) / math.sqrt(scale), near = 10, range = 80})
+			end
+		end
+	end
+end
+
 local function watchMonsters()
 	local function hook(npcs)
 		table.insert(mood.conns, npcs.ChildAdded:Connect(function(m) task.spawn(arrives, m) end))
@@ -273,6 +298,7 @@ local function enter(theme)
 	end))
 	task.spawn(dark, token)
 	task.spawn(haunt, token)
+	task.spawn(lurk, token)
 	watchMonsters()
 end
 
