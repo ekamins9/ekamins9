@@ -1,4 +1,21 @@
-# Updated scripts: What's New fits its card
+# Updated scripts: the ruins fill in
+
+- **The ruins maps** (Witchfen, Cinderfall, Duneshrine) were a temple on bare ground. Now a
+  watchtower stands breached to the ground with its stones heaped outside the gap, two houses'
+  footings lie with their doorways and hearthstones, rubble is tumbled about, ivy climbs the
+  standing columns (not in snow, sand or ash), and a swamp's pools have reeds.
+- **Scorch marks** on the ash maps were solid black discs that read as holes: now half-seen
+  earth (Cinderfall, Ashenford and Grimfield's, in Studio too).
+- **Studio-only (save the place):** the three ruins maps rebuilt and their vote pictures re-shot;
+  the scorches in Ashenford and Grimfield softened in place.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build | ModuleScript | `ruins`: the tower, footings, rubble, ivy, reeds; `burntMarks` softer |
+
+---
+
+## Before that: What's New fits its card
 
 - **What's New** had eight lines, so the last sat under TO BATTLE! and two were cut off with
   "…". Now seven, each on one line (the Courtyard banner folded into the coat-of-arms line, the

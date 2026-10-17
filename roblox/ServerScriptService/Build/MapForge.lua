@@ -440,8 +440,9 @@ local function burntMarks(ctx, T, r, n, rad)
 	if not T.burnt then return end
 	for _ = 1, n do
 		local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(10, rad)
-		local s = K.cyl(ctx, "Scorch", r:NextNumber(5, 10), 0.1, V3(math.cos(a) * d, 0.06, math.sin(a) * d), RGB(30, 28, 26), M.SmoothPlastic)
-		s.CanCollide = false
+		local s = K.cyl(ctx, "Scorch", r:NextNumber(5, 10), 0.1, V3(math.cos(a) * d, 0.06, math.sin(a) * d), RGB(44, 38, 34), M.Ground)
+		-- (half seen through: a solid black disc reads as a hole)
+		s.CanCollide, s.Transparency, s.CastShadow = false, 0.45, false
 	end
 end
 local function finishLook(ctx, T)
@@ -770,6 +771,76 @@ local function ruins(ctx, T, r)
 		K.arch(ctx, CFrame.new(p) * CFrame.Angles(0, DEG(r:NextNumber(-20, 20)), 0), 10, 10, 3, stone, sm)
 	end
 	for i = 1, 16 do local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(20, 100); K.rock(ctx, V3(math.cos(a) * d, -0.4, math.sin(a) * d), r:NextNumber(2, 5), dark) end
+	-- tumbled stone: a heap of fallen blocks (the big ones solid, the chips not)
+	local function rubble(at, n, spread)
+		for _ = 1, n do
+			local s = r:NextNumber(0.8, 3.4)
+			local p = K.box(ctx, "Rubble", V3(s, s * r:NextNumber(0.5, 0.9), s * r:NextNumber(0.7, 1.2)),
+				CFrame.new(at + V3(r:NextNumber(-spread, spread), s * 0.3, r:NextNumber(-spread, spread))) * CFrame.Angles(r:NextNumber(-0.5, 0.5), r:NextNumber(0, 6.3), r:NextNumber(-0.5, 0.5)),
+				r:NextNumber() < 0.5 and stone or dark, sm)
+			p.CanCollide = s > 2.2
+			snowOn(ctx, T, p, 0.3)
+		end
+	end
+	-- a watchtower, its top fallen in and one side breached to the ground, the stones of it heaped
+	-- outside the gap (a ring of wall stones of every height: the breach is the way in)
+	do
+		local c, R, segs = V3(-52, 0, -50), 7, 14
+		local breach = r:NextInteger(1, segs)
+		for i = 1, segs do
+			local ang = (i - 0.5) / segs * 2 * math.pi
+			local gap = (i - breach) % segs
+			local h = (gap == 0) and 0 or (gap == 1 or gap == segs - 1) and r:NextNumber(2, 5) or r:NextNumber(12, 21)
+			if h > 0 then
+				local pos = c + V3(math.cos(ang) * R, h / 2, math.sin(ang) * R)
+				local w = K.box(ctx, "TowerStone", V3(2.4, h, 2 * math.pi * R / segs + 0.5), CFrame.new(pos) * CFrame.Angles(0, -ang, 0), i % 3 == 0 and dark or stone, sm)
+				snowOn(ctx, T, w, 0.2)
+			end
+		end
+		K.cyl(ctx, "TowerFloor", R * 2 - 1, 0.6, c + V3(0, 0.3, 0), dark, sm)
+		local ba = (breach - 0.5) / segs * 2 * math.pi
+		rubble(c + V3(math.cos(ba) * (R + 4), 0, math.sin(ba) * (R + 4)), 14, 4)
+		rubble(c, 6, 3)
+	end
+	-- the footings of two houses: low walls with their doorways, a hearthstone
+	for _, f in ipairs({{V3(30, 0, -30), 0.4}, {V3(-36, 0, 28), -0.3}}) do
+		local cf = CFrame.new(f[1]) * CFrame.Angles(0, f[2], 0)
+		local W2, D2 = 7, 5
+		local corners = {cf * V3(-W2, 0, -D2), cf * V3(W2, 0, -D2), cf * V3(W2, 0, D2), cf * V3(-W2, 0, D2)}
+		for k = 1, 4 do
+			local p0, p1 = corners[k], corners[k % 4 + 1]
+			local m1, m2 = p0:Lerp(p1, 0.38), p0:Lerp(p1, 0.62)
+			K.wall(ctx, p0, m1, r:NextNumber(1, 2.6), 1.6, {color = k % 2 == 0 and stone or dark, material = sm})
+			if k ~= 1 then K.wall(ctx, m2, p1, r:NextNumber(0.8, 2.2), 1.6, {color = dark, material = sm}) end
+		end
+		K.box(ctx, "Hearth", V3(3, 0.6, 3), cf * CFrame.new(-W2 + 2.4, 0.3, 0), dark, sm)
+		rubble(cf * V3(W2 + 3, 0, 2), 6, 2.5)
+	end
+	-- ivy up the standing columns (not in the snow, the sand or the ash)
+	if not (T.snow or T.burnt or T.ground == Mat.Sand) then
+		for _, col in ipairs(ctx.Geometry:GetChildren()) do
+			if col.Name == "Column" and col.Size.Y > 9 and r:NextNumber() < 0.6 then
+				for _ = 1, r:NextInteger(2, 3) do
+					local ang = r:NextNumber(0, 2 * math.pi)
+					local h = col.Size.Y * r:NextNumber(0.4, 0.9)
+					local ivy = K.box(ctx, "Ivy", V3(0.9, h, 0.2), CFrame.new(col.Position.X + math.cos(ang) * 1.25, col.Position.Y - col.Size.Y / 2 + h / 2, col.Position.Z + math.sin(ang) * 1.25) * CFrame.Angles(0, -ang + math.pi / 2, 0), r:NextNumber() < 0.5 and T.leaf or T.leaf2, M.Grass)
+					ivy.CanCollide = false
+				end
+			end
+		end
+	end
+	-- reeds at the pools' edges (a swamp's ruins)
+	if T.puddles and T.tree == "willow" then
+		for _ = 1, 14 do
+			local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(30, 110)
+			local at = V3(math.cos(a) * d, 0, math.sin(a) * d)
+			for _ = 1, r:NextInteger(5, 9) do
+				local h = r:NextNumber(2.5, 4.5)
+				local reed = K.cyl(ctx, "Reed", 0.18, h, CFrame.new(at + V3(r:NextNumber(-1.6, 1.6), h / 2 - 0.3, r:NextNumber(-1.6, 1.6))) * CFrame.Angles(r:NextNumber(-0.15, 0.15), 0, r:NextNumber(-0.15, 0.15)), T.accentColor or T.leaf, M.Grass, ctx.Props)
+				reed.CanCollide = false
+			end
+		end
+	end
 	lamps(ctx, T, ring(T.night and 8 or 4, 24, 0, 0.4), 5)
 	forest(ctx, T, r, math.floor(T.trees * 0.7), 90, 118, nil)
 	burntMarks(ctx, T, r, 12, 90)
