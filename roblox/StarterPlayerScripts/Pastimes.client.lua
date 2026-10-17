@@ -439,6 +439,18 @@ RunService.RenderStepped:Connect(function()
 	local hatch = hatchModel and hatchModel.Parent and hatchModel or nil
 	local now = workspace:GetServerTimeNow()
 	local want = parseNests()
+	-- (of the empty nests, only the one nearest you says so: three "EMPTY NEST"s pile into one
+	-- unreadable label from most angles)
+	local nearestEmpty, ned = nil, math.huge
+	local camPos = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position
+	for i = 1, Catalog.EGGS.nests do
+		local marker = hatch and hatch:FindFirstChild("Nest" .. i)
+		local w = want[i]
+		if marker and camPos and not (w and w.egg) then
+			local d = (marker.Position - camPos).Magnitude
+			if d < ned then nearestEmpty, ned = i, d end
+		end
+	end
 	for i = 1, Catalog.EGGS.nests do
 		local marker = hatch and hatch:FindFirstChild("Nest" .. i)
 		local n = nests[i]
@@ -462,6 +474,7 @@ RunService.RenderStepped:Connect(function()
 			end
 			n.readyAt = w and w.readyAt or nil
 			local top, bottom = n.gui.Top, n.gui.Bottom
+			n.gui.Enabled = n.egg ~= nil or i == nearestEmpty
 			if n.egg then
 				local left = (n.readyAt or now) - now
 				local e = Catalog.EGG[n.egg]

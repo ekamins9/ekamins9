@@ -5,6 +5,7 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [MapCourtyard.lua](ServerScriptService/Build/MapCourtyard.lua) | ServerScriptService ▸ Build | ModuleScript | "LIFE ABOUT THE PLACE"; SmithSpot |
+| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Hatchery: only the nearest empty nest says EMPTY NEST (three piled into one unreadable label) |
 | [README.md](README.md) | | doc | |
 
 Studio-only: ServerStorage ▸ Maps ▸ Courtyard was rebuilt from the code (`require(game.ServerScriptService.Build.Maps).build("Courtyard")`; a fresh build of the old code matched the saved map exactly first). Save the place. The old one is kept as ServerStorage ▸ TMP_CourtyardBackup until then; delete it once saved.
