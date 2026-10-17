@@ -1225,6 +1225,8 @@ function CombatServer.attach(Tool, weaponConfig)
 		local family = CombatServer.wallFamily(material)
 		if family == "Stone" or family == "Metal" then Injury.sparks(pos) end
 		CombatServer.clang(material, handle(), ownSounds.Wall)
+		-- (the blade's nick in it: each screen finds the surface from where the swing came)
+		scuffRemote:FireAllClients(nil, pos, (pos - hrp.Position).Unit, hrp.Position)
 		for _, fn in ipairs(CombatServer.worldHitHooks) do task.spawn(fn, character, pos, material) end
 		cancelSwing("wall")
 		state.nextActionTime = os.clock() + cfg.WALL_RECOVERY

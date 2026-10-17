@@ -1886,8 +1886,11 @@ MIDDLE OF A BATTLE · WIN IT").
 A fight shows on you: every clean blow leaves its mark where it landed, on every screen near it
 (within 70 studs): a bright scratch across plate and mail, a dark scuff on cloth and leather, laid
 along the blade's path on the visible piece it met (the armour over the limb the server struck). A
-dozen to a fighter at most, the oldest going first; gone with the body. The server sends only the
-part, the point and the direction (`ScuffEvent`); nothing is replicated.
+dozen to a fighter at most, the oldest going first; gone with the body. A blade that hits the world
+leaves its nick there too (each screen finds the surface from where the swing came): a dark groove
+with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal, fading after a
+minute and a half. The server sends only the part (or none, for the world), the point, the
+direction and where the swing came from (`ScuffEvent`); nothing is replicated.
 
 ## The Courtyard's pigeons (`Pigeons.client`)
 A flock (11, 6 on a phone) pecks about the fountain, on the cobbles and up on its rim, hopping a

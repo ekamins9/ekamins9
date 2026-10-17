@@ -1,4 +1,16 @@
-# Updated scripts: battle wear
+# Updated scripts: the blade nicks the walls
+
+- **A blade that hits the world leaves its mark**: a dark groove with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal. Each fades after a minute and a half.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Scuffs.client.lua](StarterPlayerScripts/Scuffs.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | world nicks |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | ScuffEvent on a wall hit |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: battle wear
 
 - **A fight shows on you**: every clean blow leaves its mark where it landed, a bright scratch on plate and mail or a dark scuff on cloth and leather, laid along the blade's path. There are a dozen at most to a fighter, and they're gone when you respawn. It's drawn on each screen near the fight and costs no network traffic beyond the hit itself.
 
