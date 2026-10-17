@@ -215,13 +215,16 @@ step):
   `layout.corridors`); Deadvault's sarcophagi can wake (`Deadvault:waken`, `Containers`); the
   sleeping dead lie among the bones and get up (`DungeonMood` "the dead lie"); rats and drips;
   the score is quiet until a fight (`Music.client` Dread / Battle; a dungeon lord's theme only
-  near its lair). Footprints in snow, sand, mud and earth everywhere (`Footsteps.client`).
+  near its lair). Footprints in snow, sand, mud and earth everywhere (`Footsteps.client`). The sun
+  moves over War, Siege and Horde. The Gilded Rat sounds lived in (`TavernAmbience.client`).
+  Note: every procedural map carries the Generated attribute (War, the caldera, the Crownlands,
+  the Tavern, dungeon floors): test the mode, not Generated, to mean "a dungeon".
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
   their MapShots (and Stormvale's and Duskmoor's, War's two new themes), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
-  Squeak, Drip.
+  Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
   too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
