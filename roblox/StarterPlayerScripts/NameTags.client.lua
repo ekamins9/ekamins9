@@ -114,7 +114,7 @@ local function paint(tag)
 		end
 		if plr:GetAttribute("PassHolder") then
 			gold = true
-			local crown, cs = text(tag.row, 18); crown.Text = "♛"; crown.TextColor3 = GOLD; crown.LayoutOrder = 3
+			local crown, cs = text(tag.row, 18); crown.Text = "👑"; crown.TextColor3 = GOLD; crown.LayoutOrder = 3
 			fades(crown, cs)
 			if not role then color = GOLD end
 		end

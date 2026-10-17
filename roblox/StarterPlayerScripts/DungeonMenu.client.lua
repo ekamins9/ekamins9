@@ -403,7 +403,7 @@ local function seatTag(i, line1, line2, crown, ready)
 		seatTags[i] = bb
 	end
 	bb.A.Text = line1
-	bb.B.Text = (crown and "♛ " or "") .. line2 .. (ready and "  ✓" or "")
+	bb.B.Text = (crown and "👑 " or "") .. line2 .. (ready and "  ✓" or "")
 	bb.B.TextColor3 = ready and C.GOOD or C.TEXT
 	return bb
 end

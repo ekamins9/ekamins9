@@ -142,7 +142,7 @@ local function pushFeed(e)
 		local col = tc and tc:Lerp(Color3.new(1, 1, 1), 0.3) or (me and COL_ME) or COL_TEXT
 		local pass = plr and plr:GetAttribute("PassHolder") == true
 		if pass and not tc and not me then col = COL_GOLD end
-		local s = (pass and string.format('<font color="#%s">♛</font> ', COL_GOLD:ToHex()) or "")
+		local s = (pass and "👑 " or "")
 			.. string.format(me and '<font color="#%s"><b><u>%s</u></b></font>' or '<font color="#%s"><b>%s</b></font>', col:ToHex(), n)
 		local title = withTitle and plr and plr:GetAttribute("Title") or ""
 		if title ~= "" and title ~= "Recruit" then s ..= string.format(' <font color="#%s" size="12"><i>%s</i></font>', COL_TITLE:ToHex(), title) end
@@ -474,7 +474,7 @@ local function refreshBoard()
 			-- the name, a crown for the pass, the title they wear (not the free Recruit)
 			local title = e.p:GetAttribute("Title") or ""
 			local pass = e.p:GetAttribute("PassHolder") == true
-			r.cells[1].Text = (pass and string.format('<font color="#%s">♛</font> ', COL_GOLD:ToHex()) or "") .. e.p.DisplayName .. (mine and "  (you)" or "")
+			r.cells[1].Text = (pass and "👑 " or "") .. e.p.DisplayName .. (mine and "  (you)" or "")
 				.. ((title ~= "" and title ~= "Recruit") and string.format('  <font color="#%s" size="12"><i>%s</i></font>', COL_TITLE:ToHex(), title) or "")
 			r.cells[1].TextColor3 = mine and COL_ME or (tc or (pass and COL_GOLD) or COL_TEXT)
 		end

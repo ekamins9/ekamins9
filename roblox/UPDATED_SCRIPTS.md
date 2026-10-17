@@ -1,4 +1,16 @@
-# Updated scripts: boiling oil over the gate
+# Updated scripts: the pass crown shows
+
+- **Fixed**: the season pass holder's crown before a name (the scoreboard, the round's result, the dungeon lobby, name tags) was a chess-piece glyph the game's font lacks, so it showed as a box. It's now the crown emoji, which renders everywhere.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 👑 |
+| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 👑 |
+| [NameTags.client.lua](StarterPlayerScripts/NameTags.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 👑 |
+
+---
+
+## Before that: boiling oil over the gate
 
 - **Siege**: while the gate holds, the defenders now and then tip a cauldron over the edge of the gatehouse. A column of smoking oil pours down onto the gate's foot, steam rolls off the ground with a hiss, and the men massed there scatter. It's for looks only and hurts no player.
 
