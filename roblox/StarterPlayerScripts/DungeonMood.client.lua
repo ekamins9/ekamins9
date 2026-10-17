@@ -1,5 +1,5 @@
 --[[ DUNGEON MOOD — what being down there feels like, on your screen only, on any floor Game ▸
-     Dungeon built (The Depths, Deadvault: the Map carries Generated and its Theme), and on Plague
+     Dungeon built for The Depths or Deadvault (the Map carries Generated and its Theme), and on Plague
      Night and the Undead invasion (the dread, the sounds, the apparitions and bats; not the
      lanterns or the arrivals):
 
@@ -72,8 +72,9 @@ local function inDungeon()
 	local m = workspace:FindFirstChild("Map")
 	local mode = round:GetAttribute("Mode")
 	if (mode == "Plague" or mode == "InvUndead") and m then return true, "Plague" end
-	-- (the Gilded Rat is built fresh too, but it's the warm, safe place: none of this)
-	if mode == "Tavern" then return false end
+	-- (only the dungeon modes' floors: every procedural map is Generated — War's fields, the
+	-- caldera, the Crownlands, the Gilded Rat — and none of those is a dungeon)
+	if mode ~= "Depths" and mode ~= "Deadvault" then return false end
 	return m and m:GetAttribute("Generated") == true, m and m:GetAttribute("Theme")
 end
 

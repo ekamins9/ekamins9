@@ -1,7 +1,8 @@
-# Updated scripts: the Gilded Rat sounds lived in
+# Updated scripts: the Gilded Rat sounds lived in; the dungeon dread only in dungeons
 
 - **The Tavern (the Gilded Rat)**: a murmur of patrons over the hall, the hearth crackling where it stands, and a lute-and-fiddle tune by the hearth.
-- **Fixed**: the Tavern played battle music, and got the dungeons' dread (drone, cold grade, dark edge, whispers, apparitions, rats). Its map is built fresh like a dungeon floor, and that made it count as one. It now gets its own tune (or the Courtyard's) and none of the dread.
+- **Fixed**: the Tavern played battle music. It now gets its own tune (or the Courtyard's).
+- **Fixed**: the dungeons' dread (drone, cold grade, dark edge, lanterns, whispers, apparitions, bats, rats) ran on every procedural map: War's battlefields, Dragonfall's caldera, Crownfall's island, the Prologue and the Tavern. Every built-fresh map is flagged Generated, not only dungeon floors. It now runs only in The Depths and Deadvault (and, as before, Plague Night and the Undead invasion).
 
 | File | Studio location | Type | Change |
 |---|---|---|---|

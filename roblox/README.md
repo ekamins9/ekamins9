@@ -2131,7 +2131,8 @@ Deadvault's extraction); its door goes home to the Courtyard.
   (WarAudio ▸ TavernRoom: talk you can't make out, a laugh, mugs), the hearth crackling from its
   mouth (WarAudio ▸ Fire), and a lute and fiddle tune by the hearth (Music's `Tavern` mood:
   WarAudio ▸ Tavern, else the Courtyard's score). None of the dungeon's dread here: the lodge is
-  built fresh (Generated) like a floor, but `DungeonMood` leaves the Tavern alone.
+  built fresh (Generated) like a floor, but `DungeonMood` runs only for The Depths and Deadvault (and
+  Plague Night, the Undead invasion): every procedural map is Generated, War's fields included.
 - **The lodge** (built fresh when its server starts): a long timbered hall, candle-lit tables
   under iron chandeliers, a great hearth, banners, torches; the Treasurer's counter (coin, scales),
   Hrothgar the Smith's forge (glowing coals, anvil, racks), Old Brenna's armour stands, Wendel the
