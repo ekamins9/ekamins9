@@ -1,4 +1,15 @@
-# Updated scripts: the champion's name over his head; the card puts itself away
+# Updated scripts: a boss falls
+
+- **Every boss** (the Depths' lords, Deadvault's lair boss, War's and Siege's champions, the Horde's Warlord): when one dies near you, a deep boom and the ground shaking, a pillar of light where it stood, a ring of force rolling out, dust, and the world washing white for a moment.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BossEntrance.client.lua](StarterPlayerScripts/BossEntrance.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the fall |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the champion's name over his head; the card puts itself away
 
 - **War**: the champion carries his name over his head in his side's colour, seen from up to 400 studs, on top of his boss health bar.
 - **Fixed**: the What's new card stayed over the match if you left the Courtyard before closing it. It now goes away by itself and comes back next time, still unread.
