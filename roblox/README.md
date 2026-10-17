@@ -1926,6 +1926,10 @@ lists its stages in `Map ▸ Objectives` (MapKit `K.objective`), each with a `La
 
 ## Horde (after Mordhau's Horde)
 
+**The sun goes down on the defence** (`Horde:start` / `startWave` / `tick`): on a morning or
+afternoon map each wave carries the clock on towards dusk (up to 3 hours, never past 18.2, there by
+the tenth wave), drifting over a few seconds as it starts; a dusk or night map keeps its light.
+
 The HORDE door (PLAY board): you and your party against waves of bots, in a Friends server like
 the Training Yard, **defending something** (`Game ▸ HordeObjective`): the camp's fire, the
 caravan, or four villagers round a well, picked per map (`GameConfig.MODES.Horde.objectives`;

@@ -1,13 +1,15 @@
-# Updated scripts: the sun moves over a War battle, and over a siege
+# Updated scripts: the sun moves over a War battle, a siege, a horde's defence
 
 - **War**: the day goes on while you fight. A morning field brightens; an afternoon one wears on towards golden hour, with long shadows and a warm sky by the bell. Dusk and night themes keep their tuned light.
 - **Siege**: the same over the assault, gentler (afternoon towards evening, the fires showing brighter).
+- **Horde**: the sun goes down on the defence wave by wave (dusk by the tenth wave).
 - Soaked Invasion (Undead Night) with today's changes: no errors.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the sun's drift |
 | [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the sun's drift |
+| [Horde.lua](ServerScriptService/Game/Modes/Horde.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the sun, wave by wave |
 | [README.md](README.md) | | doc | |
 
 ---

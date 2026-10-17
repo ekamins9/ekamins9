@@ -117,6 +117,13 @@ function Horde:start(map)
 	self.wave, self.phase, self.nextAt = 0, "break", os.clock() + FIRST
 	self.queue, self.live, self.killed, self.total = {}, {}, 0, 0
 	self.everUp = false
+	-- THE SUN GOES DOWN on the defence, wave by wave: an afternoon (or a morning) wears on towards
+	-- dusk by the tenth wave; a dusk or a night stays as it is
+	do
+		local c0 = game:GetService("Lighting").ClockTime
+		local to = (c0 >= 6 and c0 < 16.5) and math.min(c0 + 3, 18.2) or c0
+		self.sun = to ~= c0 and {from = c0, to = to, goal = c0} or nil
+	end
 	node:SetAttribute("ObjKind", "Horde")
 	node:SetAttribute("ObjStages", 0)
 	node:SetAttribute("ObjStage", 0)
@@ -146,6 +153,7 @@ end
 function Horde:roster(n, players) return roster(n, players) end
 
 function Horde:stop()
+	self.sun = nil
 	for b in pairs(self.live or {}) do self:removeLive(b) end
 	self.live, self.queue = {}, {}
 	if self.obj then self.obj:destroy(); self.obj = nil end
@@ -211,6 +219,7 @@ end
 function Horde:startWave()
 	self.wave += 1
 	self.phase = "wave"
+	if self.sun then self.sun.goal = self.sun.from + (self.sun.to - self.sun.from) * math.min(self.wave / 10, 1) end
 	self.queue = self:roster(self.wave, math.max(1, #Players:GetPlayers()))
 	self.total, self.killed = #self.queue, 0
 	event:FireAllClients("Stage", {text = "WAVE " .. self.wave, add = 0, team = "B", final = false, horde = true, count = self.total})
@@ -268,6 +277,13 @@ function Horde:spawnOne(skill, at)
 end
 
 function Horde:tick(dt)
+	-- (the sun drifts to where this wave has it, a little at a time)
+	local sun = self.sun
+	if sun then
+		local L = game:GetService("Lighting")
+		local c = L.ClockTime
+		if math.abs(sun.goal - c) > 0.005 then L.ClockTime = c + math.clamp(sun.goal - c, -0.01 * dt * 4, 0.01 * dt * 4) end
+	end
 	local now = os.clock()
 	local up = alivePlayers()
 	if up > 0 then self.everUp = true end
