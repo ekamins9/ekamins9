@@ -130,7 +130,10 @@ local title = label(panel, "CHOOSE YOUR CLASS", 28, FONT_BLACK, COL_ACCENT)
 title.Size = UDim2.new(1, -260, 0, 34)
 local modeLine = label(panel, "", 14, FONT_BODY, COL_DIM)
 modeLine.Position = UDim2.new(0, 0, 0, 34)
-modeLine.Size = UDim2.new(1, -260, 0, 20)
+-- (the mode and map, and its description under them: from the top down, never over the title)
+modeLine.Size = UDim2.new(1, -260, 0, 36)
+modeLine.TextYAlignment = Enum.TextYAlignment.Top
+modeLine.TextTruncate = Enum.TextTruncate.AtEnd
 modeLine.RichText = true
 
 -- top-right: the Hub menu's tabs
@@ -159,8 +162,8 @@ local fitCards   -- (below)
 -- class cards
 local cardRow = Instance.new("Frame")
 cardRow.BackgroundTransparency = 1
-cardRow.Position = UDim2.new(0, 0, 0, 68)
-cardRow.Size = UDim2.new(1, 0, 1, -68 - 130)
+cardRow.Position = UDim2.new(0, 0, 0, 76)
+cardRow.Size = UDim2.new(1, 0, 1, -76 - 130)
 cardRow.Parent = panel
 local crl = Instance.new("UIListLayout", cardRow)
 crl.FillDirection = Enum.FillDirection.Horizontal

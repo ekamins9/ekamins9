@@ -1,4 +1,15 @@
-# Updated scripts: Deadvault comes down; the boss cinematic only for entrances
+# Updated scripts: the class picker's mode line
+
+- **Fixed**: on CHOOSE YOUR CLASS, the mode's line ("Crownfall on The Crownlands" and its description) spilled up over the title. It now reads from the top down under it, two lines at most, and the class cards sit a little lower.
+- Soaked Dragonfall and Crownfall with today's changes: no errors (60 / 55 fps in Studio).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | mode line layout |
+
+---
+
+## Before that: Deadvault comes down; the boss cinematic only for entrances
 
 - **Deadvault's last minute**: deep rumbles closer and closer together, the ground shaking harder, grit pouring from the ceiling and stones dropping round you, your lantern stuttering.
 - **Fixed**: every red ("boss") banner played the boss cinematic. Deadvault's IT IS COLLAPSING and YOU FELL, Crownfall's ring closing and Dragonfall's warnings all took the camera for 3 s. Now only a boss's entrance does it (the Depths' lord, the dragon: `intro = true` on the banner).
