@@ -361,7 +361,7 @@ function BotFill.start()
 			if m and m.Parent then
 				local emote = nil
 				if winKey and e.team == winKey then
-					emote = ({"Cheer", "WarCry", "Cheer", "Salute"})[math.random(4)]
+					emote = ({"Cheer", "WarCry", "Cheer", "Salute", "WarDrum"})[math.random(5)]
 				elseif winKey and math.random() < 0.55 then
 					emote = "Kneel"
 				end
