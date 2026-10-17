@@ -13,6 +13,9 @@ local TweenService = game:GetService("TweenService")
 
 local round = ReplicatedStorage:WaitForChild("Round")
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+local Device = require(ReplicatedStorage:WaitForChild("Device"))
+-- (a phone keeps its frames for the fight: no fair-weather clouds there; the weather's own still come)
+local CLOUDS = Device.kind() ~= "phone"
 
 local GRADE = {contrast = 0.13, saturation = -0.12, brightness = -0.02, tint = Color3.fromRGB(255, 244, 228)}
 local RAYS = {intensity = 0.06, spread = 0.3}
@@ -53,7 +56,7 @@ if not clouds then
 end
 local function skyWant()
 	local mode = round:GetAttribute("Mode") or ""
-	if SKIP[mode] or NO_CLOUDS[mode] then return placeSky or {Cover = 0, Density = 0, Color = FAIR.Color} end
+	if not CLOUDS or SKIP[mode] or NO_CLOUDS[mode] then return placeSky or {Cover = 0, Density = 0, Color = FAIR.Color} end
 	return FAIR
 end
 task.spawn(function()

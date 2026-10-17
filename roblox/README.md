@@ -1824,7 +1824,8 @@ pulled back (-0.12) from Roblox's toy greens and blues, a breath darker (-0.02),
 and the sun's rays visible through the haze by day (SunRays 0.06, spread 0.3). Fair-weather clouds
 drift over every open-air map (one `Clouds` under the Terrain: Cover 0.5, Density 0.55), eased in
 a little at a time and left alone while a weather has the sky (`WarFX.weatherKind()`; the weather
-puts back what it found when it ends). None over the caldera (Dragonfall) or indoors. Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
+puts back what it found when it ends). None over the caldera (Dragonfall) or indoors, nor on a
+phone (they cost about a tenth of the frame in War). Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
 Plague Night, the Undead invasion) and the Gilded Rat, where the place's own rays come back.
 
 ## Shell-shocked (`ReplicatedStorage ▸ Hearing`, rung by `WarFX.blast`)
