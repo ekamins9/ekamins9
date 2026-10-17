@@ -1,4 +1,17 @@
-# Updated scripts: the Silk Caverns, an eighth dungeon
+# Updated scripts: clouds spared on phones
+
+- **Phones** skip the fair-weather clouds (they cost about a tenth of the frame in War); the weather's own clouds still come.
+- The Depths' header comment lists the Silk Caverns.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CinematicGrade.client.lua](StarterPlayerScripts/CinematicGrade.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no fair clouds on phones |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | header |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Silk Caverns, an eighth dungeon
 
 - **The Silk Caverns**: a new dungeon theme for The Depths and Deadvault. Rough caves in sickly light, mostly spiders' nests, corridors strung with webs, spiders dropping on threads every little while, and the Cave Spiders, Broodmothers and risen cocooned dead that live there.
 - **Its boss, Arachnessa, Queen of the Silk**: a spider the size of a cart. She pounces, rushes, bursts venom and spits web; at half health the brood awakens and she calls her spiders about her while the ceiling crawls.
