@@ -1,6 +1,8 @@
 --[[ BOSS ENTRANCE — Siege's champion on his throne and the Horde's Warlord get the entrance the
      Depths' lords have (ReplicatedStorage ▸ BossIntro): when a bot in workspace ▸ NPCs becomes a
-     Boss in one of those modes, the bars, the camera on it, its name, a boom. Once each. ]]
+     Boss in one of those modes, the bars, the camera on it, its name, a boom. Once each.
+     War's champions (Game ▸ Modes ▸ War:champion) get the bars and the name only: in the thick of
+     a battle the camera stays yours. ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -18,6 +20,11 @@ local SAYS = {
 	Horde = function(m)
 		return string.upper(m:GetAttribute("TagName") or "THE WARLORD"), "THE WARLORD LEADS THIS WAVE  ·  HOLD THE CAMP"
 	end,
+	War = function(m)
+		local me = game:GetService("Players").LocalPlayer.Character
+		local ours = me and me:GetAttribute("Team") ~= nil and me:GetAttribute("Team") == m:GetAttribute("Team")
+		return string.upper(m:GetAttribute("TagName") or m.Name), ours and "YOUR CHAMPION TAKES THE FIELD" or "THEIR CHAMPION TAKES THE FIELD  ·  BRING HIM DOWN", true
+	end,
 }
 
 local function check(m)
@@ -27,8 +34,8 @@ local function check(m)
 	seen[m] = true
 	task.wait(0.4)   -- (dressed and standing first)
 	if not m.Parent then return end
-	local text, sub = say(m)
-	BossIntro.play(m, text, sub)
+	local text, sub, nameOnly = say(m)
+	BossIntro.play(not nameOnly and m or nil, text, sub)
 end
 
 local function watch(npcs)

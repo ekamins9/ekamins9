@@ -757,6 +757,15 @@ round:GetAttributeChangedSignal("Map"):Connect(function()
 	if war.on then leave(); task.wait(0.5); if inWar() then enter() end end
 end)
 round:GetAttributeChangedSignal("Mode"):Connect(function() if inWar() then enter() else leave() end end)
+-- A CHAMPION FALLS (Round ▸ WarChampFell, "<side>@<time>"): the call, and his killers' roar
+round:GetAttributeChangedSignal("WarChampFell"):Connect(function()
+	local v = round:GetAttribute("WarChampFell")
+	if not (war.on and type(v) == "string") then return end
+	local side = string.match(v, "^(%a)")
+	local ours = side == mySide()
+	bigCall("THE CHAMPION FALLS", ours and "YOUR SIDE LOSES 25" or "THEIR SIDE LOSES 25", ours and Color3.fromRGB(255, 120, 100) or Color3.fromRGB(255, 220, 120), 4)
+	WarFX.sound("Roar", nil, {volume = 0.8})
+end)
 -- THE WEATHER TURNS (Round ▸ WarSky, War:start decides): the sky opens over the battle, a long
 -- roll of thunder, the new weather thickening in over a few seconds
 round:GetAttributeChangedSignal("WarSky"):Connect(function()

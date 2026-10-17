@@ -1,4 +1,17 @@
-# Updated scripts: secret rooms in the dungeons
+# Updated scripts: a champion takes the field in War
+
+- **War**: five to seven minutes in, the side that's behind sends its champion (Sir Aldric the Unbroken / Grimwald Ironhand): heavy plate, a great blade, a head taller, a boss's health. His name comes up on every screen without taking the camera. Cut him down and his side loses 25 tickets (THE CHAMPION FALLS).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `War:champion` |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the fall's call |
+| [BossEntrance.client.lua](StarterPlayerScripts/BossEntrance.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | War's champions: name only |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: secret rooms in the dungeons
 
 - **The Depths and Deadvault**: some rooms hide a walled-up cache behind a cracked stretch of wall with a draft of dust seeping through. Three blows bring it down in a crash of stone and dust. Behind it is a short passage to the cache: gold, bones, candles, and a gilded chest (the Depths, one card each) or an ornate container (Deadvault). One a floor in the Depths (sometimes two deeper down), three a raid.
 

@@ -57,7 +57,7 @@ local CFG = {
 	-- the server's breath: fewer bots when its frames run long
 	slow = 1 / 38, quick = 1 / 54, least = 10,
 }
-local FIELD_ATTRS = {"OwnHud", "OwnTop", "ObjKind", "WarFront", "WarTicketsA", "WarTicketsB", "WarTickets", "WarSky"}
+local FIELD_ATTRS = {"OwnHud", "OwnTop", "ObjKind", "WarFront", "WarTicketsA", "WarTicketsB", "WarTickets", "WarSky", "WarChampFell"}
 
 local function humOf(m) return m and m:FindFirstChildOfClass("Humanoid") end
 local function flat(v) return Vector3.new(v.X, 0, v.Z) end
@@ -118,6 +118,9 @@ function War:start(map)
 		self.skyAt, self.sky = nil, nil
 		if nextSky and math.random() < 0.4 then self.skyAt, self.sky = now + rnd(240, 540), nextSky end
 	end
+	-- A CHAMPION TAKES THE FIELD, five to seven minutes in (War:champion)
+	self.champAt, self.champ = now + rnd(300, 420), nil
+	node:SetAttribute("WarChampFell", nil)
 	self.frame = 1 / 60
 	self.capAt = now + 6
 	self.lastFront = nil
@@ -133,6 +136,7 @@ end
 function War:stop()
 	if self.beat then self.beat:Disconnect(); self.beat = nil end
 	self.sun = nil
+	if self.champ then pcall(function() self.champ:destroy() end); self.champ = nil end
 	self.engines = nil
 	for _, k in ipairs(FIELD_ATTRS) do node:SetAttribute(k, nil) end
 	for i = 1, 5 do
@@ -176,6 +180,11 @@ function War:tick(dt)
 	local L = self.layout
 	if not L then return end
 	local now = os.clock()
+	if self.champAt and now >= self.champAt then
+		self.champAt = nil
+		local ok, err = pcall(self.champion, self)
+		if not ok then warn("[War] champion:", err) end
+	end
 	if self.skyAt and now >= self.skyAt then
 		self.skyAt = nil
 		node:SetAttribute("WarSky", self.sky)
@@ -415,6 +424,41 @@ function War:botOpts(opts)
 		end
 		return L.banners[self:frontFor(side)].pos + off
 	end
+end
+
+-- A CHAMPION TAKES THE FIELD: the side that's behind (a coin toss when even) sends its champion
+-- from its camp: a Champion bot in heavy plate with a great blade, a boss's health (more for each
+-- enemy player), a head taller than the rest; he pushes the front with his army, and every screen
+-- puts his name up (BossEntrance.client: the bars and his name, the camera left alone). Cut him
+-- down and his side loses CHAMP_COST tickets (Round ▸ WarChampFell, War.client calls it).
+local CHAMP_COST = 25
+local CHAMPS = {A = {name = "Sir Aldric the Unbroken", weapon = "Zweihander"}, B = {name = "Grimwald Ironhand", weapon = "Executioner"}}
+function War:champion()
+	local L, t = self.layout, self.tickets
+	if not (L and t) or Game.current ~= self then return end
+	local side = (t.A < t.B and "A") or (t.B < t.A and "B") or (math.random() < 0.5 and "A" or "B")
+	local f = side == "A" and 1 or -1
+	local at = L.camps[side] + Vector3.new(0, 3, f * 10)
+	local def = CHAMPS[side]
+	local Bots = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Bots"))
+	local opts = {at = CFrame.lookAt(at, at + Vector3.new(0, 0, f)), skill = "Champion", weapon = def.weapon, name = def.name,
+		weight = "Heavy", team = side, startDelay = 1}
+	self:botOpts(opts)
+	opts.corpseTime = 8
+	opts.onDeath = function(b, killer)
+		if self.champ ~= b then return end
+		self.champ = nil
+		if self.tickets then self.tickets[side] -= CHAMP_COST end
+		node:SetAttribute("WarChampFell", side .. "@" .. string.format("%.2f", os.clock()))
+		if killer and _G.RoundBump then _G.RoundBump(killer, "objective") end
+	end
+	local bot = Bots.spawn(opts)
+	if not bot then return end
+	local hp = 900 + 120 * math.max(1, Teams.count(ENEMY[side]))
+	bot.hum.MaxHealth, bot.hum.Health = hp, hp
+	pcall(function() bot.model:ScaleTo(1.2) end)
+	bot.model:SetAttribute("Boss", true)
+	self.champ = bot
 end
 
 --------------------------------------------------------------------

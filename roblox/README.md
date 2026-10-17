@@ -1667,6 +1667,13 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   (ClockTime 6–10) brightens an hour and a half; an afternoon one wears on towards golden hour
   (up to 2.2 hours, never past 17.1), long shadows and a warm sky by the bell. A dusk or a night
   theme stays as it was tuned.
+- **A champion takes the field** (`War:champion`, five to seven minutes in): the side that's behind
+  (a coin toss when even) sends its champion from its camp: Sir Aldric the Unbroken for the Crown,
+  Grimwald Ironhand for Iron, a Champion bot in heavy plate with a great blade, a head taller than
+  the rest, 900 health and 120 more for each enemy player; he pushes the front with his army. Every
+  screen puts his name up on the bars (`BossEntrance.client`: YOUR / THEIR CHAMPION TAKES THE FIELD;
+  the camera stays yours in a battle). Cut him down and his side loses 25 tickets (Round ▸
+  WarChampFell: THE CHAMPION FALLS, a roar).
 - **The weather turns** (`War:start` / `tick`, `War.client`): on a clear or rainy field (not
   Sunreach's desert, Frostmere's snow or Ashvale's ash), 40% of battles see the sky open partway
   through (4 to 9 minutes in): clear to rain, rain to a storm. Round ▸ WarSky carries it; every
