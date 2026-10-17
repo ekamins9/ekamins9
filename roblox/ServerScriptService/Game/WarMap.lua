@@ -28,6 +28,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local K = require(ServerScriptService:WaitForChild("Build"):WaitForChild("MapKit"))
+local WarProps = require(script.Parent:WaitForChild("WarProps"))
 if not K.campfire then require(ServerScriptService.Build:WaitForChild("MapProps"))(K) end
 
 local WarMap = {}
@@ -164,27 +165,8 @@ local function tree(ctx, kind, pos)
 	else K.deadTree(ctx, pos, 10 + rnd:NextNumber(0, 8)) end
 end
 
--- a made prop (ServerStorage ▸ WarProps ▸ name): `height` tall, its base at `cf`, facing cf's
--- look plus its own Yaw; nil when there's none
-local function prop(ctx, name, cf, height, collide)
-	local f = ServerStorage:FindFirstChild("WarProps")
-	local tpl = f and f:FindFirstChild(name)
-	if not tpl then return nil end
-	local m = tpl:Clone()
-	for _, d in ipairs(m:GetDescendants()) do
-		if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = collide ~= false end
-	end
-	local _, size = m:GetBoundingBox()
-	if size.Y > 0 and height then pcall(function() m:ScaleTo(m:GetScale() * height / size.Y) end) end
-	m.Parent = ctx.Props
-	local yaw = math.rad(tpl:GetAttribute("Yaw") or 0)
-	m:PivotTo(cf * CFrame.Angles(0, yaw, 0))
-	-- (its lowest point onto the ground)
-	local bcf, bsize = m:GetBoundingBox()
-	local bottom = bcf.Position.Y - bsize.Y / 2
-	m:PivotTo(m:GetPivot() + Vector3.new(0, cf.Position.Y - bottom, 0))
-	return m
-end
+-- a made prop (Game ▸ WarProps): nil when there's none
+local function prop(ctx, name, cf, height, collide) return WarProps.place(name, cf, height, ctx.Props, collide) end
 
 -- A BANNER: a stone plinth, a tall pole, a flag the clients colour for its holder (WarFlag_n),
 -- a ring of stones marking how near you must stand

@@ -1664,8 +1664,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
 - **Made props** (ServerStorage ▸ WarProps, Studio-only, generated): **Pavilion** (each camp's
   command tent), **SiegeTower** (two parked before each camp, ramps towards the enemy),
   **Ballista** (two at each camp's corners), **Barricade** (spiked logs before the camps, and cover
-  beside banners 2 and 4). WarMap scales each to a height, sets it on the ground and turns it by
-  its own `Yaw` attribute (degrees); a missing one is left out. Terrain ground (`K.terrain` with `fast`: no read-back of
+  beside banners 2 and 4). `Game ▸ WarProps.place` scales each to a height, sets it on the ground
+  and turns it by its own `Yaw` attribute (degrees); a missing one is left out. Terrain ground (`K.terrain` with `fast`: no read-back of
   the surroundings), a corridor 210 wide fenced with stakes (and an unseen wall), banners named
   for the theme (THE VILLAGE, THE OLD FORT, THE FORD…). Vote pictures: ReplicatedStorage ▸ MapShots.
 - **Performance**: the crowds (arrows, raindrops, soldiers, horsemen, flying stones) live under the
@@ -1696,6 +1696,8 @@ skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …
 back beyond their first spawns lob fire onto defenders near the objective; the attackers' archers
 and the defenders' (up by their keep) loose volleys at knots of the other side near it. Gentler
 than War's (power 0.6, trebuchets every 14–20 s, volleys every 16–24 s, after 25 s).
+The attackers' camp is dressed for it (`Game ▸ WarProps`): siege towers, ballistae and a pavilion
+round their first spawns, wherever the ground is open and level (into the map, so they go with it).
 
 The attackers take a castle stage by stage; the defenders hold until the clock runs out
 (5 minutes to start). The mode's `attack` table (`GameConfig.MODES.Siege`) eases the map's stage

@@ -471,7 +471,7 @@ local function distantWar()
 	if roll < 0.45 then
 		local side = math.random() < 0.5 and "A" or "B"
 		local f = side == "A" and 1 or -1
-		WarFX.volley(V3(x + (math.random() - 0.5) * 20, 6, fz - f * 110), V3(x, 0, fz + f * (6 + math.random() * 20)), 40, {flight = 2.6, spread = 14, stick = false, range = 260})
+		WarFX.volley(V3(x + (math.random() - 0.5) * 20, 6, fz - f * 110), V3(x, 0, fz + f * (6 + math.random() * 20)), 70, {flight = 2.6, spread = 16, stick = false, range = 260})
 	elseif roll < 0.75 then
 		local side = math.random() < 0.5 and "A" or "B"
 		local arm = W("Treb" .. side .. math.random(2))

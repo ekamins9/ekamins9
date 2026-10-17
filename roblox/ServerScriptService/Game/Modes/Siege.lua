@@ -44,6 +44,7 @@ local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Engines = require(script.Parent.Parent:WaitForChild("Engines"))
+local WarProps = require(script.Parent.Parent:WaitForChild("WarProps"))
 local Teams, MapLoader = Game.Teams, Game.MapLoader
 
 local event = ReplicatedStorage:FindFirstChild("ObjectiveEvent")
@@ -158,6 +159,25 @@ function Siege:startEngines()
 	-- the attackers' trebuchets well back beyond their first spawns (out of sight: only their fire is
 	-- seen), their archers just behind them; the defenders' archers up on the walls by their keep
 	local trebs = {a + away * 160 + side * 40 + Vector3.new(0, 30, 0), a + away * 170 - side * 50 + Vector3.new(0, 30, 0)}
+	-- the attackers' camp dressed for a siege: towers, ballistae, a pavilion (Game ▸ WarProps; set
+	-- down only where the ground is clear, into the map so they go with it)
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Exclude
+	ray.FilterDescendantsInstances = {workspace:FindFirstChild("NPCs") or workspace.Terrain}
+	local function ground(p)
+		local r = workspace:Raycast(p + Vector3.new(0, 60, 0), Vector3.new(0, -140, 0), ray)
+		if not r then return nil end
+		-- (only open, level ground about as high as their spawns: not a roof, a wall, a tree)
+		if r.Normal.Y < 0.9 or math.abs(r.Position.Y - a.Y) > 8 then return nil end
+		return r.Position
+	end
+	local function face(at) return CFrame.lookAt(at, Vector3.new(d.X, at.Y, d.Z)) end
+	local props = {{"SiegeTower", away * 26 + side * 30, 30}, {"SiegeTower", away * 30 - side * 34, 30},
+		{"Ballista", away * 14 + side * 52, 7}, {"Ballista", away * 16 - side * 56, 7}, {"Pavilion", away * 60, 18}}
+	for _, pr in ipairs(props) do
+		local at = ground(a + pr[2])
+		if at then pcall(WarProps.place, pr[1], face(at), pr[3], m) end
+	end
 	local sides = {}
 	sides[self.attack] = {trebs = trebs, archers = {a + away * 30 + side * 20, a + away * 30 - side * 20}}
 	sides[self.defend] = {archers = {d + Vector3.new(0, 18, 0)}}

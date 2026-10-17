@@ -156,7 +156,7 @@ function Engines:fireVolley(side)
 		if d < best then from, best = c, d end
 	end
 	local V = Engines.VOLLEY
-	remote:FireAllClients("Volley", {side = side, from = from + Vector3.new(0, 6, 0), to = to, t = V.flight, r = V.radius, n = 70})
+	remote:FireAllClients("Volley", {side = side, from = from + Vector3.new(0, 6, 0), to = to, t = V.flight, r = V.radius, n = 120})
 	task.wait(V.flight)
 	if self.alive() then self:hurt(side, to, V.radius, V.damage, {guard = true, flat = true}) end
 end

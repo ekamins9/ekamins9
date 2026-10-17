@@ -1,4 +1,22 @@
-# Updated scripts: War's camps get made siege towers, ballistae, pavilions and barricades; two more battlefields
+# Updated scripts: Siege's attackers get a proper siege camp; bigger volleys
+
+- **Siege**: siege towers, ballistae and a pavilion stand round the attackers' first spawns (where the ground is open and level), facing the castle.
+- **Bigger volleys**: the engines' volleys are 120 arrows now (70 before), the distant ones on War's flanks 70 (40): the arrows cost almost nothing since they moved out of the physics world.
+- **One prop placer** (new Game ▸ WarProps) shared by War's battlefields and Siege.
+- **Checked in Play**: Siege on Frostgate (a tower and two ballistae placed, the uneven spots skipped); every touched script compiled.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarProps.lua](ServerScriptService/Game/WarProps.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | uses WarProps |
+| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the attackers' siege camp |
+| [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | 120-arrow volleys |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | bigger distant volleys |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: War's camps get made siege towers, ballistae, pavilions and barricades; two more battlefields
 
 - **Made props in every War battlefield** (generated models, Studio-only): a striped command pavilion in each camp, siege towers parked before the camps with their ramps towards the enemy, ballistae at the camps' corners, spiked barricades before the camps and as cover beside banners 2 and 4.
 - **Nightfall**: a moonlit battle, torches lining the field, a burning watchtower, standing stones. **Sunreach**: a desert valley with a ruined sandstone temple, obelisks and dunes. Both with vote pictures.
@@ -29,22 +47,4 @@ Studio-only (save the place): ServerStorage ▸ WarProps (Pavilion, SiegeTower, 
 |---|---|---|---|
 | [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ◀ MAIN MENU, the wallet, shuts outside the Gilded Rat |
 | [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | opens by itself on coming home |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: siege engines in Siege too, a cinematic opening for every battle
-
-- **Siege goes to war**: the attackers' trebuchets beyond the walls lob fire onto the defenders at the objective (a red ring first), and both sides' archers loose volleys at each other near it (raise your guard or get under a roof). War's engines became a shared module so any mode can have them.
-- **Every battle opens like a film**: your first spawn of a round in Siege, Team Deathmatch, King of the Hill, Free-for-All, Last Team Standing or Horde flies the camera from the map's own shot down behind you, with the mode, the map and what you're there to do (TAKE THE CASTLE / HOLD THE CASTLE…), a horn, black bars. Any key skips.
-- **Checked in Play**: Siege on Frostgate: the engines set up from the map's spawns (two trebuchets and two archer companies for the attackers, a company on the walls for the defenders) and fired at knots of the other side near the objective; every touched script compiled.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | new: trebuchets, volleys, barrages for any mode |
-| [Engines.client.lua](StarterPlayerScripts/Engines.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new: draws them, warns you |
-| [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | uses Engines |
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the armies' part only |
-| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the war round it |
 | [README.md](README.md) | | doc | |
