@@ -1930,7 +1930,9 @@ player's chest, drawn on every screen). Dust drifts through the light round you,
 cold (each theme its own grade), the screen's edges darken, a low drone sits under everything, and
 now and then, somewhere in the dark behind or beside you, a whisper, an iron clank, a deep thud
 from far below (WarAudio: Drone, Whisper, Gate, Impact). A monster doesn't pop in: grave-dust
-bursts up where it comes out of the dark (some of the dead whisper as they come). **A boss's
+bursts up where it comes out of the dark (some of the dead whisper as they come). Now and then,
+well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
+path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen). **A boss's
 entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords on their banner through
 `Adventure.client`, Siege's champion and the Horde's Warlord through `BossEntrance.client` when a
 bot becomes a `Boss`): black bars close in and the rest of the HUD steps aside, the camera finds

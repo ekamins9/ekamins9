@@ -38,7 +38,10 @@
                               a crowd watching (an arena's stands): still, and on c:roar(secs) a
                               good part of it on its feet, arms up, cheering
        c:rout(id, secs)       a regiment cut down: all fall within secs, none steps up after
-       c:stop() ]]
+       c:stop()
+       WarCrowd.ghost(at, {side, kind, dir, speed, secs, color})
+                              an apparition: a pale see-through man walking from `at` along `dir`,
+                              fading in and out over `secs` (a dungeon's dark: DungeonMood) ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -762,6 +765,60 @@ function WarCrowd:stepAudiences(now, dt, put, cam, c)
 			a.wasCheering = cheering
 		end
 	end
+end
+
+--------------------------------------------------------------------
+--  AN APPARITION: a pale see-through man walking a few steps through the dark, then gone
+--------------------------------------------------------------------
+function WarCrowd.ghost(at, o)
+	o = o or {}
+	local t = template(o.side or "A", o.kind or "foot", math.random(2))
+	if not t then return nil end
+	local home = Instance.new("Folder")
+	home.Name = "WarCrowdGhost"
+	home.Parent = workspace.CurrentCamera or workspace
+	local s = newSoldier(home, t, o.detail or "lite", true)
+	local col = o.color or Color3.fromRGB(196, 236, 226)
+	for _, p in ipairs(s.parts) do
+		for _, d in ipairs(p:GetChildren()) do
+			if d:IsA("SurfaceAppearance") or d:IsA("Decal") or d:IsA("Texture") then d:Destroy() end
+		end
+		if p:IsA("MeshPart") then p.TextureID = "" end
+		p.Color = col
+		p.Material = Enum.Material.Neon
+		p.CastShadow = false
+		p.Transparency = 1
+	end
+	s.ph = math.random() * 6.28
+	s.state = "march"
+	local dir = o.dir or at.LookVector
+	dir = V3(dir.X, 0, dir.Z)
+	dir = dir.Magnitude > 0.01 and dir.Unit or V3(0, 0, -1)
+	local face = CFrame.lookAt(Vector3.zero, dir)
+	local speed, secs = o.speed or 4, o.secs or 3.4
+	local t0 = os.clock()
+	local Ls = {}
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local u = (os.clock() - t0) / secs
+		if u >= 1 or not home.Parent then
+			conn:Disconnect()
+			home:Destroy()
+			return
+		end
+		-- (fades in, holds faintly glowing, fades out)
+		local alpha = 1 - math.min(u / 0.25, 1, (1 - u) / 0.3) * 0.3
+		local base = CF(at.Position + dir * speed * secs * u) * face
+		pose(s, os.clock(), o.kind or "foot", Ls)
+		for i = 1, 6 do
+			local f = base * Ls[i]
+			for j, p in ipairs(s.limbs[i]) do
+				p.CFrame = f * s.offs[i][j]
+				p.Transparency = alpha
+			end
+		end
+	end)
+	return home
 end
 
 function WarCrowd:stop()

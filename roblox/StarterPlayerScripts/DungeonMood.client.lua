@@ -9,6 +9,9 @@
                         you, a whisper, an iron clank, a deep thud from far below, stone settling
        what comes       a monster doesn't just appear: grave-dust bursts up where it stands out
                         of the dark (and some of the dead whisper as they come)
+       what's there     now and then, well ahead of you in the dark, a pale see-through figure
+                        walks a few steps across your path and is gone (WarCrowd.ghost; never a
+                        fighter, nothing anyone else sees)
 
      The sounds are ReplicatedStorage ▸ WarAudio's (Drone, Whisper, Gate, Impact; one missing is
      just quiet). Nothing here is sent to the server. ]]
@@ -20,6 +23,7 @@ local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
 
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+local WarCrowd = require(ReplicatedStorage:WaitForChild("WarCrowd"))
 local Device = require(ReplicatedStorage:WaitForChild("Device"))
 
 local player = Players.LocalPlayer
@@ -172,6 +176,45 @@ local function dark(token)
 end
 
 --------------------------------------------------------------------
+--  WHAT'S THERE: an apparition crossing the dark ahead of you
+--------------------------------------------------------------------
+local GHOST = {FrozenDepths = Color3.fromRGB(180, 220, 255), CrimsonManor = Color3.fromRGB(236, 200, 214), EmberForge = Color3.fromRGB(255, 200, 160)}
+local ghostRay = RaycastParams.new()
+ghostRay.FilterType = Enum.RaycastFilterType.Exclude
+local function apparition()
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+	ghostRay.FilterDescendantsInstances = {char, cam, workspace:FindFirstChild("NPCs")}
+	local look = cam.CFrame.LookVector
+	local fwd = V3(look.X, 0, look.Z)
+	if fwd.Magnitude < 0.2 then return end
+	fwd = fwd.Unit
+	local eye = root.Position + V3(0, 2, 0)
+	-- (well ahead, in the open dark: past 26 studs, short of whatever wall is there)
+	local hit = workspace:Raycast(eye, fwd * 80, ghostRay)
+	local d = hit and (hit.Position - eye).Magnitude - 5 or 60
+	if d < 26 then return end
+	d = math.min(d, 55)
+	local at = eye + fwd * d
+	local floor = workspace:Raycast(at + V3(0, 4, 0), V3(0, -30, 0), ghostRay)
+	if not floor then return end
+	local across = V3(-fwd.Z, 0, fwd.X) * (math.random() < 0.5 and -1 or 1)
+	local secs, speed = 3.6, 3.2
+	local start = floor.Position - across * speed * secs / 2
+	WarCrowd.ghost(CFrame.new(start), {dir = across, speed = speed, secs = secs, color = GHOST[mood.theme or ""], kind = math.random() < 0.5 and "foot" or "knight"})
+	WarFX.sound("Whisper", floor.Position + V3(0, 3, 0), {volume = 0.45, speed = 0.7 + math.random() * 0.2, near = 12, range = 90})
+end
+local function haunt(token)
+	task.wait(30 + math.random() * 30)
+	while mood.on and mood.token == token do
+		if math.random() < 0.45 then pcall(apparition) end
+		task.wait(45 + math.random() * 50)
+	end
+end
+
+--------------------------------------------------------------------
 --  WHAT COMES OUT OF THE DARK
 --------------------------------------------------------------------
 local DUST = {Undead = Color3.fromRGB(110, 120, 112), Frost = Color3.fromRGB(190, 210, 230), Infernal = Color3.fromRGB(90, 70, 60)}
@@ -229,6 +272,7 @@ local function enter(theme)
 		table.insert(mood.conns, p.CharacterAdded:Connect(function(c) task.wait(0.3); lantern(c) end))
 	end))
 	task.spawn(dark, token)
+	task.spawn(haunt, token)
 	watchMonsters()
 end
 
