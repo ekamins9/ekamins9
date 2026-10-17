@@ -136,6 +136,16 @@ local THEMES = {
 			FogColor = Color3.fromRGB(176, 186, 184), FogEnd = 420, FogStart = 40, ExposureCompensation = 0.25, EnvironmentDiffuseScale = 0.5},
 		atmo = {Density = 0.55, Offset = 0.05, Haze = 3, Glare = 0.2, Color = Color3.fromRGB(196, 204, 200), Decay = Color3.fromRGB(120, 132, 130)},
 	},
+	-- AMBERWOOD: an autumn wood's edge in the late gold light, the field between two lines of red and
+	-- gold oaks, fallen leaves drifting down, an orchard, a hunting lodge, a woodcutters' camp
+	Amberwood = {
+		ground = M.Grass, field = M.LeafyGrass, path = M.Ground, trees = "autumn", weather = "leaves",
+		colors = {Grass = Color3.fromRGB(124, 120, 62), LeafyGrass = Color3.fromRGB(172, 98, 46), Ground = Color3.fromRGB(112, 86, 60)},
+		slab = Color3.fromRGB(120, 114, 60), hill = Color3.fromRGB(132, 96, 54),
+		light = {ClockTime = 16.4, Brightness = 2.4, Ambient = Color3.fromRGB(132, 112, 92), OutdoorAmbient = Color3.fromRGB(164, 138, 108),
+			FogColor = Color3.fromRGB(226, 180, 130), FogEnd = 1300, FogStart = 180, ExposureCompensation = 0.15, EnvironmentDiffuseScale = 0.7},
+		atmo = {Density = 0.34, Offset = 0.2, Haze = 1.9, Glare = 0.6, Color = Color3.fromRGB(236, 190, 140), Decay = Color3.fromRGB(180, 110, 70)},
+	},
 }
 WarMap.THEMES = THEMES
 
@@ -188,8 +198,16 @@ local function trebuchet(ctx, pos, yaw)
 	return pos + V3(0, size.Y * 0.85, 0)
 end
 
+local AUTUMN = {Color3.fromRGB(206, 112, 40), Color3.fromRGB(172, 60, 36), Color3.fromRGB(214, 166, 58), Color3.fromRGB(150, 92, 42)}
 local function tree(ctx, kind, pos)
 	if kind == "oak" then K.oak(ctx, pos, 12 + rnd:NextNumber(0, 8))
+	elseif kind == "autumn" then
+		-- (red, rust and gold; now and then one already bare)
+		if rnd:NextNumber() < 0.12 then K.deadTree(ctx, pos, 10 + rnd:NextNumber(0, 6))
+		else
+			local i = rnd:NextInteger(1, #AUTUMN)
+			K.oak(ctx, pos, 12 + rnd:NextNumber(0, 9), {AUTUMN[i], AUTUMN[i % #AUTUMN + 1], AUTUMN[i]})
+		end
 	elseif kind == "pine" then K.pine2(ctx, pos, 16 + rnd:NextNumber(0, 10), 3, 5)
 	elseif kind == "snowpine" then K.pine2(ctx, pos, 16 + rnd:NextNumber(0, 10), 3, 5, Color3.fromRGB(196, 210, 206))
 	else K.deadTree(ctx, pos, 10 + rnd:NextNumber(0, 8)) end
@@ -509,6 +527,60 @@ function FEATURE.Mistmarsh(ctx)
 	end
 	for _ = 1, 18 do K.rock(ctx, V3(rnd:NextNumber(-100, 100), 0, rnd:NextNumber(-340, 340)), 1.5 + rnd:NextNumber(0, 3), Color3.fromRGB(92, 100, 90)) end
 end
+-- AMBERWOOD: the wood's edge down both flanks, an orchard round the second banner, a hunting lodge
+-- round the third, a woodcutters' camp round the fourth, fallen leaves in drifts
+function FEATURE.Amberwood(ctx)
+	-- the wood's edge: a line of oaks along each flank, just outside the fighting
+	for _, s in ipairs({-1, 1}) do
+		for z = -360, 360, 15 do
+			tree(ctx, "autumn", V3(s * rnd:NextNumber(110, 128), 0, z + rnd:NextNumber(-5, 5)))
+			if rnd:NextNumber() < 0.5 then tree(ctx, "autumn", V3(s * rnd:NextNumber(132, 160), 0, z + rnd:NextNumber(-7, 7))) end
+		end
+	end
+	-- the orchard: small trees in rows either side of the second banner
+	for _, s in ipairs({-1, 1}) do
+		for row = 0, 2 do
+			for col = 0, 3 do
+				local at = V3(s * (34 + row * 14), 0, -170 + col * 26 + rnd:NextNumber(-2, 2))
+				local i = rnd:NextInteger(1, #AUTUMN)
+				K.oak(ctx, at, 8 + rnd:NextNumber(0, 3), {AUTUMN[3], AUTUMN[i], AUTUMN[1]})
+			end
+		end
+	end
+	-- the hunting lodge: two long houses of dark timber by the third banner, fences, a cart
+	local WOOD, ROOF = Color3.fromRGB(150, 116, 82), Color3.fromRGB(88, 56, 40)
+	K.house(ctx, CF(-46, 0, -8) * CFrame.Angles(0, DEG(90), 0), 14, 22, 10, WOOD, ROOF)
+	K.house(ctx, CF(48, 0, 14) * CFrame.Angles(0, DEG(-90), 0), 12, 16, 8, WOOD, ROOF)
+	K.fence(ctx, V3(-70, 0, 22), V3(-30, 0, 30))
+	K.fence(ctx, V3(30, 0, -26), V3(72, 0, -30))
+	pcall(K.wagon, ctx, CF(-22, 0, -30) * CFrame.Angles(0, DEG(40), 0))
+	-- the woodcutters' camp round the fourth banner: stacked logs, stumps
+	local LOG, CUT = Color3.fromRGB(104, 76, 50), Color3.fromRGB(196, 160, 112)
+	for _, at in ipairs({V3(-36, 0, 110), V3(40, 0, 140), V3(-52, 0, 160), V3(30, 0, 98)}) do
+		local yaw = rnd:NextNumber(0, 6.28)
+		for layer = 0, 2 do
+			for k = 0, 3 - layer do
+				local log = K.cyl(ctx, "Log", 1.5, 9, CF(at) * CFrame.Angles(0, yaw, 0) * CF((k - (3 - layer) / 2) * 1.5, 0.75 + layer * 1.3, 0) * CFrame.Angles(DEG(90), 0, 0), LOG, M.Wood, ctx.Props)
+				log.CanCollide = layer == 0
+			end
+		end
+	end
+	for _ = 1, 22 do
+		local at = V3((rnd:NextNumber() < 0.5 and -1 or 1) * rnd:NextNumber(18, 100), 0, rnd:NextNumber(60, 220))
+		local h = rnd:NextNumber(0.8, 1.6)
+		K.cyl(ctx, "Stump", rnd:NextNumber(1.6, 2.4), h, at + V3(0, h / 2, 0), LOG, M.Wood, ctx.Props)
+		nocol(K.cyl(ctx, "StumpTop", 1.4, 0.06, at + V3(0, h + 0.03, 0), CUT, M.Wood, ctx.Props))
+	end
+	-- fallen leaves in drifts, rust and gold
+	for _ = 1, 46 do
+		local p = nocol(K.box(ctx, "LeafDrift", V3(1, 1, 1), CF((rnd:NextNumber() < 0.5 and -1 or 1) * rnd:NextNumber(10, 104), 0.1, rnd:NextNumber(-340, 340)) * CFrame.Angles(0, rnd:NextNumber(0, 6.28), 0), AUTUMN[rnd:NextInteger(1, #AUTUMN)], M.Grass, ctx.Props))
+		local m = Instance.new("SpecialMesh")
+		m.MeshType = Enum.MeshType.Sphere
+		m.Scale = V3(rnd:NextNumber(4, 9), rnd:NextNumber(0.5, 0.9), rnd:NextNumber(3, 7))
+		m.Parent = p
+	end
+	for _ = 1, 12 do K.rock(ctx, V3(rnd:NextNumber(-100, 100), 0, rnd:NextNumber(-340, 340)), 1.5 + rnd:NextNumber(0, 2.5), Color3.fromRGB(120, 112, 100)) end
+end
 -- SUNREACH: a ruined temple of sandstone in the middle, obelisks, rocks
 function FEATURE.Sunreach(ctx)
 	local SAND = Color3.fromRGB(214, 180, 128)
@@ -607,6 +679,13 @@ function PAINT.Mistmarsh(T, th)
 	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
 	surface(-14, -400, 14, 400, th.ground, th.field)
 	for _ = 1, 16 do disc(rnd:NextNumber(-110, 110), rnd:NextNumber(-330, 330), rnd:NextNumber(8, 18), th.ground, th.field) end
+	rolling(T, th)
+end
+function PAINT.Amberwood(T, th)
+	-- fallen leaves carpeting the flanks and lying in drifts across the field, a track down the middle
+	for _, s in ipairs({-1, 1}) do surface(s * 104, -400, s * 300, 400, th.ground, th.field) end
+	for _ = 1, 22 do disc(rnd:NextNumber(-100, 100), rnd:NextNumber(-340, 340), rnd:NextNumber(8, 20), th.ground, th.field) end
+	surface(-5, -400, 5, 400, th.ground, th.path)
 	rolling(T, th)
 end
 function PAINT.Nightfall(T, th)

@@ -113,7 +113,7 @@ function War:start(map)
 		local m = MapLoader.current
 		local w = m and m:GetAttribute("W_Weather") or ""
 		local theme = m and m:GetAttribute("W_Theme") or ""
-		local nextSky = (w == "" and "rain") or (w == "rain" and "storm") or nil
+		local nextSky = (w == "" and "rain") or (w == "leaves" and "rain") or (w == "rain" and "storm") or nil
 		if theme == "Sunreach" or theme == "Ashvale" or theme == "Frostmere" then nextSky = nil end
 		self.skyAt, self.sky = nil, nil
 		if nextSky and math.random() < 0.4 then self.skyAt, self.sky = now + rnd(240, 540), nextSky end

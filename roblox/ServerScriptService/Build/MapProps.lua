@@ -99,12 +99,14 @@ return function(K)
 		end
 		return trunk
 	end
-	function K.oak(ctx, pos, h)
+	-- (palette: leaf colours, for an autumn wood; the summer greens without one)
+	function K.oak(ctx, pos, h, palette)
 		h = h or 14
+		local leaf = palette or OAKLEAF
 		K.cyl(ctx, "Trunk", 1.4, h * 0.55, pos + V3(0, h * 0.275, 0), Color3.fromRGB(92, 70, 50), M.Wood, ctx.Props)
 		for i = 1, 5 do
 			local off = V3(r:NextNumber(-1, 1) * h * 0.22, h * (0.62 + r:NextNumber(0, 0.22)), r:NextNumber(-1, 1) * h * 0.22)
-			local b = K.ball(ctx, "Leaves", h * r:NextNumber(0.32, 0.46), pos + off, OAKLEAF[i % 3 + 1], M.Grass, ctx.Props)
+			local b = K.ball(ctx, "Leaves", h * r:NextNumber(0.32, 0.46), pos + off, leaf[i % #leaf + 1], M.Grass, ctx.Props)
 			b.CanCollide = false
 		end
 	end

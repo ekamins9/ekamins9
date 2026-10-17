@@ -1773,7 +1773,11 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   walls and arch, pillars, a graveyard on both sides of the road), **Duskmoor** (purple heather at
   golden hour: a ring of cairns, a beacon burning on the tallest), **Mistmarsh** (a fog-bound
   marsh at dawn, you see 40 studs clear: a broken stone causeway down the middle, standing water
-  and reed beds, a chapel half sunk into the bog with its tower leaning, mossy stones).
+  and reed beds, a chapel half sunk into the bog with its tower leaning, mossy stones),
+  **Amberwood** (an autumn wood's edge in the late gold light: a line of red, rust and gold oaks
+  down each flank, fallen leaves drifting down and lying in drifts, an orchard round the second
+  banner, a half-timbered hunting lodge round the third, a woodcutters' camp of stacked logs and
+  stumps round the fourth; its sky can turn to rain).
 - **The litter of earlier fighting** on every field (`debris` in WarMap): dropped shields in both
   sides' colours, broken spears, clusters of arrows stuck in the ground leaning the way they came,
   fallen banners, helmets; thickest round the banners; nothing solid or queryable (looks only).

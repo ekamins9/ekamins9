@@ -1,4 +1,23 @@
-# Updated scripts: light from above
+# Updated scripts: Amberwood, an eleventh War field
+
+- **War: Amberwood**, an autumn wood's edge in the late gold light. Red, rust and gold oaks line both flanks, fallen leaves drift down and lie in drifts across golden grass, and there's an orchard, a half-timbered hunting lodge and a woodcutters' camp. Its sky can turn to rain mid-battle. Its five banners are the South Woods, the Orchard, the Hunting Lodge, the Woodpile and the North Woods.
+- Autumn oaks are a `K.oak` palette; drifting leaves are a new WarFX weather, `leaves`.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | Amberwood theme, feature, paint; `autumn` trees |
+| [MapProps.lua](ServerScriptService/Build/MapProps.lua) | ServerScriptService ▸ Build | ModuleScript | `K.oak` palette |
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | `leaves` weather |
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | leaves can turn to rain |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War maps, title, fighters |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | banner names |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ MapShots ▸ Amberwood (its vote picture; save the place).
+
+---
+
+## Before that: light from above
 
 - **The dungeons**: in a few rooms a floor, an iron grate in the ceiling glows with pale light from somewhere above, and the light falls through in a soft column to a pool on the floor, dust turning slowly in it. The Drowned Halls' light is sea-green and the Abbey's violet-white; the Ember Forge has none.
 
