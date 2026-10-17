@@ -1767,7 +1767,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   a burning watchtower, standing stones), **Sunreach** (a desert valley: a ruined temple of
   sandstone columns, obelisks, dunes), **Stormvale** (a storm over a ruined abbey: broken nave
   walls and arch, pillars, a graveyard on both sides of the road), **Duskmoor** (purple heather at
-  golden hour: a ring of cairns, a beacon burning on the tallest).
+  golden hour: a ring of cairns, a beacon burning on the tallest), **Mistmarsh** (a fog-bound
+  marsh at dawn, you see 40 studs clear: a broken stone causeway down the middle, standing water
+  and reed beds, a chapel half sunk into the bog with its tower leaning, mossy stones).
 - **The litter of earlier fighting** on every field (`debris` in WarMap): dropped shields in both
   sides' colours, broken spears, clusters of arrows stuck in the ground leaning the way they came,
   fallen banners, helmets; thickest round the banners; nothing solid or queryable (looks only).

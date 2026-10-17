@@ -126,6 +126,16 @@ local THEMES = {
 			FogColor = Color3.fromRGB(214, 140, 110), FogEnd = 1400, FogStart = 200, ExposureCompensation = 0.25, EnvironmentDiffuseScale = 0.7},
 		atmo = {Density = 0.33, Offset = 0.2, Haze = 1.8, Glare = 0.8, Color = Color3.fromRGB(230, 150, 120), Decay = Color3.fromRGB(150, 70, 80)},
 	},
+	-- MISTMARSH: a fog-bound marsh at dawn, a stone causeway across it, reeds and standing water,
+	-- a chapel half sunk into the bog
+	Mistmarsh = {
+		ground = M.Grass, field = M.Mud, path = M.Cobblestone, trees = "dead", weather = "",
+		colors = {Grass = Color3.fromRGB(86, 102, 74), Mud = Color3.fromRGB(70, 66, 52), Cobblestone = Color3.fromRGB(112, 112, 106)},
+		slab = Color3.fromRGB(80, 96, 70), hill = Color3.fromRGB(74, 88, 68),
+		light = {ClockTime = 7.2, Brightness = 1.5, Ambient = Color3.fromRGB(110, 118, 120), OutdoorAmbient = Color3.fromRGB(140, 146, 146),
+			FogColor = Color3.fromRGB(176, 186, 184), FogEnd = 420, FogStart = 40, ExposureCompensation = 0.25, EnvironmentDiffuseScale = 0.5},
+		atmo = {Density = 0.55, Offset = 0.05, Haze = 3, Glare = 0.2, Color = Color3.fromRGB(196, 204, 200), Decay = Color3.fromRGB(120, 132, 130)},
+	},
 }
 WarMap.THEMES = THEMES
 
@@ -452,6 +462,53 @@ function FEATURE.Duskmoor(ctx)
 	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 130, 60); l.Range = 50; l.Brightness = 2.2; l.Parent = blaze
 	for _ = 1, 20 do K.rock(ctx, V3(rnd:NextNumber(-95, 95), 0, rnd:NextNumber(-340, 340)), 2 + rnd:NextNumber(0, 4), Color3.fromRGB(96, 88, 86)) end
 end
+-- MISTMARSH: a raised causeway of old stone down the middle, standing water and reed beds on the
+-- flanks, a chapel half sunk into the bog (its tower leaning), dead trees, mossy stones
+function FEATURE.Mistmarsh(ctx)
+	local STONE = Color3.fromRGB(112, 112, 106)
+	local WATER = Color3.fromRGB(52, 64, 60)
+	-- the causeway: a low stone road with kerbs, broken in places
+	for z = -330, 330, 22 do
+		if rnd:NextNumber() > 0.12 then
+			K.box(ctx, "Causeway", V3(12, 1, 20), CF(0, 0.5, z), STONE, M.Cobblestone)
+			for _, s in ipairs({-1, 1}) do
+				if rnd:NextNumber() > 0.25 then K.box(ctx, "Kerb", V3(1, 1.4, 20), CF(s * 6.5, 0.9, z) * CFrame.Angles(0, 0, s * rnd:NextNumber(-0.05, 0.05)), Color3.fromRGB(96, 98, 92), M.Slate, ctx.Props) end
+			end
+		end
+	end
+	-- standing water on the flanks: still sheets over the mud (walkable: they're only the surface)
+	for _ = 1, 26 do
+		local s = rnd:NextNumber(10, 26)
+		local x = (rnd:NextNumber() < 0.5 and -1 or 1) * rnd:NextNumber(20, 110)
+		local pool = nocol(K.box(ctx, "Marshwater", V3(s, 0.08, s * rnd:NextNumber(0.6, 1)), CF(x, 0.06, rnd:NextNumber(-330, 330)) * CFrame.Angles(0, rnd:NextNumber(0, 6), 0), WATER, M.Glass, ctx.Props))
+		pool.Transparency, pool.Reflectance = 0.2, 0.25
+	end
+	-- reed beds round the water
+	local REED = Color3.fromRGB(150, 140, 92)
+	for _ = 1, 60 do
+		local c = V3((rnd:NextNumber() < 0.5 and -1 or 1) * rnd:NextNumber(16, 115), 0, rnd:NextNumber(-340, 340))
+		for _ = 1, rnd:NextInteger(5, 9) do
+			local h = rnd:NextNumber(2.5, 5)
+			nocol(K.box(ctx, "Reed", V3(0.18, h, 0.18), CF(c + V3(rnd:NextNumber(-2, 2), h / 2, rnd:NextNumber(-2, 2))) * CFrame.Angles(rnd:NextNumber(-0.2, 0.2), 0, rnd:NextNumber(-0.2, 0.2)), REED, M.Grass, ctx.Props))
+		end
+	end
+	-- the sunken chapel: tilted walls, a leaning tower, its door half under the mud
+	local base = CF(-34, -2.5, 30) * CFrame.Angles(DEG(4), DEG(18), DEG(-6))
+	local CH = Color3.fromRGB(150, 146, 136)
+	K.box(ctx, "ChapelWall", V3(2, 14, 30), base * CF(-8, 7, 0), CH, M.Slate)
+	K.box(ctx, "ChapelWall", V3(2, 12, 22), base * CF(8, 6, 4), CH, M.Slate)
+	K.box(ctx, "ChapelWall", V3(18, 14, 2), base * CF(0, 7, -15), CH, M.Slate)
+	K.box(ctx, "ChapelRoof", V3(20, 1.4, 14), base * CF(0, 14.5, -8) * CFrame.Angles(0, 0, DEG(12)), Color3.fromRGB(64, 66, 72), M.Slate, ctx.Props)
+	local tower = CF(-50, -3, 14) * CFrame.Angles(DEG(-7), 0, DEG(9))
+	K.box(ctx, "ChapelTower", V3(7, 30, 7), tower * CF(0, 15, 0), CH, M.Slate)
+	K.wedge(ctx, "ChapelSpire", V3(7, 8, 7), tower * CF(0, 34, 0), Color3.fromRGB(64, 66, 72), M.Slate, ctx.Props)
+	-- mossy standing stones, half sunk
+	for _ = 1, 14 do
+		local h = rnd:NextNumber(4, 9)
+		K.box(ctx, "MossStone", V3(2.4, h, 1.6), CF((rnd:NextNumber() < 0.5 and -1 or 1) * rnd:NextNumber(20, 100), h / 2 - 1.5, rnd:NextNumber(-320, 320)) * CFrame.Angles(rnd:NextNumber(-0.25, 0.25), rnd:NextNumber(0, 6), rnd:NextNumber(-0.25, 0.25)), Color3.fromRGB(92, 108, 86), M.Slate, ctx.Props)
+	end
+	for _ = 1, 18 do K.rock(ctx, V3(rnd:NextNumber(-100, 100), 0, rnd:NextNumber(-340, 340)), 1.5 + rnd:NextNumber(0, 3), Color3.fromRGB(92, 100, 90)) end
+end
 -- SUNREACH: a ruined temple of sandstone in the middle, obelisks, rocks
 function FEATURE.Sunreach(ctx)
 	local SAND = Color3.fromRGB(214, 180, 128)
@@ -543,6 +600,13 @@ function PAINT.Duskmoor(T, th)
 	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
 	disc(0, 0, 40, th.ground, th.field)
 	surface(-5, -400, 5, 400, th.ground, th.path)
+	rolling(T, th)
+end
+function PAINT.Mistmarsh(T, th)
+	-- bog on the flanks, mud round the causeway, grass hummocks between
+	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
+	surface(-14, -400, 14, 400, th.ground, th.field)
+	for _ = 1, 16 do disc(rnd:NextNumber(-110, 110), rnd:NextNumber(-330, 330), rnd:NextNumber(8, 18), th.ground, th.field) end
 	rolling(T, th)
 end
 function PAINT.Nightfall(T, th)

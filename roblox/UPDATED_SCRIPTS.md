@@ -1,4 +1,19 @@
-# Updated scripts: lighter on a phone
+# Updated scripts: a tenth War battlefield, Mistmarsh
+
+- **War**: Mistmarsh, a fog-bound marsh at dawn. A broken stone causeway runs down the middle, with standing water and reed beds, a chapel half sunk into the bog with its tower leaning, and mossy stones. The banners: the South Causeway, the Reeds, the Sunken Chapel, the Bog, the North Causeway. It has a vote picture.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | the theme, its paint and features |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War's maps, title, fighters |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the banner names |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ MapShots ▸ Mistmarsh (the vote picture; save the place).
+
+---
+
+## Before that: lighter on a phone
 
 - **Footprints**: on a phone, at most 100 on the ground (220 elsewhere) and no puffs when running.
 - **The dead lie**: at most 8 lying copies at once on a phone (24 elsewhere); the rest just sleep standing.

@@ -227,8 +227,8 @@ step):
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
-  their MapShots (and Stormvale's and Duskmoor's, War's two new themes, and DrownedHalls, the sixth
-  dungeon theme's), WarAudio ▸ Drums, Roar,
+  their MapShots (and Stormvale's, Duskmoor's and Mistmarsh's, War's new themes, and DrownedHalls,
+  the sixth dungeon theme's), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
   Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
