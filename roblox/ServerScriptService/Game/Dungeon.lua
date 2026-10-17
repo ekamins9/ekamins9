@@ -521,14 +521,16 @@ local ARCH_W = {   -- by theme: which rooms its dungeon has, by weight
 	EmberForge = {armory = 3, storeroom = 2, hall = 2, cells = 1, cavern = 2},
 	DrownedHalls = {crypt = 3, cavern = 3, hall = 2, cells = 2, chapel = 1, storeroom = 1},
 	HollowAbbey = {chapel = 4, library = 3, crypt = 2, hall = 2, cells = 1, storeroom = 1},
+	SilkCaverns = {nest = 4, cavern = 4, cells = 1, crypt = 1, storeroom = 1},
 }
 local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern", "nest"}
 -- (The Depths: now and then a fight room of these is a spiders' nest)
-local NESTS = {BoneCrypt = 0.15, GoblinWarrens = 0.25}
+local NESTS = {BoneCrypt = 0.15, GoblinWarrens = 0.25, SilkCaverns = 0.55}
 -- the odd container by a raid room's walls, by theme
 local RAID_ODDS = {BoneCrypt = {"urn", "urn", "crate", "sack"}, GoblinWarrens = {"sack", "sack", "crate", "barrel"},
 	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"},
-	DrownedHalls = {"barrel", "urn", "crate"}, HollowAbbey = {"urn", "urn", "crate", "sack"}}
+	DrownedHalls = {"barrel", "urn", "crate"}, HollowAbbey = {"urn", "urn", "crate", "sack"},
+	SilkCaverns = {"sack", "remains", "crate"}}
 local ARCH_SIZE = {hall = {30, 36}, crypt = {19, 26}, cells = {21, 26}, library = {21, 27}, armory = {18, 24},
 	storeroom = {14, 19}, chapel = {21, 27}, cavern = {20, 27}, vault = {18, 22}, lair = {33, 35}, nest = {20, 26}}   -- ×2 studs
 local ARCH_H = {hall = 30, cavern = 26, chapel = 28, lair = 30, nest = 26}
@@ -1114,7 +1116,7 @@ end
 -- a SHAFT of light from above: an iron grate in the ceiling with a pale glow behind it, the light
 -- falling through in a soft column to a pool on the floor, dust turning slowly in it. A few rooms a
 -- floor (Dungeon.build); none in the Ember Forge, whose light is its fires.
-local SHAFT_TINT = {DrownedHalls = Color3.fromRGB(170, 230, 220), HollowAbbey = Color3.fromRGB(222, 212, 255),
+local SHAFT_TINT = {DrownedHalls = Color3.fromRGB(170, 230, 220), HollowAbbey = Color3.fromRGB(222, 212, 255), SilkCaverns = Color3.fromRGB(206, 228, 176),
 	FrozenDepths = Color3.fromRGB(200, 226, 255), CrimsonManor = Color3.fromRGB(214, 214, 236)}
 local SHAFT_IRON = Color3.fromRGB(40, 38, 36)
 local function shaft(ctx, at, RH, tint)

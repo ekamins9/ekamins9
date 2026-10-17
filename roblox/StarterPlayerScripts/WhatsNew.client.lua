@@ -22,7 +22,7 @@ local NEWS = {
 		{"🍂", "Amberwood", "a new War field: an autumn wood's edge, red and gold oaks, leaves drifting down"},
 		{"🏰", "Stone, timber and sky", "castles of rough stone, half-timbered villages, clouds over every field"},
 		{"💥", "Shell-shocked", "a trebuchet stone lands beside you: the world goes muffled and your ears ring"},
-		{"🕷", "Spiders", "giant spiders hunt the warrens and the crypt; more drop on threads ahead of you"},
+		{"🕷", "The Silk Caverns", "a new dungeon of webs and nests, giant spiders, and their Queen"},
 		{"🗡", "Through your own eyes", "in Settings, Start in: begin every fight in first person"},
 		{"🌊", "Two new dungeons", "the flooded Drowned Halls and the desecrated Hollow Abbey, each with its lord"},
 		{"📦", "Mimics", "in Deadvault not every chest is a chest; skeletons now fall apart into bones"},

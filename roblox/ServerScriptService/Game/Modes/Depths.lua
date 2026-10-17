@@ -69,7 +69,7 @@ local KILL_GOLD = {2, 5, 14, 60}
 local WAVE_CHANCE = {0.3, 0.5, 0.7}
 local WAVE_LINE = {BoneCrypt = "THE DEAD RISE", GoblinWarrens = "MORE POUR IN", CrimsonManor = "THE HOUSE STIRS",
 	FrozenDepths = "THE ICE CRACKS", EmberForge = "THE FORGE WAKES", DrownedHalls = "THE DEEP GIVES UP ITS DEAD",
-	HollowAbbey = "THE BROTHERS RISE FOR PRAYER"}
+	HollowAbbey = "THE BROTHERS RISE FOR PRAYER", SilkCaverns = "THE BROOD HATCHES"}
 
 local event = ReplicatedStorage:FindFirstChild("AdventureEvent")
 if not event then event = Instance.new("RemoteEvent"); event.Name = "AdventureEvent"; event.Parent = ReplicatedStorage end

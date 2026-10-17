@@ -51,6 +51,21 @@ add("CaveSpider", {name = "Cave Spider", faction = "Beast", skill = "Beast", wea
 add("Broodmother", {name = "Broodmother", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 260, speed = 1.05, weight = "Medium", scale = 1.45,
 	look = {body = "spider", skin = C(34, 28, 30), eyes = C(255, 40, 30), mark = C(168, 34, 28)}, traits = {"summon"}, summons = {"CaveSpider"}, tier = 3})
 
+-- the QUEEN of the Silk Caverns: a spider the size of a cart, the brood about her
+add("SpiderQueen", {name = "Arachnessa, Queen of the Silk", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 1050, scale = 2.4, weight = "Heavy", speed = 1.05,
+	look = {body = "spider", skin = C(30, 24, 26), eyes = C(200, 255, 120), mark = C(196, 30, 40)}, traits = {"summon", "enrage"}, summons = {"CaveSpider"},
+	moveFx = "nature", phaseLine = "THE BROOD AWAKENS",
+	moves = {
+		{kind = "leap", name = "Pounce", dmg = 34, cd = 9, radius = 8, range = {10, 55}},
+		{kind = "charge", name = "Skittering Rush", dmg = 28, cd = 11, range = {12, 50}},
+		{kind = "nova", name = "Venom Burst", dmg = 22, cd = 9, radius = 6},
+		{kind = "barrage", name = "Web Spit", dmg = 12, cd = 8, count = 5, volleys = 2, spread = 40},
+		{kind = "eruption", name = "Brood Beneath", dmg = 20, cd = 10, phase = 2, count = 8},
+		{kind = "rain", name = "Falling Brood", dmg = 18, cd = 11, phase = 2, count = 8, radius = 5},
+	},
+	hazard = {kind = "rain", name = "The Ceiling Crawls", every = 8, count = 7, dmg = 14, radius = 4, fx = "nature"},
+	tier = 4})
+
 -- the MIMIC: a raid's chest that was never a chest (Game ▸ Modes ▸ Deadvault:mimic); a gilded one
 -- for an ornate chest
 add("Mimic", {name = "Mimic", faction = "Beast", skill = "Beast", weapon = "Dagger", hp = 150, speed = 0.95, weight = "Medium",

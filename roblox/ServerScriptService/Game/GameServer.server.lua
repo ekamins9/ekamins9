@@ -201,8 +201,10 @@ task.spawn(function()
 		-- a custom server's host fixed the map (settings.map; "" = rotate), if this mode plays on it
 		local fixed = st and st.map
 		if Game.server.custom and fixed and fixed ~= "" and table.find(def.maps or {}, fixed) and MapLoader.exists(fixed) then map = fixed end
-		-- staff (Admin) or the host (HostServer) picked the next map
-		if Game.adminNextMap and MapLoader.exists(Game.adminNextMap) then map = Game.adminNextMap end
+		-- staff (Admin) or the host (HostServer) picked the next map (a procedural mode's: one of
+		-- its themes)
+		local asked = Game.adminNextMap
+		if asked and (MapLoader.exists(asked) or (def.procedural and table.find(def.maps or {}, asked))) then map = asked end
 		Game.adminNextMap = nil
 		-- a procedural mode builds its map from the picked theme (The Depths, Crownfall…):
 		-- the mode's buildMap(theme) -> the built map's name in ServerStorage ▸ Maps

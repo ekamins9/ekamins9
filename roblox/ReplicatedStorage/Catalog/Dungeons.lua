@@ -84,4 +84,13 @@ return {
 		monsters = {common = {"HollowMonk", "HollowMonk", "Penitent", "AbbeyGuard"}, ranged = {"Cultist", "Crossbowman"}, elite = {"Wraith", "Gargoyle"}},
 		boss = "BlackAbbot", bossName = "Malachai, the Black Abbot",
 	},
+	SilkCaverns = {
+		name = "The Silk Caverns", sub = "Something spins in the dark below",
+		floor = C(66, 62, 56), floorMat = "Slate", wall = C(80, 76, 68), wallMat = "Rock", trim = C(58, 50, 42), trimMat = "Wood",
+		accent = C(190, 230, 120), torch = C(214, 226, 168),
+		light = {ClockTime = 0, Ambient = C(66, 70, 60), OutdoorAmbient = C(62, 66, 56), Brightness = 0.5, FogColor = C(20, 22, 16), FogEnd = 230, FogStart = 50},
+		props = {"cobweb", "cobweb", "bones", "rubble", "mushroom", "cage", "chains", "crystal"},
+		monsters = {common = {"CaveSpider", "CaveSpider", "CaveSpider", "Ghoul"}, ranged = {"SkeletonArcher", "GoblinShaman"}, elite = {"Broodmother", "Broodmother", "Wraith"}},
+		boss = "SpiderQueen", bossName = "Arachnessa, Queen of the Silk",
+	},
 }

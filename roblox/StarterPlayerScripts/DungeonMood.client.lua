@@ -87,11 +87,12 @@ local GRADE = {
 	EmberForge = {tint = Color3.fromRGB(250, 222, 200), sat = -0.12},
 	DrownedHalls = {tint = Color3.fromRGB(200, 232, 228), sat = -0.3},
 	HollowAbbey = {tint = Color3.fromRGB(226, 214, 240), sat = -0.3},
+	SilkCaverns = {tint = Color3.fromRGB(222, 232, 204), sat = -0.3},
 }
 local LANTERN = Color3.fromRGB(255, 190, 130)
 -- (how sound carries, by theme)
 local REVERB = {BoneCrypt = "StoneCorridor", GoblinWarrens = "Cave", CrimsonManor = "Hallway", FrozenDepths = "Cave",
-	EmberForge = "Hangar", DrownedHalls = "SewerPipe", HollowAbbey = "Auditorium", Plague = "Plain"}
+	EmberForge = "Hangar", DrownedHalls = "SewerPipe", HollowAbbey = "Auditorium", SilkCaverns = "Cave", Plague = "Plain"}
 local SoundService = game:GetService("SoundService")
 
 local mood = {on = false, token = 0}
@@ -280,7 +281,7 @@ end
 --  WHAT'S THERE: an apparition crossing the dark ahead of you
 --------------------------------------------------------------------
 local GHOST = {FrozenDepths = Color3.fromRGB(180, 220, 255), CrimsonManor = Color3.fromRGB(236, 200, 214), EmberForge = Color3.fromRGB(255, 200, 160),
-	DrownedHalls = Color3.fromRGB(170, 240, 225), HollowAbbey = Color3.fromRGB(220, 200, 255)}
+	DrownedHalls = Color3.fromRGB(170, 240, 225), HollowAbbey = Color3.fromRGB(220, 200, 255), SilkCaverns = Color3.fromRGB(220, 232, 200)}
 local ghostRay = RaycastParams.new()
 ghostRay.FilterType = Enum.RaycastFilterType.Exclude
 local function apparition()
@@ -418,7 +419,7 @@ end
 -- SPIDERS: one lets itself down on its thread from the ceiling ahead of you to the height of your
 -- face, hangs there turning slowly with its legs working and its eyes catching your light, then
 -- whips back up into the dark (sooner if you come right up to it). Only where there's a ceiling.
-local SPIDERS = {BoneCrypt = true, GoblinWarrens = true, CrimsonManor = true, HollowAbbey = true}
+local SPIDERS = {BoneCrypt = true, GoblinWarrens = true, CrimsonManor = true, HollowAbbey = true, SilkCaverns = true}
 local SPIDER = Color3.fromRGB(46, 38, 34)
 local SPIDER_MARK = Color3.fromRGB(196, 182, 150)   -- (a pale mark on its back, catching your light)
 local function spider()
@@ -532,7 +533,8 @@ local function spiders(token)
 	task.wait(25 + math.random() * 30)
 	while mood.on and mood.token == token do
 		if SPIDERS[mood.theme or ""] then pcall(spider) end
-		task.wait(40 + math.random() * 50)
+		-- (the Silk Caverns crawl with them)
+		task.wait(mood.theme == "SilkCaverns" and (16 + math.random() * 18) or (40 + math.random() * 50))
 	end
 end
 
@@ -577,7 +579,8 @@ end
 -- EYES: a pair of eyes in the dark far ahead, watching; a blink; gone when you come closer (or
 -- after a while)
 local EYES = {BoneCrypt = Color3.fromRGB(140, 255, 190), GoblinWarrens = Color3.fromRGB(255, 210, 90), CrimsonManor = Color3.fromRGB(255, 70, 70),
-	FrozenDepths = Color3.fromRGB(160, 220, 255), EmberForge = Color3.fromRGB(255, 140, 50), DrownedHalls = Color3.fromRGB(120, 255, 220), HollowAbbey = Color3.fromRGB(200, 140, 255)}
+	FrozenDepths = Color3.fromRGB(160, 220, 255), EmberForge = Color3.fromRGB(255, 140, 50), DrownedHalls = Color3.fromRGB(120, 255, 220), HollowAbbey = Color3.fromRGB(200, 140, 255),
+	SilkCaverns = Color3.fromRGB(255, 70, 50)}
 local function eyes()
 	local cam = workspace.CurrentCamera
 	local char = player.Character
@@ -686,7 +689,7 @@ end
 -- colour, trembling), then bursts as it comes
 local ACCENT = {BoneCrypt = Color3.fromRGB(120, 255, 170), GoblinWarrens = Color3.fromRGB(170, 230, 90), CrimsonManor = Color3.fromRGB(255, 60, 80),
 	FrozenDepths = Color3.fromRGB(140, 210, 255), EmberForge = Color3.fromRGB(255, 130, 40), DrownedHalls = Color3.fromRGB(110, 240, 210),
-	HollowAbbey = Color3.fromRGB(190, 120, 255)}
+	HollowAbbey = Color3.fromRGB(190, 120, 255), SilkCaverns = Color3.fromRGB(190, 230, 120)}
 local function crackAt(spot, theme)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude

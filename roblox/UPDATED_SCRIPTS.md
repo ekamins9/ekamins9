@@ -1,4 +1,27 @@
-# Updated scripts: web traps
+# Updated scripts: the Silk Caverns, an eighth dungeon
+
+- **The Silk Caverns**: a new dungeon theme for The Depths and Deadvault. Rough caves in sickly light, mostly spiders' nests, corridors strung with webs, spiders dropping on threads every little while, and the Cave Spiders, Broodmothers and risen cocooned dead that live there.
+- **Its boss, Arachnessa, Queen of the Silk**: a spider the size of a cart. She pounces, rushes, bursts venom and spits web; at half health the brood awakens and she calls her spiders about her while the ceiling crawls.
+- **Staff**: the admin "next map" can now pick a procedural mode's theme (a dungeon theme, a War field), not only a saved map.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | SilkCaverns |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | SpiderQueen |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Depths and Deadvault maps, title |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | rooms, odds, nests, light |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | wave line |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | wakers |
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | web-heavy weights |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | grade, echo, colours, more dangling spiders |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | admin next map: procedural themes |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ MapShots ▸ SilkCaverns (its vote picture; save the place).
+
+---
+
+## Before that: web traps
 
 - **A new corridor trap**: a sheet of web strung across the passage (the Warrens and the Crypt mostly). Walk into it and it clings, slowing you as it tears, and half the time its spider drops in for you. Cut it with your blade first and it falls harmlessly.
 

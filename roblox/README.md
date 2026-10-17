@@ -2190,7 +2190,16 @@ hide one (the builder's `r.secret`, its wall `Map ▸ Secrets ▸ SecretWall<roo
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone
 Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned Halls, the
-Hollow Abbey: `Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's boss.
+Hollow Abbey, the Silk Caverns: `Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's boss.
+- **The Silk Caverns** (the newest): rough caves where something spins in the dark below, sickly
+  pale light, more than half its rooms nests (webs across the corners, egg sacs, hanging cocoons,
+  the bones of the caught), its corridors strung with web traps, spiders letting themselves down
+  ahead of you every little while. Its brood: Cave Spiders by the dozen, Ghouls (the cocooned dead,
+  up again), Skeleton Archers and Goblin Shamans; champions the Broodmother and the Wraith; its
+  queen **Arachnessa, Queen of the Silk** (a spider the size of a cart, venom-green eyes, a red
+  mark on her back: Pounce, Skittering Rush, Venom Burst, Web Spit, then Brood Beneath and Falling
+  Brood as THE BROOD AWAKENS, her brood called up about her, and the ceiling crawls on you).
+  Vote picture: MapShots ▸ SilkCaverns.
 - **The Hollow Abbey**: a desecrated monastery where the monks kept praying after they died:
   violet candlelight, chapels, libraries and crypts, statues and banners. Its dead: Hollow Monks
   (hooded skeletons that reassemble), Penitents (quick ghouls in rags), Abbey Guards in mail;
@@ -2199,7 +2208,7 @@ Hollow Abbey: `Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's
   Open, then The Last Rite and Falling Bells as THE ABBEY RINGS ITS BELLS, and the bells toll on
   you). Now and then a bell tolls far off through the stone (WarAudio ▸ AbbeyBell) or a faint
   wordless chant drifts from another room (WarAudio ▸ Chant). Vote picture: MapShots ▸ HollowAbbey.
-- **The Drowned Halls** (the newest): flooded catacombs where the sea came in and the dead stayed:
+- **The Drowned Halls**: flooded catacombs where the sea came in and the dead stayed:
   wet stone, rust-green corroded iron, pale teal flames, standing water across the floors and
   puddles everywhere (the theme's `wet` flag), water dripping close by all the time. Its dead: the
   Drowned (ghouls, quick, mending), Drowned Bones and Drowned Archers (they reassemble), Deep
