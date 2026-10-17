@@ -1828,7 +1828,8 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   loose back at them.
 - **The ladders**: under each stretch (clear of the defenders' spawns) a block of attackers waits
   with shields raised over their heads, two ladders against the wall and men swarming up them:
-  at the top they go over (and fight on the walk a moment), now and then one is thrown off.
+  at the top they go over (and fight on the walk a moment), now and then one is thrown off; every
+  8–15 s the defenders hurl a pot of burning pitch down onto the shields.
 - **The ram's crew**: six of the attackers under the ram's roof walk it up the road and lean into it
   when it stops (`WarCrowd:crew`, riding along with the ram's body); they cheer when the gate falls.
 - **The flanks**: on both sides of the castle the defenders' sally fights the attackers' lines

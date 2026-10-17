@@ -1,4 +1,16 @@
-# Updated scripts: the steel of the battle lines, up close
+# Updated scripts: burning pitch from the walls
+
+- **Siege**: the defenders hurl pots of burning pitch down from the walls onto the shield blocks at the ladders (men fall under them).
+- **Checked in Play** on Thornwall.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | pitch pots |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the steel of the battle lines, up close
 
 - **Near a fighting line you hear the blows**: the men fighting in the front rank ring out with clashes, parries, blocks and blows on plate from where they stand (the same sounds as the real fights), a few times a second.
 - **Men falling near you** cry out and hit the ground with an armoured thud.
@@ -19,17 +31,4 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | fire arrows (`opts.fire`, by default at night) |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the Siege ram has a crew
-
-- **Six attackers under the ram's roof** walk it up the road with the players and lean into it when it stops; they cheer when the gate falls.
-- **Checked in Play** on Emberkeep.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the ram's crew |
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `crew`, `crewCheer` |
 | [README.md](README.md) | | doc | |

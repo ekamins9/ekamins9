@@ -324,6 +324,17 @@ local function arrows(now)
 			task.delay(2.2, function() if siege.crowd == crowd then crowd:hit(to, 9, 3) end end)
 		end)
 	end
+	-- pitch: a pot of it, burning, hurled down from the walk onto the shields under the walls
+	if not siege.taken and #siege.feet > 0 and now >= (siege.nextPitch or 0) then
+		siege.nextPitch = now + 8 + math.random() * 7
+		local foot = siege.feet[math.random(#siege.feet)]
+		local from = V3(foot.X + (math.random() - 0.5) * 8, C.top + 2, C.faceZ - f * 1)
+		local to = WarFX.ground(V3(foot.X + (math.random() - 0.5) * 10, C.top, foot.Z + f * (math.random() * 4 - 2)))
+		local me = myPos()
+		local close = me and (me - to).Magnitude < 50
+		WarFX.fireball(from, to, 1.1, {size = 1.3, height = 5, far = not close, scorch = true,
+			onLand = function(p) if siege.crowd == crowd then crowd:hit(p, 6, 3) end end})
+	end
 	if now >= siege.nextArch then
 		siege.nextArch = now + 8 + math.random() * 5
 		local s = math.random() < 0.5 and -1 or 1
