@@ -6649,17 +6649,31 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 	dim(tp, "Every class carries one. Hold " .. tostring(keyOf("Throw", "D-PAD ↓")) .. " to draw back and aim (the arc shows where it lands), let go to throw; block to put it away. Charges come back one at a time.", 12)
 	do
 		local cur = lo.throwable or Catalog.FREE_THROWABLE
-		local g = cardGrid(tp, 40)
-		itemCard(g, 0, "Nothing", "carry no throwable", cur == "none", true, nil, function() lo.throwable, lo.throwableSkin = "none", nil; dirty() end)
-		for i, t in ipairs(Catalog.ARSENAL.throwables) do
-			local have = owns("weapons", t.id)
-			local what = t.burst and (t.burst.fire and "fire pool" or (t.burst.frost and "frost cloud" or (t.burst.smoke and "smoke" or (t.burst.ground and "spikes" or "heals"))))
+		local function pickT(t, have)
+			if have then lo.throwable, lo.throwableSkin = t.id, t.id .. ":Default"; dirty()
+			else toast(t.name .. ": " .. unlockText(t) .. " (or buy it in the ARMORY)", COL.DIM) end
+		end
+		local function whatT(t)
+			return t.burst and (t.burst.fire and "fire pool" or (t.burst.frost and "frost cloud" or (t.burst.smoke and "smoke" or (t.burst.ground and "spikes" or "heals"))))
 				or (t.snare and "roots them" or (t.damage .. " damage"))
-			itemCard(g, i, t.name, have and string.format("%d × %s · %ds each", t.charges, what, t.recharge) or (unlockText(t) .. (t.marks and ("  ·  or " .. fmt(t.marks) .. " Marks") or "")),
-				cur == t.id, have, nil, function()
-				if have then lo.throwable, lo.throwableSkin = t.id, t.id .. ":Default"; dirty()
-				else toast(t.name .. ": " .. unlockText(t) .. " (or buy it in the ARMORY)", COL.DIM) end
-			end)
+		end
+		if tiles then
+			-- (as pictures, three across)
+			local g = tiles.grid(tp, 3, 100)
+			tiles.tile(g, 0, {name = "Nothing", sub = "carry no throwable", have = true, on = cur == "none", onClick = function() lo.throwable, lo.throwableSkin = "none", nil; dirty() end})
+			for i, t in ipairs(Catalog.ARSENAL.throwables) do
+				local have = owns("weapons", t.id)
+				tiles.tile(g, i, {name = t.name, sub = have and string.format("%d × %s", t.charges, whatT(t)) or unlockText(t), have = have, weapon = t.id,
+					skin = cur == t.id and lo.throwableSkin or nil, on = cur == t.id, onClick = function() pickT(t, have) end})
+			end
+		else
+			local g = cardGrid(tp, 40)
+			itemCard(g, 0, "Nothing", "carry no throwable", cur == "none", true, nil, function() lo.throwable, lo.throwableSkin = "none", nil; dirty() end)
+			for i, t in ipairs(Catalog.ARSENAL.throwables) do
+				local have = owns("weapons", t.id)
+				itemCard(g, i, t.name, have and string.format("%d × %s · %ds each", t.charges, whatT(t), t.recharge) or (unlockText(t) .. (t.marks and ("  ·  or " .. fmt(t.marks) .. " Marks") or "")),
+					cur == t.id, have, nil, function() pickT(t, have) end)
+			end
 		end
 		local t = Catalog.WEAPON[cur or ""]
 		if t then
@@ -6672,17 +6686,20 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 	if lo.shield then
 		local sp = panel(list, "SIDEARM  ·  BESIDE YOUR SHIELD  ·  3")
 		dim(sp, "Your shield takes the secondary's place: a one-handed sidearm can ride on key 3.", 12)
-		local g = cardGrid(sp, 40)
 		local kind = lo.thirdKind
-		itemCard(g, 0, "None", "no sidearm", kind ~= "sidearm", true, nil, function() lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil; dirty() end)
+		local function noSide() lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil; dirty() end
+		local g = tiles and tiles.grid(sp, 3, 100) or cardGrid(sp, 40)
+		if tiles then tiles.tile(g, 0, {name = "None", sub = "no sidearm", have = true, on = kind ~= "sidearm", onClick = noSide})
+		else itemCard(g, 0, "None", "no sidearm", kind ~= "sidearm", true, nil, noSide) end
 		local n = 0
 		for _, sw in ipairs(Catalog.WEAPONS) do
 			if sw.id ~= lo.weapon and Catalog.weaponFits(cls, sw, "secondary") then
 				n += 1
 				local have = owns("weapons", sw.id)
-				itemCard(g, n, sw.name, have and "a sidearm on 3" or unlockText(sw), kind == "sidearm" and lo.thirdId == sw.id, have, nil, function()
-					if have then lo.thirdKind, lo.thirdId, lo.thirdSkin = "sidearm", sw.id, sw.id .. ":Default"; dirty() end
-				end)
+				local on = kind == "sidearm" and lo.thirdId == sw.id
+				local function pick() if have then lo.thirdKind, lo.thirdId, lo.thirdSkin = "sidearm", sw.id, sw.id .. ":Default"; dirty() end end
+				if tiles then tiles.tile(g, n, {name = sw.name, sub = have and "a sidearm on 3" or unlockText(sw), have = have, weapon = sw.id, skin = on and lo.thirdSkin or nil, on = on, onClick = pick})
+				else itemCard(g, n, sw.name, have and "a sidearm on 3" or unlockText(sw), on, have, nil, pick) end
 			end
 		end
 		local sw = kind == "sidearm" and Catalog.WEAPON[lo.thirdId or ""]
