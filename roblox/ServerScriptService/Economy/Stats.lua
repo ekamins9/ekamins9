@@ -1,5 +1,5 @@
 --[[ STATS — counters and contracts.
-       Stats.add(plr, key, n)        "kill", "parry", "chamber", "win", "round", "drill", "kill_<Family>", "win_<bracket>", "hill", "banner"
+       Stats.add(plr, key, n)        "kill", "parry", "chamber", "win", "round", "drill", "kill_<Family>", "win_<bracket>", "hill", "banner", "standard"
        Stats.contracts(plr)          today's three + the weekly, with progress (generated on first call each day)
        Stats.weaponKill(plr, weaponId)   counts kill, kill_<family> and byWeapon
      Contracts pay through Economy when they complete. Combat code reports

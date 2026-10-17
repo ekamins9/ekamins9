@@ -10,6 +10,7 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [Standards.lua](ServerScriptService/Game/Modes/Standards.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new: the mode |
+| [Catalog/Contracts.lua](ReplicatedStorage/Catalog/Contracts.lua), [Stats.lua](ServerScriptService/Economy/Stats.lua) | ReplicatedStorage ▸ Catalog · ServerScriptService ▸ Economy | ModuleScript | a daily task: Capture 2 standards (the `standard` stat) |
 | [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | `MODES.Standards`, in Warfront's modes and `MODE_ORDER` |
 | [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | steps aside for it (the standards carry their own markers) |
 | [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | its opening line |

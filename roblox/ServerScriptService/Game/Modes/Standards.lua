@@ -21,6 +21,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Teams, MapLoader, node = Game.Teams, Game.MapLoader, Game.node
+-- (the "standard" stat: a capture you carried home, for the daily task · Economy ▸ Stats)
+local Stats
+pcall(function() Stats = require(game:GetService("ServerScriptService"):WaitForChild("Economy"):WaitForChild("Stats")) end)
 
 local Std = setmetatable({}, {__index = Game.Mode})
 Std.__index = Std
@@ -263,6 +266,8 @@ function Std:tick()
 				if hrp and mine.state == "home" and (V3(hrp.Position.X, 0, hrp.Position.Z) - V3(mine.home.X, 0, mine.home.Z)).Magnitude < HOME_R and math.abs(hrp.Position.Y - mine.home.Y) < 12 then
 					local who = s.carrier
 					self.scores[side] += 1
+					local plr = Players:GetPlayerFromCharacter(who)
+					if plr and Stats then pcall(Stats.add, plr, "standard", 1) end
 					banner({text = string.upper(GameConfig.TEAMS[side].name) .. " CAPTURE THE " .. string.upper(GameConfig.TEAMS[key].name) .. " STANDARD",
 						sub = string.format("%s  ·  %d – %d", string.upper(nameOf(who)), self.scores.A, self.scores.B), kind = "victory"})
 					self:goHome(key)

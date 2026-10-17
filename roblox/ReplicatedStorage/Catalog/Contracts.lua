@@ -3,7 +3,8 @@
        stat   a counter the server keeps: "kill", "parry", "chamber", "win",
               "round", "drill", "kill_OneHanded", "kill_TwoHanded", "kill_Polearm",
               "win_2v2", "win_3v3", "win_1v1", "hill" (seconds on the hill), "banner" (War:
-              at a banner when your side took it)
+              at a banner when your side took it), "standard" (Capture the Standard: a capture
+              you carried home)
        goal   how many        pay   Marks        weekly  true = in the weekly pool ]]
 return {
 	{id = "parry20",   text = "Land 20 parries",              stat = "parry",          goal = 20, pay = 150},
@@ -21,6 +22,7 @@ return {
 	{id = "win4",      text = "Win 4 rounds",                 stat = "win",            goal = 4,  pay = 380},
 	{id = "hill120",   text = "Hold the hill for 2 minutes",  stat = "hill",           goal = 120, pay = 250},
 	{id = "banner3",   text = "Take 3 banners in War",        stat = "banner",         goal = 3,  pay = 220},
+	{id = "standard2", text = "Capture 2 standards",          stat = "standard",       goal = 2,  pay = 260},
 	{id = "banner8",   text = "Take 8 banners in War",        stat = "banner",         goal = 8,  pay = 420},
 	{id = "drill1",    text = "Finish a Tiltyard drill",      stat = "drill",          goal = 1,  pay = 80},
 	{id = "drill3",    text = "Finish 3 Tiltyard drills",     stat = "drill",          goal = 3,  pay = 150},
