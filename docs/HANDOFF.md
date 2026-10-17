@@ -267,7 +267,8 @@ step):
   and HollowAbbey, the sixth and seventh dungeon themes'), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
   Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur), AbbeyBell, Chant, Splash, ArmorMail,
-  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons, BoneCrunch, Creak, ShadeBreath, Heartbeat; and the 10-17 material pass over ServerStorage ▸ Maps
+  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons, BoneCrunch, Creak, ShadeBreath, Heartbeat; the Courtyard
+  rebuilt from code on 10-17 (smithy, market; the old one is ServerStorage ▸ TMP_CourtyardBackup); and the 10-17 material pass over ServerStorage ▸ Maps
   (stone walls, shingled spires, rebuilt houses).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
@@ -284,7 +285,7 @@ step):
    **Save the place first** if it's been open since the 2026-10-16/17 run: its maps, MapShots and
    WarAudio sounds are Studio-only (section 4f). Remove the test scaffolding (ServerScriptService ▸
    TMP_Go, ServerStorage ▸ TMP_MapPick / TMP_Map / TMP_WarTheme, StarterPlayer ▸
-   StarterPlayerScripts ▸ TMP_ClientErrs) before publishing.
+   StarterPlayerScripts ▸ TMP_ClientErrs, ServerStorage ▸ TMP_CourtyardBackup) before publishing.
 2. Finish / verify the mesh armor (section 4), look at every set on the mannequin, fix fits.
 3. Polish: weapon and helmet shapes, menu screens against `docs/reference/`, the maps' cover.
 4. Only one session should push to the branch at a time.
