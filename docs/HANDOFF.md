@@ -346,6 +346,9 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
 - **Battle honours** (`Game ▸ Honours`, `Honours.client`): DOUBLE / TRIPLE KILL, RAMPAGE;
   runs BATTLE-HARDENED → CHAMPION OF THE FIELD → WARLORD → BANE OF ARMIES → UNSTOPPABLE, the big
   ones and STREAK BREAKER announced to everyone; daily tasks for a capture and for a champion run.
+  The result screen shows the round's TOP BLADE, LONGEST RUN and your tally. **Objective flags**
+  (`ObjectiveFX`): KOTH's hill flies its holders' banner up a pole (down and up again when it
+  changes hands, half-mast contested); a siege's capture zone flies the defenders', sinking as it's taken.
 - **Menus**: the class cards show TOUGHNESS / SPEED / STAMINA bars and the chosen class's full
   line under them (no more "…"); What's New fits its card (seven one-line entries at most).
 - **Studio-only, to save:** the ten new maps and the three rebuilt ruins maps (ServerStorage ▸
