@@ -1907,7 +1907,11 @@ cold embers) and the lantern every adventurer carries (`DungeonMood.client`: a w
 player's chest, drawn on every screen). Dust drifts through the light round you, the colours go
 cold (each theme its own grade), the screen's edges darken, a low drone sits under everything, and
 now and then, somewhere in the dark behind or beside you, a whisper, an iron clank, a deep thud
-from far below (WarAudio: Drone, Whisper, Gate, Impact).
+from far below (WarAudio: Drone, Whisper, Gate, Impact). A monster doesn't pop in: grave-dust
+bursts up where it comes out of the dark (some of the dead whisper as they come). **A boss's
+entrance** (`Adventure.client`, on its banner): black bars close in and the rest of the HUD steps
+aside, the camera finds the boss and creeps towards it while its name comes up big on the bars, a
+deep boom and the ground shaking; about three seconds, then back to you.
 
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone

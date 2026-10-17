@@ -7,6 +7,8 @@
                         to the screen
        the sounds       a low drone under everything; now and then, somewhere in the dark near
                         you, a whisper, an iron clank, a deep thud from far below, stone settling
+       what comes       a monster doesn't just appear: grave-dust bursts up where it stands out
+                        of the dark (and some of the dead whisper as they come)
 
      The sounds are ReplicatedStorage ▸ WarAudio's (Drone, Whisper, Gate, Impact; one missing is
      just quiet). Nothing here is sent to the server. ]]
@@ -170,6 +172,33 @@ local function dark(token)
 end
 
 --------------------------------------------------------------------
+--  WHAT COMES OUT OF THE DARK
+--------------------------------------------------------------------
+local DUST = {Undead = Color3.fromRGB(110, 120, 112), Frost = Color3.fromRGB(190, 210, 230), Infernal = Color3.fromRGB(90, 70, 60)}
+local function arrives(m)
+	if not mood.on or not m:IsA("Model") then return end
+	task.wait(0.15)
+	if not m.Parent or not m:GetAttribute("Monster") then return end
+	local root = m:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local faction = m:GetAttribute("Faction")
+	local feet = root.Position - Vector3.new(0, 2.6 * (m:GetAttribute("MonsterScale") or 1), 0)
+	WarFX.dust(feet + Vector3.new(0, 0.6, 0), 1.4 * (m:GetAttribute("MonsterScale") or 1), DUST[faction or ""] or Color3.fromRGB(96, 90, 84))
+	if faction == "Undead" and os.clock() - (mood.lastWhisper or 0) > 4 and math.random() < 0.5 then
+		mood.lastWhisper = os.clock()
+		WarFX.sound("Whisper", root.Position, {volume = 0.5, speed = 0.75 + math.random() * 0.2, near = 10, range = 70})
+	end
+end
+local function watchMonsters()
+	local function hook(npcs)
+		table.insert(mood.conns, npcs.ChildAdded:Connect(function(m) task.spawn(arrives, m) end))
+	end
+	local npcs = workspace:FindFirstChild("NPCs")
+	if npcs then hook(npcs) end
+	table.insert(mood.conns, workspace.ChildAdded:Connect(function(c) if c.Name == "NPCs" then hook(c) end end))
+end
+
+--------------------------------------------------------------------
 --  COMING AND GOING
 --------------------------------------------------------------------
 local function leave()
@@ -200,6 +229,7 @@ local function enter(theme)
 		table.insert(mood.conns, p.CharacterAdded:Connect(function(c) task.wait(0.3); lantern(c) end))
 	end))
 	task.spawn(dark, token)
+	watchMonsters()
 end
 
 local want = 0
