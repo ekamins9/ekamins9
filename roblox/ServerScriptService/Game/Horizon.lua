@@ -349,7 +349,8 @@ function Horizon.build(map, name)
 			ball(ctx, V3(w * 1.1, h * 0.5, w * 0.8), CF(p + V3(r:NextNumber(-1, 1) * w * 0.5, 0, r:NextNumber(-1, 1) * w * 0.3)), T.groundColor, T.ground)
 		else
 			ball(ctx, V3(w, h * 2, w * 0.75), CF(p) * CFrame.Angles(0, -a + math.pi / 2 + r:NextNumber(-0.3, 0.3), 0), shade(T.cliffColor, r:NextNumber(0, 0.12)), rocky)
-			if T.snow or (themeKey == "dawnMist" and i % 3 == 0) then
+			if (T.snow and not T.night) or (themeKey == "dawnMist" and i % 3 == 0) then
+				-- (snow-capped; not by night, when a pale cap floats free of its dark mountain)
 				ball(ctx, V3(w * 0.5, h * 0.7, w * 0.4), CF(p + V3(0, h * 0.72, 0)), tint(T.groundColor, 0.2), Mat.Snow)
 			elseif themeKey == "ember" and i % 4 == 0 then
 				-- a fire mountain: a glowing crown, smoke off it
