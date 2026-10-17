@@ -2076,7 +2076,8 @@ path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your
 swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸
 Bats). While a
 boss lives within 90 studs, the grade turns darker, blood-tinged and harder, easing back when it
-falls. Now and then something heavy walks across the floor above you: five slow deep thuds
+falls. Now and then a pair of eyes watches you out of the dark far ahead (35 to 70 studs, the
+theme's colour), blinks, and is gone when you come within 22 studs. Now and then something heavy walks across the floor above you: five slow deep thuds
 passing over, grit sifting down from the ceiling and your lantern trembling with each. Now and then, while nothing's coming for you, slow footsteps sound somewhere behind you on
 whatever's underfoot, a little closer each, and stop. Now and then a few rats squeak and scurry across the floor ahead of you, wall to wall,
 through your light (WarAudio ▸ Squeak), and water drips somewhere close (WarAudio ▸ Drip; not in

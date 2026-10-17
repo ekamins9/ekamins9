@@ -43,6 +43,8 @@
        vermin           now and then a few rats squeak and scurry across the floor ahead of you,
                         wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
                         water drips (WarAudio ▸ Drip; not in the Ember Forge)
+       eyes             now and then a pair of eyes watches you out of the dark far ahead, low in a
+                        doorway or a corner; they blink, and when you come closer they're gone
        overhead         now and then something heavy walks across the floor above you: slow deep
                         thuds passing over, grit sifting down from the ceiling with each, the
                         lantern trembling, then it's gone
@@ -444,6 +446,64 @@ local function steps()
 	task.delay(2, function() spot:Destroy() end)
 end
 
+-- EYES: a pair of eyes in the dark far ahead, watching; a blink; gone when you come closer (or
+-- after a while)
+local EYES = {BoneCrypt = Color3.fromRGB(140, 255, 190), GoblinWarrens = Color3.fromRGB(255, 210, 90), CrimsonManor = Color3.fromRGB(255, 70, 70),
+	FrozenDepths = Color3.fromRGB(160, 220, 255), EmberForge = Color3.fromRGB(255, 140, 50), DrownedHalls = Color3.fromRGB(120, 255, 220), HollowAbbey = Color3.fromRGB(200, 140, 255)}
+local function eyes()
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+	ghostRay.FilterDescendantsInstances = {char, cam, workspace:FindFirstChild("NPCs")}
+	local look = cam.CFrame.LookVector
+	local fwd = V3(look.X, 0, look.Z)
+	if fwd.Magnitude < 0.2 then return end
+	fwd = (fwd.Unit + V3(-fwd.Z, 0, fwd.X) * (math.random() - 0.5) * 0.5).Unit
+	local eye0 = root.Position + V3(0, 1, 0)
+	-- (far ahead, just short of whatever's there: 35 to 70 studs, in the dark)
+	local hit = workspace:Raycast(eye0, fwd * 75, ghostRay)
+	local d = hit and (hit.Position - eye0).Magnitude - 1.5 or 70
+	if d < 35 then return end
+	local at = eye0 + fwd * d + V3(0, (math.random() < 0.5 and -0.6 or 1.2), 0)
+	local color = EYES[mood.theme or ""] or Color3.fromRGB(255, 220, 140)
+	local folder = Instance.new("Folder")
+	folder.Name = "Eyes"
+	folder.Parent = workspace.Terrain
+	local face = CFrame.lookAt(at, at - fwd)
+	local pair = {}
+	for _, s in ipairs({-0.38, 0.38}) do
+		local e = Instance.new("Part")
+		e.Shape = Enum.PartType.Ball
+		e.Size = V3(0.32, 0.32, 0.32)
+		e.Material = Enum.Material.Neon
+		e.Color = color
+		e.Anchored, e.CanCollide, e.CanQuery, e.CanTouch, e.CastShadow = true, false, false, false, false
+		e.CFrame = face * CFrame.new(s, 0, 0)
+		e.Transparency = 1
+		e.Parent = folder
+		table.insert(pair, e)
+	end
+	local function set(t) for _, e in ipairs(pair) do e.Transparency = t end end
+	-- (they open slowly)
+	for k = 1, 10 do set(1 - k / 10 * 0.95); task.wait(0.05) end
+	local t0 = os.clock()
+	local blinked = false
+	while folder.Parent and mood.on do
+		local now = os.clock()
+		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not me or (me.Position - at).Magnitude < 22 or now - t0 > 9 then break end
+		if not blinked and now - t0 > 2.5 + math.random() * 2 then
+			blinked = true
+			set(1); task.wait(0.12); set(0.05)
+		end
+		task.wait(0.1)
+	end
+	-- (and they're gone)
+	for k = 1, 5 do set(0.05 + k / 5 * 0.95); task.wait(0.04) end
+	folder:Destroy()
+end
+
 -- OVERHEAD: something heavy walks across the floor above (thuds passing over, grit from the
 -- ceiling with each) — gritAt and the lantern's tremble are the collapse's (below, hoisted)
 local overheadFn
@@ -453,8 +513,8 @@ local function haunt(token)
 	task.wait(30 + math.random() * 30)
 	while mood.on and mood.token == token do
 		local r = math.random()
-		if r < 0.25 then pcall(apparition) elseif r < 0.45 then pcall(bats) elseif r < 0.65 then task.spawn(pcall, steps)
-		elseif r < 0.82 then task.spawn(pcall, overhead) end
+		if r < 0.22 then pcall(apparition) elseif r < 0.4 then pcall(bats) elseif r < 0.57 then task.spawn(pcall, steps)
+		elseif r < 0.72 then task.spawn(pcall, overhead) elseif r < 0.88 then task.spawn(pcall, eyes) end
 		task.wait(40 + math.random() * 45)
 	end
 end

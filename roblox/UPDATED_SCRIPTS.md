@@ -1,4 +1,16 @@
-# Updated scripts: every place has its echo
+# Updated scripts: eyes in the dark
+
+- **The dungeons**: now and then a pair of eyes watches you out of the dark far ahead. They glow in the theme's colour, blink once, and are gone when you come closer.
+- **What's new**: a seventh line, "Hear it, feel it" (armour, splashes, echoes, crates).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | eyes |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: every place has its echo
 
 - **Dungeons**: every sound (blades, footsteps, groans, the bell) rings off the stone, in each theme's own acoustic: the crypt's stone corridors, the warrens' and the ice's caves, the manor's halls, the forge's iron halls, the drowned halls' wet tunnels, the abbey's great nave.
 - **The Gilded Rat** has a warm room's echo; **the arenas** an arena's. Elsewhere, none, as before.
