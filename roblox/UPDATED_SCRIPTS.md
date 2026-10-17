@@ -1,4 +1,24 @@
-# Updated scripts: no map floats any more
+# Updated scripts: every banner flies arms
+
+- **The banners on every map carry heraldry now**: two houses at war on each map, the blue banners
+  with one house's arms (an eagle, a lion, a griffin…) and the red with the other's (a dragon, a
+  wolf, a boar…), painted in gold with a dark outline, swinging with the cloth in the wind. The
+  camps outside the maps, the Courtyard and its war camp fly them too.
+- **War battlefields** get the land round them in their own look (snowy for Frostmere, ash for
+  Ashvale, desert for Sunreach…).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BannerArt.lua](ServerScriptService/Game/BannerArt.lua) | ServerScriptService ▸ Game | ModuleScript | **new** |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | paints the banners of the map and its horizon |
+| [HubBackdrop.lua](ServerScriptService/Game/HubBackdrop.lua) | ServerScriptService ▸ Game | ModuleScript | the backdrop camp's banners |
+| [Horizon.lua](ServerScriptService/Game/Horizon.lua) | ServerScriptService ▸ Game | ModuleScript | War themes' looks |
+| [BannerWind.client.lua](StarterPlayerScripts/BannerWind.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the painted arms swing with their cloth |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: no map floats any more
 
 - **Every outdoor map sits in a world now** (all 42 in ServerStorage ▸ Maps). Round its edge the
   map's own ground runs on into country: mounds, rocky outcrops, mud or lava patches, pools, rolling

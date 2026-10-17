@@ -1,6 +1,6 @@
 --[[ BANNER WIND — the cloth on every map moves, on your screen only: banners, pennants and
      standards (Banner, Pennant, KeepBanner, HallBanner, WallBanner, PodiumBanner, with their tips,
-     trims and crests swinging along) sway from their top edge in the wind, each on its own
+     trims, crests and painted arms swinging along: Game ▸ BannerArt) sway from their top edge in the wind, each on its own
      rhythm; harder in a storm. Only cloth near the camera is touched, a dozen times a second.
      Nothing here is sent to the server. ]]
 
@@ -10,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
 
 local CLOTH = {Banner = true, Pennant = true, KeepBanner = true, HallBanner = true, WallBanner = true, PodiumBanner = true}
-local HANGERS = {BannerTip = true, KeepBannerTrim = true, KeepBannerCrest = true, HallBannerStar = true, WallBannerStar = true}
+local HANGERS = {BannerTip = true, KeepBannerTrim = true, KeepBannerCrest = true, HallBannerStar = true, WallBannerStar = true, BannerArt = true}
 local NEAR = 160
 local RATE = 1 / 12
 

@@ -188,6 +188,13 @@ function MapLoader.load(name)
 	do
 		local ok, err = pcall(function() return horizon().build(m, name) end)
 		if not ok then warn("[Map] horizon:", err) end
+		-- the two houses' arms on every banner (Game ▸ BannerArt)
+		ok, err = pcall(function()
+			local BannerArt = require(script.Parent:WaitForChild("BannerArt"))
+			BannerArt.dress(m, name)
+			BannerArt.dress(workspace:FindFirstChild("MapHorizon"), name)
+		end)
+		if not ok then warn("[Map] banners:", err) end
 	end
 	MapLoader.current, MapLoader.name = m, name
 	log("loaded", name)

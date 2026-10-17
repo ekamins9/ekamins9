@@ -34,6 +34,11 @@ local HAND = {
 	Colosseum = "desert", Frostgate = "winter", Highbridge = "dawnMist", Millfield = "summer", Ravenhold = "nightForest",
 	RoseCourt = "spring", Sandpit = "desert", Stormbreak = "stormNight", TrainingYard = "summer", Wildwood = "summer",
 }
+-- the War mode's battlefields (Game ▸ WarMap, its W_Theme): the nearest MapForge look
+local WAR = {
+	Redfield = "summer", Ironridge = "stormNight", Frostmere = "winter", Ashvale = "ash", Kingsbridge = "summer",
+	Nightfall = "nightForest", Sunreach = "desert", Stormvale = "stormNight", Duskmoor = "autumn", Mistmarsh = "swamp", Amberwood = "autumn",
+}
 -- the layouts that are a fight in a war (camps outside), and the rest (a village down the road)
 local WARLIKE = {siege = true, warfield = true, arena = true, bailey = true, bridge = true}
 local TEAM = {RGB(56, 92, 206), RGB(190, 50, 44)}
@@ -42,7 +47,7 @@ local bands = {}                  -- the skirt's terrain boxes, to clear
 local function themeOf(map, name)
 	local ok, F = pcall(require, Build:WaitForChild("MapForge"))
 	local themes = ok and F.THEMES or {}
-	local key = map:GetAttribute("Theme") or HAND[name] or "summer"
+	local key = map:GetAttribute("Theme") or WAR[map:GetAttribute("W_Theme") or ""] or HAND[name] or "summer"
 	return themes[key] or themes.summer, key
 end
 
@@ -349,7 +354,7 @@ function Horizon.build(map, name)
 	-- WOODS in groves
 	local layout = map:GetAttribute("Layout") or map:GetAttribute("Kind")
 	local groves = (T.trees or 30) >= 30 and 12 or 7
-	local warlike = WARLIKE[layout] or (layout == nil and themeKey ~= "spring")
+	local warlike = WARLIKE[layout] or map:GetAttribute("W_Theme") ~= nil or (layout == nil and themeKey ~= "spring")
 	local campA = r:NextNumber(0, math.pi * 2)
 	local sectors = {campA, campA + math.pi}   -- (the camps, or the village and its road: kept clear of trees)
 	local function clear_(a) for _, s in ipairs(sectors) do if math.abs(math.atan2(math.sin(a - s), math.cos(a - s))) < 0.32 then return false end end return true end

@@ -89,6 +89,8 @@ function HubBackdrop.build(map)
 	map:SetAttribute("BD_Camp", camp)
 	ctx.model.Name = "MapBackdrop"
 	ctx.model.Parent = workspace
+	-- (the camp's banners fly the arms of a house: Game ▸ BannerArt)
+	pcall(function() require(script.Parent:WaitForChild("BannerArt")).dress(ctx.model, "Courtyard") end)
 end
 
 function HubBackdrop.clear()

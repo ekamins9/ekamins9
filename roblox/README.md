@@ -38,6 +38,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Game/Game.lua` | `ServerScriptService` → `Game` (Folder) → `Game` | ModuleScript |
 | `ServerScriptService/Game/MapLoader.lua` | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript |
 | `ServerScriptService/Game/Horizon.lua` | `ServerScriptService` → `Game` → `Horizon` (the land round every outdoor map) | ModuleScript |
+| `ServerScriptService/Game/BannerArt.lua` | `ServerScriptService` → `Game` → `BannerArt` (the two houses' arms on every banner) | ModuleScript |
 | `ServerScriptService/Game/Teams.lua` | `ServerScriptService` → `Game` → `Teams` | ModuleScript |
 | `ServerScriptService/Game/GameServer.server.lua` | `ServerScriptService` → `Game` → `GameServer` | Script |
 | `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `Tiltyard`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH`, `Lists` | ModuleScript each |
@@ -1350,6 +1351,14 @@ village down a road and fields; a castle on a far hill; smoke on the horizon (bl
 burning farms, pale from a quiet map's chimneys). Its look is the map's MapForge theme (the
 hand-made maps are named in `Horizon`'s HAND); `NoHorizon = true` on a map leaves it alone (the
 Courtyard has its own, `HubBackdrop`).
+
+**Every banner flies arms** (`Game ▸ BannerArt`, as the map loads: the map, its horizon, the
+Courtyard's backdrop): each cloth gets its house's emblem (the shields' pictures, ShieldArt) on
+both faces, gold on a dark or bright cloth, dark on a pale one, with its outline and shadow; not
+on the side that hangs against a wall. A map's blue banners share one house's arms and its red
+ones the other's (never the same beast), green, gold, purple and black cloth their own; picked by
+the map's name, so a map always flies the same. The plates (BannerArt) swing with the cloth
+(`BannerWind`).
 
 No such map → whatever is in workspace, and
 `SpawnLocation`s. `GameServer` runs the loop: mode → map (vote or rotation) → round (mode
