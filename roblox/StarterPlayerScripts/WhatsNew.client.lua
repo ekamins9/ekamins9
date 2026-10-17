@@ -25,7 +25,7 @@ local NEWS = {
 		{"🕷", "Spiders", "giant spiders hunt the warrens and the crypt; more drop on threads ahead of you"},
 		{"🗡", "Through your own eyes", "in Settings, Start in: begin every fight in first person"},
 		{"🌊", "Two new dungeons", "the flooded Drowned Halls and the desecrated Hollow Abbey, each with its lord"},
-		{"💎", "Traps and secrets", "spike grates, swinging blades, darts, fire; cracked walls hide caches"},
+		{"📦", "Mimics", "in Deadvault not every chest is a chest; skeletons now fall apart into bones"},
 	},
 }
 
