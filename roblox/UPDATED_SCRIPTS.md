@@ -1,4 +1,15 @@
-# Updated scripts: the Courtyard's keep in stone; the Hatchery's labels
+# Updated scripts: clouds over the open-air maps
+
+- **The sky**: fair-weather clouds drift over every open-air map (the Courtyard, War, Siege, the arenas, the Lists...). A storm, rain or snow takes the sky over while it lasts and gives it back after. None over the caldera or indoors.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CinematicGrade.client.lua](StarterPlayerScripts/CinematicGrade.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | clouds |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Courtyard's keep in stone; the Hatchery's labels
 
 - **The Courtyard**: the keep is coursed stone on a cobbled footing like the walls; the Rest Inn is plastered under clay tiles. The saved Courtyard was converted too (save the place).
 - **Fixed**: from across the Courtyard, the Hatchery's three nest labels ("EMPTY NEST", "[E] GET EGGS") piled into one garbled line. They now show only from close by (28 studs).
