@@ -1,4 +1,18 @@
-# Updated scripts: the second muster
+# Updated scripts: your arms by your name
+
+- **A little shield of your coat of arms** shows beside your level on your name tag, for everyone who
+  looks your way.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [NameTags.client.lua](StarterPlayerScripts/NameTags.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the arms badge |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | `Profile.publishArms` (player attribute Arms) |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | publishes them at each spawn |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the second muster
 
 - **12 new emblems** (unicorn, owl, bull, hound, scorpion, longship, anchor, crown, crossed axes,
   crossed keys, trident, salamander): on the banners' houses, and in YOUR ARMS (36 now; the open ones

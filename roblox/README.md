@@ -1040,7 +1040,8 @@ the training yard's teachers, the Courtyard's bard). `NameTags` (client)
 draws ours, and only when it makes sense: someone within 9 studs, or your aim (the middle of the
 screen, or the mouse when it's free) on their body within 45 studs with a clear line of sight;
 in the Courtyard everyone within 24 studs shows too. Names fade in fast and out slowly.
-- **The look:** a level badge, a staff badge (OWNER · ADMIN · MOD · HELPER in their role's colour),
+- **The look:** a level badge, a little shield of their own coat of arms (player attribute `Arms`,
+  `Profile.publishArms`; LOOK ▸ YOUR ARMS), a staff badge (OWNER · ADMIN · MOD · HELPER in their role's colour),
   a gold crown and a gold shimmering name for **season pass** holders; team colours in team modes;
   bots in their rank's colour with their rank under the name (a Warlord in gold); a map's
   character (a Model in `workspace ▸ Map` with `TagName`) in gold with what they do under it

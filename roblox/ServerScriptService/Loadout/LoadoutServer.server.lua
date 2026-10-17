@@ -402,6 +402,7 @@ spawnAs = function(plr, classId, opts)
 	char:SetAttribute("Title", p.appearance.title or "")
 	local team = Game.teamOf(plr)
 	Dresser.dress(char, {loadout = lo, appearance = Avatars.appearanceOf(plr), weight = GameConfig.CLASSES[classId].weight, team = team})
+	Profile.publishArms(plr)
 	Game.Teams.mark(char, team)
 	classStats(char, hum, classId)
 	if lo.secondary then giveWeapon(plr, char, lo.secondary, lo.secondarySkin, false, 2, lo) end

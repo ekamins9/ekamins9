@@ -14,6 +14,8 @@
        the title     under the name: the title they wear (player attribute Title,
                      the free "Recruit" left out); a bot shows its rank
        the level     a small badge before the name (player attribute Level)
+       their arms    a little shield of their own coat of arms beside it (player attribute Arms,
+                     "emblem|metal|field": Profile.publishArms; Catalog ▸ Arms)
      Characters of the map (the training yard's teachers, the Courtyard's bard) get one
      too: any Model in workspace ▸ Map with a TagName attribute (TagTitle under it).
      Player attributes come from Hub ▸ Pastimes (Title, Level, PassHolder) and
@@ -26,6 +28,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
+local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 
 local player = Players.LocalPlayer
 local roundNode = ReplicatedStorage:WaitForChild("Round")
@@ -105,6 +108,36 @@ local function paint(tag)
 		if lvl then
 			local lv = chip(tag.row, "Lv " .. tostring(lvl), Color3.fromRGB(46, 52, 74)); lv.LayoutOrder = 1
 			fades(lv)
+		end
+		-- their own coat of arms, a little shield (Catalog ▸ Arms; the pictures in ShieldArt)
+		local arms = plr:GetAttribute("Arms")
+		if type(arms) == "string" then
+			local emblem, metalId, fieldName = string.match(arms, "^([^|]+)|([^|]*)|(.*)$")
+			local A = Catalog.ARMS
+			local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+			if emblem and A and art and art:FindFirstChild(emblem) then
+				local metal = A.METAL[metalId] or A.METALS[1]
+				local field = Catalog.COLOR[fieldName or ""]
+				local badge = Instance.new("Frame")
+				badge.BackgroundColor3 = field and field.color or Color3.fromRGB(56, 60, 78)
+				badge.Size = UDim2.fromOffset(18, 21)
+				badge.LayoutOrder = 1
+				Instance.new("UICorner", badge).CornerRadius = UDim.new(0, 5)
+				local bs = Instance.new("UIStroke"); bs.Color = Color3.fromRGB(20, 16, 24); bs.Thickness = 1; bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; bs.Parent = badge
+				for z, layer in ipairs({{emblem .. "_o", metal.edge}, {emblem, metal.color}}) do
+					local v = art:FindFirstChild(layer[1])
+					if v then
+						local il = Instance.new("ImageLabel")
+						il.BackgroundTransparency = 1
+						il.Size = UDim2.new(1, -2, 1, -2); il.Position = UDim2.fromOffset(1, 1)
+						il.ScaleType = Enum.ScaleType.Fit
+						il.Image = v.Value; il.ImageColor3 = layer[2]; il.ZIndex = z
+						il.Parent = badge
+					end
+				end
+				badge.Parent = tag.row
+				fades(badge)
+			end
 		end
 		local role = ROLE[plr:GetAttribute("StaffRole") or ""]
 		if role then
@@ -194,7 +227,7 @@ local function makeTag(model, plr)
 	local function repaint() if tags[model] == tag then paint(tag) end end
 	for _, a in ipairs({"Team", "Title", "Boss", "TagName"}) do table.insert(conns, model:GetAttributeChangedSignal(a):Connect(repaint)) end
 	if plr then
-		for _, a in ipairs({"Title", "Level", "PassHolder", "StaffRole"}) do table.insert(conns, plr:GetAttributeChangedSignal(a):Connect(repaint)) end
+		for _, a in ipairs({"Title", "Level", "PassHolder", "StaffRole", "Arms"}) do table.insert(conns, plr:GetAttributeChangedSignal(a):Connect(repaint)) end
 	end
 	table.insert(conns, roundNode:GetAttributeChangedSignal("Teams"):Connect(repaint))
 	tag.conns = conns
@@ -345,6 +378,10 @@ RunService.RenderStepped:Connect(function(dt)
 				if f.obj:IsA("TextLabel") then
 					f.obj.TextTransparency = tr
 					if f.obj.BackgroundTransparency < 1 or f.obj:GetAttribute("Chip") then f.obj.BackgroundTransparency = tr; f.obj:SetAttribute("Chip", true) end
+				elseif f.obj:IsA("Frame") then
+					-- (the arms badge: its field and its pictures)
+					f.obj.BackgroundTransparency = tr
+					for _, im in ipairs(f.obj:GetChildren()) do if im:IsA("ImageLabel") then im.ImageTransparency = tr end end
 				end
 				if f.stroke then f.stroke.Transparency = tr end
 				local cs = f.obj:FindFirstChildOfClass("UIStroke")

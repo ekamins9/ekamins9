@@ -597,7 +597,12 @@ function Profile.setActive(plr, classId)
 	if GameConfig.CLASSES[classId] and Catalog.classOpen(classId, Profile.get(plr)) then Profile.get(plr).active = classId; dirty[plr] = true; return true end
 	return false
 end
-function Profile.setAppearance(plr, app) Profile.get(plr).appearance = app; dirty[plr] = true end
+function Profile.setAppearance(plr, app) Profile.get(plr).appearance = app; dirty[plr] = true; Profile.publishArms(plr) end
+-- your arms where everyone's screen can read them (NameTags' badge): "emblem|metal|field", or none
+function Profile.publishArms(plr)
+	local a = cache[plr] and cache[plr].appearance
+	plr:SetAttribute("Arms", (a and a.armsEmblem) and string.format("%s|%s|%s", a.armsEmblem, a.armsMetal or "Gold", a.armsField or "") or nil)
+end
 function Profile.addStat(plr, key, n)
 	local p = cache[plr]; if not p then return end
 	p.stats[key] = (p.stats[key] or 0) + (n or 1); dirty[plr] = true
