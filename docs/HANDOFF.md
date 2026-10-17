@@ -209,11 +209,19 @@ step):
   dust, grade, vignette, drone and whispers, grave-dust arrivals, apparitions), boss entrances
   (`ReplicatedStorage ▸ BossIntro`; the Depths through `Adventure.client`, Siege's champion and
   the Horde's Warlord through `BossEntrance.client`).
+- **The dungeons, later the same night:** second waves that burst up through cracked floors and a
+  boss's servants (`Depths:wave`); trapped corridors (`Game ▸ Traps` + `Traps.client`: spike
+  grates, pendulum blades on the server's clock, dart plates, fire grates; the builder now lists
+  `layout.corridors`); Deadvault's sarcophagi can wake (`Deadvault:waken`, `Containers`); the
+  sleeping dead lie among the bones and get up (`DungeonMood` "the dead lie"); rats and drips;
+  the score is quiet until a fight (`Music.client` Dread / Battle; a dungeon lord's theme only
+  near its lair). Footprints in snow, sand, mud and earth everywhere (`Footsteps.client`).
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
   their MapShots (and Stormvale's and Duskmoor's, War's two new themes), WarAudio ▸ Drums, Roar,
-  Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver.
+  Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
+  Squeak, Drip.
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
   too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
