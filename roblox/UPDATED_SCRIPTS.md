@@ -1,4 +1,18 @@
-# Updated scripts: the abbey's bell and chant
+# Updated scripts: splashing through water
+
+- **Everywhere there's standing water** (the Drowned Halls, Mistmarsh's pools, every dungeon puddle): a step into it splashes, and a ripple spreads on the water. This applies to everyone's steps, yours too.
+- The Hollow Abbey's bell and chant sounds are now in place.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Footsteps.lua](ReplicatedStorage/Footsteps.lua) | ReplicatedStorage | ModuleScript | water steps |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Splash, AbbeyBell, Chant (Sounds; save the place).
+
+---
+
+## Before that: the abbey's bell and chant
 
 - **The Hollow Abbey**: now and then a bell tolls far off through the stone, or a faint wordless chant drifts from another room.
 

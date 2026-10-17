@@ -2867,7 +2867,10 @@ can't patter on after you stop. Your own steps are timed by `CameraRig` on the s
 else's (other players, bots) by `StarterPlayerScripts ▸ Footsteps`, from how far their root
 moved, heard within 70 studs. A `FootstepSounds` folder in `SoundService` (one `Sound` per
 material name, plus `Default`) still overrides the table. Roblox's own looping `Running` and
-`Climbing` sounds are muted on every character.
+`Climbing` sounds are muted on every character. **Water**: a step onto a puddle, standing water
+or a marsh pool (the thin sheets `Puddle`, `StandingWater`, `Marshwater`, which nothing queries)
+splashes instead (WarAudio ▸ Splash) with a ripple spreading on the water (`Footsteps.play`,
+yours and everyone's).
 
 **Prints on the ground** (`StarterPlayerScripts ▸ Footsteps`, every body within 70 studs, yours
 too): a step into snow, sand, salt, mud or bare earth presses an oval print there (left, right,
