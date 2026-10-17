@@ -1778,7 +1778,8 @@ In the hub, on your screen only: sentries in the Crown's colours walk the Courty
 archer), stopping at the end of their stretch to look out over the walls a while
 (`WarCrowd:sentry`). Outside the walls, on the east field two companies of the garrison drill
 against each other (charge, crash, fight it out, pull apart: `WarCrowd:lane`); on the west field
-an archery range, a line of archers loosing at straw butts every 7–11 s. About 1,100 parts.
+an archery range, a line of archers loosing at straw butts every 7–11 s. About 1,100 parts. The
+training yard (Tiltyard) gets the sentries on its walls too.
 
 ## The rest of the horde (`HordeHost.client`)
 In the Horde, on your screen only: out past each of the map's gates (`Spots ▸ HordeGate<n>`) and

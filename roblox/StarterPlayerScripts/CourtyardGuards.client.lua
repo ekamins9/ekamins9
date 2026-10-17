@@ -7,7 +7,7 @@
                         crash together, fight it out and pull apart to go again
        the west field   an archery range: a line of archers loosing at straw butts, the arrows
                         thudding in round them
-     Only in the hub (Round ▸ Mode "Hub"). ]]
+     In the hub (Round ▸ Mode "Hub"); the training yard (Tiltyard) gets its sentries too. ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -121,7 +121,7 @@ local function enter(m)
 		guards.crowd = crowd
 		local half = 0
 		for _, w in ipairs(walks) do half = math.max(half, math.abs(w.Position.X - centre.X)) end
-		pcall(fields, crowd, centre, half, token)
+		if round:GetAttribute("Mode") == "Hub" then pcall(fields, crowd, centre, half, token) end
 		for _, w in ipairs(walks) do
 			local e = extent(w)
 			local along = e.X >= e.Z and V3(1, 0, 0) or V3(0, 0, 1)
@@ -149,7 +149,8 @@ local function refresh()
 	task.delay(1, function()
 		if want ~= w then return end
 		local m = workspace:FindFirstChild("Map")
-		local fits = m and round:GetAttribute("Mode") == "Hub"
+		local mode = round:GetAttribute("Mode")
+		local fits = m and (mode == "Hub" or mode == "Tiltyard")
 		if guards.on and (not fits or guards.map ~= m) then leave() end
 		if fits and not guards.on then guards.map = m; enter(m) end
 	end)
