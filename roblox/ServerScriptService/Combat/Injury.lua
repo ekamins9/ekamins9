@@ -130,7 +130,8 @@ end
 -- orange of steel on steel, so a hit never reads as a block)
 -- WHAT A BLOW KNOCKS OFF A MONSTER (the game is rated Mild: no blood, so each kind of thing
 -- sheds what it's made of): bone chips off the dead, grave dust off the ghouls, ice off the frost,
--- embers off the fire, stone off a golem, a wisp off a wraith. Read off the model's Monster id
+-- embers off the fire, stone off a golem, a wisp off a wraith, flecks of shell off a spider,
+-- splinters off a mimic. Read off the model's Monster id
 -- (its Bestiary look.body) and Faction; anyone else gets the white-gold flash.
 local Bestiary
 local SHED = {
@@ -140,8 +141,10 @@ local SHED = {
 	ember  = {tex = "rbxasset://textures/particles/fire_main.dds", c0 = Color3.fromRGB(255, 200, 90), c1 = Color3.fromRGB(255, 80, 20), size = 0.5, speed = {8, 16}, life = {0.3, 0.6}, grav = 8, light = 1},
 	stone  = {tex = "rbxasset://textures/particles/sparkles_main.dds", c0 = Color3.fromRGB(180, 176, 168), c1 = Color3.fromRGB(130, 126, 120), size = 0.6, speed = {8, 16}, life = {0.3, 0.6}, grav = -60, light = 0.3},
 	wisp   = {tex = "rbxasset://textures/particles/smoke_main.dds", c0 = Color3.fromRGB(180, 230, 255), c1 = Color3.fromRGB(120, 160, 220), size = 1, speed = {2, 5}, life = {0.6, 1.1}, grav = 3, light = 0.8},
+	chitin = {tex = "rbxasset://textures/particles/sparkles_main.dds", c0 = Color3.fromRGB(70, 58, 46), c1 = Color3.fromRGB(120, 130, 80), size = 0.45, speed = {8, 16}, life = {0.3, 0.6}, grav = -50, light = 0.1},
+	wood   = {tex = "rbxasset://textures/particles/sparkles_main.dds", c0 = Color3.fromRGB(160, 116, 72), c1 = Color3.fromRGB(104, 72, 42), size = 0.55, speed = {10, 20}, life = {0.35, 0.7}, grav = -60, light = 0},
 }
-local BODY_SHED = {skeleton = "bone", ghoul = "dust", golem = "stone", cinder = "ember", wraith = "wisp"}
+local BODY_SHED = {skeleton = "bone", ghoul = "dust", golem = "stone", cinder = "ember", wraith = "wisp", spider = "chitin", mimic = "wood"}
 local FACTION_SHED = {Frost = "ice", Infernal = "ember"}
 local function shedOf(part)
 	local m = part and part:FindFirstAncestorOfClass("Model")

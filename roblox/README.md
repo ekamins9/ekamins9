@@ -2899,7 +2899,8 @@ Change `WEAPON_NAME` in `TestDummies` for another default weapon.
 - **Rated Mild (all ages): `GameConfig.GORE = false`.** A killing blow just drops them, with
   the hit's white-and-gold flash (on a monster, what it's made of instead: bone chips off the
   dead, grave dust off ghouls, ice off the frost, embers off fire things, stone off golems, a wisp
-  off a wraith: `Injury.hitFlash`, by its Bestiary body and Faction), the hitstop and the
+  off a wraith, flecks of shell off a spider, splinters off a mimic: `Injury.hitFlash`, by its
+  Bestiary body and Faction), the hitstop and the
   ragdoll, then the body fades within seconds
   (`Corpses.BODY_LIFE`; kill-effect remains keep their time). Off, there's no blood, nothing is
   severed or skewered, nobody bleeds out, arrows don't stay in bodies, there are no bone

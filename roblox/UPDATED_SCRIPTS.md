@@ -1,4 +1,15 @@
-# Updated scripts: the Spider Queen's lair
+# Updated scripts: what a blow knocks off spiders and mimics
+
+- **Hitting a spider** knocks flecks of dark shell off it; **hitting a mimic**, wood splinters (the game stays Mild: no blood).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Injury.lua](ServerScriptService/Combat/Injury.lua) | ServerScriptService ▸ Combat | ModuleScript | `chitin`, `wood` sheds |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Spider Queen's lair
 
 - **The Silk Caverns' boss room** is dressed as the Queen's nest: webs strung across its corners, egg sacs heaped by the walls, cocoons hanging about her dais.
 
