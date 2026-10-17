@@ -1,4 +1,19 @@
-# Updated scripts: shields in the Armory
+# Updated scripts: the Hall of Arms
+
+- **Your banner in the Courtyard**: its eight small banners fly the arms of the players there who
+  bear them (highest level first), in their colours, with their names embroidered under them; the
+  rest fly the house's.
+- BannerArt's plates are their cloth's children now (one cloth repainted at a time).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BannerArt.lua](ServerScriptService/Game/BannerArt.lua) | ServerScriptService ▸ Game | ModuleScript | `BannerArt.fly`; plates under their cloth |
+| [Hub.lua](ServerScriptService/Game/Modes/Hub.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the Hall of Arms loop |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: shields in the Armory
 
 - **The Armory shows a shield face on**, swaying a little (it no longer spins edge-on), says it's a
   shield (and a throwable a throwable), and gives a shield its own card: guard width, block cost,

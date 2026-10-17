@@ -1005,6 +1005,11 @@ grassland to the horizon, hills all round, the road out of the gate through a vi
 windmill and fields, woods, and far to the east a war camp with its trebuchets, which now and then
 lob fire further off still (`HubAmbience.client`: scenery only, never near anyone).
 
+**The Hall of Arms** (`Modes ▸ Hub`, every 15 s): the Courtyard's eight small banners fly the
+arms of those in the server who bear them (LOOK ▸ YOUR ARMS), the highest level first, each with
+the name embroidered under it (`BannerArt.fly`); the rest fly the house's. The keep's two great
+banners stay the house's.
+
 A castle courtyard built from code (`Build ▸ MapCourtyard`); the old free-model Courtyard was
 moved to `ServerStorage ▸ _RetiredMaps`. It's peaceful: players can't fight here.
 `Hub ▸ Courtyard` (server) and `StarterPlayerScripts ▸ Courtyard` (client) run its places from
