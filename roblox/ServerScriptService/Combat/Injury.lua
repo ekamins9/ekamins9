@@ -128,7 +128,58 @@ end
 
 -- a clean hit, without gore: a quick white-and-gold star flash where it landed (not the
 -- orange of steel on steel, so a hit never reads as a block)
+-- WHAT A BLOW KNOCKS OFF A MONSTER (the game is rated Mild: no blood, so each kind of thing
+-- sheds what it's made of): bone chips off the dead, grave dust off the ghouls, ice off the frost,
+-- embers off the fire, stone off a golem, a wisp off a wraith. Read off the model's Monster id
+-- (its Bestiary look.body) and Faction; anyone else gets the white-gold flash.
+local Bestiary
+local SHED = {
+	bone   = {tex = "rbxasset://textures/particles/sparkles_main.dds", c0 = Color3.fromRGB(246, 240, 222), c1 = Color3.fromRGB(206, 196, 170), size = 0.6, speed = {10, 20}, life = {0.35, 0.7}, grav = -50, light = 0.45},
+	dust   = {tex = "rbxasset://textures/particles/smoke_main.dds", c0 = Color3.fromRGB(140, 150, 130), c1 = Color3.fromRGB(110, 118, 104), size = 1.1, speed = {3, 7}, life = {0.5, 0.9}, grav = -2, light = 0},
+	ice    = {tex = "rbxasset://textures/particles/sparkles_main.dds", c0 = Color3.fromRGB(220, 244, 255), c1 = Color3.fromRGB(150, 210, 250), size = 0.4, speed = {10, 20}, life = {0.25, 0.5}, grav = -40, light = 0.6},
+	ember  = {tex = "rbxasset://textures/particles/fire_main.dds", c0 = Color3.fromRGB(255, 200, 90), c1 = Color3.fromRGB(255, 80, 20), size = 0.5, speed = {8, 16}, life = {0.3, 0.6}, grav = 8, light = 1},
+	stone  = {tex = "rbxasset://textures/particles/sparkles_main.dds", c0 = Color3.fromRGB(180, 176, 168), c1 = Color3.fromRGB(130, 126, 120), size = 0.6, speed = {8, 16}, life = {0.3, 0.6}, grav = -60, light = 0.3},
+	wisp   = {tex = "rbxasset://textures/particles/smoke_main.dds", c0 = Color3.fromRGB(180, 230, 255), c1 = Color3.fromRGB(120, 160, 220), size = 1, speed = {2, 5}, life = {0.6, 1.1}, grav = 3, light = 0.8},
+}
+local BODY_SHED = {skeleton = "bone", ghoul = "dust", golem = "stone", cinder = "ember", wraith = "wisp"}
+local FACTION_SHED = {Frost = "ice", Infernal = "ember"}
+local function shedOf(part)
+	local m = part and part:FindFirstAncestorOfClass("Model")
+	local id = m and m:GetAttribute("Monster")
+	if not id then return nil end
+	if Bestiary == nil then
+		local ok, Catalog = pcall(require, ReplicatedStorage:WaitForChild("Catalog"))
+		Bestiary = ok and Catalog.BESTIARY or false
+	end
+	local def = Bestiary and Bestiary[id]
+	local body = def and def.look and def.look.body
+	-- (frost bones are ice; cinder's ember; the rest by body, then by side)
+	local faction = m:GetAttribute("Faction")
+	return (faction == "Frost" and body == "skeleton" and "ice") or BODY_SHED[body or ""] or FACTION_SHED[faction or ""]
+end
+local function shed(part, kind, count)
+	local k = SHED[kind]
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = k.tex
+	e.Color = ColorSequence.new(k.c0, k.c1)
+	e.LightEmission = k.light
+	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, k.size), NumberSequenceKeypoint.new(1, k.size * 0.3)})
+	e.Transparency = NumberSequence.new(0, 1)
+	e.Lifetime = NumberRange.new(k.life[1], k.life[2])
+	e.Speed = NumberRange.new(k.speed[1], k.speed[2])
+	e.SpreadAngle = Vector2.new(140, 140)
+	e.Acceleration = Vector3.new(0, k.grav, 0)
+	e.RotSpeed = NumberRange.new(-200, 200)
+	e.Drag = 3
+	e.Rate = 0
+	e.Parent = part
+	e:Emit(math.floor((count or 25) * 0.7))
+	Debris:AddItem(e, 1.5)
+end
+
 local function hitFlash(part, count)
+	local kind = shedOf(part)
+	if kind then shed(part, kind, count); return end
 	local e = Instance.new("ParticleEmitter")
 	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 	e.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 226, 140))

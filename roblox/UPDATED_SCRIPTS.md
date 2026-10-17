@@ -1,4 +1,15 @@
-# Updated scripts: something walks overhead
+# Updated scripts: blows knock off what monsters are made of
+
+- **Every monster** (the game stays Mild: no blood): a clean hit sheds what the thing is made of instead of the plain white-gold flash. Bone chips off skeletons, grave dust off ghouls, ice off frost things, embers off fire creatures, stone off golems, a wisp off wraiths. Players and human foes keep the flash.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Injury.lua](ServerScriptService/Combat/Injury.lua) | ServerScriptService ▸ Combat | ModuleScript | `hitFlash` by kind |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: something walks overhead
 
 - **The dungeons**: now and then, while nothing's coming for you, something heavy walks across the floor above you. Five slow deep thuds pass over, grit sifts down from the ceiling and your lantern trembles with each.
 
