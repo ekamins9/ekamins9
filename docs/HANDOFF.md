@@ -328,6 +328,32 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
 - **Studio-only, to save:** ReplicatedStorage ▸ ShieldArt, ReplicatedStorage ▸ WarAudio ▸ ShieldBlock1..3. **Test scaffolding added:**
   ServerStorage ▸ TMP_ShieldLineupSrc (a disabled shield-lineup script).
 
+## 4h. The battlefield pass (2026-10-18, autonomous, later)
+
+- **Ten new maps** from MapForge (Frostmarch and Gloamhold sieges with their own champions;
+  Snowcrest and Sunhold courtyards; Blossomby; Frostford; Witchfen; Amberglade; the Greenring;
+  Blossomfield for the Lists), in their modes' rotations, with vote pictures. **The ruins layout**
+  filled in (a breached tower, house footings, rubble, ivy, reeds): Witchfen, Cinderfall and
+  Duneshrine rebuilt and re-shot; ash maps' scorch marks no longer read as holes.
+- **Capture the Standard** (`Game ▸ Modes ▸ Standards`, a Warfront mode): carry the enemy's war
+  banner home on your back; three captures win; bots raid, guard, chase and escort; a daily task.
+- **The last fight's leavings** (`Game ▸ Litter.field`, MapLoader) on every outdoor battle map:
+  arrows standing in the turf, dropped shields with the houses' arms, snapped spears, fallen
+  banners, helmets, the grass trodden to earth under them.
+- **Your arms**: the **Raise the Standard** kill effect (Relic, Legendary) plants your banner
+  with your coat of arms beside whoever you finish; with no side (FFA, duels, the Courtyard) your
+  own arms ride on your chest on a roundel of your colour.
+- **Menus**: the class cards show TOUGHNESS / SPEED / STAMINA bars and the chosen class's full
+  line under them (no more "…"); What's New fits its card (seven one-line entries at most).
+- **Studio-only, to save:** the ten new maps and the three rebuilt ruins maps (ServerStorage ▸
+  Maps), their MapShots (ids in gitignored blender/out/mapshots/images_v3.txt), Ashenford's and
+  Grimfield's softened scorch marks. **Test scaffolding added:** ServerStorage ▸ TMP_ShotKit (the
+  vote-picture kit).
+- **Rojo's plugin dropped mid-run** (the Studio MCP reconnected and the plugin stopped receiving;
+  rojo.exe kept serving). Every change from commit `eeba7c9`'s What's New line on was mirrored into Studio by hand with
+  the same edits and checked byte for byte, so Studio matches the repo; reconnect the plugin
+  (Rojo → Connect) before the next edit.
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.
@@ -335,7 +361,7 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
    WarAudio sounds are Studio-only (section 4f). Remove the test scaffolding (ServerScriptService ▸
    TMP_Go, ServerStorage ▸ TMP_MapPick / TMP_Map / TMP_WarTheme, StarterPlayer ▸
    StarterPlayerScripts ▸ TMP_ClientErrs, ServerScriptService ▸ TMP_ServerErrs, ServerStorage ▸
-   TMP_CourtyardBackup, ServerStorage ▸ TMP_ShieldLineupSrc) before publishing; ReplicatedStorage ▸
+   TMP_CourtyardBackup, ServerStorage ▸ TMP_ShieldLineupSrc, ServerStorage ▸ TMP_ShotKit) before publishing; ReplicatedStorage ▸
    ShieldArt (2026-10-18) must be saved with the place. (The two error loggers write workspace ▸ TMP_Errs and
    the player's TMP_CErrs: handy for a soak while they're there.)
 2. Finish / verify the mesh armor (section 4), look at every set on the mannequin, fix fits.
