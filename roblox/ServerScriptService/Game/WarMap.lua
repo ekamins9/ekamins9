@@ -16,6 +16,7 @@
        layout.archers     {A = {Vector3, Vector3}, B = {…}}   (one company on each flank)
        layout.mages       {A = Vector3, B = Vector3}
        layout.bounds      {x = 105, z = 372}: the playable corridor
+       layout.ballistae   {{model, side}, …}: the ballistae players man (War rigs them)
      The client reads the same off the Map: W_Banner1…5, W_Radius, W_CampA/B, W_TrebA1/2, W_TrebB1/2,
      W_ArchA1/2, W_ArchB1/2, W_MageA/B, W_Lane1…3 (the flank lanes' |x|), W_Weather, W_Theme.
 
@@ -443,7 +444,7 @@ function WarMap.build(themeName)
 	made += 1
 	local name = "Gen_War_" .. themeName .. "_" .. made
 	local ctx = K.new(name)
-	local L = {banners = {}, camps = {}, trebuchets = {A = {}, B = {}}, archers = {A = {}, B = {}}, mages = {}, radius = RADIUS, bounds = {x = CW, z = END}}
+	local L = {banners = {}, camps = {}, trebuchets = {A = {}, B = {}}, archers = {A = {}, B = {}}, mages = {}, radius = RADIUS, bounds = {x = CW, z = END}, ballistae = {}}
 
 	-- THE GROUND: terrain over the field, a slab under the far country
 	K.terrainColors(ctx, th.colors)
@@ -468,6 +469,27 @@ function WarMap.build(themeName)
 		ctx.model:SetAttribute("W_Banner" .. i, pos)
 	end
 	ctx.model:SetAttribute("W_Radius", RADIUS)
+
+	-- THE BALLISTAE players man: two a side, behind the banner second from their end, facing the
+	-- enemy (the made one, else one of timber)
+	for _, side in ipairs({"A", "B"}) do
+		local f = side == "A" and -1 or 1
+		for _, x in ipairs({-62, 62}) do
+			local at = V3(x, 0, f * 186)
+			local cf = CFrame.lookAt(at, at + V3(0, 0, -f))
+			local m = prop(ctx, "Ballista", cf, 7)
+			if not m then
+				m = Instance.new("Model")
+				K.box(ctx, "Base", V3(3, 1.4, 5), cf * CF(0, 0.7, 0), DARK, M.Wood, m)
+				K.box(ctx, "Arms", V3(8, 0.6, 0.8), cf * CF(0, 2.4, -1.6), WOOD, M.Wood, m)
+				K.box(ctx, "Stock", V3(0.8, 0.8, 6), cf * CF(0, 2.2, 0), WOOD, M.Wood, m)
+				m.Parent = ctx.Props
+			end
+			m.Name = "PlayerBallista"
+			m:SetAttribute("Side", side)
+			table.insert(L.ballistae, {model = m, side = side})
+		end
+	end
 
 	-- cover beside the second and fourth banners: barricades to fight round
 	for _, i in ipairs({2, 4}) do

@@ -46,6 +46,11 @@ Engines.TREB = {warn = 3.4, radius = 13, damage = 70, knock = 46}
 Engines.VOLLEY = {flight = 2.8, radius = 13, damage = 24}
 
 local function humOf(m) return m and m:FindFirstChildOfClass("Humanoid") end
+-- "Crown Trebuchet", "Iron Archers": who the feed says did it
+function Engines.name(side, what)
+	local d = Teams.def(side)
+	return (d and d.name or side) .. " " .. what
+end
 local function flat(v) return Vector3.new(v.X, 0, v.Z) end
 local function rnd(a, b) return a + math.random() * (b - a) end
 
@@ -111,6 +116,14 @@ function Engines:hurt(side, at, r, dmg, opts)
 				end
 			end
 			if hum and hum.Health > 0 and not safe then
+				-- (the feed names the engine: "Crown Trebuchet struck down …")
+				if opts.by then
+					model:SetAttribute("LastHitBy", 0)
+					model:SetAttribute("LastHitByName", opts.by)
+					model:SetAttribute("LastHitWith", opts.with or "")
+					model:SetAttribute("LastHitByTeam", side)
+					model:SetAttribute("LastHitAt", os.clock())
+				end
 				hum:TakeDamage(dmg * (opts.flat and 1 or (1 - 0.55 * d / r)))
 				if opts.knock then
 					local away = flat(hrp.Position - at)
@@ -141,7 +154,7 @@ function Engines:fireTrebuchet(side)
 	Moves.circle(to, T.radius, DANGER, T.warn)
 	remote:FireAllClients("Treb", {side = side, from = arms[math.random(#arms)], to = to, t = T.warn, r = T.radius})
 	task.wait(T.warn)
-	if self.alive() then self:hurt(side, to, T.radius, T.damage, {knock = T.knock}) end
+	if self.alive() then self:hurt(side, to, T.radius, T.damage, {knock = T.knock, by = Engines.name(side, "Trebuchet"), with = "Trebuchet"}) end
 end
 
 function Engines:fireVolley(side)
@@ -158,7 +171,7 @@ function Engines:fireVolley(side)
 	local V = Engines.VOLLEY
 	remote:FireAllClients("Volley", {side = side, from = from + Vector3.new(0, 6, 0), to = to, t = V.flight, r = V.radius, n = 120})
 	task.wait(V.flight)
-	if self.alive() then self:hurt(side, to, V.radius, V.damage, {guard = true, flat = true}) end
+	if self.alive() then self:hurt(side, to, V.radius, V.damage, {guard = true, flat = true, by = Engines.name(side, "Archers"), with = "Volley"}) end
 end
 
 function Engines:fireBarrage(side, frontZ)
@@ -175,7 +188,7 @@ function Engines:fireBarrage(side, frontZ)
 		for k, p in ipairs(pts) do Moves.circle(p, 10, ARCANE, 2.6 + k * 0.3) end
 		remote:FireAllClients("Barrage", {side = side, kind = kind, from = from, points = pts, t = 2.6, step = 0.3, r = 10})
 		for k, p in ipairs(pts) do
-			task.delay(2.6 + k * 0.3, function() if self.alive() then self:hurt(side, p, 10, 45, {knock = 34}) end end)
+			task.delay(2.6 + k * 0.3, function() if self.alive() then self:hurt(side, p, 10, 45, {knock = 34, by = Engines.name(side, "Battle-Mages"), with = "Meteor"}) end end)
 		end
 	elseif kind == "lightning" then
 		-- bolts onto their fighters where they stand
@@ -192,7 +205,7 @@ function Engines:fireBarrage(side, frontZ)
 		for k, p in ipairs(pts) do Moves.circle(p, 6, FROST:Lerp(Color3.new(1, 1, 1), 0.5), 1.4 + k * 0.35) end
 		remote:FireAllClients("Barrage", {side = side, kind = kind, from = from, points = pts, t = 1.4, step = 0.35, r = 6})
 		for k, p in ipairs(pts) do
-			task.delay(1.4 + k * 0.35, function() if self.alive() then self:hurt(side, p, 6, 35, {flat = true}) end end)
+			task.delay(1.4 + k * 0.35, function() if self.alive() then self:hurt(side, p, 6, 35, {flat = true, by = Engines.name(side, "Battle-Mages"), with = "Lightning"}) end end)
 		end
 	else
 		-- a frost over a knot of them: it bites and slows
@@ -201,7 +214,7 @@ function Engines:fireBarrage(side, frontZ)
 		Moves.circle(to, 18, FROST, 1.8)
 		remote:FireAllClients("Barrage", {side = side, kind = kind, from = from, points = {to}, t = 1.8, step = 0, r = 18})
 		task.wait(1.8)
-		if self.alive() then self:hurt(side, to, 18, 12, {flat = true, slow = 0.55}) end
+		if self.alive() then self:hurt(side, to, 18, 12, {flat = true, slow = 0.55, by = Engines.name(side, "Battle-Mages"), with = "Frost"}) end
 	end
 end
 

@@ -1,4 +1,21 @@
-# Updated scripts: Siege's attackers get a proper siege camp; bigger volleys
+# Updated scripts: ballistae you man in War; the engines' kills on the feed
+
+- **Man a ballista**: two a side behind your second banner. Hold E: it swings onto the nearest knot of enemies ahead and looses a bolt that goes through up to three of them; the kills are yours; six seconds to wind. Only your side sees its prompt (and nobody while it winds). Works the same on keyboard, controller and touch.
+- **The kill feed names the engines**: "Crown Trebuchet", "Iron Archers", "Crown Battle-Mages".
+- **Checked in Play**: War on Redfield: four ballistae rigged, one loosed (it turned onto its target, the bolt flew, it wound and came ready again); every touched script compiled.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | ballistae |
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | where they stand |
+| [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | kills on the feed |
+| [Engines.client.lua](StarterPlayerScripts/Engines.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the bolt |
+| [Prompts.client.lua](StarterPlayerScripts/Prompts.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a side's own prompt |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Siege's attackers get a proper siege camp; bigger volleys
 
 - **Siege**: siege towers, ballistae and a pavilion stand round the attackers' first spawns (where the ground is open and level), facing the castle.
 - **Bigger volleys**: the engines' volleys are 120 arrows now (70 before), the distant ones on War's flanks 70 (40): the arrows cost almost nothing since they moved out of the physics world.
@@ -33,18 +50,3 @@
 | [README.md](README.md) | | doc | |
 
 Studio-only (save the place): ServerStorage ▸ WarProps (Pavilion, SiegeTower, Ballista, Barricade); ReplicatedStorage ▸ MapShots ▸ Nightfall, Sunreach.
-
----
-
-## Before that: the dungeon game feels part of the main game; one clear way back
-
-- **◀ MAIN MENU** top left of the dungeon lobby (and on the Gilded Rat's walking-about bar) replaces the red TO THE COURTYARD: one question (your stash, kit and gold stay safe), then you're home and the main menu opens by itself.
-- **The main game's numbers in the lobby**: your level, Marks and Crowns beside the vault's gold, so a run reads as part of your progress.
-- **Fixes found while testing**: coming home in the same session left the main menu shut (it only reopened after a death), and the dungeon lobby stayed drawn over the main menu; both fixed. A dungeon lobby at the 200-locals limit, folded.
-- **Checked in Play**: into the Gilded Rat (the new top bar), home again (the lobby shut, the main menu up).
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ◀ MAIN MENU, the wallet, shuts outside the Gilded Rat |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | opens by itself on coming home |
-| [README.md](README.md) | | doc | |

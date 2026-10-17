@@ -11,6 +11,9 @@
      YOU COME IN at your foremost banner that isn't under attack, else at your camp (in waves).
      THE BOTS (Game ▸ BotFill, fillAnywhere): most push for the banner their side is taking, some
      hold one under attack; how many there are follows the server's frame rate (botTarget).
+     THE BALLISTAE: two a side behind its second banner, for its players: hold E and it swings onto
+     the nearest knot of enemies in front of it and looses a bolt that goes through up to three of
+     them (yours the kills); six seconds to wind again.
      THE ENGINES, each side on its own beat once the round is under way:
        • TREBUCHETS (two a side): a red ring where the shot will land, then the blast; the
          engine's enemies in it are hurt badly and thrown back
@@ -99,6 +102,7 @@ function War:start(map)
 	node:SetAttribute("ObjKind", "War")
 	node:SetAttribute("WarTickets", t0)
 	self.beat = RunService.Heartbeat:Connect(function(dt) self.frame = self.frame * 0.97 + math.min(dt, 0.2) * 0.03 end)
+	self:rigBallistae()
 	self:publishScores()
 end
 
@@ -232,6 +236,94 @@ function War:targetFor(side)
 	local L = self.layout
 	local b = L and L.banners[self:frontFor(ENEMY[side])]
 	return b and (b.pos + Vector3.new(rnd(-12, 12), 0, rnd(-12, 12))) or nil
+end
+
+--------------------------------------------------------------------
+--  THE BALLISTAE players man
+--------------------------------------------------------------------
+local BALLISTA = {reload = 6, range = 260, arc = 0.35, pierce = 3, damage = {85, 70, 55}, width = 3.5}
+function War:rigBallistae()
+	self.ballistae = {}
+	for _, b in ipairs(self.layout and self.layout.ballistae or {}) do
+		local m = b.model
+		if m and m.Parent then
+			local holder = m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
+			local pr = Instance.new("ProximityPrompt")
+			pr.ActionText, pr.ObjectText = "Loose", "Ballista"
+			pr.KeyboardKeyCode = Enum.KeyCode.E
+			pr.HoldDuration = 0.25
+			pr.MaxActivationDistance = 11
+			pr.RequiresLineOfSight = false
+			-- (its own side's only; winding: nobody's · Prompts.client)
+			pr:SetAttribute("Team", b.side)
+			pr:SetAttribute("Ready", true)
+			pr.Parent = holder
+			local e = {model = m, side = b.side, prompt = pr, readyAt = 0, home = m:GetPivot()}
+			pr.Triggered:Connect(function(plr) self:looseBallista(e, plr) end)
+			table.insert(self.ballistae, e)
+		end
+	end
+end
+
+function War:looseBallista(e, plr)
+	if Game.current ~= self or os.clock() < e.readyAt then return end
+	if Teams.keyOf(plr) ~= e.side then return end
+	local char = plr.Character
+	local hum = humOf(char)
+	if not (hum and hum.Health > 0) then return end
+	e.readyAt = os.clock() + BALLISTA.reload
+	e.prompt:SetAttribute("Ready", false)
+	local f = e.side == "A" and 1 or -1
+	local from = e.home.Position + Vector3.new(0, 4, 0)
+	local ahead = Vector3.new(0, 0, f)
+	-- the nearest knot of enemies in front of it (else straight down the field)
+	local best, bestD
+	for _, hrp in pairs(Teams.fighters(ENEMY[e.side])) do
+		local to = hrp.Position - from
+		local d = to.Magnitude
+		if d < BALLISTA.range and d > 4 and flat(to).Unit:Dot(ahead) > BALLISTA.arc and (not bestD or d < bestD) then best, bestD = hrp.Position, d end
+	end
+	local aim = best and (best - from).Unit or (ahead + Vector3.new(0, 0.02, 0)).Unit
+	-- it swings onto them
+	-- (turned the way it's aiming: its home pivot already faces the enemy, so turn by the difference)
+	local yaw = math.atan2(-aim.X, -aim.Z) - math.atan2(-ahead.X, -ahead.Z)
+	pcall(function() e.model:PivotTo(e.home * CFrame.Angles(0, yaw, 0)) end)
+	local L = BALLISTA.range
+	local to = from + aim * L
+	-- who's in the bolt's way: the first few along its line
+	local hits = {}
+	for model, hrp in pairs(Teams.fighters(ENEMY[e.side])) do
+		local rel = hrp.Position - from
+		local along = rel:Dot(aim)
+		if along > 0 and along < L then
+			local off = (rel - aim * along).Magnitude
+			if off < BALLISTA.width then table.insert(hits, {model = model, hrp = hrp, along = along}) end
+		end
+	end
+	table.sort(hits, function(x, y) return x.along < y.along end)
+	if #hits >= BALLISTA.pierce then to = from + aim * (hits[BALLISTA.pierce].along + 6) end
+	local flight = math.clamp((to - from).Magnitude / 220, 0.15, 1.2)
+	remote:FireAllClients("Bolt", {side = e.side, from = from, to = to, t = flight})
+	task.delay(flight * 0.5, function()
+		for k, h in ipairs(hits) do
+			if k > BALLISTA.pierce then break end
+			local victim = humOf(h.model)
+			if victim and victim.Health > 0 then
+				h.model:SetAttribute("LastHitBy", plr.UserId)
+				h.model:SetAttribute("LastHitByName", plr.DisplayName)
+				h.model:SetAttribute("LastHitWith", "Ballista")
+				h.model:SetAttribute("LastHitByTeam", e.side)
+				h.model:SetAttribute("LastHitAt", os.clock())
+				victim:TakeDamage(BALLISTA.damage[k])
+				h.hrp.AssemblyLinearVelocity = aim * 40 + Vector3.new(0, 22, 0)
+			end
+		end
+	end)
+	task.delay(BALLISTA.reload, function()
+		if Game.current ~= self then return end
+		e.prompt:SetAttribute("Ready", true)
+		pcall(function() e.model:PivotTo(e.home) end)
+	end)
 end
 
 --------------------------------------------------------------------

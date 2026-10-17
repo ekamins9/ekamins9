@@ -132,6 +132,23 @@ function EV.Barrage(d)
 	end
 end
 
+-- a manned ballista's bolt (War): a great shaft streaking down the field
+function EV.Bolt(d)
+	local bolt = WarFX.part(V3(0.5, 0.5, 8), Color3.fromRGB(110, 82, 54), Enum.Material.Wood)
+	bolt.CFrame = CFrame.lookAt(d.from, d.to)
+	local a0 = Instance.new("Attachment"); a0.Position = V3(0, 0.3, 3.5); a0.Parent = bolt
+	local a1 = Instance.new("Attachment"); a1.Position = V3(0, -0.3, 3.5); a1.Parent = bolt
+	local tr = Instance.new("Trail"); tr.Attachment0, tr.Attachment1 = a0, a1; tr.Lifetime = 0.3; tr.LightEmission = 1
+	tr.Color = ColorSequence.new(Color3.fromRGB(255, 236, 200)); tr.Transparency = NumberSequence.new(0.3, 1); tr.Parent = bolt
+	bolt.Parent = workspace
+	WarFX.sound("Arrows", d.from, {speed = 0.7, volume = 1.2, range = 400})
+	TweenService:Create(bolt, TweenInfo.new(d.t, Enum.EasingStyle.Linear), {CFrame = CFrame.lookAt(d.to, d.to + (d.to - d.from).Unit)}):Play()
+	task.delay(d.t, function()
+		bolt:Destroy()
+		WarFX.dust(d.to, 0.8)
+	end)
+end
+
 remote.OnClientEvent:Connect(function(what, d)
 	local f = EV[what]
 	if f then

@@ -1641,6 +1641,13 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   enemies; a raised guard or a roof overhead saves you); **battle-mages** (a barrage now and then:
   a line of meteors across the enemy's front, chain lightning onto their fighters, or a frost
   that slows them). Engines only hurt the other side.
+- **Ballistae you man**: two a side behind its second banner (WarMap `layout.ballistae`, the made
+  Ballista or one of timber). Hold E: it swings onto the nearest knot of enemies in front of it
+  and looses a bolt that goes through up to three of them (85 / 70 / 55, thrown back; the kills
+  yours); six seconds to wind. Its prompt shows only to its own side, and to nobody while it winds
+  (Prompts.client: a prompt's `Team` and `Ready` attributes).
+- **The engines' kills on the feed**: "Crown Trebuchet", "Iron Archers", "Crown Battle-Mages"
+  (Engines sets LastHitByName / LastHitWith on whoever it hurts).
 - **On your screen** (`War.client`): reinforcements (number and bar) and the clock, the five
   banners as chips in their holder's colour filling as they swing, the one your side is fighting
   for ringed in gold; at a banner: TAKING · HOLDING · LOSING IT! · CAN'T TAKE IT YET; big calls

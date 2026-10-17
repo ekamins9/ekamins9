@@ -24,10 +24,31 @@ local playerGui = player:WaitForChild("PlayerGui")
 local RARITY = {}
 for _, r in ipairs(Catalog.LOOT and Catalog.LOOT.RARITIES or {}) do RARITY[r.id] = r.color end
 
+-- a side's own prompt (Team attribute: War's ballistae) shows only to that side; one that isn't
+-- Ready (a ballista winding) to nobody
+local sided = {}
+local function mySide() local c = player.Character; return c and c:GetAttribute("Team") end
+local function judge(p)
+	if p.Parent then p.Enabled = (p:GetAttribute("Team") == nil or p:GetAttribute("Team") == mySide()) and p:GetAttribute("Ready") ~= false end
+end
 -- every prompt: ours to draw
 local function claim(d)
-	if d:IsA("ProximityPrompt") then d.Style = Enum.ProximityPromptStyle.Custom end
+	if d:IsA("ProximityPrompt") then
+		d.Style = Enum.ProximityPromptStyle.Custom
+		if d:GetAttribute("Team") ~= nil or d:GetAttribute("Ready") ~= nil then
+			sided[d] = true
+			judge(d)
+			d.AttributeChanged:Connect(function() judge(d) end)
+			d.Destroying:Connect(function() sided[d] = nil end)
+		end
+	end
 end
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for p in pairs(sided) do judge(p) end
+	end
+end)
 for _, d in ipairs(workspace:GetDescendants()) do claim(d) end
 workspace.DescendantAdded:Connect(claim)
 
