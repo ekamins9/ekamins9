@@ -10,6 +10,7 @@
 | [Honours.lua](ServerScriptService/Game/Honours.lua) | ServerScriptService ▸ Game | ModuleScript | new: the counts, the names, HonoursEvent |
 | [Honours.client.lua](StarterPlayerScripts/Honours.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new: the callouts |
 | [Game.lua](ServerScriptService/Game/Game.lua) | ServerScriptService ▸ Game | ModuleScript | `onDeath` / `onBotDeath` tell Honours (loaded at start) |
+| [Catalog/Contracts.lua](ReplicatedStorage/Catalog/Contracts.lua), [Stats.lua](ServerScriptService/Economy/Stats.lua) | ReplicatedStorage ▸ Catalog · ServerScriptService ▸ Economy | ModuleScript | a daily task: Be Champion of the Field (the `champion` stat) |
 | [README.md](README.md) | | doc | |
 
 ---

@@ -20,6 +20,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Honours = {}
 local WINDOW = 4.5
+-- (a run of 5 is the "champion" stat, for the daily task · Economy ▸ Stats)
+local Stats
+pcall(function() Stats = require(game:GetService("ServerScriptService"):WaitForChild("Economy"):WaitForChild("Stats")) end)
 local QUIET = {Hub = true, Tiltyard = true, Training = true, Tavern = true}
 
 local node = ReplicatedStorage:WaitForChild("Round")
@@ -75,6 +78,7 @@ function Honours.kill(killer, victimPlr)
 		local sub = (multi and run) and (run .. "  ·  " .. s.run .. " IN A ROW") or (s.run >= 3 and (s.run .. " IN A ROW") or "")
 		event:FireClient(killer, "Mine", {title = title, sub = sub, big = (s.multi >= 3) or loud ~= nil})
 	end
+	if s.run == 5 and Stats then pcall(Stats.add, killer, "champion", 1) end
 	if loud then
 		event:FireAllClients("All", {text = string.upper(killer.DisplayName) .. " " .. loud, sub = s.run .. " IN A ROW", who = killer.UserId})
 	end
