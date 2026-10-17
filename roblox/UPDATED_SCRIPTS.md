@@ -1,4 +1,16 @@
-# Updated scripts: the hill flies its holders' banner
+# Updated scripts: the fitting-room light
+
+- **The preview stages** (LOADOUT, the Armory's armour, and the others that use a stage) stand
+  your fighter in a dark armoury with warm light falling behind them and the floor going off into
+  shadow, instead of a flat lavender panel.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `Stage.new`'s backdrop |
+
+---
+
+## Before that: the hill flies its holders' banner
 
 - **King of the Hill** has a flagpole on the hill. Whoever holds it has their banner run up it,
   their house's arms on it; when the hill changes hands it comes down and the new one goes up;

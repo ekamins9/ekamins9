@@ -1208,12 +1208,38 @@ function Stage.new(parent, opts)
 	opts = opts or {}
 	local self = setmetatable({}, Stage)
 	if not opts.transparent then
-		-- the backdrop (a gradient on the ViewportFrame itself would tint the render)
+		-- the backdrop: a dark armoury, warm light falling behind whoever stands here, the floor
+		-- going off into shadow (a gradient on the ViewportFrame itself would tint the render)
 		local back = frame(parent, WHITE, 14)
 		back.Size = UDim2.fromScale(1, 1)
+		back.ClipsDescendants = true
 		local g = Instance.new("UIGradient", back)
 		g.Rotation = 90
-		g.Color = ColorSequence.new(Color3.fromRGB(78, 96, 146), Color3.fromRGB(22, 26, 44))
+		g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(46, 54, 80)), ColorSequenceKeypoint.new(0.6, Color3.fromRGB(28, 32, 50)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 14, 22))})
+		-- (many faint rings, so the light has no edges)
+		for _, k in ipairs({{1.4, 0.958}, {1.24, 0.958}, {1.08, 0.958}, {0.93, 0.958}, {0.79, 0.958}, {0.65, 0.958}, {0.51, 0.958}, {0.37, 0.958}}) do
+			local glow = Instance.new("Frame")
+			glow.AnchorPoint = Vector2.new(0.5, 0.5)
+			glow.Position = UDim2.fromScale(0.5, 0.44)
+			glow.SizeConstraint = Enum.SizeConstraint.RelativeYY
+			glow.Size = UDim2.fromScale(k[1], k[1])
+			glow.BackgroundColor3 = Color3.fromRGB(255, 214, 150)
+			glow.BackgroundTransparency = k[2]
+			glow.BorderSizePixel = 0
+			glow.Parent = back
+			Instance.new("UICorner", glow).CornerRadius = UDim.new(0.5, 0)
+		end
+		local floor = Instance.new("Frame")
+		floor.AnchorPoint = Vector2.new(0, 1)
+		floor.Position = UDim2.fromScale(0, 1)
+		floor.Size = UDim2.fromScale(1, 0.34)
+		floor.BackgroundColor3 = Color3.new(0, 0, 0)
+		floor.BorderSizePixel = 0
+		floor.Parent = back
+		local fg = Instance.new("UIGradient", floor)
+		fg.Rotation = 90
+		fg.Transparency = NumberSequence.new(1, 0.45)
 	end
 	local vp = Instance.new("ViewportFrame")
 	vp.BackgroundTransparency = 1
