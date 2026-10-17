@@ -1,4 +1,17 @@
-# Updated scripts: monsters take shape out of the dark
+# Updated scripts: the Siege ram has a crew
+
+- **Six attackers under the ram's roof** walk it up the road with the players and lean into it when it stops; they cheer when the gate falls.
+- **Checked in Play** on Emberkeep.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the ram's crew |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `crew`, `crewCheer` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: monsters take shape out of the dark
 
 - **In the dungeons a monster fades in** from nothing to solid over most of a second as the grave-dust bursts up, instead of popping into view.
 - **Checked in Play** in the Bone Crypt: a skeleton knight materialising; fully solid after.
@@ -19,17 +32,4 @@
 |---|---|---|---|
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `torches`, `WarCrowd.night()` |
 | [War.client.lua](StarterPlayerScripts/War.client.lua), [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua), [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | torches at night |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the armies answer your war cry
-
-- **War Cry / Cheer in a battle**: your side's regiments nearby (within 140 studs) raise their weapons and roar back. Works in War, Siege, the warfields and anywhere the armies stand.
-- **Checked in Play** on Redfield (War): the cry by the Crown's lines; 90 s soak with no errors.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a rally on War Cry / Cheer |
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `WarCrowd.answer` |
 | [README.md](README.md) | | doc | |

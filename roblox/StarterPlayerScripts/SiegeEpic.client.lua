@@ -196,6 +196,26 @@ local function build(C)
 	end
 	siege.hazes.gate = WarFX.haze(V3(C.gate.X, 2, C.faceZ + f * 14), {width = 60, depth = 20, rate = small and 1 or 3, color = DUST})
 	siege.battle = WarFX.loop("Battle", 0.4)
+	-- THE RAM'S CREW: six of the attackers under its roof, walking it up the road, leaning into it
+	task.spawn(function()
+		local m = workspace:FindFirstChild("Map")
+		local obj = m and m:FindFirstChild("Objectives")
+		local ram
+		for _ = 1, 40 do
+			for _, c in ipairs(obj and obj:GetChildren() or {}) do
+				local r = c:FindFirstChild("Ram")
+				if r and r.PrimaryPart then ram = r end
+			end
+			if ram or siege.crowd ~= crowd then break end
+			task.wait(0.5)
+		end
+		if not ram or siege.crowd ~= crowd then return end
+		local spots = {}
+		for _, x in ipairs({-2, 2}) do
+			for _, z in ipairs({-4.5, 0, 4.5}) do table.insert(spots, CF(x, -1.6, z)) end
+		end
+		crowd:crew(ram.PrimaryPart, {side = A, kind = "foot", spots = spots})
+	end)
 	siege.crows = WarFX.crows(V3(C.gate.X, 0, C.gate.Z - f * 40), {n = small and 8 or 14, radius = 90, height = 70})
 	siege.charged = false
 	siege.chargeAt = os.clock() + 8
@@ -214,6 +234,7 @@ local function wallsTaken(quiet)
 	siege.taken = true
 	if not quiet then
 		crowd:cheer(siege.A)
+		crowd:crewCheer(6)
 		-- the gate bursts: a cloud of dust and splinters, the crash, the ground jumping under you
 		local g = C.gate
 		WarFX.dust(g + V3(0, 3, C.f * 4), 4, DUST)

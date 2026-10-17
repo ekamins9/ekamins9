@@ -42,6 +42,9 @@
                               a crowd watching (an arena's stands): still, and on c:roar(secs) a
                               good part of it on its feet, arms up, cheering
        c:rout(id, secs)       a regiment cut down: all fall within secs, none steps up after
+       c:crew(part, {side, kind, spots = {CFrame…} (offsets from the part, at the men's feet)})
+                              men riding along with a moving thing (a ram's crew under its roof):
+                              they walk while it moves, lean into it when it stops; c:crewCheer(secs)
        c:sentry({side, kind, from, to, out, speed})
                               one man walking his stretch (a wall's walk: from → to and back),
                               stopping at each end a few seconds to look out (`out`)
@@ -811,6 +814,52 @@ function WarCrowd:stepAudiences(now, dt, put, cam, c)
 end
 
 --------------------------------------------------------------------
+--  A CREW: men moving with a moving thing (under a ram's roof), walking or leaning into it
+--------------------------------------------------------------------
+function WarCrowd:crew(part, o)
+	local kind = o.kind or "foot"
+	local cr = {part = part, kind = kind, men = {}, acc = 0, cheerUntil = 0}
+	for k, off in ipairs(o.spots or {}) do
+		local t = template(o.side or "A", kind, k % 2 + 1)
+		if t then
+			local s = newSoldier(self.home, t, o.detail or "lite", true)
+			s.ph = math.random() * 6.28
+			s.state = "brace"
+			table.insert(cr.men, {s = s, off = off})
+		end
+	end
+	self.crews = self.crews or {}
+	table.insert(self.crews, cr)
+	return cr
+end
+function WarCrowd:crewCheer(secs)
+	for _, cr in ipairs(self.crews or {}) do cr.cheerUntil = os.clock() + (secs or 4) end
+end
+
+function WarCrowd:stepCrews(now, dt, put, c)
+	for _, cr in ipairs(self.crews or {}) do
+		local p = cr.part
+		if p and p.Parent then
+			cr.acc += dt
+			local cf = p.CFrame
+			local d = (cf.Position - c).Magnitude
+			local every = d < 120 and 0.05 or 0.25
+			if cr.acc >= every then
+				local moved = cr.last and (cf.Position - cr.last).Magnitude / cr.acc or 0
+				cr.acc = 0
+				cr.last = cf.Position
+				local st = now < cr.cheerUntil and "cheer" or (moved > 0.4 and "march" or "brace")
+				for _, e in ipairs(cr.men) do
+					e.s.state = st
+					local base = cf * e.off
+					if d < 120 then place(e.s, base, now, cr.kind, put) else placeRigid(e.s, base, cr.kind, put) end
+				end
+			end
+		end
+	end
+end
+
+--------------------------------------------------------------------
 --  A SENTRY: one man walking his stretch of wall and back, looking out at each end
 --------------------------------------------------------------------
 function WarCrowd:sentry(o)
@@ -962,7 +1011,7 @@ function WarCrowd:stop()
 	if self.dead then return end
 	self.dead = true
 	self.home:Destroy()
-	self.list, self.regs, self.flying, self.ladders, self.audiences, self.sentries = {}, {}, {}, nil, nil, nil
+	self.list, self.regs, self.flying, self.ladders, self.audiences, self.sentries, self.crews = {}, {}, {}, nil, nil, nil, nil
 end
 
 -- one regiment: march (always), then its men where they need moving
@@ -1110,6 +1159,10 @@ function WarCrowd:step(now, dt)
 			self:placeReg(reg, now, reg.acc, put, visible, lod)
 			reg.acc = 0
 		end
+	end
+	if self.crews then
+		local camC = workspace.CurrentCamera
+		self:stepCrews(now, dt, put, camC and camC.CFrame.Position or Vector3.zero)
 	end
 	if self.sentries then
 		local camS = workspace.CurrentCamera
