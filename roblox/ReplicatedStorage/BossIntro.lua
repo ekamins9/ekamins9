@@ -1,6 +1,7 @@
 --[[ BOSS INTRO — a boss's entrance, on this screen: black bars close in and the rest of the HUD
      steps aside, the camera finds the boss and creeps towards it while its name comes up big on
-     the bars, a deep boom and the ground shaking; about three seconds, then back to you.
+     the bars (the boss in focus, the room behind it soft), a deep boom and the ground shaking;
+     about three seconds, then back to you.
      (Client only. The Depths' lords: Adventure.client on the boss banner; Siege's champion and
      the Horde's Warlord: BossEntrance.client.)
 
@@ -93,6 +94,11 @@ function BossIntro.play(model, text, subText, color)
 			WarFX.shake(1.1, 0.9)
 		end)
 		_G.CinematicUp = true
+		-- (the boss sharp, the room behind it soft)
+		local dof = Instance.new("DepthOfFieldEffect")
+		dof.Name = "BossIntroDOF"
+		dof.FarIntensity, dof.NearIntensity, dof.InFocusRadius, dof.FocusDistance = 0.45, 0, 8, 18
+		dof.Parent = workspace.CurrentCamera
 		if head and me then
 			local scale = model:GetAttribute("MonsterScale") or 1
 			local away = Vector3.new(me.Position.X - head.Position.X, 0, me.Position.Z - head.Position.Z)
@@ -109,10 +115,12 @@ function BossIntro.play(model, text, subText, color)
 				cam.CameraType = Enum.CameraType.Scriptable
 				cam.CFrame = CFrame.lookAt(from, at + Vector3.new(0, 0.6 * scale, 0))
 				cam.FieldOfView = 55 - 6 * e
+				if dof.Parent then dof.FocusDistance = (from - at).Magnitude; dof.InFocusRadius = 6 * scale end
 			end)
 		end
 		task.wait(DUR)
 		pcall(function() RunService:UnbindFromRenderStep("BossIntro") end)
+		dof:Destroy()
 		for _, g in ipairs(hidden) do if g.Parent then g.Enabled = true end end
 		local cam = workspace.CurrentCamera
 		if cam then cam.CameraType = Enum.CameraType.Custom end
