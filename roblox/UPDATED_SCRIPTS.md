@@ -1,4 +1,16 @@
-# Updated scripts: torches in the night battles
+# Updated scripts: monsters take shape out of the dark
+
+- **In the dungeons a monster fades in** from nothing to solid over most of a second as the grave-dust bursts up, instead of popping into view.
+- **Checked in Play** in the Bone Crypt: a skeleton knight materialising; fully solid after.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the fade-in |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: torches in the night battles
 
 - **At night the armies carry torches**: on night maps (Nightfall in War, the night castles in Siege, Ravenfield) the battle lines show as firelight in the dark.
 - **Checked in Play** on Ravenfield: 52 torches, 52–58 fps in Studio play.
@@ -21,18 +33,3 @@
 | [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a rally on War Cry / Cheer |
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `WarCrowd.answer` |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: the monsters groan and growl in the dark
-
-- **What lurks**: in the dungeons, monsters near you groan (the undead) or growl (everything else) now and then from where they stand, the big ones deeper. Two new generated sounds.
-- **Siege**: once the fight is inside the walls, smoke from the burning castle drifts through the yard being fought over.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | groans and growls |
-| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | smoke in the bailey |
-| [README.md](README.md) | | doc | |
-
-Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Groan, Growl.

@@ -7,8 +7,9 @@
                         to the screen
        the sounds       a low drone under everything; now and then, somewhere in the dark near
                         you, a whisper, an iron clank, a deep thud from far below, stone settling
-       what comes       a monster doesn't just appear: grave-dust bursts up where it stands out
-                        of the dark (and some of the dead whisper as they come)
+       what comes       a monster doesn't just appear: it takes shape out of the dark over most
+                        of a second as grave-dust bursts up round it (and some of the dead whisper
+                        as they come)
        what lurks       a monster near you (within 70 studs) groans or growls now and then, from
                         where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
@@ -227,6 +228,23 @@ local function arrives(m)
 	local root = m:FindFirstChild("HumanoidRootPart")
 	if not root then return end
 	local faction = m:GetAttribute("Faction")
+	-- (it takes shape out of the dark: from nothing to solid over most of a second)
+	local parts = {}
+	for _, d in ipairs(m:GetDescendants()) do
+		if (d:IsA("BasePart") or d:IsA("Decal")) and d.LocalTransparencyModifier == 0 then
+			d.LocalTransparencyModifier = 1
+			table.insert(parts, d)
+		end
+	end
+	task.spawn(function()
+		local t0 = os.clock()
+		while true do
+			local u = math.clamp((os.clock() - t0) / 0.9, 0, 1)
+			for _, d in ipairs(parts) do if d.Parent then d.LocalTransparencyModifier = 1 - u * u end end
+			if u >= 1 then break end
+			task.wait()
+		end
+	end)
 	local feet = root.Position - Vector3.new(0, 2.6 * (m:GetAttribute("MonsterScale") or 1), 0)
 	WarFX.dust(feet + Vector3.new(0, 0.6, 0), 1.4 * (m:GetAttribute("MonsterScale") or 1), DUST[faction or ""] or Color3.fromRGB(96, 90, 84))
 	if faction == "Undead" and os.clock() - (mood.lastWhisper or 0) > 4 and math.random() < 0.5 then

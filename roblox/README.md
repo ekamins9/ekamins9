@@ -1961,8 +1961,9 @@ cold (each theme its own grade), the screen's edges darken, a low drone sits und
 now and then, somewhere in the dark behind or beside you, a whisper, an iron clank, a deep thud
 from far below (WarAudio: Drone, Whisper, Gate, Impact). The monsters near you (within 70
 studs) groan or growl now and then from where they stand: the dead groan, the rest growl
-(WarAudio: Groan, Growl; a big one lower). A monster doesn't pop in: grave-dust
-bursts up where it comes out of the dark (some of the dead whisper as they come). Now and then,
+(WarAudio: Groan, Growl; a big one lower). A monster doesn't pop in: it takes shape out of the
+dark over most of a second as grave-dust bursts up round it (some of the dead whisper as they
+come). Now and then,
 well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
 path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen). **A boss's
 entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords on their banner through
