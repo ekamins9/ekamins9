@@ -1377,6 +1377,16 @@ hand-made maps are named in `Horizon`'s HAND; a `HorizonTheme` attribute names o
 running on past the map's square, a still sea beyond to the sky, headlands and mountains rising
 out of it all round, wooded islets, smoke off a far coast.
 
+**The last fight's leavings** (`Game ▸ Litter.field`, laid by MapLoader on every map that gets a
+horizon, but not War's fields, which have their own, an island realm or the training yard): its
+open ground strewn with what an earlier battle left, the same every time for a map: volleys of
+arrows still standing in the turf, all leaning back the way they flew; round shields dropped face
+up with the two houses' arms (ReplicatedStorage ▸ Houses) or face down on their straps; spears
+snapped in two; a banner down in the mud with its pole; helmets. Only on bare terrain (never a
+floor, a bridge, a roof or water), never by a spawn, and nothing in it collides, is hit or is
+touched. Under each heap the grass is trodden to earth (`Terrain:ReplaceMaterial`), or the grass
+would hide it all. Siege adds a thicker field before its castle's gate.
+
 **Every banner flies arms** (`Game ▸ BannerArt`, as the map loads: the map, its horizon, the
 Courtyard's backdrop): each cloth gets its house's emblem (the shields' pictures, ShieldArt) on
 both faces, gold on a dark or bright cloth, dark on a pale one, with its outline and shadow; not

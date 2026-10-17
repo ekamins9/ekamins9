@@ -188,6 +188,7 @@ function MapLoader.load(name)
 	do
 		local ok, err = pcall(function() return horizon().build(m, name) end)
 		if not ok then warn("[Map] horizon:", err) end
+		local landed = ok and err == true
 		-- the two houses' arms on every banner (Game ▸ BannerArt); HouseSeed on the Map is what every
 		-- screen picks this map's houses by (ReplicatedStorage ▸ Houses: the sides' shields too)
 		-- (a built map's round number left off: Gen_War_Redfield_3 flies what Gen_War_Redfield_1 did)
@@ -199,6 +200,12 @@ function MapLoader.load(name)
 			BannerArt.dress(workspace:FindFirstChild("MapHorizon"), seed)
 		end)
 		if not ok then warn("[Map] banners:", err) end
+		-- the last fight's leavings on its open ground (Game ▸ Litter): only a battleground with land
+		-- round it, not War's (its own: WarMap), an island realm's nor the training yard
+		if landed and not m:GetAttribute("W_Theme") and not m:GetAttribute("Island") and name ~= "TrainingYard" then
+			ok, err = pcall(function() return require(script.Parent:WaitForChild("Litter")).field(m, seed) end)
+			if not ok then warn("[Map] litter:", err) end
+		end
 	end
 	MapLoader.current, MapLoader.name = m, name
 	log("loaded", name)

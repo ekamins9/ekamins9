@@ -1,4 +1,21 @@
-# Updated scripts: Raise the Standard, a kill effect that flies your arms
+# Updated scripts: every battlefield strewn with the last fight
+
+- **The last fight's leavings on every outdoor battle map** (TDM, KOTH, FFA, LTS, Kingslayer,
+  Plague, the Lists, Siege…): volleys of arrows still standing in the turf, all leaning the same
+  way; shields dropped face up with the two houses' arms, or face down on their straps; spears
+  snapped in two; a banner down in the mud; helmets. The grass under each heap is trodden to bare
+  earth so it shows. The same field every time for a map; nothing in it gets in the way.
+- Siege's field before the gate uses the same, better-made pieces.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Litter.lua](ServerScriptService/Game/Litter.lua) | ServerScriptService ▸ Game | ModuleScript | rewritten: real shapes, the houses' arms, trampling, `Litter.field` |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | lays `Litter.field` on maps with a horizon |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Raise the Standard, a kill effect that flies your arms
 
 - **Raise the Standard** (Legendary, Relic Crate): your war banner whistles down out of the sky,
   plants itself beside whoever you finished off with a thud and a burst of earth, and unfurls your
