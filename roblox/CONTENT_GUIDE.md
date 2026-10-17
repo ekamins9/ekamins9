@@ -779,6 +779,14 @@ list from the file's header), `order` (how the panel lists them), `owners` (more
 the creator is one already), `TEMPBAN_HOURS` (the longest ban a `tempban` role may give). People
 get roles in the panel's STAFF tab.
 
+## 11d. An update's "What's new" card
+
+Each update you ship can tell returning players what's new: edit `NEWS` at the top of
+`StarterPlayerScripts ▸ WhatsNew` (a new `version` string, up to 16 characters, e.g. the date; a
+`title`; six or so lines of `{icon, heading, one line}`). Everyone who's past the welcome sees it
+once, back in the Courtyard. Keep the icons to ones that already show in the game's menus (a few
+newer emoji draw as an empty box on Roblox).
+
 ## 12. The first release
 
 [RELEASE_CONTENT.md](RELEASE_CONTENT.md) lists every model the shipped catalog expects, with
