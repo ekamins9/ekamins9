@@ -285,13 +285,41 @@ step):
   rebuilt from code on 10-17 (smithy, market; the old one is ServerStorage ▸ TMP_CourtyardBackup); and the 10-17 material pass over ServerStorage ▸ Maps
   (stone walls, shingled spires, rebuilt houses).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
-  rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
+  rendering (wake it with a one-shot `SetThreadExecutionState(ES_DISPLAY_REQUIRED)` before a
+  screenshot batch; a background process holding it on gets blocked as persistence); script tabs in front of the viewport do
   too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
   TMP Scripts made in the Server context during Play share the game's `require` cache.
 - **Tried and dropped:** a victory camera on the round's winner (the server swaps the winner's
   body as the round ends; it would need a change to the round flow).
 - **Recommended to the owner:** Lighting ▸ Technology = Future (the torch pools, fire and
   lanterns are made for it; the MCP can't read or set it).
+
+## 4g. The heraldry pass (2026-10-18, autonomous)
+
+The user's direction: shields "boring and plain, make them 1000x cooler"; the loadout scrolls too
+much and previews badly; maps should "sprawl forever, not floating"; menus clear and beautiful;
+more content; a real medieval battle. What came of it (each in `roblox/README.md`; every step in
+`roblox/UPDATED_SCRIPTS.md`):
+- **`ReplicatedStorage ▸ ShieldPaint`** — a shield's painted face as Decals on clear plates (so
+  ViewportFrames show it too): a great emblem with outline and shadow, the field split (14
+  divisions), scratches, painted light. Pictures are Studio-only: **ReplicatedStorage ▸ ShieldArt**
+  (188 StringValues: 36 emblems × picture/outline/shadow, 5 board shapes × 14 divisions + shade +
+  wear). The image ids are in gitignored `blender/out/forge/shield_art_images.txt` (rebuild the folder
+  from it if lost); the emblem art came from ForgeGUI (icon_gfx, white on black) cut by Pillow
+  scripts.
+- **59 Heraldry shields** (26 redesigned under their names, 33 new); the kite has a true point and
+  a full rim. **YOUR ARMS** (`Catalog ▸ Arms`, LOOK tab): a player's own emblem, metal, field and
+  division on any plain shield, a badge of it on their name tag. **Houses** (`ReplicatedStorage ▸
+  Houses`, `Game ▸ BannerArt`): every banner on every map flies its house's arms; in a team fight
+  plain shields (players' and War's crowds') carry their side's. **`Shields.batter`**: blows caught
+  on a shield chip its paint and throw splinters.
+- **The loadout** in WEAPONS / ARMOR / GEAR / LOOK tabs with 3D picture tiles (HubMenu's `LT`).
+- **`Game ▸ Horizon`** — the land round every outdoor map (MapForge, War, the hand-made ones named
+  in its HAND): a terrain skirt flush with the map, a plain, a mountain ridge that closes the view
+  inside the render distance (~1000 studs: past it the sky shows like a sea), woods, camps or a
+  village, a castle, smoke. Persistent.
+- **Studio-only, to save:** ReplicatedStorage ▸ ShieldArt. **Test scaffolding added:**
+  ServerStorage ▸ TMP_ShieldLineupSrc (a disabled shield-lineup script).
 
 ## 5. Suggested order of work
 
@@ -300,7 +328,8 @@ step):
    WarAudio sounds are Studio-only (section 4f). Remove the test scaffolding (ServerScriptService ▸
    TMP_Go, ServerStorage ▸ TMP_MapPick / TMP_Map / TMP_WarTheme, StarterPlayer ▸
    StarterPlayerScripts ▸ TMP_ClientErrs, ServerScriptService ▸ TMP_ServerErrs, ServerStorage ▸
-   TMP_CourtyardBackup) before publishing. (The two error loggers write workspace ▸ TMP_Errs and
+   TMP_CourtyardBackup, ServerStorage ▸ TMP_ShieldLineupSrc) before publishing; ReplicatedStorage ▸
+   ShieldArt (2026-10-18) must be saved with the place. (The two error loggers write workspace ▸ TMP_Errs and
    the player's TMP_CErrs: handy for a soak while they're there.)
 2. Finish / verify the mesh armor (section 4), look at every set on the mannequin, fix fits.
 3. Polish: weapon and helmet shapes, menu screens against `docs/reference/`, the maps' cover.
