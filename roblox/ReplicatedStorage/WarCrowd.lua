@@ -38,6 +38,9 @@
                               a crowd watching (an arena's stands): still, and on c:roar(secs) a
                               good part of it on its feet, arms up, cheering
        c:rout(id, secs)       a regiment cut down: all fall within secs, none steps up after
+       c:sentry({side, kind, from, to, out, speed})
+                              one man walking his stretch (a wall's walk: from → to and back),
+                              stopping at each end a few seconds to look out (`out`)
        c:stop()
        WarCrowd.ghost(at, {side, kind, dir, speed, secs, color})
                               an apparition: a pale see-through man walking from `at` along `dir`,
@@ -768,6 +771,60 @@ function WarCrowd:stepAudiences(now, dt, put, cam, c)
 end
 
 --------------------------------------------------------------------
+--  A SENTRY: one man walking his stretch of wall and back, looking out at each end
+--------------------------------------------------------------------
+function WarCrowd:sentry(o)
+	local kind = o.kind or "pike"
+	local t = template(o.side or "A", kind, math.random(2))
+	if not t then return nil end
+	local s = newSoldier(self.home, t, o.detail or "lite")
+	s.ph = math.random() * 6.28
+	s.state = "march"
+	local se = {s = s, a = o.from, b = o.to, len = math.max((o.to - o.from).Magnitude, 1), u = math.random(), dir = math.random() < 0.5 and 1 or -1,
+		speed = o.speed or 3.6, kind = kind, out = o.out, waitUntil = 0, acc = math.random() * 0.2, placed = false}
+	self.sentries = self.sentries or {}
+	table.insert(self.sentries, se)
+	return se
+end
+
+function WarCrowd:stepSentries(now, dt, put, c)
+	for _, se in ipairs(self.sentries or {}) do
+		se.acc += dt
+		local at = se.a:Lerp(se.b, se.u)
+		local d = (at - c).Magnitude
+		local every = d < 80 and 0.05 or (d < 250 and 0.15 or 0.4)
+		if se.acc >= every then
+			local step = se.acc
+			se.acc = 0
+			local s = se.s
+			if now < se.waitUntil then
+				-- (at the end of his stretch: stands and looks out a while)
+				if s.state ~= "stand" or not se.placed then
+					s.state = "stand"
+					local out = se.out or (se.b - se.a)
+					placeRigid(s, CFrame.lookAt(at, at + V3(out.X, 0, out.Z)), se.kind, put)
+					se.placed = true
+				end
+			else
+				se.u += se.dir * se.speed * step / se.len
+				if se.u >= 1 or se.u <= 0 then
+					se.u = math.clamp(se.u, 0, 1)
+					se.dir = -se.dir
+					se.waitUntil = now + 3 + math.random() * 4
+				end
+				s.state = "march"
+				at = se.a:Lerp(se.b, se.u)
+				local ahead = (se.b - se.a) * se.dir
+				local base = CFrame.lookAt(at, at + V3(ahead.X, 0, ahead.Z))
+				if d < 80 then place(s, base, now, se.kind, put)
+				else placeRigid(s, base * CF(0, math.abs(math.sin((now + s.ph) * 7)) * 0.2, 0), se.kind, put) end
+				se.placed = false
+			end
+		end
+	end
+end
+
+--------------------------------------------------------------------
 --  AN APPARITION: a pale see-through man walking a few steps through the dark, then gone
 --------------------------------------------------------------------
 function WarCrowd.ghost(at, o)
@@ -825,7 +882,7 @@ function WarCrowd:stop()
 	if self.dead then return end
 	self.dead = true
 	self.home:Destroy()
-	self.list, self.regs, self.flying, self.ladders, self.audiences = {}, {}, {}, nil, nil
+	self.list, self.regs, self.flying, self.ladders, self.audiences, self.sentries = {}, {}, {}, nil, nil, nil
 end
 
 -- one regiment: march (always), then its men where they need moving
@@ -970,6 +1027,10 @@ function WarCrowd:step(now, dt)
 			self:placeReg(reg, now, reg.acc, put, visible, lod)
 			reg.acc = 0
 		end
+	end
+	if self.sentries then
+		local camS = workspace.CurrentCamera
+		self:stepSentries(now, dt, put, camS and camS.CFrame.Position or Vector3.zero)
 	end
 	if self.audiences then
 		local camA = workspace.CurrentCamera

@@ -1761,6 +1761,12 @@ the map's Shot1 down to just behind you, the mode and the map as a title and wha
 do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four seconds; any key
 skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …).
 
+## The Courtyard's sentries (`CourtyardGuards.client`)
+In the hub, on your screen only, sentries in the Crown's colours walk the Courtyard's battlements
+(a stretch of each `Walk` part each, a long walk shared by two; spearmen and now and then an
+archer), stopping at the end of their stretch to look out over the walls a while
+(`WarCrowd:sentry`). About 130 parts.
+
 ## The rest of the horde (`HordeHost.client`)
 In the Horde, on your screen only: out past each of the map's gates (`Spots ▸ HordeGate<n>`) and
 past its edge (never where anyone can walk up to them), a block of the horde's soldiers stands

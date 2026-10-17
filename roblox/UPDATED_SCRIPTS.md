@@ -1,4 +1,17 @@
-# Updated scripts: two more battlefield duel maps
+# Updated scripts: sentries on the Courtyard's walls
+
+- **The Courtyard is a garrison**: Crown sentries walk the battlements, stopping at the ends of their stretch to look out over the walls.
+- **Checked in Play** in the Courtyard.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CourtyardGuards.client.lua](StarterPlayerScripts/CourtyardGuards.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `sentry` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: two more battlefield duel maps
 
 - **Sunfall** (desert dunes at dusk, a huge moon) and **Ravenfield** (night, storm and lightning, the ring lit by torches): the duel ring in the middle of the battle, now five maps in The Lists. Vote pictures shot with the battle running.
 
@@ -21,21 +34,4 @@ Studio-only (save the place): ServerStorage ▸ Maps ▸ Sunfall, Ravenfield; Re
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [HordeHost.client.lua](StarterPlayerScripts/HordeHost.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: crows over the battlefields; the Siege gate bursts
-
-- **Crows** wheel high over every battlefield (War's front, the Siege castle, the warfields, the team fights): black wings beating, gliding, beating again.
-- **The Siege gate bursts** in a cloud of dust and splinters with a crash that shakes the ground (more the nearer you are).
-- **Checked in Play** on Frostgate: the flock over the castle, the gate breaking.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | `WarFX.crows` |
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows over the front |
-| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows; the gate's burst |
-| [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows |
-| [BattleAmbience.client.lua](StarterPlayerScripts/BattleAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows |
 | [README.md](README.md) | | doc | |
