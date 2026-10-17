@@ -38,6 +38,8 @@
                                           handle:move(pos), handle:stop(fade)
        WarFX.crows(centre, opts)          a flock wheeling high over a battlefield (opts.n, opts.radius,
                                           opts.height) · handle:move(centre), handle:stop()
+       WarFX.bats(from, to, n)            a swarm bursting out of the dark at `from`, flitting past
+                                          to `to` and gone (about two seconds)
        WarFX.clear()                      everything gone (leaving the mode)
      A fireball takes opts.color (a battle-mage's meteor) and opts.size; a blast opts.color. ]]
 
@@ -931,6 +933,48 @@ function WarFX.crows(centre, opts)
 		birds = {}
 	end
 	return h
+end
+
+--------------------------------------------------------------------
+--  BATS: a swarm out of the dark, flitting past and gone
+--------------------------------------------------------------------
+function WarFX.bats(from, to, n)
+	n = n or 10
+	local black = Color3.fromRGB(16, 14, 16)
+	local list, ps, cfs = {}, {}, {}
+	for i = 1, n do
+		local b = {body = part(V3(0.3, 0.25, 0.5), black), l = part(V3(0.9, 0.05, 0.45), black), r = part(V3(0.9, 0.05, 0.45), black),
+			delay = math.random() * 0.5, wob = V3((math.random() - 0.5) * 6, (math.random() - 0.5) * 3, (math.random() - 0.5) * 6),
+			ph = math.random() * 6.28, T = 1.6 + math.random() * 0.6}
+		for _, p in ipairs({b.body, b.l, b.r}) do p.CFrame = FAR; p.Parent = crowd() end
+		list[i] = b
+	end
+	local t0 = os.clock()
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local t = os.clock() - t0
+		local k, done = 0, true
+		for _, b in ipairs(list) do
+			local u = math.clamp((t - b.delay) / b.T, 0, 1)
+			if u < 1 then done = false end
+			local pos
+			if u <= 0 or u >= 1 then pos = nil
+			else
+				-- (a jinking path: the straight line, a sway across it, a lift in the middle)
+				pos = from:Lerp(to, u) + b.wob * math.sin(u * math.pi) + V3(math.sin(t * 9 + b.ph) * 0.8, math.sin(u * math.pi) * 2 + math.cos(t * 11 + b.ph) * 0.5, 0)
+			end
+			local cf = pos and CFrame.lookAt(pos, pos + (to - from).Unit) or FAR
+			local beat = math.sin(t * 28 + b.ph) * 0.9
+			k += 1; ps[k] = b.body; cfs[k] = cf
+			k += 1; ps[k] = b.l; cfs[k] = pos and cf * CFrame.Angles(0, 0, beat) * CF(-0.5, 0, 0) or FAR
+			k += 1; ps[k] = b.r; cfs[k] = pos and cf * CFrame.Angles(0, 0, -beat) * CF(0.5, 0, 0) or FAR
+		end
+		workspace:BulkMoveTo(ps, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+		if done then
+			conn:Disconnect()
+			for _, b in ipairs(list) do b.body:Destroy(); b.l:Destroy(); b.r:Destroy() end
+		end
+	end)
 end
 
 --------------------------------------------------------------------

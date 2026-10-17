@@ -1983,7 +1983,9 @@ studs) groan or growl now and then from where they stand: the dead groan, the re
 dark over most of a second as grave-dust bursts up round it (some of the dead whisper as they
 come). Now and then,
 well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
-path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen). While a
+path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen); or a
+swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸
+Bats). While a
 boss lives within 90 studs, the grade turns darker, blood-tinged and harder, easing back when it
 falls. **A boss's
 entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords on their banner through

@@ -14,6 +14,8 @@
                         where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
        a boss near      while a boss is alive near you (Boss, within 90 studs) the colours turn
                         a darker, blood-tinged, harder grade, easing back when it falls
+       bats             now and then a swarm bursts out of the dark ahead and flits past over your
+                        head (WarAudio ▸ Bats)
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
                         walks a few steps across your path and is gone (WarCrowd.ghost; never a
                         fighter, nothing anyone else sees)
@@ -239,11 +241,33 @@ local function apparition()
 	WarCrowd.ghost(CFrame.new(start), {dir = across, speed = speed, secs = secs, color = GHOST[mood.theme or ""], kind = math.random() < 0.5 and "foot" or "knight"})
 	WarFX.sound("Whisper", floor.Position + V3(0, 3, 0), {volume = 0.45, speed = 0.7 + math.random() * 0.2, near = 12, range = 90})
 end
+local function bats()
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+	ghostRay.FilterDescendantsInstances = {char, cam, workspace:FindFirstChild("NPCs")}
+	local look = cam.CFrame.LookVector
+	local fwd = V3(look.X, 0, look.Z)
+	if fwd.Magnitude < 0.2 then return end
+	fwd = fwd.Unit
+	local head = root.Position + V3(0, 4, 0)
+	-- (out of the dark ahead, short of the wall; over your head and away behind you)
+	local hit = workspace:Raycast(head, fwd * 60, ghostRay)
+	local d = hit and (hit.Position - head).Magnitude - 3 or 45
+	if d < 14 then return end
+	local from = head + fwd * math.min(d, 40) + V3(0, 3, 0)
+	local back = workspace:Raycast(head, -fwd * 40, ghostRay)
+	local to = head - fwd * ((back and (back.Position - head).Magnitude - 2) or 30) + V3((math.random() - 0.5) * 8, 2, (math.random() - 0.5) * 8)
+	WarFX.bats(from, to, 9 + math.random(5))
+	WarFX.sound("Bats", head, {volume = 0.8, near = 10, range = 80, speed = 0.95 + math.random() * 0.1})
+end
 local function haunt(token)
 	task.wait(30 + math.random() * 30)
 	while mood.on and mood.token == token do
-		if math.random() < 0.45 then pcall(apparition) end
-		task.wait(45 + math.random() * 50)
+		local r = math.random()
+		if r < 0.35 then pcall(apparition) elseif r < 0.65 then pcall(bats) end
+		task.wait(40 + math.random() * 45)
 	end
 end
 

@@ -1,4 +1,19 @@
-# Updated scripts: a Siege ends over the castle; War's finale fixed
+# Updated scripts: bats in the dungeons
+
+- **Bats**: now and then a swarm bursts out of the dark ahead of you and flits past over your head, wings beating, with a generated flutter-and-squeak sound.
+- **Checked in Play** in the Bone Crypt.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | `WarFX.bats` |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | bats now and then |
+| [README.md](README.md) | | doc | |
+
+Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Bats.
+
+---
+
+## Before that: a Siege ends over the castle; War's finale fixed
 
 - **Siege's finale**: when a round ends, horns sound, the winners' army cheers, and the camera rises and circles slowly over the castle (walls, ladders, burning towers) for a few seconds before the scoreboard.
 - **Fixed**: War's finale flight was being overridden by the menu's overview camera as soon as your character was gone; both finales now hold it off (`_G.FinaleCamera`).
@@ -20,16 +35,3 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | every soldier's swing timing set when he's made |
-
----
-
-## Before that: siege towers roll up to the walls
-
-- **Siege**: two siege towers roll slowly up to the castle's side walls during the ram stage, pushed by their crews; they dock with a crash and men climb up inside and over onto the walls. Only on your screen (nothing solid).
-- **Checked in Play** on Greenhollow: rolled from 32 studs out (the fields beside these castles are narrow), docked against the wall with the drawbridge over the battlements.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the rolling towers |
-| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | side walls described; a tower model for clients |
-| [README.md](README.md) | | doc | |
