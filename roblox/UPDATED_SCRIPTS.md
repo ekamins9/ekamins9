@@ -1,4 +1,15 @@
-# Updated scripts: what's new, again
+# Updated scripts: windows lit at night
+
+- **After dark** (the Prologue's Stormwatch, Plague Night, the Invasion, the night warfields), about two in three of the houses' and towers' windows glow with warm light, spilling a little onto the ground outside. They go dark again at dawn.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [NightWindows.client.lua](StarterPlayerScripts/NightWindows.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: what's new, again
 
 - **The What's new card** comes back once (version `2026-10-17b`) with today's additions: Amberwood; stone, timber and sky; shell-shock; spiders and light shafts; starting in first person. It also keeps the new dungeons and the traps.
 

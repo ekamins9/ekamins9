@@ -117,6 +117,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
 | `StarterPlayerScripts/CinematicGrade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `CinematicGrade` | LocalScript |
 | `ReplicatedStorage/Hearing.lua` | `ReplicatedStorage` → `Hearing` | ModuleScript |
+| `StarterPlayerScripts/NightWindows.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NightWindows` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -1847,6 +1848,13 @@ Castle stone is rubble masonry (`K.wall` and `K.tower` default to Cobblestone in
 the footing the same in its darker stone), and towers' spires are shingled (RoofShingles;
 `opts.roofMaterial` to change it). The maps saved in Studio (ServerStorage ▸ Maps) were converted
 by the same rules on 2026-10-17, and their old houses rebuilt in place.
+
+## Night windows (`NightWindows.client`)
+After dark (ClockTime before 5.8 or after 18.6), about two in three of the map's windows (parts named
+`Window`: K.house's and K.tower's) glow with warm light, picked by where each stands so every
+screen agrees, each spilling a little light onto the ground (a PointLight; not on phones). They go
+dark again at dawn (Plague Night's sunrise). The Prologue's Stormwatch, Plague Night, the Invasion
+and the night warfields.
 
 ## Weather (`Weather.client`, `GameConfig.MAP_WEATHER` / `MODE_WEATHER`, drawn by WarFX)
 Rain, storms (rain, lightning, heavy cloud), snow, embers and petals on the maps that have them:
