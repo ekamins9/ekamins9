@@ -216,7 +216,10 @@ step):
   sleeping dead lie among the bones and get up (`DungeonMood` "the dead lie"); rats and drips;
   the score is quiet until a fight (`Music.client` Dread / Battle; a dungeon lord's theme only
   near its lair). Footprints in snow, sand, mud and earth everywhere (`Footsteps.client`). The sun
-  moves over War, Siege and Horde. The Gilded Rat sounds lived in (`TavernAmbience.client`).
+  moves over War, Siege and Horde; War's weather can turn mid-battle (Round ▸ WarSky). The Gilded
+  Rat sounds lived in (`TavernAmbience.client`). A sixth dungeon theme, the Drowned Halls (its
+  bestiary and its king). Secret rooms behind cracked walls (`Game ▸ Secrets`, `opts.secrets`, the
+  `CombatServer.worldHitHooks` list for blades that hit the world).
   Note: every procedural map carries the Generated attribute (War, the caldera, the Crownlands,
   the Tavern, dungeon floors): test the mode, not Generated, to mean "a dungeon".
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
