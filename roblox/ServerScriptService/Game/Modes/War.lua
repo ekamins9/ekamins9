@@ -36,6 +36,8 @@ local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local WarMap = require(script.Parent.Parent:WaitForChild("WarMap"))
 local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Engines = require(script.Parent.Parent:WaitForChild("Engines"))
+local Stats
+pcall(function() Stats = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Stats")) end)
 local Teams, MapLoader = Game.Teams, Game.MapLoader
 local node = Game.node
 
@@ -227,10 +229,13 @@ function War:captured(i, side, lost)
 	remote:FireAllClients("Captured", {id = i, side = side, lost = lost})
 	-- (everyone of the side standing at it when it fell is paid for it: Catalog ▸ Economy war_banner)
 	local b = side and self.layout and self.layout.banners[i]
-	if b and _G.RoundBump then
+	if b then
 		for model, hrp in pairs(Teams.fighters(side)) do
 			local plr = Players:GetPlayerFromCharacter(model)
-			if plr and (flat(hrp.Position) - flat(b.pos)).Magnitude <= self.layout.radius + 2 then _G.RoundBump(plr, "war_banner") end
+			if plr and (flat(hrp.Position) - flat(b.pos)).Magnitude <= self.layout.radius + 2 then
+				if _G.RoundBump then _G.RoundBump(plr, "war_banner") end
+				if Stats then pcall(Stats.add, plr, "banner", 1) end   -- (the daily tasks)
+			end
 		end
 	end
 end

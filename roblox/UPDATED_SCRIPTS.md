@@ -1,4 +1,18 @@
-# Updated scripts: key art on the loading and travel screens; a world round the Courtyard
+# Updated scripts: the hill task works; War's banners in the daily tasks
+
+- **Fixed: "Hold the hill for 2 minutes" could never be finished**: nothing counted time on the hill. King of the Hill now counts every second each player of the holding side spends on it (checked in Play: 6 s on the hill, 6 counted).
+- **New tasks**: Take 3 banners in War (220 Marks), Take 8 banners in War (420), and weekly Take 25 banners in War (1200).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [KOTH.lua](ServerScriptService/Game/Modes/KOTH.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | counts the hill stat |
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | counts the banner stat |
+| [Contracts.lua](ReplicatedStorage/Catalog/Contracts.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | War tasks |
+| [Stats.lua](ServerScriptService/Economy/Stats.lua) | ServerScriptService ▸ Economy | ModuleScript | (doc) |
+
+---
+
+## Before that: key art on the loading and travel screens; a world round the Courtyard
 
 - **Key art** (generated: the two armies, trebuchets, a battle-mage's lightning) behind the loading screen and every travel screen, darkened so the words read.
 - **The Courtyard isn't a floating island any more**: hills to the horizon, the road out of the gate through a village and fields, woods, and a war camp far to the east whose trebuchets lob fire now and then over the far hills (a tease for WAR).
@@ -28,18 +42,4 @@ Studio-only (save the place): ReplicatedFirst ▸ KeyArt.
 | [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | war_banner on a capture |
 | [Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | war_banner |
 | [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService | Script | War's kills on the board |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: cheaper bots far from players; War fields 32
-
-- **Stress test** (War, 46 bots held): Studio's shared server fell to about 24 fps; with the cap free, it stepped itself down 46 → 38 → 34 → 30 as designed. War now fields 32 by default for headroom.
-- **Bots no player is near** (90 studs) watch for parries every third frame and think five times a second instead of ten: nobody sees those fights, and both sides are treated the same.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | far bots cheaper |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War botFill 32 |
-| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | default cap 32 |
 | [README.md](README.md) | | doc | |

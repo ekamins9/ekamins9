@@ -7,7 +7,11 @@
 --   ObjKind "Hill" · ObjPos · ObjRadius · ObjOwner "A"|"B"|"" ·
 --   ObjState "held" | "contested" | "idle" · ObjCountA / ObjCountB
 local Players = game:GetService("Players")
+local ServerScriptService = game:GetService("ServerScriptService")
 local Game  = require(script.Parent.Parent:WaitForChild("Game"))
+-- (the "hill" stat: seconds on a hill your side holds, for the daily task · Economy ▸ Stats)
+local Stats
+pcall(function() Stats = require(ServerScriptService:WaitForChild("Economy"):WaitForChild("Stats")) end)
 local Teams, MapLoader = Game.Teams, Game.MapLoader
 local node = Game.node
 
@@ -81,6 +85,19 @@ function KOTH:tick(dt)
 		while self.acc >= 1 do
 			self.acc -= 1
 			self.scores[owner] += 1
+			-- every player of the side on the hill: a second of holding it
+			if Stats then
+				local r, h, axis = shapeOf(hill)
+				for model, hrp in pairs(Teams.fighters(owner)) do
+					local plr = Players:GetPlayerFromCharacter(model)
+					if plr then
+						local l = hill.CFrame:PointToObjectSpace(hrp.Position)
+						local along = axis == "X" and l.X or l.Y
+						local across = axis == "X" and Vector2.new(l.Y, l.Z).Magnitude or Vector2.new(l.X, l.Z).Magnitude
+						if across <= r and math.abs(along) <= h / 2 + 4 then pcall(Stats.add, plr, "hill", 1) end
+					end
+				end
+			end
 		end
 		self:publishScores()
 	end
