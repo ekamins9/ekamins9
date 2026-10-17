@@ -1,4 +1,16 @@
-# Updated scripts: Amberwood, an eleventh War field
+# Updated scripts: start in first person
+
+- **Settings ▸ Start in**: choose whether each spawn begins over the shoulder or through your own eyes, blade in hand. The View key still switches any time.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | `StartView` choice |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | reads it at spawn |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Amberwood, an eleventh War field
 
 - **War: Amberwood**, an autumn wood's edge in the late gold light. Red, rust and gold oaks line both flanks, fallen leaves drift down and lie in drifts across golden grass, and there's an orchard, a half-timbered hunting lodge and a woodcutters' camp. Its sky can turn to rain mid-battle. Its five banners are the South Woods, the Orchard, the Hunting Lodge, the Woodpile and the North Woods.
 - Autumn oaks are a `K.oak` palette; drifting leaves are a new WarFX weather, `leaves`.

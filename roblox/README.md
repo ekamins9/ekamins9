@@ -2687,7 +2687,9 @@ a real 116..120° plus an eye pull-back of up to `EYE_PULL_MAX` so the whole swo
 and nudges third person too) and keybinds. **Looking down** in first person: the pull-back fades
 out over `LOOKDOWN_ANGLE` and the eye slides `LOOKDOWN_FWD` studs forward past the chest, and the
 torso, tabard and torso armor fade in between `TORSO_SHOW_FROM` and `TORSO_SHOW_TO` — so you see
-your chest front, legs and feet, never the top surface of your chest. Stored in
+your chest front, legs and feet, never the top surface of your chest. **Start in** (Third person /
+First person) is the view each spawn begins in (CameraRig reads it as it starts); the View key
+switches any time. Stored in
 `ReplicatedStorage.ClientSettings`, read live by CameraRig / CombatClient / Movement, and
 saved per player by `SettingsServer` (DataStore; in Studio enable *Allow Studio access to API
 services* or it just lasts the session).

@@ -79,6 +79,8 @@ ClientSettings.CHOICES = {
 		hint = "Whose companions you see following them around: everyone's, only yours, or none."},
 	{key = "DodgeTap",   label = "Double-tap dodge", options = {"On", "Off"},
 		hint = "Double-tap A, D or S to dodge that way (the Dodge key works either way)."},
+	{key = "StartView",  label = "Start in", options = {"Third person", "First person"},
+		hint = "The view you're in each time you spawn: over the shoulder, or through your own eyes with your blade in your hands. The View key switches any time."},
 	{key = "KillCam",    label = "Kill cam", options = {"On", "Off"},
 		hint = "When you fall, the view turns to whoever got you and closes in on them for a moment."},
 	{key = "DrawAnim",   label = "Draw animation", options = {"On", "Off"},
@@ -102,7 +104,7 @@ ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests", "Gifts", "Pulls"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1, TouchLook = 1, TouchSize = 1, AimAssist = "On",
-	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
+	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", StartView = "Third person", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
 	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone", Pulls = "Show",
 	SeenNews = "",   -- (not a setting: the last WHAT'S NEW card seen, StarterPlayerScripts ▸ WhatsNew)
 }

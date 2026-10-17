@@ -308,6 +308,8 @@ end)
 if type(character:GetAttribute("FaceYaw")) == "number" then rot = Vector2.new(0, character:GetAttribute("FaceYaw")) end
 local camDist       = DEFAULT_DIST
 local camDistTarget = DEFAULT_DIST
+-- (the view chosen to start in: Settings ▸ Start in)
+if S("StartView") == "First person" then camDist, camDistTarget = 0, 0 end
 local bobAmt = 0
 local stepPhase, stepSide = 0, 1
 local lastSpeed, lastVY = 0, 0
