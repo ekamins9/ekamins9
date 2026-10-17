@@ -25,6 +25,9 @@
      TRAPS. The corridors between are trapped too (Game ▸ Traps: spike grates, swinging blades,
      dart plates, fire grates), more of them each floor down; the first floor's start is clear.
 
+     SECRETS. A floor hides a walled-up cache or two (Game ▸ Secrets): a cracked stretch of wall
+     with a draft through it. Three blows bring it down: a gilded chest behind it, for everyone.
+
      DOWN, NOT OUT. Fall in a fight and you watch until the room is cleared; then you're back on
      your feet in it (with what you carried). Everyone down at once: the run is over. A Phoenix
      Plume brings you back where you fell, once.
@@ -47,6 +50,7 @@ local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
 local Traps = require(script.Parent.Parent:WaitForChild("Traps"))
+local Secrets = require(script.Parent.Parent:WaitForChild("Secrets"))
 local MapLoader = Game.MapLoader
 local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
@@ -93,6 +97,7 @@ local function floorOpts(floor, players)
 		final = floor >= FLOORS and "boss" or "stairs",
 		special = {treasure = 1, shrine = (floor == 2) and 1 or (math.random() < 0.6 and 1 or 0), fountain = 1, elite = floor >= 2 and 1 or (math.random() < 0.5 and 1 or 0)},
 		loops = 1,
+		secrets = 1 + ((floor >= 2 and math.random() < 0.5) and 1 or 0),
 	}
 end
 function Depths:buildMap(theme)
@@ -639,6 +644,18 @@ end
 function Depths:setTraps()
 	Traps.arm(MapLoader.current, self.layout, {count = 1 + self.floor, theme = self.theme,
 		skip = self.floor == 1 and {[self.layout.start] = true} or nil})
+	-- (and its secrets: a hidden cache's chest is gilded, one card each)
+	Secrets.arm(MapLoader.current, self.layout, {
+		reward = function(_, cf)
+			Loot.chest(cf, {rarity = "Epic", perPlayer = true, gilded = true, label = "Hidden Cache",
+				onOpen = function(plr)
+					if not aliveChar(plr) then return false end
+					self:chestFor(plr, "treasure", 0.8)
+					return true
+				end})
+		end,
+		banner = function(plr, t) event:FireClient(plr, "Banner", t) end,
+	})
 end
 
 function Depths:sendLayout(plr)
@@ -696,6 +713,7 @@ end
 
 function Depths:stop()
 	Traps.disarm()
+	Secrets.disarm()
 	if self.active and self.active.opts then Monsters.halt(self.active.opts) end
 	for _, room in ipairs(self.layout and self.layout.rooms or {}) do
 		for mob in pairs(room.mobs or {}) do Monsters.despawn(mob) end

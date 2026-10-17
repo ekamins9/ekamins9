@@ -111,7 +111,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterPlayerScripts/War.client.lua`, `SiegeEpic.client.lua`, `Warfield.client.lua`, `Engines.client.lua`, `MatchIntro.client.lua`, `BattleAmbience.client.lua`, `ArenaCrowd.client.lua`, `HordeHost.client.lua`, `CourtyardGuards.client.lua`, `BossEntrance.client.lua`, `DungeonMood.client.lua`, `BannerWind.client.lua`, `Weather.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → each by its name (the battles, the crowds, the dark, the wind) | LocalScript each |
 | `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
-| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
+| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
@@ -2073,6 +2073,17 @@ slips them, spawn protection too. The server decides every hit (20 times a secon
 draws the moving parts (`StarterPlayerScripts ▸ Traps.client`): a blade swings on the server's
 clock (`workspace:GetServerTimeNow()`), so every screen sees it where the server judges it, with a
 heavy whoosh each pass; the spikes rise on a trap's `FiredAt`; the darts fly from the holes.
+
+### Secrets (`Game ▸ Secrets`, built by `Game ▸ Dungeon` opts.secrets)
+Now and then a room has a stretch of wall newer than the rest: paler, cracked, a draft of dust
+seeping through it into the room. Strike it with a blade (`CombatServer.worldHitHooks`): it
+shudders and sheds grit; the **third blow** brings it down, the stones tumbling into the room in a
+cloud of dust with a crash the dark hears (`Perception.noise`), settling out of anyone's way. Behind
+it a short passage to a walled-up cache (gold piles, someone who never got out, candles burnt low)
+and the mode's reward: **The Depths** a gilded Epic chest (one card each, a treasure room's luck
++0.8; one secret a floor, sometimes two deeper down), **Deadvault** an ornate container (three a
+raid). A SECRET! for whoever broke it. Only a room side with no door and no room beyond it can
+hide one (the builder's `r.secret`, its wall `Map ▸ Secrets ▸ SecretWall<room id>`).
 
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone

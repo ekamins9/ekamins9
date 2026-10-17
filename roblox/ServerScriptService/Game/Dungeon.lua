@@ -13,6 +13,9 @@
                          library armory storeroom chapel cavern vault lair: furnished to match, its
                          own size and height r.h), with its CONTAINERS (r.containers = {{kind, cf}});
                          fewer torches; an exit is stairs up to a door of daylight (r.escape)
+         opts.secrets    how many rooms hide a walled-up cache (Game ▸ Secrets; 0 by default):
+                         r.secret = {dir, chest (Vector3), face (Vector3)}, its breakable wall in
+                         Map ▸ Secrets ▸ SecretWall<room id>
          opts.seed       a number (random otherwise)
          opts.name       the map's name in ServerStorage ▸ Maps (Gen_<n> otherwise)
 
@@ -1058,6 +1061,29 @@ function Dungeon.build(themeKey, opts)
 		r.spots, r.gates, r.containers = {}, {}, {}
 	end
 
+	-- SECRETS (Game ▸ Secrets): a room or two has a stretch of wall newer than the rest, cracked,
+	-- a draft of dust seeping out of it: break it and there's a walled-up cache behind. Only a side
+	-- with nothing beyond it (no door, no room in that cell) has the room for one.
+	do
+		local taken = {}
+		for _, r in ipairs(list) do taken[r.gx .. "," .. r.gy] = true end
+		local cands = {}
+		for _, r in ipairs(list) do
+			if r.kind ~= "start" and r.kind ~= "exit" and r.kind ~= "boss" and r.kind ~= "stairs" then
+				for d, v in pairs(DIRS) do
+					if not r.doors[d] and not taken[(r.gx + v[1]) .. "," .. (r.gy + v[2])] then table.insert(cands, {r, d}) end
+				end
+			end
+		end
+		for i = #cands, 2, -1 do local j = rng:NextInteger(1, i); cands[i], cands[j] = cands[j], cands[i] end
+		local want = opts.secrets or 0
+		for _, cd in ipairs(cands) do
+			if want <= 0 then break end
+			if not cd[1].secret then cd[1].secret = {dir = cd[2]}; want -= 1 end
+		end
+	end
+	local secretsFolder = Instance.new("Folder"); secretsFolder.Name = "Secrets"; secretsFolder.Parent = ctx.model
+
 	local floorC, floorM = th.floor, mat(th.floorMat)
 	for _, r in ipairs(list) do
 		local c = Vector3.new(r.cx, 0, r.cz)
@@ -1082,10 +1108,61 @@ function Dungeon.build(themeKey, opts)
 		if r.doors.S then table.insert(gapsS, 0) end
 		if r.doors.E then table.insert(gapsE, 0) end
 		if r.doors.W then table.insert(gapsW, 0) end
+		if r.secret then table.insert(({N = gapsN, S = gapsS, E = gapsE, W = gapsW})[r.secret.dir], 0) end
 		wallRun(ctx, th, c + Vector3.new(0, 0, -r.d / 2 - T / 2), "x", fw, RH, gapsN)
 		wallRun(ctx, th, c + Vector3.new(0, 0, r.d / 2 + T / 2), "x", fw, RH, gapsS)
 		wallRun(ctx, th, c + Vector3.new(r.w / 2 + T / 2, 0, 0), "z", r.d, RH, gapsE)
 		wallRun(ctx, th, c + Vector3.new(-r.w / 2 - T / 2, 0, 0), "z", r.d, RH, gapsW)
+		-- the secret: the gap's walled up again (cracked, a draft through it), a passage behind it, a cache
+		if r.secret then
+			local dir = ({N = Vector3.new(0, 0, -1), S = Vector3.new(0, 0, 1), E = Vector3.new(1, 0, 0), W = Vector3.new(-1, 0, 0)})[r.secret.dir]
+			local half = (r.secret.dir == "N" or r.secret.dir == "S") and r.d / 2 or r.w / 2
+			local wallAt = c + dir * (half + T / 2)
+			-- (local: x along the wall, y up, -z out through it, +z back into the room)
+			local f = CFrame.lookAt(wallAt, wallAt + dir)
+			local panel = K.box(ctx, "SecretWall" .. r.id, Vector3.new(DOOR_W, DOOR_H, T), f * CFrame.new(0, DOOR_H / 2, 0), shade(th.wall, 1.1), mat(th.wallMat), secretsFolder)
+			panel:SetAttribute("SecretRoom", r.id)
+			panel:SetAttribute("Out", dir)
+			local crack = shade(th.wall, 0.35)
+			for k = 1, 7 do
+				local x, y = rng:NextNumber(-DOOR_W / 2 + 1, DOOR_W / 2 - 1), rng:NextNumber(1, DOOR_H - 1)
+				local len = rng:NextNumber(1.5, 3.5)
+				local p = K.box(ctx, "SecretCrack", Vector3.new(0.14, len, 0.06), f * CFrame.new(x, y, T / 2 + 0.03) * CFrame.Angles(0, 0, rng:NextNumber(-0.9, 0.9)), crack, Enum.Material.SmoothPlastic, panel)
+				p.CanCollide, p.CanQuery = false, false
+			end
+			-- (the draft: a little dust seeping into the room through the cracks)
+			local pe = Instance.new("ParticleEmitter")
+			pe.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			pe.Color = ColorSequence.new(Color3.fromRGB(190, 180, 166))
+			pe.Size = NumberSequence.new(0.3, 1.2)
+			pe.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.75), NumberSequenceKeypoint.new(1, 1)})
+			pe.Lifetime = NumberRange.new(2, 3.5)
+			pe.Speed = NumberRange.new(0.5, 1.2)
+			pe.SpreadAngle = Vector2.new(25, 25)
+			pe.EmissionDirection = Enum.NormalId.Back
+			pe.Rate = 3
+			pe.Parent = panel
+			-- the passage (6 deep) and the cache (16 wide, 14 deep, as tall as the doorway)
+			local wc, wm = shade(th.wall, 0.9), mat(th.wallMat)
+			local z0 = -(T / 2)
+			K.box(ctx, "SecretFloor", Vector3.new(DOOR_W + T * 2, 1, 6 + 14 + T), f * CFrame.new(0, -0.5, z0 - (6 + 14 + T) / 2), shade(floorC, 0.85), floorM)
+			K.box(ctx, "SecretCeiling", Vector3.new(16 + T * 2, 1, 6 + 14 + T), f * CFrame.new(0, DOOR_H + 0.5, z0 - (6 + 14 + T) / 2), shade(th.wall, 0.55), wm)
+			for _, s in ipairs({-1, 1}) do
+				K.box(ctx, "SecretWallSide", Vector3.new(T, DOOR_H, 6), f * CFrame.new(s * (DOOR_W / 2 + T / 2), DOOR_H / 2, z0 - 3), wc, wm)
+				K.box(ctx, "SecretWallSide", Vector3.new(T, DOOR_H, 14), f * CFrame.new(s * (8 + T / 2), DOOR_H / 2, z0 - 6 - 7), wc, wm)
+				K.box(ctx, "SecretWallSide", Vector3.new(8 - DOOR_W / 2 + T, DOOR_H, T), f * CFrame.new(s * ((8 + DOOR_W / 2) / 2 + T / 2), DOOR_H / 2, z0 - 6 + T / 2), wc, wm)
+			end
+			K.box(ctx, "SecretFloorWide", Vector3.new(16 + T * 2, 1, 14), f * CFrame.new(0, -0.49, z0 - 6 - 7), shade(floorC, 0.85), floorM)
+			K.box(ctx, "SecretWallBack", Vector3.new(16 + T * 2, DOOR_H, T), f * CFrame.new(0, DOOR_H / 2, z0 - 6 - 14 - T / 2), wc, wm)
+			-- what was walled up: gold, someone who never got out, candles burnt low
+			local back = f * CFrame.new(0, 0, z0 - 6 - 11)
+			P.goldpile(ctx, th, back * CFrame.new(-4.5, 0, 0), rng)
+			P.goldpile(ctx, th, back * CFrame.new(4.5, 0, 0.5), rng)
+			P.bones(ctx, th, f * CFrame.new(5, 0, z0 - 6 - 4), rng)
+			P.candles(ctx, th, back * CFrame.new(0, 0, -1.5) * CFrame.Angles(0, math.pi, 0), rng)
+			r.secret.chest = (f * CFrame.new(0, 0, z0 - 6 - 7)).Position
+			r.secret.face = -dir
+		end
 		-- the baseboard, pillars at the corners
 		for _, sx in ipairs({-1, 1}) do
 			for _, sz in ipairs({-1, 1}) do

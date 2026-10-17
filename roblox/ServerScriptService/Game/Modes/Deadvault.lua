@@ -28,6 +28,9 @@
      TRAPS in a third of its corridors (Game ▸ Traps: spike grates, swinging blades, dart plates,
      fire grates); none by a haven.
 
+     SECRETS: three walled-up caches a raid (Game ▸ Secrets): a cracked stretch of wall with a
+     draft through it; three blows bring it down, and an ornate chest waits behind.
+
      NOT EVERY DEAD RESTS: search a sarcophagus and now and then (WAKE_CHANCE) the lid is thrown off
      and its dead climbs out at you (Deadvault:waken, for Game ▸ Containers).
 
@@ -45,6 +48,7 @@ local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
 local Traps = require(script.Parent.Parent:WaitForChild("Traps"))
+local Secrets = require(script.Parent.Parent:WaitForChild("Secrets"))
 local Vault = require(script.Parent.Parent:WaitForChild("Vault"))
 local Containers = require(script.Parent.Parent:WaitForChild("Containers"))
 local Combat = ServerScriptService:WaitForChild("Combat")
@@ -83,7 +87,7 @@ local function clock(t) t = math.max(0, math.floor(t)); return string.format("%d
 function Deadvault:buildMap(theme)
 	self.theme = Catalog.DUNGEONS[theme] and theme or "BoneCrypt"
 	local name, layout = Dungeon.build(self.theme, {rooms = 30, grid = {7, 6}, final = "boss", exits = 2, havens = 3, loops = 6, raid = true,
-		special = {treasure = 3, shrine = 1, fountain = 1, elite = 3}})
+		special = {treasure = 3, shrine = 1, fountain = 1, elite = 3}, secrets = 3})
 	self.layout = layout
 	self.havens = {}
 	for _, r in ipairs(layout.rooms) do if r.kind == "start" then table.insert(self.havens, r) end end
@@ -744,6 +748,10 @@ function Deadvault:start(map)
 		Traps.arm(MapLoader.current, self.layout, {count = math.floor(#(self.layout.corridors or {}) * 0.3), theme = self.layout.theme, skip = skip})
 	end
 	self:populate()
+	Secrets.arm(MapLoader.current, self.layout, {
+		reward = function(_, cf) if self.boxes then self.boxes:add("ornate", cf, {luck = 0.8}) end end,
+		banner = function(plr, t) banner(t, plr) end,
+	})
 	node:SetAttribute("OwnHud", true)
 	node:SetAttribute("ObjKind", "Deadvault")
 	self:sendLayout()
@@ -770,6 +778,7 @@ end
 
 function Deadvault:stop()
 	Traps.disarm()
+	Secrets.disarm()
 	-- (still inside when it collapses: lost)
 	for plr, r in pairs(self.runs or {}) do
 		if not self.out[plr] and plr.Parent and #carried(r) > 0 then banner({text = "LOST IN THE DARK", sub = "THE DEADVAULT KEEPS WHAT YOU CARRIED", kind = "boss"}, plr) end

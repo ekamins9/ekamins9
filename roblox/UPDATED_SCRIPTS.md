@@ -1,4 +1,19 @@
-# Updated scripts: the weather turns in a War battle
+# Updated scripts: secret rooms in the dungeons
+
+- **The Depths and Deadvault**: some rooms hide a walled-up cache behind a cracked stretch of wall with a draft of dust seeping through. Three blows bring it down in a crash of stone and dust. Behind it is a short passage to the cache: gold, bones, candles, and a gilded chest (the Depths, one card each) or an ornate container (Deadvault). One a floor in the Depths (sometimes two deeper down), three a raid.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Secrets.lua](ServerScriptService/Game/Secrets.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | builds them (`opts.secrets`) |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `worldHitHooks` |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | a floor's secrets, the chest |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | a raid's secrets, the container |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the weather turns in a War battle
 
 - **War**: on a clear or rainy field, 4 in 10 battles see the sky open partway through. Clear turns to rain, rain to a storm, with a long roll of thunder, a flash, the rain thickening in, and THE HEAVENS OPEN / THE STORM BREAKS on screen.
 

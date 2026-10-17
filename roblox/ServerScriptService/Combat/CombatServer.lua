@@ -268,6 +268,9 @@ local WALL_FEEL = {   -- fallback re-pitch of the Wall slot per family
 function CombatServer.wallFamily(materialName)
 	return WALL_FAMILY[materialName]   -- nil = unknown: silent
 end
+-- a blade that hit the world (not a body): fn(character, pos, materialName) for each listener
+-- (Game ▸ Secrets: a cracked wall that gives way)
+CombatServer.worldHitHooks = {}
 -- plays the clang for a material at `at`; `fallbackId` is the weapon's Wall slot.
 -- Unknown material: an exact-name Sound in ClangSounds still plays, otherwise nothing.
 function CombatServer.clang(materialName, at, fallbackId)
@@ -1218,6 +1221,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		local family = CombatServer.wallFamily(material)
 		if family == "Stone" or family == "Metal" then Injury.sparks(pos) end
 		CombatServer.clang(material, handle(), ownSounds.Wall)
+		for _, fn in ipairs(CombatServer.worldHitHooks) do task.spawn(fn, character, pos, material) end
 		cancelSwing("wall")
 		state.nextActionTime = os.clock() + cfg.WALL_RECOVERY
 		dprint("blade hit the world:", material, "(" .. tostring(family or "unknown, silent") .. ")")
