@@ -2063,7 +2063,11 @@ come); one of a second wave climbs out of a pit cracked in the floor (The Depths
 it lies on its back among the bones like the dead it is (its body hidden, a laid-down copy in its
 place, its middle over where it really stands so a sneak attack still lands), and the moment it
 notices anything it gets up, tipping up off the floor from its feet in a puff of grave-dust with a
-groan. **Getting out of Deadvault** floods the screen with warm daylight as the dread's drone falls
+groan. **Every sound echoes** down here (`SoundService.AmbientReverb` by theme: the crypt's stone corridors,
+the warrens' and the ice's caves, the manor's halls, the forge's iron halls, the drowned halls' wet
+tunnels, the abbey's great nave; Plague Night an open plain); the Gilded Rat has a warm room's,
+an arena's stands an arena's (`TavernAmbience`, `ArenaCrowd`); everywhere else, none.
+**Getting out of Deadvault** floods the screen with warm daylight as the dread's drone falls
 away, then it eases back. **Deadvault's last minute** comes down round you: deep rumbles coming closer together, the
 ground shaking harder, grit pouring from the ceiling and stones dropping, your lantern stuttering;
 in the last seconds, without a break.

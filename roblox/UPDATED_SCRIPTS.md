@@ -1,4 +1,18 @@
-# Updated scripts: out into the day
+# Updated scripts: every place has its echo
+
+- **Dungeons**: every sound (blades, footsteps, groans, the bell) rings off the stone, in each theme's own acoustic: the crypt's stone corridors, the warrens' and the ice's caves, the manor's halls, the forge's iron halls, the drowned halls' wet tunnels, the abbey's great nave.
+- **The Gilded Rat** has a warm room's echo; **the arenas** an arena's. Elsewhere, none, as before.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | reverb by theme |
+| [TavernAmbience.client.lua](StarterPlayerScripts/TavernAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a room's |
+| [ArenaCrowd.client.lua](StarterPlayerScripts/ArenaCrowd.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | an arena's |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: out into the day
 
 - **Deadvault**: getting out floods your screen with warm daylight as the dread's drone falls away, then it eases back under the YOU GOT OUT card.
 

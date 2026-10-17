@@ -16,8 +16,10 @@ local round = ReplicatedStorage:WaitForChild("Round")
 
 local on = nil   -- {room, hearth}
 
+local SoundService = game:GetService("SoundService")
 local function stop()
 	if not on then return end
+	if SoundService.AmbientReverb == Enum.ReverbType.Room then SoundService.AmbientReverb = Enum.ReverbType.NoReverb end
 	if on.room then WarFX.stopLoop(on.room, 1.5) end
 	if on.hearth then on.hearth.stop(1.5) end
 	on = nil
@@ -26,6 +28,8 @@ end
 local function start(map)
 	if on then return end
 	on = {}
+	-- (a timbered hall: a warm room's echo)
+	SoundService.AmbientReverb = Enum.ReverbType.Room
 	on.room = WarFX.loop("TavernRoom", 0.55)
 	local mouth = map:FindFirstChild("HearthMouth", true)
 	if mouth and mouth:IsA("BasePart") then

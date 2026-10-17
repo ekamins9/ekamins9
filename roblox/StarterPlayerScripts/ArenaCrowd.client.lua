@@ -9,6 +9,7 @@
                      shout (not more than every few seconds)
        a round won   the whole crowd on its feet, a long roar
        between       the murmur of the stands; now and then a few of them shout
+       the echo      every sound rings round the arena (SoundService ▸ AmbientReverb Arena)
 
      Each Stand part seats a row along its top, facing the middle of the map (its Centre). ]]
 
@@ -52,9 +53,11 @@ local function standsOf(m)
 	return list
 end
 
+local SoundService = game:GetService("SoundService")
 local function leave()
 	if not arena.on then return end
 	arena.on = false
+	if SoundService.AmbientReverb == Enum.ReverbType.Arena then SoundService.AmbientReverb = Enum.ReverbType.NoReverb end
 	arena.token += 1
 	if arena.crowd then arena.crowd:stop(); arena.crowd = nil end
 	if arena.murmur then arena.murmur.stop(1); arena.murmur = nil end
@@ -108,6 +111,7 @@ end
 local function enter(m)
 	if arena.on then return end
 	arena.on = true
+	SoundService.AmbientReverb = Enum.ReverbType.Arena
 	arena.token += 1
 	arena.conns = {}
 	local token = arena.token

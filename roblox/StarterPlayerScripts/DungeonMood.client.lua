@@ -7,6 +7,9 @@
                         floors are dark now, the torches only pools on the walls
        the air          dust drifting through the light round you; colder colours, a darker edge
                         to the screen
+       the echo         every sound down here rings off the stone (SoundService ▸ AmbientReverb by
+                        theme: the crypt's stone corridors, the warrens' and the ice's caves, the
+                        manor's halls, the abbey's great nave, the forge's iron halls)
        the sounds       a low drone under everything; now and then, somewhere in the dark near
                         you, a whisper, an iron clank, a deep thud from far below, stone settling
        what comes       a monster doesn't just appear: it takes shape out of the dark over most
@@ -77,6 +80,10 @@ local GRADE = {
 	HollowAbbey = {tint = Color3.fromRGB(226, 214, 240), sat = -0.3},
 }
 local LANTERN = Color3.fromRGB(255, 190, 130)
+-- (how sound carries, by theme)
+local REVERB = {BoneCrypt = "StoneCorridor", GoblinWarrens = "Cave", CrimsonManor = "Hallway", FrozenDepths = "Cave",
+	EmberForge = "Hangar", DrownedHalls = "SewerPipe", HollowAbbey = "Auditorium", Plague = "Plain"}
+local SoundService = game:GetService("SoundService")
 
 local mood = {on = false, token = 0}
 
@@ -936,6 +943,8 @@ local function leave()
 	dropDead()
 	airOff()
 	if mood.drone then WarFX.stopLoop(mood.drone, 2); mood.drone = nil end
+	if mood.reverb and SoundService.AmbientReverb == mood.reverb then SoundService.AmbientReverb = Enum.ReverbType.NoReverb end
+	mood.reverb = nil
 end
 
 local function enter(theme)
@@ -946,6 +955,8 @@ local function enter(theme)
 	local token = mood.token
 	airOn(theme)
 	mood.drone = WarFX.loop("Drone", 0.45)
+	local rv = Enum.ReverbType[REVERB[theme or ""] or "StoneCorridor"]
+	if rv then SoundService.AmbientReverb = rv; mood.reverb = rv end
 	local plague = theme == "Plague"
 	-- every adventurer carries a light
 	if not plague then
