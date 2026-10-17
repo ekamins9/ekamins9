@@ -26,6 +26,8 @@ local EmoteFX = require(ReplicatedStorage:WaitForChild("EmoteFX"))   -- (what an
 local RALLY = {WarCry = true, Cheer = true}
 local function rally(char, id)
 	if not RALLY[id] or not char then return end
+	-- (the cry over their head, and their side's soldiers near them shouting back: Shouts.client)
+	if _G.ShoutRally then pcall(_G.ShoutRally, char) end
 	local side = char:GetAttribute("Team")
 	local root = char:FindFirstChild("HumanoidRootPart")
 	if (side ~= "A" and side ~= "B") or not root then return end

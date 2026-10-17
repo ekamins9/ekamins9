@@ -3,6 +3,9 @@
      felling a foe ("NEXT!"), seeing a friend fall ("AVENGE THEM!"); a goblin's "SHINIES!", an orc's
      "SMASH!", an elf's "BEGONE!". The undead, beasts and the like keep their silence.
 
+     A War Cry or a Cheer emote in a fight (Cosmetics.client calls _G.ShoutRally): your cry over
+     your head, and your side's soldiers near you shout back ("AYE!", "WITH YOU!").
+
      A shout pops over the speaker's head in its side's colour and fades. Only fighters within 40
      studs and in view; a few at a time (fewer on a phone), each speaker now and then. Not in the
      Hub. Nothing here is sent to the server. ]]
@@ -31,6 +34,7 @@ local SOLDIER = {
 	hurt = {"I'M HIT!", "STILL STANDING!", "IS THAT ALL?", "NOT YET!", "HOLD... HOLD!"},
 	kill = {"NEXT!", "STAY DOWN!", "WHO'S NEXT?", "ONE LESS!", "FOR THE %s!"},
 	ally = {"WE'VE LOST ONE!", "AVENGE THEM!", "CLOSE THE GAP!", "THEY'RE THROUGH!"},
+	rally = {"AYE!", "WITH YOU!", "FOR THE %s!", "HUZZAH!", "TO THE END!", "AYE, FOR THE %s!"},
 }
 local BANDIT = {
 	charge = {"CHARGE!", "AT THEM!", "GET THEM!", "NO WITNESSES!"},
@@ -67,21 +71,8 @@ local function colorFor(m)
 	return t and t.rgb or Color3.new(1, 1, 1)
 end
 
-local function say(m, kind)
-	local now = os.clock()
-	local st = state[m]
-	if not st or now - st.last < EACH or now - lastAny < GAP or live >= MAX_UP then return end
-	local pool = linesFor(m)
-	pool = pool and pool[kind]
-	local head = m:FindFirstChild("Head")
-	if not (pool and head) then return end
-	local cam = workspace.CurrentCamera
-	if not cam or (cam.CFrame.Position - head.Position).Magnitude > NEAR then return end
-	local _, onScreen = cam:WorldToViewportPoint(head.Position)
-	if not onScreen then return end
-	st.last, lastAny = now, now
-	local side = GameConfig.TEAMS[sideOf(m) or ""]
-	local text = string.format(pool[math.random(#pool)], side and string.upper(side.name) or "KING")
+-- a shout over a head: the words popping up in the speaker's side's colour, rising, fading
+local function bubble(m, head, text)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Shout"
 	bb.Size = UDim2.fromOffset(260, 34)
@@ -110,6 +101,52 @@ local function say(m, kind)
 		TweenService:Create(t, TweenInfo.new(0.5), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
 		task.delay(0.55, function() bb:Destroy(); live -= 1 end)
 	end)
+end
+
+local function lineOf(m, pool)
+	local side = GameConfig.TEAMS[sideOf(m) or ""]
+	return string.format(pool[math.random(#pool)], side and string.upper(side.name) or "KING")
+end
+
+local function say(m, kind, force)
+	local now = os.clock()
+	local st = state[m]
+	if not force and (not st or now - st.last < EACH or now - lastAny < GAP or live >= MAX_UP) then return end
+	local pool = linesFor(m)
+	pool = pool and pool[kind]
+	local head = m:FindFirstChild("Head")
+	if not (pool and head) then return end
+	local cam = workspace.CurrentCamera
+	if not cam or (cam.CFrame.Position - head.Position).Magnitude > NEAR then return end
+	local _, onScreen = cam:WorldToViewportPoint(head.Position)
+	if not onScreen then return end
+	if st then st.last = now end
+	lastAny = now
+	bubble(m, head, lineOf(m, pool))
+end
+
+-- A WAR CRY (Cosmetics.client, the War Cry / Cheer emote): the cry over the crier's head, and
+-- the soldiers of their side near them answering, one after another
+_G.ShoutRally = function(char)
+	local head = char and char:FindFirstChild("Head")
+	local side = char and sideOf(char)
+	if not head or round:GetAttribute("Mode") == "Hub" then return end
+	local cam = workspace.CurrentCamera
+	if cam and (cam.CFrame.Position - head.Position).Magnitude < NEAR + 20 then
+		local t = GameConfig.TEAMS[side or ""]
+		bubble(char, head, t and ("FOR THE " .. string.upper(t.name) .. "!") or "FOR GLORY!")
+	end
+	if not side then return end
+	local n = 0
+	for _, m in ipairs(folder:GetChildren()) do
+		local r = m:FindFirstChild("HumanoidRootPart")
+		local h = m:FindFirstChildOfClass("Humanoid")
+		if n < 4 and r and h and h.Health > 0 and m:GetAttribute("Bot") and not m:GetAttribute("Monster") and sideOf(m) == side
+			and (r.Position - head.Position).Magnitude < 34 then
+			n += 1
+			task.delay(0.35 + n * 0.3 + math.random() * 0.2, function() if m.Parent then say(m, "rally", true) end end)
+		end
+	end
 end
 
 -- two fighters on opposite sides (by Team; a monster and anyone who isn't one are always foes)

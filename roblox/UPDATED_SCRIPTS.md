@@ -1,4 +1,16 @@
-# Updated scripts: the Headless Knight
+# Updated scripts: a war cry answered
+
+- **A War Cry or Cheer in a fight**: your cry shows over your head, and your side's soldiers near you shout back ("AYE!", "WITH YOU!", "FOR THE CROWN!") as the armies round you roar.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shouts.client.lua](StarterPlayerScripts/Shouts.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `bubble`, `_G.ShoutRally`, the `rally` lines |
+| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `rally` calls `_G.ShoutRally` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Headless Knight
 
 - **The Bone Crypt and the Hollow Abbey** have a new champion: the Headless Knight, a dark-armoured skeleton with no head on its shoulders, mist rising from its collar, its skull carried in its hand with eyes burning. It charges, and its skull screams.
 
