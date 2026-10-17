@@ -313,12 +313,19 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   Houses`, `Game ▸ BannerArt`): every banner on every map flies its house's arms; in a team fight
   plain shields (players' and War's crowds') carry their side's. **`Shields.batter`**: blows caught
   on a shield chip its paint and throw splinters.
-- **The loadout** in WEAPONS / ARMOR / GEAR / LOOK tabs with 3D picture tiles (HubMenu's `LT`).
+- **The houses everywhere**: every regiment's standard, War's taken banners, a gold badge on every
+  team fighter's chest (players, bots and the crowds: `Teams.mark`, WarCrowd), the houses' emblems
+  by the scores (Scoreboard), and the Courtyard's **Hall of Arms** (its banners fly the arms of the
+  players there who bear them, names embroidered: `Modes ▸ Hub`, `BannerArt.fly`). A blow on a
+  shield thuds (Studio-only `WarAudio ▸ ShieldBlock1..3`).
+- **The loadout** in WEAPONS / ARMOR / GEAR / LOOK tabs, every weapon, skin, armour piece, shield,
+  throwable and sidearm a 3D picture tile (HubMenu's `LT`); the Armory shows shields face on with
+  their own stat card.
 - **`Game ▸ Horizon`** — the land round every outdoor map (MapForge, War, the hand-made ones named
   in its HAND): a terrain skirt flush with the map, a plain, a mountain ridge that closes the view
   inside the render distance (~1000 studs: past it the sky shows like a sea), woods, camps or a
   village, a castle, smoke. Persistent.
-- **Studio-only, to save:** ReplicatedStorage ▸ ShieldArt. **Test scaffolding added:**
+- **Studio-only, to save:** ReplicatedStorage ▸ ShieldArt, ReplicatedStorage ▸ WarAudio ▸ ShieldBlock1..3. **Test scaffolding added:**
   ServerStorage ▸ TMP_ShieldLineupSrc (a disabled shield-lineup script).
 
 ## 5. Suggested order of work
