@@ -191,7 +191,7 @@ a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (*
    with **OPEN A CRATE**, straight to the crates. (Studio: the player attribute `TourAutoplay`
    clicks through the tour for a test.)
 
-### The Siege of Stormwatch (`Game ▸ Modes ▸ Prologue`, `Game ▸ StormwatchMap`, `Prologue.client`, `ReplicatedStorage ▸ WarFX`)
+### The Siege of Stormwatch (`Game ▸ Modes ▸ Prologue`, `Game ▸ StormwatchMap`, `Prologue.client`, `ReplicatedStorage ▸ WarFX`, `WarCrowd`)
 A dark, stormy night; the Iron Host is at Stormwatch's gate, and you are a soldier of its garrison.
 A server of your own (`DOORS.Prologue`, `MODES.Prologue`: hidden, ownSpawn, one map built fresh).
 - **The castle** (`StormwatchMap.build`): curtain walls with crenels and a breach in the east wall,
@@ -212,6 +212,12 @@ A server of your own (`DOORS.Prologue`, `MODES.Prologue`: hidden, ownSpawn, one 
   of the Host) → cutscene: **Lord Varg** → the duel (a boss bar; every fall weakens him) →
   cutscene: dawn, horns, the King's riders, **STORMWATCH STANDS**. Before the battle you can't
   fall (30 % health always left); in it you come back at the gatehouse.
+- **The Host and the garrison** (`Prologue.client`, `ReplicatedStorage ▸ WarCrowd`): the Iron Host
+  drawn up in the field among its torches (two blocks of foot, pikes, knights behind, archers
+  before), the garrison's archers along the north walls; the garrison's volleys cut men down in
+  the Host's lines and the Host's archers loose back over the wall; its war cries; the Host closes
+  on the gate as the night goes on (the gatehouse, the hold, the champion), and at dawn it turns
+  and runs into the dark while the walls cheer.
 - **On your screen** (`Prologue.client`): the lesson card (STEP n / 13, what to do in your own
   controls, a progress bar, a tick when done), Captain Hale's lines, a beacon of light over where to
   go with an arrow at the screen's edge, the cutscenes (black bars, a flying camera, subtitles,

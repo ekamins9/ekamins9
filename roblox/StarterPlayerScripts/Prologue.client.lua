@@ -1,5 +1,9 @@
 --[[ PROLOGUE (client) — the Siege of Stormwatch on your screen (Game ▸ Modes ▸ Prologue runs the
      story; its header lists the steps). Only while the round's Mode is "Prologue":
+       • THE HOST AND THE GARRISON (ReplicatedStorage ▸ WarCrowd): the Iron Host drawn up in the
+         field among its torches (foot, pikes, knights, archers), the garrison's archers along the
+         north walls; the volleys cut men down on both sides; the Host closes on the gate as the
+         night goes on, and at dawn it breaks and runs while the walls cheer
        • THE STORM AND THE WAR ALL ROUND (ReplicatedStorage ▸ WarFX): rain, lightning, heavy cloud;
          the garrison's volleys off the walls and the Host's back over them, arrows thudding into
          the yard; the trebuchets lobbing fire; war cries from the camp; the score and the roar of
@@ -26,6 +30,7 @@ local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+local WarCrowd = require(ReplicatedStorage:WaitForChild("WarCrowd"))
 local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
 
 local player = Players.LocalPlayer
@@ -323,6 +328,63 @@ local function inTheField()
 	return V3((math.random() - 0.5) * 220, 0, gz - 50 - math.random() * 90)
 end
 
+-- THE HOST AND THE GARRISON: real soldiers (WarCrowd), the Host's lines where its torches burn
+local host = {}
+local HOST_REGS = {"hostL", "hostC", "hostR", "hostK"}
+local function hostUp()
+	if host.crowd then return end
+	local gz, W = castle()
+	local wallY = P("wall").Y > 1 and P("wall").Y or 26
+	local small = (require(ReplicatedStorage:WaitForChild("Device")).kind() == "phone")
+	WarCrowd.SCALE = small and 0.6 or 1
+	local crowd = WarCrowd.new()
+	host.crowd = crowd
+	-- the Host (the Iron side) facing the gate, its lines among the torches; archers before them
+	local front = gz - 78
+	crowd:regiment("hostL", {side = "B", kind = "foot", at = V3(-56, 0, front), facing = 1, cols = 14, ranks = 5, spacing = 3, detail = "lite"})
+	crowd:regiment("hostC", {side = "B", kind = "pike", at = V3(0, 0, front - 2), facing = 1, cols = 14, ranks = 5, spacing = 3, detail = "lite"})
+	crowd:regiment("hostR", {side = "B", kind = "foot", at = V3(56, 0, front), facing = 1, cols = 14, ranks = 5, spacing = 3, detail = "lite"})
+	crowd:regiment("hostK", {side = "B", kind = "knight", at = V3(0, 0, front - 24), facing = 1, cols = 10, ranks = 4, spacing = 3.2, detail = "mass"})
+	for k, x in ipairs({-60, 60}) do
+		crowd:regiment("hostA" .. k, {side = "B", kind = "archer", at = V3(x, 0, front + 22), facing = 1, cols = 10, ranks = 2, spacing = 2.8, detail = "lite"})
+	end
+	-- the garrison's archers along the north walls, either side of the gatehouse
+	for k, x in ipairs({-(W + 26) / 2, (W + 26) / 2}) do
+		crowd:regiment("wall" .. k, {side = "A", kind = "archer", at = V3(x, wallY, gz + 0.5), facing = -1, cols = math.floor((W - 30) / 2.6), ranks = 1,
+			spacing = 2.6, detail = "lite", banner = false, fixed = true})
+	end
+	host.front = front
+end
+-- the Host closes on the gate (the night goes on), or breaks and runs (dawn)
+local function hostMarch(z, run)
+	local crowd = host.crowd
+	if not crowd then return end
+	for _, id in ipairs(HOST_REGS) do
+		local r = crowd.regs[id]
+		if r then crowd:march(id, z + (id == "hostK" and -24 or 0), run) end
+	end
+	for k = 1, 2 do crowd:march("hostA" .. k, z + 22, run) end
+end
+local function hostRout()
+	local crowd = host.crowd
+	if not crowd then return end
+	-- (they turn and run: the whole Host back into the dark, the walls cheering)
+	for _, id in ipairs(HOST_REGS) do local r = crowd.regs[id]; if r then r.facing, r.dirty = -1, true end end
+	for k = 1, 2 do local r = crowd.regs["hostA" .. k]; if r then r.facing, r.dirty = -1, true end end
+	hostMarch(host.front - 320, true)
+	crowd:cheer("A")
+	task.delay(5, function() if host.crowd == crowd then crowd:cheer("A") end end)
+end
+local function hostDown()
+	if host.crowd then host.crowd:stop(); host.crowd = nil end
+end
+-- where the story is: the Host comes on as the night goes on
+local STEP_FRONT = {gatehouse = 10, hold = 30, champion = 40}
+round:GetAttributeChangedSignal("PrologueStep"):Connect(function()
+	local add = STEP_FRONT[round:GetAttribute("PrologueStep") or ""]
+	if add and host.crowd and host.front then hostMarch(host.front + add, false) end
+end)
+
 local function ambience()
 	if amb.on then return end
 	amb.on = true
@@ -330,6 +392,11 @@ local function ambience()
 	local token = amb.token
 	WarFX.storm(true)
 	_G.OwnScore = true
+	task.spawn(function()
+		-- (the field arrives with the map)
+		for _ = 1, 60 do if mapModel() and mapModel():GetAttribute("P_army") then break end task.wait(0.5) end
+		if amb.on and amb.token == token and mapModel() then pcall(hostUp) end
+	end)
 	amb.rain = WarFX.loop("Rain", 1)
 	amb.battle = WarFX.loop("Battle", 0.8)
 	amb.music = WarFX.loop("Music", 0.9)
@@ -348,18 +415,34 @@ local function ambience()
 					task.wait(1.6 + math.random() * 1.2)
 				else
 					if roll < 0.32 then
-						-- the garrison looses from the walls into the dark
+						-- the garrison looses from the walls into the dark (onto the Host's lines)
 						local from = onTheWall()
-						WarFX.volley(from, inTheField(), 26, {spread = 16, flight = 2.8, stick = false})
+						local to = inTheField()
+						if host.crowd then
+							host.crowd:loose(from.X < 0 and "wall1" or "wall2")
+							local r = host.crowd.regs[({"hostL", "hostC", "hostR"})[math.random(3)]]
+							if r then to = V3(r.x + (math.random() - 0.5) * 30, 0, r.z - 4 - math.random() * 8) end
+							local crowd = host.crowd
+							task.delay(2.8, function() if host.crowd == crowd then crowd:hit(to, 10, 3) end end)
+						end
+						WarFX.volley(from, to, 26, {spread = 16, flight = 2.8, stick = false})
 					elseif roll < 0.6 then
 						-- the Host's answer, over the wall and into the yard
-						WarFX.volley(inTheField() + V3(0, 2, 0), yardSpot(26), 20, {spread = 12, flight = 2.7})
+						local from = inTheField() + V3(0, 2, 0)
+						if host.crowd then
+							local k = math.random(2)
+							host.crowd:loose("hostA" .. k)
+							local r = host.crowd.regs["hostA" .. k]
+							if r then from = V3(r.x, 4, r.z) end
+						end
+						WarFX.volley(from, yardSpot(26), 20, {spread = 12, flight = 2.7})
 					elseif roll < 0.86 then
 						local list = trebuchets()
 						local to = math.random() < 0.5 and onTheWall() or yardSpot(45)
 						WarFX.fireball(list[math.random(#list)], to, 4.4, {whistle = (to - aroundMe()).Magnitude < 160, big = math.random() < 0.5})
 					else
 						WarFX.sound("Charge", inTheField() + V3(0, 0, -60), {volume = 0.55, range = 1600, near = 220})
+						if host.crowd then host.crowd:cheer("B") end
 					end
 					task.wait(2.6 + math.random() * 3.4)
 				end
@@ -382,6 +465,7 @@ end
 -- DAWN: the storm breaks, the sun comes up, the horns
 local function dawn()
 	ambienceOff(7)
+	pcall(hostRout)
 	local info = TweenInfo.new(9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 	TweenService:Create(Lighting, info, {ClockTime = 6.4, Brightness = 1.7, Ambient = Color3.fromRGB(112, 100, 104), OutdoorAmbient = Color3.fromRGB(160, 136, 124),
 		FogColor = Color3.fromRGB(206, 160, 128), FogEnd = 1100, ExposureCompensation = 0.25}):Play()
@@ -833,6 +917,7 @@ local function leave()
 	ambienceOff(0)
 	if amb.music then WarFX.stopLoop(amb.music, 1.5); amb.music = nil end
 	if ui.riders then ui.riders.stop(); ui.riders = nil end
+	hostDown()
 	WarFX.clear()
 	_G.OwnScore, _G.CinematicUp = nil, nil
 	step = nil

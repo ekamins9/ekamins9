@@ -34,8 +34,6 @@
                                           handle:stop()
        WarFX.loop3D(name, pos, opts)      a looping sound at a point (opts.volume, opts.near, opts.range) ·
                                           handle:move(pos), handle:stop(fade)
-       WarFX.army()                       the armies on the flanks: regiments of cheap figures that
-                                          march, clash, loose and cast (ARMIES below)
        WarFX.clear()                      everything gone (leaving the mode)
      A fireball takes opts.color (a battle-mage's meteor) and opts.size; a blast opts.color. ]]
 
@@ -214,7 +212,7 @@ end
 --  THE LOOP: arrows, shots, flying stones, horsemen (one connection, bulk moves)
 --------------------------------------------------------------------
 local pool, flying, stuck = {}, {}, {}
-local shots, stones, columns, armies = {}, {}, {}, {}
+local shots, stones, columns = {}, {}, {}
 local MAX_STUCK = 260
 local ARROW = Color3.fromRGB(86, 66, 46)
 local FLETCH = Color3.fromRGB(226, 220, 206)
@@ -310,11 +308,6 @@ local function step(dt)
 			if s.pos.Y < s.floor then s.pos = V3(s.pos.X, s.floor, s.pos.Z); s.rest = true end
 			put(s.p, CF(s.pos) * CFrame.Angles(s.spin.X * s.t, s.spin.Y * s.t, s.spin.Z * s.t))
 		end
-	end
-	-- armies
-	for i = #armies, 1, -1 do
-		local ar = armies[i]
-		if ar.dead then table.remove(armies, i) else ar:step(now, dt, put) end
 	end
 	-- horsemen
 	for i = #columns, 1, -1 do
@@ -850,223 +843,8 @@ function WarFX.riders(path, n, opts)
 end
 
 --------------------------------------------------------------------
---  ARMIES: regiments of cheap figures on the flanks. Never real fighters (no humanoid, no
---  collisions, nothing replicated): a handful of parts a man, all moved in one bulk move, a
---  far regiment less often. They march to a line, clash (lunges, thrusts, now and then one
---  falls), loose (archers draw and shoot up) and cast (mages raise their staffs, orbs flaring).
---
---     local army = WarFX.army()
---     army:regiment(id, {color, at = front-centre Vector3, facing = 1 (towards +z) | -1, cols, ranks,
---                        kind = "foot" | "pike" | "archer" | "mage", spacing, banner = true})
---     army:march(id, z)    its front rank heads for this line, at a walk
---     army:clash(id, on)   its front two ranks fight
---     army:loose(id)       archers draw and loose · mages cast
---     army:stop()
---------------------------------------------------------------------
-local STEEL = Color3.fromRGB(150, 152, 158)
-local function figure(kind, color, h, front)
-	local list = {}
-	local function add(size, col, mat, off, ball)
-		local p = part(size, col, mat)
-		if ball then p.Shape = Enum.PartType.Ball end
-		p.CFrame = FAR
-		p.Parent = h
-		table.insert(list, {p = p, off = off})
-		return list[#list]
-	end
-	local mage, archer = kind == "mage", kind == "archer"
-	-- the body (legs and coat in one), the head, what they carry
-	add(V3(2, 4.2, 1.05), mage and color:Lerp(Color3.new(), 0.2) or color, Enum.Material.SmoothPlastic, CF(0, 2.1, 0))
-	add(V3(1.15, 1.15, 1.15), archer and Color3.fromRGB(70, 58, 44) or (mage and color:Lerp(Color3.new(1, 1, 1), 0.2) or STEEL), Enum.Material.SmoothPlastic, CF(0, 4.8, 0), true)
-	if kind == "foot" then
-		local w = add(V3(0.18, 0.18, 4.2), STEEL, Enum.Material.SmoothPlastic, CF(0.9, 3.2, -1.6))
-		w.weapon = true
-		if front then add(V3(0.3, 2.6, 2), color:Lerp(Color3.new(), 0.25), Enum.Material.SmoothPlastic, CF(-1.15, 3, -0.4)) end
-	elseif kind == "pike" then
-		local w = add(V3(0.2, 0.2, 13), Color3.fromRGB(110, 86, 60), Enum.Material.SmoothPlastic, CF(0.7, 3.4, -4.2) * CFrame.Angles(math.rad(8), 0, 0))
-		w.weapon = true
-	elseif archer then
-		local w = add(V3(0.2, 4.4, 0.25), Color3.fromRGB(90, 66, 44), Enum.Material.SmoothPlastic, CF(-0.4, 3.4, -1.1))
-		w.bow = true
-	elseif mage then
-		local w = add(V3(0.22, 6, 0.22), Color3.fromRGB(80, 60, 44), Enum.Material.SmoothPlastic, CF(1.1, 3.2, -0.6))
-		w.staff = true
-		local o = add(V3(0.9, 0.9, 0.9), color:Lerp(Color3.new(1, 1, 1), 0.4), Enum.Material.Neon, CF(1.1, 6.4, -0.6), true)
-		o.staff, o.orb = true, true
-	end
-	return list
-end
-
-local Army = {}
-Army.__index = Army
-function WarFX.army()
-	ensureLoop()
-	local self = setmetatable({regs = {}, list = {}, dead = false, acc = 0, accFar = 0}, Army)
-	self.ray = RaycastParams.new()
-	self.ray.FilterType = Enum.RaycastFilterType.Exclude
-	table.insert(armies, self)
-	return self
-end
-
-function Army:groundAt(x, z, fallback)
-	self.ray.FilterDescendantsInstances = {home(), crowd()}
-	local r = workspace:Raycast(V3(x, 300, z), V3(0, -600, 0), self.ray)
-	return r and r.Position.Y or fallback or 0
-end
-
-function Army:regiment(id, o)
-	local h = crowd()
-	local cols, ranks = o.cols or 8, o.ranks or 5
-	local reg = {id = id, kind = o.kind or "foot", facing = o.facing or 1, x = o.at.X, z = o.at.Z, target = o.at.Z, cols = cols, ranks = ranks,
-		sp = o.spacing or 3.2, men = {}, clash = false, looseUntil = 0, y0 = o.at.Y, y1 = o.at.Y, nextGround = 0, color = o.color, dirty = true, fallen = 0}
-	reg.y0 = self:groundAt(reg.x, reg.z, o.at.Y)
-	reg.y1 = reg.y0
-	for r = 1, ranks do
-		for c = 1, cols do
-			table.insert(reg.men, {r = r, c = c, parts = figure(reg.kind, o.color, h, r == 1), ph = math.random() * 6.28,
-				jx = (math.random() - 0.5) * 0.8, jz = (math.random() - 0.5) * 0.8, fell = nil})
-		end
-	end
-	-- a standard over the second rank
-	if o.banner ~= false then
-		local pole = part(V3(0.25, 13, 0.25), Color3.fromRGB(90, 70, 50), Enum.Material.Wood)
-		local flag = part(V3(0.12, 3.4, 4.4), o.color, Enum.Material.Fabric)
-		pole.CFrame, flag.CFrame = FAR, FAR
-		pole.Parent, flag.Parent = h, h
-		reg.standard = {pole, flag}
-	end
-	self.regs[id] = reg
-	table.insert(self.list, reg)
-	return reg
-end
-function Army:march(id, z) local r = self.regs[id]; if r then r.target = z end end
-function Army:clash(id, on) local r = self.regs[id]; if r then r.clash = on and true or false end end
-function Army:loose(id)
-	local r = self.regs[id]
-	if not r then return end
-	r.looseUntil = os.clock() + 2.2
-	if r.kind == "mage" then
-		for _, m in ipairs(r.men) do
-			for _, e in ipairs(m.parts) do
-				if e.orb then
-					e.p.Size = V3(1.6, 1.6, 1.6)
-					task.delay(2.2, function() if e.p.Parent then e.p.Size = V3(0.9, 0.9, 0.9) end end)
-				end
-			end
-		end
-	end
-end
-function Army:stop()
-	if self.dead then return end
-	self.dead = true
-	for _, r in ipairs(self.list) do
-		for _, m in ipairs(r.men) do for _, e in ipairs(m.parts) do e.p:Destroy() end end
-		if r.standard then for _, p in ipairs(r.standard) do p:Destroy() end end
-	end
-	self.list, self.regs = {}, {}
-end
-
--- one regiment: it marches (always, seen or not); its men are moved only when they need to be:
--- all of them while it marches, looses or has just come into view; just the front two ranks
--- while it fights; none while it stands
-function Army:place(reg, now, dt, put, visible)
-	local f = reg.facing
-	local gap = reg.target - reg.z
-	local marching = math.abs(gap) > 0.5
-	if math.abs(gap) > 0.2 then reg.z += math.clamp(gap, -6 * dt, 6 * dt); reg.dirty = true end
-	if not visible then reg.hidden = true; return end
-	if reg.hidden then reg.hidden = false; reg.dirty = true end
-	if marching and now > reg.nextGround then
-		reg.nextGround = now + 0.6
-		reg.y0 = self:groundAt(reg.x, reg.z, reg.y0)
-		reg.y1 = self:groundAt(reg.x, reg.z - f * reg.ranks * reg.sp, reg.y1)
-	end
-	local loosing = now < reg.looseUntil
-	if loosing or reg.wasLoosing then reg.dirty = true end
-	reg.wasLoosing = loosing
-	local full = reg.dirty
-	if not full and not reg.clash and reg.fallen == 0 then return end
-	local rot = CFrame.lookAt(Vector3.zero, V3(0, 0, f))
-	local fallen = 0
-	for _, m in ipairs(reg.men) do
-		local fighting = reg.clash and m.r <= 2
-		if full or fighting or m.fell then
-			local x = reg.x + (m.c - (reg.cols + 1) / 2) * reg.sp + m.jx
-			local z = reg.z - f * (m.r - 1) * reg.sp + m.jz
-			local y = reg.y0 + (reg.y1 - reg.y0) * ((m.r - 1) / math.max(reg.ranks - 1, 1))
-			local t = now + m.ph
-			local base
-			-- now and then a man in the front rank falls (and his place is taken a while later)
-			if fighting and not m.fell and math.random() < dt * 0.02 then m.fell = now end
-			if m.fell then
-				fallen += 1
-				local k = math.min((now - m.fell) / 0.5, 1)
-				base = CF(x, y, z) * rot * CFrame.Angles(-k * 1.45, 0, 0)
-				if now - m.fell > 7 then m.fell = nil end
-			else
-				local bob = marching and math.abs(math.sin(t * 6)) * 0.35 or 0
-				local lunge = fighting and math.max(0, math.sin(t * 3.1)) * 0.9 or 0
-				base = CF(x, y + bob, z) * rot * CF(0, 0, -lunge)
-			end
-			for _, e in ipairs(m.parts) do
-				local off = e.off
-				if not m.fell then
-					if e.weapon and fighting then
-						off = off * CF(0, 0, -math.max(0, math.sin(t * 3.1 + 0.4)) * 1.6)
-					elseif e.bow and loosing then
-						off = CF(-0.4, 4.2, -1) * CFrame.Angles(math.rad(-50), 0, 0)
-					elseif e.staff and loosing then
-						off = off * CF(0, 1.8, -0.4)
-					end
-				end
-				put(e.p, base * off)
-			end
-		end
-	end
-	reg.fallen = fallen
-	if reg.standard and (full or reg.clash) then
-		local sway = math.sin(now * 2) * 0.08
-		local cf = CF(reg.x, reg.y0, reg.z - f * reg.sp * 1.5) * rot * CFrame.Angles(0, 0, sway)
-		put(reg.standard[1], cf * CF(0.6, 6.5, 0))
-		put(reg.standard[2], cf * CF(0.6, 11, 2.3))
-	end
-	reg.dirty = false
-end
-
-function Army:step(now, dt, put)
-	if self.dead then return end
-	-- near regiments 20 times a second, far ones 5; ones out of sight only march
-	self.acc += dt
-	self.accFar += dt
-	local near = self.acc >= 0.05
-	local far = self.accFar >= 0.2
-	if not (near or far) then return end
-	local cam = workspace.CurrentCamera
-	local c = cam and cam.CFrame.Position or Vector3.zero
-	local vs = cam and cam.ViewportSize or Vector2.new(1, 1)
-	for _, reg in ipairs(self.list) do
-		local mid = V3(reg.x, reg.y0 + 3, reg.z)
-		local d = (mid - c).Magnitude
-		local visible = d < 60
-		if not visible and cam then
-			local v = cam:WorldToViewportPoint(mid)
-			visible = v.Z > 0 and v.X > -vs.X * 0.4 and v.X < vs.X * 1.4 and v.Y > -vs.Y * 0.6 and v.Y < vs.Y * 1.6
-		end
-		if d < 320 then
-			if near then self:place(reg, now, self.acc, put, visible) end
-		elseif far then
-			self:place(reg, now, self.accFar, put, visible)
-		end
-	end
-	if near then self.acc = 0 end
-	if far then self.accFar = 0 end
-end
-
---------------------------------------------------------------------
 function WarFX.clear()
 	WarFX.weather(nil, 0)
-	for _, ar in ipairs(armies) do ar:stop() end
-	table.clear(armies)
 	for _, f in ipairs(flying) do giveBack(f.a) end
 	for _, s in ipairs(stuck) do giveBack(s.a) end
 	table.clear(flying); table.clear(stuck)

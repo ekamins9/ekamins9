@@ -1,4 +1,18 @@
-# Updated scripts: Siege's champion and the Horde's Warlord make an entrance too
+# Updated scripts: the Prologue's Iron Host is a real army
+
+- **The first thing a new player sees** is now an army: the Iron Host drawn up in the rain among its torches before Stormwatch (foot, pikes, knights, archers), the garrison's archers on the north walls. Volleys cut men down on both sides, the Host roars, closes on the gate as the story goes on, and at dawn turns and runs while the walls cheer.
+- **Cleanup**: the old block-figure armies in WarFX (replaced by WarCrowd everywhere) are gone.
+- **Checked in Play**: the Prologue's opening, from the walls and from over the Host.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Host and the garrison |
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | old armies removed |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Siege's champion and the Horde's Warlord make an entrance too
 
 - **The boss entrance is shared** now (a module): the Depths' lords, Siege's champion on his throne ("JARL HROLF · THE CHAMPION OF FROSTGATE · SLAY HIM"), and the Horde's Warlord.
 - **Checked in Play**: Siege on Frostgate, skipped to the last stage: the champion's shot and title.
@@ -22,19 +36,4 @@
 |---|---|---|---|
 | [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the boss's entrance |
 | [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | monsters' arrival |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the weight of your swing, and the battle beyond every team fight
-
-- **Your swings have weight**: the view leans back as you draw a blow, then is dragged along the blade's path as it goes (a side swing turns and rolls it, an overhead nods it down, a stab punches in). Small, quick, and scaled by the Shake setting.
-- **A bigger battle round every team fight** (Team Deathmatch, King of the Hill, Last Team Standing): smoke columns beyond the map's edge, the din of battle and an army's roar off to one side, volleys arcing high over the whole field, a trebuchet's fire streaking across, a distant horn.
-- **Checked in Play** on Abbeyfield (TDM): the drag measured on the camera; the burning column on the horizon.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | swing drag |
-| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | marks wind-up and release |
-| [BattleAmbience.client.lua](StarterPlayerScripts/BattleAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
 | [README.md](README.md) | | doc | |
