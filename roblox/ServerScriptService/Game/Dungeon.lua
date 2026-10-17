@@ -533,6 +533,7 @@ local ARCH_W = {   -- by theme: which rooms its dungeon has, by weight
 local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern", "nest"}
 -- (The Depths: now and then a fight room of these is a spiders' nest)
 local NESTS = {BoneCrypt = 0.15, GoblinWarrens = 0.25, SilkCaverns = 0.55}
+local DEPTHS_ARCH = 0.6   -- (The Depths: the share of its fight rooms that are dressed as something)
 -- the odd container by a raid room's walls, by theme
 local RAID_ODDS = {BoneCrypt = {"urn", "urn", "crate", "sack"}, GoblinWarrens = {"sack", "sack", "crate", "barrel"},
 	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"},
@@ -1182,11 +1183,18 @@ function Dungeon.build(themeKey, opts)
 
 	-- each room's size and place (a raid's: what it was, and its size by that)
 	local archW = ARCH_W[themeKey] or ARCH_W.BoneCrypt
+	local depthsW = {}
+	for k, v in pairs(archW) do if k ~= "storeroom" and k ~= "armory" then depthsW[k] = v end end
 	for _, r in ipairs(list) do
 		r.cx = (r.gx - (W - 1) / 2) * CELL
 		r.cz = (r.gy - (H - 1) / 2) * CELL
 		if opts.raid then
 			r.arch = (r.kind == "combat" and weighted(rng, archW)) or (r.kind == "elite" and "hall") or (r.kind == "treasure" and "vault") or (r.kind == "boss" and "lair") or nil
+		elseif r.kind == "combat" and rng:NextNumber() < DEPTHS_ARCH then
+			-- (The Depths: most fight rooms are something too, as the raid's are: a great hall, a
+			-- crypt, a chapel, a cavern…; not the store-rooms and armouries, which are mostly what
+			-- a raid searches)
+			r.arch = weighted(rng, depthsW)
 		end
 		local sz = r.arch and ARCH_SIZE[r.arch]
 		local big = r.kind == "boss" and 70 or (r.kind == "elite" and 52 or (r.kind == "start" and 40 or (r.kind == "exit" and opts.raid and 40 or nil)))
@@ -1365,7 +1373,12 @@ function Dungeon.build(themeKey, opts)
 		-- the room's feature at its middle (the boss's dais, an altar…); a raid's rooms are furnished
 		-- as what they were, and its exits are stairs up to the daylight
 		local mid = CFrame.new(c)
-		local function keep(kind, cf) table.insert(r.containers, {kind = kind, cf = cf}) end
+		-- (a raid's containers, to search; The Depths has none: what was left there, as it lies)
+		local function keep(kind, cf)
+			if opts.raid then table.insert(r.containers, {kind = kind, cf = cf}); return end
+			if kind == "remains" then P.bones(ctx, th, cf, rng)
+			elseif kind == "coffin" then sarcophagus(ctx, th, cf) end
+		end
 		-- (The Depths: a fight room in the warrens or the crypt may be a spiders' nest)
 		if not opts.raid and not r.arch and r.kind == "combat" and NESTS[themeKey] and rng:NextNumber() < NESTS[themeKey] then r.arch = "nest" end
 		if r.arch and A[r.arch] then

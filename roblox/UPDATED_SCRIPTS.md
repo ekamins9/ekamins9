@@ -1,4 +1,15 @@
-# Updated scripts: chandeliers fall
+# Updated scripts: the Depths' rooms dressed
+
+- **The Depths**: most fight rooms are now something, as a Deadvault raid's are: a great hall with pillars and chandeliers, a crypt of sarcophagi, the cells, a library, a chapel with its altar and pews, a cavern, a nest. Each theme leans its own way. Every floor reads as a place rather than a run of bare rooms.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | Depths room types, `DEPTHS_ARCH`, non-raid `keep` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: chandeliers fall
 
 - **Deadvault**: about a third of the chandeliers in the raid's halls, libraries and vaults hang loose. Walk under one and its chain creaks, grit sifts down, it shudders, and a second later it crashes to the floor. Get clear, or it hurts. It stays down with its candles out.
 

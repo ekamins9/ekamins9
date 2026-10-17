@@ -2224,6 +2224,10 @@ hide one (the builder's `r.secret`, its wall `Map ▸ Secrets ▸ SecretWall<roo
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone
 Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned Halls, the
 Hollow Abbey, the Silk Caverns: `Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's boss.
+Most of its fight rooms (`Dungeon` DEPTHS_ARCH, 60%) are dressed as something, as a raid's are: a
+great hall, a crypt, the cells, a library, a chapel, a cavern, a nest, by the theme's weights (not
+the store-rooms and armouries, which are mostly a raid's searching); what a raid would search there
+lies as it is (remains as bones, a coffin as a sarcophagus).
 - **The Silk Caverns** (the newest): rough caves where something spins in the dark below, sickly
   pale light, more than half its rooms nests (webs across the corners, egg sacs, hanging cocoons,
   the bones of the caught), its corridors strung with web traps, spiders letting themselves down
