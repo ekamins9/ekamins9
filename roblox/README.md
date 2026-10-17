@@ -1816,7 +1816,7 @@ pulled back (-0.12) from Roblox's toy greens and blues, a breath darker (-0.02),
 and the sun's rays visible through the haze by day (SunRays 0.06, spread 0.3). Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
 Plague Night, the Undead invasion) and the Gilded Rat, where the place's own rays come back.
 
-## Houses (`Build ▸ MapKit` K.house)
+## Houses and castle stone (`Build ▸ MapKit` K.house, K.wall, K.tower)
 Every cottage in the game (War's villages, the Crownlands, Stormwatch, the Horde's town, the
 Courtyard's backdrop) is half-timbered: plaster walls on a cobbled plinth, the dark frame standing
 proud of them (corner posts, studs bay by bay, a brace in each end bay and either side of the
@@ -1824,6 +1824,11 @@ door, the plates), shuttered windows, a framed door on a stone step, a clay-tile
 its colour is snow-white) under a ridge beam, and on about half of them a chimney with a thread of
 smoke. Only the walls, roof and gables collide; the rest is dressing (no collision, no queries, no
 shadows), about 45 parts a house.
+
+Castle stone is coursed (`K.wall` and `K.tower` default to Brick in a stone colour, which reads as
+dressed blocks, with Cobblestone footings), and towers' spires are shingled (RoofShingles;
+`opts.roofMaterial` to change it). The maps saved in Studio (ServerStorage ▸ Maps) were converted
+by the same rules on 2026-10-17, and their old houses rebuilt in place.
 
 ## Weather (`Weather.client`, `GameConfig.MAP_WEATHER` / `MODE_WEATHER`, drawn by WarFX)
 Rain, storms (rain, lightning, heavy cloud), snow, embers and petals on the maps that have them:

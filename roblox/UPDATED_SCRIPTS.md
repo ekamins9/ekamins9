@@ -1,4 +1,16 @@
-# Updated scripts: half-timbered villages, a filmic grade
+# Updated scripts: castle stone in courses, shingled spires
+
+- **Castle walls and towers** (the Courtyard, every castle, Frostgate, the arenas' towers, the Crownlands, Stormwatch, the Gilded Rat) are coursed stone instead of smooth slate: dressed blocks on rough cobbled footings. Tower spires are shingled instead of cloth.
+- **The saved maps** (ServerStorage ▸ Maps, Studio-only) were converted the same way. Their 30 old box houses (Millfield, Marshfen, Frosthollow, HollowGrove, Harvestvale, Pinewatch) were rebuilt in place as half-timbered cottages. **Save the place** to keep this.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build | ModuleScript | `K.wall` / `K.tower` materials, `opts.roofMaterial` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: half-timbered villages, a filmic grade
 
 - **Every house in the game** is now a half-timbered cottage: plaster on a stone plinth, a dark timber frame (posts, studs, braces), shuttered windows on three sides, a framed door on a step, clay-tiled roofs with a ridge beam, and on about half a smoking chimney. War's villages, the Crownlands, Stormwatch, the Horde's town and the Courtyard's backdrop all change at once. The new trim doesn't collide, so nobody's path changes.
 - **The open-air maps' grade**: the colour is pulled back from Roblox's lime greens and bright blues, with more contrast and warm light, for a painted, sunlit-field look.

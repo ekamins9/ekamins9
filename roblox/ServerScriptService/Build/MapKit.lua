@@ -99,10 +99,13 @@ end
 --------------------------------------------------------------------
 -- a straight wall from a to b (Vector3s on the ground), height h, thickness t;
 -- opts: crenels (battlements), color, material, base (a wider footing: baseH
--- tall, baseW wider than the wall; a tall one makes a wall look founded, not sunk), cap
+-- tall, baseW wider than the wall; a tall one makes a wall look founded, not sunk), cap.
+-- Coursed stone by default (Brick in a stone colour reads as dressed blocks), the footing
+-- rougher (Cobblestone)
 function K.wall(ctx, a, b, h, t, opts)
 	opts = opts or {}
-	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Slate
+	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Brick
+	local footMat = opts.material or K.M.Cobblestone
 	local d = b - a
 	local len = d.Magnitude
 	local mid = (a + b) / 2
@@ -111,8 +114,8 @@ function K.wall(ctx, a, b, h, t, opts)
 	K.box(ctx, "Wall", Vector3.new(t, h, len), frame, color, mat)
 	if opts.base then
 		local bh, bw = opts.baseH or 1.2, opts.baseW or 1.2
-		K.box(ctx, "Footing", Vector3.new(t + bw, bh, len), look * CFrame.new(0, bh / 2, 0), opts.baseColor or K.C.STONEDARK, mat)
-		if bh >= 2 then K.box(ctx, "FootingCap", Vector3.new(t + bw * 0.6, 0.4, len - 0.3), look * CFrame.new(0, bh + 0.2, 0), opts.baseColor or K.C.STONEDARK, mat) end
+		K.box(ctx, "Footing", Vector3.new(t + bw, bh, len), look * CFrame.new(0, bh / 2, 0), opts.baseColor or K.C.STONEDARK, footMat)
+		if bh >= 2 then K.box(ctx, "FootingCap", Vector3.new(t + bw * 0.6, 0.4, len - 0.3), look * CFrame.new(0, bh + 0.2, 0), opts.baseColor or K.C.STONEDARK, footMat) end
 	end
 	if opts.crenels then
 		local n = math.max(1, math.floor(len / 3.2))
@@ -125,15 +128,16 @@ function K.wall(ctx, a, b, h, t, opts)
 	return frame
 end
 
--- a round tower: body, a wider top ring with crenels, an optional cone roof;
--- opts.base = a footing ring that many studs tall
+-- a round tower: body, a wider top ring with crenels, an optional cone roof (shingled);
+-- opts.base = a footing ring that many studs tall. Stone as K.wall's.
 function K.tower(ctx, pos, r, h, opts)
 	opts = opts or {}
-	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Slate
+	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Brick
+	local footMat = opts.material or K.M.Cobblestone
 	K.cyl(ctx, "Tower", r * 2, h, pos + Vector3.new(0, h / 2, 0), color, mat)
 	if opts.base then
-		K.cyl(ctx, "TowerFooting", r * 2 + 2.4, opts.base, pos + Vector3.new(0, opts.base / 2, 0), opts.baseColor or K.C.STONEDARK, mat)
-		K.cyl(ctx, "TowerFootingCap", r * 2 + 1.4, 0.4, pos + Vector3.new(0, opts.base + 0.2, 0), opts.baseColor or K.C.STONEDARK, mat)
+		K.cyl(ctx, "TowerFooting", r * 2 + 2.4, opts.base, pos + Vector3.new(0, opts.base / 2, 0), opts.baseColor or K.C.STONEDARK, footMat)
+		K.cyl(ctx, "TowerFootingCap", r * 2 + 1.4, 0.4, pos + Vector3.new(0, opts.base + 0.2, 0), opts.baseColor or K.C.STONEDARK, footMat)
 	end
 	K.cyl(ctx, "TowerTop", r * 2 + 1.6, 1.0, pos + Vector3.new(0, h + 0.5, 0), opts.topColor or K.C.STONEDARK, mat)
 	local n = math.max(6, math.floor(r * 2))
@@ -144,7 +148,7 @@ function K.tower(ctx, pos, r, h, opts)
 	if opts.roof then
 		-- a spire: an eight-sided cone over the crenels, a gold finial on top
 		local rh = opts.roofH or r * 2.2
-		K.cone(ctx, "Roof", pos + Vector3.new(0, h + 1, 0), r + 1.1, rh, opts.roofColor or K.C.RED, K.M.Fabric)
+		K.cone(ctx, "Roof", pos + Vector3.new(0, h + 1, 0), r + 1.1, rh, opts.roofColor or K.C.RED, opts.roofMaterial or K.M.RoofShingles)
 		K.ball(ctx, "Finial", 0.9, pos + Vector3.new(0, h + 1 + rh + 0.3, 0), K.C.GOLD, K.M.Metal)
 	end
 	if opts.windows then
