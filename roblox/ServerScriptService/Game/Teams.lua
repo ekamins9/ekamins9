@@ -1,7 +1,9 @@
 --[[ TEAMS — two sides, "A" and "B" (names/colors in GameConfig.TEAMS), on top
      of Roblox's Teams service so overhead names take the team color. A
      character carries a Team attribute ("A"/"B") that combat reads for
-     friendly fire, and a coloured tabard so you can tell at a glance.
+     friendly fire, and a coloured tabard so you can tell at a glance, its house's
+     badge on the chest; with no side (a free-for-all, a duel, the Courtyard) a player
+     wears their own coat of arms there instead, on a roundel of their colour.
      Parties (HubServer sets a Party attribute on players) stay together. ]]
 
 local Players = game:GetService("Players")
@@ -79,12 +81,27 @@ end
 local function houseBadge(char, key, torso)
 	local old = char:FindFirstChild("HouseBadge")
 	if old then old:Destroy() end
-	if key ~= "A" and key ~= "B" then return end
 	local RS = game:GetService("ReplicatedStorage")
 	local art = RS:FindFirstChild("ShieldArt")
-	local map = workspace:FindFirstChild("Map")
-	local okH, emblem = pcall(function() return require(RS:WaitForChild("Houses")).forTeam(key, map and map:GetAttribute("HouseSeed")) end)
-	if not (okH and emblem and art and art:FindFirstChild(emblem)) then return end
+	local emblem, metal, edge, field
+	if key == "A" or key == "B" then
+		local map = workspace:FindFirstChild("Map")
+		local okH, e = pcall(function() return require(RS:WaitForChild("Houses")).forTeam(key, map and map:GetAttribute("HouseSeed")) end)
+		emblem = okH and e or nil
+	else
+		-- no side: their own arms (Profile.publishArms: "emblem|metal|field"), on a roundel
+		local plr = Players:GetPlayerFromCharacter(char)
+		local arms = plr and plr:GetAttribute("Arms")
+		if type(arms) ~= "string" then return end
+		local e, m, f = string.match(arms, "^([^|]+)|([^|]*)|(.*)$")
+		local okC, Catalog = pcall(require, RS:WaitForChild("Catalog"))
+		local A = okC and Catalog.ARMS
+		if not (e and A and A.EMBLEM[e]) then return end
+		local mt = A.METAL[m] or A.METALS[1]
+		local fc = Catalog.COLOR[f or ""]
+		emblem, metal, edge, field = e, mt.color, mt.edge, fc and fc.color or Color3.fromRGB(40, 44, 62)
+	end
+	if not (emblem and art and art:FindFirstChild(emblem)) then return end
 	local look, up = torso.CFrame.LookVector, torso.CFrame.UpVector
 	local chest = torso.Position + up * 0.25
 	-- (the first of his visible parts a line into his chest from in front meets: armor isn't
@@ -117,7 +134,7 @@ local function houseBadge(char, key, torso)
 	p.Transparency = 1
 	p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
 	p.CFrame = CFrame.lookAt(at + look * 0.03, at + look * 2, up)
-	for z, layer in ipairs({{emblem .. "_o", Color3.fromRGB(26, 20, 18)}, {emblem, Color3.new(1.06, 0.84, 0.4)}}) do
+	for z, layer in ipairs({{emblem .. "_o", edge or Color3.fromRGB(26, 20, 18)}, {emblem, metal or Color3.new(1.06, 0.84, 0.4)}}) do
 		local v = art:FindFirstChild(layer[1])
 		if v then
 			-- (the decal on the plate's back face: CFrame.lookAt points its -Z, the Front, outward)
@@ -127,7 +144,29 @@ local function houseBadge(char, key, torso)
 			d.Parent = p
 		end
 	end
+	-- (their own arms stand a little proud, on a roundel of their colour rimmed in their metal's edge)
+	if field then p.CFrame = p.CFrame * CFrame.new(0, 0, -0.07) end
 	local w = Instance.new("Weld"); w.Part0, w.Part1 = torso, p; w.C0 = torso.CFrame:ToObjectSpace(p.CFrame); w.Parent = p
+	if field then
+		local disc = Instance.new("Part")
+		disc.Name = "Roundel"
+		disc.Shape = Enum.PartType.Cylinder
+		disc.Size = Vector3.new(0.03, 1.3, 1.3)
+		disc.Color = field
+		disc.Material = Enum.Material.Fabric
+		disc.CanCollide, disc.CanQuery, disc.CanTouch, disc.CastShadow, disc.Massless = false, false, false, false, true
+		disc.CFrame = p.CFrame * CFrame.new(0, 0, 0.03) * CFrame.Angles(0, math.pi / 2, 0)
+		disc.Parent = p
+		local rim = disc:Clone()
+		rim.Name = "RoundelRim"
+		rim.Size = Vector3.new(0.03, 1.42, 1.42)
+		rim.Color = edge
+		rim.CFrame = p.CFrame * CFrame.new(0, 0, 0.06) * CFrame.Angles(0, math.pi / 2, 0)
+		rim.Parent = p
+		for _, d in ipairs({disc, rim}) do
+			local dw = Instance.new("WeldConstraint"); dw.Part0, dw.Part1 = p, d; dw.Parent = d
+		end
+	end
 	p.Parent = char
 end
 

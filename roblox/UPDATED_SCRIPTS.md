@@ -1,4 +1,16 @@
-# Updated scripts: the ruins fill in
+# Updated scripts: your arms on your chest when you fight alone
+
+- **With no side** (a free-for-all, a duel, the Lists, the Courtyard) you now wear your own coat
+  of arms on your chest, in its metal on a roundel of your colour, where a team fight puts your
+  house's badge. Nothing if you haven't chosen arms (LOOK ▸ YOUR ARMS).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Teams.lua](ServerScriptService/Game/Teams.lua) | ServerScriptService ▸ Game | ModuleScript | `houseBadge`: a player's own arms with no side, the roundel |
+
+---
+
+## Before that: the ruins fill in
 
 - **The ruins maps** (Witchfen, Cinderfall, Duneshrine) were a temple on bare ground. Now a
   watchtower stands breached to the ground with its stones heaped outside the gap, two houses'
