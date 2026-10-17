@@ -778,6 +778,43 @@ local function breakingWatch(side)
 end
 breakingWatch("A")
 breakingWatch("B")
+-- THE CHAMPION ON THE FIELD: a mark over his head in his side's colour, up to 400 studs off
+-- (War:champion makes him a Boss in workspace ▸ NPCs; the boss bar at the top tracks him too)
+local function markChampion(m)
+	if not (war.on and m:IsA("Model") and m:GetAttribute("Boss")) then return end
+	local head = m:WaitForChild("Head", 5)
+	if not head or head:FindFirstChild("ChampionMark") then return end
+	local side = m:GetAttribute("Team")
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "ChampionMark"
+	bb.Size = UDim2.fromOffset(220, 46)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 4.2, 0)
+	bb.LightInfluence = 0
+	bb.MaxDistance = 400
+	bb.Adornee = head
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.Size = UDim2.fromScale(1, 1)
+	l.Font = Enum.Font.FredokaOne
+	l.TextScaled = true
+	l.TextColor3 = SIDE[side] or WHITE
+	l.TextStrokeTransparency = 0.2
+	l.Text = "⚔ " .. string.upper(m:GetAttribute("TagName") or m.Name) .. " ⚔"
+	l.Parent = bb
+	bb.Parent = head
+	local h = m:FindFirstChildOfClass("Humanoid")
+	if h then h.Died:Once(function() bb:Destroy() end) end
+end
+local function watchChampions(npcs)
+	for _, m in ipairs(npcs:GetChildren()) do task.spawn(markChampion, m) end
+	npcs.ChildAdded:Connect(function(m)
+		task.wait(0.5)
+		markChampion(m)
+		m:GetAttributeChangedSignal("Boss"):Connect(function() markChampion(m) end)
+	end)
+end
+if workspace:FindFirstChild("NPCs") then watchChampions(workspace.NPCs) end
+workspace.ChildAdded:Connect(function(c) if c.Name == "NPCs" then watchChampions(c) end end)
 -- A CHAMPION FALLS (Round ▸ WarChampFell, "<side>@<time>"): the call, and his killers' roar
 round:GetAttributeChangedSignal("WarChampFell"):Connect(function()
 	local v = round:GetAttribute("WarChampFell")

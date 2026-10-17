@@ -1,4 +1,17 @@
-# Updated scripts: a tenth War battlefield, Mistmarsh
+# Updated scripts: the champion's name over his head; the card puts itself away
+
+- **War**: the champion carries his name over his head in his side's colour, seen from up to 400 studs, on top of his boss health bar.
+- **Fixed**: the What's new card stayed over the match if you left the Courtyard before closing it. It now goes away by itself and comes back next time, still unread.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the champion's mark |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | away on leaving |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a tenth War battlefield, Mistmarsh
 
 - **War**: Mistmarsh, a fog-bound marsh at dawn. A broken stone causeway runs down the middle, with standing water and reed beds, a chapel half sunk into the bog with its tower leaning, and mossy stones. The banners: the South Causeway, the Reeds, the Sunken Chapel, the Bog, the North Causeway. It has a vote picture.
 

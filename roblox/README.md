@@ -1675,7 +1675,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
 - **A champion takes the field** (`War:champion`, five to seven minutes in): the side that's behind
   (a coin toss when even) sends its champion from its camp: Sir Aldric the Unbroken for the Crown (the Training Yard's own master of steel),
   Grimwald Ironhand for Iron, a Champion bot in heavy plate with a great blade, a head taller than
-  the rest, 900 health and 120 more for each enemy player; he pushes the front with his army. Every
+  the rest, 900 health and 120 more for each enemy player; he pushes the front with his army, his
+  name over his head in his side's colour (up to 400 studs) and his health on the boss bar. Every
   screen puts his name up on the bars (`BossEntrance.client`: YOUR / THEIR CHAMPION TAKES THE FIELD;
   the camera stays yours in a battle). Cut him down and his side loses 25 tickets (Round ▸
   WarChampFell: THE CHAMPION FALLS, a roar).
@@ -2174,7 +2175,8 @@ Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Dr
 Once per update, back in the Courtyard, a card of what's new (the script's `NEWS`: a `version`, a
 title, lines of an icon, a heading and a line). Only for someone past the welcome and the menu
 tour (Tutorial ≥ 2, no intro, tour or cinematic running), over the Hub menu; TO BATTLE! (or
-Escape, Enter, a controller's B) puts it away and the version is kept with your settings
+Escape, Enter, a controller's B) puts it away and the version is kept with your settings (leaving
+for a match before that puts it away unread, for next time)
 (`ClientSettings` ▸ `SeenNews`, not shown in the settings panel and never reset), so the same update
 never shows it twice. Scaled to fit a short screen. A new update: change `NEWS.version` and its lines.
 

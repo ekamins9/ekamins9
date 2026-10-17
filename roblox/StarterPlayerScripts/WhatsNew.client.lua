@@ -139,32 +139,37 @@ local function show()
 	TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = fit}):Play()
 
 	local closed = false
-	local conn
-	local function close()
+	local conn, modeConn
+	local function close(seen)
 		if closed then return end
 		closed = true
 		if conn then conn:Disconnect() end
-		ClientSettings.set("SeenNews", NEWS.version)
+		if modeConn then modeConn:Disconnect() end
+		if seen ~= false then ClientSettings.set("SeenNews", NEWS.version) else shown = false end
 		TweenService:Create(veil, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
 		TweenService:Create(scale, TweenInfo.new(0.2), {Scale = fit * 0.85}):Play()
 		task.delay(0.25, function() gui:Destroy() end)
 	end
-	go.Activated:Connect(close)
+	go.Activated:Connect(function() close() end)
 	conn = UIS.InputBegan:Connect(function(input)
 		if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.ButtonB or input.KeyCode == Enum.KeyCode.Return then close() end
+	end)
+	-- (off to a match before reading it: put away, not marked seen, for next time in the Courtyard)
+	modeConn = round:GetAttributeChangedSignal("Mode"):Connect(function()
+		if round:GetAttribute("Mode") ~= "Hub" then close(false) end
 	end)
 end
 
 -- (when: in the Courtyard, past the welcome and the tour, with nothing else running)
 task.spawn(function()
 	task.wait(4)
-	while not shown do
+	while true do
 		local ok = round:GetAttribute("Mode") == "Hub" and (player:GetAttribute("Tutorial") or 0) >= 2
 			and player:GetAttribute("MenuTour") ~= false and not _G.IntroActive and not _G.TourActive and not _G.CinematicUp
-		if ok then
+		if ok and not shown then
 			if ClientSettings.get("SeenNews") == NEWS.version then return end
 			task.wait(1.5)
-			if not (_G.IntroActive or _G.TourActive) then show() end
+			if round:GetAttribute("Mode") == "Hub" and not (_G.IntroActive or _G.TourActive) then show() end
 		end
 		task.wait(1)
 	end
