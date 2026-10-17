@@ -11,7 +11,9 @@
        WarFX.volley(from, to, n, opts)    n arrows loosed round `from`, falling round `to`
                                           (opts.spread, opts.flight seconds, opts.height, opts.stagger,
                                           opts.stick = false: they vanish where they land; opts.fire:
-                                          fire arrows, a streak of flame each — by default at night)
+                                          fire arrows, a streak of flame each — by default at night;
+                                          an arc that passes over the camera whistles overhead:
+                                          WarAudio ▸ ArrowsOver)
        WarFX.fireball(from, to, t, opts)  a burning shot on a high arc landing at `to` after t s
                                           (opts.blast = false: no blast; opts.big; opts.onLand(pos);
                                           opts.scorch = false: no burnt mark; opts.floor: where its
@@ -388,6 +390,21 @@ function WarFX.volley(from, to, n, opts)
 	-- the hiss as they come down
 	if opts.sound ~= false then
 		task.delay(math.max(T - 1.4, 0), function() WarFX.sound("Arrows", to, {range = opts.range or 320, near = 50}) end)
+		-- and if their arc passes over you (not landing on you): the whistle of them going over
+		local c = cam and cam.CFrame.Position
+		if c then
+			local flat = V3(to.X - from.X, 0, to.Z - from.Z)
+			local L = flat.Magnitude
+			if L > 30 then
+				local u = math.clamp(V3(c.X - from.X, 0, c.Z - from.Z):Dot(flat.Unit) / L, 0, 1)
+				local onPath = from:Lerp(to, u)
+				local side = (V3(c.X, 0, c.Z) - V3(onPath.X, 0, onPath.Z)).Magnitude
+				if u > 0.15 and u < 0.8 and side < 45 and (V3(c.X, 0, c.Z) - V3(to.X, 0, to.Z)).Magnitude > 35 then
+					local overAt = onPath + V3(0, h * 0.8, 0)
+					task.delay(T * u * 0.9, function() WarFX.sound("ArrowsOver", overAt, {range = 160, near = 40, volume = 0.9}) end)
+				end
+			end
+		end
 	end
 end
 

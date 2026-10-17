@@ -1714,6 +1714,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   second rank holds a burning torch up (`torches = true`), so the lines show as firelight in the
   dark (War, Siege, the warfields), and every volley is fire arrows, streaks of flame across the
   dark (`WarFX.volley`'s `fire`, by default at night: the engines' volleys too).
+- **Arrows overhead**: a volley whose arc passes over you (and isn't coming down on you) whistles
+  and hisses as it goes over (`WarFX.volley`, WarAudio ▸ ArrowsOver), in every mode with volleys.
 - **The steel up close**: within ~55 studs of a fighting line, the men fighting in its front rank
   ring out a few times a second (a clash, a parry, a block, a blow on plate: the fight's own
   SoundBank) from where they stand, on top of the din of the melee; a man going down within 50
