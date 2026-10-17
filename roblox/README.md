@@ -1769,6 +1769,9 @@ Marshfen, Mistbridge, Blackwater; embers on Emberkeep, Ashenford, Cinderfall; pe
 and the Rose Court; Plague Night is always a storm, the Undead invasion rain. A mode's own wins
 over its map's; War and the Prologue draw their own; none in the Hub or the dungeon game. Drops
 stop under a roof. One table to change it, no Studio work.
+**Banners in the wind** (`BannerWind.client`): every banner, pennant and standard on a map sways
+from its top edge on its own rhythm, its tips and trims swinging with it, harder in rain and
+storms; only cloth within 160 studs, a dozen times a second.
 **Cold breath:** where it's cold (snow falling, a winter-themed map, War's Frostmere, the Frozen
 Depths) every player's breath shows, a small white puff from the mouth every few seconds,
 quicker when running.
