@@ -514,24 +514,26 @@ end
 --  (the mode builds them: crate barrel sack urn rack stand shelf coffin remains chest ornate hoard)
 --------------------------------------------------------------------
 local ARCH_W = {   -- by theme: which rooms its dungeon has, by weight
-	BoneCrypt = {crypt = 4, hall = 2, cells = 2, chapel = 2, library = 1, storeroom = 2, armory = 1},
-	GoblinWarrens = {cavern = 4, storeroom = 3, cells = 1, armory = 2, hall = 1},
+	BoneCrypt = {crypt = 4, hall = 2, cells = 2, chapel = 2, library = 1, storeroom = 2, armory = 1, nest = 1},
+	GoblinWarrens = {cavern = 4, storeroom = 3, cells = 1, armory = 2, hall = 1, nest = 2},
 	CrimsonManor = {hall = 3, library = 3, chapel = 2, cells = 1, storeroom = 2, armory = 1},
 	FrozenDepths = {cavern = 3, crypt = 2, hall = 2, armory = 1, storeroom = 2},
 	EmberForge = {armory = 3, storeroom = 2, hall = 2, cells = 1, cavern = 2},
 	DrownedHalls = {crypt = 3, cavern = 3, hall = 2, cells = 2, chapel = 1, storeroom = 1},
 	HollowAbbey = {chapel = 4, library = 3, crypt = 2, hall = 2, cells = 1, storeroom = 1},
 }
-local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern"}
+local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern", "nest"}
+-- (The Depths: now and then a fight room of these is a spiders' nest)
+local NESTS = {BoneCrypt = 0.15, GoblinWarrens = 0.25}
 -- the odd container by a raid room's walls, by theme
 local RAID_ODDS = {BoneCrypt = {"urn", "urn", "crate", "sack"}, GoblinWarrens = {"sack", "sack", "crate", "barrel"},
 	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"},
 	DrownedHalls = {"barrel", "urn", "crate"}, HollowAbbey = {"urn", "urn", "crate", "sack"}}
 local ARCH_SIZE = {hall = {30, 36}, crypt = {19, 26}, cells = {21, 26}, library = {21, 27}, armory = {18, 24},
-	storeroom = {14, 19}, chapel = {21, 27}, cavern = {20, 27}, vault = {18, 22}, lair = {33, 35}}   -- ×2 studs
-local ARCH_H = {hall = 30, cavern = 26, chapel = 28, lair = 30}
+	storeroom = {14, 19}, chapel = {21, 27}, cavern = {20, 27}, vault = {18, 22}, lair = {33, 35}, nest = {20, 26}}   -- ×2 studs
+local ARCH_H = {hall = 30, cavern = 26, chapel = 28, lair = 30, nest = 26}
 Dungeon.ARCH_NAMES = {hall = "Great Hall", crypt = "Crypt", cells = "The Cells", library = "Library", armory = "Armoury",
-	storeroom = "Storeroom", chapel = "Chapel", cavern = "Cavern", vault = "Treasure Vault", lair = "The Lair"}
+	storeroom = "Storeroom", chapel = "Chapel", cavern = "Cavern", vault = "Treasure Vault", lair = "The Lair", nest = "The Nest"}
 
 local function weighted(rng, t)
 	local total = 0
@@ -792,6 +794,80 @@ A.cavern = function(ctx, th, r, c, rng, keep)
 		if K.campfire then K.campfire(ctx, camp) else P.brazier(ctx, th, CFrame.new(camp)) end
 		keep("sack", CFrame.new(camp + Vector3.new(4.5, 0, 1.5)))
 		if rng:NextNumber() < 0.5 then keep("crate", CFrame.new(camp + Vector3.new(-4.5, 0, -1)) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)) end
+	end
+end
+-- a NEST: webs strung across its corners up into the dark, egg sacs heaped by the walls, cocoons
+-- hanging on silk from the ceiling, the bones of what was caught (and, in a raid, what it had on it)
+local SILK = Color3.fromRGB(226, 224, 214)
+local function strand(ctx, a, b, w, alpha)
+	local d = b - a
+	local p = box(ctx, "Silk", Vector3.new(w or 0.06, w or 0.06, math.max(d.Magnitude, 0.1)), CFrame.lookAt((a + b) / 2, b), SILK, Enum.Material.Fabric, false)
+	p.Transparency = alpha or 0.4
+	p.CanQuery, p.CanTouch, p.CastShadow = false, false, false
+	return p
+end
+-- a web across a corner: three anchors (down each wall, out along the ceiling), threads from its
+-- hub out to them and between, three rings of thread round the hub
+local function web(ctx, corner, sx, sz, H, s, rng)
+	local v1 = corner + Vector3.new(0, H - s * 1.2, -sz * s)
+	local v2 = corner + Vector3.new(-sx * s, H - s * 1.2, 0)
+	local v3 = corner + Vector3.new(-sx * s * 0.8, H - 0.1, -sz * s * 0.8)
+	local hub = (v1 + v2 + v3) / 3
+	local rim = {v1, (v1 + v3) / 2, v3, (v3 + v2) / 2, v2, (v2 + v1) / 2}
+	for _, p in ipairs(rim) do strand(ctx, hub, p, 0.06, 0.35) end
+	-- (each ring a little uneven, as a spider spins it)
+	for _, t in ipairs({0.35, 0.7, 1}) do
+		local pts = {}
+		for i = 1, #rim do pts[i] = hub:Lerp(rim[i], t * (t < 1 and rng:NextNumber(0.88, 1.12) or 1)) end
+		for i = 1, #rim do strand(ctx, pts[i], pts[i % #rim + 1], 0.05, 0.45) end
+	end
+end
+A.nest = function(ctx, th, r, c, rng, keep)
+	local H = ctx.H or WALL_H
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			if rng:NextNumber() < 0.8 then web(ctx, c + Vector3.new(sx * r.w / 2, 0, sz * r.d / 2), sx, sz, H, rng:NextNumber(5, 8), rng) end
+		end
+	end
+	local taken = {c}
+	-- egg sacs, heaped against the walls on a sheet of silk
+	for _ = 1, rng:NextInteger(2, 3) do
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local len = wallLen(r, d)
+		local u = rng:NextNumber(-len / 2 + 5, len / 2 - 5)
+		if not (opening(r, d) and math.abs(u) < DOOR_W / 2 + 3) then
+			local f = wallFrame(r, c, d, 2.6, u)
+			table.insert(taken, f.Position)
+			local sheet = K.cyl(ctx, "SilkSheet", 5.5, 0.06, f * CFrame.new(0, 0.04, 0), SILK, Enum.Material.Fabric, ctx.Props)
+			sheet.Transparency, sheet.CanCollide, sheet.CanQuery = 0.68, false, false
+			for _ = 1, rng:NextInteger(4, 7) do
+				local sz = rng:NextNumber(0.8, 1.5)
+				local egg = K.ball(ctx, "EggSac", sz, f * CFrame.new(rng:NextNumber(-1.6, 1.6), sz * 0.4, rng:NextNumber(-1.2, 1.2)), Color3.fromRGB(230, 222, 196), Enum.Material.Fabric, ctx.Props)
+				egg.CanCollide = false
+			end
+		end
+	end
+	-- cocoons on threads from the ceiling
+	for _ = 1, rng:NextInteger(3, 5) do
+		local p = floorSpot(r, c, rng, taken, 5)
+		if p then
+			table.insert(taken, p)
+			local hang = rng:NextNumber(2, 7)
+			local mid = p + Vector3.new(0, H - hang - 1.7, 0)
+			local co = box(ctx, "Cocoon", Vector3.new(1.4, 3.2, 1.4), CFrame.new(mid) * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6.28), rng:NextNumber(-0.12, 0.12)), Color3.fromRGB(190, 184, 168), Enum.Material.Fabric, false)
+			co.CanQuery = false
+			local m = Instance.new("SpecialMesh"); m.MeshType = Enum.MeshType.Sphere; m.Parent = co
+			strand(ctx, mid + Vector3.new(0, 1.5, 0), Vector3.new(p.X, H, p.Z), 0.07, 0.3)
+		end
+	end
+	-- what was caught
+	for _ = 1, 2 do
+		local p = floorSpot(r, c, rng, taken, 5)
+		if p then table.insert(taken, p); P.bones(ctx, th, CFrame.new(p), rng) end
+	end
+	if keep and rng:NextNumber() < 0.6 then
+		local p = floorSpot(r, c, rng, taken, 6)
+		if p then keep("remains", CFrame.new(p) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)) end
 	end
 end
 -- a TREASURE VAULT: the ornate chest on its dais, gold piled round it, its silent guardians
@@ -1281,6 +1357,8 @@ function Dungeon.build(themeKey, opts)
 		-- as what they were, and its exits are stairs up to the daylight
 		local mid = CFrame.new(c)
 		local function keep(kind, cf) table.insert(r.containers, {kind = kind, cf = cf}) end
+		-- (The Depths: a fight room in the warrens or the crypt may be a spiders' nest)
+		if not opts.raid and not r.arch and r.kind == "combat" and NESTS[themeKey] and rng:NextNumber() < NESTS[themeKey] then r.arch = "nest" end
 		if r.arch and A[r.arch] then
 			local okA, errA = pcall(A[r.arch], ctx, th, r, c, rng, keep)
 			if not okA then warn("[Dungeon] room", r.arch, errA) end

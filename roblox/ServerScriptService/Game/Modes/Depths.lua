@@ -306,6 +306,8 @@ function Depths:roster(room)
 		local ranged = math.random() < 0.28
 		local pool = ranged and mons.ranged or mons.common
 		local id = pool[math.random(#pool)]
+		-- (a nest's fighters are mostly its spiders)
+		if room.arch == "nest" and not ranged and table.find(mons.common, "CaveSpider") and math.random() < 0.7 then id = "CaveSpider" end
 		local def = Monsters.def(id)
 		local cost = def and ({1, 1.6, 3.2, 8})[def.tier or 1] or 1
 		add(id, {elite = math.random() < eliteChance})

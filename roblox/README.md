@@ -2534,7 +2534,12 @@ legs each on a `SpiderHip_n` and a `SpiderKnee_n` joint (kept rigid when it fall
 twitch when it stands, the body rears and thrusts as it bites (read from how fast its hidden arm
 turns), the legs curl when it dies; it skitters as it runs (WarAudio ▸ Skitter), leaves no boot
 steps or prints (`Skitters`). It fights as a **Beast** (`Bots.SKILLS.Beast`): no guard, no parries,
-ripostes, feints or kicks; quick, low lunging bites (stabs and underhands).
+ripostes, feints or kicks; quick, low lunging bites (stabs and underhands). Their **nests**
+(`Dungeon` A.nest, "The Nest"): webs strung across the corners up into the dark, egg sacs heaped on
+silk by the walls, cocoons hanging on threads from the ceiling, the bones of what was caught (and,
+in a raid, its remains to search). A Deadvault raid's Warrens and Crypt have them among their rooms;
+in The Depths a fight room there is a nest now and then (`NESTS`: 25% in the Warrens, 15% in the
+Crypt), its fighters mostly cave spiders.
 
 ### Boss moves (`Combat ▸ BossMoves`)
 Bosses (and elites, and a few casters) fight with **telegraphed big moves** on top of their blade,

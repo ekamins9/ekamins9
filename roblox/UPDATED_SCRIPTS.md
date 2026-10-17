@@ -1,4 +1,16 @@
-# Updated scripts: spiders that fight
+# Updated scripts: spiders' nests
+
+- **The dungeons** (the Goblin Warrens, the Bone Crypt): some rooms are spiders' nests, with webs strung across the corners, egg sacs heaped on silk, cocoons hanging on threads from the ceiling, and the bones of what was caught. In The Depths, a nest's fighters are mostly Cave Spiders; in a Deadvault raid, the remains there can be searched.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | `A.nest`, `NESTS`, nest in the raids' rooms |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | a nest's roster |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: spiders that fight
 
 - **New monsters: spiders.** The **Cave Spider** is small, quick and comes in numbers, in the Goblin Warrens and the Bone Crypt (and their Deadvault raids). The **Broodmother** is an elite of the Warrens, huge and red-marked, and calls up cave spiders. Both come straight at you with lunging bites: no guard, no parries. Their eight legs walk in a real gait, they rear as they bite, they skitter as they run, and their legs curl when they die.
 - Built on the existing monster system: the body is a hidden fighter (`body = "spider"`), the fangs are a hidden blade that never drops, and a new `Beast` bot profile drives it.
