@@ -1,4 +1,15 @@
-# Updated scripts: mimics in the Depths too
+# Updated scripts: web traps
+
+- **A new corridor trap**: a sheet of web strung across the passage (the Warrens and the Crypt mostly). Walk into it and it clings, slowing you as it tears, and half the time its spider drops in for you. Cut it with your blade first and it falls harmlessly.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | `BUILD.web`, `Traps.WEB`, weights |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: mimics in the Depths too
 
 - **The Depths**: a treasure room's chest is now and then a mimic (gilded from the third floor). Kill it and the chest is back, and everyone gets their pick as before.
 

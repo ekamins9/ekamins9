@@ -10,6 +10,10 @@
                   in one wall (jump it)
        flames     two grates side by side that breathe fire in turn (the Ember Forge's, the
                   Warrens'): cross on the cool side
+       web        a sheet of web strung right across the corridor (the spiders' dungeons): walk
+                  into it and it clings, slowing you a moment as it tears (CAUGHT IN A WEB), and
+                  now and then its spider comes down for whoever tore it; cut it first (any blow
+                  that lands in it tears it harmlessly) or go round it if you can
 
      Each shows itself (a grate, a plate, holes in a wall, a blade you hear) and has a way past.
      They hurt anyone who blunders in, monsters on the hunt too (a calm one knows its own dungeon). The server decides every hit; every screen
@@ -43,14 +47,15 @@ Traps.SPIKES = {dmg = 26, rise = 0.5, hold = 1.6, rearm = 3}
 Traps.BLADE = {dmg = 30, knock = 42, again = 1.2}
 Traps.DARTS = {dmg = 18, delay = 0.18, rearm = 4}
 Traps.FLAMES = {dmg = 9, every = 0.5, period = 4.4, warn = 0.9, burn = 1.7}
+Traps.WEB = {slow = 0.45, time = 2.2, spider = 0.5}
 local WEIGHTS = {
-	BoneCrypt = {spikes = 3, blade = 3, darts = 2},
-	GoblinWarrens = {darts = 3, spikes = 3, flames = 2, blade = 1},
-	CrimsonManor = {blade = 3, darts = 3, spikes = 2},
+	BoneCrypt = {spikes = 3, blade = 3, darts = 2, web = 2},
+	GoblinWarrens = {darts = 3, spikes = 3, flames = 2, blade = 1, web = 3},
+	CrimsonManor = {blade = 3, darts = 3, spikes = 2, web = 1},
 	FrozenDepths = {spikes = 3, blade = 2, darts = 2},
 	EmberForge = {flames = 4, spikes = 2, blade = 2, darts = 1},
 	DrownedHalls = {blade = 3, spikes = 3, darts = 2},
-	HollowAbbey = {blade = 3, darts = 3, spikes = 2},
+	HollowAbbey = {blade = 3, darts = 3, spikes = 2, web = 1},
 }
 local IRON, DARK = Color3.fromRGB(70, 70, 76), Color3.fromRGB(26, 24, 24)
 local DODGE_IFRAMES = 0.45
@@ -362,6 +367,83 @@ end
 --------------------------------------------------------------------
 --  SETTING THEM
 --------------------------------------------------------------------
+-- WEB: a sheet of web across the corridor, from wall to wall and up into the dark
+local SILK = Color3.fromRGB(228, 226, 216)
+function BUILD.web(folder, at, T, C, ceil, rng, theme)
+	local m = Instance.new("Model")
+	m.Name = "WebTrap"
+	m:SetAttribute("Trap", "web")
+	local frame = CFrame.fromMatrix(at, C, UP)   -- (x across the corridor, y up)
+	local halfW, top = 5.6, math.min(ceil - 0.5, 12)
+	local hub = V3(rng:NextNumber(-1, 1), top * 0.5, 0)
+	local rim = {V3(-halfW, 0.4, 0), V3(-halfW, top * 0.5, 0), V3(-halfW, top, 0), V3(0, top, 0), V3(halfW, top, 0), V3(halfW, top * 0.5, 0), V3(halfW, 0.4, 0), V3(0, 0.4, 0)}
+	local strands = {}
+	local function strand(a, b, w)
+		local wa, wb = frame * a, frame * b
+		local d = wb - wa
+		local p = piece(m, "Silk", V3(w or 0.07, w or 0.07, math.max(d.Magnitude, 0.1)), CFrame.lookAt((wa + wb) / 2, wb), SILK, Enum.Material.Fabric)
+		p.Transparency, p.CastShadow = 0.35, false
+		table.insert(strands, p)
+	end
+	for _, p in ipairs(rim) do strand(hub, p, 0.08) end
+	for _, t in ipairs({0.3, 0.55, 0.8}) do
+		local pts = {}
+		for i = 1, #rim do pts[i] = hub:Lerp(rim[i], t * rng:NextNumber(0.9, 1.1)) end
+		for i = 1, #rim do strand(pts[i], pts[i % #rim + 1], 0.06) end
+	end
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+	m.Parent = folder
+	local cfg = Traps.WEB
+	local torn = false
+	local function tear(by)
+		torn = true
+		m:SetAttribute("Torn", true)
+		-- (most of it gone; a few threads left hanging)
+		for _, p in ipairs(strands) do
+			if rng:NextNumber() < 0.7 then p:Destroy() else p.Transparency = 0.6 end
+		end
+		-- its spider, now and then, down for whoever tore it
+		if by and rng:NextNumber() < cfg.spider then
+			task.delay(0.6, function()
+				local okM, Monsters = pcall(function() return require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Monsters")) end)
+				if not (okM and Monsters.def("CaveSpider")) then return end
+				local r = rootOf(by)
+				local from = at + T * ((r and (r.Position - at):Dot(T) > 0) and -4 or 4)
+				local mob = Monsters.spawn("CaveSpider", {team = "B"}, {at = CFrame.lookAt(from + UP * 3, (r and r.Position or at) + UP * 0)})
+				if mob and mob.model then mob.model:SetAttribute("Rising", true) end
+			end)
+		end
+	end
+	-- (a blow that lands in it tears it harmlessly)
+	local hook = function(character, pos)
+		if torn or not m.Parent then return end
+		local rel = pos - at
+		if math.abs(rel:Dot(T)) < 2 and math.abs(rel:Dot(C)) < halfW + 1 and rel.Y > -1 and rel.Y < top + 1 then tear(nil) end
+	end
+	table.insert(CombatServer.worldHitHooks, hook)
+	m.Destroying:Connect(function()
+		local i = table.find(CombatServer.worldHitHooks, hook)
+		if i then table.remove(CombatServer.worldHitHooks, i) end
+	end)
+	return function(now, list)
+		if torn then return end
+		for _, c in ipairs(list) do
+			-- (spiders pass through their own webs)
+			if not c:GetAttribute("Skitters") then
+				local rel = rootOf(c).Position - at
+				if math.abs(rel:Dot(T)) < 1.2 and math.abs(rel:Dot(C)) < halfW + 0.5 and rel.Y < top then
+					local okP, Powers = pcall(function() return require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Powers")) end)
+					if okP and Powers.addMods then Powers.addMods(c, {speed = cfg.slow}, cfg.time, "Web") end
+					c:SetAttribute("GuardText", "CAUGHT IN A WEB")
+					c:SetAttribute("GuardTick", (c:GetAttribute("GuardTick") or 0) + 1)
+					tear(c)
+					return
+				end
+			end
+		end
+	end
+end
+
 local function pick(rng, weights)
 	local total = 0
 	for _, w in pairs(weights) do total += w end

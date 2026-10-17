@@ -2163,6 +2163,11 @@ of its corridors, none by a haven. Each theme has its favourites (the module's W
   across (18). Jump it.
 - **Fire grates**: two side by side breathing fire in turn (a glow, then the jet: 9 every half
   second). Cross on the cool side.
+- **Web**: a sheet of web strung right across the corridor, wall to wall and up into the dark
+  (the Warrens, the Crypt, now and then the Manor and the Abbey). Walk into it and it clings
+  (CAUGHT IN A WEB: slowed to 45% for 2.2 s) as it tears, and half the time its spider comes down
+  for whoever tore it. A blow that lands in it (`CombatServer.worldHitHooks`) cuts it harmlessly:
+  cut first. Spiders pass through their own webs.
 They hurt anyone, monsters on the hunt too (a calm one, walking its patrol or waiting in its room,
 knows its own dungeon and steps round them); armour turns half of what it would turn from a blade, a dodge
 slips them, spawn protection too. The server decides every hit (20 times a second); every screen
