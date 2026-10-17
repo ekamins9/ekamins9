@@ -861,7 +861,7 @@ and a UIScale fits it to any screen.
   does; in a team fight on your side's colour. Kept in your appearance (`armsEmblem`, `armsMetal`,
   `armsField`, `armsDivision`, `armsColor2`; `Profile.validateAppearance` checks the level and the
   colours).
-  `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab.
+  `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab (`"ARMOR:top"`: on a slot).
   **Anything locked can be tried on** (a shield's skin too): it shows on you, with where it
   comes from and a buy button when it is in today's shop.
 - **🔒 LOCKED: SHOWN / HIDDEN** (the Loadout and the Armory; Settings ▸ *Locked items in menus*,

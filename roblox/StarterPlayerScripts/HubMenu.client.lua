@@ -9707,9 +9707,11 @@ bus.Event:Connect(function(what, tab)
 		-- screen back on after the menu had closed itself)
 		if open then hide() else gui.Enabled = false; bus:Fire("HubClosed") end
 	elseif what == "PlayDoor" then goDoor(tab)   -- the Courtyard's gates
-	-- (straight to a part of the loadout: "WEAPONS", "ARMOR", "GEAR" or "LOOK")
+	-- (straight to a part of the loadout: "WEAPONS", "ARMOR", "GEAR" or "LOOK"; "ARMOR:top" a slot too)
 	elseif what == "LoadoutTab" then
-		ui.loTab = tab
+		local name, slot = string.match(tostring(tab), "^(%u+):?(%l*)$")
+		ui.loTab = name or tab
+		if slot and slot ~= "" then ui.loSlot = slot end
 		if not open or currentTab ~= "CLASSES" then show("CLASSES") elseif render.CLASSES then render.CLASSES() end
 	end
 end)
