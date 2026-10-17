@@ -1,4 +1,17 @@
-# Updated scripts: a shield sounds like a shield
+# Updated scripts: the house on every chest
+
+- **Every fighter in a team fight wears their house's arms on the chest**: a gold badge (the
+  same beast their side's banners, standards and shields carry) on the front of their armor,
+  players and bots alike.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Teams.lua](ServerScriptService/Game/Teams.lua) | ServerScriptService ▸ Game | ModuleScript | the house badge (`Teams.mark`) |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a shield sounds like a shield
 
 - **A blow caught on a shield thuds**: a hollow wooden impact with a crack of the board (three
   takes), the steel clang quieter under it, instead of the blade-on-blade ring every block made.

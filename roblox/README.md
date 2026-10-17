@@ -1381,7 +1381,9 @@ the map's name, so a map always flies the same. The plates (BannerArt) swing wit
 (`BannerWind`). **The sides carry them too**: in a team fight a plain (Default) shield is painted
 in its side's colour with its house's arms (`Combat ▸ Shields` → `ShieldPaint.house`), and so are
 the War armies' shields (`WarCrowd`: the front rank's whole painted face, the ranks behind the
-emblem), and every regiment's standard flies its house's arms on both faces. War's five banners
+emblem), and every regiment's standard flies its house's arms on both faces; every fighter in a
+team fight, player or bot, wears a gold badge of their house on the front of whatever they wear
+(`Teams.mark`: the chest found by testing their parts' boxes, armor not being queryable). War's five banners
 raise the arms of the side that holds them (`War.client`), bare while no one does. Which house is which is `ReplicatedStorage ▸ Houses`, from the Map's `HouseSeed` (its
 name without a built map's round number), the same on the server and every screen.
 

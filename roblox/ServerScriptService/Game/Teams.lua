@@ -74,8 +74,71 @@ function Teams.clearAll()
 	for _, p in ipairs(Players:GetPlayers()) do Teams.set(p, nil) end
 end
 
--- the tabard: a thin plate on the chest in the team colour (or none)
+-- HIS HOUSE ON HIS CHEST: the arms his side's banners fly on this map (ReplicatedStorage ▸ Houses),
+-- a gold badge on the front of whatever he wears, found by looking at his chest from in front
+local function houseBadge(char, key, torso)
+	local old = char:FindFirstChild("HouseBadge")
+	if old then old:Destroy() end
+	if key ~= "A" and key ~= "B" then return end
+	local RS = game:GetService("ReplicatedStorage")
+	local art = RS:FindFirstChild("ShieldArt")
+	local map = workspace:FindFirstChild("Map")
+	local okH, emblem = pcall(function() return require(RS:WaitForChild("Houses")).forTeam(key, map and map:GetAttribute("HouseSeed")) end)
+	if not (okH and emblem and art and art:FindFirstChild(emblem)) then return end
+	local look, up = torso.CFrame.LookVector, torso.CFrame.UpVector
+	local chest = torso.Position + up * 0.25
+	-- (the first of his visible parts a line into his chest from in front meets: armor isn't
+	--  queryable, so each part's box is tested by hand)
+	local from, dir = chest + look * 3, -look
+	local best = 3 - 0.5
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") and part.Transparency < 0.9 and part.Name ~= "HumanoidRootPart" and part.Name ~= "HouseBadge" then
+			local o = part.CFrame:PointToObjectSpace(from)
+			local d = part.CFrame:VectorToObjectSpace(dir)
+			local h = part.Size / 2
+			local t0, t1 = -math.huge, math.huge
+			for _, ax in ipairs({"X", "Y", "Z"}) do
+				local oa, da, ha = o[ax], d[ax], h[ax]
+				if math.abs(da) < 1e-6 then
+					if oa < -ha or oa > ha then t0 = math.huge; break end
+				else
+					local ta, tb = (-ha - oa) / da, (ha - oa) / da
+					if ta > tb then ta, tb = tb, ta end
+					t0, t1 = math.max(t0, ta), math.min(t1, tb)
+				end
+			end
+			if t0 <= t1 and t0 >= 0 and t0 < best then best = t0 end
+		end
+	end
+	local at = from + dir * best
+	local p = Instance.new("Part")
+	p.Name = "HouseBadge"
+	p.Size = Vector3.new(1.05, 1.05, 0.01)
+	p.Transparency = 1
+	p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
+	p.CFrame = CFrame.lookAt(at + look * 0.03, at + look * 2, up)
+	for z, layer in ipairs({{emblem .. "_o", Color3.fromRGB(26, 20, 18)}, {emblem, Color3.new(1.06, 0.84, 0.4)}}) do
+		local v = art:FindFirstChild(layer[1])
+		if v then
+			-- (the decal on the plate's back face: CFrame.lookAt points its -Z, the Front, outward)
+			local d = Instance.new("Decal")
+			d.Face = Enum.NormalId.Front
+			d.Texture, d.Color3, d.ZIndex = v.Value, layer[2], z
+			d.Parent = p
+		end
+	end
+	local w = Instance.new("Weld"); w.Part0, w.Part1 = torso, p; w.C0 = torso.CFrame:ToObjectSpace(p.CFrame); w.Parent = p
+	p.Parent = char
+end
+
+-- the tabard: a thin plate on the chest in the team colour (or none), and his house's badge over it
+local tabard
 function Teams.mark(char, key)
+	tabard(char, key)
+	local torso = char:FindFirstChild("Torso")
+	if torso then pcall(houseBadge, char, key, torso) end
+end
+tabard = function(char, key)
 	char:SetAttribute("Team", key)
 	local old = char:FindFirstChild("Tabard")
 	if old then old:Destroy() end
