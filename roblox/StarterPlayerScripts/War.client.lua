@@ -757,6 +757,16 @@ round:GetAttributeChangedSignal("Map"):Connect(function()
 	if war.on then leave(); task.wait(0.5); if inWar() then enter() end end
 end)
 round:GetAttributeChangedSignal("Mode"):Connect(function() if inWar() then enter() else leave() end end)
+-- THE WEATHER TURNS (Round ▸ WarSky, War:start decides): the sky opens over the battle, a long
+-- roll of thunder, the new weather thickening in over a few seconds
+round:GetAttributeChangedSignal("WarSky"):Connect(function()
+	local sky = round:GetAttribute("WarSky")
+	if not (war.on and type(sky) == "string" and sky ~= "") then return end
+	WarFX.sound("Thunder", nil, {volume = sky == "storm" and 0.9 or 0.55, speed = 0.8})
+	if sky == "storm" then pcall(WarFX.lightning, false) end
+	WarFX.weather(sky, 8)
+	bigCall(sky == "storm" and "THE STORM BREAKS" or "THE HEAVENS OPEN", nil, Color3.fromRGB(190, 210, 240), 3)
+end)
 if inWar() then enter() end
 
 -- your first body of a round: the flight over the field

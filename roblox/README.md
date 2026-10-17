@@ -1667,6 +1667,11 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   (ClockTime 6–10) brightens an hour and a half; an afternoon one wears on towards golden hour
   (up to 2.2 hours, never past 17.1), long shadows and a warm sky by the bell. A dusk or a night
   theme stays as it was tuned.
+- **The weather turns** (`War:start` / `tick`, `War.client`): on a clear or rainy field (not
+  Sunreach's desert, Frostmere's snow or Ashvale's ash), 40% of battles see the sky open partway
+  through (4 to 9 minutes in): clear to rain, rain to a storm. Round ▸ WarSky carries it; every
+  screen hears a long roll of thunder (a flash of lightning for a storm), the new weather thickens
+  in over 8 seconds, and THE HEAVENS OPEN / THE STORM BREAKS comes up big.
 - **Coming in**: at your foremost banner nobody's attacking, else at the camp, in waves
   (`waveSpawn` 8). Bots: most push for the banner their side is taking, some hold one under attack
   (`War:botOpts` goal). Their number follows the server's frame rate (`War:botTarget`, read by

@@ -57,7 +57,7 @@ local CFG = {
 	-- the server's breath: fewer bots when its frames run long
 	slow = 1 / 38, quick = 1 / 54, least = 10,
 }
-local FIELD_ATTRS = {"OwnHud", "OwnTop", "ObjKind", "WarFront", "WarTicketsA", "WarTicketsB", "WarTickets"}
+local FIELD_ATTRS = {"OwnHud", "OwnTop", "ObjKind", "WarFront", "WarTicketsA", "WarTicketsB", "WarTickets", "WarSky"}
 
 local function humOf(m) return m and m:FindFirstChildOfClass("Humanoid") end
 local function flat(v) return Vector3.new(v.X, 0, v.Z) end
@@ -104,6 +104,19 @@ function War:start(map)
 		local to = (c0 >= 6 and c0 < 10 and c0 + 1.5) or (c0 >= 10 and c0 < 16.5 and math.min(c0 + 2.2, 17.1)) or c0
 		self.sun = to ~= c0 and {from = c0, to = to, at = now, len = def.roundLength or 900} or nil
 		self.sunTick = 0
+	end
+	-- THE WEATHER TURNS: on a clear or a rainy field (not the desert, the snow, the ash), now and
+	-- then partway through the battle the sky opens: clear to rain, rain to a storm (Round ▸
+	-- WarSky; War.client draws it)
+	node:SetAttribute("WarSky", nil)
+	do
+		local m = MapLoader.current
+		local w = m and m:GetAttribute("W_Weather") or ""
+		local theme = m and m:GetAttribute("W_Theme") or ""
+		local nextSky = (w == "" and "rain") or (w == "rain" and "storm") or nil
+		if theme == "Sunreach" or theme == "Ashvale" or theme == "Frostmere" then nextSky = nil end
+		self.skyAt, self.sky = nil, nil
+		if nextSky and math.random() < 0.4 then self.skyAt, self.sky = now + rnd(240, 540), nextSky end
 	end
 	self.frame = 1 / 60
 	self.capAt = now + 6
@@ -163,6 +176,10 @@ function War:tick(dt)
 	local L = self.layout
 	if not L then return end
 	local now = os.clock()
+	if self.skyAt and now >= self.skyAt then
+		self.skyAt = nil
+		node:SetAttribute("WarSky", self.sky)
+	end
 	-- (the sun moves: a little every couple of seconds)
 	if self.sun and now - (self.sunTick or 0) > 2 then
 		self.sunTick = now
