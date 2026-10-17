@@ -22,7 +22,7 @@ local NEWS = {
 		{"🍂", "Amberwood", "a new War field: an autumn wood's edge, red and gold oaks, leaves drifting down"},
 		{"🏰", "Stone, timber and sky", "castles of rough stone, half-timbered villages, clouds over every field"},
 		{"💥", "Shell-shocked", "a trebuchet stone lands beside you: the world goes muffled and your ears ring"},
-		{"🕷", "Things in the dark", "spiders let themselves down ahead of you; light falls through ceiling grates"},
+		{"🕷", "Spiders", "they hunt the warrens and the crypt, and their Broodmother; others drop on threads ahead of you"},
 		{"🗡", "Through your own eyes", "in Settings, Start in: begin every fight in first person"},
 		{"🌊", "Two new dungeons", "the flooded Drowned Halls and the desecrated Hollow Abbey, each with its lord"},
 		{"💎", "Traps and secrets", "spike grates, swinging blades, darts, fire; cracked walls hide caches"},
