@@ -1,4 +1,17 @@
-# Updated scripts: the Hall of Arms
+# Updated scripts: arms taken off whole; class cards on a phone
+
+- **TAKE THEM OFF** (LOOK ▸ YOUR ARMS) clears your arms whole: the emblem, the metal, the field
+  and the division (an empty value now clears each).
+- **On a phone** the class cards' names shrink to fit instead of running into the next card.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | "" clears each arms field |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | TAKE THEM OFF clears all; class names fit |
+
+---
+
+## Before that: the Hall of Arms
 
 - **Your banner in the Courtyard**: its eight small banners fly the arms of the players there who
   bear them (highest level first), in their colours, with their names embroidered under them; the
