@@ -3,6 +3,8 @@
 - **King of the Hill** has a flagpole on the hill. Whoever holds it has their banner run up it,
   their house's arms on it; when the hill changes hands it comes down and the new one goes up;
   half-mast while it's fought over; a plain cloth low on the pole while it's nobody's.
+- **A siege's capture zone** (the bailey) flies the defenders' banner the same way; it sinks down
+  the pole as the attackers take the zone.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|

@@ -11,7 +11,8 @@
                       mast while it's fought over; a plain one low on the pole while nobody has it
        Siege ram      segments split attackers vs defenders round the ram
                       ("who's holding it"); the ring rolls with the ram
-       Siege capture  segments fill with the attackers' colour as it's taken
+       Siege capture  segments fill with the attackers' colour as it's taken; the defenders'
+                      banner on a pole over it sinks as they lose it
 
      Reads ReplicatedStorage ▸ Round: ObjKind ("Hill" | "Ram" | "Capture"),
      ObjPos, ObjRadius, ObjState, and ObjOwner / ObjCountA / ObjCountB (KOTH) or
@@ -289,14 +290,14 @@ local function dressFlag(owner)
 		for _, d in ipairs(pl.layers) do d.Transparency = f and 0 or 1 end
 	end
 end
-local function stepFlag(dt, t, owner, contested)
+local function stepFlag(dt, t, owner, contested, height)
 	-- a new holder: down with the old cloth (quickly), then theirs up (with ceremony)
 	local want
 	if owner ~= flag.shown then
 		want = 0
 		if flag.h <= 0.02 then dressFlag(owner) end
 	else
-		want = contested and 0.55 or (owner ~= "" and 1 or 0.12)
+		want = height or (contested and 0.55 or (owner ~= "" and 1 or 0.12))
 	end
 	local rate = want < flag.h and 1.5 or 0.5
 	flag.h += math.clamp(want - flag.h, -rate * dt, rate * dt)
@@ -325,7 +326,7 @@ RunService.RenderStepped:Connect(function(dt)
 		shownAt, groundAt, lastPos = nil, nil, nil
 		return
 	end
-	if kind ~= "Hill" then destroyFlag() end
+	if kind ~= "Hill" and kind ~= "Capture" then destroyFlag() end
 	if not fx or math.abs(fx.radius - radius) > 0.05 then build(radius) end
 
 	-- follow the objective (the ram rolls) along the ground, smoothly
@@ -409,12 +410,18 @@ RunService.RenderStepped:Connect(function(dt)
 	-- the pillar fades when you're right there (it'd be in your face)
 	fx.beam.Enabled = not inside
 
-	-- the hill's standard (built once the hill is known, and again if it moves)
-	if kind == "Hill" then
+	-- the hill's standard (built once the hill is known, and again if it moves); a siege's
+	-- capture zone has the defenders' (sinking as it's taken)
+	if kind == "Hill" or kind == "Capture" then
 		if (not flag or (flag.centreKey - pos).Magnitude > 0.5) and not (flagMissed and (flagMissed - pos).Magnitude < 0.5) then
 			local spot = flagSpot(groundAt, radius)
 			if spot then buildFlag(spot); flag.centreKey = pos; flagMissed = nil else flagMissed = pos end
 		end
-		if flag then stepFlag(dt, t, round:GetAttribute("ObjOwner") or "", contested) end
+		if flag and kind == "Hill" then
+			stepFlag(dt, t, round:GetAttribute("ObjOwner") or "", contested)
+		elseif flag then
+			local defKey = (round:GetAttribute("Attackers") or "A") == "A" and "B" or "A"
+			stepFlag(dt, t, defKey, false, math.max(0.04, 1 - math.clamp(round:GetAttribute("ObjProgress") or 0, 0, 1)))
+		end
 	end
 end)

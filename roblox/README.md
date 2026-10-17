@@ -1370,7 +1370,8 @@ dashes (faster while it's moving or being taken), a light pillar to find it from
 (hidden while you stand in it), and a ground light. It rolls with the ram. The KOTH hill also has a
 flagpole (in its middle, or by the ring when something stands there): the holders' banner, their
 house's arms on it, run up to the top; when the hill changes hands it comes down and the new one goes
-up; half-mast while it's fought over; a plain cloth low on the pole while nobody holds it. Data: Round attributes
+up; half-mast while it's fought over; a plain cloth low on the pole while nobody holds it. A
+siege's capture zone has the defenders' banner on its pole, sinking as the attackers take it. Data: Round attributes
 `ObjKind` (`Hill` / `Ram` / `Capture`), `ObjPos`, `ObjRadius`, `ObjState`, plus `ObjOwner` /
 `ObjCountA` / `ObjCountB` (KOTH) or `Attackers` / `ObjAttack` / `ObjDefend` / `ObjProgress` (Siege). Nothing to author for the menu camera: it measures the map's bounding
 box and circles above its edge, looking down and wandering its gaze across the ground. A public
