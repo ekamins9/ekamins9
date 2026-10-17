@@ -25,7 +25,7 @@
                                           (opts.color, opts.speed, opts.lances) · handle:stop()
        WarFX.strike(pos, opts)            a bolt from the sky onto a point (a battle-mage's lightning)
        WarFX.frost(pos, r)                a burst of ice and cold mist (a battle-mage's frost)
-       WarFX.weather(kind, fade)          "storm" (= WarFX.storm), "rain", "snow", "embers", or nil: off
+       WarFX.weather(kind, fade)          "storm" (= WarFX.storm), "rain", "snow", "embers", "petals", or nil: off
        WarFX.army()                       the armies on the flanks: regiments of cheap figures that
                                           march, clash, loose and cast (ARMIES below)
        WarFX.clear()                      everything gone (leaving the mode)
@@ -580,6 +580,7 @@ local WEATHER = {
 	snow = {n = 200, size = V3(0.3, 0.3, 0.3), color = Color3.fromRGB(245, 248, 255), alpha = 0.1, wind = V3(4, -9, 2), drift = 3, roof = true, round = true,
 		clouds = {Cover = 0.72, Density = 0.5, Color = Color3.fromRGB(220, 226, 236)}},
 	embers = {n = 80, size = V3(0.22, 0.22, 0.22), color = Color3.fromRGB(255, 140, 50), alpha = 0, wind = V3(3, 5, 1), drift = 2.5, neon = true, rise = true, round = true},
+	petals = {n = 70, size = V3(0.5, 0.06, 0.4), color = Color3.fromRGB(255, 186, 214), alpha = 0.05, wind = V3(5, -4, 2), drift = 3.5},
 }
 local weather = nil
 function WarFX.weather(kind, fade)
@@ -673,6 +674,7 @@ function WarFX.weather(kind, fade)
 	end
 end
 function WarFX.storm(on, fade) WarFX.weather(on and "storm" or nil, fade) end
+function WarFX.weatherKind() return weather and weather.kind or nil end
 
 --------------------------------------------------------------------
 --  HORSEMEN: a column riding along a path (each horse and rider a handful of parts)

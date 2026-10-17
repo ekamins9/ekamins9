@@ -1712,6 +1712,14 @@ fighters, or a frost that slows (`SpeedMult_Frost`). A mode's `target` returning
 down on you (TREBUCHET / VOLLEY: raise your guard / METEORS / LIGHTNING / FROST); `_G.EngineShout`.
 Used by War (everything) and Siege (below: power 0.6).
 
+## Weather (`Weather.client`, `GameConfig.MAP_WEATHER` / `MODE_WEATHER`, drawn by WarFX)
+Rain, storms (rain, lightning, heavy cloud), snow, embers and petals on the maps that have them:
+snow on Frostgate, Rimeholt and Frosthollow; storms on Stormhold and Stormbreak; rain on Mistmoor,
+Marshfen, Mistbridge, Blackwater; embers on Emberkeep, Ashenford, Cinderfall; petals on Blossomgate
+and the Rose Court; Plague Night is always a storm, the Undead invasion rain. A mode's own wins
+over its map's; War and the Prologue draw their own; none in the Hub or the dungeon game. Drops
+stop under a roof. One table to change it, no Studio work.
+
 ## The opening of a battle (`MatchIntro.client`)
 Your first body of a round in Siege, TDM, KOTH, FFA, LTS or Horde: black bars, the camera flies from
 the map's Shot1 down to just behind you, the mode and the map as a title and what you're there to

@@ -257,6 +257,17 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
+-- THE WEATHER on each map (StarterPlayerScripts ▸ Weather, drawn by ReplicatedStorage ▸ WarFX: rain
+-- and snow stop under a roof): "rain" · "storm" (rain, lightning, heavy cloud) · "snow" · "embers" ·
+-- "petals". A mode's own (MODE_WEATHER) wins over the map's. War and the Prologue draw their own.
+GameConfig.MAP_WEATHER = {
+	Frostgate = "snow", Rimeholt = "snow", Frosthollow = "snow",
+	Stormhold = "storm", Stormbreak = "storm", Mistmoor = "rain", Marshfen = "rain", Mistbridge = "rain", Blackwater = "rain",
+	Emberkeep = "embers", Ashenford = "embers", Cinderfall = "embers",
+	Blossomgate = "petals", RoseCourt = "petals",
+}
+GameConfig.MODE_WEATHER = {Plague = "storm", InvUndead = "rain"}
+
 -- how many fighters (players and bots together) a map suits: {fewest, most}. A
 -- match picks among the maps that suit its numbers, and bots never fill a map past
 -- its most (Game ▸ GameServer, BotFill). A map not listed suits anything
