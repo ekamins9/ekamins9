@@ -163,8 +163,15 @@ local fitCards   -- (below)
 local cardRow = Instance.new("Frame")
 cardRow.BackgroundTransparency = 1
 cardRow.Position = UDim2.new(0, 0, 0, 76)
-cardRow.Size = UDim2.new(1, 0, 1, -76 - 130)
+cardRow.Size = UDim2.new(1, 0, 1, -76 - 150)
 cardRow.Parent = panel
+-- the class you pick, in full, under the cards (each card has its bars instead)
+local classLine = label(panel, "", 13, FONT_BODY, COL_TEXT)
+classLine.AnchorPoint = Vector2.new(0.5, 1)
+classLine.Position = UDim2.new(0.5, 0, 1, -110)
+classLine.Size = UDim2.new(1, -40, 0, 36)
+classLine.TextXAlignment = Enum.TextXAlignment.Center
+classLine.RichText = true
 local crl = Instance.new("UIListLayout", cardRow)
 crl.FillDirection = Enum.FillDirection.Horizontal
 crl.Padding = UDim.new(0, 14)
@@ -189,6 +196,31 @@ local function paint()
 		c.stroke.Transparency = on and 0 or 1
 		-- (its armour's colour, lifted towards white on the bright card so it still reads)
 		if c.tagCol then c.tag.TextColor3 = on and c.tagCol:Lerp(Color3.new(1, 1, 1), 0.65) or c.tagCol end
+	end
+	local def = GameConfig.CLASSES[selected]
+	if def then classLine.Text = string.format('<font color="#%s"><b>%s</b></font>   %s', COL_ACCENT:ToHex(), string.upper(def.name), def.description or "") end
+end
+
+-- each card's three bars: how much it takes, how fast it moves, how long it lasts (Catalog ▸
+-- Weights and the class's own health / prot / speed: what a spawn really gets, never its looks)
+local STATS = {}
+local STAT_ROWS = {{"TOUGHNESS", Color3.fromRGB(222, 112, 72)}, {"SPEED", Color3.fromRGB(122, 190, 108)}, {"STAMINA", Color3.fromRGB(86, 140, 226)}}
+do
+	local W = require(ReplicatedStorage:WaitForChild("Catalog")).WEIGHTS or {}
+	local raw = {}
+	for id, def in pairs(GameConfig.CLASSES) do
+		local w = W[def.weight] or {}
+		local hp = 100 + (w.health or 0) + (def.health or 0)
+		local prot = def.prot or w.prot or 0
+		raw[id] = {hp / math.max(0.3, 1 - prot), (w.speed or 1) * (def.speed or 1), (w.stamina or 1) * (w.regen or 1)}
+	end
+	for k = 1, 3 do
+		local lo, hi = math.huge, -math.huge
+		for _, r in pairs(raw) do lo = math.min(lo, r[k]); hi = math.max(hi, r[k]) end
+		for id, r in pairs(raw) do
+			STATS[id] = STATS[id] or {}
+			STATS[id][k] = hi > lo and 0.18 + 0.82 * (r[k] - lo) / (hi - lo) or 1
+		end
 	end
 end
 
@@ -222,7 +254,18 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 	cam.FieldOfView = 30
 	cam.Parent = vp
 	vp.CurrentCamera = cam
-	local d = label(b, def.description or "", 13, FONT_BODY, COL_DIM); d.AnchorPoint = Vector2.new(0, 1); d.Position = UDim2.new(0, 0, 1, -62); d.Size = UDim2.new(1, 0, 0, 54); d.TextYAlignment = Enum.TextYAlignment.Top; d.TextTruncate = Enum.TextTruncate.AtEnd   -- (a long one ends in "…", never mid-word under the loadout)
+	-- (its bars where a paragraph was: the whole of it is under the cards, for the one you pick)
+	local d = Instance.new("Frame"); d.Name = "Stats"; d.BackgroundTransparency = 1; d.AnchorPoint = Vector2.new(0, 1); d.Position = UDim2.new(0, 0, 1, -64); d.Size = UDim2.new(1, 0, 0, 50); d.Parent = b
+	for k, row in ipairs(STAT_ROWS) do
+		local y = (k - 1) * 17
+		local nm = label(d, row[1], 10, FONT, COL_DIM); nm.Position = UDim2.fromOffset(0, y); nm.Size = UDim2.new(0, 74, 0, 14); nm.TextWrapped = false
+		local bar = Instance.new("Frame"); bar.BackgroundColor3 = Color3.fromRGB(10, 12, 22); bar.BackgroundTransparency = 0.25; bar.BorderSizePixel = 0
+		bar.Position = UDim2.new(0, 76, 0, y + 3); bar.Size = UDim2.new(1, -76, 0, 8); bar.Parent = d
+		Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+		local fill = Instance.new("Frame"); fill.BackgroundColor3 = row[2]; fill.BorderSizePixel = 0
+		fill.Size = UDim2.fromScale((STATS[id] or {})[k] or 0.5, 1); fill.Parent = bar
+		Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+	end
 	local lh = label(b, "LOADOUT", 11, FONT, COL_DIM); lh.AnchorPoint = Vector2.new(0, 1); lh.Position = UDim2.new(0, 0, 1, -44); lh.Size = UDim2.new(1, 0, 0, 14)
 	local sum = label(b, "…", 14, FONT, COL_TEXT); sum.AnchorPoint = Vector2.new(0, 1); sum.Position = UDim2.new(0, 0, 1, 0); sum.Size = UDim2.new(1, 0, 0, 44); sum.TextYAlignment = Enum.TextYAlignment.Top
 	b.MouseEnter:Connect(function() if selected ~= id then b.BackgroundColor3 = COL_CARD:Lerp(COL_CARD_ON, 0.35) end end)
@@ -514,6 +557,9 @@ event:FireServer("Ready")
 fitCards = function()
 	local phone = Device.kind() == "phone"
 	panel.Size = phone and UDim2.fromScale(0.96, 0.94) or UDim2.fromScale(0.8, 0.72)
+	-- (a phone has no room for the class's line under the cards)
+	cardRow.Size = phone and UDim2.new(1, 0, 1, -76 - 130) or UDim2.new(1, 0, 1, -76 - 150)
+	classLine.Visible = not phone
 	for _, c in pairs(cards) do
 		if c.desc then c.desc.Visible = not phone end
 		c.vp.Size = phone and UDim2.new(1, 16, 1, -50 - 64) or UDim2.new(1, 16, 1, -50 - 122)

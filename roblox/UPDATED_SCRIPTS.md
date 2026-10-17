@@ -1,4 +1,17 @@
-# Updated scripts: ten new maps
+# Updated scripts: the class cards read at a glance
+
+- **CHOOSE YOUR CLASS**: each card shows three bars (TOUGHNESS, SPEED, STAMINA) where a
+  paragraph used to end in "…"; the class you pick is described in full under the cards. The
+  bars come from what a spawn really gets (Catalog ▸ Weights and the class's own health, prot and
+  speed). A phone keeps its bigger fighters and no line under the cards.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the bars (`STATS`), `classLine` |
+
+---
+
+## Before that: ten new maps
 
 - **Ten new maps** from MapForge, each a layout in a theme it hadn't been built in yet:
   two sieges (Frostmarch in the snow, its champion the Frost Jarl with a bardiche; Gloamhold in a
