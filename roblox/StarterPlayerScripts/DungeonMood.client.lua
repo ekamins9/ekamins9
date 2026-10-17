@@ -12,6 +12,10 @@
        what comes       a monster doesn't just appear: it takes shape out of the dark over most
                         of a second as grave-dust bursts up round it (and some of the dead whisper
                         as they come)
+       more come        when a fight's second wave (or a boss's servants) is called, the floor
+                        cracks where each will come, glowing the dungeon's colour and trembling,
+                        and a second later bursts: stone flung up, a cloud of grave-dust, and it
+                        climbs out of the dark (AdventureEvent "Rise", the Rising attribute)
        what lurks       a monster near you (within 70 studs) groans or growls now and then, from
                         where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
        a boss near      while a boss is alive near you (Boss, within 90 studs) the colours turn
@@ -308,12 +312,155 @@ local function arrives(m)
 		end
 	end)
 	local feet = root.Position - Vector3.new(0, 2.6 * (m:GetAttribute("MonsterScale") or 1), 0)
-	WarFX.dust(feet + Vector3.new(0, 0.6, 0), 1.4 * (m:GetAttribute("MonsterScale") or 1), DUST[faction or ""] or Color3.fromRGB(96, 90, 84))
+	WarFX.dust(feet + Vector3.new(0, 0.6, 0), (m:GetAttribute("Rising") and 2.2 or 1.4) * (m:GetAttribute("MonsterScale") or 1), DUST[faction or ""] or Color3.fromRGB(96, 90, 84))
 	if faction == "Undead" and os.clock() - (mood.lastWhisper or 0) > 4 and math.random() < 0.5 then
 		mood.lastWhisper = os.clock()
 		WarFX.sound("Whisper", root.Position, {volume = 0.5, speed = 0.75 + math.random() * 0.2, near = 10, range = 70})
 	end
 end
+-- MORE COME: the floor cracks where each of a new wave will climb out (glowing the dungeon's
+-- colour, trembling), then bursts as it comes
+local ACCENT = {BoneCrypt = Color3.fromRGB(120, 255, 170), GoblinWarrens = Color3.fromRGB(170, 230, 90), CrimsonManor = Color3.fromRGB(255, 60, 80),
+	FrozenDepths = Color3.fromRGB(140, 210, 255), EmberForge = Color3.fromRGB(255, 130, 40)}
+local function crackAt(spot, theme)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local skip = {}
+	for _, n in ipairs({"NPCs", "MonsterFX", "LootDrops"}) do local f = workspace:FindFirstChild(n); if f then table.insert(skip, f) end end
+	for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(skip, p.Character) end end
+	params.FilterDescendantsInstances = skip
+	local hit = workspace:Raycast(spot + V3(0, 4, 0), V3(0, -14, 0), params)
+	local floor = hit and hit.Position or (spot - V3(0, 3, 0))
+	local stone = hit and hit.Instance:IsA("BasePart") and hit.Instance.Color or Color3.fromRGB(96, 92, 88)
+	local glow = ACCENT[theme] or Color3.fromRGB(255, 140, 80)
+	local folder = Instance.new("Folder")
+	folder.Name = "RiseCrack"
+	folder.Parent = workspace.Terrain
+	local function slab(size, cf, color, mat)
+		local p = Instance.new("Part")
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.Size, p.CFrame, p.Color, p.Material = size, cf, color, mat
+		p.Parent = folder
+		return p
+	end
+	-- the hole: a dark pit opening in the stone, cracks running out from it, glowing
+	local pit = slab(V3(0.1, 0.2, 0.2), CFrame.new(floor + V3(0, 0.04, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(8, 8, 10), Enum.Material.SmoothPlastic)
+	pit.Shape = Enum.PartType.Cylinder
+	pit.Transparency = 0.1
+	-- (each crack runs out in three jagged legs, thinning to its tip)
+	local cracks = {}
+	for k = 1, 7 do
+		local a = k / 7 * math.pi * 2 + math.random() * 0.5
+		local from, run = 1.2, 0
+		for leg = 1, 3 do
+			a += (math.random() - 0.5) * 1.1
+			local len = 0.8 + math.random() * 1.2
+			local c = slab(V3(0.24 - leg * 0.05, 0.06, 0.05), CFrame.new(floor), glow, Enum.Material.Neon)
+			c.Transparency = 0.25
+			table.insert(cracks, {c, a, len, run, from})
+			from, run = nil, run + len
+		end
+	end
+	-- (where each leg starts: the end of the one before it)
+	local function lay(e)
+		local tip
+		for _, c in ipairs(cracks) do
+			local dir = V3(math.sin(c[2]), 0, math.cos(c[2]))
+			-- (the first leg starts at the pit's edge)
+			if c[5] then tip = floor + V3(0, 0.05, 0) + dir * (0.15 + 1.9 * e) end
+			local l = math.clamp(4.5 * e - c[4], 0, c[3])
+			c[1].Size = V3(c[1].Size.X, 0.06, math.max(l, 0.05))
+			c[1].CFrame = CFrame.lookAt(tip, tip + dir) * CFrame.new(0, 0, -l / 2)
+			c[1].Transparency = l > 0.05 and 0.25 or 1
+			tip += dir * l
+		end
+	end
+	-- (flagstones heaving up round the rim)
+	local heave = {}
+	for k = 1, 6 do
+		local a = k / 6 * math.pi * 2 + math.random() * 0.6
+		local f = slab(V3(1.3, 0.3, 0.9), CFrame.new(floor), stone, Enum.Material.Slate)
+		f.Transparency = 1
+		table.insert(heave, {f, a, 0.3 + math.random() * 0.35})
+	end
+	local function lift(e)
+		for _, h in ipairs(heave) do
+			local dir = V3(math.sin(h[2]), 0, math.cos(h[2]))
+			local at = floor + dir * (0.4 + 2 * e) + V3(0, 0.1 + 0.15 * e, 0)
+			h[1].CFrame = CFrame.lookAt(at, at + dir) * CFrame.Angles(h[3] * e, 0, (h[3] - 0.45) * e)
+			h[1].Transparency = e > 0.15 and 0 or 1
+		end
+	end
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness, light.Shadows = glow, 10, 0, false
+	light.Parent = pit
+	local tremble = Instance.new("ParticleEmitter")
+	tremble.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	tremble.Color = ColorSequence.new(Color3.fromRGB(110, 104, 96))
+	tremble.Size = NumberSequence.new(0.6, 2.2)
+	tremble.Transparency = NumberSequence.new(0.5, 1)
+	tremble.Lifetime = NumberRange.new(0.5, 0.9)
+	tremble.Speed = NumberRange.new(1.5, 4)
+	tremble.SpreadAngle = Vector2.new(60, 60)
+	tremble.Rate = 26
+	tremble.EmissionDirection = Enum.NormalId.Right
+	tremble.Parent = pit
+	WarFX.sound("Impact", floor, {volume = 0.35, speed = 0.3, near = 12, range = 90})
+	-- the crack opens over a second (the pit widens, the cracks run, the glow comes up)
+	local t0 = os.clock()
+	while folder.Parent do
+		local u = math.clamp((os.clock() - t0) / 1.05, 0, 1)
+		local e = u * u * (3 - 2 * u)
+		pit.Size = V3(0.1, 0.3 + 3.8 * e, 0.3 + 3.8 * e)
+		lay(e)
+		lift(e)
+		light.Brightness = 3 * e
+		if u >= 1 then break end
+		task.wait()
+	end
+	-- it bursts: stone flung up, the dust, a boom close by
+	tremble.Enabled = false
+	local cam = workspace.CurrentCamera
+	local near = cam and (cam.CFrame.Position - floor).Magnitude or 999
+	if near < 40 then WarFX.shake(0.35 * (1 - near / 40) + 0.08, 0.35) end
+	WarFX.sound("Impact", floor, {volume = 0.6, speed = 0.55 + math.random() * 0.15, near = 14, range = 110})
+	for _ = 1, 7 do
+		local s = 0.4 + math.random() * 0.6
+		local r = Instance.new("Part")
+		r.Size = V3(s, s * 0.7, s)
+		r.Color, r.Material = Color3.fromRGB(96, 92, 88), Enum.Material.Slate
+		r.CanCollide, r.CanQuery, r.CanTouch, r.CastShadow = false, false, false, false
+		r.CFrame = CFrame.new(floor + V3((math.random() - 0.5) * 2, 0.4, (math.random() - 0.5) * 2)) * CFrame.Angles(math.random() * 6, math.random() * 6, 0)
+		r.Parent = folder
+		local a = math.random() * math.pi * 2
+		r.AssemblyLinearVelocity = V3(math.cos(a) * (6 + math.random() * 8), 22 + math.random() * 14, math.sin(a) * (6 + math.random() * 8))
+		r.AssemblyAngularVelocity = V3(math.random() * 10, math.random() * 10, math.random() * 10)
+		task.delay(1.4, function() if r.Parent then r:Destroy() end end)
+	end
+	-- (the hole stays a while, cooling, then is gone)
+	task.wait(1.2)
+	local t1 = os.clock()
+	while folder.Parent do
+		local u = math.clamp((os.clock() - t1) / 3, 0, 1)
+		light.Brightness = 3 * (1 - u)
+		for _, c in ipairs(cracks) do c[1].Transparency = 0.25 + 0.75 * u end
+		pit.Transparency = 0.1 + 0.9 * u
+		for _, h in ipairs(heave) do h[1].Transparency = u end
+		if u >= 1 then break end
+		task.wait(0.05)
+	end
+	folder:Destroy()
+end
+task.spawn(function()
+	local ev = ReplicatedStorage:WaitForChild("AdventureEvent")
+	ev.OnClientEvent:Connect(function(kind, data)
+		if kind ~= "Rise" or not mood.on or type(data) ~= "table" then return end
+		for i, at in ipairs(data.at or {}) do
+			task.delay((i - 1) * 0.08, function() crackAt(at, data.theme) end)
+		end
+	end)
+end)
+
 -- what lurks: the nearest monsters groan or growl now and then, from where they stand
 local function lurk(token)
 	while mood.on and mood.token == token do

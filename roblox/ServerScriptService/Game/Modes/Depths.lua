@@ -18,6 +18,10 @@
      power, swapped for any class's for the run); gold. Pick one. A cleared room sometimes
      leaves a chest too.
 
+     MORE COME. A fight down to its last few can bring a second wave (likelier the deeper you go;
+     a fight's room or the stairs', never a champion's): the floor cracks where they'll come, then
+     they burst up out of it. A boss in its second phase calls its servants the same way, once.
+
      DOWN, NOT OUT. Fall in a fight and you watch until the room is cleared; then you're back on
      your feet in it (with what you carried). Everyone down at once: the run is over. A Phoenix
      Plume brings you back where you fell, once.
@@ -50,6 +54,10 @@ local node = Game.node
 local FLOORS = 3
 local ATTRS = {"ObjKind", "ObjLabel", "ObjNote", "ObjState", "DepthsFloor", "DepthsTheme", "OwnHud"}
 local KILL_GOLD = {2, 5, 14, 60}
+-- MORE COME (Depths:wave): the chance a fight's room sends a second wave, by floor; its line by theme
+local WAVE_CHANCE = {0.3, 0.5, 0.7}
+local WAVE_LINE = {BoneCrypt = "THE DEAD RISE", GoblinWarrens = "MORE POUR IN", CrimsonManor = "THE HOUSE STIRS",
+	FrozenDepths = "THE ICE CRACKS", EmberForge = "THE FORGE WAKES"}
 
 local event = ReplicatedStorage:FindFirstChild("AdventureEvent")
 if not event then event = Instance.new("RemoteEvent"); event.Name = "AdventureEvent"; event.Parent = ReplicatedStorage end
@@ -354,6 +362,8 @@ end
 function Depths:engage(room)
 	room.state = "fight"
 	self.active = room
+	room.wave = (room.kind == "combat" or room.kind == "stairs") and math.random() < (WAVE_CHANCE[self.floor] or 0.5)
+	room.peak, room.incoming = 0, 0
 	self:shut(room, true)
 	self:sendRoom(room)
 	-- the stragglers are drawn in after you
@@ -407,6 +417,64 @@ function Depths:engage(room)
 	else
 		event:FireAllClients("Banner", {text = "THE GATES SLAM SHUT", sub = string.format("%d FOES", #list), kind = "fight"})
 	end
+end
+
+-- MORE COME: a second wave for a fight down to its last few (room.wave, decided as it starts), or a
+-- boss's servants (servants): every screen sees the floor crack where they'll come (AdventureEvent
+-- "Rise"), then they burst up out of it a second later (the Rising attribute: StarterPlayerScripts ▸
+-- DungeonMood). Returns how many are coming (counted as foes left until they're here).
+function Depths:wave(room, servants)
+	local th = Catalog.DUNGEONS[self.theme]
+	local mons = th.monsters
+	local players = playersN()
+	local budget = (servants and 2.6 or (1.5 + self.floor * 0.8)) * (1 + (players - 1) * 0.5)
+	local list = {}
+	while budget >= 1 and #list < 8 do
+		local pool = (math.random() < 0.2 and mons.ranged) or mons.common
+		local id = pool[math.random(#pool)]
+		local def = Monsters.def(id)
+		budget -= def and ({1, 1.6, 3.2, 8})[def.tier or 1] or 1
+		table.insert(list, id)
+	end
+	-- (where: the room's spots farthest from anyone, a little apart)
+	local roots = {}
+	for _, p in ipairs(Players:GetPlayers()) do local r = rootOf(aliveChar(p)); if r then table.insert(roots, r.Position) end end
+	local function clearance(s)
+		local d = math.huge
+		for _, r in ipairs(roots) do d = math.min(d, (r - s).Magnitude) end
+		return d
+	end
+	local at = {}
+	for i = 1, #list do
+		local best, bestD
+		for _ = 1, 5 do
+			local s = room.spots[math.random(#room.spots)]
+			local d = clearance(s)
+			if not best or d > bestD then best, bestD = s, d end
+		end
+		at[i] = best + Vector3.new(math.random(-25, 25) / 10, 0, math.random(-25, 25) / 10)
+	end
+	event:FireAllClients("Rise", {at = at, theme = self.theme})
+	if servants then
+		local name = string.upper(string.match(th.bossName or "", "^[^,]+") or "THE BOSS")
+		event:FireAllClients("Banner", {text = "THEY ANSWER", sub = name .. " CALLS ITS SERVANTS", kind = "fight"})
+	else
+		event:FireAllClients("Banner", {text = WAVE_LINE[self.theme] or "MORE COME", sub = string.format("%d MORE", #list), kind = "fight"})
+	end
+	room.incoming = (room.incoming or 0) + #list
+	task.delay(1.1, function()
+		room.incoming = math.max(0, (room.incoming or 0) - #list)
+		if self.active ~= room or room.state ~= "fight" then return end
+		for i, id in ipairs(list) do
+			local p = at[i]
+			local mob = Monsters.spawn(id, room.opts, {at = CFrame.new(p, Vector3.new(room.cx, p.Y, room.cz)), elite = false})
+			if mob then
+				room.mobs[mob] = true
+				if mob.model then mob.model:SetAttribute("Rising", true) end
+			end
+		end
+	end)
+	return #list
 end
 
 function Depths:clear(room)
@@ -703,7 +771,22 @@ function Depths:tick(dt)
 			end
 			if mob.alive then left += 1 else room.mobs[mob] = nil end
 		end
-		left += Monsters.pending(room.opts)
+		left += Monsters.pending(room.opts) + (room.incoming or 0)
+		room.peak = math.max(room.peak or 0, left)
+		-- (a fight down to its last few: maybe more come; a boss in its second phase calls its own)
+		if room.wave and not room.waved and room.peak >= 2 and left <= math.max(1, math.floor(room.peak * 0.34)) then
+			room.waved = true
+			left += self:wave(room)
+		end
+		local boss = room.kind == "boss" and self.boss
+		if boss and boss.alive and boss.model and boss.model:GetAttribute("BossPhase") == 2 and not room.called then
+			room.phaseAt = room.phaseAt or now
+			-- (a moment after its fury's roar, so the two don't talk over each other)
+			if now - room.phaseAt > 2.5 then
+				room.called = true
+				left += self:wave(room, true)
+			end
+		end
 		node:SetAttribute("ObjLabel", "FLOOR " .. self.floor .. "  ·  " .. string.upper(room.kind == "boss" and "THE BOSS" or (room.kind == "elite" and "A CHAMPION" or "FIGHT")))
 		node:SetAttribute("ObjNote", string.format("%d FOE%s LEFT", left, left == 1 and "" or "S"))
 		node:SetAttribute("ObjState", "fight")

@@ -2008,8 +2008,8 @@ from far below (WarAudio: Drone, Whisper, Gate, Impact). The monsters near you (
 studs) groan or growl now and then from where they stand: the dead groan, the rest growl
 (WarAudio: Groan, Growl; a big one lower). A monster doesn't pop in: it takes shape out of the
 dark over most of a second as grave-dust bursts up round it (some of the dead whisper as they
-come). Now and then,
-well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
+come); one of a second wave climbs out of a pit cracked in the floor (The Depths: More come).
+Now and then, well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
 path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen); or a
 swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸
 Bats). While a
@@ -2040,6 +2040,15 @@ Three floors; floor 3 ends in the theme's boss.
   come. Kill them all and the gates rise; the fallen are back on their feet in the room; everyone
   mends 40%. A cleared room sometimes leaves a chest (an elite room always does; in a room with a
   centrepiece, the start's brazier, an altar, the fountain, it stands on open floor).
+- **More come** (`Depths:wave`): a fight down to its last few (a third of its most) can bring a
+  second wave, decided as the gates drop (30% on the first floor, 50% on the second, 70% on the
+  third; a fight's room or the stairs', never a champion's, never a room killed in its sleep). The
+  floor cracks where each will come (AdventureEvent `Rise`: on every screen a dark pit opens, its
+  cracks running out glowing the theme's colour, flagstones heaving up round the rim, the ground
+  trembling), then a second later they burst up out of it (the `Rising` attribute: stone flung up,
+  a bigger cloud of grave-dust) under a banner in the theme's words (THE DEAD RISE, MORE POUR IN,
+  THE HOUSE STIRS, THE ICE CRACKS, THE FORGE WAKES). A boss in its second phase calls its servants
+  the same way, once (THEY ANSWER), a moment after its fury's roar. Those coming count as foes left.
 - **Difficulty** (`Depths:engage`): gentle first floors. Monsters start at 80% health and damage
   and grow with each floor; how well they fight is capped by the floor (Squires on the first,
   Knights on the second; the boss never fights better than a Knight); elites come from the second
