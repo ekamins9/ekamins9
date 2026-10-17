@@ -1,7 +1,7 @@
 --[[ THE DEPTHS — a roguelike crawl for a party of 1–4 (GameConfig.MODES.Depths). Three floors of
      a dungeon built fresh every run (Game ▸ Dungeon) in the theme the vote picked: the Bone
      Crypt, the Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned
-     Halls, the Hollow Abbey (Catalog ▸ Dungeons). You go in as your class with your own gear; you come out (if you do) carrying
+     Halls, the Hollow Abbey, the Silk Caverns (Catalog ▸ Dungeons). You go in as your class with your own gear; you come out (if you do) carrying
      whatever the dungeon gave you.
 
      THE ROOMS. Step into one and its gates slam shut: whoever's left in the corridor is pulled
