@@ -2557,6 +2557,11 @@ falls: a skeleton falls apart into a heap of its bones, the skull on top (Corpse
 that will stand back up), a wraith is simply gone ("none"); the rest leave their body as anyone
 does. The killer's own kill effect, if it has one, has the last word.
 
+**The Gargoyle's stillness**: a sleeping gargoyle (the Crimson Manor's and the Abbey's champions)
+stands as a statue on a cobbled plinth on every screen, stone all through, its eyes dead
+(`DungeonMood` "the statues": a stone copy, its body hidden); when it notices you its stone shell
+bursts off it in tumbling shards with a crack and a growl, and it comes for you.
+
 **The Banshee**: a pale wraith, a champion of the Bone Crypt, the Crimson Manor and the Hollow
 Abbey. Now and then it throws its head back as a ring fills round it, then SCREAMS (BossMoves
 `wail`): everyone in the ring is hurt a little, thrown a step, slowed a moment, and half deaf for a

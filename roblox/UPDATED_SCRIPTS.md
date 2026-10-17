@@ -1,4 +1,15 @@
-# Updated scripts: the Banshee
+# Updated scripts: gargoyles that stand as statues
+
+- **The dungeons**: a sleeping Gargoyle stands as a stone statue on a plinth, eyes dead, until it notices you. Then its stone shell bursts off in tumbling shards and it comes for you.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `petrify` / `wake` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Banshee
 
 - **A new champion: the Banshee**, a pale wraith in the Bone Crypt, the Crimson Manor and the Hollow Abbey. Now and then it throws its head back as a ring fills round it, then screams. Anyone in the ring is hurt a little, thrown a step, slowed a moment, and left half deaf for a few seconds with their ears ringing. Get out of the ring.
 - A new boss move kind any monster can use: `wail`.

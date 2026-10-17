@@ -55,6 +55,9 @@
        overhead         now and then something heavy walks across the floor above you: slow deep
                         thuds passing over, grit sifting down from the ceiling with each, the
                         lantern trembling, then it's gone
+       the statues      a sleeping gargoyle stands as a statue on its plinth, stone all through,
+                        its eyes dead; when it notices you the stone bursts off it in shards and
+                        it moves
        footsteps        now and then, while nothing's fighting near you, slow steps on the stone
                         somewhere behind you, coming a little closer, then they stop
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
@@ -972,6 +975,88 @@ local function dropDead()
 	lying = {}
 end
 
+-- THE STATUES: a sleeping gargoyle is a statue on its plinth until it notices you
+local STATUES = {Gargoyle = true}
+local STONE = Color3.fromRGB(126, 124, 120)
+local statues = {}   -- model -> {proxy}
+local function wake(m)
+	local e = statues[m]
+	if not e then return end
+	statues[m] = nil
+	local root = m:FindFirstChild("HumanoidRootPart")
+	local scale = m:GetAttribute("MonsterScale") or 1
+	-- (its stone shell bursts off it: the pieces flung out and tumbling, dust, a crack)
+	local centre = root and root.Position or e.proxy:GetPivot().Position
+	for _, p in ipairs(e.proxy:GetChildren()) do
+		if p:IsA("BasePart") and p.Name ~= "Plinth" then
+			p.Anchored = false
+			p.CanCollide = true
+			local out = p.Position - centre
+			out = out.Magnitude > 0.1 and out.Unit or V3(0, 1, 0)
+			p.AssemblyLinearVelocity = out * (8 + math.random() * 10) + V3(0, 8 + math.random() * 8, 0)
+			p.AssemblyAngularVelocity = V3(math.random() * 8, math.random() * 8, math.random() * 8)
+		end
+	end
+	WarFX.dust(centre, 1.4 * scale, Color3.fromRGB(150, 146, 140))
+	WarFX.sound("Impact", centre, {volume = 0.8, speed = 1.4, near = 15, range = 120})
+	WarFX.sound("Growl", centre, {volume = 0.7, speed = 0.8, near = 12, range = 90})
+	local proxy = e.proxy
+	task.delay(1.6, function() if proxy.Parent then proxy:Destroy() end end)
+	if m.Parent then hideBody(m, false) end
+end
+local function petrify(m)
+	if not mood.on or statues[m] or not STATUES[m:GetAttribute("Monster") or ""] or m:GetAttribute("Alert") ~= "z" then return end
+	local root = m:FindFirstChild("HumanoidRootPart")
+	local h = m:FindFirstChildOfClass("Humanoid")
+	if not (root and h and h.Health > 0) then return end
+	local scale = m:GetAttribute("MonsterScale") or 1
+	deadRay.FilterDescendantsInstances = {m, workspace:FindFirstChild("NPCs")}
+	local hit = workspace:Raycast(root.Position, V3(0, -8 * scale, 0), deadRay)
+	if not hit then return end
+	-- (a stone copy of it as it stands, raised on a plinth)
+	local lift = 1.2
+	local proxy = Instance.new("Model")
+	proxy.Name = "Statue"
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 0.98 then
+			local c = d:Clone()
+			for _, k in ipairs(c:GetDescendants()) do
+				if not k:IsA("DataModelMesh") then k:Destroy() end
+			end
+			c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch = true, false, false, false
+			c.Color = STONE:Lerp(Color3.new(0, 0, 0), math.random() * 0.12)
+			c.Material = Enum.Material.Slate
+			c.LocalTransparencyModifier = 0
+			c.CFrame = d.CFrame + V3(0, lift, 0)
+			c.Parent = proxy
+		end
+	end
+	local plinth = Instance.new("Part")
+	plinth.Name = "Plinth"
+	plinth.Size = V3(3.4 * scale, lift, 3.4 * scale)
+	plinth.CFrame = CFrame.new(hit.Position + V3(0, lift / 2, 0)) * root.CFrame.Rotation
+	plinth.Color, plinth.Material = STONE:Lerp(Color3.new(0, 0, 0), 0.25), Enum.Material.Cobblestone
+	plinth.Anchored, plinth.CanCollide, plinth.CanQuery, plinth.CanTouch = true, false, false, false
+	plinth.Parent = proxy
+	statues[m] = {proxy = proxy}
+	proxy.Parent = workspace
+	hideBody(m, true)
+	local c1, c2
+	local function done()
+		if c1 then c1:Disconnect() end
+		if c2 then c2:Disconnect() end
+	end
+	c1 = m:GetAttributeChangedSignal("Alert"):Connect(function()
+		if m:GetAttribute("Alert") ~= "z" then done(); wake(m) end
+	end)
+	c2 = h.Died:Connect(function() done(); wake(m) end)
+	m.AncestryChanged:Connect(function() if not m.Parent then done(); statues[m] = nil; proxy:Destroy() end end)
+end
+local function dropStatues()
+	for m, e in pairs(statues) do e.proxy:Destroy(); if m.Parent then hideBody(m, false) end end
+	statues = {}
+end
+
 -- THE COLLAPSE (Deadvault's last minute, Round ▸ TimeLeft): it comes down round you, harder
 -- the closer the end
 local grit
@@ -1113,9 +1198,9 @@ local function watchMonsters()
 		table.insert(mood.conns, npcs.ChildAdded:Connect(function(m)
 			task.spawn(arrives, m)
 			-- (after it has taken shape: a sleeper of the dead lies down)
-			task.delay(1.3, function() if m.Parent then playDead(m) end end)
+			task.delay(1.3, function() if m.Parent then playDead(m); petrify(m) end end)
 		end))
-		for _, m in ipairs(npcs:GetChildren()) do task.spawn(playDead, m) end
+		for _, m in ipairs(npcs:GetChildren()) do task.spawn(playDead, m); task.spawn(petrify, m) end
 	end
 	local npcs = workspace:FindFirstChild("NPCs")
 	if npcs then hook(npcs) end
@@ -1133,6 +1218,7 @@ local function leave()
 	mood.conns = {}
 	dropLanterns()
 	dropDead()
+	dropStatues()
 	airOff()
 	if mood.drone then WarFX.stopLoop(mood.drone, 2); mood.drone = nil end
 	if mood.reverb and SoundService.AmbientReverb == mood.reverb then SoundService.AmbientReverb = Enum.ReverbType.NoReverb end
