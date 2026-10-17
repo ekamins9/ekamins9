@@ -4777,16 +4777,16 @@ do
 		if stale() then return true end
 		-- THE SECONDARY (or a shield: GEAR)
 		local sp = panel(page, "SECONDARY")
-		local sg2 = cardGrid(sp, 40)
-		itemCard(sg2, 0, "None", lo.shield and "you carry a shield" or "", lo.secondary == nil, true, nil, function() choose("secondary", nil) end)
+		local sg2 = LT.grid(sp, 3, 100)
+		LT.tile(sg2, 0, {name = "None", sub = lo.shield and "you carry a shield" or "nothing on 2", have = true, on = lo.secondary == nil, onClick = function() choose("secondary", nil) end})
 		local n = 0
 		for _, w in ipairs(Catalog.WEAPONS) do
 			if w.id ~= lo.weapon and allowed(w, "secondary") then
 				n += 1
 				local have = owns("weapons", w.id)
-				itemCard(sg2, n, w.name, have and (w.magic and "magic · no mana" or "one-handed") or unlockText(w), lo.secondary == w.id, have, nil, function()
-					if have then choose("secondary", w.id) else tryOn("weapon", w.id) end
-				end)
+				LT.tile(sg2, n, {name = w.name, sub = have and (w.magic and "magic · no mana" or "one-handed") or unlockText(w), have = have, weapon = w.id,
+					skin = lo.secondary == w.id and lo.secondarySkin or nil, on = lo.secondary == w.id,
+					onClick = function() if have then choose("secondary", w.id) else tryOn("weapon", w.id) end end})
 			end
 		end
 		if lo.secondary then

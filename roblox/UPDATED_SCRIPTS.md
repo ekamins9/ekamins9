@@ -2,7 +2,7 @@
 
 - **LOADOUT ▸ ARMOR shows every piece as a picture**: the helmet, the top or the legs on their own as
   they sit on a body, in your class's colours, yours first; a tile for going bareheaded.
-- **GEAR**: the throwables and the sidearm are pictures too (each throwable with its charges and what
+- **WEAPONS ▸ SECONDARY** and **GEAR**: the secondaries, the throwables and the sidearm are pictures too (each throwable with its charges and what
   it does). `LoadoutTab` takes `"ARMOR:top"` to open on a slot.
 
 | File | Studio location | Type | Change |
