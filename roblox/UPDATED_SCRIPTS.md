@@ -1,4 +1,17 @@
-# Updated scripts: splashing through water
+# Updated scripts: armour you can hear
+
+- **Everyone in armour**: mail jingles and plate clanks with each step, a little under the footstep. Your own steps always; others' only close by (28 studs), so a battle doesn't drown in it.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Footsteps.lua](ReplicatedStorage/Footsteps.lua) | ReplicatedStorage | ModuleScript | armour steps |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ ArmorMail, ArmorPlate (Sounds; save the place).
+
+---
+
+## Before that: splashing through water
 
 - **Everywhere there's standing water** (the Drowned Halls, Mistmarsh's pools, every dungeon puddle): a step into it splashes, and a ripple spreads on the water. This applies to everyone's steps, yours too.
 - The Hollow Abbey's bell and chant sounds are now in place.

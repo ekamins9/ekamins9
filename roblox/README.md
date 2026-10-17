@@ -2870,7 +2870,9 @@ material name, plus `Default`) still overrides the table. Roblox's own looping `
 `Climbing` sounds are muted on every character. **Water**: a step onto a puddle, standing water
 or a marsh pool (the thin sheets `Puddle`, `StandingWater`, `Marshwater`, which nothing queries)
 splashes instead (WarAudio ▸ Splash) with a ripple spreading on the water (`Footsteps.play`,
-yours and everyone's).
+yours and everyone's). **Armour**: a body in mail (ArmorType Medium) jingles with each step, one
+in plate (Heavy) clanks (WarAudio ▸ ArmorMail / ArmorPlate), a little under the step: yours
+always, others' within 28 studs of the camera.
 
 **Prints on the ground** (`StarterPlayerScripts ▸ Footsteps`, every body within 70 studs, yours
 too): a step into snow, sand, salt, mud or bare earth presses an oval print there (left, right,

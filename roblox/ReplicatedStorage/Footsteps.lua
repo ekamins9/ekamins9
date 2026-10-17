@@ -16,7 +16,11 @@
      WATER: a step onto a puddle, standing water or a marsh pool (thin sheets on the floor that
      nothing queries: the dungeons' Puddle and StandingWater, a marsh's Marshwater) splashes
      instead (ReplicatedStorage ▸ WarAudio ▸ Splash, if the place has it), with a ripple spreading
-     on the water. ]]
+     on the water.
+
+     ARMOUR: a body in mail (ArmorType Medium) jingles with each step, one in plate (Heavy) clanks
+     (WarAudio ▸ ArmorMail / ArmorPlate, if the place has them), a little under the step itself:
+     yours always, others' within 28 studs of the camera. ]]
 
 local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -114,9 +118,28 @@ local function ripple(water, pos)
 	game:GetService("Debris"):AddItem(r, 0.8)
 end
 
+local ARMOR = {Medium = {"ArmorMail", 0.32}, Heavy = {"ArmorPlate", 0.38}}
+local function armorStep(part, o)
+	local body = part.Parent
+	local a = body and ARMOR[body:GetAttribute("ArmorType") or ""]
+	if not a then return end
+	-- (yours always; others' only close by, or a battle's worth of armour drowns everything)
+	local me = game:GetService("Players").LocalPlayer
+	if body ~= (me and me.Character) then
+		local cam = workspace.CurrentCamera
+		if not cam or (cam.CFrame.Position - part.Position).Magnitude > 28 then return end
+	end
+	local wa = a and ReplicatedStorage:FindFirstChild("WarAudio")
+	local snd = wa and wa:FindFirstChild(a[1])
+	if snd and snd:IsA("Sound") then
+		Sounds.play(snd.SoundId, part, {Volume = (o.Volume or 0.5) * a[2] * 2, Speed = 0.9 + math.random() * 0.2, MaxDistance = o.MaxDistance or 60, Ttl = 1.2})
+	end
+end
+
 function Footsteps.play(part, material, o)
 	if not part then return nil end
 	o = o or {}
+	if game:GetService("RunService"):IsClient() then pcall(armorStep, part, o) end
 	-- (into water: a splash, a ripple)
 	local water = game:GetService("RunService"):IsClient() and waterAt(part.Position)
 	if water then
