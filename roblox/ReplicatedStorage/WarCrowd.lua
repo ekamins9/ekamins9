@@ -44,6 +44,8 @@
                               one man walking his stretch (a wall's walk: from → to and back),
                               stopping at each end a few seconds to look out (`out`)
        c:stop()
+       WarCrowd.answer(side, pos, r)  every crowd's regiments (and audiences) of that side within r
+                              of pos raise their weapons and cheer: a war cry answered
        WarCrowd.figure(side, kind, state, level, home, unarmed) -> {{p, off}…}
                               a dressed soldier's parts held in one pose (offsets from his
                               feet), for something else to carry: a rider on WarFX's horses
@@ -910,6 +912,23 @@ function WarCrowd.ghost(at, o)
 		end
 	end)
 	return home
+end
+
+function WarCrowd.answer(side, pos, r)
+	local now, n = os.clock(), 0
+	local at = V3(pos.X, 0, pos.Z)
+	for _, c in ipairs(crowds) do
+		if not c.dead then
+			for _, reg in ipairs(c.list) do
+				if reg.side == side and (V3(reg.x, 0, reg.z) - at).Magnitude < r then
+					reg.cheerUntil = now + 3.2
+					reg.dirty = true
+					n += 1
+				end
+			end
+		end
+	end
+	return n
 end
 
 function WarCrowd:stop()

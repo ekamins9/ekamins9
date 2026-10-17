@@ -20,6 +20,22 @@ local TweenService = game:GetService("TweenService")
 local KillFX = require(ReplicatedStorage:WaitForChild("KillFX"))
 local Emotes = require(ReplicatedStorage:WaitForChild("Emotes"))
 local EmoteFX = require(ReplicatedStorage:WaitForChild("EmoteFX"))   -- (what an emote does besides move: rarer, more)
+
+-- a War Cry or a Cheer in a battle: the armies of your side round you answer it (ReplicatedStorage
+-- ▸ WarCrowd: the regiments within 140 studs raise their weapons and roar)
+local RALLY = {WarCry = true, Cheer = true}
+local function rally(char, id)
+	if not RALLY[id] or not char then return end
+	local side = char:GetAttribute("Team")
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if (side ~= "A" and side ~= "B") or not root then return end
+	local ok, WarCrowd = pcall(require, ReplicatedStorage:WaitForChild("WarCrowd"))
+	if not ok then return end
+	if WarCrowd.answer(side, root.Position, 140) > 0 then
+		local okFx, WarFX = pcall(require, ReplicatedStorage:WaitForChild("WarFX"))
+		if okFx then WarFX.sound("Roar", root.Position + Vector3.new(0, 6, 0), {volume = 0.9, near = 60, range = 600, speed = 1.05}) end
+	end
+end
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
@@ -92,7 +108,7 @@ fx.OnClientEvent:Connect(function(what, a, b, c, d)
 		if typeof(plr) ~= "Instance" or not plr.Character then return end
 		-- our own emote already started the moment we pressed it
 		if plr == player and Emotes.playing(plr.Character) == id then return end
-		if Emotes.play(plr.Character, id, startedAt) then EmoteFX.attach(plr.Character, id) end
+		if Emotes.play(plr.Character, id, startedAt) then EmoteFX.attach(plr.Character, id); rally(plr.Character, id) end
 	elseif what == "EmoteModel" then
 		-- a bot's (a staff showcase's bots emote over the fallen)
 		local model, id, startedAt = a, b, c
@@ -229,6 +245,7 @@ local function playEmote(id)
 	end
 	if not Emotes.play(char, id) then return end
 	EmoteFX.attach(char, id)
+	rally(char, id)
 	startedAt = os.clock()
 	emoteRemote:FireServer("Play", id)
 end

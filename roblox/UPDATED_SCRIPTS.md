@@ -1,4 +1,17 @@
-# Updated scripts: the monsters groan and growl in the dark
+# Updated scripts: the armies answer your war cry
+
+- **War Cry / Cheer in a battle**: your side's regiments nearby (within 140 studs) raise their weapons and roar back. Works in War, Siege, the warfields and anywhere the armies stand.
+- **Checked in Play** on Redfield (War): the cry by the Crown's lines; 90 s soak with no errors.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a rally on War Cry / Cheer |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `WarCrowd.answer` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the monsters groan and growl in the dark
 
 - **What lurks**: in the dungeons, monsters near you groan (the undead) or growl (everything else) now and then from where they stand, the big ones deeper. Two new generated sounds.
 - **Siege**: once the fight is inside the walls, smoke from the burning castle drifts through the yard being fought over.
@@ -21,16 +34,4 @@ Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Groan, Growl.
 |---|---|---|---|
 | [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the hosts |
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `still` regiments (each man on his own ground) |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the garrison drills outside the Courtyard
-
-- **Outside the walls**: on the east field two companies of the garrison drill against each other (charging, crashing together, pulling apart); on the west field an archery range, archers loosing at straw butts. Seen from the battlements and the menu's flyover.
-- **Checked in Play** in the Courtyard.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [CourtyardGuards.client.lua](StarterPlayerScripts/CourtyardGuards.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the drill, the archery range |
 | [README.md](README.md) | | doc | |
