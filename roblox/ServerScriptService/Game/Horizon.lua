@@ -47,7 +47,10 @@ local bands = {}                  -- the skirt's terrain boxes, to clear
 local function themeOf(map, name)
 	local ok, F = pcall(require, Build:WaitForChild("MapForge"))
 	local themes = ok and F.THEMES or {}
-	local key = map:GetAttribute("Theme") or WAR[map:GetAttribute("W_Theme") or ""] or HAND[name] or "summer"
+	-- (only the outdoor battlegrounds: a map named nowhere here makes its own world: the dungeons,
+	--  the Gilded Rat, Crownlands, the Caldera, the prologue's Stormwatch)
+	local key = map:GetAttribute("Theme") or WAR[map:GetAttribute("W_Theme") or ""] or HAND[name]
+	if not key then return nil, nil end
 	return themes[key] or themes.summer, key
 end
 
@@ -235,7 +238,12 @@ function Horizon.build(map, name)
 	local function outside(p, m) return math.abs(p.X - cx) > ex + (m or 0) or math.abs(p.Z - cz) > ez + (m or 0) end
 
 	-- THE SKIRT: the map's ground running on, flush with its edge
-	local T_ = workspace.Terrain
+	-- (Roblox draws terrain's surface half a voxel above where a fill ends: every brush is lowered
+	-- by those 2 studs, as Build ▸ MapKit's are, so the skirt meets the map's ground flush)
+	local DROP = V3(0, 2, 0)
+	local T_ = {}
+	function T_:FillBlock(cf, sz, mat) return workspace.Terrain:FillBlock(cf - DROP, sz, mat) end
+	function T_:FillBall(c, r, mat) return workspace.Terrain:FillBall(c - DROP, r, mat) end
 	local depth = 16
 	-- (8 studs over the map's own edge: MapForge's ground stops 4 short of its terrain box)
 	local LAP = 8
