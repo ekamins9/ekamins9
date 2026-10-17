@@ -1,4 +1,18 @@
-# Updated scripts: a taken banner raises the taker's arms
+# Updated scripts: a shield sounds like a shield
+
+- **A blow caught on a shield thuds**: a hollow wooden impact with a crack of the board (three
+  takes), the steel clang quieter under it, instead of the blade-on-blade ring every block made.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | the thud in `Shields.batter` |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | the steel Block sound quieter on a shield |
+| *(Studio-only)* WarAudio ▸ ShieldBlock1..3 | ReplicatedStorage | Sound | **new** (generated) — save the place |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a taken banner raises the taker's arms
 
 - **War's five banners** raise the arms of whichever side holds them (the lion for blue, the wolf
   for red, or whatever this field's houses are), and come down bare when no one does.

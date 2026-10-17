@@ -211,6 +211,23 @@ function Shields.batter(c, at, k)
 			board = d
 		end
 	end
+	-- the board's own voice: a hollow wooden thud (Studio-only ReplicatedStorage ▸ WarAudio ▸
+	-- ShieldBlock1..n; none there, the steel clang alone)
+	local audio = ReplicatedStorage:FindFirstChild("WarAudio")
+	if audio and board then
+		local takes = {}
+		for _, s in ipairs(audio:GetChildren()) do if s:IsA("Sound") and s.Name:match("^ShieldBlock") then table.insert(takes, s) end end
+		if #takes > 0 then
+			local s = takes[math.random(#takes)]:Clone()
+			s.Volume = s.Volume * math.clamp((k or 0.07) / 0.07, 0.45, 1.2)
+			s.PlaybackSpeed = s.PlaybackSpeed * (0.9 + math.random() * 0.2)
+			s.RollOffMode = Enum.RollOffMode.InverseTapered
+			s.RollOffMinDistance, s.RollOffMaxDistance = 6, 90
+			s.Parent = board
+			s:Play()
+			game:GetService("Debris"):AddItem(s, 3)
+		end
+	end
 	if typeof(at) ~= "Vector3" then return end
 	-- (a few real chips: its paint and the wood under it, off the face and down)
 	local out = board and board.CFrame.LookVector or Vector3.yAxis

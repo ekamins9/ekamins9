@@ -1018,7 +1018,9 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- BLOCK: drains defender stamina by the attack's blockCost; empty = guard broken
 				drainStamina(target, (info.blockCost or 0) * (cfg.BLOCK_COST_MULT or 1) * (target:GetAttribute("StaminaCostMult") or 1) * (target:GetAttribute("ShieldBlock") or 1))
 				local m = target:GetAttribute("BlockMeter") or 0
-				sfx("Block", part)
+				-- (on a shield the board's thud carries it: the steel only under it)
+				local onShield = target:FindFirstChild("ShieldModel") and not target:GetAttribute("ShieldSlung")
+				sfx("Block", part, onShield and {Volume = 0.45} or nil)
 				Injury.sparks(hitPos, 1)
 				CombatServer.batterShield(target, hitPos, 0.07)   -- (on a shield: its paint chips, splinters fly)
 				-- the blade stops dead on a guard, same as a parry — the parry's

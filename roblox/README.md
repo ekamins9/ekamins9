@@ -720,7 +720,8 @@ Each widens the guard (ShieldCone), cheapens blocks (ShieldBlock), changes the p
 RangedServer, MagicServer, Throwing ask `Shields.stops`), makes the kick a bash (ShieldBash /
 ShieldStun), and the big ones slow you (SpeedMult_Shield). Not for the Archer or the Mage.
 **It takes the fight** (`Shields.batter`, from CombatServer's block and parry and RangedServer's
-caught arrows): every blow caught on it chips its paint (ShieldPaint's scratches deepen over the
+caught arrows): every blow caught on it lands with the board's own hollow wooden thud
+(Studio-only `WarAudio ▸ ShieldBlock1..3`, the steel clang quieter under it), chips its paint (ShieldPaint's scratches deepen over the
 life; a plain shield gets a fresh painted face to scar) and throws a few splinters of the board.
 **A two-hander in hand slings it onto your back** (`Shields.sling`: a Zweihander picked up off
 the floor, a looted polearm, a bow): it hangs there face out and does nothing (no shield block,
