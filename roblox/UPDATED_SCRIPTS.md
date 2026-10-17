@@ -1,4 +1,26 @@
-# Updated scripts: Deadvault starts from nothing; the kick's follow-up
+# Updated scripts: steel on steel
+
+- **A blocked or parried blow now glances off, visibly.** Every screen works out where the two
+  blades actually cross (the closest points of the attacker's blade and the defender's guard) and
+  which way the blow was travelling, then bounces it: on a blade it skids down the guard and is
+  pushed back off it, on a shield it mirrors off the board. The attacker's arm is knocked along that
+  bounce (out fast, back with a little overshoot) and the blade rings in the hand; the defender's
+  arm gives a little under the blow.
+- **Sparks off the crossing**: white-hot slivers spraying along the glance and down the guard's
+  edge, cooling to orange as they fall, with a blink of light. A parry throws more, a parry
+  streak more again, a perfect parry adds a four-pointed glint; a guard broken throws a shower; a
+  shield only a few. (These replace the old round puff of sparks for guards.)
+- Laid over the animations, which are untouched.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ClashFX.client.lua](StarterPlayerScripts/ClashFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `ClashEvent`, `CombatServer.clash` on block / parry / chamber / break |
+| [README.md](README.md) | | doc | "Steel on steel" |
+
+---
+
+## Before that: Deadvault starts from nothing; the kick's follow-up
 
 - **Deadvault: nothing of your loadout comes in.** You go in as your class in its plain starting
   pieces (no armour finish, no colours of yours), with the weapons on your run (the free pair

@@ -131,6 +131,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Portraits.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Portraits` | LocalScript |
 | `StarterPlayerScripts/Undertow.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Undertow` | LocalScript |
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
+| `StarterPlayerScripts/ClashFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `ClashFX` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2005,6 +2006,23 @@ leaves its nick there too (each screen finds the surface from where the swing ca
 with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal, fading after a
 minute and a half. The server sends only the part (or none, for the world), the point, the
 direction and where the swing came from (`ScuffEvent`); nothing is replicated.
+
+## Steel on steel (`ClashFX.client`, `CombatServer.clash` ClashEvent)
+A blow stopped on a guard (blocked, parried, perfect-parried, chambered, caught on a shield, or a
+guard broken) is fired to every screen: attacker, defender, the server's point, the kind, the
+attack's name and how hard (a parry streak hits harder). Each screen works out what the blades
+did as it shows them: **where** they met (the closest points of the attacker's Hitbox and the
+defender's GuardHull, each taken as a segment along its length), **which way** the blow was
+travelling (from its name: RightSwing comes from the right and travels left, an overhead down, an
+underhand up, a stab forward; kept across the attacker's own blade), and **how it bounced** (on a
+blade it skids down the guard's length and its push into it comes back; on a shield it mirrors off
+the board). Then the attacker's arm is knocked along the bounce (a damped spring on the shoulder,
+out fast and back with a little overshoot) and the blade rings in the hand (a fast shiver of the
+grip); the defender's arm gives a little under it. White-hot slivers spray along the glance and
+down the guard's edge, cooling to orange as they fall, with a blink of light at the crossing; a
+perfect parry adds a glint. Laid over the animation (the joints' Transform after the Animator),
+the clips untouched. Within 120 studs; a phone throws half the sparks. Tuning: `KINDS` at the top
+of the script (knock, give, sparks, light, ring).
 
 ## The portraits watch (`Portraits.client`, Dungeon `P.painting`)
 

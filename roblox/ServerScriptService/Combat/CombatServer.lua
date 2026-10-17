@@ -64,6 +64,10 @@ local Injury      = require(script.Parent:WaitForChild("Injury"))
 -- (a clean hit's mark on what it struck: StarterPlayerScripts ▸ Scuffs draws it on each screen)
 local scuffRemote = ReplicatedStorage:FindFirstChild("ScuffEvent")
 if not scuffRemote then scuffRemote = Instance.new("RemoteEvent"); scuffRemote.Name = "ScuffEvent"; scuffRemote.Parent = ReplicatedStorage end
+-- (a blow stopped on a guard, seen: StarterPlayerScripts ▸ ClashFX works out on each screen where
+-- the blades crossed, throws the sparks and knocks the blade off)
+local clashRemote = ReplicatedStorage:FindFirstChild("ClashEvent")
+if not clashRemote then clashRemote = Instance.new("RemoteEvent"); clashRemote.Name = "ClashEvent"; clashRemote.Parent = ReplicatedStorage end
 -- GameConfig (friendly-fire multiplier); optional so the combat still runs without it
 local GameConfig = (function()
 	local m = ReplicatedStorage:FindFirstChild("GameConfig")
@@ -373,6 +377,13 @@ function CombatServer.chamberMatch(theirs, theirKind, mine, myKind)
 	if not tt or not mt or tt ~= mt then return false end
 	if ts and ms then return ts ~= ms end
 	return true
+end
+
+-- STEEL ON STEEL: a blow stopped on a guard, to every screen (ClashFX). kind: "block", "parry",
+-- "perfect", "chamber", "shield" or "break"; power scales it (a parry streak hits harder)
+function CombatServer.clash(attacker, defender, at, kind, attackName, power)
+	if typeof(at) ~= "Vector3" then return end
+	clashRemote:FireAllClients(attacker, defender, at, kind, attackName or "", power or 1)
 end
 
 -- The kick's landing: everyone in range and in the cone. hooks = {sfx, tell, dprint}
@@ -978,7 +989,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			end
 			if meter <= 0 or not Injury.canBlock(target) then
 				markCombat(target)
-				Injury.sparks(hitPos, 1)
+				CombatServer.clash(character, target, hitPos, "break", state.attackName)
 				knockAwayWeapon(target, dir, meter <= 0 and "guard hit at 0 stamina" or "guard with a missing arm")
 				sfx("Block", part)
 				guardText("DISARMED")
@@ -1013,7 +1024,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				CombatServer.refundStamina(target, refund)
 				dprint(perfect and "PERFECT parry" or "parry", "streak", streak, "+" .. refund, "stamina to", target.Name)
 				guardText(string.format("%s%s  +%d", perfect and "PERFECT PARRY" or "PARRY", streak > 1 and ("  ×" .. streak) or "", refund))
-				Injury.sparks(hitPos, 2 + 0.5 * (streak - 1) + (perfect and 1.2 or 0))   -- big, white, bigger with every parry in a row
+				-- the blade glances off hard: big sparks, bigger with every parry in a row (ClashFX)
+				CombatServer.clash(character, target, hitPos, perfect and "perfect" or "parry", state.attackName, 1 + 0.25 * (streak - 1))
 				CombatServer.batterShield(target, hitPos, 0.035)
 				if perfect then target:SetAttribute("PerfectParryAt", now) end   -- (the parrier's camera punches)
 				cancelSwing("parried")
@@ -1029,7 +1041,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				-- (on a shield the board's thud carries it: the steel only under it)
 				local onShield = target:FindFirstChild("ShieldModel") and not target:GetAttribute("ShieldSlung")
 				sfx("Block", part, onShield and {Volume = 0.45} or nil)
-				Injury.sparks(hitPos, 1)
+				-- the blade glances off the guard (ClashFX): steel's sparks, a board's thud
+				CombatServer.clash(character, target, hitPos, m <= 0 and "break" or (onShield and "shield" or "block"), state.attackName)
 				CombatServer.batterShield(target, hitPos, 0.07)   -- (on a shield: its paint chips, splinters fly)
 				-- the blade stops dead on a guard, same as a parry — the parry's
 				-- extra reward is the defender's riposte and refund
@@ -1072,8 +1085,8 @@ function CombatServer.attach(Tool, weaponConfig)
 				statHook(target, "chamber")
 				target:SetAttribute("GuardText", "CHAMBER")
 				target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
+				CombatServer.clash(character, target, hitPos, "chamber", state.attackName)
 				cancelSwing("chambered")
-				Injury.sparks(hitPos, 2)
 				sfx("Parry", part)
 				Sounds.bank("Clash", part)
 				Sounds.voice("Parry", target:FindFirstChild("Head"), {Who = target})
