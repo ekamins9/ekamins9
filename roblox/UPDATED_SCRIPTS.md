@@ -1,4 +1,16 @@
-# Updated scripts: arms taken off whole; class cards on a phone
+# Updated scripts: regiments march under their arms
+
+- **Every regiment's standard flies its house's arms** (on both faces of the flag): the armies of
+  War, the sieges and the warfields march under the same beasts as their banners and shields.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | the standard's arms |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: arms taken off whole; class cards on a phone
 
 - **TAKE THEM OFF** (LOOK ▸ YOUR ARMS) clears your arms whole: the emblem, the metal, the field
   and the division (an empty value now clears each).

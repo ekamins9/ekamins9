@@ -1380,7 +1380,7 @@ the map's name, so a map always flies the same. The plates (BannerArt) swing wit
 (`BannerWind`). **The sides carry them too**: in a team fight a plain (Default) shield is painted
 in its side's colour with its house's arms (`Combat ▸ Shields` → `ShieldPaint.house`), and so are
 the War armies' shields (`WarCrowd`: the front rank's whole painted face, the ranks behind the
-emblem). Which house is which is `ReplicatedStorage ▸ Houses`, from the Map's `HouseSeed` (its
+emblem), and every regiment's standard flies its house's arms on both faces. Which house is which is `ReplicatedStorage ▸ Houses`, from the Map's `HouseSeed` (its
 name without a built map's round number), the same on the server and every screen.
 
 No such map → whatever is in workspace, and

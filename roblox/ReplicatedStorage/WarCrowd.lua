@@ -477,6 +477,33 @@ function WarCrowd:regiment(id, o)
 			p.Parent = self.home
 		end
 		reg.standard = {pole, flag}
+		-- (its house's arms on both faces: ReplicatedStorage ▸ Houses, the pictures in ShieldArt)
+		local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+		local map = workspace:FindFirstChild("Map")
+		local okH, emblem = pcall(function() return require(ReplicatedStorage:WaitForChild("Houses")).forTeam(reg.side, map and map:GetAttribute("HouseSeed")) end)
+		if okH and emblem and art and art:FindFirstChild(emblem) then
+			for _, sgn in ipairs({1, -1}) do
+				local p = Instance.new("Part")
+				p.Size = V3(3.2, 3.2, 0.01)
+				p.Transparency = 1
+				p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+				for z, layer in ipairs({{emblem .. "_s", Color3.new(0, 0, 0), 0.25}, {emblem .. "_o", Color3.fromRGB(26, 20, 18), 0}, {emblem, Color3.new(1.06, 0.84, 0.4), 0}}) do
+					local v = art:FindFirstChild(layer[1])
+					if v then
+						local d = Instance.new("Decal")
+						d.Face = Enum.NormalId.Front
+						d.Texture, d.Color3, d.Transparency, d.ZIndex = v.Value, layer[2], layer[3], z
+						d.Parent = p
+					end
+				end
+				p.CFrame = FAR
+				p.Parent = self.home
+				table.insert(reg.standard, p)
+				-- (where it sits on the flag: out of each face, turned to look out of it)
+				reg.standardArt = reg.standardArt or {}
+				table.insert(reg.standardArt, CF(sgn * 0.08, 0, 0) * ANG(0, math.rad(-90 * sgn), 0))
+			end
+		end
 	end
 	self.regs[id] = reg
 	table.insert(self.list, reg)
@@ -1131,7 +1158,9 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 		local sway = math.sin(now * 2) * 0.08
 		local cf = CF(reg.x + reg.sp * 0.5, reg.y0, reg.z - f * reg.sp * 1.5) * rot * ANG(0, 0, sway)
 		put(reg.standard[1], cf * CF(0.6, 7, 0))
-		put(reg.standard[2], cf * CF(0.6, 12, 2.4))
+		local flagCF = cf * CF(0.6, 12, 2.4)
+		put(reg.standard[2], flagCF)
+		for k, off in ipairs(reg.standardArt or {}) do put(reg.standard[2 + k], flagCF * off) end
 	end
 	reg.dirty = false
 end
