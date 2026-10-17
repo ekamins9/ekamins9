@@ -130,11 +130,18 @@ local title = label(panel, "CHOOSE YOUR CLASS", 28, FONT_BLACK, COL_ACCENT)
 title.Size = UDim2.new(1, -260, 0, 34)
 local modeLine = label(panel, "", 14, FONT_BODY, COL_DIM)
 modeLine.Position = UDim2.new(0, 0, 0, 34)
--- (the mode and map, and its description under them: from the top down, never over the title)
-modeLine.Size = UDim2.new(1, -260, 0, 36)
+-- (the mode and map beside the menu's tabs; the mode's description under them, the panel's whole
+-- width and two lines, so a long one is read in full: descLine)
+modeLine.Size = UDim2.new(1, -260, 0, 18)
 modeLine.TextYAlignment = Enum.TextYAlignment.Top
 modeLine.TextTruncate = Enum.TextTruncate.AtEnd
 modeLine.RichText = true
+local descLine = label(panel, "", 13, FONT_BODY, COL_DIM)
+descLine.Position = UDim2.new(0, 0, 0, 53)
+descLine.Size = UDim2.new(1, 0, 0, 32)
+descLine.TextWrapped = true
+descLine.TextYAlignment = Enum.TextYAlignment.Top
+descLine.TextTruncate = Enum.TextTruncate.AtEnd
 
 -- top-right: the Hub menu's tabs
 local menuRow = Instance.new("Frame")
@@ -162,8 +169,8 @@ local fitCards   -- (below)
 -- class cards
 local cardRow = Instance.new("Frame")
 cardRow.BackgroundTransparency = 1
-cardRow.Position = UDim2.new(0, 0, 0, 76)
-cardRow.Size = UDim2.new(1, 0, 1, -76 - 150)
+cardRow.Position = UDim2.new(0, 0, 0, 88)
+cardRow.Size = UDim2.new(1, 0, 1, -88 - 150)
 cardRow.Parent = panel
 -- the class you pick, in full, under the cards (each card has its bars instead)
 local classLine = label(panel, "", 13, FONT_BODY, COL_TEXT)
@@ -372,8 +379,8 @@ local function refreshModeLine()
 	local mode = roundNode:GetAttribute("ModeName") or ""
 	local map = roundNode:GetAttribute("MapName") or roundNode:GetAttribute("Map") or ""
 	local def = GameConfig.MODES[roundNode:GetAttribute("Mode") or ""]
-	modeLine.Text = string.format("%s%s%s%s", mode, map ~= "" and ("  on  " .. map) or "", teamInfo(),
-		def and def.description and ("\n" .. def.description) or "")
+	modeLine.Text = string.format("%s%s%s", mode, map ~= "" and ("  on  " .. map) or "", teamInfo())
+	descLine.Text = def and def.description or ""
 end
 
 --------------------------------------------------------------------
@@ -557,9 +564,11 @@ event:FireServer("Ready")
 fitCards = function()
 	local phone = Device.kind() == "phone"
 	panel.Size = phone and UDim2.fromScale(0.96, 0.94) or UDim2.fromScale(0.8, 0.72)
-	-- (a phone has no room for the class's line under the cards)
-	cardRow.Size = phone and UDim2.new(1, 0, 1, -76 - 130) or UDim2.new(1, 0, 1, -76 - 150)
+	-- (a phone has no room for the class's line under the cards, nor the mode's description)
+	cardRow.Position = UDim2.new(0, 0, 0, phone and 58 or 88)
+	cardRow.Size = phone and UDim2.new(1, 0, 1, -58 - 130) or UDim2.new(1, 0, 1, -88 - 150)
 	classLine.Visible = not phone
+	descLine.Visible = not phone
 	for _, c in pairs(cards) do
 		if c.desc then c.desc.Visible = not phone end
 		c.vp.Size = phone and UDim2.new(1, 16, 1, -50 - 64) or UDim2.new(1, 16, 1, -50 - 122)

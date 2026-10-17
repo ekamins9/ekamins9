@@ -1,4 +1,16 @@
-# Updated scripts: the battle's end
+# Updated scripts: the class screen reads the whole mode
+
+- **The class screen's mode description is never cut off**: it has its own line under the mode and
+  map, the panel's whole width and two lines deep (the massive battle's used to stop at "…and the
+  rest of"). Hidden on a phone, where the cards need the room.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `descLine`; the cards a little lower |
+
+---
+
+## Before that: the battle's end
 
 - **A won battle ends on the field, not on a board.** For a few seconds after a TDM, a Standard,
   a hill or an LTS round is won, the winners raise their weapons and roar, half the beaten drop to a
