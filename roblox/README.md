@@ -1754,6 +1754,9 @@ Marshfen, Mistbridge, Blackwater; embers on Emberkeep, Ashenford, Cinderfall; pe
 and the Rose Court; Plague Night is always a storm, the Undead invasion rain. A mode's own wins
 over its map's; War and the Prologue draw their own; none in the Hub or the dungeon game. Drops
 stop under a roof. One table to change it, no Studio work.
+**Cold breath:** where it's cold (snow falling, a winter-themed map, War's Frostmere, the Frozen
+Depths) every player's breath shows, a small white puff from the mouth every few seconds,
+quicker when running.
 
 ## The opening of a battle (`MatchIntro.client`)
 Your first body of a round in Siege, TDM, KOTH, FFA, LTS or Horde: black bars, the camera flies from
