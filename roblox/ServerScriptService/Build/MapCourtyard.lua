@@ -48,9 +48,9 @@ return function(K)
 	for i = -4, 4 do K.box(ctx, "Portcullis", V3(0.4, 18, 0.4), V3(i * 2.2, 9, Z - 1), C.IRON, M.Metal) end
 	for j = 1, 6 do K.box(ctx, "PortcullisBar", V3(18, 0.4, 0.4), V3(0, j * 2.8, Z - 1), C.IRON, M.Metal) end
 	-- the keep behind the north wall
-	K.box(ctx, "Keep", V3(80, 44, 26), V3(0, 22, -Z - 18), C.STONE, M.Brick)
+	K.box(ctx, "Keep", V3(80, 44, 26), V3(0, 22, -Z - 18), C.STONE, M.Cobblestone)
 	K.box(ctx, "KeepFooting", V3(83, 3.4, 29), V3(0, 1.7, -Z - 18), C.STONEDARK, M.Cobblestone)
-	K.box(ctx, "KeepTop", V3(84, 1.4, 30), V3(0, 44.7, -Z - 18), C.STONEDARK, M.Brick)
+	K.box(ctx, "KeepTop", V3(84, 1.4, 30), V3(0, 44.7, -Z - 18), C.STONEDARK, M.Cobblestone)
 	for i = -9, 9 do K.box(ctx, "KeepCrenel", V3(2, 2.2, 2), V3(i * 4.4, 46.5, -Z - 3.4), C.STONE, M.Slate) end
 	for i = -3, 3 do
 		K.box(ctx, "KeepWindow", V3(2.4, 6, 0.6), V3(i * 10, 30, -Z - 4.8), Color3.fromRGB(26, 30, 44), M.SmoothPlastic)

@@ -1,4 +1,16 @@
-# Updated scripts: spiders
+# Updated scripts: castle walls in rubble stone
+
+- **Castle walls, towers and the Courtyard's keep** are rubble masonry (Cobblestone) instead of this morning's brick, which came out pinkish on white and grey castles. The saved maps were switched too (save the place).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build | ModuleScript | `K.wall` / `K.tower` default Cobblestone |
+| [MapCourtyard.lua](ServerScriptService/Build/MapCourtyard.lua) | ServerScriptService ▸ Build | ModuleScript | keep |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: spiders
 
 - **The dungeons** (the Bone Crypt, the Goblin Warrens, the Crimson Manor, the Hollow Abbey): now and then a spider lets itself down on its thread from the ceiling ahead of you. It hangs at the height of your face, turning, legs working, red eyes catching your lantern, then whips back up into the dark with a skitter. It goes sooner if you walk up to it.
 

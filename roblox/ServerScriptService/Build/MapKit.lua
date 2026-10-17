@@ -100,11 +100,11 @@ end
 -- a straight wall from a to b (Vector3s on the ground), height h, thickness t;
 -- opts: crenels (battlements), color, material, base (a wider footing: baseH
 -- tall, baseW wider than the wall; a tall one makes a wall look founded, not sunk), cap.
--- Coursed stone by default (Brick in a stone colour reads as dressed blocks), the footing
--- rougher (Cobblestone)
+-- Rubble masonry by default (Cobblestone in the wall's colour), the footing the same in its
+-- darker stone
 function K.wall(ctx, a, b, h, t, opts)
 	opts = opts or {}
-	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Brick
+	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Cobblestone
 	local footMat = opts.material or K.M.Cobblestone
 	local d = b - a
 	local len = d.Magnitude
@@ -132,7 +132,7 @@ end
 -- opts.base = a footing ring that many studs tall. Stone as K.wall's.
 function K.tower(ctx, pos, r, h, opts)
 	opts = opts or {}
-	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Brick
+	local color, mat = opts.color or K.C.STONE, opts.material or K.M.Cobblestone
 	local footMat = opts.material or K.M.Cobblestone
 	K.cyl(ctx, "Tower", r * 2, h, pos + Vector3.new(0, h / 2, 0), color, mat)
 	if opts.base then

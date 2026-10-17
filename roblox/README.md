@@ -1839,8 +1839,8 @@ its colour is snow-white) under a ridge beam, and on about half of them a chimne
 smoke. Only the walls, roof and gables collide; the rest is dressing (no collision, no queries, no
 shadows), about 45 parts a house.
 
-Castle stone is coursed (`K.wall` and `K.tower` default to Brick in a stone colour, which reads as
-dressed blocks, with Cobblestone footings), and towers' spires are shingled (RoofShingles;
+Castle stone is rubble masonry (`K.wall` and `K.tower` default to Cobblestone in the wall's colour,
+the footing the same in its darker stone), and towers' spires are shingled (RoofShingles;
 `opts.roofMaterial` to change it). The maps saved in Studio (ServerStorage ▸ Maps) were converted
 by the same rules on 2026-10-17, and their old houses rebuilt in place.
 
