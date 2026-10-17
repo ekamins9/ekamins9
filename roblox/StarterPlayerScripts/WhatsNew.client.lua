@@ -16,16 +16,16 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-17",
+	version = "2026-10-17b",
 	title = "NEW IN THE DARK AND ON THE FIELD",
 	lines = {
+		{"🍂", "Amberwood", "a new War field: an autumn wood's edge, red and gold oaks, leaves drifting down"},
+		{"🏰", "Stone, timber and sky", "castles of rough stone, half-timbered villages, clouds over every field"},
+		{"💥", "Shell-shocked", "a trebuchet stone lands beside you: the world goes muffled and your ears ring"},
+		{"🕷", "Things in the dark", "spiders let themselves down ahead of you; light falls through ceiling grates"},
+		{"🗡", "Through your own eyes", "in Settings, Start in: begin every fight in first person"},
 		{"🌊", "Two new dungeons", "the flooded Drowned Halls and the desecrated Hollow Abbey, each with its lord"},
-		{"💀", "The dead don't stay down", "second waves burst up through the floor; sleeping dead lie among the bones"},
 		{"💎", "Traps and secrets", "spike grates, swinging blades, darts, fire; cracked walls hide caches"},
-		{"🕯", "The dark is alive", "ambushes in the corridors, torches that gutter out, footsteps behind you"},
-		{"⚔", "Champions take the field", "in War the side that's behind sends its champion: cut him down"},
-		{"⛈", "Mistmarsh, and a turning sky", "a new War field lost in fog; the sun moves; the heavens can open mid-fight"},
-		{"🔔", "Hear it, feel it", "armour clanks, steps splash, every hall echoes, crates burst under your blade"},
 	},
 }
 

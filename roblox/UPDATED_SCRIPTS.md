@@ -1,4 +1,14 @@
-# Updated scripts: start in first person
+# Updated scripts: what's new, again
+
+- **The What's new card** comes back once (version `2026-10-17b`) with today's additions: Amberwood; stone, timber and sky; shell-shock; spiders and light shafts; starting in first person. It also keeps the new dungeons and the traps.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | NEWS |
+
+---
+
+## Before that: start in first person
 
 - **Settings ▸ Start in**: choose whether each spawn begins over the shoulder or through your own eyes, blade in hand. The View key still switches any time.
 
