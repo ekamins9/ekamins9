@@ -235,7 +235,14 @@ step):
   SoundService ▸ World, muffled by a near blast); spiders on threads and light shafts through
   ceiling grates in the dungeons; Amberwood, an eleventh War field (autumn); Settings ▸ Start in
   (first person); the review fixes (traps stream Atomic and spare calm patrols, woken coffins
-  locked, secret walls kept clear of furnishing, late joiners get WarSky).
+  locked, secret walls kept clear of furnishing, late joiners get WarSky). Later the same day:
+  night windows (`NightWindows.client`); real spider enemies (Cave Spider, Broodmother: body
+  "spider" in `Combat ▸ Monsters`, a hidden fighter under a jointed spider walked by
+  `SpiderLegs.client`, the `Beast` bot profile, `NoDrop` fangs, `Rigid` joints through the
+  ragdoll) and their nests (`Dungeon` A.nest); mimics (Deadvault's chests and the Depths'
+  treasure chests: body "mimic", `Deadvault:mimic` / `Depths:mimic`); skeletons fall apart into
+  bone heaps and wraiths vanish (Monsters, Corpses "bones"/"none"). The What's new card is at
+  version 2026-10-17b.
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
