@@ -2,11 +2,12 @@
 
 - **Every fighter in a team fight wears their house's arms on the chest**: a gold badge (the
   same beast their side's banners, standards and shields carry) on the front of their armor,
-  players and bots alike.
+  players and bots alike. The War armies' soldiers wear it too (full and lite detail).
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [Teams.lua](ServerScriptService/Game/Teams.lua) | ServerScriptService ▸ Game | ModuleScript | the house badge (`Teams.mark`) |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | the crowds' chest badges |
 | [README.md](README.md) | | doc | |
 
 ---
