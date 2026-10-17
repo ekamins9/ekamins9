@@ -26,6 +26,7 @@ local NEWS = {
 		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
 		{"💥", "Shields take the fight", "each blow you catch chips its paint and knocks splinters off the board"},
 		{"🏰", "Your banner in the Courtyard", "bear your own arms and your banner flies over the Courtyard, your name under it"},
+		{"🗺", "Ten new maps", "storm Frostmarch and Gloamhold, hold Snowcrest's walls, fight across Frostford and in Witchfen's rain"},
 	},
 }
 

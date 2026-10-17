@@ -1318,19 +1318,21 @@ A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
 names them. Every mode has 10 or more: the hand-built ones (`Build ▸ Maps`, `Build ▸ Map<Name>`)
-and 32 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
+and 42 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
 - **Siege:** Emberkeep (ember night), Sunspire (desert noon), Thornwall (autumn), Mistmoor
   (swamp mist), Greenhollow (summer), Stormhold (storm night), Ashenford (ash), Rimeholt (moonlit
-  snow), Blossomgate (spring), Duskwall (desert dusk, a great moon), Mournhold (dawn mist). Each is a castle to take: the ram up the road, the bailey, the great
+  snow), Blossomgate (spring), Duskwall (desert dusk, a great moon), Mournhold (dawn mist),
+  Frostmarch (snow; the Frost Jarl, a bardiche), Gloamhold (night forest; the Night Warden, a
+  poleaxe). Each is a castle to take: the ram up the road, the bailey, the great
   hall, and its own champion on the throne.
-- **Arenas:** the Bloodpit, Moonring, the Dustbowl, Thornpit, Mirepit.
-- **Castle courtyards:** Abbeyfield, Blackwater.
-- **Villages:** Harvestvale, Frosthollow, Marshfen.
-- **Bridges:** Redgorge (a dry gorge), Mistbridge.
-- **Ruins:** Cinderfall, Duneshrine.
-- **Clearings:** Hollow Grove (fireflies at night), Pinewatch.
+- **Arenas:** the Bloodpit, Moonring, the Dustbowl, Thornpit, Mirepit, the Greenring (summer).
+- **Castle courtyards:** Abbeyfield, Blackwater, Snowcrest (snow), Sunhold (desert).
+- **Villages:** Harvestvale, Frosthollow, Marshfen, Blossomby (spring, petals).
+- **Bridges:** Redgorge (a dry gorge), Mistbridge, Frostford (a winter river).
+- **Ruins:** Cinderfall, Duneshrine, Witchfen (a swamp in the rain).
+- **Clearings:** Hollow Grove (fireflies at night), Pinewatch, Amberglade (autumn).
 - **Warfields** (The Lists, 1v1 to 3v3): Redmeadow (autumn wheat), Ironvale (snow), Grimfield
-  (ash and embers), Sunfall (desert dunes at dusk), Ravenfield (night, storm). A duel ring of pavises and planted spears in the middle of a battle: two
+  (ash and embers), Sunfall (desert dunes at dusk), Ravenfield (night, storm), Blossomfield (spring). A duel ring of pavises and planted spears in the middle of a battle: two
   armies fight all round it on every screen (`StarterPlayerScripts ▸ Warfield`, with
   `ReplicatedStorage ▸ WarCrowd` and `WarFX`; the map's `Warfield` attribute, the ring's radius,
   turns it on): three lanes a side meet either side of the ring (foot, pikes, knights), charging

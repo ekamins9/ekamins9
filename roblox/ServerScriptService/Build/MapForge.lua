@@ -214,10 +214,22 @@ F.MAPS = {
 	Grimfield   = {title = "Grimfield",    layout = "warfield", theme = "ash",      seed = 803},
 	Sunfall     = {title = "Sunfall",      layout = "warfield", theme = "desertDusk", seed = 804},
 	Ravenfield  = {title = "Ravenfield",   layout = "warfield", theme = "stormNight", seed = 805},
+	-- THE NEW MUSTER (2026-10-18)
+	Frostmarch  = {title = "Frostmarch",   layout = "siege", theme = "winter",      seed = 112, champion = {name = "The Frost Jarl", weapon = "Bardiche"}},
+	Gloamhold   = {title = "Gloamhold",    layout = "siege", theme = "nightForest", seed = 113, champion = {name = "The Night Warden", weapon = "Poleaxe"}},
+	Snowcrest   = {title = "Snowcrest",    layout = "bailey", theme = "winter",     seed = 303},
+	Sunhold     = {title = "Sunhold",      layout = "bailey", theme = "desert",     seed = 304},
+	Blossomby   = {title = "Blossomby",    layout = "village", theme = "spring",    seed = 404},
+	Frostford   = {title = "Frostford",    layout = "bridge", theme = "winter",     seed = 503},
+	Witchfen    = {title = "Witchfen",     layout = "ruins", theme = "swamp",       seed = 603},
+	Amberglade  = {title = "Amberglade",   layout = "clearing", theme = "autumn",   seed = 703},
+	Greenring   = {title = "The Greenring", layout = "arena", theme = "summer",     seed = 206},
+	Blossomfield = {title = "Blossomfield", layout = "warfield", theme = "spring",   seed = 806},
 }
 F.ORDER = {"Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate", "Duskwall", "Mournhold",
 	"Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen",
-	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch", "Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield"}
+	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch", "Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield",
+	"Frostmarch", "Gloamhold", "Snowcrest", "Sunhold", "Blossomby", "Frostford", "Witchfen", "Amberglade", "Greenring", "Blossomfield"}
 
 --------------------------------------------------------------------
 --  SHARED PIECES

@@ -1,4 +1,25 @@
-# Updated scripts: Crownfall's island sits in a sea
+# Updated scripts: ten new maps
+
+- **Ten new maps** from MapForge, each a layout in a theme it hadn't been built in yet:
+  two sieges (Frostmarch in the snow, its champion the Frost Jarl with a bardiche; Gloamhold in a
+  night forest, the Night Warden with a poleaxe), two castle courtyards (Snowcrest, Sunhold), a
+  spring village (Blossomby), a winter river bridge (Frostford), swamp ruins in the rain
+  (Witchfen), an autumn clearing (Amberglade), a summer arena (the Greenring) and a spring
+  warfield for the Lists (Blossomfield). Each is in its modes' rotations with its fighter range
+  and weather, and has its vote picture.
+- **Studio-only (save the place):** the ten maps in ServerStorage ▸ Maps and their pictures in
+  ReplicatedStorage ▸ MapShots (built in Edit: `require(Build.Maps).build(name)`).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build | ModuleScript | the ten in `MAPS` and `ORDER` |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the modes' `maps`, `MAP_TITLES`, `MAP_WEATHER`, `MAP_FIGHTERS` |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a line for them |
+| [README.md](README.md), [HANDOFF.md](../docs/HANDOFF.md) | | doc | the map lists |
+
+---
+
+## Before that: Crownfall's island sits in a sea
 
 - **Crownfall's island no longer floats**: its sea runs on past the edge to the sky, with headlands
   and mountains rising out of it all round, a few wooded islets, smoke off a far coast.

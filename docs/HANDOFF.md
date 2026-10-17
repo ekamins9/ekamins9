@@ -199,7 +199,7 @@ step):
 - **Where the armies are:** War (`War.client`), Siege (`SiegeEpic.client`: wall archers,
   ladders, flank battles, burning towers; the server describes the castle on the Map:
   `Siege.describeCastle`), the Prologue's Iron Host (`Prologue.client`), the Lists' warfield maps
-  (`Warfield.client` + MapForge `warfield`: Redmeadow, Ironvale, Grimfield, Sunfall, Ravenfield),
+  (`Warfield.client` + MapForge `warfield`: Redmeadow, Ironvale, Grimfield, Sunfall, Ravenfield, Blossomfield),
   arena stands (`ArenaCrowd.client`), the Horde's host past the gates (`HordeHost.client`), the
   Courtyard's sentries (`CourtyardGuards.client`).
 - **`ReplicatedStorage ▸ WarFX`** — volleys, fire, blasts (`scorch`/`floor` options), smoke

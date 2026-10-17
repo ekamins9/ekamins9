@@ -87,7 +87,7 @@ GameConfig.MODES = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
 		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater",
-			"Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+			"Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield", "Snowcrest", "Sunhold", "Greenring", "Blossomfield"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	-- the dungeon game's lodge (Game ▸ Modes ▸ Tavern): walk about, trade, ready up
 	Tavern = {
@@ -105,31 +105,31 @@ GameConfig.MODES = {
 	FFA = {
 		name = "Free-for-All", category = "Battlefield", teams = 0, maxPlayers = 24, minPlayers = 1,
 		description = "Everyone for themselves. Most kills when the clock runs out wins.",
-		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Cinderfall", "Duneshrine", "HollowGrove", "Harvestvale", "Thornpit"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
+		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Cinderfall", "Duneshrine", "HollowGrove", "Harvestvale", "Thornpit", "Sunhold", "Blossomby", "Witchfen", "Amberglade", "Greenring"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 4,
 		botFill = 8,   -- fighters on the field, bots making up the numbers (Game ▸ BotFill)
 	},
 	Duel = {
 		name = "Duel Yard", category = "Arena", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Honor rules: one on one. Stay out of other people's fights.",
-		maps = {"RoseCourt", "Sandpit", "Millfield", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Cinderfall"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"RoseCourt", "Sandpit", "Millfield", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Cinderfall", "Greenring", "Snowcrest"}, roundLength = 6 * 60, intermission = 15, respawnDelay = 3,
 		botFill = 4,
 	},
 	TDM = {
 		name = "Team Deathmatch", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Two armies, one ticket pool each. Bleed theirs dry first.",
-		maps = {"Highbridge", "Millfield", "Sandpit", "RoseCourt", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen", "Redgorge", "Mistbridge", "Cinderfall"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
+		maps = {"Highbridge", "Millfield", "Sandpit", "RoseCourt", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen", "Redgorge", "Mistbridge", "Cinderfall", "Snowcrest", "Sunhold", "Blossomby", "Frostford"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6,
 		tickets = 60, waveSpawn = 8, botFill = 12,
 	},
 	LTS = {
 		name = "Last Team Standing", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 2,
 		description = "No respawns. Win the round by wiping the other side. First to 4 rounds.",
-		maps = {"Highbridge", "Sandpit", "Millfield", "Colosseum", "Abbeyfield", "Blackwater", "Redgorge", "Mistbridge", "Duneshrine", "Pinewatch", "Bloodpit", "Mirepit"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
+		maps = {"Highbridge", "Sandpit", "Millfield", "Colosseum", "Abbeyfield", "Blackwater", "Redgorge", "Mistbridge", "Duneshrine", "Pinewatch", "Bloodpit", "Mirepit", "Snowcrest", "Sunhold", "Frostford", "Amberglade"}, roundLength = 3 * 60, intermission = 12, respawnDelay = 0,
 		roundsToWin = 4, botFill = 8,
 	},
 	Horde = {
 		name = "Horde", category = "Horde", teams = 0, maxPlayers = 6, minPlayers = 1,
 		description = "You and your party defend the camp against waves of bots: keep the campfire burning, the caravan whole, the villagers safe. Each wave is bigger and better trained; every fifth brings a Warlord. Lose what you're defending and the horde wins.",
-		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak", "HollowGrove", "Pinewatch", "Marshfen", "Cinderfall", "Bloodpit", "Frosthollow"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
+		maps = {"Wildwood", "Colosseum", "Ravenhold", "Stormbreak", "HollowGrove", "Pinewatch", "Marshfen", "Cinderfall", "Bloodpit", "Frosthollow", "Blossomby", "Witchfen", "Amberglade"}, roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false,   -- the party can't hurt each other; the bots can hurt you
 		-- what you defend on each map (Game ▸ HordeObjective: "Campfire" | "Caravan" | "Villagers";
 		-- a map's own Spots ▸ HordeObjective with a Kind attribute wins), and how much it takes
@@ -140,7 +140,7 @@ GameConfig.MODES = {
 	Siege = {
 		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Attackers push the ram, break the gate and take the castle stage by stage. Defenders hold until the clock runs out. Every stage taken adds time; sides swap each round.",
-		maps = {"Frostgate", "Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate", "Duskwall", "Mournhold"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"Frostgate", "Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate", "Duskwall", "Mournhold", "Frostmarch", "Gloamhold"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
 		waveSpawn = 10,   -- reinforcements come in waves (after the first moments of a round)
 		botFill = 12,
 		-- the attackers' side of it, over the map's own stage numbers (Map ▸ Objectives):
@@ -174,14 +174,14 @@ GameConfig.MODES = {
 	Kingslayer = {
 		name = "Kingslayer", category = "Adventure", teams = 0, maxPlayers = 16, minPlayers = 1,
 		description = "Take the crown and you're the King: tough, gold, and everyone's target. Kill the King to take it. A point a second while you hold it; first to 150.",
-		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum", "Moonring", "Dustbowl", "Cinderfall", "Duneshrine", "HollowGrove", "Harvestvale", "Abbeyfield", "Pinewatch"},
+		maps = {"Sandpit", "Millfield", "Highbridge", "Colosseum", "Moonring", "Dustbowl", "Cinderfall", "Duneshrine", "HollowGrove", "Harvestvale", "Abbeyfield", "Pinewatch", "Snowcrest", "Blossomby", "Witchfen", "Amberglade"},
 		roundLength = 6 * 60, intermission = 15, respawnDelay = 4, hidden = true, botFill = 6, fillAnywhere = true, pointsToWin = 150,
 	},
 	-- PLAGUE NIGHT (Game ▸ Modes ▸ Plague): the living against the plague, till dawn
 	Plague = {
 		name = "Plague Night", category = "Adventure", teams = 2, maxPlayers = 16, minPlayers = 1,
 		description = "Night. The fallen rise as ghouls and hunt the living; more come out of the dark as the night deepens. Survive until dawn.",
-		maps = {"Millfield", "Harvestvale", "Abbeyfield", "Blackwater", "Marshfen", "Mistbridge", "HollowGrove", "Pinewatch", "Frosthollow", "Redgorge"},
+		maps = {"Millfield", "Harvestvale", "Abbeyfield", "Blackwater", "Marshfen", "Mistbridge", "HollowGrove", "Pinewatch", "Frosthollow", "Redgorge", "Blossomby", "Frostford", "Witchfen"},
 		roundLength = 5 * 60, intermission = 15, respawnDelay = 3, hidden = true,
 	},
 	-- THE INVASIONS (Game ▸ Modes ▸ Invasion, on the Horde's rules): an army, what you defend
@@ -236,7 +236,7 @@ GameConfig.MODES = {
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
-		maps = {"Millfield", "Colosseum", "Harvestvale", "Frosthollow", "Marshfen", "Duneshrine", "Cinderfall", "HollowGrove", "Pinewatch", "Abbeyfield", "Moonring"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6, botFill = 10,
+		maps = {"Millfield", "Colosseum", "Harvestvale", "Frosthollow", "Marshfen", "Duneshrine", "Cinderfall", "HollowGrove", "Pinewatch", "Abbeyfield", "Moonring", "Snowcrest", "Blossomby", "Witchfen", "Amberglade"}, roundLength = 8 * 60, intermission = 15, respawnDelay = 6, botFill = 10,
 		pointsToWin = 200, waveSpawn = 8,
 	},
 }
@@ -252,6 +252,9 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
 	-- the warfields: a duel ring in the middle of a battle (MapForge "warfield", Warfield.client)
 	Redmeadow = "Redmeadow", Ironvale = "Ironvale", Grimfield = "Grimfield", Sunfall = "Sunfall", Ravenfield = "Ravenfield",
+	-- the new muster (MapForge, 2026-10-18)
+	Frostmarch = "Frostmarch", Gloamhold = "Gloamhold", Snowcrest = "Snowcrest", Sunhold = "Sunhold", Blossomby = "Blossomby",
+	Frostford = "Frostford", Witchfen = "Witchfen", Amberglade = "Amberglade", Greenring = "The Greenring", Blossomfield = "Blossomfield",
 	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
 	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera", Stormwatch = "Stormwatch",
 	-- War's battlefields (Game ▸ WarMap)
@@ -269,6 +272,7 @@ GameConfig.MAP_WEATHER = {
 	Stormhold = "storm", Stormbreak = "storm", Ravenfield = "storm", Mistmoor = "rain", Marshfen = "rain", Mistbridge = "rain", Blackwater = "rain",
 	Emberkeep = "embers", Ashenford = "embers", Cinderfall = "embers", Grimfield = "embers",
 	Blossomgate = "petals", RoseCourt = "petals",
+	Frostmarch = "snow", Snowcrest = "snow", Frostford = "snow", Witchfen = "rain", Blossomby = "petals", Blossomfield = "petals",
 }
 GameConfig.MODE_WEATHER = {Plague = "storm", InvUndead = "rain"}
 
@@ -288,6 +292,8 @@ GameConfig.MAP_FIGHTERS = {
 	Greenhollow = {8, 40}, Stormhold = {8, 40}, Ashenford = {8, 40}, Rimeholt = {8, 40}, Blossomgate = {8, 40}, Duskwall = {8, 40}, Mournhold = {8, 40},
 	Redfield = {8, 48}, Ironridge = {8, 48}, Frostmere = {8, 48}, Ashvale = {8, 48}, Kingsbridge = {8, 48}, Nightfall = {8, 48}, Sunreach = {8, 48},
 	Stormvale = {8, 48}, Duskmoor = {8, 48}, Mistmarsh = {8, 48}, Amberwood = {8, 48},
+	Frostmarch = {8, 40}, Gloamhold = {8, 40}, Snowcrest = {6, 24}, Sunhold = {6, 24}, Blossomby = {8, 32}, Frostford = {6, 24},
+	Witchfen = {8, 32}, Amberglade = {8, 32}, Greenring = {2, 12}, Blossomfield = {2, 6},
 }
 function GameConfig.mapFighters(key)
 	local r = GameConfig.MAP_FIGHTERS[key]
