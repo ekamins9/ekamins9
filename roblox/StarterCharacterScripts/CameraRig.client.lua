@@ -18,6 +18,10 @@
        LocalTurnCapUntil   (client, weapon) os.clock() deadline for the turn cap
        LocalKickAt / LocalKickRise (client, weapon) procedural leg kick
        LocalImpactAt / LocalImpactKind (client, weapon) our swing landed / was stopped
+       LocalWindAt / LocalReleaseAt + LocalAttackName (client, weapon) our blow drawn back / let
+                           go: the view leans against the wind-up, then is dragged along the
+                           blade's path (a side swing turns and rolls it, an overhead nods it
+                           down, a stab punches in) — the weight of the swing
        HitTick / HitDir    (server) we got hit, and from which direction
 
      On death the camera rides the head (first person, wherever it rolls),
@@ -245,6 +249,37 @@ character:GetAttributeChangedSignal("LocalImpactAt"):Connect(function()
 	local k = IMPACT_KICK[kind] or IMPACT_KICK.hit
 	sHit.v = sHit.v - k * 26 * S("Shake")
 	if FOV_PUNCH[kind] then sFov.v = sFov.v + FOV_PUNCH[kind] * 22 * S("Shake") end
+end)
+-- the weight of our own swing: lean back against the wind-up, then the view dragged along the
+-- blade's path as it goes (yaw/roll for a side swing, a nod for an overhead, a punch for a stab).
+-- The name is <Side><Kind> (RightSwing: from the right, the blade travels left)
+local SWING_DRAG = {
+	Swing     = {yaw = 0.08,  roll = 0.07,  pitch = 0},
+	Overhead  = {yaw = 0,     roll = 0.02,  pitch = -0.09},
+	Underhand = {yaw = 0.04,  roll = 0.035, pitch = 0.05},
+	Stab      = {yaw = 0,     roll = 0,     pitch = -0.03, fov = -3},
+}
+local sSwYaw, sSwPitch = newSpring(), newSpring()
+local function swingDrag()
+	local n = character:GetAttribute("LocalAttackName") or ""
+	local side = n:sub(1, 4) == "Left" and -1 or 1
+	local kind = n:gsub("^Left", ""):gsub("^Right", "")
+	return SWING_DRAG[kind] or SWING_DRAG.Swing, side
+end
+character:GetAttributeChangedSignal("LocalWindAt"):Connect(function()
+	local d, side = swingDrag()
+	local k = 22 * 0.3 * S("Shake")
+	sSwYaw.v = sSwYaw.v - side * d.yaw * k
+	sSwPitch.v = sSwPitch.v - d.pitch * k
+	sRoll.v = sRoll.v - side * d.roll * k
+end)
+character:GetAttributeChangedSignal("LocalReleaseAt"):Connect(function()
+	local d, side = swingDrag()
+	local k = 22 * S("Shake")
+	sSwYaw.v = sSwYaw.v + side * d.yaw * k
+	sSwPitch.v = sSwPitch.v + d.pitch * k
+	sRoll.v = sRoll.v + side * d.roll * k
+	if d.fov then sFov.v = sFov.v + d.fov * 22 * S("Shake") end
 end)
 -- our perfect parry (the server stamps it): a sharp punch, the moment reads
 character:GetAttributeChangedSignal("PerfectParryAt"):Connect(function()
@@ -658,6 +693,8 @@ local function loopBody(dt)
 	local bobX = springC(sStepX, 0, dtc, STEP_STIFF, STEP_DAMP)
 	local kick = springC(sKick,  0, dtc, STEP_STIFF, STEP_DAMP)
 	local hitKick = springC(sHit, 0, dtc, STEP_STIFF, STEP_DAMP)
+	local swYaw = springC(sSwYaw, 0, dtc, 160, 18)
+	local swPitch = springC(sSwPitch, 0, dtc, 160, 18)
 	local torsoBobY = math.abs(bobY) * (BOB_TORSO / math.max(BOB_CAM_Y, 0.001))
 	local dirFwd  = -moveDir.Z * BOB_DIR_FWD  * bobAmt * math.abs(bobY)
 	local dirSide =  moveDir.X * BOB_DIR_SIDE * bobAmt * math.abs(bobY)
@@ -784,9 +821,9 @@ local function loopBody(dt)
 		local pull = EYE_PULL_MAX * dial * (1 - downFrac)
 		local nose = LOOKDOWN_FWD * downFrac
 		Camera.CFrame = CFrame.new(eyePos)
-			* CFrame.Angles(0, rot.Y, 0)
+			* CFrame.Angles(0, rot.Y + swYaw, 0)
 			* CFrame.new(0, 0, -nose)   -- horizontal, past the chest, when looking down
-			* CFrame.Angles(rot.X + leanPitch + kick + hitKick, 0, roll*FP_ROLL_MULT)
+			* CFrame.Angles(rot.X + leanPitch + kick + hitKick + swPitch, 0, roll*FP_ROLL_MULT)
 			* CFrame.new(hOff*fpClunk, EYE_UP + vOff*fpClunk, -EYE_FWD + pull + zOff*fpClunk)
 	else
 		eyePos = nil
@@ -795,7 +832,7 @@ local function loopBody(dt)
 		-- where the camera wants to be (over the shoulder, back), and a sweep from the body to it:
 		-- a wall in the way pulls the whole offset in, the shoulder too (a corridor, a dungeon's
 		-- walls: the shoulder offset alone used to slide it through the wall beside you)
-		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y, 0) * CFrame.Angles(rot.X + leanPitch + hitKick, 0, roll)
+		local orbit = CFrame.new(focus) * CFrame.Angles(0, rot.Y + swYaw * 0.6, 0) * CFrame.Angles(rot.X + leanPitch + hitKick + swPitch * 0.6, 0, roll)
 		local off = Vector3.new(SHOULDER_X + hOff, SHOULDER_Y + vOff, camDist + zOff)
 		local seg = orbit:VectorToWorldSpace(off)
 		local k = 1

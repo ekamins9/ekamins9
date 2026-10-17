@@ -1,4 +1,19 @@
-# Updated scripts: the dungeons are dark now
+# Updated scripts: the weight of your swing, and the battle beyond every team fight
+
+- **Your swings have weight**: the view leans back as you draw a blow, then is dragged along the blade's path as it goes (a side swing turns and rolls it, an overhead nods it down, a stab punches in). Small, quick, and scaled by the Shake setting.
+- **A bigger battle round every team fight** (Team Deathmatch, King of the Hill, Last Team Standing): smoke columns beyond the map's edge, the din of battle and an army's roar off to one side, volleys arcing high over the whole field, a trebuchet's fire streaking across, a distant horn.
+- **Checked in Play** on Abbeyfield (TDM): the drag measured on the camera; the burning column on the horizon.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | swing drag |
+| [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | marks wind-up and release |
+| [BattleAmbience.client.lua](StarterPlayerScripts/BattleAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the dungeons are dark now
 
 - **Dark floors** (The Depths, Deadvault): low ambient light and close fog; torches throw pools of light on the walls with darkness between, and in a raid some have guttered out.
 - **Your lantern**: every adventurer carries a warm light, so you see what's around you and not much more.
@@ -32,24 +47,3 @@
 | [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
 
 Studio-only (save the place): ServerStorage ▸ Maps ▸ Redmeadow, Ironvale, Grimfield (built with `require(game.ServerScriptService.Build.Maps).build(name)`); ReplicatedStorage ▸ MapShots ▸ Redmeadow, Ironvale, Grimfield.
-
----
-
-## Before that: the Siege is a real siege now
-
-- **Defenders' archers line the castle walls** and loose on the field; the attackers' archers loose back.
-- **Ladders against the walls** with men swarming up them under a block of raised shields: some go over the top and fight on the walk, some are thrown off.
-- **Battles on both flanks** of the castle: the defenders' sally against the attackers' lines, with a charge, the crash, and fresh charges.
-- **The castle burns**: towers on fire with smoke rising high, villages burning beyond, stones and fire falling on the towers and walls.
-- **It follows the fight**: the gate falls → the attackers cheer, the wall archers are cut down, the ladders all go over, the reserves charge the walls; the great hall stormed → its roof catches fire; the winners cheer.
-- **Fixed**: the "split arrow" power crashed its extra arrows (they left after the draw had ended), so they never flew. Fireballs that hit a roof no longer leave a burn mark hanging in the air.
-- **Checked in Play** on Frostgate: from the spawn, from the wall, the gate breaking, the hall burning. About 45 fps in Studio play with 40 bots.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | describes the castle on the map |
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | ladders, shields overhead, rout, men on walls |
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | blasts without a burn mark |
-| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | split-arrow fix |
-| [README.md](README.md) | | doc | |

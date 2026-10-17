@@ -1749,6 +1749,14 @@ the map's Shot1 down to just behind you, the mode and the map as a title and wha
 do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four seconds; any key
 skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …).
 
+## The battle beyond a team fight (`BattleAmbience.client`)
+In Team Deathmatch, King of the Hill and Last Team Standing your fight is one corner of a bigger
+battle, on your screen only: columns of smoke rising beyond the map's edge (one with its fire
+showing), the din of the battle beyond and an army's roar off to one side, a volley now and then
+arcing high over the whole field to land far beyond it, a trebuchet's fire streaking across, a
+distant horn. It reads the Map's `Centre` and `Radius` (MapLoader). War, Siege and the warfields
+draw their own.
+
 ## Siege (Team Objective, after Chivalry 2)
 
 **The war round it** (`Siege:startEngines`, from the map's spawns): the attackers' trebuchets far
@@ -2648,3 +2656,4 @@ character:SetAttribute("SpeedMult_Armor", nil)   -- unequip
 | `LocalTurnCapUntil` | CombatClient | CameraRig | turn cap deadline on the **client clock** |
 | `LocalKickAt`, `LocalKickRise` | CombatClient | CameraRig | procedural leg kick |
 | `LocalImpactAt`, `LocalImpactKind` | CombatClient | CameraRig | attacker feedback (impact kick) |
+| `LocalWindAt`, `LocalReleaseAt` (+ `LocalAttackName`) | CombatClient | CameraRig | the weight of your swing: the view leans against the wind-up, then is dragged along the blade's path (side swing: turn and roll; overhead: a nod; stab: a punch in), scaled by the Shake setting |

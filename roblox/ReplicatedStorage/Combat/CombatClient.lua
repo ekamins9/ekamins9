@@ -190,6 +190,8 @@ function CombatClient.attach(Tool, weaponConfig)
 		end
 		sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
 		setTrail(true)
+		-- (the blow goes: the camera rig drags the view along with it)
+		char:SetAttribute("LocalReleaseAt", os.clock())
 	end
 
 	-- Raycasts never register a surface they START inside, and at melee range
@@ -354,6 +356,9 @@ function CombatClient.attach(Tool, weaponConfig)
 		local fadeA  = blendFor(speed, active)
 		local fadeIn = windup > 0 and windup or fadeA
 		lastSpeed = speed
+		-- (the blow drawn back: the camera rig leans the view against it)
+		local me = player.Character
+		if me and windup > 0 then me:SetAttribute("LocalWindAt", os.clock()) end
 		local t = cached(releaseId)
 		-- the outgoing clip fades over the same time the new one fades in — unless
 		-- it IS the new one (feint → same attack): then it just turns back around
