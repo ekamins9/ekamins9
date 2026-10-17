@@ -2191,7 +2191,7 @@ of its corridors, none by a haven. Each theme has its favourites (the module's W
   across (18). Jump it.
 - **Fire grates**: two side by side breathing fire in turn (a glow, then the jet: 9 every half
   second). Cross on the cool side.
-- **Chandelier**: a raid's great hall, library or vault (Deadvault) hangs a chandelier or two
+- **Chandelier**: a dungeon's great hall, library or vault (The Depths, Deadvault) hangs a chandelier or two
   (one model each, Props ▸ Chandelier); about a third hang loose (`Traps.CHANDELIER`). Walk under
   one and its chain creaks (WarAudio ▸ Creak), grit sifts down and it shudders; 1.1 s later it
   drops and crashes onto whatever is below (32 to anyone within 5.5 studs, thrown clear). It stays
