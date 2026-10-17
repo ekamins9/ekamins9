@@ -1,6 +1,6 @@
---[[ BATTLE AMBIENCE — the war going on round a team fight, on your screen only (Team Deathmatch,
-     King of the Hill, Last Team Standing: War, Siege and the warfields draw their own): your
-     fight is one corner of a bigger battle.
+--[[ BATTLE AMBIENCE — the war going on round a fight, on your screen only (Team Deathmatch,
+     King of the Hill, Last Team Standing, Free-for-all, Kingslayer: War, Siege and the warfields
+     draw their own): your fight is one corner of a bigger battle.
 
        the horizon      columns of smoke rising beyond the map's edge, a fire under one
        the sky          now and then a volley arcs high over the whole field from one side to the
@@ -17,7 +17,7 @@ local Device = require(ReplicatedStorage:WaitForChild("Device"))
 
 local round = ReplicatedStorage:WaitForChild("Round")
 local V3 = Vector3.new
-local MODES = {TDM = true, KOTH = true, LTS = true}
+local MODES = {TDM = true, KOTH = true, LTS = true, FFA = true, Kingslayer = true}
 
 local amb = {on = false, token = 0}
 

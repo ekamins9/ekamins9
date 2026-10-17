@@ -1792,7 +1792,7 @@ camera; further off a cheering man is a cached arms-up pose bobbing. Measured in
 (FFA, bots): 56–60 fps in Studio play, the crowd ~0 ms idle and ~2 ms in a roar.
 
 ## The battle beyond a team fight (`BattleAmbience.client`)
-In Team Deathmatch, King of the Hill and Last Team Standing your fight is one corner of a bigger
+In Team Deathmatch, King of the Hill, Last Team Standing, Free-for-all and Kingslayer your fight is one corner of a bigger
 battle, on your screen only: crows wheeling high over the field (`WarFX.crows`; War, Siege and the
 warfields have their flocks too), columns of smoke rising beyond the map's edge (one with its fire
 showing), the din of the battle beyond and an army's roar off to one side, a volley now and then
