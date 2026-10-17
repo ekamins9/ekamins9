@@ -32,6 +32,8 @@
        vermin           now and then a few rats squeak and scurry across the floor ahead of you,
                         wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
                         water drips (WarAudio ▸ Drip; not in the Ember Forge)
+       footsteps        now and then, while nothing's fighting near you, slow steps on the stone
+                        somewhere behind you, coming a little closer, then they stop
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
                         walks a few steps across your path and is gone (WarCrowd.ghost; never a
                         fighter, nothing anyone else sees)
@@ -375,11 +377,49 @@ local function vermin(token)
 	end
 end
 
+-- FOOTSTEPS behind you: a few slow steps, a little closer each, then nothing
+local Footsteps = require(ReplicatedStorage:WaitForChild("Footsteps"))
+local function steps()
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+	-- (not with something already coming for you)
+	local npcs = workspace:FindFirstChild("NPCs")
+	for _, m in ipairs(npcs and npcs:GetChildren() or {}) do
+		local r = m:FindFirstChild("HumanoidRootPart")
+		if r and m:GetAttribute("Alert") == "!" and (r.Position - root.Position).Magnitude < 60 then return end
+	end
+	local look = cam.CFrame.LookVector
+	local back = -V3(look.X, 0, look.Z)
+	if back.Magnitude < 0.2 then return end
+	back = back.Unit
+	ghostRay.FilterDescendantsInstances = {char, cam, npcs}
+	local hit = workspace:Raycast(root.Position, back * 20, ghostRay)
+	local d = math.min(hit and (hit.Position - root.Position).Magnitude - 2 or 16, 16)
+	if d < 7 then return end
+	local spot = Instance.new("Part")
+	spot.Anchored, spot.CanCollide, spot.CanQuery, spot.CanTouch, spot.Transparency = true, false, false, false, 1
+	spot.Size = V3(0.2, 0.2, 0.2)
+	spot.Parent = workspace.Terrain
+	-- (on whatever's underfoot there: stone below, mud in a plagued village)
+	local ground = workspace:Raycast(root.Position + back * d + V3(0, 2, 0), V3(0, -10, 0), ghostRay)
+	local mat = ground and ground.Material or Enum.Material.Slate
+	local n = math.random(3, 5)
+	for i = 1, n do
+		if not mood.on then break end
+		spot.Position = root.Position + back * (d - i * 0.9) + V3(0, -2.5, 0)
+		Footsteps.play(spot, mat, {Volume = 0.35 + i * 0.05, Speed = 0.92, MaxDistance = 40})
+		task.wait(0.55 + math.random() * 0.15)
+	end
+	task.delay(2, function() spot:Destroy() end)
+end
+
 local function haunt(token)
 	task.wait(30 + math.random() * 30)
 	while mood.on and mood.token == token do
 		local r = math.random()
-		if r < 0.35 then pcall(apparition) elseif r < 0.65 then pcall(bats) end
+		if r < 0.3 then pcall(apparition) elseif r < 0.55 then pcall(bats) elseif r < 0.8 then task.spawn(pcall, steps) end
 		task.wait(40 + math.random() * 45)
 	end
 end
