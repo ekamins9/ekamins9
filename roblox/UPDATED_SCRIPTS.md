@@ -1,4 +1,15 @@
-# Updated scripts: rats and drips in the dark
+# Updated scripts: footprints in the snow, sand and mud
+
+- **Everywhere**: every body near you (yours too) leaves prints in snow, sand, mud and bare earth, fading over a while (snow keeps them longest); running kicks up a little puff of snow, sand or dust. A trampled road in the snow fills with them.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Footsteps.client.lua](StarterPlayerScripts/Footsteps.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | prints, puffs |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: rats and drips in the dark
 
 - **Every dungeon floor** (and Plague Night): now and then a few rats squeak and scurry across the floor ahead of you, wall to wall, through your light; water drips somewhere close (not in the Ember Forge).
 
