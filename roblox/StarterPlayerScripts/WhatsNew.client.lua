@@ -17,16 +17,16 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-18",
+	version = "2026-10-18b",
 	title = "ARMS, BANNERS AND THE LAND BEYOND",
 	lines = {
-		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn. 33 new"},
-		{"👑", "Your own coat of arms", "in LOOK: on your shield, your Courtyard banner and the new Raise the Standard effect"},
-		{"🏰", "Two houses at war", "every banner flies its house's arms; each side's plain shields carry them to battle"},
-		{"🗺", "Ten new maps", "storm Frostmarch and Gloamhold, hold Snowcrest, fight in Witchfen's rain"},
-		{"🏞", "No map floats", "the land runs on past every edge, and the fields are strewn with the last fight"},
+		{"✨", "Steel on steel", "a blocked blow glances off where the blades cross: sparks, the ring of the blade"},
+		{"💥", "Kick, then strike", "press a strike during your kick: it goes in the moment their guard drops"},
+		{"🔥", "Warfront: massive battles", "the great battle is a Warfront mode now, beside the new Capture the Standard"},
+		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn"},
+		{"👑", "Your own coat of arms", "in LOOK: on your shield, your banner, and two houses at war on every field"},
+		{"🗺", "Ten new maps", "and the land runs on past every edge, strewn with the last fight"},
 		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
-		{"🚩", "Capture the Standard", "a new Warfront mode: take their war banner and carry it home. Three captures win"},
 	},
 }
 

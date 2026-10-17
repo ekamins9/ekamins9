@@ -361,6 +361,28 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   the same edits and checked byte for byte, so Studio matches the repo; reconnect the plugin
   (Rojo → Connect) before the next edit.
 
+## 4i. The feel pass (2026-10-18, autonomous, after the user's notes)
+
+- **War joined Warfront**: the massive battle is one of Warfront's voted modes ("Massive Battle"),
+  a fresh Warfront server opens with it; one big WARFRONT tile on PLAY.
+- **Deadvault starts from nothing**: no power (unless a tome is looted), throwable, shield,
+  sidearm, skins, armour finish or colours from your loadout; the class's plain pieces and the run's
+  weapons; no weekend roulette. The Depths and the other adventures are unchanged.
+- **Kick, then strike**: a strike pressed during a kick goes off as the leg comes back; a kick that
+  lands recovers in 0.12 s and quickens the next windup (CombatServer `KICK_HIT_RECOVERY`,
+  `KICK_FOLLOW_*`); bots follow their kicks.
+- **Steel on steel** (`ClashFX.client`, `CombatServer.clash`): blocks, parries, chambers, shields and
+  guard breaks glance off where the blades really cross (closest points of the two blades), the
+  attacker's arm knocked along the bounce, the blades ringing, sparks cooling as they fall, a
+  glint on a perfect parry.
+- **The tutorial's first fight** (Prologue): you wake in first person in a hollow barracks, take a
+  sword from the rack, step out (third person), and a raider fights you **in slow time**, each beat
+  held with your key big on screen (block, strike, stab, overhead, parry, riposte, kick, the blow
+  after), then full speed into the trebuchets and the siege. New pieces: a fighter's `Tempo` and
+  `Hold` attributes (CombatServer: slow time, a held moment), `Bots.spawn{scripted}`, CameraRig's
+  `ViewWant`. Verified end to end in Play with a temporary prompt relay (removed).
+- Rojo is live again (the plugin reconnected); edits sync on save.
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.

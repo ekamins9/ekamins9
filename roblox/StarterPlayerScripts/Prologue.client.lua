@@ -9,6 +9,10 @@
          the yard; the trebuchets lobbing fire; war cries from the camp; the score and the roar of
          the battle (ReplicatedStorage ▸ WarAudio, Studio-only: anything missing is just quiet)
        • the lesson card (top): the step, what to do in your own controls (InputHints), how far along
+       • THE PROMPT (the duel's beats, the dodge): the key to press, big, under the middle of the
+         screen, in your own controls; green when it's done, red with a word when it went wrong
+       • SLOW TIME (Round ▸ PrologueSlow, the duel): the colour drains and cools, bars close in at
+         top and bottom; while the raider's moment is held (his Hold) it drains further
        • Captain Hale's lines (bottom), a beacon over where to go, an arrow at the screen's edge
          when it's behind you
        • the cutscenes (opening, breach, champion, victory): black bars, the camera flies, the
@@ -45,8 +49,8 @@ local EASE = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out
 local function inPrologue() return round:GetAttribute("Mode") == "Prologue" end
 
 -- the lessons, in order (for "3 / 13"), and what a beacon over each place is called
-local LESSONS = {"wake", "swing", "stab", "overhead", "dodge", "block", "parry", "riposte", "kick", "finish", "gatehouse", "hold", "champion"}
-local PLACE = {wake = "THE ARMOURY", swing = "RAIDER", stab = "RAIDER", overhead = "RAIDER", block = "THE BREACH", gatehouse = "THE GATEHOUSE"}
+local LESSONS = {"arm", "out", "duel", "dodge", "gatehouse", "hold", "champion"}
+local PLACE = {out = "THE YARD", gatehouse = "THE GATEHOUSE"}
 
 -- where things are (the map carries its story points as attributes: StormwatchMap)
 local function mapModel() return workspace:FindFirstChild("Map") end
@@ -154,6 +158,44 @@ do
 	a.Size = UDim2.fromOffset(44, 44); a.AnchorPoint = Vector2.new(0.5, 0.5); a.Visible = false
 	ui.edge = a
 end
+-- THE PROMPT: the verb, the keycap, a line under it
+do
+	local holder = Instance.new("CanvasGroup")
+	holder.Name = "Prompt"
+	holder.BackgroundTransparency = 1
+	-- (its foot just above the captain's lines)
+	holder.AnchorPoint = Vector2.new(0.5, 1)
+	holder.Position = UDim2.new(0.5, 0, 1, -268)
+	holder.Size = UDim2.fromOffset(520, 160)
+	holder.GroupTransparency = 1
+	holder.Visible = false
+	holder.ZIndex = 8
+	holder.Parent = gui
+	local verb = label(holder, "", 46, Theme.FONT_TITLE, WHITE, 52)
+	local key = Instance.new("Frame")
+	key.AnchorPoint = Vector2.new(0.5, 0)
+	key.Position = UDim2.new(0.5, 0, 0, 58)
+	key.Size = UDim2.fromOffset(150, 52)
+	key.BackgroundColor3 = Color3.fromRGB(22, 20, 28)
+	key.BackgroundTransparency = 0.08
+	corner(key, 12)
+	local ks = Instance.new("UIStroke"); ks.Color = GOLD; ks.Thickness = 2.5; ks.Parent = key
+	local kt = label(key, "", 24, Theme.FONT_TITLE, GOLD, 52)
+	kt.Size = UDim2.fromScale(1, 1)
+	local kscale = Instance.new("UIScale"); kscale.Parent = key
+	key.Parent = holder
+	local line = label(holder, "", 19, Theme.FONT_BODY, Color3.fromRGB(226, 232, 245), 26); line.Position = UDim2.fromOffset(0, 120)
+	local scale = Instance.new("UIScale"); scale.Parent = holder
+	ui.prompt = {holder = holder, verb = verb, key = key, keyText = kt, keyStroke = ks, keyScale = kscale, line = line, scale = scale, token = 0}
+end
+-- SLOW TIME: bars that close in at top and bottom (the colour is Lighting's)
+do
+	local top = Instance.new("Frame"); top.BackgroundColor3 = Color3.new(); top.BorderSizePixel = 0; top.BackgroundTransparency = 0.1
+	top.Size = UDim2.new(1, 0, 0, 0); top.ZIndex = 2; top.Parent = gui
+	local bottom = top:Clone(); bottom.AnchorPoint = Vector2.new(0, 1); bottom.Position = UDim2.fromScale(0, 1); bottom.Parent = gui
+	ui.slowTop, ui.slowBottom = top, bottom
+end
+
 -- THE CUTSCENE'S FRAME: black bars, subtitles, the title card, a veil to fade through, skip
 do
 	local cine = Instance.new("Frame"); cine.Name = "Cine"; cine.BackgroundTransparency = 1; cine.Size = UDim2.fromScale(1, 1); cine.ZIndex = 20; cine.Visible = false; cine.Parent = gui
@@ -298,6 +340,148 @@ local function stepDone(text)
 		if ui.title.TextColor3 == Theme.GOOD then TweenService:Create(ui.card, EASE, {Position = UDim2.new(0.5, 0, 0, -160)}):Play() end
 	end)
 end
+
+-- THE PROMPT: show the key to press; done (green), missed (red, a word why), hidden
+local PR = {}
+function PR.hide(now)
+	local p = ui.prompt
+	p.token += 1
+	p.up = false
+	if now then p.holder.Visible = false; p.holder.GroupTransparency = 1; return end
+	local tok = p.token
+	TweenService:Create(p.holder, TweenInfo.new(0.3), {GroupTransparency = 1}):Play()
+	task.delay(0.32, function() if p.token == tok then p.holder.Visible = false end end)
+end
+local function promptKey(action)
+	local p = ui.prompt
+	p.keyText.Text = action and InputHints.name(action) or ""
+	p.key.Visible = p.keyText.Text ~= ""
+	local w = math.max(64, p.keyText.TextBounds.X + 40)
+	p.key.Size = UDim2.fromOffset(w, 52)
+end
+function PR.show(d)
+	local p = ui.prompt
+	p.token += 1
+	p.up, p.action, p.sub = true, d.action, d.sub
+	p.verb.Text = d.verb or ""
+	p.verb.TextColor3 = WHITE
+	p.keyStroke.Color, p.keyText.TextColor3 = GOLD, GOLD
+	p.line.Text = InputHints.fill(d.sub or "")
+	p.line.TextColor3 = Color3.fromRGB(226, 232, 245)
+	promptKey(d.action)
+	p.holder.Visible = true
+	p.holder.GroupTransparency = 1
+	p.scale.Scale = 1.3
+	TweenService:Create(p.holder, TweenInfo.new(0.22), {GroupTransparency = 0}):Play()
+	TweenService:Create(p.scale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	UIFX.play("Whoosh")
+end
+function PR.done(text)
+	local p = ui.prompt
+	p.token += 1
+	local tok = p.token
+	p.up = false
+	p.holder.Visible = true
+	p.holder.GroupTransparency = 0
+	p.verb.Text = text or ""
+	p.verb.TextColor3 = Theme.GOOD
+	p.keyStroke.Color, p.keyText.TextColor3 = Theme.GOOD, Theme.GOOD
+	p.line.Text = ""
+	p.scale.Scale = 1.18
+	TweenService:Create(p.scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	UIFX.play("Rise")
+	task.delay(0.95, function() if p.token == tok then PR.hide() end end)
+end
+function PR.miss(text)
+	local p = ui.prompt
+	p.token += 1
+	local tok = p.token
+	p.up = false
+	p.holder.Visible = true
+	p.holder.GroupTransparency = 0
+	p.verb.Text = "AGAIN"
+	p.verb.TextColor3 = Theme.RED
+	p.keyStroke.Color, p.keyText.TextColor3 = Theme.RED, Theme.RED
+	p.line.Text = InputHints.fill(text or "")
+	p.line.TextColor3 = Color3.fromRGB(255, 190, 180)
+	UIFX.play("Error")
+	-- (a shake)
+	task.spawn(function()
+		for i = 1, 6 do
+			if p.token ~= tok then return end
+			p.holder.Position = UDim2.new(0.5, (i % 2 == 0 and 1 or -1) * (7 - i), 1, -268)
+			task.wait(0.03)
+		end
+		p.holder.Position = UDim2.new(0.5, 0, 1, -268)
+	end)
+	task.delay(1.5, function() if p.token == tok then PR.hide() end end)
+end
+InputHints.changed:Connect(function()
+	local p = ui.prompt
+	if p.up then promptKey(p.action); p.line.Text = InputHints.fill(p.sub or "") end
+end)
+-- the keycap breathes while it waits; it lights as you press the key it asks for
+RunService.RenderStepped:Connect(function()
+	local p = ui.prompt
+	if not p.up then p.keyScale.Scale = 1; return end
+	p.keyScale.Scale = 1 + 0.06 * math.sin(os.clock() * 6)
+end)
+local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+UserInputService.InputBegan:Connect(function(input, gp)
+	local p = ui.prompt
+	if gp or not p.up or not p.action then return end
+	local ok, act = pcall(ClientSettings.actionForInput, input)
+	local hit = ok and act == p.action
+	if not hit and p.action == "Block" then hit = input.UserInputType == Enum.UserInputType.MouseButton2 end
+	if hit then
+		p.keyStroke.Color, p.keyText.TextColor3 = WHITE, WHITE
+		p.keyScale.Scale = 0.9
+	end
+end)
+
+-- SLOW TIME (the duel): the colour drains and cools, the bars close in; deeper while his moment
+-- is held
+local slow = {on = false, held = false}
+local function slowLook()
+	local cc = slow.cc
+	if not cc then return end
+	local held = slow.held
+	TweenService:Create(cc, TweenInfo.new(held and 0.25 or 0.6), {Saturation = held and -0.7 or -0.42, Contrast = held and 0.2 or 0.1,
+		TintColor = held and Color3.fromRGB(196, 214, 255) or Color3.fromRGB(222, 230, 255)}):Play()
+end
+local function setSlow(on)
+	if on == slow.on then return end
+	slow.on = on
+	if on then
+		local cc = Instance.new("ColorCorrectionEffect")
+		cc.Name = "PrologueSlow"
+		cc.Parent = Lighting
+		slow.cc = cc
+		slowLook()
+		for _, b in ipairs({ui.slowTop, ui.slowBottom}) do TweenService:Create(b, TweenInfo.new(0.8, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0.075, 0)}):Play() end
+		UIFX.play("Fallen")
+	else
+		local cc = slow.cc
+		slow.cc, slow.held = nil, false
+		if cc then
+			TweenService:Create(cc, TweenInfo.new(0.5), {Saturation = 0, Contrast = 0, TintColor = WHITE}):Play()
+			task.delay(0.55, function() cc:Destroy() end)
+		end
+		for _, b in ipairs({ui.slowTop, ui.slowBottom}) do TweenService:Create(b, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0, 0)}):Play() end
+	end
+end
+round:GetAttributeChangedSignal("PrologueSlow"):Connect(function() setSlow(inPrologue() and round:GetAttribute("PrologueSlow") == true) end)
+RunService.Heartbeat:Connect(function()
+	if not slow.on then return end
+	local npcs = workspace:FindFirstChild("NPCs")
+	local raider = npcs and npcs:FindFirstChild("Iron Host Raider")
+	local held = raider ~= nil and raider:GetAttribute("Hold") == true
+	if held ~= slow.held then
+		slow.held = held
+		slowLook()
+		if held then UIFX.play("Thud") end
+	end
+end)
 
 --------------------------------------------------------------------
 --  THE WAR ALL ROUND (until dawn)
@@ -557,8 +741,9 @@ function CINES.opening()
 		S(5.4, 9.2, look(treb + V3(-16, -14, -36), tower, 58), look(treb + V3(-8, -12, -24), tower, 52)),
 		S(9.2, 13.6, look(V3(W - 48, 7, gz + 54), tower + V3(0, 6, 0), 62), look(V3(W - 42, 9, gz + 46), tower, 56)),
 		S(13.6, 16.6, look(hale - toMe * 2.6 + right * 1.4 + V3(0, 0.5, 0), me, 50), look(hale - toMe * 2.2 + right * 1.2 + V3(0, 0.3, 0), me, 46)),
-		S(16.6, 19, look(me + toMe * 6 - right * 2 + V3(0, 1.6, 0), hale, 62), look(me + toMe * 4.5 - right * 1.6 + V3(0, 1.2, 0), hale, 70)),
-	}, beats = {
+		-- (your own eyes, opening on the barracks and the captain in its doorway)
+		S(16.6, 19, look(me + V3(0, -0.25, 0), hale + V3(0, -0.4, 0), 72), look(me + V3(0, 0.1, 0), hale, 70)),
+	}, fp = 16.6, beats = {
 		{0.1, function() WarFX.lightning(true) end},
 		{0.6, function() titleCard("THE NORTHERN MARCHES", "", 3.6); subtitle(nil, "The third night of the siege.", 3.6) end},
 		{1.2, function() WarFX.sound("Charge", army, {volume = 0.7, range = 2000, near = 300}) end},
@@ -567,7 +752,11 @@ function CINES.opening()
 		{6.6, function() subtitle(nil, "Tonight, in the storm, they come for the gate.", 3.2) end},
 		{10.7, function() titleCard(string.upper(GameConfig.GAME_NAME or "STEEL & GLORY"), "THE SIEGE OF STORMWATCH", 2.8) end},
 		{13.8, function() subtitle("CAPTAIN HALE", "Up! Up, soldier! On your feet!", 2.8) end},
+		{16.45, function() fade(ui.veil, {BackgroundTransparency = 0}, 0.12) end},
+		{16.75, function() fade(ui.veil, {BackgroundTransparency = 1}, 0.7) end},
 		{16.8, function() subtitle("CAPTAIN HALE", "The Iron Host is at our gate. You're with me!", 2.4) end},
+		{17.75, function() fade(ui.veil, {BackgroundTransparency = 0.15}, 0.08) end},
+		{17.9, function() fade(ui.veil, {BackgroundTransparency = 1}, 0.3) end},
 	}}
 end
 function CINES.breach()
@@ -770,6 +959,12 @@ function FX.Breach(d)
 end
 function FX.Charge(d) WarFX.sound("Charge", (d.pos or P("gate")) + V3(0, 0, -30), {range = 1200, near = 120}) end
 function FX.Dawn() if not cine.on then dawn() end end
+function FX.Armed() UIFX.play("Unsheath") end
+function FX.FullSpeed()
+	setSlow(false)
+	WarFX.shake(0.7, 0.35)
+	UIFX.play("Whoosh")
+end
 
 --------------------------------------------------------------------
 --  THE MENU KEY: RESUME / SKIP THE TUTORIAL · THE END
@@ -884,13 +1079,21 @@ end
 remote.OnClientEvent:Connect(function(what, a, b)
 	if not inPrologue() then return end
 	if what == "Step" then
+		PR.hide(true)
 		showStep(a or {})
+	elseif what == "Prompt" then
+		PR.show(a or {})
+	elseif what == "PromptDone" then
+		PR.done((a or {}).text)
+	elseif what == "PromptMiss" then
+		PR.miss((a or {}).text)
 	elseif what == "Progress" then
 		progress(a, b)
 	elseif what == "Line" then
 		a = a or {}
 		if cine.on then subtitle(a.who, a.text, a.dur) else say(a.who, a.text, a.dur) end
 	elseif what == "Cine" then
+		PR.hide(true)
 		runCine(a)
 	elseif what == "Fx" then
 		local f = FX[a]
@@ -907,6 +1110,7 @@ local function enter()
 	gui.Enabled = true
 	ui.card.Visible = false
 	ambience()
+	setSlow(round:GetAttribute("PrologueSlow") == true)
 end
 local function leave()
 	gui.Enabled = false
@@ -914,6 +1118,8 @@ local function leave()
 	closeModal()
 	ui.doneUp = false
 	clearBeacon()
+	PR.hide(true)
+	setSlow(false)
 	ambienceOff(0)
 	if amb.music then WarFX.stopLoop(amb.music, 1.5); amb.music = nil end
 	if ui.riders then ui.riders.stop(); ui.riders = nil end

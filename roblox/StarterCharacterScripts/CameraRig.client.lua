@@ -310,6 +310,15 @@ local camDist       = DEFAULT_DIST
 local camDistTarget = DEFAULT_DIST
 -- (the view chosen to start in: Settings ▸ Start in)
 if S("StartView") == "First person" then camDist, camDistTarget = 0, 0 end
+-- a scene that wants a view (the Prologue: you wake in the barracks in first person, and the view
+-- pulls back as you step out of its door): ViewWant "First" / "Third" on the character
+local function viewWanted(snap)
+	local w = character:GetAttribute("ViewWant")
+	if w == "First" then camDistTarget = 0; if snap then camDist = 0 end
+	elseif w == "Third" then camDistTarget = DEFAULT_DIST end
+end
+character:GetAttributeChangedSignal("ViewWant"):Connect(function() viewWanted(false) end)
+viewWanted(true)
 local bobAmt = 0
 local stepPhase, stepSide = 0, 1
 local lastSpeed, lastVY = 0, 0

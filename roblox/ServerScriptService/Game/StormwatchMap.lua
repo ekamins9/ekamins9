@@ -2,8 +2,11 @@
      Stormwatch, a border castle on a stormy night with the Iron Host at its gate.
 
        StormwatchMap.build() -> mapName, layout
-         layout.points  named places (Vector3 on the ground): wake, armory, raiders, yard, breach,
-                        breachOut, gate, gateOut, wall, keep, army, ram, captain…
+         layout.points  named places (Vector3 on the ground): wake (beside your bunk, inside the
+                        barracks), rack (the sword rack there), door (just out of its door), duel
+                        (where the raider meets you), armory, raiders, yard, breach, breachOut,
+                        gate, gateOut, wall, keep, army, ram, captain (by the barracks door)…
+         Map ▸ SwordRack  the rack's part (the mode puts its "take a sword" prompt on it)
          layout.trebuchets  where the Iron Host's engines stand (the mode lobs fire from them)
          Map ▸ Gate     the gate's two leaves (GateLeft, GateRight): the breach throws them down
          Map attributes P_<name> = the points again (the client's cutscenes read them)
@@ -80,6 +83,90 @@ local function squareTower(ctx, pos, s, h)
 			nocol(K.box(ctx, "Slit", V3(0.8, 2.6, 0.3), CFrame.new(pos + f), Color3.fromRGB(14, 14, 18), Enum.Material.SmoothPlastic))
 		end
 	end
+end
+
+-- THE BARRACKS, where you wake: a hollow room of bunks under a gable roof, its door to the yard
+-- (+Z of `frame`), windows the storm's light comes through, a brazier, a candle on the table and
+-- the rack you take your sword from. Fills in P.wake, P.rack, P.door, P.captain.
+local function barracks(ctx, frame, P)
+	local w, len, h, t = 16, 22, 10, 0.8
+	local hw, hl = w / 2, len / 2
+	local PLASTER, TIMBER = Color3.fromRGB(150, 140, 124), DARK
+	local function at(x, y, z) return frame * CFrame.new(x, y, z) end
+	local function wall(name, size, cf) return K.box(ctx, name, size, cf, PLASTER, Enum.Material.Plaster) end
+	local function trim(name, size, cf) return nocol(K.box(ctx, name, size, cf, TIMBER, Enum.Material.Wood)) end
+	K.box(ctx, "BarracksFloor", V3(w, 0.4, len), at(0, 0.2, 0), Color3.fromRGB(92, 66, 44), Enum.Material.WoodPlanks)
+	-- the long walls, two windows each (sill at 4.4, head at 6.8)
+	for _, sx in ipairs({-1, 1}) do
+		local x = sx * (hw - t / 2)
+		wall("BarracksWall", V3(t, 4.4, len), at(x, 2.2, 0))
+		wall("BarracksWall", V3(t, h - 6.8, len), at(x, (h + 6.8) / 2, 0))
+		for _, seg in ipairs({{-hl, -5.3}, {-2.7, 2.7}, {5.3, hl}}) do
+			wall("BarracksWall", V3(t, 2.4, seg[2] - seg[1]), at(x, 5.6, (seg[1] + seg[2]) / 2))
+		end
+		for _, z in ipairs({-4, 4}) do trim("WindowBar", V3(t + 0.1, 2.4, 0.18), at(x, 5.6, z)) end
+	end
+	-- the back wall, and the front with its door (4 wide, 7.6 high)
+	wall("BarracksWall", V3(w, h, t), at(0, h / 2, -hl + t / 2))
+	for _, sx in ipairs({-1, 1}) do wall("BarracksWall", V3(hw - 2, h, t), at(sx * (hw + 2) / 2, h / 2, hl - t / 2)) end
+	wall("BarracksWall", V3(4, h - 7.6, t), at(0, (h + 7.6) / 2, hl - t / 2))
+	-- the door, swung in against the wall
+	K.box(ctx, "BarracksDoor", V3(3.8, 7.4, 0.3), at(-1.8, 3.8, hl - t - 0.15) * CFrame.Angles(0, DEG(80), 0) * CFrame.new(1.9, 0, 0), WOOD, Enum.Material.WoodPlanks)
+	-- the gable ends, stepped boards under the roof's line; the roof; the ridge
+	local rise = 4
+	for _, z in ipairs({-hl + t / 2, hl - t / 2}) do
+		for i = 0, 3 do
+			local half = hw * (1 - (i + 1) / 4)
+			if half > 0.2 then wall("Gable", V3(half * 2, 1, t), at(0, h + i + 0.5, z)) end
+		end
+	end
+	local slope = math.atan2(rise, hw)
+	local run = math.sqrt(hw * hw + rise * rise) + 1.2
+	for _, sx in ipairs({-1, 1}) do
+		K.box(ctx, "BarracksRoof", V3(run, 0.6, len + 2), at(sx * hw / 2, h + rise / 2 + 0.35, 0) * CFrame.Angles(0, 0, -sx * slope), Color3.fromRGB(70, 46, 32), Enum.Material.WoodPlanks)
+	end
+	trim("Ridge", V3(0.7, 0.7, len + 2.2), at(0, h + rise + 0.45, 0))
+	-- the timbers outside: corner posts, the girt round it, the beams across inside
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do trim("Timber", V3(0.7, h, 0.7), at(sx * (hw + 0.05), h / 2, sz * (hl + 0.05))) end
+		trim("Timber", V3(0.4, 0.5, len + 0.6), at(sx * (hw + 0.15), h * 0.55, 0))
+		trim("Timber", V3(w + 0.6, 0.5, 0.4), at(0, h * 0.55, sx * (hl + 0.15)))
+	end
+	for z = -hl + 3, hl - 3, 4 do trim("Beam", V3(w - 1, 0.6, 0.6), at(0, h - 0.4, z)) end
+	-- the bunks: straw mattresses, blankets, a pillow; yours at the back on the left
+	local function bunk(x, z, blanket)
+		local f = at(x, 0, z)
+		K.box(ctx, "Bunk", V3(2.8, 0.5, 6.2), f * CFrame.new(0, 1.1, 0), WOOD, Enum.Material.Wood)
+		for _, lx in ipairs({-1.2, 1.2}) do for _, lz in ipairs({-2.9, 2.9}) do
+			K.box(ctx, "BunkLeg", V3(0.35, 0.9, 0.35), f * CFrame.new(lx, 0.45, lz), DARK, Enum.Material.Wood)
+		end end
+		nocol(K.box(ctx, "Mattress", V3(2.5, 0.4, 5.8), f * CFrame.new(0, 1.55, 0), Color3.fromRGB(176, 154, 104), Enum.Material.Fabric))
+		nocol(K.box(ctx, "Blanket", V3(2.6, 0.22, 3.4), f * CFrame.new(0, 1.82, 1) * CFrame.Angles(0, DEG(math.random(-4, 4)), 0), blanket, Enum.Material.Fabric))
+		nocol(K.box(ctx, "Pillow", V3(1.7, 0.35, 0.9), f * CFrame.new(0, 1.9, -2.3), Color3.fromRGB(208, 196, 168), Enum.Material.Fabric))
+	end
+	local blankets = {Color3.fromRGB(110, 34, 30), Color3.fromRGB(40, 62, 120), Color3.fromRGB(84, 74, 52)}
+	for i, z in ipairs({-7.2, -2.4, 2.4}) do bunk(-hw + 1.9, z, blankets[1 + i % 3]) end
+	for i, z in ipairs({-7.2, -2.4}) do bunk(hw - 1.9, z, blankets[1 + (i + 1) % 3]) end
+	-- a table and a candle, a brazier in the middle, shields on the back wall
+	K.box(ctx, "Table", V3(4, 0.3, 2.4), at(0, 2.5, -8.4), WOOD, Enum.Material.Wood)
+	for _, lx in ipairs({-1.7, 1.7}) do for _, lz in ipairs({-0.9, 0.9}) do K.box(ctx, "TableLeg", V3(0.3, 2.35, 0.3), at(lx, 1.18, -8.4 + lz), DARK, Enum.Material.Wood) end end
+	nocol(K.cyl(ctx, "Candle", 0.3, 0.7, at(0.8, 3, -8.4), Color3.fromRGB(236, 226, 200), Enum.Material.SmoothPlastic))
+	local flame = nocol(K.ball(ctx, "CandleFlame", 0.22, at(0.8, 3.45, -8.4), FIRE, Enum.Material.Neon))
+	local cl = Instance.new("PointLight"); cl.Name = "Flicker"; cl.Color = Color3.fromRGB(255, 170, 90); cl.Range = 14; cl.Brightness = 1.3; cl.Shadows = true; cl.Parent = flame
+	brazier(ctx, at(0, 0, -1.5).Position)
+	for _, x in ipairs({-3.5, 3.5}) do
+		nocol(K.cyl(ctx, "WallShield", 2.6, 0.25, at(x, 6.6, -hl + t + 0.15) * CFrame.Angles(DEG(90), 0, 0), BLUE, Enum.Material.Wood))
+		nocol(K.cyl(ctx, "WallShieldBoss", 0.7, 0.3, at(x, 6.6, -hl + t + 0.3) * CFrame.Angles(DEG(90), 0, 0), IRON, Enum.Material.Metal))
+	end
+	-- the rack by the door, its swords waiting (the mode's prompt is on its bar)
+	local rackF = at(hw - 1.5, 0, 5.6) * CFrame.Angles(0, DEG(-90), 0)
+	pcall(K.rack, ctx, rackF)
+	local hold = nocol(K.box(ctx, "SwordRack", V3(5, 3, 1.4), rackF * CFrame.new(0, 1.8, 0.4), WOOD, Enum.Material.Wood))
+	hold.Transparency = 1
+	P.wake = (at(-hw + 4.6, 0, -7.2)).Position
+	P.rack = (rackF * CFrame.new(0, 0, 2.6)).Position
+	P.door = (at(0, 0, hl + 4)).Position
+	P.captain = (at(2.2, 0, 7.6)).Position
 end
 
 -- a timber trebuchet (when the place has no PrologueProps ▸ Trebuchet)
@@ -175,12 +262,15 @@ function StormwatchMap.build()
 	P.keep = V3(0, 0, SZ - 40)
 
 	-- THE BARRACKS (where you come to), the armoury, the smithy and the stables
-	K.house(ctx, CFrame.new(-56, 0, 34) * CFrame.Angles(0, DEG(90), 0), 16, 22, 11, Color3.fromRGB(150, 140, 124), DARK)
-	P.wake = V3(-33, 0, 34)   -- (out before its door: room for the camera behind you)
+	barracks(ctx, CFrame.new(-56, 0, 34) * CFrame.Angles(0, DEG(90), 0), P)
 	-- the armoury: a roofed rack yard
 	local arm = CFrame.new(-50, 0, -8)
 	for _, x in ipairs({-8, 8}) do for _, z in ipairs({-6, 6}) do K.box(ctx, "Post", V3(1, 10, 1), arm * CFrame.new(x, 5, z), DARK, Enum.Material.Wood) end end
 	K.box(ctx, "ArmouryRoof", V3(20, 0.8, 16), arm * CFrame.new(0, 10.4, 0) * CFrame.Angles(0, 0, DEG(-8)), DARK, Enum.Material.WoodPlanks)
+	-- its roof alight (a fire arrow found it): the yard before it, where the raider meets you, in its glow
+	local roofFire = nocol(K.box(ctx, "ArmouryFire", V3(14, 1.5, 10), arm * CFrame.new(2, 11.6, 0), FIRE, Enum.Material.Neon, ctx.Props))
+	roofFire.Transparency = 0.75
+	fireOn(roofFire, 11)
 	for _, z in ipairs({-4, 0, 4}) do pcall(K.rack, ctx, arm * CFrame.new(-6, 0, z) * CFrame.Angles(0, DEG(90), 0)) end
 	for _ = 1, 4 do K.crate(ctx, (arm * CFrame.new(math.random(2, 7), 0, math.random(-5, 5))).Position, 2.6, math.random(0, 90)) end
 	P.armory = V3(-38, 0, -8)
@@ -280,8 +370,8 @@ function StormwatchMap.build()
 
 	-- where the story happens
 	P.raiders = V3(-24, 0, 2)
+	P.duel = V3(-38, 0, 8)   -- (clear ground, lit by the armoury's burning roof)
 	P.yard = V3(-4, 0, 14)
-	P.captain = V3(-27, 0, 29)
 	P.boss = V3(0, 0, NZ + 34)
 	for k, v in pairs(P) do ctx.model:SetAttribute("P_" .. k, v) end
 	K.spawn(ctx, P.wake + V3(0, 1, 0), nil, P.wake + V3(10, 1, 0))

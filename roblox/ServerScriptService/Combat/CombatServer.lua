@@ -1325,6 +1325,7 @@ function CombatServer.attach(Tool, weaponConfig)
 	local function npcSweepStep()
 		local sw = npc.sweep
 		if not sw or not character then return end
+		if character:GetAttribute("Hold") then return end   -- (a moment held: HELD below)
 		if os.clock() > sw.endsAt then
 			for hum, p in pairs(sw.pending) do npcReport(sw, hum, p.e) end
 			npc.sweep = nil
@@ -1417,6 +1418,15 @@ function CombatServer.attach(Tool, weaponConfig)
 		t.TimePosition = 0
 		t:AdjustSpeed(0)              -- hold the loaded pose while it blends in
 		npc.current = t
+		-- (timed against the swing's own clock, which a held moment stops: HELD below)
+		local function when(getT, fn)
+			local function tick()
+				if state.token ~= token or npcArm ~= arm then return end
+				local r = getT() - os.clock()
+				if r > 0.004 then task.delay(r, tick) else fn() end
+			end
+			task.delay(math.max(getT() - os.clock(), 0), tick)
+		end
 		local function release()
 			if state.token ~= token or npcArm ~= arm or not character or npc.current ~= t then return end
 			local sp = (cfg.FIT_ANIMS and t.Length > 0) and t.Length / active or speed
@@ -1430,12 +1440,34 @@ function CombatServer.attach(Tool, weaponConfig)
 				last[bl] = pts
 			end
 			npc.sweep = {token = token, endsAt = os.clock() + active, last = last, reported = {}, pending = {}}
-			task.delay(math.max(active - 0.02, 0), function()
+			when(function() return state.releaseEnd - 0.02 end, function()
 				if npc.current == t and npcArm == arm then t:AdjustSpeed(0); t:Stop(fadeA); npc.current = nil end
 			end)
 		end
-		if windup > 0 then task.delay(windup, release) else release() end
+		if windup > 0 then when(function() return state.windupEnd end, release) else release() end
 	end
+
+	-- HELD: a moment stopped (a lesson's: Game ▸ Modes ▸ Prologue sets Hold on its raider while
+	-- the key to press is on your screen). Nothing of the swing moves on: its clock stands still,
+	-- the clip stands still, the blade's sweep waits. Let go, and it carries on from there.
+	local heldSpeed = nil
+	table.insert(conns, RunService.Heartbeat:Connect(function(dt)
+		if not character then return end
+		if character:GetAttribute("Hold") then
+			if state.phase ~= "idle" then
+				state.windupStart += dt
+				state.windupEnd += dt
+				state.releaseEnd += dt
+				state.nextActionTime += dt
+			end
+			if npc.sweep then npc.sweep.endsAt += dt end
+			local t = npc.current
+			if t and not heldSpeed then heldSpeed = t.Speed; t:AdjustSpeed(0) end
+		elseif heldSpeed then
+			if npc.current then npc.current:AdjustSpeed(heldSpeed) end
+			heldSpeed = nil
+		end
+	end))
 
 	npcTell = function(what, a, b, c, d, e, f, g, h)
 		if what == "Setup" then
@@ -1522,6 +1554,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		local _, atype = CombatServer.sideType(name)
 		local speed = (info.speed or 1) * ((cfg.TYPE_SPEED or {})[atype or ""] or 1) * cfg.SPEED_MULT
 			* ((GameConfig.TEMPO or {}).swing or 1)   -- (the whole game's tempo)
+			* (attr("Tempo") or 1)                    -- (this fighter's: a lesson in slow time, Modes ▸ Prologue)
 		local wl = info.windup or cfg.WINDUP
 		if (attr("FastUntil") or 0) > os.clock() then wl = wl / cfg.RIPOSTE_SPEED end   -- riposte: quicker windup only
 		if (state.kickFollowUntil or 0) > os.clock() then wl = wl / (cfg.KICK_FOLLOW_SPEED or 1) end   -- straight in behind a kick

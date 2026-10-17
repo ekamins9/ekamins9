@@ -1,4 +1,32 @@
-# Updated scripts: steel on steel
+# Updated scripts: the tutorial's first fight, in slow time
+
+- **You wake in first person** in the barracks (now a real room: bunks, a brazier, a candle on
+  the table, windows the lightning comes through), the opening cutscene ending in your own eyes
+  blinking awake. Nothing in your hands: **take a sword from the rack** by the door.
+- **Out into the storm**: the view pulls back to third person as you step out of the door.
+- **Your first fight, in slow time**: a raider comes at you out of the dark and the world slows
+  (the colour drains, bars close in). Each beat stops the moment with **your key, big on screen**
+  (BLOCK, STRIKE, STAB, OVERHEAD, PARRY, RIPOSTE, KICK, STRIKE); press it and the moment runs on into
+  what it teaches: his blow clangs off your guard, your parry glints, his guard breaks under your
+  kick and he falls. Green when it's done, red with a word when it went wrong (and the beat comes
+  again). Then full speed: the trebuchets (DODGE on screen too), the gate, the battle.
+- The armoury roof burns, lighting the yard where you fight.
+- What's New: steel on steel, kick then strike, Warfront's massive battles.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Prologue.lua](ServerScriptService/Game/Modes/Prologue.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new steps arm / out / duel; `rack`, `takeSword`, `duel`, `runDuel`; dodge prompts; ViewWant |
+| [StormwatchMap.lua](ServerScriptService/Game/StormwatchMap.lua) | ServerScriptService ▸ Game | ModuleScript | the hollow barracks (`barracks`), `SwordRack`, points wake / rack / door / duel, the burning armoury roof |
+| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the prompt, slow time's look, the opening's first-person end, lessons list |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | a fighter's `Tempo` (slow time) and `Hold` (a held moment); NPC playback timed against the swing's clock |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | `scripted` bots (keep distance, face; the lesson acts for them) |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | `ViewWant` "First" / "Third" |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | this update's lines |
+| [README.md](README.md), [HANDOFF.md](../docs/HANDOFF.md) | | doc | |
+
+---
+
+## Before that: steel on steel
 
 - **A blocked or parried blow now glances off, visibly.** Every screen works out where the two
   blades actually cross (the closest points of the attacker's blade and the defender's guard) and

@@ -528,7 +528,7 @@ end
 -- REFLEXES, every frame: the foe's weapon and its own
 function Bot:reflex()
 	local sk, ctrl, model = self.skill, self.ctrl, self.model
-	if not (self.alive and ctrl) or sk.dummy or self.arming then return end
+	if not (self.alive and ctrl) or sk.dummy or self.arming or self.scripted then return end
 	if ctrl.ranged or ctrl.magic then return end
 	local foe = self.foe
 	if not (foe and foe.Parent) or self.hum.Health <= 0 or model:GetAttribute("Ragdolled") then return end
@@ -845,6 +845,18 @@ function Bot:think()
 		if held then task.spawn(self.adopt, self, held) else self.tool, self.ctrl = nil, nil end
 	end
 	local ctrl = self.ctrl
+
+	-- A SCRIPTED BOT (opts.scripted: a lesson's, Game ▸ Modes ▸ Prologue): it keeps its distance
+	-- and faces you; the lesson swings, guards and kicks for it
+	if self.scripted then
+		local to = thrp.Position - hrp.Position
+		local flat = Vector3.new(to.X, 0, to.Z)
+		local want = self.scriptedRange or 5
+		if flat.Magnitude > want + 1 then hum.WalkSpeed = 9; hum:Move(flat.Unit)
+		elseif flat.Magnitude < want - 1.6 then hum.WalkSpeed = 5; hum:Move(-flat.Unit)
+		else hum:Move(Vector3.zero) end
+		return
+	end
 
 	-- the guard dummy: guard up, always (a kick knocks it down for a moment)
 	if sk.guard then
@@ -1348,7 +1360,8 @@ function Bots.spawn(opts)
 	local bot = setmetatable({model = model, hum = hum, hrp = hrp, skill = skill, target = opts.target, arena = opts.arena,
 		fightBots = opts.fightBots == true, goal = opts.goal, engage = opts.engage, sack = opts.sack, face = opts.face, fireLimit = opts.fireLimit,
 		alive = true, conns = {}, nextAttack = startAt + 1.2, strafe = 1, strafeUntil = 0, learned = {},
-		startAt = startAt, invulnerable = opts.invulnerable == true, attacks = {}, reach = 5, cfg = {}}, Bot)
+		startAt = startAt, invulnerable = opts.invulnerable == true, attacks = {}, reach = 5, cfg = {},
+		scripted = opts.scripted == true, scriptedRange = opts.scriptedRange}, Bot)
 	bot.temper = Bots.TEMPERS[opts.temper] or Bots.TEMPERS[TEMPER_NAMES[math.random(#TEMPER_NAMES)]]
 	bot.ring = 10 + math.random() * 5          -- how far out it waits its turn
 	if opts.invulnerable then hum.MaxHealth = 5000; hum.Health = 5000 end

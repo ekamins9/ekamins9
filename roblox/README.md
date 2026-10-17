@@ -220,18 +220,27 @@ A dark, stormy night; the Iron Host is at Stormwatch's gate, and you are a soldi
 A server of your own (`DOORS.Prologue`, `MODES.Prologue`: hidden, ownSpawn, one map built fresh).
 - **The castle** (`StormwatchMap.build`): curtain walls with crenels and a breach in the east wall,
   a gatehouse of two towers and an oak-and-iron gate (its own `Gate` model, which bursts apart),
-  corner towers (one burning), the keep, the barracks, an armoury of racks, a burning smithy,
+  corner towers (one burning), the keep, the barracks (hollow: bunks, a brazier, a candle, windows,
+  the rack you take your sword from, `SwordRack`), an armoury of racks under a burning roof, a burning smithy,
   stables, stakes, braziers, banners, puddles, spent arrows in the cobbles; outside, a field of mud,
   the Host's tents and fires, rank on rank of torches, their trebuchets (ServerStorage ▸
   PrologueProps ▸ Trebuchet, a generated model; a timber one is built if it's missing), the ram
   under its hide roof, ladders on the walls, hills on the horizon. The story's places are map
-  attributes `P_<name>` (wake, armory, raiders, breach, gate, ram, yard, army…), the trebuchets'
-  throwing arms `T_1…`. Night and storm lighting, heavy atmosphere.
+  attributes `P_<name>` (wake, rack, door, duel, armory, raiders, breach, gate, ram, yard, army…),
+  the trebuchets' throwing arms `T_1…`. Night and storm lighting, heavy atmosphere.
 - **The story** (`Prologue.STEPS`): a cutscene (the storm, the Host, a tower hit, Captain Hale
-  wakes you) → run to the armoury → raiders over the wall (swing, stab, overhead on a staggering
-  raider) → the trebuchets find the yard (a red ring under you: dodge out of it, or take the blast)
-  → a raider through the breach (block, parry, riposte: his blows teach, `Harmless`) → a brute
-  behind his guard (kick, then cut him down) → run for the gatehouse through falling arrows →
+  wakes you: it ends in your own eyes, blinking awake) → you're in the barracks **in first person**
+  with nothing in your hands: take a sword from the rack by the door (its prompt) → follow Hale out
+  (the view pulls back to third person at the door: `ViewWant` on the character, CameraRig) →
+  **your first fight, in slow time**: a raider comes at you out of the dark and the world slows
+  (his `Tempo`, Combat ▸ CombatServer); each beat stops the moment (his `Hold`) with the key to
+  press big on your screen, and runs on into what it teaches when you press it: BLOCK his blow,
+  STRIKE, STAB, OVERHEAD, PARRY his next at the last moment (a perfect parry, its glint), RIPOSTE,
+  KICK his raised guard open, the blow after it, and he falls; then full speed. His blows can't
+  hurt (`Harmless`), he's a scripted bot (`Bots.spawn{scripted}`: keeps his distance and faces
+  you; the lesson swings, guards and kicks for him); every beat waits, and comes again if it went
+  wrong → the trebuchets find the yard (a red ring under you, DODGE on screen: dodge out of it, or
+  take the blast) → run for the gatehouse through falling arrows →
   cutscene: the ram, the gate bursts, the Host pours in → hold the gate beside the garrison (six
   of the Host) → cutscene: **Lord Varg** → the duel (a boss bar; every fall weakens him) →
   cutscene: dawn, horns, the King's riders, **STORMWATCH STANDS**. Before the battle you can't
@@ -242,7 +251,9 @@ A server of your own (`DOORS.Prologue`, `MODES.Prologue`: hidden, ownSpawn, one 
   the Host's lines and the Host's archers loose back over the wall; its war cries; the Host closes
   on the gate as the night goes on (the gatehouse, the hold, the champion), and at dawn it turns
   and runs into the dark while the walls cheer.
-- **On your screen** (`Prologue.client`): the lesson card (STEP n / 13, what to do in your own
+- **On your screen** (`Prologue.client`): THE PROMPT (the verb, a keycap with your own key, a line;
+  green when done, red with a word when it went wrong); slow time's look (`Round.PrologueSlow`: the
+  colour drains and cools, bars close in, deeper while his moment is held); the lesson card (STEP n / 7, what to do in your own
   controls, a progress bar, a tick when done), Captain Hale's lines, a beacon of light over where to
   go with an arrow at the screen's edge, the cutscenes (black bars, a flying camera, subtitles,
   title cards; SPACE / ENTER / tap / Ⓐ skips one), M: RESUME / SKIP THE TUTORIAL (asked once),
