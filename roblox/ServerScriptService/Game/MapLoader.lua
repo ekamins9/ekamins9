@@ -188,11 +188,15 @@ function MapLoader.load(name)
 	do
 		local ok, err = pcall(function() return horizon().build(m, name) end)
 		if not ok then warn("[Map] horizon:", err) end
-		-- the two houses' arms on every banner (Game ▸ BannerArt)
+		-- the two houses' arms on every banner (Game ▸ BannerArt); HouseSeed on the Map is what every
+		-- screen picks this map's houses by (ReplicatedStorage ▸ Houses: the sides' shields too)
+		-- (a built map's round number left off: Gen_War_Redfield_3 flies what Gen_War_Redfield_1 did)
+		local seed = (string.gsub(name, "_%d+$", ""))
+		m:SetAttribute("HouseSeed", seed)
 		ok, err = pcall(function()
 			local BannerArt = require(script.Parent:WaitForChild("BannerArt"))
-			BannerArt.dress(m, name)
-			BannerArt.dress(workspace:FindFirstChild("MapHorizon"), name)
+			BannerArt.dress(m, seed)
+			BannerArt.dress(workspace:FindFirstChild("MapHorizon"), seed)
 		end)
 		if not ok then warn("[Map] banners:", err) end
 	end

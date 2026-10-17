@@ -39,6 +39,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Game/MapLoader.lua` | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript |
 | `ServerScriptService/Game/Horizon.lua` | `ServerScriptService` → `Game` → `Horizon` (the land round every outdoor map) | ModuleScript |
 | `ServerScriptService/Game/BannerArt.lua` | `ServerScriptService` → `Game` → `BannerArt` (the two houses' arms on every banner) | ModuleScript |
+| `ReplicatedStorage/Houses.lua` | `ReplicatedStorage` → `Houses` (which house's arms each colour flies on a map) | ModuleScript |
 | `ServerScriptService/Game/Teams.lua` | `ServerScriptService` → `Game` → `Teams` | ModuleScript |
 | `ServerScriptService/Game/GameServer.server.lua` | `ServerScriptService` → `Game` → `GameServer` | Script |
 | `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `Tiltyard`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH`, `Lists` | ModuleScript each |
@@ -1358,7 +1359,11 @@ both faces, gold on a dark or bright cloth, dark on a pale one, with its outline
 on the side that hangs against a wall. A map's blue banners share one house's arms and its red
 ones the other's (never the same beast), green, gold, purple and black cloth their own; picked by
 the map's name, so a map always flies the same. The plates (BannerArt) swing with the cloth
-(`BannerWind`).
+(`BannerWind`). **The sides carry them too**: in a team fight a plain (Default) shield is painted
+in its side's colour with its house's arms (`Combat ▸ Shields` → `ShieldPaint.house`), and so are
+the War armies' shields (`WarCrowd`: the front rank's whole painted face, the ranks behind the
+emblem). Which house is which is `ReplicatedStorage ▸ Houses`, from the Map's `HouseSeed` (its
+name without a built map's round number), the same on the server and every screen.
 
 No such map → whatever is in workspace, and
 `SpawnLocation`s. `GameServer` runs the loop: mode → map (vote or rotation) → round (mode

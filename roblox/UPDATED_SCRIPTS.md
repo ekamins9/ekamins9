@@ -1,4 +1,25 @@
-# Updated scripts: every banner flies arms
+# Updated scripts: the armies carry their houses' arms
+
+- **In a team fight, a plain shield carries its side**: the team's colour on the board and its
+  house's arms on it (the same beast its banners fly on that map), battered like a soldier's. A
+  shield skin still shows the skin.
+- **The War armies too**: every soldier's shield is painted in its side's colour, the front rank
+  with the whole painted face, the ranks behind with the emblem.
+- A built map (War's battlefields) keeps the same houses round after round.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Houses.lua](ReplicatedStorage/Houses.lua) | ReplicatedStorage | ModuleScript | **new**: which house each colour flies on a map |
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | `ShieldPaint.house`; the emblem plate is named Emblem |
+| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | a plain shield in a team fight wears its house |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | soldiers' shields painted with their house |
+| [BannerArt.lua](ServerScriptService/Game/BannerArt.lua) | ServerScriptService ▸ Game | ModuleScript | picks by Houses |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | the Map's HouseSeed |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: every banner flies arms
 
 - **The banners on every map carry heraldry now**: two houses at war on each map, the blue banners
   with one house's arms (an eagle, a lion, a griffin…) and the red with the other's (a dragon, a

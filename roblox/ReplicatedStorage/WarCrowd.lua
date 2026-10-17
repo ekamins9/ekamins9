@@ -117,13 +117,28 @@ local function build(side, look)
 	lo.weapon, lo.shield = look.weapon, look.shield
 	local ok, m = pcall(PreviewRig.dressedRig, {loadout = lo, weight = "Medium", team = side})
 	if not ok or not m then return nil end
+	-- (its plain shield carries its side: the house its banners fly on this map, ReplicatedStorage ▸
+	-- Houses; painted once here, so every man of the front rank has it for nothing)
+	local sp = m:FindFirstChild("ShieldPreview")
+	local map = workspace:FindFirstChild("Map")
+	local seed = map and map:GetAttribute("HouseSeed")
+	if sp and seed then
+		pcall(function()
+			local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+			local emblem = require(ReplicatedStorage:WaitForChild("Houses")).forTeam(side, seed)
+			if emblem then require(ReplicatedStorage:WaitForChild("ShieldPaint")).house(sp, emblem, GameConfig.TEAMS[side].rgb) end
+		end)
+	end
 	local limbPart = {}
 	for i, n in ipairs(LIMBS) do limbPart[i] = m:FindFirstChild(n) end
 	if not limbPart[T] then m:Destroy(); return nil end
 	local groups = {}   -- limb -> list of {part, off, vol, role}
 	for i = 1, 6 do groups[i] = {} end
 	local function take(part, limb, role)
-		if not part:IsA("BasePart") or part.Transparency >= 0.95 or not limbPart[limb] then return end
+		-- (a shield's painted plates are clear parts carrying its arms: kept, for the front rank)
+		if not part:IsA("BasePart") or not limbPart[limb] then return end
+		if role == "shield" and (part.Name == "Paint" or part.Name == "Emblem") then role = part.Name == "Emblem" and "emblem" or "paint"
+		elseif part.Transparency >= 0.95 then return end
 		table.insert(groups[limb], {proto = part, off = limbPart[limb].CFrame:ToObjectSpace(part.CFrame), vol = volume(part), role = role})
 	end
 	local armor = m:FindFirstChild("Armor")
@@ -152,7 +167,7 @@ local function build(side, look)
 		return out
 	end
 	local t = {}
-	t.full = pick({40, 40, 40, 40, 40, 40}, {armor = true, weapon = true, shield = true, limb = true, body = true})
+	t.full = pick({40, 40, 40, 40, 40, 40}, {armor = true, weapon = true, shield = true, limb = true, body = true, paint = true, emblem = true})
 	-- lite: the whole helmet and body armour (what you see of a man), the main piece on each limb,
 	-- the weapon and the shield; mass: the body's shell, the helmet, bare arms and legs, the weapon
 	local SHELL = {Primary = 1, Fixed = 2, Secondary = 3, Metal = 4, Accent = 5}
@@ -179,7 +194,7 @@ local function build(side, look)
 		local list = first(sorted(i, "armor"), cap, {})
 		if #list == 0 then table.insert(list, bare(i)) end
 		if i == RA then first(sorted(i, "weapon"), 2, list) end
-		if i == LA then first(sorted(i, "shield"), 2, list) end
+		if i == LA then first(sorted(i, "shield"), 2, list); first(sorted(i, "emblem"), 1, list) end
 		t.lite[i] = list
 	end
 	t.mass = {}
@@ -199,7 +214,8 @@ end
 local function template(side, kind, variant)
 	local looks = (WarCrowd.LOOKS[side] or WarCrowd.LOOKS.A)[kind] or WarCrowd.LOOKS.A.foot
 	local look = looks[(variant - 1) % #looks + 1]
-	local key = side .. kind .. look.set
+	local map = workspace:FindFirstChild("Map")
+	local key = side .. kind .. look.set .. "|" .. tostring(map and map:GetAttribute("HouseSeed") or "")
 	if templates[key] == nil then templates[key] = build(side, look) or false end
 	return templates[key] or nil
 end
@@ -227,8 +243,9 @@ local function newSoldier(home, t, level, unarmed)
 				if not (d:IsA("SurfaceAppearance") or d:IsA("SpecialMesh") or d:IsA("Decal") or d:IsA("Texture")) then d:Destroy() end
 			end
 			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
-			p.CastShadow = level == "full"
-			p.Transparency = 0
+			local clear = e.role == "paint" or e.role == "emblem"
+			p.CastShadow = level == "full" and not clear
+			p.Transparency = clear and 1 or 0
 			p.CFrame = FAR
 			p.Parent = home
 			table.insert(s.limbs[i], p)

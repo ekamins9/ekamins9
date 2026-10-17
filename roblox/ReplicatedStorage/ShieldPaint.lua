@@ -11,6 +11,9 @@
      A picture that isn't there is just left off.
 
        ShieldPaint.apply(container, skin) -> bool     ShieldPaint.clear(container)
+       ShieldPaint.house(container, emblem, color)    a plain shield in a team fight: its side's
+                                                      colour on the board, its house's arms on it
+                                                      (ReplicatedStorage ▸ Houses), battered
 
      A skin's fields (all optional):
        division      pale fess quarterly bend saltire chevron gyronny paly barry checky chief
@@ -55,9 +58,15 @@ function ShieldPaint.clear(container)
 	for _, d in ipairs(container:GetDescendants()) do
 		if d:IsA("BasePart") then
 			if d:GetAttribute(TAG) then d:Destroy()
-			elseif d:GetAttribute("PaintHidden") then
-				d.Transparency = d:GetAttribute("PaintHidden")
-				d:SetAttribute("PaintHidden", nil)
+			else
+				if d:GetAttribute("PaintHidden") then
+					d.Transparency = d:GetAttribute("PaintHidden")
+					d:SetAttribute("PaintHidden", nil)
+				end
+				if d:GetAttribute("HouseColor") then
+					d.Color = d:GetAttribute("HouseColor")
+					d:SetAttribute("HouseColor", nil)
+				end
 			end
 		end
 	end
@@ -85,9 +94,9 @@ function ShieldPaint.apply(container, skin)
 	end
 	local F = handle.CFrame * CFrame.new(0, Y, Z)
 	local made = {}
-	local function plate(cx, cy, w, h, z)
+	local function plate(cx, cy, w, h, z, name)
 		local p = Instance.new("Part")
-		p.Name = "Paint"
+		p.Name = name or "Paint"
 		p.Size = Vector3.new(w, h, 0.01)
 		p.CFrame = F * CFrame.new(cx, cy, z)
 		p.Transparency = 1
@@ -129,7 +138,7 @@ function ShieldPaint.apply(container, skin)
 		local each = count == 1 and size or size * (count == 2 and 0.6 or 0.44)
 		for i = 1, count do
 			local y = spot[1] + (skin.emblemY or 0) + ((count + 1) / 2 - i) * each * 1.02
-			local ep = plate(0, y, each, each, skin.heraldry and -0.09 or -0.03)
+			local ep = plate(0, y, each, each, skin.heraldry and -0.09 or -0.03, "Emblem")
 			decal(ep, art(em .. "_s"), Color3.new(0, 0, 0), glow and 0.5 or 0.1, 1)
 			if skin.emblemEdge ~= false then
 				decal(ep, art(em .. "_o"), skin.emblemEdge or color:Lerp(Color3.new(0, 0, 0), 0.85), 0, 2)
@@ -167,6 +176,18 @@ function ShieldPaint.apply(container, skin)
 		p.Parent = face.Parent
 	end
 	return n > 0
+end
+
+function ShieldPaint.house(container, emblem, color)
+	local ok = ShieldPaint.apply(container, {name = "House", rarity = "Rare", emblem = emblem,
+		emblemColor = Color3.new(1.06, 0.84, 0.4), emblemEdge = Color3.fromRGB(26, 20, 18), wear = 0.5})
+	for _, p in ipairs(container:GetDescendants()) do
+		if p:IsA("BasePart") and p:GetAttribute("SkinPart") == "Blade" and not p:GetAttribute(TAG) then
+			p:SetAttribute("HouseColor", p.Color)
+			p.Color = color:Lerp(Color3.new(0, 0, 0), 0.15)
+		end
+	end
+	return ok
 end
 
 return ShieldPaint

@@ -1,9 +1,9 @@
 --[[ BANNER ART — the arms of the two houses at war, painted on every banner of a map as it loads
      (MapLoader: the map, and the land round it, Game ▸ Horizon): each cloth (Banner, KeepBanner,
      HallBanner, WallBanner, PodiumBanner) gets its house's emblem on both faces, gold on a dark or
-     bright cloth, dark on a pale one, with its outline and shadow. The blue banners of a map all
-     share one house's arms and the red ones the other's (picked by the map's name, so a map always
-     flies the same), a green or a gold or a black cloth its own. The pictures are the shields'
+     bright cloth, dark on a pale one, with its outline and shadow. Which house flies which colour
+     on a map is ReplicatedStorage ▸ Houses (the blue banners all share one house's arms, the red
+     the other's; the sides' plain shields carry the same: ShieldPaint.house). The pictures are the shields'
      (ReplicatedStorage ▸ ShieldArt; none there, nothing painted). The plates are named BannerArt so
      the wind swings them with their cloth (StarterPlayerScripts ▸ BannerWind).
 
@@ -12,17 +12,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BannerArt = {}
+local Houses = require(ReplicatedStorage:WaitForChild("Houses"))
 local CLOTH = {Banner = true, KeepBanner = true, HallBanner = true, WallBanner = true, PodiumBanner = true}
--- each kind of cloth's houses: what a cloth of that colour may fly
-local HOUSES = {
-	blue = {"eagle", "lion", "griffin", "fleur", "horse"},
-	red = {"dragon", "wolf", "boar", "bear", "phoenix"},
-	green = {"stag", "tree", "serpent", "knot"},
-	gold = {"sun", "lion", "tower"},
-	purple = {"fleur", "moon", "rose"},
-	dark = {"raven", "tower", "moon", "swords"},
-	pale = {"cross", "rose", "tower"},
-}
 local GILT = Color3.new(1.06, 0.84, 0.4)
 local INK = Color3.fromRGB(28, 22, 20)
 
@@ -30,18 +21,6 @@ local function art(name)
 	local f = ReplicatedStorage:FindFirstChild("ShieldArt")
 	local v = f and f:FindFirstChild(name)
 	return v and v.Value ~= "" and v.Value or nil
-end
-
--- which house's colours a cloth is
-local function kindOf(c)
-	local h, s, v = c:ToHSV()
-	if v < 0.22 then return "dark" end
-	if s < 0.22 then return v > 0.7 and "pale" or "dark" end
-	if h < 0.05 or h > 0.92 then return "red" end
-	if h < 0.17 then return "gold" end
-	if h < 0.45 then return "green" end
-	if h < 0.72 then return "blue" end
-	return "purple"
 end
 
 -- layers = {{texture, colour, transparency}, …} from the back (its shadow) to the front (itself)
@@ -67,11 +46,9 @@ end
 
 function BannerArt.dress(container, seedName)
 	if not container or not ReplicatedStorage:FindFirstChild("ShieldArt") then return 0 end
-	-- the houses of this map: one emblem per kind of cloth, the same every time it's played
-	local r = Random.new(#(seedName or container.Name) * 7919 + 3)
-	local pick = {}
-	for kind, list in pairs(HOUSES) do pick[kind] = list[r:NextInteger(1, #list)] end
-	-- (the blue houses' beasts and the red houses' never overlap, so the two sides never fly the same)
+	-- the houses of this map (ReplicatedStorage ▸ Houses: the same every time it's played, and the
+	-- same arms its sides' plain shields carry)
+	local mapName = seedName or container.Name
 	local n = 0
 	for _, cloth in ipairs(container:GetDescendants()) do
 		if cloth:IsA("BasePart") and CLOTH[cloth.Name] and cloth.Transparency < 0.5 and not cloth:GetAttribute("BannerArt") then
@@ -85,7 +62,7 @@ function BannerArt.dress(container, seedName)
 			local up = upA[1].Y >= 0 and upA[1] or -upA[1]
 			local w, h = acrossA[2], upA[2]
 			local side = math.min(w, h) * 0.78
-			local emblem = pick[kindOf(cloth.Color)]
+			local emblem = Houses.forColor(cloth.Color, mapName)
 			local tex = emblem and art(emblem)
 			if side >= 1.2 and thin[2] < 1.5 and tex then
 				local light = select(3, cloth.Color:ToHSV()) > 0.72 and select(2, cloth.Color:ToHSV()) < 0.35
