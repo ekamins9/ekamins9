@@ -1575,6 +1575,30 @@ local function weaponStage(parent, weaponId, skinId, size)
 	vp.CurrentCamera = cam
 	local m = weaponDisplay(world, weaponId, skinId)
 	if not m then dim(holder, "no display model"); return holder end
+	-- a shield shows its face: turned to you, swaying a little side to side (spun about its own
+	-- axis, it would be edge-on half the time)
+	local wdef = Catalog.WEAPON[weaponId or ""]
+	local handle = wdef and wdef.family == "Shield" and m:FindFirstChild("Handle", true)
+	if handle then
+		m:PivotTo(handle.CFrame:Inverse() * m:GetPivot())
+		local bcf, bsz = m:GetBoundingBox()
+		m:PivotTo(CFrame.new(-bcf.Position) * m:GetPivot())
+		local d = (math.max(bsz.X, bsz.Y) * 0.62) / math.tan(math.rad(16))
+		cam.FieldOfView = 32
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, d * 0.04, -d), Vector3.zero)
+		local p0 = m:GetPivot()
+		local t0 = os.clock()
+		task.spawn(function()
+			while holder.Parent do
+				if HX.onScreen(holder) then
+					local t = os.clock() - t0
+					m:PivotTo(CFrame.Angles(math.sin(t * 0.9) * 0.04, math.sin(t * 0.55) * 0.42, 0) * p0)
+				end
+				task.wait(1 / 30)
+			end
+		end)
+		return holder
+	end
 	local cf, sz = m:GetBoundingBox()
 	local longest = math.max(sz.X, sz.Y, sz.Z, 1)
 	-- lay it diagonally, tip up-right, and spin it slowly about its own axis
@@ -5112,6 +5136,52 @@ local function weaponStatRange()
 	return r
 end
 -- a card of bars: reach, damage, stab, speed, stamina, guard break, armor pierce, walk speed
+-- a shield's card: how wide it guards, what a block costs, the parry, the bash, arrows, the walk
+function HX.shieldStatCard(parent, w)
+	local all = Catalog.ARSENAL.shields
+	local function range(k, def)
+		local lo, hi = math.huge, -math.huge
+		for _, sh in ipairs(all) do local v = sh[k] or def; lo = math.min(lo, v); hi = math.max(hi, v) end
+		return lo, hi
+	end
+	local function frac(k, def, invert)
+		local lo, hi = range(k, def)
+		local v = w[k] or def
+		if hi - lo < 1e-6 then return 0.6 end
+		local f = (v - lo) / (hi - lo)
+		if invert then f = 1 - f end
+		return 0.12 + 0.88 * f
+	end
+	local card = frame(parent, COL.GLASS, 14)
+	card.BackgroundTransparency = 0.18
+	card.AnchorPoint = Vector2.new(1, 1)
+	card.Position = UDim2.new(1, -14, 1, -14)
+	card.Size = UDim2.fromOffset(360, 0)
+	card.AutomaticSize = Enum.AutomaticSize.Y
+	card.ZIndex = 5
+	border(card, WHITE, 1.5, 0.85)
+	padding(card, 12, 12, 10, 10)
+	vlist(card, 4)
+	local h = title(card, "AS A SHIELD", 14, COL.DIM); h.Size = UDim2.new(1, 0, 0, 18); h.ZIndex = 6
+	local rows = {
+		{"GUARD WIDTH", frac("cone", 0), string.format("+%d° either side", w.cone or 0), COL.CROWNS},
+		{"BLOCK COST", frac("block", 1, true), string.format("%d%% cheaper", math.floor((1 - (w.block or 1)) * 100 + 0.5)), COL.GOOD},
+		{"PARRY", frac("parry", 1), string.format("×%.1f the window", w.parry or 1), COL.PURPLE},
+		{"BASH", frac("bash", 0), string.format("+%d damage%s", w.bash or 0, (w.stun or 0) > 0 and string.format(", %.1fs stun", w.stun) or ""), COL.BAD},
+		{"ARROWS", w.arrows and 1 or 0.04, w.arrows and "stops them" or "they get round it", Color3.fromRGB(180, 190, 210)},
+		{"MOVE", frac("speed", 1), string.format("%d%% walk speed", math.floor((w.speed or 1) * 100 + 0.5)), Color3.fromRGB(90, 200, 255)},
+	}
+	for i, r in ipairs(rows) do
+		local row_ = clearFrame(card); row_.Size = UDim2.new(1, 0, 0, 18); row_.LayoutOrder = 10 + i
+		local l = title(row_, r[1], 11, COL.DIM); l.Size = UDim2.fromOffset(96, 18); l.ZIndex = 6
+		local track = frame(row_, Color3.fromRGB(6, 8, 16), 4); track.Position = UDim2.fromOffset(100, 5); track.Size = UDim2.new(1, -236, 0, 8); track.BackgroundTransparency = 0.2; track.ZIndex = 6
+		local fill = frame(track, r[4], 4); fill.Size = UDim2.new(math.clamp(r[2], 0.04, 1), 0, 1, 0); fill.ZIndex = 7
+		local v = label(row_, r[3], 12, FONT, COL.TEXT); v.AnchorPoint = Vector2.new(1, 0); v.Position = UDim2.new(1, 0, 0, 0); v.Size = UDim2.fromOffset(128, 18)
+		v.TextXAlignment = Enum.TextXAlignment.Right; v.TextWrapped = false; v.ZIndex = 6
+	end
+	return card
+end
+
 local function weaponStatCard(parent, id)
 	local a, R = weaponStats(id), weaponStatRange()
 	if not (a and R) then return nil end
@@ -5260,13 +5330,14 @@ do
 		local nm = title(stg, w.name, 34); nm.Position = UDim2.fromOffset(18, 12); nm.Size = UDim2.new(1, -36, 0, 38)
 		local sk = title(stg, sel.name == "Default" and "DEFAULT LOOK" or (string.upper(sel.name) .. "  SKIN"), 18, RARITY_COL[sel.rarity] or COL.DIM); sk.Position = UDim2.fromOffset(20, 50); sk.Size = UDim2.new(1, -40, 0, 22)
 		if sel.name ~= "Default" then local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16) end
-		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or (w.family == "Ranged" and "Ranged (the Archer's)" or (w.family == "Magic" and "Magic (the Mage's)" or "Polearm")))
+		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or (w.family == "Ranged" and "Ranged (the Archer's)" or (w.family == "Magic" and "Magic (the Mage's)"
+			or (w.family == "Shield" and "Shield (beside a one-hander)" or (w.family == "Throwable" and "Throwable (hold C)" or "Polearm")))))
 		local fxText = Preview.fxText(sel)
 		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or "") .. (fxText and ("  ·  " .. fxText) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
-		local desc = (weaponStats(w.id) or {}).Description
+		local desc = (weaponStats(w.id) or {}).Description or w.desc
 		if desc then local d2 = title(stg, desc, 14); d2.TextWrapped = true; d2.AnchorPoint = Vector2.new(0, 1); d2.Position = UDim2.new(0, 20, 1, -14); d2.Size = UDim2.new(1, -420, 0, 60); d2.TextYAlignment = Enum.TextYAlignment.Bottom end
-		-- what it does, against every other weapon
-		weaponStatCard(stg, w.id)
+		-- what it does, against every other weapon (a shield: against every other shield)
+		if w.family == "Shield" then HX.shieldStatCard(stg, w) elseif w.family ~= "Throwable" then weaponStatCard(stg, w.id) end
 		-- what you can do with it: equip / unlock / buy / where it drops
 		local act = clearFrame(right); act.Position = UDim2.new(0, 0, 1, -252); act.Size = UDim2.new(1, 0, 0, 56)
 		hlist(act, 10).VerticalAlignment = Enum.VerticalAlignment.Center
@@ -5662,6 +5733,11 @@ do
 		renderSide()
 	end
 	gui:GetAttributeChangedSignal("ArmoryTab"):Connect(function() local t = gui:GetAttribute("ArmoryTab"); if t then ui.armoryTab = t; if currentTab == "ARMORY" then task.spawn(render.ARMORY) end end end)
+	-- (straight to a weapon or shield on the Armory's stage: its id)
+	gui:GetAttributeChangedSignal("ArmoryWeapon"):Connect(function()
+		local w = gui:GetAttribute("ArmoryWeapon")
+		if w and Catalog.WEAPON[w] then ui.armoryTab = "weapons"; ui.shopWeapon = w; ui.shopSkin = nil; if currentTab == "ARMORY" then task.spawn(render.ARMORY) end end
+	end)
 end
 
 --------------------------------------------------------------------

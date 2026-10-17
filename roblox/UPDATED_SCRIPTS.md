@@ -1,4 +1,18 @@
-# Updated scripts: your arms by your name
+# Updated scripts: shields in the Armory
+
+- **The Armory shows a shield face on**, swaying a little (it no longer spins edge-on), says it's a
+  shield (and a throwable a throwable), and gives a shield its own card: guard width, block cost,
+  parry, bash, arrows and walk speed against every other shield. Its skins' strip shows each one
+  painted, face on.
+- `HubMenu`'s gui attribute `ArmoryWeapon` opens the Armory on a weapon or shield.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `weaponStage` for shields; `HX.shieldStatCard`; the family label; `ArmoryWeapon` |
+
+---
+
+## Before that: your arms by your name
 
 - **A little shield of your coat of arms** shows beside your level on your name tag, for everyone who
   looks your way.
