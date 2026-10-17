@@ -12,6 +12,8 @@
                         as they come)
        what lurks       a monster near you (within 70 studs) groans or growls now and then, from
                         where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
+       a boss near      while a boss is alive near you (Boss, within 90 studs) the colours turn
+                        a darker, blood-tinged, harder grade, easing back when it falls
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
                         walks a few steps across your path and is gone (WarCrowd.ghost; never a
                         fighter, nothing anyone else sees)
@@ -130,6 +132,34 @@ local function airOn(theme)
 	end
 	mood.vignette = gui
 end
+-- a boss near: the grade darkens and reddens while it lives, eases back after
+local function bossWatch(token, theme)
+	local g = GRADE[theme or ""] or {tint = Color3.fromRGB(226, 228, 232), sat = -0.22}
+	local up = false
+	while mood.on and mood.token == token do
+		task.wait(1)
+		local npcs = workspace:FindFirstChild("NPCs")
+		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local near = false
+		if npcs and me then
+			for _, m in ipairs(npcs:GetChildren()) do
+				local h = m:FindFirstChildOfClass("Humanoid")
+				local r = m:FindFirstChild("HumanoidRootPart")
+				if m:GetAttribute("Boss") and h and h.Health > 0 and r and (r.Position - me.Position).Magnitude < 90 then near = true; break end
+			end
+		end
+		if near ~= up and mood.grade then
+			up = near
+			local info = TweenInfo.new(near and 2 or 4, Enum.EasingStyle.Sine)
+			if near then
+				TweenService:Create(mood.grade, info, {TintColor = Color3.fromRGB(240, 196, 190), Saturation = g.sat + 0.12, Contrast = 0.28, Brightness = -0.05}):Play()
+			else
+				TweenService:Create(mood.grade, info, {TintColor = g.tint, Saturation = g.sat, Contrast = 0.14, Brightness = -0.02}):Play()
+			end
+		end
+	end
+end
+
 local function airOff()
 	if mood.grade then
 		local cc = mood.grade
@@ -316,6 +346,7 @@ local function enter(theme)
 	end))
 	task.spawn(dark, token)
 	task.spawn(haunt, token)
+	task.spawn(bossWatch, token, theme)
 	task.spawn(lurk, token)
 	watchMonsters()
 end

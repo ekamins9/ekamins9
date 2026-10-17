@@ -1,4 +1,16 @@
-# Updated scripts: burning pitch from the walls
+# Updated scripts: a boss darkens the room
+
+- **Dungeon boss fights**: while a boss is alive near you the colours turn darker, blood-tinged and harder; they ease back when it falls.
+- **Checked in Play** with the Lich King.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the boss grade |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: burning pitch from the walls
 
 - **Siege**: the defenders hurl pots of burning pitch down from the walls onto the shield blocks at the ladders (men fall under them).
 - **Checked in Play** on Thornwall.
@@ -19,16 +31,4 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | close-up steel |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: fire arrows at night
-
-- **At night every volley is fire arrows**: streaks of flame arcing across the dark (the armies' volleys and the engines' alike).
-- **Checked in Play** on Ravenfield.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | fire arrows (`opts.fire`, by default at night) |
 | [README.md](README.md) | | doc | |

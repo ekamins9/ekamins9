@@ -1974,7 +1974,9 @@ studs) groan or growl now and then from where they stand: the dead groan, the re
 dark over most of a second as grave-dust bursts up round it (some of the dead whisper as they
 come). Now and then,
 well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
-path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen). **A boss's
+path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen). While a
+boss lives within 90 studs, the grade turns darker, blood-tinged and harder, easing back when it
+falls. **A boss's
 entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords on their banner through
 `Adventure.client`, Siege's champion and the Horde's Warlord through `BossEntrance.client` when a
 bot becomes a `Boss`): black bars close in and the rest of the HUD steps aside, the camera finds
