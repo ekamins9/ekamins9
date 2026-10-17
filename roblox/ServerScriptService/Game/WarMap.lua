@@ -132,7 +132,8 @@ WarMap.THEMES = THEMES
 --------------------------------------------------------------------
 --  PIECES
 --------------------------------------------------------------------
-local function nocol(p) p.CanCollide = false; return p end
+local function nocol(p) p.CanCollide = false; p.CanQuery = false; p.CanTouch = false; return p end
+local debris   -- (the litter of earlier fighting: below)
 
 -- a line of sharpened stakes leaning out (cheap: one part a stake)
 local function stakes(ctx, a, b, gap, lean)
@@ -256,6 +257,53 @@ end
 --------------------------------------------------------------------
 --  EACH THEME'S OWN PLACE (round banner 3, the middle of the field)
 --------------------------------------------------------------------
+-- THE LITTER OF EARLIER FIGHTING, on every field: dropped shields, broken spears, arrows stuck in
+-- the ground in clusters, a fallen banner or two, a helmet; thickest round the banners, nothing
+-- solid (only looks: nobody trips on it)
+local SHIELD = {Color3.fromRGB(56, 92, 206), Color3.fromRGB(190, 50, 44), Color3.fromRGB(120, 92, 62)}
+function debris(ctx)
+	local function spot()
+		-- (round a banner, or anywhere down the corridor)
+		if rnd:NextNumber(0, 1) < 0.55 then
+			local bz = BANNER_Z[rnd:NextInteger(1, #BANNER_Z)]
+			local a, d = rnd:NextNumber(0, math.pi * 2), rnd:NextNumber(RADIUS + 2, RADIUS + 40)
+			return V3(math.cos(a) * d, 0, bz + math.sin(a) * d)
+		end
+		return V3(rnd:NextNumber(-CW + 8, CW - 8), 0, rnd:NextNumber(-END + 60, END - 60))
+	end
+	for _ = 1, 26 do
+		local at = spot()
+		local col = SHIELD[rnd:NextInteger(1, #SHIELD)]
+		nocol(K.cyl(ctx, "DroppedShield", rnd:NextNumber(2.4, 3), 0.3, CF(at + V3(0, 0.12, 0)) * CFrame.Angles(DEG(rnd:NextNumber(-10, 10)), rnd:NextNumber(0, 6), DEG(rnd:NextNumber(-10, 10))), col, M.Wood, ctx.Props))
+	end
+	for _ = 1, 22 do
+		local at = spot()
+		local len = rnd:NextNumber(3, 7)
+		nocol(K.cyl(ctx, "BrokenSpear", 0.25, len, CF(at + V3(0, 0.15, 0)) * CFrame.Angles(0, rnd:NextNumber(0, 6), 0) * CFrame.Angles(DEG(88), 0, 0), DARK, M.Wood, ctx.Props))
+	end
+	for _ = 1, 18 do
+		-- a cluster of arrows stuck in the ground, all leaning the way they came
+		local at = spot()
+		local lean = CFrame.Angles(DEG(rnd:NextNumber(20, 35)), rnd:NextNumber(0, 6), 0)
+		for _ = 1, rnd:NextInteger(4, 9) do
+			local p = at + V3(rnd:NextNumber(-3, 3), 0, rnd:NextNumber(-3, 3))
+			local cf = CF(p) * lean * CF(0, 1.2, 0)
+			nocol(K.box(ctx, "SpentArrow", V3(0.12, 2.6, 0.12), cf, Color3.fromRGB(96, 74, 52), M.Wood, ctx.Props))
+			nocol(K.box(ctx, "SpentFletch", V3(0.05, 0.6, 0.3), cf * CF(0, 1.1, 0), Color3.fromRGB(226, 220, 206), M.SmoothPlastic, ctx.Props))
+		end
+	end
+	for _ = 1, 6 do
+		local at = spot()
+		local col = SHIELD[rnd:NextInteger(1, 2)]
+		nocol(K.box(ctx, "FallenBanner", V3(2.6, 0.1, 3.8), CF(at + V3(0, 0.06, 0)) * CFrame.Angles(0, rnd:NextNumber(0, 6), 0), col, M.Fabric, ctx.Props))
+		nocol(K.cyl(ctx, "FallenPole", 0.3, 9, CF(at + V3(0, 0.2, 0)) * CFrame.Angles(0, rnd:NextNumber(0, 6), 0) * CFrame.Angles(DEG(89), 0, 0), DARK, M.Wood, ctx.Props))
+	end
+	for _ = 1, 10 do
+		local at = spot()
+		nocol(K.ball(ctx, "DroppedHelm", 1.3, CF(at + V3(0, 0.4, 0)) * CFrame.Angles(rnd:NextNumber(-1, 1), rnd:NextNumber(0, 6), rnd:NextNumber(-1, 1)), Color3.fromRGB(150, 152, 158), M.Metal, ctx.Props))
+	end
+end
+
 local FEATURE = {}
 -- REDFIELD: a farming village, a windmill, haystacks, wagons, fences
 function FEATURE.Redfield(ctx)
@@ -624,6 +672,7 @@ function WarMap.build(themeName)
 		local okF, errF = pcall(feat, ctx)
 		if not okF then warn("[WarMap] feature:", errF) end
 	end
+	pcall(debris, ctx)
 
 	-- TREES along the far edges of the flanks and round the camps, a few in the field
 	for _ = 1, 46 do

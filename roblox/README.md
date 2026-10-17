@@ -1742,6 +1742,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   sandstone columns, obelisks, dunes), **Stormvale** (a storm over a ruined abbey: broken nave
   walls and arch, pillars, a graveyard on both sides of the road), **Duskmoor** (purple heather at
   golden hour: a ring of cairns, a beacon burning on the tallest).
+- **The litter of earlier fighting** on every field (`debris` in WarMap): dropped shields in both
+  sides' colours, broken spears, clusters of arrows stuck in the ground leaning the way they came,
+  fallen banners, helmets; thickest round the banners; nothing solid or queryable (looks only).
 - **Made props** (ServerStorage ▸ WarProps, Studio-only, generated): **Pavilion** (each camp's
   command tent), **SiegeTower** (two parked before each camp, ramps towards the enemy),
   **Ballista** (two at each camp's corners), **Barricade** (spiked logs before the camps, and cover
