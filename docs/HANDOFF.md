@@ -186,6 +186,42 @@ Left to the owner:
 3. **Persistence:** test it once in a private server (or turn on Studio API access). Nothing persistent can be checked in Studio with API access off: profiles, settings, boards, season grants, the admin queue.
 4. **Season 1 ends 2026-11-17** (`Catalog ▸ Pass ends`). Before then, plan Season 2: a new `season` id gives fresh boards and payouts.
 
+## 4f. The epic pass (2026-10-16/17, autonomous)
+
+The user's direction: "insanely immersive", massive battles that look real, burning sieges,
+creepy dungeons, arrows overhead, combat that feels like swinging the sword. What came of it
+(every system has its section in `roblox/README.md`; `roblox/UPDATED_SCRIPTS.md` lists each
+step):
+- **`ReplicatedStorage ▸ WarCrowd`** — the armies on every screen: copies of the game's own
+  dressed soldiers, posed limb by limb, LOD by rank and distance, staggered clocks and a per-frame
+  budget. Regiments (march, clash, charge with `lane()`, loose, cheer, rout, fall, flung by
+  blasts), ladders with climbers, audiences (arena stands), sentries, apparitions (`ghost`).
+- **Where the armies are:** War (`War.client`), Siege (`SiegeEpic.client`: wall archers,
+  ladders, flank battles, burning towers; the server describes the castle on the Map:
+  `Siege.describeCastle`), the Prologue's Iron Host (`Prologue.client`), the Lists' warfield maps
+  (`Warfield.client` + MapForge `warfield`: Redmeadow, Ironvale, Grimfield, Sunfall, Ravenfield),
+  arena stands (`ArenaCrowd.client`), the Horde's host past the gates (`HordeHost.client`), the
+  Courtyard's sentries (`CourtyardGuards.client`).
+- **`ReplicatedStorage ▸ WarFX`** — volleys, fire, blasts (`scorch`/`floor` options), smoke
+  columns, haze, positional loops, crows (`crows`), weather. `BattleAmbience.client`: the battle
+  beyond a TDM/KOTH/LTS fight.
+- **Dungeons:** dark floors with torch pools (`Game ▸ Dungeon`), `DungeonMood.client` (lanterns,
+  dust, grade, vignette, drone and whispers, grave-dust arrivals, apparitions), boss entrances
+  (`ReplicatedStorage ▸ BossIntro`; the Depths through `Adventure.client`, Siege's champion and
+  the Horde's Warlord through `BossEntrance.client`).
+- **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
+  `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
+- **Studio-only, needs a save:** the five warfield maps, their MapShots, WarAudio ▸ Drums, Roar,
+  Melee, Fire, Drone, Whisper.
+- **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
+  rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
+  too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
+  TMP Scripts made in the Server context during Play share the game's `require` cache.
+- **Tried and dropped:** a victory camera on the round's winner (the server swaps the winner's
+  body as the round ends; it would need a change to the round flow).
+- **Recommended to the owner:** Lighting ▸ Technology = Future (the torch pools, fire and
+  lanterns are made for it; the MCP can't read or set it).
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.
