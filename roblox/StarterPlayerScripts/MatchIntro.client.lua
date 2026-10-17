@@ -3,7 +3,8 @@
      from the map's own shot (MapLoader's Shot1… on the Map) down to just behind you, the mode and
      the map come up as a title with what you're there to do, and a horn (just the "what you're there
      to do", low in the black bar, when the round's FIGHT! banner has only now said the rest:
-     Celebrate). The HUD steps aside while it plays. About four seconds; any key skips it. Not for a newcomer's first battle (Intro briefs them), nor while anything else
+     Celebrate). A duel on a warfield (The Lists on a map with Warfield) gets it once a match: the
+     flight over the battle down into the ring. The HUD steps aside while it plays. About four seconds; any key skips it. Not for a newcomer's first battle (Intro briefs them), nor while anything else
      has the camera. War flies its own (War.client). ]]
 
 local Players = game:GetService("Players")
@@ -24,6 +25,7 @@ local MODES = {Siege = true, TDM = true, KOTH = true, FFA = true, LTS = true, Ho
 local GOAL = {
 	TDM = "MORE KILLS THAN THE ENEMY", KOTH = "TAKE THE HILL  ·  HOLD IT", FFA = "EVERY BLADE FOR ITSELF",
 	LTS = "ONE LIFE  ·  LAST TEAM STANDING", Horde = "HOLD THE CAMP  ·  WAVE AFTER WAVE",
+	Lists = "A DUEL IN THE MIDDLE OF A BATTLE  ·  WIN IT",
 }
 local LEN = 4.2
 
@@ -150,8 +152,12 @@ end)
 local seen = nil
 player.CharacterAdded:Connect(function(char)
 	local modeId = round:GetAttribute("Mode")
-	if not MODES[modeId] then return end
+	-- (and a duel on a warfield: the ring in the middle of a battle — once a match, on its first round)
+	local map = workspace:FindFirstChild("Map")
+	local warfield = modeId == "Lists" and map and map:GetAttribute("Warfield") ~= nil
+	if not MODES[modeId] and not warfield then return end
 	local key = tostring(round:GetAttribute("Number")) .. ":" .. tostring(modeId)
+	if warfield then key = tostring(round:GetAttribute("Map")) .. ":Lists" end
 	if seen == key then return end
 	seen = key
 	if (player:GetAttribute("Tutorial") or 2) < 2 or _G.IntroActive or _G.CinematicUp then return end

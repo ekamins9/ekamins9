@@ -1787,7 +1787,9 @@ quicker when running.
 Your first body of a round in Siege, TDM, KOTH, FFA, LTS or Horde: black bars, the camera flies from
 the map's Shot1 down to just behind you, the mode and the map as a title and what you're there to
 do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four seconds; any key
-skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …).
+skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …). A duel on a
+warfield gets it once a match: the flight over the battle down into the ring ("A DUEL IN THE
+MIDDLE OF A BATTLE · WIN IT").
 
 ## The Courtyard's garrison (`CourtyardGuards.client`)
 In the hub, on your screen only: sentries in the Crown's colours walk the Courtyard's battlements
