@@ -1720,6 +1720,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
 - **A war cry answered**: do the War Cry or Cheer emote in any battle with armies (War, Siege, the
   warfields, the Horde's host) and your side's regiments within 140 studs raise their weapons and
   roar back (`WarCrowd.answer`, from `Cosmetics.client`).
+- **A banner taken**: every regiment of the side that took it raises its weapons and the army's
+  roar rolls over the field.
 - **The set-pieces**: the opening CHARGE (horns, drums, both lines run and crash, dust, a shake,
   men knocked flying); every 40–90 s a lane pulls apart and charges again; trebuchet fire on the
   flanks throws men through the air; volleys drop them; the cavalry ploughs through a flank.

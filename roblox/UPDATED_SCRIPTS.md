@@ -1,4 +1,14 @@
-# Updated scripts: a boss darkens the room
+# Updated scripts: War's armies roar when a banner falls
+
+- **A banner taken in War**: every regiment of the side that took it raises its weapons, and the roar of the army rolls over the field.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the army's cheer on a capture |
+
+---
+
+## Before that: a boss darkens the room
 
 - **Dungeon boss fights**: while a boss is alive near you the colours turn darker, blood-tinged and harder; they ease back when it falls.
 - **Checked in Play** with the Lich King.
@@ -18,17 +28,4 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | pitch pots |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the steel of the battle lines, up close
-
-- **Near a fighting line you hear the blows**: the men fighting in the front rank ring out with clashes, parries, blocks and blows on plate from where they stand (the same sounds as the real fights), a few times a second.
-- **Men falling near you** cry out and hit the ground with an armoured thud.
-- **Checked in Play** on Redmeadow: ~2.5 a second next to a line, no errors.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | close-up steel |
 | [README.md](README.md) | | doc | |
