@@ -11,6 +11,7 @@
 |---|---|---|---|
 | [Litter.lua](ServerScriptService/Game/Litter.lua) | ServerScriptService ▸ Game | ModuleScript | rewritten: real shapes, the houses' arms, trampling, `Litter.field` |
 | [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | lays `Litter.field` on maps with a horizon |
+| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | its gate field a little lighter, with the houses' arms |
 | [README.md](README.md) | | doc | |
 
 ---

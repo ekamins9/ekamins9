@@ -333,7 +333,7 @@ function Siege:startEngines()
 			local x = gateAt.X + (math.random() - 0.5) * (near and half * 1.8 or half * 2.2)
 			local z = gateAt.Z + fz * (near and (6 + math.random() * 30) or (30 + math.random() * 150))
 			return Vector3.new(x, gateAt.Y + 20, z)
-		end, {shields = 22, spears = 18, arrows = 26, banners = 5, helms = 8})
+		end, {shields = 18, spears = 14, arrows = 18, banners = 4, helms = 6}, {houses = m:GetAttribute("HouseSeed")})
 	end
 	local sides = {}
 	sides[self.attack] = {trebs = trebs, archers = {a + away * 30 + side * 20, a + away * 30 - side * 20}}
