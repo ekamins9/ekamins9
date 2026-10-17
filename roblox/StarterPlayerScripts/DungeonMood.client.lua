@@ -62,7 +62,8 @@
                         somewhere behind you, coming a little closer, then they stop
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
                         walks a few steps across your path and is gone (WarCrowd.ghost; never a
-                        fighter, nothing anyone else sees)
+                        fighter, nothing anyone else sees); in the Hollow Abbey, sometimes a whole
+                        procession of its dead brothers, filing slowly across, chanting
 
      The sounds are ReplicatedStorage ▸ WarAudio's (Drone, Whisper, Gate, Impact; one missing is
      just quiet). Nothing here is sent to the server. ]]
@@ -307,6 +308,21 @@ local function apparition()
 	local floor = workspace:Raycast(at + V3(0, 4, 0), V3(0, -30, 0), ghostRay)
 	if not floor then return end
 	local across = V3(-fwd.Z, 0, fwd.X) * (math.random() < 0.5 and -1 or 1)
+	-- (in the Abbey, now and then a whole procession of its dead brothers files across, slow, in
+	-- step, a faint chant going with them)
+	if mood.theme == "HollowAbbey" and math.random() < 0.45 then
+		local n = math.random(5, 7)
+		local secs, speed = 6.5, 2.2
+		local start = floor.Position - across * speed * secs / 2
+		for i = 1, n do
+			task.delay((i - 1) * 0.75, function()
+				if not mood.on then return end
+				WarCrowd.ghost(CFrame.new(start), {dir = across, speed = speed, secs = secs, color = GHOST.HollowAbbey, kind = "foot"})
+			end)
+		end
+		WarFX.sound("Chant", floor.Position + V3(0, 3, 0), {volume = 0.5, speed = 0.9, near = 14, range = 110})
+		return
+	end
 	local secs, speed = 3.6, 3.2
 	local start = floor.Position - across * speed * secs / 2
 	WarCrowd.ghost(CFrame.new(start), {dir = across, speed = speed, secs = secs, color = GHOST[mood.theme or ""], kind = math.random() < 0.5 and "foot" or "knight"})

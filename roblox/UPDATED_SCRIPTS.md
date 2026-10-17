@@ -1,4 +1,14 @@
-# Updated scripts: gargoyles that stand as statues
+# Updated scripts: the Abbey's procession
+
+- **The Hollow Abbey**: sometimes the pale figure crossing the dark ahead of you is a whole procession of the abbey's dead brothers, five to seven of them filing slowly across in step, with a faint chant going with them.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | procession |
+
+---
+
+## Before that: gargoyles that stand as statues
 
 - **The dungeons**: a sleeping Gargoyle stands as a stone statue on a plinth, eyes dead, until it notices you. Then its stone shell bursts off in tumbling shards and it comes for you.
 
