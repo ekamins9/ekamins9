@@ -1,4 +1,16 @@
-# Updated scripts: shouts in the fight
+# Updated scripts: the portraits watch
+
+- **The dungeons**: the paintings are portraits now, a pale sitter in dark clothes in a gilt frame, hung flat against the wall. Their eyes follow you about the room, and now and then, with your back to one, they burn red and something whispers.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | `P.painting`: a portrait model, hung against the wall facing the room |
+| [Portraits.client.lua](StarterPlayerScripts/Portraits.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new**: the eyes follow; the red-eyed moment |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: shouts in the fight
 
 - **Every fight**: the soldiers and monsters round you call out, in a short shout over their heads in their side's colour. They cry "FOR THE CROWN!" as they charge, "SHIELDS UP!" in the thick of it, "I'M HIT!" when hurt, "NEXT!" over a fallen foe, "AVENGE THEM!" when a friend falls. Goblins, orcs, elves and bandits have their own lines; the undead stay silent.
 

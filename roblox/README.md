@@ -122,6 +122,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Pigeons.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pigeons` | LocalScript |
 | `StarterPlayerScripts/Shade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shade` | LocalScript |
 | `StarterPlayerScripts/Shouts.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shouts` | LocalScript |
+| `StarterPlayerScripts/Portraits.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Portraits` | LocalScript |
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
@@ -1893,6 +1894,15 @@ leaves its nick there too (each screen finds the surface from where the swing ca
 with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal, fading after a
 minute and a half. The server sends only the part (or none, for the world), the point, the
 direction and where the swing came from (`ScuffEvent`); nothing is replicated.
+
+## The portraits watch (`Portraits.client`, Dungeon `P.painting`)
+
+The dungeons' paintings (the Crimson Manor's walls above all) are portraits now: someone long
+dead, head and shoulders in low relief on a dark varnished canvas (dark clothes, a white collar,
+a pale face, hair) in a gilt frame with its moulding and plaque, one model each (Props ▸
+Painting). On your screen their pupils turn in their whites toward you wherever you stand in the
+room (within 40 studs). Now and then, near one (18 studs) with your back to it, its eyes burn red
+and something whispers (35% of a chance every 40-100 s); turn round and they're only paint again.
 
 ## Shouts in the fight (`Shouts.client`)
 

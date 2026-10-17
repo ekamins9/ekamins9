@@ -342,12 +342,48 @@ P.carpet = function(ctx, th, cf)
 	box(ctx, "CarpetTrim", Vector3.new(7.6, 0.08, 12.6), cf * CFrame.new(0, 0.03, 0), Color3.fromRGB(210, 170, 70), Enum.Material.Fabric, false)
 	p.CanQuery = false
 end
+-- A PORTRAIT (one model, Props ▸ Painting): someone long dead, head and shoulders in low relief
+-- on a dark varnished canvas in a gilt frame. Its eyes (PPupilL / PPupilR) follow you about the
+-- room (DungeonMood, "the portraits watch").
 P.painting = function(ctx, th, cf, rng)
-	local frame = Color3.fromRGB(200, 160, 70)
-	box(ctx, "Frame", Vector3.new(5, 6, 0.3), cf * CFrame.new(0, 8, 0), frame, Enum.Material.Metal, false)
-	local hues = {Color3.fromRGB(90, 30, 40), Color3.fromRGB(40, 50, 80), Color3.fromRGB(50, 70, 50)}
-	box(ctx, "Canvas", Vector3.new(4.2, 5.2, 0.35), cf * CFrame.new(0, 8, 0.05), hues[rng:NextInteger(1, 3)], Enum.Material.Fabric, false)
-	K.ball(ctx, "Portrait", 1.8, cf * CFrame.new(0, 8.6, 0.1), Color3.fromRGB(220, 200, 180), Enum.Material.Fabric, ctx.Props).CanCollide = false
+	local m = Instance.new("Model")
+	m.Name = "Painting"
+	-- (cf looks into the room from a stud off the wall: hung back against the wall, turned so its
+	-- face, +Z here, is the room's side)
+	local at = cf * CFrame.new(0, 8, 0.8) * CFrame.Angles(0, math.pi, 0)
+	local function piece(name, size, off, color, mat, round)
+		local q = K.box(ctx, name, size, at * off, color, mat or Enum.Material.SmoothPlastic, m)
+		q.CanCollide, q.CanQuery, q.CastShadow = false, false, false
+		if round then local sm = Instance.new("SpecialMesh"); sm.MeshType = Enum.MeshType.Sphere; sm.Parent = q end
+		return q
+	end
+	local gilt = Color3.fromRGB(176, 136, 62)
+	piece("Frame", Vector3.new(5, 6, 0.3), CFrame.new(), gilt, Enum.Material.Metal)
+	-- (a raised inner moulding, darker)
+	for _, e in ipairs({{0, 2.75, 4.5, 0.2}, {0, -2.75, 4.5, 0.2}, {2.25, 0, 0.2, 5.3}, {-2.25, 0, 0.2, 5.3}}) do
+		piece("Moulding", Vector3.new(e[3], e[4], 0.12), CFrame.new(e[1], e[2], 0.2), shade(gilt, 0.7), Enum.Material.Metal)
+	end
+	local hues = {Color3.fromRGB(58, 22, 28), Color3.fromRGB(26, 30, 48), Color3.fromRGB(30, 40, 30), Color3.fromRGB(44, 34, 26)}
+	piece("Canvas", Vector3.new(4.2, 5.2, 0.3), CFrame.new(0, 0, 0.06), hues[rng:NextInteger(1, #hues)], Enum.Material.Fabric)
+	-- the sitter: dark clothes, a pale face, hair, a collar
+	local skins = {Color3.fromRGB(214, 196, 176), Color3.fromRGB(196, 168, 144), Color3.fromRGB(150, 116, 92), Color3.fromRGB(226, 214, 200)}
+	local hairs = {Color3.fromRGB(30, 24, 20), Color3.fromRGB(70, 46, 30), Color3.fromRGB(150, 146, 140), Color3.fromRGB(110, 70, 40)}
+	local cloth = {Color3.fromRGB(24, 22, 24), Color3.fromRGB(70, 20, 26), Color3.fromRGB(30, 34, 60)}
+	local skin = skins[rng:NextInteger(1, #skins)]
+	piece("Shoulders", Vector3.new(3.4, 1.9, 0.2), CFrame.new(0, -1.7, 0.24), cloth[rng:NextInteger(1, #cloth)], Enum.Material.Fabric, true)
+	piece("Collar", Vector3.new(1.2, 0.45, 0.16), CFrame.new(0, -0.95, 0.3), Color3.fromRGB(222, 214, 196), Enum.Material.Fabric, true)
+	piece("Neck", Vector3.new(0.5, 0.6, 0.14), CFrame.new(0, -0.7, 0.27), shade(skin, 0.85))
+	piece("Hair", Vector3.new(1.45, 1.25, 0.18), CFrame.new(0, 0.62, 0.26), hairs[rng:NextInteger(1, #hairs)], Enum.Material.Fabric, true)
+	piece("Face", Vector3.new(1.2, 1.55, 0.24), CFrame.new(0, 0.2, 0.3), skin, Enum.Material.SmoothPlastic, true)
+	for i, x in ipairs({-0.24, 0.24}) do
+		local side = i == 1 and "L" or "R"
+		piece("PEye" .. side, Vector3.new(0.26, 0.14, 0.05), CFrame.new(x, 0.32, 0.43), Color3.fromRGB(232, 226, 214), Enum.Material.SmoothPlastic, true)
+		piece("PPupil" .. side, Vector3.new(0.09, 0.09, 0.05), CFrame.new(x, 0.32, 0.46), Color3.fromRGB(26, 20, 18), Enum.Material.SmoothPlastic, true)
+		piece("Brow", Vector3.new(0.3, 0.05, 0.04), CFrame.new(x, 0.47, 0.43), shade(skin, 0.55))
+	end
+	piece("Mouth", Vector3.new(0.34, 0.04, 0.04), CFrame.new(0, -0.18, 0.42), shade(skin, 0.55))
+	piece("Plaque", Vector3.new(1.1, 0.3, 0.06), CFrame.new(0, -2.86, 0.18), gilt, Enum.Material.Metal)
+	m.Parent = ctx.Props
 end
 P.bookcase = function(ctx, th, cf, rng)
 	local wood = Color3.fromRGB(80, 50, 32)
