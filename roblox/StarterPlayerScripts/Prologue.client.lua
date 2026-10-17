@@ -460,9 +460,12 @@ local function setSlow(on)
 		slowLook()
 		for _, b in ipairs({ui.slowTop, ui.slowBottom}) do TweenService:Create(b, TweenInfo.new(0.8, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0.075, 0)}):Play() end
 		UIFX.play("Fallen")
+		-- (your heart in your ears the whole slow fight: WarAudio ▸ Heartbeat, if the place has it)
+		slow.heart = WarFX.loop("Heartbeat", 0.55)
 	else
 		local cc = slow.cc
 		slow.cc, slow.held = nil, false
+		if slow.heart then WarFX.stopLoop(slow.heart, 0.8); slow.heart = nil end
 		if cc then
 			TweenService:Create(cc, TweenInfo.new(0.5), {Saturation = 0, Contrast = 0, TintColor = WHITE}):Play()
 			task.delay(0.55, function() cc:Destroy() end)

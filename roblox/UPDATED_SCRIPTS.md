@@ -1,4 +1,19 @@
-# Updated scripts: four new emotes
+# Updated scripts: the sound of it
+
+- **A blade turned aside scrapes**: under a block's or a parry's clang (blade on blade, not on a
+  board), the steel is heard sliding off steel a beat later (the game's Clash sounds, until now
+  only a chamber's), brighter on a parry.
+- **The tutorial's slow fight has your heartbeat in it** (WarAudio ▸ Heartbeat, looped while time is
+  slow, fading out at full speed).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `CombatServer.clash` plays the scrape |
+| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the heartbeat under slow time |
+
+---
+
+## Before that: four new emotes
 
 - **Pledge** (free): the sword hand to the heart, head bowed, then the chin comes up.
 - **Challenge** (Rare, Relic crate): the blade levelled at them, chin up, a hand on the hip, two

@@ -384,6 +384,14 @@ end
 function CombatServer.clash(attacker, defender, at, kind, attackName, power)
 	if typeof(at) ~= "Vector3" then return end
 	clashRemote:FireAllClients(attacker, defender, at, kind, attackName or "", power or 1)
+	-- (and under the clang, the steel scraping off steel as the blade glances away: not off a board)
+	local scrape = ({block = 0.42, parry = 0.6, perfect = 0.72, ["break"] = 0.5})[kind]
+	local root = scrape and typeof(defender) == "Instance" and defender:FindFirstChild("HumanoidRootPart")
+	if root then
+		task.delay(0.04, function()
+			if root.Parent then Sounds.bank("Clash", root, {Volume = scrape, Speed = (kind == "parry" or kind == "perfect") and 1.12 or 1}) end
+		end)
+	end
 end
 
 -- The kick's landing: everyone in range and in the cone. hooks = {sfx, tell, dprint}
