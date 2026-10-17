@@ -221,7 +221,10 @@ step):
   bestiary and its king). Secret rooms behind cracked walls (`Game ▸ Secrets`, `opts.secrets`, the
   `CombatServer.worldHitHooks` list for blades that hit the world). Corridor ambushes, torches that
   gutter out as the gates slam, footsteps behind you, the sleeping dead lying down; Deadvault
-  denser. War: a champion for the side behind, the line-breaking call.
+  denser. War: a champion for the side behind (his name over his head, a boss bar), the
+  line-breaking call, Mistmarsh (a tenth field). Every boss falls with a pillar of light
+  (`BossIntro.falls`, the dragon too). A What's new card in the Courtyard once per update
+  (`WhatsNew.client`: edit its NEWS for the next update). Phone caps on prints and the lying dead.
   Note: every procedural map carries the Generated attribute (War, the caldera, the Crownlands,
   the Tavern, dungeon floors): test the mode, not Generated, to mean "a dungeon".
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
