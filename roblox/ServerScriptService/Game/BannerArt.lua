@@ -83,7 +83,7 @@ function BannerArt.dress(container, seedName)
 					local right = up:Cross(back)
 					local pos = cf.Position + nrm * (thin[2] / 2 + 0.03) + up * lift
 					-- (not the side that hangs flat against a wall)
-					if not workspace:Raycast(pos - nrm * 0.02, nrm * 0.8, params) then
+					if not workspace:Raycast(pos - nrm * 0.02, nrm * 2, params) then
 						plate(cloth, CFrame.fromMatrix(pos, right, up, back), side, layers)
 					end
 				end
