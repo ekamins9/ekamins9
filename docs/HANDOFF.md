@@ -285,7 +285,9 @@ step):
    **Save the place first** if it's been open since the 2026-10-16/17 run: its maps, MapShots and
    WarAudio sounds are Studio-only (section 4f). Remove the test scaffolding (ServerScriptService ▸
    TMP_Go, ServerStorage ▸ TMP_MapPick / TMP_Map / TMP_WarTheme, StarterPlayer ▸
-   StarterPlayerScripts ▸ TMP_ClientErrs, ServerStorage ▸ TMP_CourtyardBackup) before publishing.
+   StarterPlayerScripts ▸ TMP_ClientErrs, ServerScriptService ▸ TMP_ServerErrs, ServerStorage ▸
+   TMP_CourtyardBackup) before publishing. (The two error loggers write workspace ▸ TMP_Errs and
+   the player's TMP_CErrs: handy for a soak while they're there.)
 2. Finish / verify the mesh armor (section 4), look at every set on the mannequin, fix fits.
 3. Polish: weapon and helmet shapes, menu screens against `docs/reference/`, the maps' cover.
 4. Only one session should push to the branch at a time.
