@@ -1103,7 +1103,8 @@ do
 			local a = m:GetAttribute("Alert")
 			local head = m:FindFirstChild("Head")
 			local h = m:FindFirstChildOfClass("Humanoid")
-			if a and ALERT[a] and head and h and h.Health > 0 then
+			-- (one of the dead lying among the bones shows nothing: DungeonMood)
+			if a and ALERT[a] and head and h and h.Health > 0 and not m:GetAttribute("PlayingDead") then
 				live[m] = true
 				local s2 = signs[m]
 				if not s2 then

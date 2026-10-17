@@ -2010,6 +2010,11 @@ studs) groan or growl now and then from where they stand: the dead groan, the re
 (WarAudio: Groan, Growl; a big one lower). A monster doesn't pop in: it takes shape out of the
 dark over most of a second as grave-dust bursts up round it (some of the dead whisper as they
 come); one of a second wave climbs out of a pit cracked in the floor (The Depths: More come).
+**The dead lie**: a sleeping skeleton or ghoul isn't stood about with "z z" over it; on your screen
+it lies on its back among the bones like the dead it is (its body hidden, a laid-down copy in its
+place, its middle over where it really stands so a sneak attack still lands), and the moment it
+notices anything it gets up, tipping up off the floor from its feet in a puff of grave-dust with a
+groan.
 Now and then, well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
 path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen); or a
 swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸

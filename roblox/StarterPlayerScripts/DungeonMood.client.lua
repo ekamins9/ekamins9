@@ -16,6 +16,10 @@
                         cracks where each will come, glowing the dungeon's colour and trembling,
                         and a second later bursts: stone flung up, a cloud of grave-dust, and it
                         climbs out of the dark (AdventureEvent "Rise", the Rising attribute)
+       the dead lie     a sleeping skeleton or ghoul isn't stood about: it lies on the floor among
+                        the bones like the dead it is (its body hidden on your screen, a laid-down
+                        copy in its place, no "z z" over it), and when it notices you it gets up
+                        (the body tipping up off the floor from its feet, grave-dust, a groan)
        what lurks       a monster near you (within 70 studs) groans or growls now and then, from
                         where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
        a boss near      while a boss is alive near you (Boss, within 90 studs) the colours turn
@@ -549,6 +553,103 @@ task.spawn(function()
 	end)
 end)
 
+-- THE DEAD LIE: a sleeping dead thing lies among the bones until it notices you, then gets up
+local PLAY_DEAD = {Skeleton = true, SkeletonKnight = true, SkeletonArcher = true, Ghoul = true, FrostSkeleton = true}
+local lying = {}   -- model -> {proxy, rel = {part -> CFrame (standing, from its feet)}, floor, yaw, scale}
+local deadRay = RaycastParams.new()
+deadRay.FilterType = Enum.RaycastFilterType.Exclude
+local function hideBody(m, hidden)
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") or d:IsA("Decal") then d.LocalTransparencyModifier = hidden and 1 or 0 end
+	end
+end
+local function pose(e, u, standYaw)
+	-- (u = 0 lying on its back, 1 stood up: tipped up about its feet)
+	-- (lying, its middle is over where its body really stands, so a blow at it lands)
+	local yaw = e.yaw + (standYaw - e.yaw) * u
+	local feet = e.floor:Lerp(e.stand, u)
+	local pivot = CFrame.new(feet + V3(0, 0.5 * e.scale * (1 - u), 0)) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(math.pi / 2 * (1 - u), 0, 0)
+	for proxy, rel in pairs(e.rel) do proxy.CFrame = pivot * rel end
+end
+local function rise(m)
+	local e = lying[m]
+	if not e then return end
+	lying[m] = nil
+	m:SetAttribute("PlayingDead", nil)
+	local root = m:FindFirstChild("HumanoidRootPart")
+	local h = m:FindFirstChildOfClass("Humanoid")
+	if not (root and h and h.Health > 0) then e.proxy:Destroy(); hideBody(m, false); return end
+	local look = root.CFrame.LookVector
+	local standYaw = math.atan2(-look.X, -look.Z)
+	WarFX.dust(e.stand + V3(0, 0.6, 0), 1.2 * e.scale, DUST[m:GetAttribute("Faction") or ""] or Color3.fromRGB(110, 120, 112))
+	WarFX.sound("Groan", root.Position, {volume = 0.6, speed = 0.85 + math.random() * 0.15, near = 10, range = 70})
+	local t0 = os.clock()
+	while e.proxy.Parent do
+		local u = math.clamp((os.clock() - t0) / 0.7, 0, 1)
+		pose(e, 1 - (1 - u) ^ 3, standYaw)
+		if u >= 1 then break end
+		task.wait()
+	end
+	e.proxy:Destroy()
+	hideBody(m, false)
+end
+local function playDead(m)
+	if not mood.on or lying[m] or not PLAY_DEAD[m:GetAttribute("Monster") or ""] or m:GetAttribute("Alert") ~= "z" then return end
+	local root = m:FindFirstChild("HumanoidRootPart")
+	local h = m:FindFirstChildOfClass("Humanoid")
+	if not (root and h and h.Health > 0) then return end
+	local scale = m:GetAttribute("MonsterScale") or 1
+	deadRay.FilterDescendantsInstances = {m, workspace:FindFirstChild("NPCs")}
+	local hit = workspace:Raycast(root.Position, V3(0, -8 * scale, 0), deadRay)
+	if not hit then return end
+	-- (a copy of its body, standing, measured from its feet; then laid down)
+	local look = root.CFrame.LookVector
+	local standYaw = math.atan2(-look.X, -look.Z)
+	local stand = CFrame.new(hit.Position) * CFrame.Angles(0, standYaw, 0)
+	local proxy = Instance.new("Model")
+	proxy.Name = "LyingDead"
+	local yaw = math.random() * math.pi * 2
+	local e = {proxy = proxy, rel = {}, stand = hit.Position, yaw = yaw, scale = scale,
+		floor = hit.Position - V3(math.sin(yaw), 0, math.cos(yaw)) * 2.6 * scale}
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 0.98 then
+			local c = d:Clone()
+			for _, k in ipairs(c:GetDescendants()) do
+				if not (k:IsA("DataModelMesh") or k:IsA("Decal") or k:IsA("Texture") or k:IsA("SurfaceAppearance")) then k:Destroy() end
+			end
+			c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch = true, false, false, false
+			c.LocalTransparencyModifier = 0
+			c.Parent = proxy
+			e.rel[c] = stand:ToObjectSpace(d.CFrame)
+		end
+	end
+	lying[m] = e
+	m:SetAttribute("PlayingDead", true)
+	pose(e, 0, standYaw)
+	proxy.Parent = workspace
+	hideBody(m, true)
+	-- (it gets up the moment it notices anything; dies where it lies if it never does)
+	local c1, c2
+	local function done()
+		if c1 then c1:Disconnect() end
+		if c2 then c2:Disconnect() end
+	end
+	c1 = m:GetAttributeChangedSignal("Alert"):Connect(function()
+		if m:GetAttribute("Alert") ~= "z" then done(); task.spawn(rise, m) end
+	end)
+	c2 = h.Died:Connect(function()
+		done()
+		lying[m] = nil
+		proxy:Destroy()
+		hideBody(m, false)
+	end)
+	m.AncestryChanged:Connect(function() if not m.Parent then done(); lying[m] = nil; proxy:Destroy() end end)
+end
+local function dropDead()
+	for m, e in pairs(lying) do e.proxy:Destroy(); if m.Parent then hideBody(m, false) end end
+	lying = {}
+end
+
 -- what lurks: the nearest monsters groan or growl now and then, from where they stand
 local function lurk(token)
 	while mood.on and mood.token == token do
@@ -574,7 +675,12 @@ end
 
 local function watchMonsters()
 	local function hook(npcs)
-		table.insert(mood.conns, npcs.ChildAdded:Connect(function(m) task.spawn(arrives, m) end))
+		table.insert(mood.conns, npcs.ChildAdded:Connect(function(m)
+			task.spawn(arrives, m)
+			-- (after it has taken shape: a sleeper of the dead lies down)
+			task.delay(1.3, function() if m.Parent then playDead(m) end end)
+		end))
+		for _, m in ipairs(npcs:GetChildren()) do task.spawn(playDead, m) end
 	end
 	local npcs = workspace:FindFirstChild("NPCs")
 	if npcs then hook(npcs) end
@@ -591,6 +697,7 @@ local function leave()
 	for _, c in ipairs(mood.conns or {}) do c:Disconnect() end
 	mood.conns = {}
 	dropLanterns()
+	dropDead()
 	airOff()
 	if mood.drone then WarFX.stopLoop(mood.drone, 2); mood.drone = nil end
 end
