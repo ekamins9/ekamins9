@@ -35,6 +35,9 @@
        vermin           now and then a few rats squeak and scurry across the floor ahead of you,
                         wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
                         water drips (WarAudio ▸ Drip; not in the Ember Forge)
+       overhead         now and then something heavy walks across the floor above you: slow deep
+                        thuds passing over, grit sifting down from the ceiling with each, the
+                        lantern trembling, then it's gone
        footsteps        now and then, while nothing's fighting near you, slow steps on the stone
                         somewhere behind you, coming a little closer, then they stop
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
@@ -418,11 +421,17 @@ local function steps()
 	task.delay(2, function() spot:Destroy() end)
 end
 
+-- OVERHEAD: something heavy walks across the floor above (thuds passing over, grit from the
+-- ceiling with each) — gritAt and the lantern's tremble are the collapse's (below, hoisted)
+local overheadFn
+local function overhead() if overheadFn then overheadFn() end end
+
 local function haunt(token)
 	task.wait(30 + math.random() * 30)
 	while mood.on and mood.token == token do
 		local r = math.random()
-		if r < 0.3 then pcall(apparition) elseif r < 0.55 then pcall(bats) elseif r < 0.8 then task.spawn(pcall, steps) end
+		if r < 0.25 then pcall(apparition) elseif r < 0.45 then pcall(bats) elseif r < 0.65 then task.spawn(pcall, steps)
+		elseif r < 0.82 then task.spawn(pcall, overhead) end
 		task.wait(40 + math.random() * 45)
 	end
 end
@@ -807,6 +816,43 @@ local function quake(k)
 				for _ = 1, 3 do l.Brightness = b * 0.3; task.wait(0.05 + math.random() * 0.06); l.Brightness = b; task.wait(0.05) end
 			end)
 		end
+	end
+end
+overheadFn = function()
+	local c = player.Character
+	local r = c and c:FindFirstChild("HumanoidRootPart")
+	local cam = workspace.CurrentCamera
+	if not (r and cam) then return end
+	-- (not with something already coming for you)
+	local npcs = workspace:FindFirstChild("NPCs")
+	for _, m in ipairs(npcs and npcs:GetChildren() or {}) do
+		local mr = m:FindFirstChild("HumanoidRootPart")
+		if mr and m:GetAttribute("Alert") == "!" and (mr.Position - r.Position).Magnitude < 60 then return end
+	end
+	deadRay.FilterDescendantsInstances = {c, npcs}
+	-- it walks across, from one side of you to the other, over the ceiling
+	local look = cam.CFrame.LookVector
+	local side = V3(-look.Z, 0, look.X)
+	if side.Magnitude < 0.2 then return end
+	side = side.Unit * (math.random() < 0.5 and -1 or 1)
+	local n = 5
+	for i = 1, n do
+		if not mood.on then return end
+		local u = (i - 1) / (n - 1)
+		local at = r.Position + side * (-14 + 28 * u) + V3(math.random(-3, 3), 0, math.random(-3, 3))
+		local up = workspace:Raycast(at, V3(0, 30, 0), deadRay)
+		local top = up and up.Position or (at + V3(0, 14, 0))
+		local close = 1 - math.abs(u - 0.5) * 1.4
+		WarFX.sound("Impact", top + V3(0, 6, 0), {volume = 0.35 + 0.35 * close, speed = 0.28 + math.random() * 0.05, near = 20, range = 120})
+		WarFX.shake(0.12 + 0.18 * close, 0.5)
+		if up then gritAt(top - V3(0, 0.4, 0)) end
+		for _, l in ipairs(mood.lights or {}) do
+			if l.Parent and l:IsDescendantOf(c) then
+				local b = l.Brightness
+				task.spawn(function() l.Brightness = b * 0.55; task.wait(0.08); if l.Parent then l.Brightness = b end end)
+			end
+		end
+		task.wait(1.05 + math.random() * 0.2)
 	end
 end
 local function collapse(token)

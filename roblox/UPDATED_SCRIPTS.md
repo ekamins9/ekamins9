@@ -1,4 +1,15 @@
-# Updated scripts: a boss falls
+# Updated scripts: something walks overhead
+
+- **The dungeons**: now and then, while nothing's coming for you, something heavy walks across the floor above you. Five slow deep thuds pass over, grit sifts down from the ceiling and your lantern trembles with each.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | overhead |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a boss falls
 
 - **Every boss** (the Depths' lords, Deadvault's lair boss, War's and Siege's champions, the Horde's Warlord): when one dies near you, a deep boom and the ground shaking, a pillar of light where it stood, a ring of force rolling out, dust, and the world washing white for a moment.
 - **Cindermaw** (Dragonfall) falls the same way, three times the size. The effect now lives in `BossIntro.falls`, shared.
