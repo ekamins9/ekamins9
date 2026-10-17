@@ -1936,7 +1936,8 @@ colour), rises a little and fades. Only fighters within 40 studs and in view; at
 once (2 on a phone), 2.2 s between any two, 12 s between one fighter's. Not in the Hub. A War Cry
 or a Cheer emote in a fight (Cosmetics.client `rally` → `_G.ShoutRally`): your cry over your head
 ("FOR THE CROWN!") and up to four of your side's soldiers within 34 studs answering one after
-another ("AYE!", "WITH YOU!", "HUZZAH!"), as the regiments round you roar.
+another ("AYE!", "WITH YOU!", "HUZZAH!"), as the regiments round you roar. Settings ▸ Battle shouts
+(`ClientSettings` "Shouts") turns them all off.
 
 ## The Courtyard's pigeons (`Pigeons.client`)
 A flock (11, 6 on a phone) pecks about the fountain, on the cobbles and up on its rim, hopping a

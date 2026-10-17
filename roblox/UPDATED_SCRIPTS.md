@@ -1,11 +1,13 @@
 # Updated scripts: a war cry answered
 
 - **A War Cry or Cheer in a fight**: your cry shows over your head, and your side's soldiers near you shout back ("AYE!", "WITH YOU!", "FOR THE CROWN!") as the armies round you roar.
+- **Settings ▸ Battle shouts** turns the shouts off for anyone who'd rather not see them.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [Shouts.client.lua](StarterPlayerScripts/Shouts.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `bubble`, `_G.ShoutRally`, the `rally` lines |
 | [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `rally` calls `_G.ShoutRally` |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | Settings ▸ Battle shouts (On / Off) |
 | [README.md](README.md) | | doc | |
 
 ---

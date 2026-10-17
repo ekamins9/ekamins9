@@ -8,7 +8,7 @@
 
      A shout pops over the speaker's head in its side's colour and fades. Only fighters within 40
      studs and in view; a few at a time (fewer on a phone), each speaker now and then. Not in the
-     Hub. Nothing here is sent to the server. ]]
+     Hub; none at all with Settings ▸ Battle shouts off. Nothing here is sent to the server. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +18,8 @@ local TweenService = game:GetService("TweenService")
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local Device = require(ReplicatedStorage:WaitForChild("Device"))
+local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local function muted() return ClientSettings.get("Shouts") == "Off" end
 local round = ReplicatedStorage:WaitForChild("Round")
 local player = Players.LocalPlayer
 
@@ -73,6 +75,7 @@ end
 
 -- a shout over a head: the words popping up in the speaker's side's colour, rising, fading
 local function bubble(m, head, text)
+	if muted() then return end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Shout"
 	bb.Size = UDim2.fromOffset(260, 34)
@@ -178,7 +181,7 @@ RunService.Heartbeat:Connect(function(dt)
 	acc += dt
 	if acc < 0.25 then return end
 	acc = 0
-	if round:GetAttribute("Mode") == "Hub" then return end
+	if round:GetAttribute("Mode") == "Hub" or muted() then return end
 	local cam = workspace.CurrentCamera
 	if not cam then return end
 	local eye = cam.CFrame.Position

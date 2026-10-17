@@ -87,6 +87,8 @@ ClientSettings.CHOICES = {
 		hint = "Taking a weapon in hand: the arm reaches over the shoulder or to the hip and pulls it out. Off: it simply appears (the moment it takes to draw stays the same)."},
 	{key = "AimAssist",  label = "Aim assist (touch, controller)", options = {"On", "Off"},
 		hint = "On a phone or a controller: as you attack, the foe right in front of you draws your aim a little. Lock-on (the LOCK button, or click the right stick) works either way."},
+	{key = "Shouts",     label = "Battle shouts", options = {"On", "Off"},
+		hint = "The fighters round you call out in a fight (\"FOR THE CROWN!\", \"SHIELDS UP!\"), in short words over their heads."},
 	{key = "ShowLocked", label = "Locked items in menus", options = {"Show", "Hide"},
 		hint = "Show everything there is to get (with how to get it), or only what you own. The 🔒 switch in the Loadout and the Armory flips it too."},
 	-- PRIVACY: the server checks these (SettingsServer puts them on the player as Priv_<key>)
@@ -104,7 +106,7 @@ ClientSettings.PRIVACY = {"PartyInvites", "TradeRequests", "Gifts", "Pulls"}
 
 ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1, TouchLook = 1, TouchSize = 1, AimAssist = "On",
-	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", StartView = "Third person", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
+	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", StartView = "Third person", KillCam = "On", DrawAnim = "On", ShowLocked = "Show", Shouts = "On",
 	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone", Pulls = "Show",
 	SeenNews = "",   -- (not a setting: the last WHAT'S NEW card seen, StarterPlayerScripts ▸ WhatsNew)
 }
