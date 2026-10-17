@@ -371,9 +371,15 @@ function Depths:prepare(room)
 	for _ in pairs(room.mobs) do room.waiting += 1 end
 end
 
+-- (now and then, as a fight's gates slam, the room's torches gutter out for a few seconds: the
+-- fight starts by lantern light; DungeonMood draws it, AdventureEvent "Snuff")
+local SNUFF_CHANCE = 0.2
 function Depths:engage(room)
 	room.state = "fight"
 	self.active = room
+	if (room.kind == "combat" or room.kind == "elite") and math.random() < SNUFF_CHANCE then
+		event:FireAllClients("Snuff", {cx = room.cx, cz = room.cz, w = room.w, d = room.d})
+	end
 	room.wave = (room.kind == "combat" or room.kind == "stairs") and math.random() < (WAVE_CHANCE[self.floor] or 0.5)
 	room.peak, room.incoming = 0, 0
 	self:shut(room, true)

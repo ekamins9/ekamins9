@@ -12,6 +12,9 @@
        what comes       a monster doesn't just appear: it takes shape out of the dark over most
                         of a second as grave-dust bursts up round it (and some of the dead whisper
                         as they come)
+       the dark falls   now and then as a fight's gates slam (AdventureEvent "Snuff"), a cold gust
+                        puts out the room's torches: a few seconds by lantern light alone, then
+                        they sputter back one by one
        more come        when a fight's second wave (or a boss's servants) is called, the floor
                         cracks where each will come, glowing the dungeon's colour and trembling,
                         and a second later bursts: stone flung up, a cloud of grave-dust, and it
@@ -592,9 +595,49 @@ local function crackAt(spot, theme)
 	end
 	folder:Destroy()
 end
+-- THE DARK FALLS: a room's torches gutter out (light off, flame hidden, its fire out), then
+-- sputter back one by one
+local function snuff(data)
+	local m = workspace:FindFirstChild("Map")
+	if not m then return end
+	local flames = {}
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("PointLight") and d.Name == "Flicker" and d.Parent:IsA("BasePart") then
+			local p = d.Parent.Position
+			if math.abs(p.X - data.cx) < data.w / 2 + 2 and math.abs(p.Z - data.cz) < data.d / 2 + 2 then table.insert(flames, d) end
+		end
+	end
+	if #flames == 0 then return end
+	local center = V3(data.cx, 6, data.cz)
+	WarFX.sound("Whisper", center, {volume = 0.7, speed = 0.55, near = 20, range = 120})
+	for i, l in ipairs(flames) do
+		task.delay((i - 1) * 0.04, function()
+			if not l.Parent then return end
+			l.Enabled = false
+			l.Parent.LocalTransparencyModifier = 1
+			local f = l.Parent:FindFirstChildOfClass("Fire")
+			if f then f.Enabled = false end
+		end)
+	end
+	task.wait(3.2 + math.random() * 1.2)
+	for i, l in ipairs(flames) do
+		task.delay((i - 1) * 0.18 + math.random() * 0.2, function()
+			if not l.Parent then return end
+			-- (a sputter: on, off, on)
+			for k = 1, 3 do
+				l.Enabled = k ~= 2
+				l.Parent.LocalTransparencyModifier = k ~= 2 and 0 or 1
+				task.wait(0.07)
+			end
+			local f = l.Parent:FindFirstChildOfClass("Fire")
+			if f then f.Enabled = true end
+		end)
+	end
+end
 task.spawn(function()
 	local ev = ReplicatedStorage:WaitForChild("AdventureEvent")
 	ev.OnClientEvent:Connect(function(kind, data)
+		if kind == "Snuff" and mood.on and type(data) == "table" then task.spawn(snuff, data); return end
 		if kind ~= "Rise" or not mood.on or type(data) ~= "table" then return end
 		for i, at in ipairs(data.at or {}) do
 			task.delay((i - 1) * 0.08, function() crackAt(at, data.theme) end)

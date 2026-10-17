@@ -2132,6 +2132,9 @@ Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Dr
   a bigger cloud of grave-dust) under a banner in the theme's words (THE DEAD RISE, MORE POUR IN,
   THE HOUSE STIRS, THE ICE CRACKS, THE FORGE WAKES). A boss in its second phase calls its servants
   the same way, once (THEY ANSWER), a moment after its fury's roar. Those coming count as foes left.
+- **The dark falls** (`Depths:engage`, `SNUFF_CHANCE` 20%): as a fight's (or a champion's) gates
+  slam, a cold gust puts out the room's torches (AdventureEvent `Snuff`, drawn by `DungeonMood`):
+  three or four seconds by lantern light alone, then they sputter back one by one.
 - **Ambush** (`Depths:ambushCheck` / `ambush`): the corridors aren't safe. Walking one (18 studs or
   longer, no fight on), each second there's a small chance (2.5%) that the floor cracks open at both
   ends of it, either side of you, and the floor's commons climb out (the same Rise as a second

@@ -1,4 +1,16 @@
-# Updated scripts: ambushes in the Depths' corridors
+# Updated scripts: the dark falls as the gates slam
+
+- **The Depths**: one fight in five, as the gates slam, a cold gust puts out the room's torches. The fight starts by lantern light alone, and the torches sputter back one by one a few seconds later.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the cue (AdventureEvent "Snuff") |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the torches out and back |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: ambushes in the Depths' corridors
 
 - **The Depths**: the corridors aren't safe. Walking one, now and then (twice a floor at most) the floor cracks open at both ends and the dead climb out on either side of you: AMBUSH! with 2 to 4 of the floor's commons, more with a party.
 
