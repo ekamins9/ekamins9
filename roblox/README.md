@@ -1634,7 +1634,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   (`waveSpawn` 8). Bots: most push for the banner their side is taking, some hold one under attack
   (`War:botOpts` goal). Their number follows the server's frame rate (`War:botTarget`, read by
   BotFill): fewer when frames run long, back up when they're quick.
-- **The engines** (each side on its own beat after the first 20 s):
+- **The engines** (`Game ▸ Engines`, shared with Siege; drawn by `Engines.client`; each side on its
+  own beat after the first 20 s):
   **trebuchets** (two a side, behind the camps: a red ring where the shot lands, then the blast:
   heavy damage and thrown back); **archers** (a company on each flank: a volley into a knot of
   enemies; a raised guard or a roof overhead saves you); **battle-mages** (a barrage now and then:
@@ -1666,7 +1667,28 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   fights, none while it stands; out of sight it only marches; far ones 5 times a second).
   Measured in Studio: about 600 soldiers on the flanks, 34 bots and the engines at 53–59 fps.
 
+## Siege engines, volleys and battle-mages for any mode (`Game ▸ Engines`, `Engines.client`)
+`Engines.new{sides = {A = {trebs, archers, mages}, B = …}, target = fn(side), beats, grace, power,
+alive}` and `:tick()` from the mode: each side fires on its own beat, only ever at the other side.
+Trebuchet: a red ring (3.4 s) then the blast (thrown back). Volley: a raised guard (`Blocking`) or a
+roof overhead spares you. Barrage: meteors across the enemy's front, chain lightning onto their
+fighters, or a frost that slows (`SpeedMult_Frost`). A mode's `target` returning nil holds fire.
+`Engines.client` draws every shot (ReplicatedStorage ▸ WarEvent) and warns you when one's coming
+down on you (TREBUCHET / VOLLEY: raise your guard / METEORS / LIGHTNING / FROST); `_G.EngineShout`.
+Used by War (everything) and Siege (below: power 0.6).
+
+## The opening of a battle (`MatchIntro.client`)
+Your first body of a round in Siege, TDM, KOTH, FFA, LTS or Horde: black bars, the camera flies from
+the map's Shot1 down to just behind you, the mode and the map as a title and what you're there to
+do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four seconds; any key
+skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …).
+
 ## Siege (Team Objective, after Chivalry 2)
+
+**The war round it** (`Siege:startEngines`, from the map's spawns): the attackers' trebuchets far
+back beyond their first spawns lob fire onto defenders near the objective; the attackers' archers
+and the defenders' (up by their keep) loose volleys at knots of the other side near it. Gentler
+than War's (power 0.6, trebuchets every 14–20 s, volleys every 16–24 s, after 25 s).
 
 The attackers take a castle stage by stage; the defenders hold until the clock runs out
 (5 minutes to start). The mode's `attack` table (`GameConfig.MODES.Siege`) eases the map's stage

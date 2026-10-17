@@ -3,8 +3,8 @@
        • THE HUD (top): each side's reinforcements (a number and a bar), the clock, the five banners
          as chips in their holder's colour, filling as they swing, the ones your side is fighting
          for ringed in gold; at a banner, what's happening there (TAKING · HOLDING · LOSING IT ·
-         CAN'T TAKE IT YET) and its bar; big calls when a banner falls; warnings when something is
-         coming down on you (VOLLEY: raise your guard · TREBUCHET · METEORS · LIGHTNING · FROST)
+         CAN'T TAKE IT YET) and its bar; big calls when a banner falls (the engines' warnings
+         and shots are Engines.client's)
        • THE BANNERS on the field: each flag in its holder's colour, a ring on the ground, a beam
          of light over the ones being fought for
        • THE ARMIES on the flanks (ReplicatedStorage ▸ WarFX regiments: cheap figures, nothing
@@ -24,7 +24,6 @@ local UserInputService = game:GetService("UserInputService")
 
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
 local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
 local Device = require(ReplicatedStorage:WaitForChild("Device"))
@@ -39,7 +38,6 @@ local WHITE = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 200, 70)
 local SIDE = {A = Color3.fromRGB(70, 120, 240), B = Color3.fromRGB(226, 66, 54)}
 local NEUTRAL = Color3.fromRGB(226, 222, 210)
-local ARCANE = Color3.fromRGB(176, 96, 255)
 local NUMERAL = {"I", "II", "III", "IV", "V"}
 local NAMES = {
 	Redfield = {"SOUTH FIELDS", "THE ORCHARD", "THE VILLAGE", "THE MILL", "NORTH FIELDS"},
@@ -194,7 +192,7 @@ do
 	p.Visible = false
 	ui.at, ui.atName, ui.atState, ui.atFill = p, name, state, fill
 end
--- CALLS (a banner falls) and WARNINGS (something coming down on you)
+-- CALLS (a banner falls; Engines.client warns of what's coming down on you)
 do
 	local call = label(gui, "", 34, Theme.FONT_TITLE, WHITE)
 	call.AnchorPoint = Vector2.new(0.5, 0.5); call.Position = UDim2.fromScale(0.5, 0.3); call.Size = UDim2.new(0.9, 0, 0, 40)
@@ -204,13 +202,7 @@ do
 	local sub = label(gui, "", 16, Theme.FONT, Color3.fromRGB(226, 230, 240))
 	sub.AnchorPoint = Vector2.new(0.5, 0); sub.Position = UDim2.new(0.5, 0, 0.3, 24); sub.Size = UDim2.new(0.9, 0, 0, 20)
 	sub.TextTransparency = 1; sub:FindFirstChildOfClass("UIStroke").Transparency = 1
-	local warn = label(gui, "", 30, Theme.FONT_TITLE, Color3.fromRGB(255, 90, 70))
-	warn.AnchorPoint = Vector2.new(0.5, 0.5); warn.Position = UDim2.fromScale(0.5, 0.44); warn.Size = UDim2.new(0.9, 0, 0, 36)
-	warn.Visible = false
-	local hint = label(gui, "", 16, Theme.FONT, WHITE)
-	hint.AnchorPoint = Vector2.new(0.5, 0); hint.Position = UDim2.new(0.5, 0, 0.44, 22); hint.Size = UDim2.new(0.9, 0, 0, 20)
-	hint.Visible = false
-	ui.call, ui.callSub, ui.warn, ui.warnHint = call, sub, warn, hint
+	ui.call, ui.callSub = call, sub
 end
 
 local function fadeText(l, to, t)
@@ -228,21 +220,6 @@ local function bigCall(text, sub, color, dur)
 	task.delay(dur or 3, function()
 		if ui.callTok == tok then fadeText(ui.call, 1, 0.5); fadeText(ui.callSub, 1, 0.5) end
 	end)
-end
-local function warning(text, hintText, dur)
-	ui.warnTok = (ui.warnTok or 0) + 1
-	local tok = ui.warnTok
-	ui.warn.Text, ui.warn.Visible = text, true
-	ui.warnHint.Text, ui.warnHint.Visible = hintText or "", hintText ~= nil
-	task.spawn(function()
-		local t0 = os.clock()
-		while ui.warnTok == tok and os.clock() - t0 < (dur or 2) do
-			ui.warn.TextTransparency = (math.floor((os.clock() - t0) * 6) % 2 == 0) and 0 or 0.35
-			task.wait(0.05)
-		end
-		if ui.warnTok == tok then ui.warn.Visible, ui.warnHint.Visible = false, false end
-	end)
-	UIFX.play("Error")
 end
 
 --------------------------------------------------------------------
@@ -447,46 +424,14 @@ end
 --------------------------------------------------------------------
 --  THE ENGINES (what the server fires)
 --------------------------------------------------------------------
-local function near(at, r)
-	local p = myPos()
-	return p and (V3(p.X, 0, p.Z) - V3(at.X, 0, at.Z)).Magnitude <= r
-end
+-- (the engines' shots and warnings are Engines.client's: here, the armies' part in them)
 local EV = {}
-function EV.Treb(d)
-	local close = near(d.to, d.r + 50)
-	WarFX.fireball(d.from, d.to, d.t, {big = true, whistle = close, height = 120})
-	if near(d.to, d.r + 6) then warning("TREBUCHET!", "GET OUT OF THE RED RING", d.t) end
-end
 function EV.Volley(d)
 	local army = war.army
-	local k = d.to.X < 0 and 1 or 2
-	if army then army:loose("arch" .. d.side .. k) end
-	WarFX.volley(d.from, d.to, d.n or 60, {flight = d.t, spread = d.r * 0.6, stagger = 0.4})
-	if near(d.to, d.r + 4) and mySide() ~= d.side then
-		warning("VOLLEY!", "RAISE YOUR GUARD  " .. InputHints.say("Block") .. "  ·  OR GET UNDER A ROOF", d.t)
-	end
+	if army then army:loose("arch" .. d.side .. (d.to.X < 0 and 1 or 2)) end
 end
 function EV.Barrage(d)
 	if war.army then war.army:loose("mage" .. d.side) end
-	local who = (d.side == "A" and "THE CROWN'S" or "THE IRON HOST'S") .. " BATTLE-MAGES"
-	local mine = mySide() == d.side
-	if d.kind == "meteors" then
-		bigCall("METEOR STORM", who, mine and SIDE[d.side] or Color3.fromRGB(200, 130, 255), 2.6)
-		for k, p in ipairs(d.points) do
-			local from = d.from + V3((math.random() - 0.5) * 40, 80, (math.random() - 0.5) * 40)
-			WarFX.fireball(from, p, d.t + k * d.step, {color = ARCANE, size = 4.4, height = 18, big = true, whistle = near(p, 40)})
-		end
-		for _, p in ipairs(d.points) do if near(p, d.r + 4) and not mine then warning("METEORS!", "MOVE!", d.t) break end end
-	elseif d.kind == "lightning" then
-		bigCall("CHAIN LIGHTNING", who, mine and SIDE[d.side] or Color3.fromRGB(160, 200, 255), 2.4)
-		for k, p in ipairs(d.points) do task.delay(d.t + k * d.step, function() if war.on then WarFX.strike(p) end end) end
-		for _, p in ipairs(d.points) do if near(p, d.r + 3) and not mine then warning("LIGHTNING!", "MOVE!", d.t) break end end
-	else
-		bigCall("FROST", who, mine and SIDE[d.side] or Color3.fromRGB(150, 210, 255), 2.4)
-		local p = d.points[1]
-		task.delay(d.t, function() if war.on then WarFX.frost(p, d.r) end end)
-		if near(p, d.r + 3) and not mine then warning("FROST!", "GET CLEAR OR BE SLOWED", d.t) end
-	end
 end
 function EV.Captured(d)
 	local me = mySide()

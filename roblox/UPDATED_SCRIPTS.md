@@ -1,4 +1,22 @@
-# Updated scripts: WAR, the massive battle
+# Updated scripts: siege engines in Siege too, a cinematic opening for every battle
+
+- **Siege goes to war**: the attackers' trebuchets beyond the walls lob fire onto the defenders at the objective (a red ring first), and both sides' archers loose volleys at each other near it (raise your guard or get under a roof). War's engines became a shared module so any mode can have them.
+- **Every battle opens like a film**: your first spawn of a round in Siege, Team Deathmatch, King of the Hill, Free-for-All, Last Team Standing or Horde flies the camera from the map's own shot down behind you, with the mode, the map and what you're there to do (TAKE THE CASTLE / HOLD THE CASTLE…), a horn, black bars. Any key skips.
+- **Checked in Play**: Siege on Frostgate: the engines set up from the map's spawns (two trebuchets and two archer companies for the attackers, a company on the walls for the defenders) and fired at knots of the other side near the objective; every touched script compiled.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | new: trebuchets, volleys, barrages for any mode |
+| [Engines.client.lua](StarterPlayerScripts/Engines.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new: draws them, warns you |
+| [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | uses Engines |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the armies' part only |
+| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the war round it |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: WAR, the massive battle
 
 - **A new mode on the Play screen's first tile: WAR.** Two armies, players and 36 bots side by side, on a battlefield built fresh each round: five banners to take one by one as a front, reinforcements that bleed away, trebuchets with red warning rings, archer volleys (raise your guard or get under a roof), battle-mages' meteor storms, chain lightning and frost, and cavalry charges.
 - **The rest of both armies clash on the flanks**: hundreds of soldiers in regiments (foot, pikes, archers, battle-mages) marching to the front and fighting there, drawn on your screen only, so the server never pays for them.
@@ -50,36 +68,3 @@ Studio-only (save the place): ReplicatedStorage ▸ MapShots ▸ Redfield, Ironr
 | [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `OwnTop` |
 | [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | its panel only in the dungeon |
 | [README.md](README.md) | | doc | the Siege of Stormwatch |
-
----
-
-## Before that: the dungeon game looks like the rest of the game, our own prompts, clear ways out, no battle class screen
-
-- **The dungeon lobby wears the game's look**: FredokaOne headings, Gotham type, outlined white text, dark-glass rounded panels, chunky glossy buttons, a blue pill under the chosen tab, with Dark and Darker's layouts and a gold accent. The raid's own screens (DarkUI) follow.
-- **Nobody is naked**: a mannequin's empty armour slot takes its class's plain piece. The PLAY scene shows your party standing before the table, facing you, lit warm.
-- **Our own prompts** instead of Roblox's default "V" box: a glass card with a key cap, the action, the thing, a hold bar; loot tinted by its rarity (new Prompts client script).
-- **Ways out, always clear**: WALK AROUND [M] and TO THE COURTYARD (asked once) in the lobby; a small bar at the top of the Gilded Rat while you walk about (LOBBY / TO THE COURTYARD); signs over the gate, the door home and your stash.
-- **No battle class screen in the Gilded Rat, Deadvault or the Depths**: you go in as your lobby class. Falling mid-raid shows the dungeon game's own YOU FELL / DOWN screen (SPECTATE, BACK TO THE GILDED RAT).
-- **A raid's end**: no map vote; your own end screen (YOU GOT OUT / YOU FELL); everyone goes back to the Gilded Rat, each party together.
-- **Fixes found while testing**: a 0-second intermission waited forever (Studio couldn't leave the Gilded Rat); the lobby stayed open over a raid; the gold label covered a tab; the hotbar showed through the lobby; prompt cards and the lobby's name tags vanished after a respawn; the top line read "THE GILDED RAT · THE GILDED RAT".
-- **Checked in Play**: Tavern arrival (no class screen, lobby opened, each tab looked at), walk-around bar and signs, into Deadvault with no spawn press, fell, YOU FELL screen, BACK TO THE GILDED RAT ended the raid with YOU FELL and returned to the Tavern with a body; a respawn in the Tavern kept prompt cards working; compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [DarkUI.lua](ReplicatedStorage/DarkUI.lua) | ReplicatedStorage | ModuleScript | the game's look |
-| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | restyle, ways out, Tavern bar, DOWN screen, scene, fixes |
-| [Prompts.client.lua](StarterPlayerScripts/Prompts.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | ownSpawn: no class screen, "Down" |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | ownSpawn on Tavern, Deadvault, Depths |
-| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | no endless 0 s break; no map vote after a raid |
-| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | toTavern; everyone home after a raid |
-| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | RaidFate; leaving ends it in Studio; wording |
-| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | leaving ends it in Studio |
-| [Tavern.lua](ServerScriptService/Game/Modes/Tavern.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | signs |
-| [RoundResult.client.lua](StarterPlayerScripts/RoundResult.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the dungeon game's end screen |
-| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no double name; BACK TO THE GILDED RAT |
-| [Spectate.client.lua](StarterPlayerScripts/Spectate.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | BACK instead of CLASS / SPAWN in the dungeon game |
-| [DeathScreen.client.lua](StarterPlayerScripts/DeathScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the dungeon game's next-step lines |
-| [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | steps aside for the lobby |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | mannequins never naked |
-| [README.md](README.md) | | doc | |

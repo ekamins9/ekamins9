@@ -26,7 +26,12 @@
        ObjProgress 0..1 · ObjState ("moving" "contested" "idle" "battering"
        "capturing" "losing" "fighting") · ObjPos · ObjAttack / ObjDefend (bodies
        at the objective) · ObjNote ("GATE 4 / 10")
-     ObjectiveEvent (RemoteEvent) server -> all: "Stage", {text, add, team, final} ]]
+     ObjectiveEvent (RemoteEvent) server -> all: "Stage", {text, add, team, final}
+
+     THE WAR ROUND IT (Game ▸ Engines, drawn by Engines.client): the attackers' trebuchets out
+     beyond their first spawns lob fire onto the defenders near the objective (a red ring first),
+     and both sides' archers loose volleys at knots of the other near it (a raised guard or a roof
+     spares you). Gentler than War's (power 0.6). ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -38,6 +43,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Sounds = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Game = require(script.Parent.Parent:WaitForChild("Game"))
+local Engines = require(script.Parent.Parent:WaitForChild("Engines"))
 local Teams, MapLoader = Game.Teams, Game.MapLoader
 
 local event = ReplicatedStorage:FindFirstChild("ObjectiveEvent")
@@ -122,13 +128,52 @@ function Siege:start(map)
 	end
 	self:nextStage()
 	self:publishScores()
+	self:startEngines()
 	self.conn = RunService.Heartbeat:Connect(function(dt)
 		local ok, err = pcall(self.step, self, dt)
 		if not ok then warn("[Siege]", err) end
 	end)
 end
 
+-- the war round the castle: where each side's engines stand (from the map's spawns)
+function Siege:startEngines()
+	local m = MapLoader.current
+	local folder = m and m:FindFirstChild("Spawns")
+	local att, def = {}, {}
+	local attFirst, defLast = math.huge, -1
+	for _, p in ipairs(folder and folder:GetChildren() or {}) do
+		local side, st = p:GetAttribute("Side"), p:GetAttribute("Stage") or 1
+		if side == "Attack" then
+			if st < attFirst then att, attFirst = {p.Position}, st elseif st == attFirst then table.insert(att, p.Position) end
+		elseif side == "Defend" then
+			if st > defLast then def, defLast = {p.Position}, st elseif st == defLast then table.insert(def, p.Position) end
+		end
+	end
+	if #att == 0 or #def == 0 then self.engines = nil; return end
+	local function mid(list) local v = Vector3.zero; for _, q in ipairs(list) do v += q end; return v / #list end
+	local a, d = mid(att), mid(def)
+	local away = Vector3.new(a.X - d.X, 0, a.Z - d.Z)
+	away = away.Magnitude > 1 and away.Unit or Vector3.new(0, 0, 1)
+	local side = Vector3.new(-away.Z, 0, away.X)
+	-- the attackers' trebuchets well back beyond their first spawns (out of sight: only their fire is
+	-- seen), their archers just behind them; the defenders' archers up on the walls by their keep
+	local trebs = {a + away * 160 + side * 40 + Vector3.new(0, 30, 0), a + away * 170 - side * 50 + Vector3.new(0, 30, 0)}
+	local sides = {}
+	sides[self.attack] = {trebs = trebs, archers = {a + away * 30 + side * 20, a + away * 30 - side * 20}}
+	sides[self.defend] = {archers = {d + Vector3.new(0, 18, 0)}}
+	self.engines = Engines.new({
+		sides = sides, power = 0.6, grace = 25,
+		beats = {treb = {14, 20}, volley = {16, 24}},
+		target = function(s)
+			local at = node:GetAttribute("ObjPos")
+			return Engines.knot(s, typeof(at) == "Vector3" and at or nil, 80)
+		end,
+		alive = function() return Game.current == self and not self.done end,
+	})
+end
+
 function Siege:stop()
+	self.engines = nil
 	if self.conn then self.conn:Disconnect(); self.conn = nil end
 	if self.boss then self.boss:destroy(); self.boss = nil end
 	self.ram, self.cap = nil, nil
@@ -384,6 +429,7 @@ end
 -- four times a second: what the HUD shows
 function Siege:tick(dt)
 	if self.done then return end
+	if self.engines then self.engines:tick() end
 	node:SetAttribute("ObjProgress", math.floor((self.progress or 0) * 1000) / 1000)
 	node:SetAttribute("ObjState", self.state or "idle")
 	node:SetAttribute("ObjAttack", self.near and self.near.a or 0)
