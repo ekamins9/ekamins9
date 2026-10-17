@@ -1,4 +1,17 @@
-# Updated scripts: arrows in the shield
+# Updated scripts: the Headless Knight
+
+- **The Bone Crypt and the Hollow Abbey** have a new champion: the Headless Knight, a dark-armoured skeleton with no head on its shoulders, mist rising from its collar, its skull carried in its hand with eyes burning. It charges, and its skull screams.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | `EXTRA.headless` |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `HeadlessKnight` |
+| [Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | in the Bone Crypt's and the Hollow Abbey's elites |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: arrows in the shield
 
 - **Every fight with bows, and War's volleys**: an arrow you catch on a raised shield stays standing in the board, five at most, each for 20 seconds. After a volley your shield bristles. Never in a body: the game stays Mild.
 

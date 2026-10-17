@@ -26,7 +26,7 @@ return {
 		accent = C(120, 255, 170), torch = C(170, 240, 200),
 		light = {ClockTime = 0, Ambient = C(78, 82, 90), OutdoorAmbient = C(72, 76, 84), Brightness = 0.7, FogColor = C(20, 26, 28), FogEnd = 260, FogStart = 60},
 		props = {"coffin", "bones", "cobweb", "candles", "pillar", "statue", "rubble", "brazier"},
-		monsters = {common = {"Skeleton", "Skeleton", "Ghoul", "SkeletonKnight", "CaveSpider"}, ranged = {"SkeletonArcher", "Necromancer"}, elite = {"DeathKnight", "Wraith", "Banshee"}},
+		monsters = {common = {"Skeleton", "Skeleton", "Ghoul", "SkeletonKnight", "CaveSpider"}, ranged = {"SkeletonArcher", "Necromancer"}, elite = {"DeathKnight", "Wraith", "Banshee", "HeadlessKnight"}},
 		boss = "LichKing", bossName = "Malgrath, the Lich King",
 	},
 	GoblinWarrens = {
@@ -81,7 +81,7 @@ return {
 		accent = C(190, 120, 255), torch = C(214, 170, 255),
 		light = {ClockTime = 0, Ambient = C(82, 74, 96), OutdoorAmbient = C(76, 68, 90), Brightness = 0.6, FogColor = C(28, 20, 38), FogEnd = 260, FogStart = 60},
 		props = {"candles", "statue", "pillar", "bookcase", "banner", "carpet", "cobweb", "bones"},
-		monsters = {common = {"HollowMonk", "HollowMonk", "Penitent", "AbbeyGuard"}, ranged = {"Cultist", "Crossbowman"}, elite = {"Wraith", "Gargoyle", "Banshee"}},
+		monsters = {common = {"HollowMonk", "HollowMonk", "Penitent", "AbbeyGuard"}, ranged = {"Cultist", "Crossbowman"}, elite = {"Wraith", "Gargoyle", "Banshee", "HeadlessKnight"}},
 		boss = "BlackAbbot", bossName = "Malachai, the Black Abbot",
 	},
 	SilkCaverns = {

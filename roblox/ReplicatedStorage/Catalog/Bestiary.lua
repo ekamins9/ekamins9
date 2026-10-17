@@ -173,6 +173,14 @@ add("DeathKnight", {name = "Death Knight", faction = "Undead", skill = "Champion
 			{kind = "charge", name = "Grave Charge", dmg = 26, cd = 12, range = {10, 40}},
 		},
 		tier = 3})
+-- the Headless Knight: rides no more but walks the dark carrying its own skull, eyes burning
+add("HeadlessKnight", {name = "Headless Knight", faction = "Undead", skill = "Champion", weapon = {"Longsword", "Executioner", "Greatsword"}, hp = 240, scale = 1.15, weight = "Heavy",
+	look = {body = "skeleton", skin = BONE_DARK, eyes = C(120, 200, 255), set = "Deathless", noHelm = true, extras = {"headless", "cape"}, aura = "ghost",
+		colors = {Primary = "Jet"}}, traits = {"enrage"}, moveFx = "ghost", moves = {
+			{kind = "charge", name = "Headless Charge", dmg = 24, cd = 11, range = {10, 38}},
+			{kind = "wail", name = "Its Skull Screams", dmg = 6, cd = 16, radius = 13},
+		},
+		tier = 3})
 add("Wraith", {name = "Wraith", faction = "Undead", skill = "Champion", class = "Mage", weapon = "Staff", hp = 180, scale = 1.15,
 	look = {body = "wraith", skin = C(40, 50, 60), eyes = C(120, 220, 255), aura = "ghost", extras = {"hood"}}, traits = {"frostbite"}, power = "Shadowstep", moveFx = "ghost", moves = {
 			{kind = "blink", name = "Shade Step", dmg = 22, cd = 9, range = {8, 60}},

@@ -440,6 +440,50 @@ EXTRA.crown = function(f, m, look)
 		if i % 2 == 0 then piece(f, head, "ball", Vector3.new(0.14, 0.14, 0.14), gem, Enum.Material.Neon, cf * CFrame.new(0, 0, -0.05)) end
 	end
 end
+-- HEADLESS: no head on its shoulders (the head and all on it unseen), a pale mist rising out of
+-- an iron collar where it was, and the skull carried in its left hand, its eyes burning (the
+-- Headless Knight: spooky, never gory)
+EXTRA.headless = function(f, m, look)
+	local head, torso, arm = m:FindFirstChild("Head"), m:FindFirstChild("Torso"), m:FindFirstChild("Left Arm")
+	if not (head and torso) then return end
+	head.Transparency = 1
+	for _, d in ipairs(head:GetChildren()) do if d:IsA("Decal") then d.Transparency = 1 end end
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("Weld") and d.Name == "LookWeld" and d.Part0 == head and d.Part1 then d.Part1.Transparency = 1 end
+	end
+	local IRON = Color3.fromRGB(52, 54, 60)
+	local collar = piece(f, torso, "cyl", Vector3.new(0.35, 1.25, 1.25), IRON, Enum.Material.Metal, CFrame.new(0, 1.05, 0) * UPRIGHT)
+	local eye = look.eyes or Color3.fromRGB(120, 200, 255)
+	if collar then
+		local mist = Instance.new("ParticleEmitter")
+		mist.Name = "NeckMist"
+		mist.Color = ColorSequence.new(eye:Lerp(Color3.new(1, 1, 1), 0.5))
+		mist.LightEmission = 0.85
+		mist.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 2.2)})
+		mist.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1)})
+		mist.Lifetime = NumberRange.new(0.9, 1.6)
+		mist.Rate = 28
+		mist.Speed = NumberRange.new(1.5, 3)
+		mist.SpreadAngle = Vector2.new(14, 14)
+		mist.EmissionDirection = Enum.NormalId.Right   -- (the collar stands on its end: its +X is up)
+		mist.Parent = collar
+		local glow = Instance.new("PointLight"); glow.Color = eye; glow.Range = 8; glow.Brightness = 1.2; glow.Parent = collar
+	end
+	if arm then
+		local bone = look.skin or Color3.fromRGB(222, 214, 190)
+		local at = CFrame.new(0, -1.2, -0.55)
+		piece(f, arm, "ball", Vector3.new(1.05, 1.05, 1.05), bone, Enum.Material.SmoothPlastic, at)
+		piece(f, arm, "block", Vector3.new(0.7, 0.32, 0.6), darker(bone, 0.9), Enum.Material.SmoothPlastic, at * CFrame.new(0, -0.45, -0.08))
+		for _, s in ipairs({-1, 1}) do
+			piece(f, arm, "ball", Vector3.new(0.26, 0.26, 0.26), Color3.fromRGB(20, 18, 20), Enum.Material.SmoothPlastic, at * CFrame.new(s * 0.2, 0.06, -0.42))
+			piece(f, arm, "ball", Vector3.new(0.14, 0.14, 0.14), eye, Enum.Material.Neon, at * CFrame.new(s * 0.2, 0.06, -0.5))
+		end
+		local glow = piece(f, arm, "ball", Vector3.new(0.1, 0.1, 0.1), eye, Enum.Material.Neon, at * CFrame.new(0, 0.06, -0.5), {Transparency = 1})
+		if glow then
+			local l = Instance.new("PointLight"); l.Color = eye; l.Range = 9; l.Brightness = 1.6; l.Parent = glow
+		end
+	end
+end
 EXTRA.halo = function(f, m)
 	local head = m:FindFirstChild("Head")
 	for i = 0, 11 do

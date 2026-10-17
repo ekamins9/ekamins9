@@ -2680,6 +2680,13 @@ Abbey. Now and then it throws its head back as a ring fills round it, then SCREA
 few seconds (`ReplicatedStorage ▸ Hearing`, through BossFX "Wail" on each screen, with the scream
 itself, WarAudio ▸ Wail, heard far off). Step out of the ring.
 
+**The Headless Knight**: a champion of the Bone Crypt and the Hollow Abbey, a dark-armoured
+skeleton knight (the Deathless set, no helm) with no head on its shoulders: a pale mist rising out of
+an iron collar where it was, a cold light, and its skull carried in its left hand with its eyes
+burning (Monsters `EXTRA.headless`: the head and all on it unseen, never gory). It fights with a
+longsword, an executioner's sword or a greatsword, charges (`charge`), and now and then its skull
+SCREAMS (`wail`, as the Banshee's).
+
 **Spiders** (`body = "spider"`: the **Cave Spider**, small and quick, in the Goblin Warrens and the
 Bone Crypt; the **Broodmother**, an elite of the Warrens twice a man's width that calls up cave
 spiders): the body it was dressed as is hidden (it still fights with it: its bites are a hidden
