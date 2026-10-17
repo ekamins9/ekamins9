@@ -219,7 +219,9 @@ step):
   moves over War, Siege and Horde; War's weather can turn mid-battle (Round ▸ WarSky). The Gilded
   Rat sounds lived in (`TavernAmbience.client`). A sixth dungeon theme, the Drowned Halls (its
   bestiary and its king). Secret rooms behind cracked walls (`Game ▸ Secrets`, `opts.secrets`, the
-  `CombatServer.worldHitHooks` list for blades that hit the world).
+  `CombatServer.worldHitHooks` list for blades that hit the world). Corridor ambushes, torches that
+  gutter out as the gates slam, footsteps behind you, the sleeping dead lying down; Deadvault
+  denser. War: a champion for the side behind, the line-breaking call.
   Note: every procedural map carries the Generated attribute (War, the caldera, the Crownlands,
   the Tavern, dungeon floors): test the mode, not Generated, to mean "a dungeon".
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
