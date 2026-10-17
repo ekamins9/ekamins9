@@ -212,7 +212,7 @@ step):
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps, their MapShots, WarAudio ▸ Drums, Roar,
-  Melee, Fire, Drone, Whisper.
+  Melee, Fire, Drone, Whisper, Groan, Growl.
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
   too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
