@@ -17,7 +17,7 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-18b",
+	version = "2026-10-18c",
 	title = "STEEL, BANNERS AND THE LAND BEYOND",
 	lines = {
 		{"✨", "Steel on steel", "a blocked blow glances off where the blades cross: sparks, the ring of the blade"},
@@ -26,7 +26,7 @@ local NEWS = {
 		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn"},
 		{"👑", "Your own coat of arms", "in LOOK: on your shield, your banner, and two houses at war on every field"},
 		{"🗺", "Ten new maps", "and the land runs on past every edge, strewn with the last fight"},
-		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
+		{"🏆", "Honor duels", "in the Courtyard, face someone and play Challenge: first to three touches"},
 	},
 }
 

@@ -386,7 +386,13 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   riposte); a dodge kicks up the ground (`DodgeFX`); a won two-sided battle ends on the field
   (`BattleEnd` + BotFill: the winners cheer and roar, the beaten kneel, a horn, the camera comes down
   to them before the board and the vote).
-- **Four new emotes**: Pledge (free), Challenge, At Rest, War Drum (Relic crate).
+- **Four new emotes**: Pledge and Challenge (free), At Rest, War Drum (Relic crate).
+- **Honor duels** (`Hub ▸ Duels`, `Duels.client`, `CombatServer.duelPair`): in the Courtyard, face
+  someone and play the Challenge emote; accepted, a ring of light, 3-2-1, first to three clean
+  touches (scored, never wounds). **Verify with 2 players** (Studio ▸ Test ▸ Clients and Servers):
+  only the screens were checked here, with test events in a 1-player session.
+- Blocks and parries on a blade now scrape (the Clash sounds under the clang); the tutorial's slow
+  time has a heartbeat (WarAudio ▸ Heartbeat).
 - The class screen shows a mode's whole description; the tutorial gives a bow or staff user a
   longsword so its duel can be fought.
 - Rojo is live again (the plugin reconnected); edits sync on save.

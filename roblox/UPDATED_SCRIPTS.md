@@ -1,5 +1,7 @@
 # Updated scripts: everyone can duel
 
+- What's New: "Honor duels" in place of the loadout's line.
+
 - **The Challenge emote is free** (it starts the honor duels), on a new player's wheel from the
   start, and put on an existing player's wheel once if there's a free slot.
 
@@ -8,6 +10,7 @@
 | [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Challenge free, Common |
 | [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | the starting wheel |
 | [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub | Script | `challengeSeeded`: once onto the wheel |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Honor duels |
 
 ---
 
