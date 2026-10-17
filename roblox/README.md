@@ -114,6 +114,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
+| `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
@@ -2166,6 +2167,14 @@ Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Dr
   TAKE THE CROWN in the other adventures), an arrow at the screen's edge to the nearest one off
   screen, an UP NEXT line under the run panel, a gift on the map's rooms with a chest. Objectives
   steps aside for an OwnHud mode.
+
+### What's new (`WhatsNew.client`)
+Once per update, back in the Courtyard, a card of what's new (the script's `NEWS`: a `version`, a
+title, lines of an icon, a heading and a line). Only for someone past the welcome and the menu
+tour (Tutorial ≥ 2, no intro, tour or cinematic running), over the Hub menu; TO BATTLE! (or
+Escape, Enter, a controller's B) puts it away and the version is kept with your settings
+(`ClientSettings` ▸ `SeenNews`, not shown in the settings panel and never reset), so the same update
+never shows it twice. Scaled to fit a short screen. A new update: change `NEWS.version` and its lines.
 
 ### The Gilded Rat: the dungeon game's world (`Game ▸ Modes ▸ Tavern`, `Game ▸ TavernMap`)
 The Depths and Deadvault start somewhere of their own: **The Gilded Rat**, an adventurers' lodge

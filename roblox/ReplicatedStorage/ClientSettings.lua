@@ -104,6 +104,7 @@ ClientSettings.DEFAULTS = {
 	Bob = 1, Sway = 1, Roll = 1, Shake = 1, Breathe = 1, FPClunk = 1, FOV = 70, Music = 1, UISounds = 1, PadLook = 1, TouchLook = 1, TouchSize = 1, AimAssist = "On",
 	SideMode = "Modifier", DefaultSide = "Right", Companions = "All", DodgeTap = "On", KillCam = "On", DrawAnim = "On", ShowLocked = "Show",
 	PartyInvites = "Everyone", TradeRequests = "Everyone", Gifts = "Everyone", Pulls = "Show",
+	SeenNews = "",   -- (not a setting: the last WHAT'S NEW card seen, StarterPlayerScripts ▸ WhatsNew)
 }
 for _, k in ipairs(ClientSettings.KEYS) do ClientSettings.DEFAULTS["Key_" .. k.key] = k.default end
 
@@ -130,6 +131,7 @@ local function isKeyName(v)
 end
 
 local function valid(key, v)
+	if key == "SeenNews" then return type(v) == "string" and #v <= 16 end
 	local s = sliderSpec(key)
 	if s then
 		return type(v) == "number" and v == v and v >= s.min and v <= s.max
@@ -240,7 +242,9 @@ function ClientSettings.set(key, v)
 end
 
 function ClientSettings.reset()
-	for k, v in pairs(ClientSettings.DEFAULTS) do ClientSettings.set(k, v) end
+	for k, v in pairs(ClientSettings.DEFAULTS) do
+		if k ~= "SeenNews" then ClientSettings.set(k, v) end
+	end
 end
 
 -- pull saved values once; safe to call from several scripts

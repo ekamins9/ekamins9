@@ -1,4 +1,17 @@
-# Updated scripts: the crowd shouts for a fine parry
+# Updated scripts: a "What's new" card
+
+- **The Courtyard**: once per update, a WHAT'S NEW card shows what's new (the Drowned Halls; the dead that don't stay down; traps and secrets; the living dark; War's champions; the turning sky). It shows only for players past the welcome and the menu tour, and is remembered with their settings so it never repeats.
+- To announce the next update, change `NEWS` at the top of the script.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | `SeenNews` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the crowd shouts for a fine parry
 
 - **Arenas** (the Colosseum, the forge arenas, the Sandpit): a parry or a chamber in the arena brings a third of the stands up with a shout.
 - **The warfields** (the Lists): a parry or a chamber in the ring brings a shout from the parrier's army. At most once every 3.5 s.
