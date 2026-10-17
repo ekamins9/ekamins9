@@ -1699,8 +1699,14 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   ~25 parts: the front rank of the nearest lane), lite (helmet and body armour, the main piece on
   each limb, weapon, shield), mass (shell, helmet, bare limbs, weapon). Every limb is posed only
   near the camera; further off men move as one piece in a cached pose; out of sight they only
-  march; a small drift isn't a march (hysteresis); far regiments update 4 times a second. Measured:
-  16,400 crowd parts, 1.1 ms a frame, 59 fps in Studio (a phone gets 60 % of the men).
+  march; a small drift isn't a march (hysteresis, 2.6 studs); mid regiments update ~6 times a
+  second, far ones ~3. Each regiment keeps its own clock (they don't all land on one frame) and a
+  frame that has moved `WarCrowd.BUDGET` parts (900 × SCALE) puts the rest off a frame or two, so
+  a whole army advancing never spikes. The second rank is lite behind a full front, mass behind a
+  lite one. Measured on Redfield with the camera on the player: about 15,500 crowd parts, 1.1–3.3
+  ms a frame (before the budget: spikes of 12–15 ms on a surge), 45–48 fps in Studio play (server
+  and client in one process; a phone gets 60 % of the men). In a heavy frame the crowd folder's
+  `Busy` attribute lists which regiments were moving and why.
 - **The set-pieces**: the opening CHARGE (horns, drums, both lines run and crash, dust, a shake,
   men knocked flying); every 40–90 s a lane pulls apart and charges again; trebuchet fire on the
   flanks throws men through the air; volleys drop them; the cavalry ploughs through a flank.

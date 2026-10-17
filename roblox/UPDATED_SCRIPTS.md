@@ -1,4 +1,17 @@
-# Updated scripts: the Prologue's Iron Host is a real army
+# Updated scripts: the armies no longer stutter when they move
+
+- **Smoother battles**: when whole lines charged or the front moved, every regiment used to update on the same frame (spikes of 12–15 ms). Now each regiment keeps its own clock and each frame has a budget; worst frame measured 3.3 ms, 45–48 fps in Studio play on War (was 36–40 with dips to the 20s).
+- **Lighter soldiers**: the second rank behind a lite front is mass, and lite men carry a little less armour (unnoticeable at that distance).
+- **Debug aids**: the crowd folder reports `Busy` (which regiments moved in a heavy frame), `MovedFlying`, `Flying`.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | staggered clocks, frame budget, lighter ranks |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Prologue's Iron Host is a real army
 
 - **The first thing a new player sees** is now an army: the Iron Host drawn up in the rain among its torches before Stormwatch (foot, pikes, knights, archers), the garrison's archers on the north walls. Volleys cut men down on both sides, the Host roars, closes on the gate as the story goes on, and at dawn turns and runs while the walls cheer.
 - **Cleanup**: the old block-figure armies in WarFX (replaced by WarCrowd everywhere) are gone.
@@ -22,18 +35,4 @@
 | [BossIntro.lua](ReplicatedStorage/BossIntro.lua) | ReplicatedStorage | ModuleScript | new (the entrance) |
 | [BossEntrance.client.lua](StarterPlayerScripts/BossEntrance.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new (Siege, Horde) |
 | [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | uses the module |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: bosses make an entrance; monsters come out of the dark
-
-- **A boss's entrance** (The Depths' lords): black bars close in, the HUD steps aside, the camera finds the boss and creeps towards it while its name comes up big, a deep boom and a shake; about three seconds, then back to you.
-- **Monsters come out of the dark**: grave-dust bursts up where each one appears, and some of the dead whisper as they come.
-- **Checked in Play** in the Bone Crypt with Malgrath, the Lich King: the shot, the title on the bars, the HUD back afterwards.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the boss's entrance |
-| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | monsters' arrival |
 | [README.md](README.md) | | doc | |

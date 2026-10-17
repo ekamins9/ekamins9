@@ -69,6 +69,8 @@ WarCrowd.LOOKS = {
 }
 -- how many soldiers a regiment really has (a phone shrinks it)
 WarCrowd.SCALE = 1
+-- how many parts a frame moves before the rest of the regiments wait a frame (× SCALE)
+WarCrowd.BUDGET = 900
 
 local LIMBS = {"Torso", "Head", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}
 local LIMB_INDEX = {}
@@ -145,7 +147,7 @@ local function build(side, look)
 	end
 	t.lite = {}
 	for i = 1, 6 do
-		local cap = (i == T and 6) or (i == H and 4) or ((i == LL or i == RL) and 2) or 1
+		local cap = (i == T and 4) or (i == H and 3) or ((i == LL or i == RL) and 2) or 1
 		local list = first(sorted(i, "armor"), cap, {})
 		if #list == 0 then table.insert(list, bare(i)) end
 		if i == RA then first(sorted(i, "weapon"), 2, list) end
@@ -319,7 +321,7 @@ local loopConn
 local bulkP, bulkC = {}, {}
 
 function WarCrowd.new()
-	local self = setmetatable({regs = {}, list = {}, flying = {}, dead = false, acc = 0, accFar = 0}, WarCrowd)
+	local self = setmetatable({regs = {}, list = {}, flying = {}, dead = false}, WarCrowd)
 	local cam = workspace.CurrentCamera
 	self.home = Instance.new("Folder")
 	self.home.Name = "WarCrowd"
@@ -362,7 +364,9 @@ function WarCrowd:regiment(id, o)
 	local frontLevel = o.detail or "lite"
 	for r = 1, ranks do
 		for c = 1, cols do
-			local level = r == 1 and frontLevel or ((r == 2 and frontLevel ~= "mass") and "lite" or "mass")
+			-- (the second rank is lite behind a full front, mass behind a lite one: what moves when a
+			-- whole line marches is what costs)
+			local level = r == 1 and frontLevel or ((r == 2 and frontLevel == "full") and "lite" or "mass")
 			local t = template(reg.side, reg.kind, (c + r) % 2 + 1)
 			if t then
 				local s = newSoldier(self.home, t, level)
@@ -687,10 +691,10 @@ end
 function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 	local f = reg.facing
 	local gap = reg.target - reg.z
-	-- (a small drift isn't a march: it starts past 1.6 studs off and stops within 0.3)
+	-- (a small drift isn't a march: it starts past 2.6 studs off and stops within 0.3)
 	if reg.moving then
 		if math.abs(gap) < 0.3 then reg.moving = false; reg.dirty = true end
-	elseif math.abs(gap) > 1.6 then
+	elseif math.abs(gap) > 2.6 then
 		reg.moving = true
 	end
 	local moving = reg.moving
@@ -738,8 +742,9 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 				if st == "fight" then base = base * CF(0, 0, -math.max(0, math.sin((now + s.ph) * 2.2)) * 0.8) end
 				-- every limb posed near the camera; further off only the fighting front rank and the
 				-- falling are, the rest move as one piece (bobbing as they walk); far off, all of them
-				local full = lod == 1 or (lod == 2 and (st == "fight" or st == "cheer" or st == "loose") and s.r <= 2)
-					or st == "cover" or st == "brace"
+				-- (a held pose, shields up, is placed limb by limb once, near or mid: it doesn't move after)
+				local full = lod == 1 or (lod == 2 and (st == "fight" or st == "cheer" or st == "loose") and s.r == 1)
+					or ((st == "cover" or st == "brace") and lod <= 2 and not moving)
 				if full then
 					place(s, base, now, reg.kind, put)
 				else
@@ -799,36 +804,31 @@ function WarCrowd:step(now, dt)
 			end
 		end
 	end
-	-- the regiments by distance: near ~20 times a second (every limb), mid ~8, far ~4; out of
-	-- sight they only march
+	local nFly = n
+	-- the regiments by distance: near ~20 times a second (every limb), mid ~6, far ~3; out of
+	-- sight they only march. Each keeps its own time (they don't all land on the same frame),
+	-- and a frame that's already moved its share puts the rest off a little (WarCrowd.BUDGET
+	-- parts; one that's waited three of its turns goes anyway)
 	local t0 = os.clock()
-	self.acc += dt
-	self.accMid = (self.accMid or 0) + dt
-	self.accFar += dt
-	local near, mid, far = self.acc >= 0.05, self.accMid >= 0.12, self.accFar >= 0.25
-	if near or mid or far then
-		local cam = workspace.CurrentCamera
-		local c = cam and cam.CFrame.Position or Vector3.zero
-		local vs = cam and cam.ViewportSize or Vector2.new(1, 1)
-		for _, reg in ipairs(self.list) do
-			local m = V3(reg.x, reg.y0 + 3, reg.z)
-			local d = (m - c).Magnitude
+	local cam = workspace.CurrentCamera
+	local c = cam and cam.CFrame.Position or Vector3.zero
+	local vs = cam and cam.ViewportSize or Vector2.new(1, 1)
+	local budget = WarCrowd.BUDGET * WarCrowd.SCALE
+	for _, reg in ipairs(self.list) do
+		reg.acc = (reg.acc or math.random() * 0.1) + dt
+		local m = V3(reg.x, reg.y0 + 3, reg.z)
+		local d = (m - c).Magnitude
+		local lod = d < 110 and 1 or (d < 300 and 2 or 3)
+		local every = lod == 1 and 0.05 or (lod == 2 and 0.16 or 0.3)
+		if reg.acc >= every and (n < budget or reg.acc >= every * 3) then
 			local visible = d < 70
 			if not visible and cam then
 				local v = cam:WorldToViewportPoint(m)
 				visible = v.Z > 0 and v.X > -vs.X * 0.5 and v.X < vs.X * 1.5 and v.Y > -vs.Y * 0.8 and v.Y < vs.Y * 1.8
 			end
-			if d < 110 then
-				if near then self:placeReg(reg, now, self.acc, put, visible, 1) end
-			elseif d < 300 then
-				if mid then self:placeReg(reg, now, self.accMid, put, visible, 2) end
-			elseif far then
-				self:placeReg(reg, now, self.accFar, put, visible, 3)
-			end
+			self:placeReg(reg, now, reg.acc, put, visible, lod)
+			reg.acc = 0
 		end
-		if near then self.acc = 0 end
-		if mid then self.accMid = 0 end
-		if far then self.accFar = 0 end
 	end
 	if self.ladders then
 		local cam = workspace.CurrentCamera
@@ -838,13 +838,26 @@ function WarCrowd:step(now, dt)
 		for k = n + 1, #bulkP do bulkP[k] = nil; bulkC[k] = nil end
 		workspace:BulkMoveTo(bulkP, bulkC, Enum.BulkMoveMode.FireCFrameChanged)
 	end
+	-- (in a heavy frame, which regiments were busy and why: the folder's Busy attribute)
+	if n > 1500 and now - (self.busyAt or 0) > 2 then
+		self.busyAt = now
+		local why = {}
+		for _, reg in ipairs(self.list) do
+			local tag = (reg.moving and (reg.run and "run" or "march") or "") .. (reg.clash and "+clash" or "") .. (now < reg.cheerUntil and "+cheer" or "") .. (now < reg.looseUntil and "+loose" or "")
+			if tag ~= "" and not reg.hidden then table.insert(why, reg.id .. ":" .. tag) end
+		end
+		self.home:SetAttribute("Busy", table.concat(why, " "))
+	end
 	-- (what it cost, smoothed: the crowd's folder carries it for a look in Studio)
 	self.ms = (self.ms or 0) * 0.95 + (os.clock() - t0) * 1000 * 0.05
 	self.moved = (self.moved or 0) * 0.95 + n * 0.05
+	self.movedFly = (self.movedFly or 0) * 0.95 + nFly * 0.05
 	if now - (self.msAt or 0) > 1 then
 		self.msAt = now
 		self.home:SetAttribute("Ms", math.floor(self.ms * 100) / 100)
 		self.home:SetAttribute("Moved", math.floor(self.moved))
+		self.home:SetAttribute("MovedFlying", math.floor(self.movedFly))
+		self.home:SetAttribute("Flying", #self.flying)
 	end
 end
 
