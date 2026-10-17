@@ -2071,8 +2071,16 @@ heavy whoosh each pass; the spikes rise on a trap's `FiredAt`; the darts fly fro
 
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone
-Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge: `Catalog ▸ Dungeons`).
-Three floors; floor 3 ends in the theme's boss.
+Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned Halls:
+`Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's boss.
+- **The Drowned Halls** (the newest): flooded catacombs where the sea came in and the dead stayed:
+  wet stone, rust-green corroded iron, pale teal flames, standing water across the floors and
+  puddles everywhere (the theme's `wet` flag), water dripping close by all the time. Its dead: the
+  Drowned (ghouls, quick, mending), Drowned Bones and Drowned Archers (they reassemble), Deep
+  Guards in corroded mail, Tide Callers (mages: Brine Fall); champions the Drowned Knight (Undertow,
+  Breaking Wave) and the Brine Hulk (Tide Smash, Swell); its lord **Thalassar, the Drowned King**
+  (a glaive; Riptide, The Tide Rolls In, Grasping Deep, Breaker, then Crashing Wave and Falling Sea
+  as THE DEEP RISES, and the roof weeps on you). Vote picture: MapShots ▸ DrownedHalls.
 - **The generator** (`Dungeon.build`): rooms on a grid (a spanning tree plus a loop), typed by
   how deep they are: start · combat · elite · treasure (dead ends) · shrine · fountain · stairs ·
   boss. Walls, ceilings, corridors, door frames, sconces in the theme's light, and the theme's

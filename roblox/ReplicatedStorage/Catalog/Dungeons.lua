@@ -13,7 +13,9 @@
        monsters            the Bestiary ids that live there: `common` (any room), `ranged`
                            (archers and casters), `elite` (an elite room's champion), `boss`
        music               the score while you're down there (MusicConfig key)
-       boss / bossName     the floor-3 boss (Bestiary id) and its title ]]
+       boss / bossName     the floor-3 boss (Bestiary id) and its title
+       wet                 true: water everywhere (more and bigger puddles, standing water across
+                           its floors, the drip of it close by) ]]
 
 local C = Color3.fromRGB
 
@@ -62,5 +64,15 @@ return {
 		props = {"lava", "anvil", "chains", "brazier", "crates", "rubble", "pillar", "crystal"},
 		monsters = {common = {"Cinderling", "Cinderling", "ForgeGuard", "MagmaBrute"}, ranged = {"FlameCaster", "Crossbowman"}, elite = {"MoltenKnight", "Ogre"}},
 		boss = "AshenWarlord", bossName = "Vulkar the Ashen Warlord",
+	},
+	DrownedHalls = {
+		name = "The Drowned Halls", sub = "The sea came in, and the dead stayed",
+		floor = C(70, 84, 82), floorMat = "Slate", wall = C(82, 98, 92), wallMat = "Cobblestone", trim = C(60, 76, 70), trimMat = "CorrodedMetal",
+		accent = C(110, 240, 210), torch = C(150, 236, 214),
+		light = {ClockTime = 0, Ambient = C(62, 82, 84), OutdoorAmbient = C(58, 78, 80), Brightness = 0.55, FogColor = C(18, 34, 36), FogEnd = 260, FogStart = 60},
+		props = {"chains", "bones", "rubble", "pillar", "statue", "mushroom", "barrel", "cobweb"},
+		wet = true,
+		monsters = {common = {"Drowned", "Drowned", "DrownedSkeleton", "DeepGuard"}, ranged = {"DrownedArcher", "TideCaller"}, elite = {"DrownedKnight", "BrineHulk"}},
+		boss = "DrownedKing", bossName = "Thalassar, the Drowned King",
 	},
 }

@@ -43,6 +43,48 @@ local M = {}
 local function add(id, t) t.id = id; M[id] = t end
 
 --------------------------------------------------------------------
+--  THE DROWNED (the Drowned Halls): the dead the sea left behind
+--------------------------------------------------------------------
+local DROWNED, BRINE, WETBONE = C(104, 134, 124), C(110, 240, 210), C(176, 186, 164)
+add("Drowned", {name = "Drowned", faction = "Undead", skill = "Squire", weapon = {"Cleaver", "Dagger", "Spear"}, hp = 85, speed = 1.08, weight = "Light",
+	look = {body = "ghoul", skin = DROWNED, eyes = BRINE, set = "PeasantSkin", noHelm = true, cloth = "Verdigris", extras = {"claws", "rags"}}, traits = {"regen"}, tier = 1})
+add("DrownedSkeleton", {name = "Drowned Bones", faction = "Undead", skill = "Squire", weapon = {"Shortsword", "Mace", "Falchion"}, hp = 70, weight = "Light",
+	look = {body = "skeleton", skin = WETBONE, eyes = BRINE, armor = "none", extras = {"ribs", "rags"}}, traits = {"reassemble"}, tier = 1})
+add("DeepGuard", {name = "Deep Guard", faction = "Undead", skill = "Knight", weapon = {"ArmingSword", "WarAxe", "Spear"}, hp = 115, weight = "Medium",
+	look = {body = "skeleton", skin = C(150, 160, 140), eyes = BRINE, armor = "medium", colors = {Primary = "Verdigris", Secondary = "Jet", Accent = "Teal", Metal = "Rust"}}, traits = {"reassemble"}, tier = 2})
+add("DrownedArcher", {name = "Drowned Archer", faction = "Undead", skill = "Squire", class = "Archer", weapon = "Bow", hp = 60,
+	look = {body = "skeleton", skin = WETBONE, eyes = BRINE, armor = "none", extras = {"hood", "ribs"}, colors = {Primary = "Verdigris"}}, traits = {"reassemble"}, tier = 1})
+add("TideCaller", {name = "Tide Caller", faction = "Undead", skill = "Knight", class = "Mage", weapon = "Staff", hp = 85,
+	look = {body = "human", skin = C(120, 150, 150), eyes = BRINE, set = "Necromancer", aura = "frost"}, traits = {"frostbite"}, moveFx = "ice", moves = {
+			{kind = "rain", name = "Brine Fall", dmg = 12, cd = 14, count = 3, radius = 4, chill = 0.25},
+		},
+		tier = 2})
+add("DrownedKnight", {name = "Drowned Knight", faction = "Undead", skill = "Champion", weapon = {"Zweihander", "Halberd", "Greatsword"}, hp = 260, scale = 1.25, weight = "Heavy",
+	look = {body = "skeleton", skin = C(150, 160, 140), eyes = BRINE, set = "Deathless", aura = "frost"}, traits = {"enrage"}, power = "ThunderSlam", moveFx = "ice", moves = {
+			{kind = "sweep", name = "Undertow", dmg = 28, cd = 8, angle = 80, range = {0, 15}},
+			{kind = "charge", name = "Breaking Wave", dmg = 26, cd = 12, range = {10, 40}},
+		},
+		tier = 3})
+add("BrineHulk", {name = "Brine Hulk", faction = "Undead", skill = "Champion", weapon = {"Maul", "BattleAxe"}, hp = 340, scale = 1.75, weight = "Heavy", speed = 0.85,
+	look = {body = "troll", skin = C(92, 122, 116), eyes = BRINE, armor = "none", extras = {"belly", "loincloth", "rags"}, aura = "frost"}, traits = {"regen"}, power = "ThunderSlam", moveFx = "ice", moves = {
+			{kind = "slam", name = "Tide Smash", dmg = 32, cd = 9, radius = 8, range = {0, 16}},
+			{kind = "shockwave", name = "Swell", dmg = 18, cd = 12, count = 1},
+		},
+		tier = 3})
+add("DrownedKing", {name = "Thalassar, the Drowned King", faction = "Undead", skill = "Champion", weapon = "Glaive", hp = 1000, scale = 1.9, weight = "Heavy", speed = 0.9,
+	look = {body = "skeleton", skin = C(150, 166, 150), eyes = BRINE, set = "Deathless", extras = {"crown", "cape"}, aura = "frost"}, traits = {"enrage"}, power = "ThunderSlam", moveFx = "ice", phaseLine = "THE DEEP RISES",
+		moves = {
+			{kind = "sweep", name = "Riptide", dmg = 34, cd = 7, angle = 100, range = {0, 18}},
+			{kind = "shockwave", name = "The Tide Rolls In", dmg = 22, cd = 10, count = 2},
+			{kind = "eruption", name = "Grasping Deep", dmg = 22, cd = 8, count = 9},
+			{kind = "charge", name = "Breaker", dmg = 30, cd = 12, range = {12, 50}},
+			{kind = "leap", name = "Crashing Wave", dmg = 42, cd = 12, phase = 2, radius = 10, range = {10, 60}},
+			{kind = "rain", name = "Falling Sea", dmg = 20, cd = 11, phase = 2, count = 8, radius = 5},
+		},
+		hazard = {kind = "rain", name = "The Roof Weeps", every = 8, count = 7, dmg = 14, radius = 4, fx = "ice"},
+		tier = 4})
+
+--------------------------------------------------------------------
 --  UNDEAD (the Bone Crypt, Undead Night)
 --------------------------------------------------------------------
 add("Skeleton", {name = "Skeleton", faction = "Undead", skill = "Squire", weapon = {"Shortsword", "Falchion", "Cleaver", "Mace"}, hp = 70, scale = 1, weight = "Light",

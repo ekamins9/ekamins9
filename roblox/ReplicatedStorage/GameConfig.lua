@@ -152,7 +152,7 @@ GameConfig.MODES = {
 	Depths = {
 		name = "The Depths", category = "Adventure", teams = 0, maxPlayers = 4, minPlayers = 1,
 		description = "A party crawl through a dungeon built fresh every run: three floors, rooms that seal you in, chests of weapons, relics and tomes, and the theme's boss at the bottom.",
-		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
+		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge", "DrownedHalls"}, procedural = true,
 		roundLength = 0, intermission = 15, respawnDelay = 3, hidden = true,
 		pvp = false, ownSpawn = true,
 	},
@@ -160,7 +160,7 @@ GameConfig.MODES = {
 	Deadvault = {
 		name = "Deadvault", category = "Adventure", teams = 0, maxPlayers = 12, minPlayers = 1,
 		description = "Go in with your party and the kit you dare to risk. Search a great dark dungeon for weapons, armour and valuables, keep quiet past what sleeps there, watch for other raiders, and get out by the escape stairs or a blue portal. Fall, or stay too long, and it's gone.",
-		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge"}, procedural = true,
+		maps = {"BoneCrypt", "GoblinWarrens", "CrimsonManor", "FrozenDepths", "EmberForge", "DrownedHalls"}, procedural = true,
 		roundLength = 15 * 60, intermission = 15, respawnDelay = 3, hidden = true, ownSpawn = true,
 	},
 	-- CROWNFALL (Game ▸ Modes ▸ Crownfall): a battle royale on an island built fresh (Game ▸ Realm)
@@ -257,7 +257,8 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	-- War's battlefields (Game ▸ WarMap)
 	Redfield = "Redfield", Ironridge = "Ironridge", Frostmere = "Frostmere", Ashvale = "Ashvale", Kingsbridge = "Kingsbridge",
 	Nightfall = "Nightfall", Sunreach = "Sunreach", Stormvale = "Stormvale", Duskmoor = "Duskmoor",
-	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
+	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge",
+	DrownedHalls = "The Drowned Halls"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
 -- THE WEATHER on each map (StarterPlayerScripts ▸ Weather, drawn by ReplicatedStorage ▸ WarFX: rain

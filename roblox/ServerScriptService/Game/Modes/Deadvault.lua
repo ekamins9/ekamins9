@@ -168,7 +168,8 @@ end
 -- Rising attribute: a bigger cloud of grave-dust, StarterPlayerScripts ▸ DungeonMood). Its own
 -- kind where the dungeon's are dead things; else a skeleton.
 Deadvault.WAKE_CHANCE = 0.3
-local WAKERS = {BoneCrypt = {"Skeleton", "Ghoul", "SkeletonKnight"}, CrimsonManor = {"Vampire", "Thrall"}, FrozenDepths = {"FrostSkeleton", "IceWraith"}}
+local WAKERS = {BoneCrypt = {"Skeleton", "Ghoul", "SkeletonKnight"}, CrimsonManor = {"Vampire", "Thrall"}, FrozenDepths = {"FrostSkeleton", "IceWraith"},
+	DrownedHalls = {"Drowned", "DrownedSkeleton"}}
 function Deadvault:waken(box, char)
 	if math.random() >= Deadvault.WAKE_CHANCE then return false end
 	local pool = WAKERS[self.theme] or {"Skeleton", "Ghoul"}

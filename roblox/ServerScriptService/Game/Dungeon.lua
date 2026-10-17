@@ -516,11 +516,13 @@ local ARCH_W = {   -- by theme: which rooms its dungeon has, by weight
 	CrimsonManor = {hall = 3, library = 3, chapel = 2, cells = 1, storeroom = 2, armory = 1},
 	FrozenDepths = {cavern = 3, crypt = 2, hall = 2, armory = 1, storeroom = 2},
 	EmberForge = {armory = 3, storeroom = 2, hall = 2, cells = 1, cavern = 2},
+	DrownedHalls = {crypt = 3, cavern = 3, hall = 2, cells = 2, chapel = 1, storeroom = 1},
 }
 local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern"}
 -- the odd container by a raid room's walls, by theme
 local RAID_ODDS = {BoneCrypt = {"urn", "urn", "crate", "sack"}, GoblinWarrens = {"sack", "sack", "crate", "barrel"},
-	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"}}
+	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"},
+	DrownedHalls = {"barrel", "urn", "crate"}}
 local ARCH_SIZE = {hall = {30, 36}, crypt = {19, 26}, cells = {21, 26}, library = {21, 27}, armory = {18, 24},
 	storeroom = {14, 19}, chapel = {21, 27}, cavern = {20, 27}, vault = {18, 22}, lair = {33, 35}}   -- ×2 studs
 local ARCH_H = {hall = 30, cavern = 26, chapel = 28, lair = 30}
@@ -867,15 +869,27 @@ local function grime(ctx, th, r, c, rng)
 			deco("Damp", Vector3.new(w * 0.35, drip, 0.07), f * CFrame.new(rng:NextNumber(-w * 0.25, w * 0.25), top - h - drip / 2 + 0.2, 0), shade(damp, 0.9), mat(th.wallMat))
 		end
 	end
-	-- a puddle
-	if rng:NextNumber() < 0.45 then
+	-- a puddle (a wet theme: several, bigger, and standing water across part of the floor)
+	for _ = 1, th.wet and rng:NextInteger(2, 4) or (rng:NextNumber() < 0.45 and 1 or 0) do
 		local p = floorSpot(r, c, rng, taken, 6)
 		if p then
-			local s = rng:NextNumber(3, 6)
-			local pd = K.cyl(ctx, "Puddle", s, 0.06, CFrame.new(p + Vector3.new(0, 0.05, 0)), Color3.fromRGB(28, 32, 36), Enum.Material.Glass, ctx.Props)
+			local s = th.wet and rng:NextNumber(4, 9) or rng:NextNumber(3, 6)
+			local pd = K.cyl(ctx, "Puddle", s, 0.06, CFrame.new(p + Vector3.new(0, 0.05, 0)), th.wet and Color3.fromRGB(22, 40, 40) or Color3.fromRGB(28, 32, 36), Enum.Material.Glass, ctx.Props)
 			pd.Size = Vector3.new(0.06, s, s * rng:NextNumber(0.6, 0.9))
 			pd.CanCollide, pd.CanQuery, pd.Reflectance, pd.Transparency = false, false, 0.35, 0.15
 		end
+	end
+	if th.wet and rng:NextNumber() < 0.5 then
+		-- (the water has come in along one side of the room: a still sheet over the flags)
+		local d = DIR_LIST[rng:NextInteger(1, 4)]
+		local across = (d == "N" or d == "S") and r.w or r.d
+		local deep = (d == "N" or d == "S") and r.d or r.w
+		local depth = deep * rng:NextNumber(0.25, 0.4)
+		local dir = ({N = Vector3.new(0, 0, -1), S = Vector3.new(0, 0, 1), E = Vector3.new(1, 0, 0), W = Vector3.new(-1, 0, 0)})[d]
+		local mid = c + dir * (deep / 2 - depth / 2) + Vector3.new(0, 0.08, 0)
+		local size = (d == "N" or d == "S") and Vector3.new(across - 1, 0.05, depth) or Vector3.new(depth, 0.05, across - 1)
+		local sheet = deco("StandingWater", size, CFrame.new(mid), Color3.fromRGB(20, 44, 44), Enum.Material.Glass)
+		sheet.Reflectance, sheet.Transparency = 0.3, 0.25
 	end
 	-- chains, or a cage, hanging out of the dark
 	local roll = rng:NextNumber()

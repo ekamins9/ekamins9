@@ -1,4 +1,27 @@
-# Updated scripts: the Gilded Rat sounds lived in; the dungeon dread only in dungeons
+# Updated scripts: a sixth dungeon, the Drowned Halls
+
+- **The Depths and Deadvault** have a new theme in the vote: **the Drowned Halls**. Flooded catacombs with wet stone, rust-green iron and pale teal flames, standing water and puddles everywhere, and water dripping all the time.
+- **Its dead** (new Bestiary lines): the Drowned, Drowned Bones, Deep Guards, Drowned Archers, Tide Callers, the Drowned Knight and the Brine Hulk.
+- **Its lord**: Thalassar, the Drowned King, with a glaive, six moves, a second phase (THE DEEP RISES), and a weeping roof.
+- It slots into everything per theme: second waves (THE DEEP GIVES UP ITS DEAD), sarcophagi that wake, the dead that lie, traps, the mood's grade and ghosts, raid rooms.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the theme, `wet` |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the drowned |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | in both modes' maps, its title |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | raid rooms, odd containers, the water |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | its wave line |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | its wakers |
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | its traps |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | grade, ghosts, glow, the dead lie, drips |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ MapShots ▸ DrownedHalls (the vote picture; save the place).
+
+---
+
+## Before that: the Gilded Rat sounds lived in; the dungeon dread only in dungeons
 
 - **The Tavern (the Gilded Rat)**: a murmur of patrons over the hall, the hearth crackling where it stands, and a lute-and-fiddle tune by the hearth.
 - **Fixed**: the Tavern played battle music. It now gets its own tune (or the Courtyard's).

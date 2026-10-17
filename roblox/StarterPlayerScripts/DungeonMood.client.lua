@@ -60,6 +60,7 @@ local GRADE = {
 	CrimsonManor = {tint = Color3.fromRGB(240, 214, 220), sat = -0.15},
 	FrozenDepths = {tint = Color3.fromRGB(206, 224, 246), sat = -0.28},
 	EmberForge = {tint = Color3.fromRGB(250, 222, 200), sat = -0.12},
+	DrownedHalls = {tint = Color3.fromRGB(200, 232, 228), sat = -0.3},
 }
 local LANTERN = Color3.fromRGB(255, 190, 130)
 
@@ -238,7 +239,8 @@ end
 --------------------------------------------------------------------
 --  WHAT'S THERE: an apparition crossing the dark ahead of you
 --------------------------------------------------------------------
-local GHOST = {FrozenDepths = Color3.fromRGB(180, 220, 255), CrimsonManor = Color3.fromRGB(236, 200, 214), EmberForge = Color3.fromRGB(255, 200, 160)}
+local GHOST = {FrozenDepths = Color3.fromRGB(180, 220, 255), CrimsonManor = Color3.fromRGB(236, 200, 214), EmberForge = Color3.fromRGB(255, 200, 160),
+	DrownedHalls = Color3.fromRGB(170, 240, 225)}
 local ghostRay = RaycastParams.new()
 ghostRay.FilterType = Enum.RaycastFilterType.Exclude
 local function apparition()
@@ -357,7 +359,8 @@ end
 -- DRIPS: water somewhere close, now and then
 local function drips(token)
 	while mood.on and mood.token == token do
-		task.wait(7 + math.random() * 12)
+		-- (the Drowned Halls drip all the time)
+		task.wait(mood.theme == "DrownedHalls" and (2 + math.random() * 4) or (7 + math.random() * 12))
 		if mood.on and mood.token == token and mood.theme ~= "EmberForge" then
 			local at = somewhereNear(6, 22)
 			if at then WarFX.sound("Drip", at + V3(0, 3, 0), {volume = 0.35 + math.random() * 0.25, speed = 0.85 + math.random() * 0.3, near = 6, range = 50}) end
@@ -419,7 +422,7 @@ end
 -- MORE COME: the floor cracks where each of a new wave will climb out (glowing the dungeon's
 -- colour, trembling), then bursts as it comes
 local ACCENT = {BoneCrypt = Color3.fromRGB(120, 255, 170), GoblinWarrens = Color3.fromRGB(170, 230, 90), CrimsonManor = Color3.fromRGB(255, 60, 80),
-	FrozenDepths = Color3.fromRGB(140, 210, 255), EmberForge = Color3.fromRGB(255, 130, 40)}
+	FrozenDepths = Color3.fromRGB(140, 210, 255), EmberForge = Color3.fromRGB(255, 130, 40), DrownedHalls = Color3.fromRGB(110, 240, 210)}
 local function crackAt(spot, theme)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
@@ -560,7 +563,8 @@ task.spawn(function()
 end)
 
 -- THE DEAD LIE: a sleeping dead thing lies among the bones until it notices you, then gets up
-local PLAY_DEAD = {Skeleton = true, SkeletonKnight = true, SkeletonArcher = true, Ghoul = true, FrostSkeleton = true}
+local PLAY_DEAD = {Skeleton = true, SkeletonKnight = true, SkeletonArcher = true, Ghoul = true, FrostSkeleton = true,
+	Drowned = true, DrownedSkeleton = true, DrownedArcher = true, DeepGuard = true}
 local lying = {}   -- model -> {proxy, rel = {part -> CFrame (standing, from its feet)}, floor, yaw, scale}
 local deadRay = RaycastParams.new()
 deadRay.FilterType = Enum.RaycastFilterType.Exclude
