@@ -78,6 +78,22 @@ end
 
 local heartbeat = nil
 
+-- a loop: the SoundConfig slot if it's set, else the game's own (ReplicatedStorage ▸ WarAudio ▸
+-- Heartbeat / Breathing), so a silent slot still has its sound
+local function loopOf(id, name)
+	local s = Sounds.loop(id, gui, 0)
+	if s then return s end
+	local wa = ReplicatedStorage:FindFirstChild("WarAudio")
+	local src = wa and wa:FindFirstChild(name)
+	if not (src and src:IsA("Sound")) then return nil end
+	s = src:Clone()
+	s.Looped, s.Volume = true, 0
+	s:SetAttribute("Base", src.Volume)
+	s.Parent = gui
+	s:Play()
+	return s
+end
+
 -- low stamina: dark vignette (separate from the parry flash frames), a little blur, breathing
 local staminaFrames = {}
 for _, side in ipairs({"L", "R", "T", "B"}) do
@@ -152,7 +168,7 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 	-- loops live in this ScreenGui (ResetOnSpawn): they die with the character no
 	-- matter how it goes away, so a respawn can never leave one playing
 	if staminaShown > 0.03 and Humanoid.Health > 0 then
-		if not breathing then breathing = Sounds.loop(SoundConfig.Breathing, gui, 0) end
+		if not breathing then breathing = loopOf(SoundConfig.Breathing, "Breathing") end
 		if breathing then
 			breathing.Volume = BREATH_VOLUME * math.min(1, staminaShown + (staFrac <= 0.001 and 0.3 or 0))
 			breathing.PlaybackSpeed = 0.9 + 0.35 * staminaShown
@@ -164,7 +180,7 @@ local conn = RunService.RenderStepped:Connect(function(dt)
 
 	if severity > 0.05 and Humanoid.Health > 0 then
 		if not heartbeat then
-			heartbeat = Sounds.loop(SoundConfig.Heartbeat, gui, 0)
+			heartbeat = loopOf(SoundConfig.Heartbeat, "Heartbeat")
 		end
 		if heartbeat then
 			heartbeat.Volume = HEART_VOLUME * severity

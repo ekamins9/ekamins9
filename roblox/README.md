@@ -2844,7 +2844,9 @@ a row you're in has a gold edge; the verb is neutral, a teamkill orange.
 ## Low stamina
 
 Below 35% stamina a dark vignette, a little blur and a looped `SoundConfig.Breathing` ramp in
-(InjuryFX); at 0 the vignette pulses and the breathing peaks.
+(InjuryFX); at 0 the vignette pulses and the breathing peaks. Below 35% health (or bleeding) the
+colour drains and a heartbeat thumps, quicker and louder the lower you are. A silent SoundConfig
+slot falls back to the game's own loop: ReplicatedStorage ▸ WarAudio ▸ Breathing / Heartbeat.
 
 ## Settings (M → SETTINGS)
 

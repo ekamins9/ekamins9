@@ -1,4 +1,17 @@
-# Updated scripts: life in the Courtyard
+# Updated scripts: your heart and your breath
+
+- **Every fight**: low on health, your heart pounds (quicker the worse it is); out of stamina, you pant. Both were silent before (their SoundConfig slots were empty); they now use the game's own sounds.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [InjuryFX.client.lua](StarterCharacterScripts/InjuryFX.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | `loopOf`: a silent slot falls back to WarAudio ▸ Heartbeat / Breathing |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Breathing (a Sound; save the place).
+
+---
+
+## Before that: life in the Courtyard
 
 - **The Courtyard** has life about it now. A smithy in the north-east corner, its forge glowing and smoking. A market row on the west wall: two stalls under striped awnings, with fruit and vegetables, onions, cloth and pots. A wagon, hay and a trough by the gate, washing on a line, firewood stacked, and bunting strung between the oaks round the fountain.
 
