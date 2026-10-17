@@ -2522,7 +2522,10 @@ reassemble (a skeleton stands back up once), lifesteal, frostbite, burning, enra
 health), explode, summon, regen. An **elite** (`opts.elite`) gets an affix (Blazing, Frozen, Swift,
 Vampiric, Stoneskin, Savage, Undying), more health, a glow, and a big move if its kind has none.
 `Monsters.display(id)` is a still copy for screens: the menu's tiles show them
-(ReplicatedStorage ▸ MonsterDisplays, made by GameServer at start).
+(ReplicatedStorage ▸ MonsterDisplays, made by GameServer at start). What a monster leaves when it
+falls: a skeleton falls apart into a heap of its bones, the skull on top (Corpses "bones"; not one
+that will stand back up), a wraith is simply gone ("none"); the rest leave their body as anyone
+does. The killer's own kill effect, if it has one, has the last word.
 
 **Spiders** (`body = "spider"`: the **Cave Spider**, small and quick, in the Goblin Warrens and the
 Bone Crypt; the **Broodmother**, an elite of the Warrens twice a man's width that calls up cave

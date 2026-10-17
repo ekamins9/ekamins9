@@ -40,6 +40,7 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Bots = require(script.Parent:WaitForChild("Bots"))
 local MagicServer = require(script.Parent:WaitForChild("MagicServer"))
 local BossMoves = require(script.Parent:WaitForChild("BossMoves"))
+local Corpses = require(script.Parent:WaitForChild("Corpses"))
 local Powers   -- (loaded when first needed: Powers loads after us)
 local function powers() Powers = Powers or require(script.Parent:WaitForChild("Powers")); return Powers end
 
@@ -941,6 +942,16 @@ function spawnMob(id, opts, over)
 					spawnMob(id, opts, {at = cf, risen = mob, startDelay = 0.6, elite = false, child = true})
 				end)
 				mob.rising = true
+			end
+			-- what it leaves: a skeleton falls apart into a heap of its bones, a wraith is simply
+			-- gone (unless its killer's kill effect has its own say: Catalog ▸ KillFX)
+			local bodyKind = def.look and def.look.body
+			local leaves = (bodyKind == "skeleton" and not mob.rising and "bones") or (bodyKind == "wraith" and "none") or nil
+			if leaves then
+				local m = b.model
+				task.delay(0.25, function()
+					if m and m.Parent and not m:GetAttribute("RemainsPending") then Corpses.pending(m, leaves, 0.5) end
+				end)
 			end
 			if opts.onDeath then task.spawn(opts.onDeath, mob, killer) end
 		end,

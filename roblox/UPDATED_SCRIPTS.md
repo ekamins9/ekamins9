@@ -1,4 +1,15 @@
-# Updated scripts: a spider on the Depths card
+# Updated scripts: skeletons fall to bones
+
+- **Monsters' deaths**: a skeleton falls apart into a heap of its bones with the skull on top (one about to stand back up doesn't), and a wraith simply vanishes. A player's kill effect still overrides both.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | remains by body |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a spider on the Depths card
 
 - **The Play menu's Depths card** shows a Cave Spider among its skeletons (its still copy is published with the others at start).
 
