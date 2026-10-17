@@ -26,7 +26,7 @@ return {
 		accent = C(120, 255, 170), torch = C(170, 240, 200),
 		light = {ClockTime = 0, Ambient = C(78, 82, 90), OutdoorAmbient = C(72, 76, 84), Brightness = 0.7, FogColor = C(20, 26, 28), FogEnd = 260, FogStart = 60},
 		props = {"coffin", "bones", "cobweb", "candles", "pillar", "statue", "rubble", "brazier"},
-		monsters = {common = {"Skeleton", "Skeleton", "Ghoul", "SkeletonKnight", "CaveSpider"}, ranged = {"SkeletonArcher", "Necromancer"}, elite = {"DeathKnight", "Wraith"}},
+		monsters = {common = {"Skeleton", "Skeleton", "Ghoul", "SkeletonKnight", "CaveSpider"}, ranged = {"SkeletonArcher", "Necromancer"}, elite = {"DeathKnight", "Wraith", "Banshee"}},
 		boss = "LichKing", bossName = "Malgrath, the Lich King",
 	},
 	GoblinWarrens = {
@@ -44,7 +44,7 @@ return {
 		accent = C(255, 70, 90), torch = C(255, 190, 120),
 		light = {ClockTime = 0, Ambient = C(108, 84, 92), OutdoorAmbient = C(100, 78, 86), Brightness = 0.85, FogColor = C(40, 18, 26), FogEnd = 300, FogStart = 80},
 		props = {"carpet", "painting", "bookcase", "chandelier", "candles", "table", "statue", "pillar"},
-		monsters = {common = {"Thrall", "Thrall", "Vampire", "CrimsonKnight"}, ranged = {"CrimsonWitch", "Crossbowman"}, elite = {"VampireLord", "Gargoyle"}},
+		monsters = {common = {"Thrall", "Thrall", "Vampire", "CrimsonKnight"}, ranged = {"CrimsonWitch", "Crossbowman"}, elite = {"VampireLord", "Gargoyle", "Banshee"}},
 		boss = "Countess", bossName = "Countess Varnya",
 	},
 	FrozenDepths = {
@@ -81,7 +81,7 @@ return {
 		accent = C(190, 120, 255), torch = C(214, 170, 255),
 		light = {ClockTime = 0, Ambient = C(82, 74, 96), OutdoorAmbient = C(76, 68, 90), Brightness = 0.6, FogColor = C(28, 20, 38), FogEnd = 260, FogStart = 60},
 		props = {"candles", "statue", "pillar", "bookcase", "banner", "carpet", "cobweb", "bones"},
-		monsters = {common = {"HollowMonk", "HollowMonk", "Penitent", "AbbeyGuard"}, ranged = {"Cultist", "Crossbowman"}, elite = {"Wraith", "Gargoyle"}},
+		monsters = {common = {"HollowMonk", "HollowMonk", "Penitent", "AbbeyGuard"}, ranged = {"Cultist", "Crossbowman"}, elite = {"Wraith", "Gargoyle", "Banshee"}},
 		boss = "BlackAbbot", bossName = "Malachai, the Black Abbot",
 	},
 	SilkCaverns = {

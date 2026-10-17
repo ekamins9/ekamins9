@@ -51,6 +51,13 @@ add("CaveSpider", {name = "Cave Spider", faction = "Beast", skill = "Beast", wea
 add("Broodmother", {name = "Broodmother", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 260, speed = 1.05, weight = "Medium", scale = 1.45,
 	look = {body = "spider", skin = C(34, 28, 30), eyes = C(255, 40, 30), mark = C(168, 34, 28)}, traits = {"summon"}, summons = {"CaveSpider"}, tier = 3})
 
+-- the BANSHEE: a pale wraith whose scream leaves you half deaf (Combat ▸ BossMoves "wail"); a
+-- champion of the crypt, the manor and the abbey
+add("Banshee", {name = "Banshee", faction = "Undead", skill = "Knight", weapon = "Dagger", hp = 140, speed = 1.15, weight = "Light",
+	look = {body = "wraith", skin = C(198, 208, 218), eyes = C(220, 244, 255), aura = "ghost"}, moveFx = "ghost",
+	moves = {{kind = "wail", name = "Wail", dmg = 8, cd = 11, radius = 14}},
+	tier = 3})
+
 -- the QUEEN of the Silk Caverns: a spider the size of a cart, the brood about her
 add("SpiderQueen", {name = "Arachnessa, Queen of the Silk", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 1050, scale = 2.4, weight = "Heavy", speed = 1.05,
 	look = {body = "spider", skin = C(30, 24, 26), eyes = C(200, 255, 120), mark = C(196, 30, 40)}, traits = {"summon", "enrage"}, summons = {"CaveSpider"},

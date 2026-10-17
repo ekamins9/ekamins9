@@ -1,4 +1,21 @@
-# Updated scripts: the chosen class's armour reads
+# Updated scripts: the Banshee
+
+- **A new champion: the Banshee**, a pale wraith in the Bone Crypt, the Crimson Manor and the Hollow Abbey. Now and then it throws its head back as a ring fills round it, then screams. Anyone in the ring is hurt a little, thrown a step, slowed a moment, and left half deaf for a few seconds with their ears ringing. Get out of the ring.
+- A new boss move kind any monster can use: `wail`.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BossMoves.lua](ServerScriptService/Combat/BossMoves.lua) | ServerScriptService ▸ Combat | ModuleScript | `K.wail` |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Banshee |
+| [Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | elite pools |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | BossFX "Wail" |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Wail (a Sound; save the place).
+
+---
+
+## Before that: the chosen class's armour reads
 
 - **Choose your class**: on the selected (bright blue) card, the armour line (HEAVY ARMOR in red, and the rest) is lifted towards white so it reads; the other cards keep their colours.
 

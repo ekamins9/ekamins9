@@ -716,6 +716,19 @@ if bossFx then
 				shakePower = math.max(os.clock() < shakeUntil and shakePower or 0, (b or 1) * (1 - d / 100))
 				shakeUntil = os.clock() + SHAKE
 			end
+		elseif kind == "Wail" then
+			-- a banshee's scream: heard far off; caught near it, half deaf a few seconds
+			-- (ReplicatedStorage ▸ Hearing) and the screen shaken
+			if typeof(a) ~= "Vector3" then return end
+			local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+			WarFX.sound("Wail", a + Vector3.new(0, 4, 0), {volume = 1, near = 20, range = 260, speed = 0.95 + math.random() * 0.1})
+			local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local r = (type(b) == "number" and b or 14) * 1.6
+			local d = me and (me.Position - a).Magnitude or 1e9
+			if d < r then
+				require(ReplicatedStorage:WaitForChild("Hearing")).ring(math.clamp(1 - d / r, 0.35, 1))
+				WarFX.shake(0.6 * (1 - d / r) + 0.2, 0.5)
+			end
 		elseif kind == "Phase" then
 			local name = typeof(a) == "Instance" and (a:GetAttribute("BossName") or a:GetAttribute("TagName")) or "THE BOSS"
 			showBanner({text = string.upper(name), sub = b or "", kind = "boss"})

@@ -2557,6 +2557,12 @@ falls: a skeleton falls apart into a heap of its bones, the skull on top (Corpse
 that will stand back up), a wraith is simply gone ("none"); the rest leave their body as anyone
 does. The killer's own kill effect, if it has one, has the last word.
 
+**The Banshee**: a pale wraith, a champion of the Bone Crypt, the Crimson Manor and the Hollow
+Abbey. Now and then it throws its head back as a ring fills round it, then SCREAMS (BossMoves
+`wail`): everyone in the ring is hurt a little, thrown a step, slowed a moment, and half deaf for a
+few seconds (`ReplicatedStorage ▸ Hearing`, through BossFX "Wail" on each screen, with the scream
+itself, WarAudio ▸ Wail, heard far off). Step out of the ring.
+
 **Spiders** (`body = "spider"`: the **Cave Spider**, small and quick, in the Goblin Warrens and the
 Bone Crypt; the **Broodmother**, an elite of the Warrens twice a man's width that calls up cave
 spiders): the body it was dressed as is hidden (it still fights with it: its bites are a hidden

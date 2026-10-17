@@ -25,6 +25,10 @@
        barrage    a fan of bolts at you (step aside, dodge)
        beam       a lance of light sweeps across the room
        roar       (the second phase's start) a burst that throws everyone back
+       wail       a ring round it fills as it throws its head back, then it SCREAMS: everyone in
+                  the ring is hurt a little, thrown off their feet a step, slowed a moment, and
+                  half deaf for a few seconds (every screen: BossFX "Wail", Adventure.client); get
+                  out of the ring
 
      Moves.run(mob) starts its loop (Combat ▸ Monsters, for any monster with moves). While a
      move is on, the bot's own fighting waits (bot.startAt). Every screen draws the wind-up
@@ -809,6 +813,26 @@ K.roar = function(mob, spec)
 	emitAt(at + Vector3.new(0, 3, 0), fx.glow, 90, 50, 0, nil, 1.5)
 	areaHit(mob, at, 12 + 3 * scaleOf(mob), spec.dmg or 10, spec, {knock = 55, lift = 24})
 	task.wait(0.8)
+end
+-- WAIL: the banshee's scream
+K.wail = function(mob, spec)
+	local fx = fxOf(spec, mob)
+	local me = rootOf(mob.model)
+	if not me or #playersNear(mob, 60) == 0 then return end
+	hold(mob, 1.6)
+	pose(mob, "PwSky")
+	flash(mob, fx.glow, 1.4)
+	local r = (spec.radius or 14) * scaleOf(mob)
+	local at = feet(mob)
+	Moves.circle(at, r, fx.glow, 1.2)
+	task.wait(1.2)
+	if not mob.alive then return end
+	fxRemote:FireAllClients("Wail", at, r)
+	emitAt(at + Vector3.new(0, 4, 0), fx.glow, 40, 26, 0, nil, 1.2)
+	areaHit(mob, at, r, spec.dmg or 8, spec, {knock = 10, lift = 6})
+	-- (the scream in their bones: slowed a moment)
+	for _, c in ipairs(playersNear(mob, r + 2)) do powers().addMods(c, {speed = 0.6}, 2.5, "Wail") end
+	task.wait(0.6)
 end
 Moves.KINDS = K
 
