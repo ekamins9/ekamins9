@@ -25,6 +25,7 @@ local NEWS = {
 		{"🕯", "The dark is alive", "ambushes in the corridors, torches that gutter out, footsteps behind you"},
 		{"⚔", "Champions take the field", "in War the side that's behind sends its champion: cut him down"},
 		{"⛈", "Mistmarsh, and a turning sky", "a new War field lost in fog; the sun moves; the heavens can open mid-fight"},
+		{"🔔", "Hear it, feel it", "armour clanks, steps splash, every hall echoes, crates burst under your blade"},
 	},
 }
 
@@ -68,17 +69,17 @@ local function show()
 	local card = Instance.new("Frame")
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
 	card.Position = UDim2.fromScale(0.5, 0.52)
-	card.Size = UDim2.new(0.9, 0, 0, 520)
+	card.Size = UDim2.new(0.9, 0, 0, 576)
 	card.BackgroundColor3 = Theme.GLASS
 	card.BackgroundTransparency = 0.05
 	card.BorderSizePixel = 0
 	card.Parent = gui
 	Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
 	local stroke = Instance.new("UIStroke", card); stroke.Color = Theme.ACCENT; stroke.Thickness = 2; stroke.Transparency = 0.35
-	local size = Instance.new("UISizeConstraint", card); size.MaxSize = Vector2.new(640, 520)
+	local size = Instance.new("UISizeConstraint", card); size.MaxSize = Vector2.new(640, 576)
 	-- (a short screen, a phone on its side: the whole card scaled to fit)
 	local vh = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 720
-	local fit = math.min(1, (vh - 30) / 520)
+	local fit = math.min(1, (vh - 30) / 576)
 	local scale = Instance.new("UIScale", card); scale.Scale = fit * 0.9
 	local pad = Instance.new("UIPadding", card)
 	pad.PaddingLeft, pad.PaddingRight, pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 24), UDim.new(0, 24), UDim.new(0, 18), UDim.new(0, 18)
