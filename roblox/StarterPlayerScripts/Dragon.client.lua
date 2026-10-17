@@ -13,6 +13,7 @@
      is a stream of flame off its mouth while Breath is on. ]]
 
 local RunService = game:GetService("RunService")
+local BossIntro = require(game:GetService("ReplicatedStorage"):WaitForChild("BossIntro"))
 
 local FIRE = Color3.fromRGB(255, 130, 40)
 local dragons = {}   -- model -> state
@@ -108,6 +109,11 @@ local function animate(st, dt)
 	local t = os.clock()
 	local state = m:GetAttribute("DragonState") or "ground"
 	local dead = m:GetAttribute("Dead") == true
+	-- (its death: a boss's fall, the size of a dragon)
+	if (dead or state == "dead") and not st.fell then
+		st.fell = true
+		task.spawn(BossIntro.falls, root.Position - Vector3.new(0, 6, 0), 3)
+	end
 	local downed = m:GetAttribute("Downed") == true or state == "downed" or dead
 	local fly = m:GetAttribute("Fly") == true and not dead
 	local flyK = ease(st, "fly", fly and 1 or 0, dt, 3)

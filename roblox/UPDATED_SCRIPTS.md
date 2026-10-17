@@ -1,10 +1,13 @@
 # Updated scripts: a boss falls
 
 - **Every boss** (the Depths' lords, Deadvault's lair boss, War's and Siege's champions, the Horde's Warlord): when one dies near you, a deep boom and the ground shaking, a pillar of light where it stood, a ring of force rolling out, dust, and the world washing white for a moment.
+- **Cindermaw** (Dragonfall) falls the same way, three times the size. The effect now lives in `BossIntro.falls`, shared.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [BossEntrance.client.lua](StarterPlayerScripts/BossEntrance.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the fall |
+| [BossIntro.lua](ReplicatedStorage/BossIntro.lua) | ReplicatedStorage | ModuleScript | `falls` |
+| [BossEntrance.client.lua](StarterPlayerScripts/BossEntrance.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | calls it for every boss |
+| [Dragon.client.lua](StarterPlayerScripts/Dragon.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | calls it for the dragon |
 | [README.md](README.md) | | doc | |
 
 ---

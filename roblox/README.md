@@ -2068,8 +2068,9 @@ entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords and the dragon 
 `Adventure.client`, Siege's champion and the Horde's Warlord through `BossEntrance.client` when a
 bot becomes a `Boss`): black bars close in and the rest of the HUD steps aside, the camera finds
 the boss and creeps towards it while its name comes up big on the bars, a deep boom and the ground
-shaking; about three seconds, then back to you. **A boss falls** (`BossEntrance.client`, any
-boss in workspace ▸ NPCs in any mode, within 200 studs of you): a deep boom and the ground
+shaking; about three seconds, then back to you. **A boss falls** (`BossIntro.falls`, called by
+`BossEntrance.client` for any boss in workspace ▸ NPCs in any mode and by `Dragon.client` for
+Cindermaw, three times the size; within 200 studs of you): a deep boom and the ground
 shaking, a pillar of light where it stood fading up into the dark, a ring of force rolling out
 over the floor, a cloud of dust, the world washing white for a moment.
 
