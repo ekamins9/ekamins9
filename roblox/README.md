@@ -36,6 +36,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Scoreboard.server.lua` | `ServerScriptService` → `Scoreboard` | Script |
 | `ReplicatedStorage/GameConfig.lua` | `ReplicatedStorage` → `GameConfig` | ModuleScript |
 | `ServerScriptService/Game/Game.lua` | `ServerScriptService` → `Game` (Folder) → `Game` | ModuleScript |
+| `ServerScriptService/Game/Honours.lua`, `StarterPlayerScripts/Honours.client.lua` | `ServerScriptService` → `Game` → `Honours` · `StarterPlayer` → `StarterPlayerScripts` → `Honours` | ModuleScript · LocalScript |
 | `ServerScriptService/Game/MapLoader.lua` | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript |
 | `ServerScriptService/Game/Horizon.lua` | `ServerScriptService` → `Game` → `Horizon` (the land round every outdoor map) | ModuleScript |
 | `ServerScriptService/Game/BannerArt.lua` | `ServerScriptService` → `Game` → `BannerArt` (the two houses' arms on every banner) | ModuleScript |
@@ -2981,6 +2982,16 @@ round kills) and into the player's `Profile` stats; the board resets each round.
 every name in the feed wears its team's colour** — players and bots alike (`killerTeam` /
 `victimTeam`: CombatServer stamps the attacker's team as `LastHitByTeam`); yours is underlined and
 a row you're in has a gold edge; the verb is neutral, a teamkill orange.
+
+**Battle honours** (`Game ▸ Honours`, called from `Game.onDeath` / `Game.onBotDeath`; shown by
+`StarterPlayerScripts ▸ Honours`): kills each within 4.5 s of the last are a DOUBLE KILL, a TRIPLE
+KILL, then RAMPAGE; kills without falling are a run: BATTLE-HARDENED at 3, CHAMPION OF THE FIELD at
+5, WARLORD at 8, BANE OF ARMIES at 12, UNSTOPPABLE at 16 and every 5 after. Yours come up big in
+gold a third of the way down, the count under a gilt rule, a horn for the big ones; from CHAMPION
+on everyone sees a line under the top of the screen ("… IS A WARLORD · 8 IN A ROW"), and when a run
+of 5 or more ends, who ended it (they get STREAK BREAKER). Never in the Courtyard, a yard or a
+peaceful place, never for a teammate; a new round starts the counts again. Bots' kills count for
+the player who made them, and a bot can end a player's run.
 
 ## Low stamina
 

@@ -267,10 +267,21 @@ function Game.spawnCFrame(plr)
 	return MapLoader.pickSpawn(nil, {})
 end
 
+-- a run of kills called out (Game ▸ Honours), never in the way of the rest
+local Honours
+local function honour(fn, a, b)
+	Honours = Honours or require(script.Parent:WaitForChild("Honours"))
+	local ok, err = pcall(Honours[fn], a, b)
+	if not ok then warn("[Honours]", err) end
+end
+-- (loaded now, so its RemoteEvent is there before anyone's screen looks for it)
+task.defer(function() Honours = Honours or require(script.Parent:WaitForChild("Honours")) end)
+
 -- Scoreboard reports every death here; killerPlr may be nil
 function Game.onDeath(victimPlr, killerPlr, victimChar)
 	if not Game.current then return end
-	if killerPlr and killerPlr ~= victimPlr then Game.current:onKill(killerPlr, victimPlr, victimChar) end
+	if killerPlr and killerPlr ~= victimPlr then Game.current:onKill(killerPlr, victimPlr, victimChar); honour("kill", killerPlr, victimPlr) end
+	if victimPlr then honour("fell", victimPlr, killerPlr) end
 	Game.current:onDeath(victimPlr)
 	Game.current:publishScores()
 end
@@ -280,7 +291,7 @@ end
 function Game.onBotDeath(model, killerPlr)
 	local mode = Game.current
 	if not mode then return end
-	if killerPlr then mode:onKill(killerPlr, nil, model) end
+	if killerPlr then mode:onKill(killerPlr, nil, model); honour("kill", killerPlr, nil) end
 	if mode.onBotDeath then mode:onBotDeath(model:GetAttribute("Team"), model) end
 	mode:publishScores()
 end

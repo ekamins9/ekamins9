@@ -1,4 +1,20 @@
-# Updated scripts: a new mode, Capture the Standard
+# Updated scripts: battle honours
+
+- **Multi-kills and runs called out**: DOUBLE KILL, TRIPLE KILL, RAMPAGE for kills close together;
+  BATTLE-HARDENED, CHAMPION OF THE FIELD, WARLORD, BANE OF ARMIES, UNSTOPPABLE for kills without
+  falling. Yours come up big in gold with a horn for the big ones; from CHAMPION on everyone hears
+  of it, and of who ends a run of five or more (STREAK BREAKER for them).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Honours.lua](ServerScriptService/Game/Honours.lua) | ServerScriptService ▸ Game | ModuleScript | new: the counts, the names, HonoursEvent |
+| [Honours.client.lua](StarterPlayerScripts/Honours.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new: the callouts |
+| [Game.lua](ServerScriptService/Game/Game.lua) | ServerScriptService ▸ Game | ModuleScript | `onDeath` / `onBotDeath` tell Honours (loaded at start) |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a new mode, Capture the Standard
 
 - **Capture the Standard** (Warfront votes it like the rest): each side's war banner stands at its
   camp in a glowing ring. Take theirs, carry it home on your back (a little slower, seen by
