@@ -1,4 +1,24 @@
-# Updated scripts: War's banners pay; War's kills on the season board
+# Updated scripts: key art on the loading and travel screens; a world round the Courtyard
+
+- **Key art** (generated: the two armies, trebuchets, a battle-mage's lightning) behind the loading screen and every travel screen, darkened so the words read.
+- **The Courtyard isn't a floating island any more**: hills to the horizon, the road out of the gate through a village and fields, woods, and a war camp far to the east whose trebuchets lob fire now and then over the far hills (a tease for WAR).
+- **Fixes**: the travel screen's embers were drawn under its backdrop and never seen.
+- **Checked in Play**: the menu still frames the castle (the world sits beside the map, not in it: inside it the menu's camera pulled back a mile); the travel screen with the art; the art loads.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubBackdrop.lua](ServerScriptService/Game/HubBackdrop.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Hub.lua](ServerScriptService/Game/Modes/Hub.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | builds / clears it |
+| [HubAmbience.client.lua](StarterPlayerScripts/HubAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [Loading.client.lua](ReplicatedFirst/Loading.client.lua) | ReplicatedFirst | LocalScript | key art |
+| [TravelScreen.client.lua](StarterPlayerScripts/TravelScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | key art; embers seen |
+| [README.md](README.md) | | doc | |
+
+Studio-only (save the place): ReplicatedFirst ▸ KeyArt.
+
+---
+
+## Before that: War's banners pay; War's kills on the season board
 
 - **Taking a banner pays**: everyone of your side at a banner when it falls to you earns 20 Marks and 45 XP (paid with the round), so the objective is worth chasing.
 - **War counts on the season's kill board**, like Warfront.
@@ -22,21 +42,4 @@
 | [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | far bots cheaper |
 | [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War botFill 32 |
 | [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | default cap 32 |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: ballistae you man in War; the engines' kills on the feed
-
-- **Man a ballista**: two a side behind your second banner. Hold E: it swings onto the nearest knot of enemies ahead and looses a bolt that goes through up to three of them; the kills are yours; six seconds to wind. Only your side sees its prompt (and nobody while it winds). Works the same on keyboard, controller and touch.
-- **The kill feed names the engines**: "Crown Trebuchet", "Iron Archers", "Crown Battle-Mages".
-- **Checked in Play**: War on Redfield: four ballistae rigged, one loosed (it turned onto its target, the bolt flew, it wound and came ready again); every touched script compiled.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | ballistae |
-| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | where they stand |
-| [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | kills on the feed |
-| [Engines.client.lua](StarterPlayerScripts/Engines.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the bolt |
-| [Prompts.client.lua](StarterPlayerScripts/Prompts.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a side's own prompt |
 | [README.md](README.md) | | doc | |

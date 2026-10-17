@@ -138,6 +138,11 @@ you'll spawn with two.
 
 ## A newcomer's first minutes
 
+**Key art** (ReplicatedFirst ▸ KeyArt, a Studio-only StringValue holding the image: a generated
+painting of the two armies, trebuchets and a battle-mage) sits behind the loading screen (faded in
+once it has loaded) and the travel screen, darkened round the middle so the words read. Both screens
+layer globally: the art is at ZIndex 1 over their backdrop, the words and bars above it.
+
 A brand-new player (profile `tutorial` 0; the player attribute `Tutorial` mirrors it) never sees
 a menu first. The game's name and line are `GameConfig.GAME_NAME` / `TAGLINE` (**Steel & Glory**).
 0. **Loading** (`ReplicatedFirst ▸ Loading`): from the very first frame, the game's name on a dark
@@ -938,6 +943,12 @@ If a store can't be reached (Studio without API access), roles, bans and the log
 that server and the panel says so.
 
 ## The Courtyard (the hub)
+
+**The world round its walls** (`Game ▸ HubBackdrop`, built when the Hub starts into workspace ▸
+MapBackdrop, beside the map so the menu still frames the castle; the Hub clears it when it ends):
+grassland to the horizon, hills all round, the road out of the gate through a village with a
+windmill and fields, woods, and far to the east a war camp with its trebuchets, which now and then
+lob fire further off still (`HubAmbience.client`: scenery only, never near anyone).
 
 A castle courtyard built from code (`Build ▸ MapCourtyard`); the old free-model Courtyard was
 moved to `ServerStorage ▸ _RetiredMaps`. It's peaceful: players can't fight here.

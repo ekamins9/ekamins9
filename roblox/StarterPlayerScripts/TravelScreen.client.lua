@@ -79,6 +79,30 @@ local function build(name)
 	local vignette = Instance.new("UIGradient", back)
 	vignette.Rotation = 90
 	vignette.Color = ColorSequence.new(Color3.fromRGB(14, 12, 10), Color3.fromRGB(4, 4, 3))
+	-- the game's key art behind it (ReplicatedFirst ▸ KeyArt, Studio-only), darkened to read over
+	local art = game:GetService("ReplicatedFirst"):FindFirstChild("KeyArt")
+	if art and art:IsA("StringValue") and art.Value ~= "" then
+		local img = Instance.new("ImageLabel")
+		img.Name = "KeyArt"
+		img.BackgroundTransparency = 1
+		img.Size = UDim2.fromScale(1, 1)
+		img.Image = art.Value
+		img.ScaleType = Enum.ScaleType.Crop
+		img.ImageTransparency = 0.35
+		img.ZIndex = 1   -- (this screen layers globally: the art over the backdrop, under the rest)
+		img.Parent = back
+		local shade = Instance.new("Frame")
+		shade.Name = "Shade"
+		shade.BackgroundColor3 = Color3.new(0, 0, 0)
+		shade.BorderSizePixel = 0
+		shade.Size = UDim2.fromScale(1, 1)
+		shade.ZIndex = 1
+		shade.Parent = back
+		local g = Instance.new("UIGradient", shade)
+		g.Rotation = 90
+		g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(0.45, 0.25),
+			NumberSequenceKeypoint.new(0.7, 0.25), NumberSequenceKeypoint.new(1, 0.1)})
+	end
 
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
@@ -192,7 +216,7 @@ do
 	embers.Name = "Embers"
 	embers.BackgroundTransparency = 1
 	embers.Size = UDim2.fromScale(1, 1)
-	embers.ZIndex = 0
+	embers.ZIndex = 1   -- (0 drew them under the backdrop: never seen)
 	embers.Parent = back
 	require(ReplicatedStorage:WaitForChild("UIFX")).embers(embers, {colors = "fire", rate = 0.08, z = 0})
 end
