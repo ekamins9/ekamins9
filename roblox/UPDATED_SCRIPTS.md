@@ -1,4 +1,17 @@
-# Updated scripts: a shield bash lands like one
+# Updated scripts: Crownfall's island sits in a sea
+
+- **Crownfall's island no longer floats**: its sea runs on past the edge to the sky, with headlands
+  and mountains rising out of it all round, a few wooded islets, smoke off a far coast.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Horizon.lua](ServerScriptService/Game/Horizon.lua) | ServerScriptService ▸ Game | ModuleScript | the island horizon; `HorizonTheme` |
+| [Realm.lua](ServerScriptService/Game/Realm.lua) | ServerScriptService ▸ Game | ModuleScript | its maps say they're islands |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a shield bash lands like one
 
 - **A kick with a shield up (a bash)** now slams in with the board's wooden thud and knocks a few
   chips off it, instead of sounding like a boot.

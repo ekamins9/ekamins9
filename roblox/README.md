@@ -1369,8 +1369,11 @@ ember maps), bigger ones behind for the screens that see further; woods in grove
 trees; a fighting map has both armies' camps outside it (tents, banners, fires), a quiet one a
 village down a road and fields; a castle on a far hill; smoke on the horizon (black from a war's
 burning farms, pale from a quiet map's chimneys). Its look is the map's MapForge theme (the
-hand-made maps are named in `Horizon`'s HAND); `NoHorizon = true` on a map leaves it alone (the
-Courtyard has its own, `HubBackdrop`).
+hand-made maps are named in `Horizon`'s HAND; a `HorizonTheme` attribute names one outright);
+`NoHorizon = true` on a map leaves it alone (the Courtyard has its own, `HubBackdrop`). **An island**
+(`Island = true`, `SeaLevel`: Crownfall's realm, `Game ▸ Realm`) gets the sea instead: its water
+running on past the map's square, a still sea beyond to the sky, headlands and mountains rising
+out of it all round, wooded islets, smoke off a far coast.
 
 **Every banner flies arms** (`Game ▸ BannerArt`, as the map loads: the map, its horizon, the
 Courtyard's backdrop): each cloth gets its house's emblem (the shields' pictures, ShieldArt) on

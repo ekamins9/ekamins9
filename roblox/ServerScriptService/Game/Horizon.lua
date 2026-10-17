@@ -13,7 +13,10 @@
          chimneys on a quiet one; more of it on the ash and ember maps)
 
      The look comes from the map's theme (its Theme attribute: Build ▸ MapForge's THEMES; the
-     hand-made maps are named in HAND below). A map with NoHorizon = true is left alone (the
+     hand-made maps are named in HAND below; a HorizonTheme attribute says it outright).
+     AN ISLAND (Island = true on the map: Crownfall's realm, Game ▸ Realm) gets the sea instead:
+     its water running on past the map's square, out to a sea that meets the sky, headlands and far
+     mountains rising out of it, a few wooded islets, smoke off a distant coast. A map with NoHorizon = true is left alone (the
      Courtyard has its own: Game ▸ HubBackdrop).
 
        Horizon.build(map, name)    Horizon.clear() ]]
@@ -49,7 +52,7 @@ local function themeOf(map, name)
 	local themes = ok and F.THEMES or {}
 	-- (only the outdoor battlegrounds: a map named nowhere here makes its own world: the dungeons,
 	--  the Gilded Rat, Crownlands, the Caldera, the prologue's Stormwatch)
-	local key = map:GetAttribute("Theme") or WAR[map:GetAttribute("W_Theme") or ""] or HAND[name]
+	local key = map:GetAttribute("HorizonTheme") or map:GetAttribute("Theme") or WAR[map:GetAttribute("W_Theme") or ""] or HAND[name]
 	if not key then return nil, nil end
 	return themes[key] or themes.summer, key
 end
@@ -218,6 +221,94 @@ function Horizon.clear()
 	bands = {}
 end
 
+-- AN ISLAND'S HORIZON: the sea all round, to the sky. W = its water's top (y)
+local function isle(map, name, T, themeKey, corner, size)
+	local r = Random.new(#name * 613 + 29)
+	local c = corner + size / 2
+	local cx, cz = c.X, c.Z
+	local ex, ez = size.X / 2, size.Z / 2
+	local E = math.max(ex, ez)
+	local W = map:GetAttribute("SeaLevel") or -9
+	local ctx = K.new("MapHorizon")
+	local function at(a, d, y) return V3(cx + math.cos(a) * d, y or W, cz + math.sin(a) * d) end
+	-- the near sea: real water past the square (waves, the same colour), a band SEA wide
+	local SEA = 520
+	local DROP = V3(0, 2, 0)
+	local LAP = 8
+	local bandsWater = {
+		{CF(cx, W - 5, cz - ez - SEA / 2 + LAP / 2), V3(size.X + SEA * 2, 10, SEA + LAP)},
+		{CF(cx, W - 5, cz + ez + SEA / 2 - LAP / 2), V3(size.X + SEA * 2, 10, SEA + LAP)},
+		{CF(cx - ex - SEA / 2 + LAP / 2, W - 5, cz), V3(SEA + LAP, 10, size.Z)},
+		{CF(cx + ex + SEA / 2 - LAP / 2, W - 5, cz), V3(SEA + LAP, 10, size.Z)},
+	}
+	for _, b in ipairs(bandsWater) do
+		pcall(function() workspace.Terrain:FillBlock(b[1] - DROP, b[2], Mat.Water) end)
+		local lo, hi = b[1].Position - b[2] / 2, b[1].Position + b[2] / 2
+		table.insert(bands, Region3.new(V3(lo.X, W - 24, lo.Z), V3(hi.X, W + 120, hi.Z)):ExpandToGrid(4))
+	end
+	-- the far sea: a still plane in the water's colour, from under the near sea to the haze
+	local seaCol = workspace.Terrain.WaterColor:Lerp(Color3.new(0, 0, 0), 0.25)
+	local inner, outer, step = E + SEA - 40, E + 3200, 2000
+	for x0 = cx - outer, cx + outer - 1, step do
+		for z0 = cz - outer, cz + outer - 1, step do
+			local x1, z1 = math.min(x0 + step, cx + outer), math.min(z0 + step, cz + outer)
+			local hx0, hx1, hz0, hz1 = cx - inner, cx + inner, cz - inner, cz + inner
+			local rects = {}
+			if x1 <= hx0 or x0 >= hx1 or z1 <= hz0 or z0 >= hz1 then rects = {{x0, z0, x1, z1}}
+			else
+				if z0 < hz0 then table.insert(rects, {x0, z0, x1, hz0}) end
+				if z1 > hz1 then table.insert(rects, {x0, hz1, x1, z1}) end
+				local mz0, mz1 = math.max(z0, hz0), math.min(z1, hz1)
+				if x0 < hx0 and mz1 > mz0 then table.insert(rects, {x0, mz0, hx0, mz1}) end
+				if x1 > hx1 and mz1 > mz0 then table.insert(rects, {hx1, mz0, x1, mz1}) end
+			end
+			for _, q in ipairs(rects) do
+				local w, d = q[3] - q[1], q[4] - q[2]
+				if w > 1 and d > 1 then
+					local p = part(ctx, "Part", V3(w, 2, d), CF((q[1] + q[3]) / 2, W - 1.6, (q[2] + q[4]) / 2), seaCol, Mat.SmoothPlastic)
+					p.Reflectance = 0.12
+				end
+			end
+		end
+	end
+	-- the far coasts: headlands and mountains rising from the sea all round, a ring with no gap
+	-- inside a screen's reach, greener on their feet
+	for i = 1, 26 do
+		local ridge = i <= 18
+		local a = (ridge and i / 18 or (i - 18) / 8) * math.pi * 2 + r:NextNumber(-0.12, 0.12)
+		local d = ridge and r:NextNumber(E + 700, E + 900) or r:NextNumber(E + 1100, E + 1500)
+		local w = ridge and r:NextNumber(380, 600) or r:NextNumber(700, 1100)
+		local h = ridge and r:NextNumber(90, 180) or r:NextNumber(240, 420)
+		local p = at(a, d, W)
+		ball(ctx, V3(w, h * 2, w * 0.75), CF(p) * CFrame.Angles(0, -a + math.pi / 2 + r:NextNumber(-0.3, 0.3), 0), shade(T.cliffColor, r:NextNumber(0, 0.12)), T.cliff)
+		ball(ctx, V3(w * 1.1, h * 0.9, w * 0.8), CF(p + (V3(cx, W, cz) - p).Unit * w * 0.1), shade(T.groundColor, 0.08), T.ground)
+		-- (a pale beach where it meets the water)
+		ball(ctx, V3(w * 1.2, 10, w * 0.9), CF(p + (V3(cx, W, cz) - p).Unit * w * 0.15), RGB(214, 196, 150), Mat.Sand)
+	end
+	-- a few wooded islets between, near enough to make out
+	for _ = 1, 6 do
+		local a, d = r:NextNumber(0, math.pi * 2), r:NextNumber(E + 160, E + 480)
+		local p = at(a, d, W)
+		if math.abs(p.X - cx) > ex + 40 or math.abs(p.Z - cz) > ez + 40 then
+			local w = r:NextNumber(50, 110)
+			ball(ctx, V3(w * 1.15, 8, w * 1.15), CF(p), RGB(214, 196, 150), Mat.Sand)
+			ball(ctx, V3(w, w * 0.32, w * 0.9), CF(p + V3(0, 1, 0)), T.groundColor, T.ground)
+			for _ = 1, r:NextInteger(3, 8) do
+				local q = p + V3(r:NextNumber(-0.3, 0.3) * w, w * 0.1, r:NextNumber(-0.3, 0.3) * w)
+				tree(ctx, T, r, q, r:NextNumber(14, 24))
+			end
+		end
+	end
+	-- smoke off a distant coast
+	for _ = 1, 2 do smokeColumn(ctx, T, at(r:NextNumber(0, math.pi * 2), r:NextNumber(E + 650, E + 800), W + 30), false) end
+	ctx.model.Name = "MapHorizon"
+	ctx.model:SetAttribute("Theme", themeKey)
+	ctx.model:SetAttribute("Island", true)
+	pcall(function() ctx.model.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end)
+	ctx.model.Parent = workspace
+	return true
+end
+
 function Horizon.build(map, name)
 	-- (the terrain was cleared with the last map: MapLoader.unload)
 	local old = workspace:FindFirstChild("MapHorizon"); if old then old:Destroy() end
@@ -226,6 +317,7 @@ function Horizon.build(map, name)
 	if typeof(corner) ~= "Vector3" or typeof(size) ~= "Vector3" then return false end
 	local T, themeKey = themeOf(map, name)
 	if not T then return false end
+	if map:GetAttribute("Island") then return isle(map, name, T, themeKey, corner, size) end
 	local r = Random.new(#name * 977 + 13)
 	local c = corner + size / 2
 	local ex, ez = size.X / 2, size.Z / 2
