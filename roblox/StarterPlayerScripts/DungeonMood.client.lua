@@ -40,6 +40,8 @@
        the abbey        in the Hollow Abbey, now and then a bell tolls somewhere far off through the
                         stone (WarAudio ▸ AbbeyBell), or a faint wordless chant drifts from another
                         room (WarAudio ▸ Chant)
+       the fountain     a fountain room's water trickles into its basin (WarAudio ▸ Fountain, from
+                        its spout: louder as you come to it)
        vermin           now and then a few rats squeak and scurry across the floor ahead of you,
                         wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
                         water drips (WarAudio ▸ Drip; not in the Ember Forge)
@@ -1005,6 +1007,8 @@ local function leave()
 	if mood.drone then WarFX.stopLoop(mood.drone, 2); mood.drone = nil end
 	if mood.reverb and SoundService.AmbientReverb == mood.reverb then SoundService.AmbientReverb = Enum.ReverbType.NoReverb end
 	mood.reverb = nil
+	for _, h in ipairs(mood.fountains or {}) do h.stop(1) end
+	mood.fountains = nil
 end
 
 local function enter(theme)
@@ -1015,6 +1019,15 @@ local function enter(theme)
 	local token = mood.token
 	airOn(theme)
 	mood.drone = WarFX.loop("Drone", 0.45)
+	-- (a fountain room's water, from its spout)
+	mood.fountains = {}
+	local m = workspace:FindFirstChild("Map")
+	for _, d in ipairs(m and m:GetDescendants() or {}) do
+		if d.Name == "SpoutTop" and d:IsA("BasePart") then
+			local h = WarFX.loop3D("Fountain", d.Position, {near = 8, range = 60, volume = 0.7})
+			if h then table.insert(mood.fountains, h) end
+		end
+	end
 	local rv = Enum.ReverbType[REVERB[theme or ""] or "StoneCorridor"]
 	if rv then SoundService.AmbientReverb = rv; mood.reverb = rv end
 	local plague = theme == "Plague"
@@ -1060,10 +1073,12 @@ local function refresh()
 	task.delay(0.6, function()
 		if want ~= w then return end
 		local yes, theme = inDungeon()
+		local map = workspace:FindFirstChild("Map")
 		if yes and not mood.on then enter(theme)
 		elseif not yes and mood.on then leave()
-		elseif yes and mood.on and theme ~= mood.theme then leave(); enter(theme) end
-		mood.theme = theme
+		-- (a new floor, even of the same theme: its own fountains, its own dead)
+		elseif yes and mood.on and (theme ~= mood.theme or map ~= mood.map) then leave(); enter(theme) end
+		mood.theme, mood.map = theme, map
 	end)
 end
 workspace.ChildAdded:Connect(function(c) if c.Name == "Map" then refresh() end end)

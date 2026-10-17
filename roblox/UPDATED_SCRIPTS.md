@@ -1,4 +1,18 @@
-# Updated scripts: petals from the stands
+# Updated scripts: the fountain trickles; each floor its own mood
+
+- **The Depths**: a fountain room's water trickles into its basin, louder as you come to it.
+- **Fixed**: going down to a floor of the same theme kept the last floor's mood running. Its lying dead and its sounds stayed at the old floor's positions. Each new floor now starts its mood fresh.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | fountains, per-floor restart |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Fountain (a Sound; save the place).
+
+---
+
+## Before that: petals from the stands
 
 - **The arenas** (the Colosseum, the forge arenas, the Sandpit, the Bloodpit): when a round is won, the stands throw petals down onto the sand for a few seconds as they roar.
 

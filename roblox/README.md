@@ -2064,7 +2064,8 @@ come); one of a second wave climbs out of a pit cracked in the floor (The Depths
 it lies on its back among the bones like the dead it is (its body hidden, a laid-down copy in its
 place, its middle over where it really stands so a sneak attack still lands), and the moment it
 notices anything it gets up, tipping up off the floor from its feet in a puff of grave-dust with a
-groan. **Every sound echoes** down here (`SoundService.AmbientReverb` by theme: the crypt's stone corridors,
+groan. A fountain room's water trickles into its basin, louder as you come to it (WarAudio ▸ Fountain,
+from its spout). **Every sound echoes** down here (`SoundService.AmbientReverb` by theme: the crypt's stone corridors,
 the warrens' and the ice's caves, the manor's halls, the forge's iron halls, the drowned halls' wet
 tunnels, the abbey's great nave; Plague Night an open plain); the Gilded Rat has a warm room's,
 an arena's stands an arena's (`TavernAmbience`, `ArenaCrowd`); everywhere else, none.
