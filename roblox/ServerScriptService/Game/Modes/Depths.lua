@@ -28,6 +28,9 @@
      AMBUSH. The corridors aren't safe either: now and then (twice a floor at most) the dead crack
      up through the floor at both ends of the one you're walking, and you're caught between them.
 
+     WANDERERS. From the second floor a pair of the floor's commons (two pairs on the third) walk
+     the halls from room to room, there to be met in a corridor: their own little fight, no gates.
+
      LOOK UP. Now and then some of a room's waiting monsters (the kinds that climb: spiders,
      ghouls, goblins, vampires, wraiths) cling to its ceiling in the dark instead, upside down,
      eyes glinting. Walk under one, or wake the room, and they drop on you.
@@ -593,6 +596,56 @@ function Depths:ambush(c, T, along, plr)
 		end
 	end)
 end
+-- WANDERERS: from the second floor, a pair or two of the floor's commons walking a route of rooms
+-- through their doors and back (Combat ▸ Perception patrols: they see and hear as the rest do).
+-- Their own fight, no gates; they go with the floor (kept with the ambushers: clearAmbushers).
+local WANDER = {0, 1, 2}   -- pairs, by floor
+function Depths:wanderers()
+	local L = self.layout
+	local mons = Catalog.DUNGEONS[self.theme].monsters
+	local starts = {}
+	for _, r in ipairs(L.rooms) do
+		if (r.kind == "combat" or r.kind == "fountain" or r.kind == "shrine") and (r.depth or 0) >= 2 then table.insert(starts, r) end
+	end
+	local want = WANDER[self.floor] or 0
+	while want > 0 and #starts > 0 do
+		local from = table.remove(starts, math.random(#starts))
+		-- (three rooms on through their doors, never the start, the stairs or the lair, and back;
+		-- a room with nowhere to go from it is passed over for the next)
+		local path, cur = {from}, from
+		for _ = 1, 3 do
+			local opts = {}
+			for _, nid in pairs(cur.doors) do
+				local o = L.rooms[nid]
+				if o and o.kind ~= "start" and o.kind ~= "boss" and o.kind ~= "stairs" and not table.find(path, o) then table.insert(opts, o) end
+			end
+			if #opts == 0 then break end
+			cur = opts[math.random(#opts)]
+			table.insert(path, cur)
+		end
+		if #path >= 2 then
+			want -= 1
+			local pts = {}
+			for _, r in ipairs(path) do table.insert(pts, Vector3.new(r.cx, 3, r.cz)) end
+			for i = #path - 1, 2, -1 do table.insert(pts, Vector3.new(path[i].cx, 3, path[i].cz)) end
+			local pseudo = {cx = 0, cz = 0, w = 4000, d = 4000, mobs = {}, state = "sealed", kind = "wander"}
+			local opts = self:roomOpts(pseudo)
+			pseudo.opts = opts
+			self.ambushers = self.ambushers or {}
+			table.insert(self.ambushers, pseudo)
+			for k = 1, 2 do
+				local at = pts[1] + Vector3.new(k == 1 and -2.5 or 2.5, 0, 0)
+				local how = {home = pts[1], patrol = pts, sight = 40}
+				local mob = Monsters.spawn(mons.common[math.random(#mons.common)], opts, {at = CFrame.lookAt(at, pts[2]), sense = how})
+				if mob then
+					pseudo.mobs[mob] = true
+					if mob.bot and not self.senses.bots[mob.bot] then self.senses:add(mob.bot, how) end
+				end
+			end
+		end
+	end
+end
+
 function Depths:clearAmbushers()
 	for _, pseudo in ipairs(self.ambushers or {}) do
 		for mob in pairs(pseudo.mobs) do Monsters.despawn(mob) end
@@ -795,6 +848,7 @@ function Depths:descend()
 	Dungeon.sweep(name)
 	self:dressRooms()
 	self:setTraps()
+	self:wanderers()
 	local spawns = MapLoader.spawns(nil)
 	local i = 0
 	for _, p in ipairs(Players:GetPlayers()) do

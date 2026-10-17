@@ -1,4 +1,15 @@
-# Updated scripts: your heart and your breath
+# Updated scripts: wanderers in the Depths
+
+- **The Depths**: from the second floor, a pair of the floor's monsters (two pairs on the third) walk the halls from room to room, to be met in a corridor. Their own fight, no gates; they go with the floor.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `wanderers`, `WANDER`; called on each new floor |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: your heart and your breath
 
 - **Every fight**: low on health, your heart pounds (quicker the worse it is); out of stamina, you pant. Both were silent before (their SoundConfig slots were empty); they now use the game's own sounds.
 
