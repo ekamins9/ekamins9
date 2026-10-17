@@ -72,6 +72,8 @@ local function inDungeon()
 	local m = workspace:FindFirstChild("Map")
 	local mode = round:GetAttribute("Mode")
 	if (mode == "Plague" or mode == "InvUndead") and m then return true, "Plague" end
+	-- (the Gilded Rat is built fresh too, but it's the warm, safe place: none of this)
+	if mode == "Tavern" then return false end
 	return m and m:GetAttribute("Generated") == true, m and m:GetAttribute("Theme")
 end
 

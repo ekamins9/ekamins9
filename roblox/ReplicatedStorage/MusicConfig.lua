@@ -10,6 +10,7 @@
        HordeBreak   between waves: breathe, but don't relax
        Boss         a warlord / champion is alive (Bot attribute Boss)
        Intro        a newcomer's welcome (the cinematic and the TRAIN / BATTLE card)
+       Tavern       the Gilded Rat (none listed: WarAudio ▸ Tavern, Studio-only; else Hub's)
        Dread        the dungeons between fights (none listed here: ReplicatedStorage ▸ WarAudio ▸
                     Dread, a Studio-only Sound, if the place has one; else silence under the
                     dungeon's own sounds)
@@ -27,6 +28,7 @@ return {
 		Boss         = {1843640242, 9046496901},
 		Intro        = {9043542688},
 		Dread        = {},
+		Tavern       = {},
 	},
 	-- a mood louder or softer than VOLUME (the intro's score is the scene; the dread sits low)
 	MOOD_VOLUME = {Intro = 0.55, Dread = 0.26},

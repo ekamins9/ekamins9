@@ -1,4 +1,21 @@
-# Updated scripts: the sun moves over a War battle, a siege, a horde's defence
+# Updated scripts: the Gilded Rat sounds lived in
+
+- **The Tavern (the Gilded Rat)**: a murmur of patrons over the hall, the hearth crackling where it stands, and a lute-and-fiddle tune by the hearth.
+- **Fixed**: the Tavern played battle music, and got the dungeons' dread (drone, cold grade, dark edge, whispers, apparitions, rats). Its map is built fresh like a dungeon floor, and that made it count as one. It now gets its own tune (or the Courtyard's) and none of the dread.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [TavernAmbience.client.lua](StarterPlayerScripts/TavernAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [Music.client.lua](StarterPlayerScripts/Music.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Tavern mood |
+| [MusicConfig.lua](ReplicatedStorage/MusicConfig.lua) | ReplicatedStorage | ModuleScript | `Tavern` |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | not in the Tavern |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Tavern (the tune), TavernRoom (the murmur) (Sounds; save the place).
+
+---
+
+## Before that: the sun moves over a War battle, a siege, a horde's defence
 
 - **War**: the day goes on while you fight. A morning field brightens; an afternoon one wears on towards golden hour, with long shadows and a warm sky by the bell. Dusk and night themes keep their tuned light.
 - **Siege**: the same over the assault, gentler (afternoon towards evening, the fires showing brighter).

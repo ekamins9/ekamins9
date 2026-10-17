@@ -7,7 +7,8 @@
      on — a Depths room's gates shut, a blow struck or taken in the last few seconds, or something
      near has seen you and is coming (a monster's Alert "!") — and then the battle score swells in,
      easing back out a while after. A mood with no tracks of its own in MusicConfig plays
-     ReplicatedStorage ▸ WarAudio ▸ <mood> if the place has one (Studio-only), else silence. ]]
+     ReplicatedStorage ▸ WarAudio ▸ <mood> if the place has one (Studio-only), else silence.
+     The Gilded Rat (Tavern) plays WarAudio ▸ Tavern by the hearth, or the Courtyard's score. ]]
 
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -76,6 +77,11 @@ local function moodNow()
 	if _G.OwnScore then return "Silent" end    -- (a mode playing its own score: the Prologue, War)
 	local mode, state = round:GetAttribute("Mode"), round:GetAttribute("State")
 	if mode == nil or mode == "Hub" or mode == "Tiltyard" then return "Hub" end
+	-- (the Gilded Rat: its own tune by the hearth if the place has one, else the Courtyard's)
+	if mode == "Tavern" then
+		local wa = ReplicatedStorage:FindFirstChild("WarAudio")
+		return (wa and wa:FindFirstChild("Tavern")) and "Tavern" or "Hub"
+	end
 	if state ~= "Round" then return "Intermission" end
 	local kind = round:GetAttribute("ObjKind")
 	local dungeon = kind == "Depths" or kind == "Deadvault"

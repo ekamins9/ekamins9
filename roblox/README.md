@@ -113,6 +113,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
 | `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
+| `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
@@ -2126,6 +2127,11 @@ at the top of the stairs to the dark (GameConfig.DOORS.Tavern, MODES.Tavern: pub
 their own, like the Courtyard's). The Courtyard's PLAY ▸ ADVENTURES ▸ Deadvault / The Depths take
 you (and your party) there; leaving a raid brings you back there (HubServer's goHub and
 Deadvault's extraction); its door goes home to the Courtyard.
+- **It sounds lived in** (`TavernAmbience.client`): the low murmur of the place over the whole hall
+  (WarAudio ▸ TavernRoom: talk you can't make out, a laugh, mugs), the hearth crackling from its
+  mouth (WarAudio ▸ Fire), and a lute and fiddle tune by the hearth (Music's `Tavern` mood:
+  WarAudio ▸ Tavern, else the Courtyard's score). None of the dungeon's dread here: the lodge is
+  built fresh (Generated) like a floor, but `DungeonMood` leaves the Tavern alone.
 - **The lodge** (built fresh when its server starts): a long timbered hall, candle-lit tables
   under iron chandeliers, a great hearth, banners, torches; the Treasurer's counter (coin, scales),
   Hrothgar the Smith's forge (glowing coals, anvil, racks), Old Brenna's armour stands, Wendel the
