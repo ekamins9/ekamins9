@@ -381,6 +381,14 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   after), then full speed into the trebuchets and the siege. New pieces: a fighter's `Tempo` and
   `Hold` attributes (CombatServer: slow time, a held moment), `Bots.spawn{scripted}`, CameraRig's
   `ViewWant`. Verified end to end in Play with a temporary prompt relay (removed).
+- **Feel, everywhere**: bots visibly take a hit (`HitReact`: body rocks away, head snaps, a white
+  flash on whoever is struck); every fighter's swing leaves a faint arc (`SwingArcs`, gold on a
+  riposte); a dodge kicks up the ground (`DodgeFX`); a won two-sided battle ends on the field
+  (`BattleEnd` + BotFill: the winners cheer and roar, the beaten kneel, a horn, the camera comes down
+  to them before the board and the vote).
+- **Four new emotes**: Pledge (free), Challenge, At Rest, War Drum (Relic crate).
+- The class screen shows a mode's whole description; the tutorial gives a bow or staff user a
+  longsword so its duel can be fought.
 - Rojo is live again (the plugin reconnected); edits sync on save.
 
 ## 5. Suggested order of work
