@@ -258,8 +258,16 @@ step):
   as halls, crypts, chapels…; its treasure rooms are vaults; a lost-chest bug fixed (a chest in a
   room's very middle got a NaN facing: `Loot.chest` now guards it); and **the Shade**
   (`Game ▸ Shade` + `Shade.client`): linger on a Depths floor and an unkillable hooded thing comes
-  through the walls for you. To test it, a temporary Script can set
-  `require(Game.Shade).PATIENCE = {15, 15, 15}` before the run starts.
+  through the walls for you (Deadvault calls it in for its last three minutes). To test it, a
+  temporary Script can set `require(Game.Shade).PATIENCE = {15, 15, 15}` before the run starts.
+  The afternoon of 10-17: climbers that cling to dungeon ceilings and drop (`Game ▸ Clingers`, The
+  Depths and Deadvault); wanderers patrolling the Depths' halls from floor 2; portraits whose eyes
+  follow you (`Portraits.client`, Dungeon P.painting, which used to face the wall); shouts over
+  fighters' heads (`Shouts.client`); arrows that stay in a raised shield (`RangedServer.shieldCatch`,
+  War volleys too: a Weld, not a WeldConstraint, because only clients raise the shield); a heartbeat
+  and panting from WarAudio when the SoundConfig slots are silent (InjuryFX); the Courtyard's
+  smithy, market row, wagon, washing and bunting (MapCourtyard, rebuilt in Studio); one EMPTY NEST
+  label at the Hatchery. What's new card: 2026-10-17d.
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,

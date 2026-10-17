@@ -6,6 +6,7 @@
 |---|---|---|---|
 | [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `shieldFace`, `onBoard` (in the board's own frame: only clients raise the shield), `SHIELD_ARROWS`, `RangedServer.shieldCatch`; arrows on a body weightless, not catchable, and held by a Weld with its offset (a WeldConstraint's offset is worked out on each client, against a shield only the client has raised) |
 | [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | a War volley that falls on a raised shield leaves an arrow or two in it (`opts.arrows`) |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 2026-10-17d: the Shade, look up, shields that bristle, shouts, the Courtyard, portraits, vaults |
 | [README.md](README.md) | | doc | |
 
 ---

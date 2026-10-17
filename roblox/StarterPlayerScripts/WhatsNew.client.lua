@@ -16,16 +16,16 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-17c",
+	version = "2026-10-17d",
 	title = "NEW IN THE DARK AND ON THE FIELD",
 	lines = {
 		{"👁", "Don't linger", "dawdle in The Depths and the Shade comes through the walls for you. Keep moving"},
-		{"🍂", "Amberwood", "a new War field: an autumn wood's edge, red and gold oaks, leaves drifting down"},
-		{"💥", "Feel every blow", "a blast beside you leaves you deaf a moment; your armour scratches where blows land"},
-		{"🕸", "The Silk Caverns", "a new dungeon of webs and nests, giant spiders, and their Queen"},
+		{"🕷", "Look up", "things cling to the ceilings of the dungeons, and drop on whoever walks beneath"},
+		{"🛡", "Shields that bristle", "arrows you catch on your shield stay in it, a volley's worth at a time"},
+		{"📣", "The battle shouts", "soldiers, goblins and orcs call out as they charge, fight and fall"},
+		{"🏰", "The Courtyard lives", "a smithy, a market row, washing on the line and bunting round the fountain"},
+		{"🖼", "The portraits watch", "the Crimson Manor's painted dead follow you with their eyes"},
 		{"🕯", "Vaults and chandeliers", "treasure vaults in The Depths; loose chandeliers that crash down on the unwary"},
-		{"👻", "Banshees and gargoyles", "a scream that leaves you deaf; statues that wake as you pass"},
-		{"📦", "Mimics", "in Deadvault not every chest is a chest; skeletons now fall apart into bones"},
 	},
 }
 
