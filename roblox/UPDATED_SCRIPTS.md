@@ -1,4 +1,15 @@
-# Updated scripts: the line is breaking
+# Updated scripts: more in the dark of Deadvault
+
+- **Deadvault**: fewer empty rooms (28% of fight rooms now, was 42%), more holding two, now and then a pack of three; more pairs on patrol (four, plus one for every two raiders). A raid holds about 44 monsters; server and client both hold about 60 fps in Studio.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | population |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the line is breaking
 
 - **War**: the first time a side's tickets fall under 60, a horn sounds, the war drums quicken, and every screen calls it: IRON IS BREAKING with ONE LAST PUSH! for the side winning, HOLD THE LINE! for the side breaking.
 

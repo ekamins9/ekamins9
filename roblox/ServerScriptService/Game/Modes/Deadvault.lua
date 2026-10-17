@@ -248,9 +248,9 @@ function Deadvault:populate()
 			elseif room.kind == "treasure" then
 				for _ = 1, rng:NextInteger(2, 3) do table.insert(list, {id = pick(rng:NextNumber() < 0.3 and th.monsters.ranged or th.monsters.common), elite = rng:NextNumber() < 0.15}) end
 			elseif room.kind == "combat" then
-				-- many rooms are empty: the dark is quiet till it isn't
+				-- some rooms are empty: the dark is quiet till it isn't; now and then a pack
 				local x = rng:NextNumber()
-				local n = (x < 0.42 and 0) or (x < 0.8 and 1) or 2
+				local n = (x < 0.28 and 0) or (x < 0.68 and 1) or (x < 0.92 and 2) or 3
 				for _ = 1, n do table.insert(list, {id = pick(rng:NextNumber() < 0.3 and th.monsters.ranged or th.monsters.common), elite = rng:NextNumber() < 0.05}) end
 			end
 			local sleepy = rng:NextNumber() < 0.35
@@ -268,7 +268,7 @@ function Deadvault:populate()
 	local starts = {}
 	for _, r in ipairs(L.rooms) do if r.kind == "combat" then table.insert(starts, r) end end
 	local players = math.max(1, #Players:GetPlayers())
-	for _ = 1, math.min(#starts, 3 + math.floor(players / 3)) do
+	for _ = 1, math.min(#starts, 4 + math.floor(players / 2)) do
 		local r = table.remove(starts, rng:NextInteger(1, #starts))
 		local pts = route(L, r, rng)
 		if #pts >= 3 then

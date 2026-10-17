@@ -2248,7 +2248,8 @@ get out with what you found, or lose it all.
   theme's, dimmer (ambient ×0.62, brightness ≤ 0.4, a thicker haze): the torches are what you see
   by, and they **flicker** (`TorchFlicker.client`: any PointLight named "Flicker" wavers about how
   it was built; the dungeons' sconces, braziers and candles and the Gilded Rat's fires are named so).
-- **Its monsters** keep to their rooms (many rooms hold none), some **asleep**, pairs **on patrol**
+- **Its monsters** keep to their rooms (a fight's room: 28% none, 40% one, 24% two, 8% a pack of
+  three), some **asleep**, pairs **on patrol** (four, and one more for every two raiders)
   between rooms; they come when they **see or hear** you (`Combat ▸ Perception`: a run is loud, a
   fight louder, a crouch is quiet and half as visible), shout for those near, hunt where they
   last saw you and go back. Over a monster's head: **!** (it knows), **?** (looking), **z z**
