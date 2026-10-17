@@ -22,6 +22,9 @@
                         a darker, blood-tinged, harder grade, easing back when it falls
        bats             now and then a swarm bursts out of the dark ahead and flits past over your
                         head (WarAudio ▸ Bats)
+       vermin           now and then a few rats squeak and scurry across the floor ahead of you,
+                        wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
+                        water drips (WarAudio ▸ Drip; not in the Ember Forge)
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
                         walks a few steps across your path and is gone (WarCrowd.ghost; never a
                         fighter, nothing anyone else sees)
@@ -274,6 +277,91 @@ local function bats()
 	WarFX.bats(from, to, 9 + math.random(5))
 	WarFX.sound("Bats", head, {volume = 0.8, near = 10, range = 80, speed = 0.95 + math.random() * 0.1})
 end
+-- VERMIN: a few rats across the floor ahead of you, wall to wall, through your light
+local RAT = Color3.fromRGB(64, 56, 52)
+local function rats()
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+	ghostRay.FilterDescendantsInstances = {char, cam, workspace:FindFirstChild("NPCs")}
+	local look = cam.CFrame.LookVector
+	local fwd = V3(look.X, 0, look.Z)
+	if fwd.Magnitude < 0.2 then return end
+	fwd = fwd.Unit
+	local eye = root.Position + V3(0, 1, 0)
+	-- (ahead, short of the wall: 8 to 18 studs)
+	local hit = workspace:Raycast(eye, fwd * 24, ghostRay)
+	local d = math.min(hit and (hit.Position - eye).Magnitude - 2 or 18, 18)
+	if d < 8 then return end
+	local floor = workspace:Raycast(eye + fwd * d + V3(0, 2, 0), V3(0, -12, 0), ghostRay)
+	if not floor then return end
+	local mid = floor.Position + V3(0, 0.3, 0)
+	-- (from one wall to the other, low along the floor)
+	local across = V3(-fwd.Z, 0, fwd.X) * (math.random() < 0.5 and -1 or 1)
+	local function wallAt(dir)
+		local h = workspace:Raycast(mid, dir * 22, ghostRay)
+		return h and (h.Position - mid).Magnitude - 0.8 or 14
+	end
+	local a, b = wallAt(-across), wallAt(across)
+	local from, to = mid - across * a, mid + across * b
+	local len = (to - from).Magnitude
+	if len < 4 then return end
+	local folder = workspace:FindFirstChild("DungeonVermin") or Instance.new("Folder")
+	folder.Name = "DungeonVermin"
+	folder.Parent = workspace
+	local function bit(size, color, ball)
+		local p = Instance.new("Part")
+		p.Size, p.Color, p.Material = size, color, Enum.Material.SmoothPlastic
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+		if ball then
+			local m = Instance.new("SpecialMesh"); m.MeshType = Enum.MeshType.Sphere; m.Parent = p
+		end
+		p.Parent = folder
+		return p
+	end
+	WarFX.sound("Squeak", mid, {volume = 0.7, speed = 0.95 + math.random() * 0.15, near = 8, range = 60})
+	for k = 1, math.random(1, 3) do
+		task.delay((k - 1) * (0.15 + math.random() * 0.25), function()
+			local body = bit(V3(0.5, 0.42, 0.95), RAT, true)
+			local head = bit(V3(0.32, 0.3, 0.42), RAT, true)
+			local tail = bit(V3(0.07, 0.07, 0.9), Color3.fromRGB(150, 116, 112))
+			local side = (math.random() - 0.5) * 1.6
+			local speed = 13 + math.random() * 5
+			local t0 = os.clock()
+			while body.Parent do
+				local u = (os.clock() - t0) * speed / len
+				if u >= 1 then break end
+				-- (a scurry: quick, a little zig and a bob)
+				local p = from:Lerp(to, u) + fwd * (side + math.sin(u * 19) * 0.25) + V3(0, math.abs(math.sin(u * 40)) * 0.08, 0)
+				local cf = CFrame.lookAt(p, p + across)
+				body.CFrame = cf
+				head.CFrame = cf * CFrame.new(0, 0.04, -0.58)
+				tail.CFrame = cf * CFrame.new(0, -0.08, 0.85) * CFrame.Angles(0, math.sin(os.clock() * 30) * 0.4, 0)
+				task.wait()
+			end
+			body:Destroy(); head:Destroy(); tail:Destroy()
+		end)
+	end
+end
+-- DRIPS: water somewhere close, now and then
+local function drips(token)
+	while mood.on and mood.token == token do
+		task.wait(7 + math.random() * 12)
+		if mood.on and mood.token == token and mood.theme ~= "EmberForge" then
+			local at = somewhereNear(6, 22)
+			if at then WarFX.sound("Drip", at + V3(0, 3, 0), {volume = 0.35 + math.random() * 0.25, speed = 0.85 + math.random() * 0.3, near = 6, range = 50}) end
+		end
+	end
+end
+local function vermin(token)
+	task.wait(15 + math.random() * 20)
+	while mood.on and mood.token == token do
+		pcall(rats)
+		task.wait(28 + math.random() * 40)
+	end
+end
+
 local function haunt(token)
 	task.wait(30 + math.random() * 30)
 	while mood.on and mood.token == token do
@@ -528,6 +616,8 @@ local function enter(theme)
 	end
 	task.spawn(dark, token)
 	task.spawn(haunt, token)
+	task.spawn(vermin, token)
+	task.spawn(drips, token)
 	task.spawn(bossWatch, token, theme)
 	task.spawn(lurk, token)
 	if not plague then watchMonsters() end

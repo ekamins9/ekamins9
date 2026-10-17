@@ -2015,7 +2015,9 @@ path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your
 swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸
 Bats). While a
 boss lives within 90 studs, the grade turns darker, blood-tinged and harder, easing back when it
-falls. **The score** (`Music.client`) is quiet down here: only the dungeon's dread (`Dread`:
+falls. Now and then a few rats squeak and scurry across the floor ahead of you, wall to wall,
+through your light (WarAudio ▸ Squeak), and water drips somewhere close (WarAudio ▸ Drip; not in
+the Ember Forge). **The score** (`Music.client`) is quiet down here: only the dungeon's dread (`Dread`:
 ReplicatedStorage ▸ WarAudio ▸ Dread, a Studio-only Sound; silence without it) until a fight is on
 (a Depths room's gates shut, a blow struck or taken in the last 8 s, something within 60 studs
 has seen you and is coming: Alert "!"), when the battle score swells in, easing back out 10 s
