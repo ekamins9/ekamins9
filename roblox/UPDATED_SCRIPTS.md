@@ -1,4 +1,15 @@
-# Updated scripts: armour you can hear
+# Updated scripts: a cinematic grade over the open air
+
+- **Every open-air map**: a gentle film look. A touch more contrast and colour, the light a shade warm, and the sun's rays visible through the haze by day. It's off in the dungeons (they have their own grade) and the Gilded Rat.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CinematicGrade.client.lua](StarterPlayerScripts/CinematicGrade.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: armour you can hear
 
 - **Everyone in armour**: mail jingles and plate clanks with each step, a little under the footstep. Your own steps always; others' only close by (28 studs), so a battle doesn't drown in it.
 

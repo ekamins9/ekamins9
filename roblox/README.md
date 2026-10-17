@@ -115,6 +115,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
+| `StarterPlayerScripts/CinematicGrade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `CinematicGrade` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
@@ -1800,6 +1801,12 @@ fighters, or a frost that slows (`SpeedMult_Frost`). A mode's `target` returning
 `Engines.client` draws every shot (ReplicatedStorage ▸ WarEvent) and warns you when one's coming
 down on you (TREBUCHET / VOLLEY: raise your guard / METEORS / LIGHTNING / FROST); `_G.EngineShout`.
 Used by War (everything) and Siege (below: power 0.6).
+
+## The cinematic grade (`CinematicGrade.client`)
+Over every open-air map, on your screen only, a gentle film look: a touch more contrast (+0.08)
+and colour (+0.08), the light a shade warm, and the sun's rays visible through the haze by day
+(SunRays 0.06, spread 0.3). Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
+Plague Night, the Undead invasion) and the Gilded Rat, where the place's own rays come back.
 
 ## Weather (`Weather.client`, `GameConfig.MAP_WEATHER` / `MODE_WEATHER`, drawn by WarFX)
 Rain, storms (rain, lightning, heavy cloud), snow, embers and petals on the maps that have them:
