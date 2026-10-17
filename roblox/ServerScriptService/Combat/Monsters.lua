@@ -170,6 +170,91 @@ local function buildSkeleton(f, model, bone, eye)
 	end
 end
 
+-- a SPIDER: the body it was dressed as vanishes (it still fights with it: the reach of its bites
+-- is a hidden blade's, a beast's), and a spider stands in its place, low over the floor: a
+-- thorax and a great abdomen with a mark on its back, a cluster of red eyes, fangs, and eight
+-- jointed legs, each on its own two joints (SpiderHip_n / SpiderKnee_n) and the whole body on
+-- SpiderBody, so each screen can walk it, lunge it and curl it up when it dies
+-- (StarterPlayerScripts ▸ SpiderLegs). Its joints stay as they are when it falls (Rigid).
+local function joint(name, p0, p1, c0, c1)
+	local m = Instance.new("Motor6D")
+	m.Name, m.Part0, m.Part1, m.C0, m.C1 = name, p0, p1, c0, c1 or CFrame.new()
+	m:SetAttribute("Rigid", true)
+	m.Parent = p0
+	return m
+end
+local function bare(f, size, color, mat, shape)
+	local p = Instance.new("Part")
+	if shape == "ball" then p.Shape = Enum.PartType.Ball end
+	p.Name = "Look"
+	p.Size, p.Color, p.Material = size, color, mat or Enum.Material.SmoothPlastic
+	p.TopSurface, p.BottomSurface = SMOOTH, SMOOTH
+	p.CanCollide, p.CanQuery, p.CanTouch, p.Massless, p.Anchored = false, false, false, true, false
+	p.Parent = f
+	return p
+end
+-- (all it was dressed in, out of sight: the body, its clothes, its weapon; f: what's its own)
+local function hideBody(model, f)
+	for _, d in ipairs(model:GetDescendants()) do
+		if f and d:IsDescendantOf(f) then continue end
+		if d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" then d.Transparency = 1
+		elseif d:IsA("Decal") then d.Transparency = 1
+		elseif d:IsA("Trail") or d:IsA("ParticleEmitter") or d:IsA("Beam") then d.Enabled = false end
+	end
+end
+Monsters.hideBody = hideBody
+local function buildSpider(f, model, skin, eye, mark)
+	hideBody(model, f)
+	local tool = model:FindFirstChildOfClass("Tool")
+	if tool then tool:SetAttribute("NoDrop", true) end
+	model:SetAttribute("Skitters", true)
+	local torso = model:FindFirstChild("Torso")
+	if not torso then return end
+	local root = bare(f, Vector3.new(0.2, 0.2, 0.2), skin)
+	root.Name = "SpiderRoot"
+	root.Transparency = 1
+	root.CFrame = torso.CFrame * CFrame.new(0, -1.3, 0)
+	joint("SpiderBody", torso, root, CFrame.new(0, -1.3, 0))
+	local dark = darker(skin, 0.55)
+	-- the body
+	piece(f, root, "ball", Vector3.new(1.5, 1.5, 1.5), skin, Enum.Material.Fabric, CFrame.new(0, 0.1, -0.5))
+	piece(f, root, "ball", Vector3.new(0.95, 0.95, 0.95), skin, Enum.Material.Fabric, CFrame.new(0, 0, -1.3))
+	piece(f, root, "ball", Vector3.new(2.4, 2.4, 2.4), skin, Enum.Material.Fabric, CFrame.new(0, 0.55, 1.2))
+	local mk = piece(f, root, "block", Vector3.new(0.6, 0.1, 0.9), mark, Enum.Material.Fabric, CFrame.new(0, 1.7, 1.0) * CFrame.Angles(math.rad(-12), 0, 0))
+	if mk then local m = Instance.new("SpecialMesh"); m.MeshType = Enum.MeshType.Sphere; m.Parent = mk end
+	-- the fangs and the eyes
+	for _, x in ipairs({-0.18, 0.18}) do
+		piece(f, root, "block", Vector3.new(0.12, 0.5, 0.12), dark, nil, CFrame.new(x, -0.35, -1.62) * CFrame.Angles(math.rad(-20), 0, math.rad(x > 0 and 14 or -14)))
+	end
+	for _, e in ipairs({{-0.12, 0.2, -1.73}, {0.12, 0.2, -1.73}, {-0.3, 0.27, -1.62}, {0.3, 0.27, -1.62}, {-0.07, 0.36, -1.66}, {0.07, 0.36, -1.66}}) do
+		piece(f, root, "ball", Vector3.new(0.15, 0.15, 0.15), eye, Enum.Material.Neon, CFrame.new(e[1], e[2], e[3]))
+	end
+	local l = Instance.new("PointLight")
+	l.Color, l.Range, l.Brightness, l.Shadows = eye, 6, 1, false
+	l.Name = "EyeGlow"
+	l.Parent = root
+	-- the legs: out and up from the thorax, then down to the floor
+	local UP = math.rad(40)
+	for _, sx in ipairs({-1, 1}) do
+		for i = 1, 4 do
+			local phi = math.rad(({-40, -12, 14, 40})[i])
+			local hip = Vector3.new(sx * 0.55, 0.1, -0.85 + (i - 1) * 0.38)
+			local out = Vector3.new(sx * math.cos(phi), 0, math.sin(phi))
+			local dir = out * math.cos(UP) + Vector3.new(0, math.sin(UP), 0)
+			local upper = bare(f, Vector3.new(0.16, 0.16, 1.5), dark)
+			local lower = bare(f, Vector3.new(0.12, 0.12, 3), dark)
+			upper.Name, lower.Name = "SpiderLeg", "SpiderLeg"
+			local c0 = CFrame.lookAt(hip, hip + dir)
+			upper.CFrame = root.CFrame * c0 * CFrame.new(0, 0, -0.75)
+			local n = (sx < 0 and 0 or 4) + i
+			joint("SpiderHip_" .. n, root, upper, c0, CFrame.new(0, 0, 0.75))
+			local k0 = CFrame.new(0, 0, -0.75) * CFrame.Angles(math.rad(-110), 0, 0)
+			lower.CFrame = upper.CFrame * k0 * CFrame.new(0, 0, -1.5)
+			joint("SpiderKnee_" .. n, upper, lower, k0, CFrame.new(0, 0, 1.5))
+		end
+	end
+end
+
 -- a wraith: a robe where its legs were, a hood round a face of nothing
 local function buildWraith(f, model, cloth, eye)
 	for _, n in ipairs({"Left Leg", "Right Leg"}) do local p = model:FindFirstChild(n); if p then p.Transparency = 1 end end
@@ -504,6 +589,8 @@ local function build(model, def)
 		buildWraith(f, model, skin or Color3.fromRGB(40, 50, 60), eye)
 	elseif body == "golem" then
 		buildGolem(f, model, skin or Color3.fromRGB(110, 112, 118), eye)
+	elseif body == "spider" then
+		buildSpider(f, model, skin or Color3.fromRGB(46, 38, 34), eye, look.mark or Color3.fromRGB(176, 150, 112))
 	else
 		if skin then paintSkin(model, skin, body == "cinder" and Enum.Material.Basalt or nil) end
 		if body == "cinder" then hideFace(model); local h = model:FindFirstChild("Head"); if h then glowEyes(f, h, eye, 0.24) end end
@@ -799,6 +886,7 @@ local ELITE_MOVES = {
 Monsters.MINIONS = {
 	Undead = {"Skeleton", "SkeletonArcher"}, Goblin = {"Goblin", "GoblinSpearman"}, Vampire = {"Thrall", "Vampire"},
 	Frost = {"FrostSkeleton"}, Infernal = {"Cinderling"}, Elf = {"ElfArcher"}, Orc = {"OrcGrunt"}, Human = {"Crossbowman"},
+	Beast = {"CaveSpider"},
 }
 
 function spawnMob(id, opts, over)
@@ -932,6 +1020,8 @@ function Monsters.display(id)
 	if not ok then warn("[Monsters] display", id, err) end
 	local w = pick(def.weapon)
 	if w then pcall(Dresser.attachWeapon, model, w, nil) end
+	-- (a spider's fangs are its weapon: out of sight like the rest of what it was dressed in)
+	if (def.look or {}).body == "spider" then hideBody(model, model:FindFirstChild("MonsterLook")) end
 	if (def.scale or 1) ~= 1 then pcall(function() model:ScaleTo(def.scale) end) end
 	-- (its clothes, its bits and its weapon hang off the limbs by welds, which only place them
 	-- once physics steps: a moment in the world, held by the root, before it's frozen)

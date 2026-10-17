@@ -108,6 +108,11 @@ Bots.SKILLS = {
 	Champion = {react = 0.14, parry = 0.8,  read = true,  bait = 0.3,  jitter = 0.06,  riposte = 0.8,  punish = 0.85, chamber = 0.15, feint = 0.28, morph = 0.22, combo = 0.35,
 		kick = 0.6,  reserve = 35, interval = {0.8, 1.4}, pace = 1,    spare = 1,   label = "Champion", weight = "Heavy",
 		step = 0.3, aggression = 0.55, hesitate = 0.1, miss = 0.06, fooled = 0.3},
+	-- a beast (a spider): no guard to speak of, no parries, ripostes, feints or kicks; it comes
+	-- straight in, quick, low lunges and bites (its fangs are a hidden blade: Combat ▸ Monsters)
+	Beast    = {react = 9, parry = 0, read = false, bait = 0, jitter = 0.12, riposte = 0, punish = 0, chamber = 0, feint = 0, morph = 0, combo = 0,
+		kick = 0, reserve = 0, interval = {0.9, 1.7}, pace = 1.1, spare = 0, label = "Beast", weight = "Light", kinds = {"Stab", "Underhand"},
+		step = 0.5, aggression = 0.8, hesitate = 0.1, miss = 0.22, fooled = 1},
 	-- the training yard's drill dummies: one throws slow, readable swings and
 	-- overheads from where it stands; the other only ever holds its guard
 	Drill    = {react = 9, parry = 0, read = false, bait = 0, jitter = 0, riposte = 0, punish = 0, chamber = 0, feint = 0, morph = 0, combo = 0,

@@ -166,6 +166,8 @@ local function step(m, dt, camPos, quiet)
 	local hrp = m:FindFirstChild("HumanoidRootPart")
 	local hum = m:FindFirstChildOfClass("Humanoid")
 	if not (hrp and hum) or hum.Health <= 0 or hrp.Anchored or m:GetAttribute("Ragdolled") then track[m] = nil; return end
+	-- (a spider leaves no prints and no boots: its own skitter, SpiderLegs)
+	if m:GetAttribute("Skitters") then track[m] = nil; return end
 	if (hrp.Position - camPos).Magnitude > HEAR then track[m] = nil; return end
 	local t = track[m]
 	local pos = hrp.Position

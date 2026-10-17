@@ -106,6 +106,8 @@ end
 -- tool: the Tool; char: who had it (may be nil); dir/speed: fling (optional)
 function Pickup.drop(tool, char, dir, speed)
 	if not tool or not tool:IsA("Tool") or Pickup.isDropped(tool) then return false end
+	-- (a beast's fangs: part of it, nothing anyone can take)
+	if tool:GetAttribute("NoDrop") then return false end
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local handle = handleOf(tool)

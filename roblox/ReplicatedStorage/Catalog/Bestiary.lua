@@ -43,6 +43,15 @@ local M = {}
 local function add(id, t) t.id = id; M[id] = t end
 
 --------------------------------------------------------------------
+--  SPIDERS (the warrens' tunnels, the crypt's dark corners): beasts, low and quick, all bite
+--  (body = "spider": Combat ▸ Monsters builds it, StarterPlayerScripts ▸ SpiderLegs walks it)
+--------------------------------------------------------------------
+add("CaveSpider", {name = "Cave Spider", faction = "Beast", skill = "Beast", weapon = "Dagger", hp = 60, speed = 1.3, weight = "Light", scale = 0.72,
+	look = {body = "spider", skin = C(54, 44, 36), eyes = C(255, 64, 40), mark = C(112, 88, 62)}, tier = 1})
+add("Broodmother", {name = "Broodmother", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 260, speed = 1.05, weight = "Medium", scale = 1.45,
+	look = {body = "spider", skin = C(34, 28, 30), eyes = C(255, 40, 30), mark = C(168, 34, 28)}, traits = {"summon"}, summons = {"CaveSpider"}, tier = 3})
+
+--------------------------------------------------------------------
 --  THE HOLLOW ABBEY: the monks who kept praying after they died, and those who came to them
 --------------------------------------------------------------------
 local VIOLET = C(190, 120, 255)

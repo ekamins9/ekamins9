@@ -73,7 +73,7 @@ function Ragdoll.enable(char, dir, speed)
 		-- the weapon grip stays welded: ball-socketing it just makes the weapon
 		-- flail off the hand, and it isn't part of the body's rig anyway
 		if m:IsA("Motor6D") and m.Enabled and m.Part0 and m.Part1
-			and m.Name ~= "ToolGrip" and m.Part1:IsDescendantOf(char) then
+			and m.Name ~= "ToolGrip" and m.Part1:IsDescendantOf(char) and not m:GetAttribute("Rigid") then
 			local a0 = Instance.new("Attachment")
 			a0.Name, a0.CFrame, a0.Parent = "RagdollA0", m.C0, m.Part0
 			local a1 = Instance.new("Attachment")

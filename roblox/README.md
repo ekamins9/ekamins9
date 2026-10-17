@@ -118,6 +118,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/CinematicGrade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `CinematicGrade` | LocalScript |
 | `ReplicatedStorage/Hearing.lua` | `ReplicatedStorage` → `Hearing` | ModuleScript |
 | `StarterPlayerScripts/NightWindows.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NightWindows` | LocalScript |
+| `StarterPlayerScripts/SpiderLegs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SpiderLegs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2522,6 +2523,18 @@ health), explode, summon, regen. An **elite** (`opts.elite`) gets an affix (Blaz
 Vampiric, Stoneskin, Savage, Undying), more health, a glow, and a big move if its kind has none.
 `Monsters.display(id)` is a still copy for screens: the menu's tiles show them
 (ReplicatedStorage ▸ MonsterDisplays, made by GameServer at start).
+
+**Spiders** (`body = "spider"`: the **Cave Spider**, small and quick, in the Goblin Warrens and the
+Bone Crypt; the **Broodmother**, an elite of the Warrens twice a man's width that calls up cave
+spiders): the body it was dressed as is hidden (it still fights with it: its bites are a hidden
+blade's reach, its fangs a weapon that never drops, `NoDrop`) and a spider stands in its place, a
+thorax and a great marked abdomen on a `SpiderBody` joint, a cluster of red eyes, fangs, and eight
+legs each on a `SpiderHip_n` and a `SpiderKnee_n` joint (kept rigid when it falls: `Rigid`).
+`StarterPlayerScripts ▸ SpiderLegs` walks them on every screen: the legs step in two sets of four,
+twitch when it stands, the body rears and thrusts as it bites (read from how fast its hidden arm
+turns), the legs curl when it dies; it skitters as it runs (WarAudio ▸ Skitter), leaves no boot
+steps or prints (`Skitters`). It fights as a **Beast** (`Bots.SKILLS.Beast`): no guard, no parries,
+ripostes, feints or kicks; quick, low lunging bites (stabs and underhands).
 
 ### Boss moves (`Combat ▸ BossMoves`)
 Bosses (and elites, and a few casters) fight with **telegraphed big moves** on top of their blade,

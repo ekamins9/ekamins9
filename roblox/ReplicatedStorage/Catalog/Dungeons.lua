@@ -26,7 +26,7 @@ return {
 		accent = C(120, 255, 170), torch = C(170, 240, 200),
 		light = {ClockTime = 0, Ambient = C(78, 82, 90), OutdoorAmbient = C(72, 76, 84), Brightness = 0.7, FogColor = C(20, 26, 28), FogEnd = 260, FogStart = 60},
 		props = {"coffin", "bones", "cobweb", "candles", "pillar", "statue", "rubble", "brazier"},
-		monsters = {common = {"Skeleton", "Skeleton", "Ghoul", "SkeletonKnight"}, ranged = {"SkeletonArcher", "Necromancer"}, elite = {"DeathKnight", "Wraith"}},
+		monsters = {common = {"Skeleton", "Skeleton", "Ghoul", "SkeletonKnight", "CaveSpider"}, ranged = {"SkeletonArcher", "Necromancer"}, elite = {"DeathKnight", "Wraith"}},
 		boss = "LichKing", bossName = "Malgrath, the Lich King",
 	},
 	GoblinWarrens = {
@@ -35,7 +35,7 @@ return {
 		accent = C(255, 170, 70), torch = C(255, 150, 60),
 		light = {ClockTime = 0, Ambient = C(78, 66, 54), OutdoorAmbient = C(72, 60, 50), Brightness = 0.6, FogColor = C(30, 22, 16), FogEnd = 260, FogStart = 60},
 		props = {"mushroom", "scaffold", "goldpile", "crates", "barrel", "rubble", "brazier", "banner"},
-		monsters = {common = {"Goblin", "Goblin", "GoblinSpearman", "GoblinBrute"}, ranged = {"GoblinArcher", "GoblinShaman", "GoblinBomber"}, elite = {"GoblinWarboss", "Ogre"}},
+		monsters = {common = {"Goblin", "Goblin", "GoblinSpearman", "GoblinBrute", "CaveSpider", "CaveSpider"}, ranged = {"GoblinArcher", "GoblinShaman", "GoblinBomber"}, elite = {"GoblinWarboss", "Ogre", "Broodmother"}},
 		boss = "GoblinKing", bossName = "Grubnak the Goblin King",
 	},
 	CrimsonManor = {

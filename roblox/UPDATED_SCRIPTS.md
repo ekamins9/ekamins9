@@ -1,4 +1,24 @@
-# Updated scripts: windows lit at night
+# Updated scripts: spiders that fight
+
+- **New monsters: spiders.** The **Cave Spider** is small, quick and comes in numbers, in the Goblin Warrens and the Bone Crypt (and their Deadvault raids). The **Broodmother** is an elite of the Warrens, huge and red-marked, and calls up cave spiders. Both come straight at you with lunging bites: no guard, no parries. Their eight legs walk in a real gait, they rear as they bite, they skitter as they run, and their legs curl when they die.
+- Built on the existing monster system: the body is a hidden fighter (`body = "spider"`), the fangs are a hidden blade that never drops, and a new `Beast` bot profile drives it.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | `buildSpider`, `hideBody`, Beast minions |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | `SKILLS.Beast` |
+| [Pickup.lua](ServerScriptService/Combat/Pickup.lua) | ServerScriptService ▸ Combat | ModuleScript | `NoDrop` |
+| [Ragdoll.lua](ServerScriptService/Combat/Ragdoll.lua) | ServerScriptService ▸ Combat | ModuleScript | skips `Rigid` joints |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | CaveSpider, Broodmother |
+| [Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Warrens and Crypt rosters |
+| [SpiderLegs.client.lua](StarterPlayerScripts/SpiderLegs.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [Footsteps.client.lua](StarterPlayerScripts/Footsteps.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | spiders leave no steps |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | spiders skitter in the dark |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: windows lit at night
 
 - **After dark** (the Prologue's Stormwatch, Plague Night, the Invasion, the night warfields), about two in three of the houses' and towers' windows glow with warm light, spilling a little onto the ground outside. They go dark again at dawn.
 

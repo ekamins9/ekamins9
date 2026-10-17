@@ -32,7 +32,8 @@
                         shaking harder, grit pouring from the ceiling round you and stones dropping,
                         your lantern stuttering; at the end, without a break
        what lurks       a monster near you (within 70 studs) groans or growls now and then, from
-                        where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
+                        where it stands: the dead groan (WarAudio ▸ Groan), spiders skitter
+                        (Skitter), the rest growl (Growl)
        a boss near      while a boss is alive near you (Boss, within 90 studs) the colours turn
                         a darker, blood-tinged, harder grade, easing back when it falls
        bats             now and then a swarm bursts out of the dark ahead and flits past over your
@@ -1097,7 +1098,8 @@ local function lurk(token)
 				local m = near[math.random(#near)]
 				local scale = m:GetAttribute("MonsterScale") or 1
 				local undead = m:GetAttribute("Faction") == "Undead"
-				WarFX.sound(undead and "Groan" or "Growl", m.HumanoidRootPart.Position, {volume = 0.7, speed = (0.95 + math.random() * 0.15) / math.sqrt(scale), near = 10, range = 80})
+				local kind = (m:GetAttribute("Skitters") and "Skitter") or (undead and "Groan") or "Growl"
+				WarFX.sound(kind, m.HumanoidRootPart.Position, {volume = 0.7, speed = (0.95 + math.random() * 0.15) / math.sqrt(scale), near = 10, range = 80})
 			end
 		end
 	end
