@@ -1761,6 +1761,13 @@ the map's Shot1 down to just behind you, the mode and the map as a title and wha
 do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four seconds; any key
 skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …).
 
+## The rest of the horde (`HordeHost.client`)
+In the Horde, on your screen only: out past each of the map's gates (`Spots ▸ HordeGate<n>`) and
+past its edge (never where anyone can walk up to them), a block of the horde's soldiers stands
+facing the camp (`WarCrowd:audience`: real armour in the attackers' colours, weapons in hand; at
+night a few hold torches up). When a wave comes they roar and raise their weapons, a horn sounds
+and the war drums beat until the break; every three waves beaten, the blocks grow deeper.
+
 ## The crowd in the stands (`ArenaCrowd.client`)
 On any map with `Stand` parts (the Colosseum, the forge arenas, the Sandpit), in any mode but the
 hubs, the stands are full on your screen: a row of unarmed commoners along the top of every

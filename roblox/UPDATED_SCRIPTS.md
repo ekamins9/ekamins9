@@ -1,4 +1,17 @@
-# Updated scripts: crows over the battlefields; the Siege gate bursts
+# Updated scripts: the rest of the horde waits on the hills
+
+- **The Horde's host**: beyond each gate and past the map's edge, blocks of the horde's soldiers stand facing your camp (torches at night). Each wave starts with their roar, a horn and war drums; they grow deeper as you survive. Only on your screen; never inside the play area, so nobody takes them for the wave.
+- **Not shipped**: a victory camera on the round's winner (the server swaps the winner's body the moment the round ends, so there's nobody to film without changing the round flow).
+- **Checked in Play**: the Horde on Wildwood.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HordeHost.client.lua](StarterPlayerScripts/HordeHost.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: crows over the battlefields; the Siege gate bursts
 
 - **Crows** wheel high over every battlefield (War's front, the Siege castle, the warfields, the team fights): black wings beating, gliding, beating again.
 - **The Siege gate bursts** in a cloud of dust and splinters with a crash that shakes the ground (more the nearer you are).
@@ -24,17 +37,4 @@
 |---|---|---|---|
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `WarCrowd.ghost` |
 | [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | apparitions |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the arena stands are packed
-
-- **Crowds in the stands** of the Colosseum, the forge arenas and the Sandpit: hundreds of spectators, blue fans at one end and red at the other, on their feet with arms up and a roar whenever someone falls, a long roar when a round is won, a murmur and a few shouts in between.
-- **Checked in Play**: the Colosseum in FFA with bots: 56–60 fps in Studio play.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [ArenaCrowd.client.lua](StarterPlayerScripts/ArenaCrowd.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | audience, roar, unarmed men, held poses |
 | [README.md](README.md) | | doc | |
