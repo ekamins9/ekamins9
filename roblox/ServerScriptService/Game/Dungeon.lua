@@ -380,6 +380,7 @@ P.chandelier = function(ctx, th, cf)
 	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 200, 130); l.Range = 22; l.Brightness = 1.4
 	l.Parent = last
 	m.Parent = ctx.Props
+	return m
 end
 P.table = function(ctx, th, cf)
 	local wood = Color3.fromRGB(96, 64, 40)
@@ -892,7 +893,8 @@ A.vault = function(ctx, th, r, c, rng, keep)
 		P.statue(ctx, th, CFrame.lookAt(c + Vector3.new(s * (r.w / 2 - 5), 0, -r.d / 2 + 6), c))
 		keep("urn", CFrame.new(c + Vector3.new(s * (r.w / 2 - 5), 0, r.d / 2 - 5)))
 	end
-	P.chandelier(ctx, th, CFrame.new(c))
+	-- (hung fast: right over the chest, a loose one would be a sure blow to whoever opens it)
+	P.chandelier(ctx, th, CFrame.new(c)):SetAttribute("Secure", true)
 end
 -- THE LAIR (a raid's boss): the dais, and the hoard behind it
 A.lair = function(ctx, th, r, c, rng, keep)
@@ -1190,6 +1192,9 @@ function Dungeon.build(themeKey, opts)
 		r.cz = (r.gy - (H - 1) / 2) * CELL
 		if opts.raid then
 			r.arch = (r.kind == "combat" and weighted(rng, archW)) or (r.kind == "elite" and "hall") or (r.kind == "treasure" and "vault") or (r.kind == "boss" and "lair") or nil
+		elseif r.kind == "treasure" then
+			-- (its chest on the vault's dais: r.chest below, at the dais's top)
+			r.arch = "vault"
 		elseif r.kind == "combat" and rng:NextNumber() < DEPTHS_ARCH then
 			-- (The Depths: most fight rooms are something too, as the raid's are: a great hall, a
 			-- crypt, a chapel, a cavern…; not the store-rooms and armouries, which are mostly what

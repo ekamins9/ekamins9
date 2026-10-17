@@ -2192,7 +2192,8 @@ of its corridors, none by a haven. Each theme has its favourites (the module's W
 - **Fire grates**: two side by side breathing fire in turn (a glow, then the jet: 9 every half
   second). Cross on the cool side.
 - **Chandelier**: a dungeon's great hall, library or vault (The Depths, Deadvault) hangs a chandelier or two
-  (one model each, Props ▸ Chandelier); about a third hang loose (`Traps.CHANDELIER`). Walk under
+  (one model each, Props ▸ Chandelier); about a third hang loose (`Traps.CHANDELIER`; never a
+  vault's, over the chest: those are `Secure`). Walk under
   one and its chain creaks (WarAudio ▸ Creak), grit sifts down and it shudders; 1.1 s later it
   drops and crashes onto whatever is below (32 to anyone within 5.5 studs, thrown clear). It stays
   down for good, its candles out (the server puts it there: its Rest, found as it falls).
@@ -2227,7 +2228,9 @@ Hollow Abbey, the Silk Caverns: `Catalog ▸ Dungeons`). Three floors; floor 3 e
 Most of its fight rooms (`Dungeon` DEPTHS_ARCH, 60%) are dressed as something, as a raid's are: a
 great hall, a crypt, the cells, a library, a chapel, a cavern, a nest, by the theme's weights (not
 the store-rooms and armouries, which are mostly a raid's searching); what a raid would search there
-lies as it is (remains as bones, a coffin as a sarcophagus).
+lies as it is (remains as bones, a coffin as a sarcophagus). Its treasure rooms are always **vaults**:
+the chest gilded (Rare) on a dais under the chandelier, gold piled round it, two stone guardians
+and two urns by the walls (a chest in a room's very middle faces the way in: `Depths:placeChest`).
 - **The Silk Caverns** (the newest): rough caves where something spins in the dark below, sickly
   pale light, more than half its rooms nests (webs across the corners, egg sacs, hanging cocoons,
   the bones of the caught), its corridors strung with web traps, spiders letting themselves down

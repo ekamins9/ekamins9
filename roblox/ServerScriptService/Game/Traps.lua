@@ -582,7 +582,7 @@ function Traps.arm(map, layout, opts)
 	-- the halls' chandeliers: some hang loose
 	local hanging = {}
 	for _, d in ipairs(map:GetDescendants()) do
-		if d:IsA("Model") and d.Name == "Chandelier" and not d:GetAttribute("Trap") then table.insert(hanging, d) end
+		if d:IsA("Model") and d.Name == "Chandelier" and not d:GetAttribute("Trap") and not d:GetAttribute("Secure") then table.insert(hanging, d) end
 	end
 	for _, m in ipairs(hanging) do
 		if rng:NextNumber() < (opts.chandeliers or Traps.CHANDELIER.chance) then

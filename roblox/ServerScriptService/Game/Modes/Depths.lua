@@ -278,7 +278,14 @@ function Depths:placeChest(room, kind, luck)
 		local s = room.spots[math.random(#room.spots)]
 		at = Vector3.new(s.X, at.Y, s.Z)
 	end
-	local cf = CFrame.lookAt(at, Vector3.new(room.cx, at.Y, room.cz))
+	-- (facing the room's middle; one in the middle itself, on its dais, faces the way in: a look
+	-- at the very point it stands on is no facing at all, and the chest would be lost)
+	local look = Vector3.new(room.cx, at.Y, room.cz)
+	if (look - at).Magnitude < 0.5 then
+		local d = room.doors and next(room.doors)
+		look = at + (({N = Vector3.new(0, 0, -1), S = Vector3.new(0, 0, 1), E = Vector3.new(1, 0, 0), W = Vector3.new(-1, 0, 0)})[d] or Vector3.new(0, 0, -1))
+	end
+	local cf = CFrame.lookAt(at, look)
 	local rarity = kind == "boss" and "Legendary" or (kind == "elite" and "Epic" or (kind == "treasure" and "Rare" or "Uncommon"))
 	local mimicked = kind == "treasure" and math.random() < Depths.MIMIC_CHANCE
 	local chest
@@ -659,7 +666,8 @@ function Depths:dressRooms()
 		room.state = (room.kind == "combat" or room.kind == "elite" or room.kind == "stairs" or room.kind == "boss") and "sealed" or "clear"
 		if room.kind == "start" then room.state = "clear" end
 		if room.state == "sealed" then self:prepare(room) end
-		if room.kind == "treasure" then self:placeChest(room, "depths", 1) end
+		-- (a treasure vault's chest: gilded, on its dais, and now and then a mimic)
+		if room.kind == "treasure" then self:placeChest(room, "treasure", 1) end
 		if room.kind == "shrine" then
 			local p = Instance.new("Part")
 			p.Name = "ShrinePrompt"; p.Anchored, p.CanCollide, p.Transparency = true, false, 1

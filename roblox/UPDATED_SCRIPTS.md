@@ -1,4 +1,20 @@
-# Updated scripts: the Depths' rooms dressed
+# Updated scripts: treasure vaults, and the lost chests
+
+- **The Depths**: a treasure room is now always a vault: its chest gilded (Rare) on a dais under a chandelier, gold piled round it, stone guardians and urns by the walls. It is the room the treasure-room mimic waits in, and now it actually can.
+- **Fixed**: a chest set in a room's very middle (a treasure room's, a boss's hoard) was turned to face that same point. That gave it no facing at all and lost it far below the map. It now faces the way in.
+- **Fixed**: the treasure room's chest was the plain kind, so its mimic never came. It now rolls as the treasure kind.
+- A vault's chandelier, right over the chest, hangs fast and never falls.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | treasure rooms are `vault`s; `P.chandelier` returns its model; the vault's is `Secure` |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `placeChest` facing in a room's middle; treasure room's chest kind |
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | skips `Secure` chandeliers |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Depths' rooms dressed
 
 - **The Depths**: most fight rooms are now something, as a Deadvault raid's are: a great hall with pillars and chandeliers, a crypt of sarcophagi, the cells, a library, a chapel with its altar and pews, a cavern, a nest. Each theme leans its own way. Every floor reads as a place rather than a run of bare rooms.
 
