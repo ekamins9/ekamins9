@@ -1,4 +1,19 @@
-# Updated scripts: siege engines in Siege too, a cinematic opening for every battle
+# Updated scripts: the dungeon game feels part of the main game; one clear way back
+
+- **◀ MAIN MENU** top left of the dungeon lobby (and on the Gilded Rat's walking-about bar) replaces the red TO THE COURTYARD: one question (your stash, kit and gold stay safe), then you're home and the main menu opens by itself.
+- **The main game's numbers in the lobby**: your level, Marks and Crowns beside the vault's gold, so a run reads as part of your progress.
+- **Fixes found while testing**: coming home in the same session left the main menu shut (it only reopened after a death), and the dungeon lobby stayed drawn over the main menu; both fixed. A dungeon lobby at the 200-locals limit, folded.
+- **Checked in Play**: into the Gilded Rat (the new top bar), home again (the lobby shut, the main menu up).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ◀ MAIN MENU, the wallet, shuts outside the Gilded Rat |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | opens by itself on coming home |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: siege engines in Siege too, a cinematic opening for every battle
 
 - **Siege goes to war**: the attackers' trebuchets beyond the walls lob fire onto the defenders at the objective (a red ring first), and both sides' archers loose volleys at each other near it (raise your guard or get under a roof). War's engines became a shared module so any mode can have them.
 - **Every battle opens like a film**: your first spawn of a round in Siege, Team Deathmatch, King of the Hill, Free-for-All, Last Team Standing or Horde flies the camera from the map's own shot down behind you, with the mode, the map and what you're there to do (TAKE THE CASTLE / HOLD THE CASTLE…), a horn, black bars. Any key skips.
@@ -39,32 +54,3 @@
 | [README.md](README.md) | | doc | War |
 
 Studio-only (save the place): ReplicatedStorage ▸ MapShots ▸ Redfield, Ironridge, Frostmere, Ashvale, Kingsbridge.
-
----
-
-## Before that: the Siege of Stormwatch, a new player's first battle
-
-- **A brand-new player starts in a battle**: a dark, stormy night, the Iron Host at the gate of Stormwatch. They learn every move in the middle of it: swing, stab and overhead on raiders over the wall, dodging trebuchet fire, block / parry / riposte against a raider through the breach, kicking a brute's guard open, running the gauntlet of arrows to the gate, holding the gate beside the garrison, and a duel with Lord Varg, the Host's champion.
-- **Cutscenes**: the opening (the storm, the camp, a fireball into a tower, Captain Hale), the ram breaking the gate, Lord Varg's entrance, dawn and the King's riders. Black bars, a flying camera, subtitles, title cards; any of them can be skipped.
-- **The war all round you** (new WarFX): rain that stops under a roof, lightning and thunder, volleys of arrows arcing over the walls and sticking in the cobbles, trebuchet fire and its blasts, war cries, the battle's roar and its own score.
-- **The screen**: a lesson card in your own controls, the captain's lines, a beacon over where to go (and an edge arrow when it's behind you), M to pause or skip, an end card with a welcome purse (300 Marks, 250 XP, once).
-- **Fixes found while testing**: the over-the-shoulder camera pressed against a wall showed the inside of your own helmet (it now hides the head, CameraRig); a dungeon panel showed empty in other modes with their own HUD; the scoreboard strip doubled up over a mode's own top.
-- **Checked in Play**: the whole story start to finish (each lesson's signal, the bombardment hurting and knocking back, the breach, the battle with the garrison, Varg's boss bar, dawn, the end card and its purse); every touched script compiled in Studio.
-- **Studio-only (save the place)**: ReplicatedStorage ▸ WarAudio (the sounds), ServerStorage ▸ PrologueProps ▸ Trebuchet.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Prologue.lua](ServerScriptService/Game/Modes/Prologue.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
-| [StormwatchMap.lua](ServerScriptService/Game/StormwatchMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
-| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | new |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS / MODES Prologue, Stormwatch |
-| [Economy.lua](ReplicatedStorage/Catalog/Economy.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the prologue's purse |
-| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | a newcomer's training is the Prologue |
-| [Intro.client.lua](StarterPlayerScripts/Intro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a newcomer goes straight to the siege |
-| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | no helmet-inside view against walls |
-| [Music.client.lua](StarterPlayerScripts/Music.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `_G.OwnScore` |
-| [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | hides for a cutscene |
-| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `OwnTop` |
-| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | its panel only in the dungeon |
-| [README.md](README.md) | | doc | the Siege of Stormwatch |

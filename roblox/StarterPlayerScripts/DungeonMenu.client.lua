@@ -16,9 +16,10 @@
      The server decides everything (VaultRemote: Hub ▸ VaultServer; the party: HubRemote). Opened by
      _G.OpenDungeon(tab, mode); _G.OpenVault opens the stash.
 
-     THE WAYS OUT are always in sight: WALK AROUND (M) shuts the lobby and you're on your feet in the
-     Gilded Rat (its own little bar at the top: LOBBY, TO THE COURTYARD); TO THE COURTYARD (asked
-     once) takes you home. And the dungeon game never shows the battle's class screen
+     PART OF THE MAIN GAME: top left, ◀ MAIN MENU (where every screen's back is) takes you back to
+     the main menu (asked once: your stash, kit and gold stay here); top right, your level, Marks and
+     Crowns (what every run pays into) beside the vault's gold. WALK AROUND (M) shuts the lobby and
+     you're on your feet in the Gilded Rat (its own little bar at the top: LOBBY, ◀ MAIN MENU). And the dungeon game never shows the battle's class screen
      (LoadoutServer: a mode's ownSpawn): when you can't go back in, its own screen says why (YOU
      FELL · DOWN) with SPECTATE and BACK TO THE GILDED RAT. ]]
 
@@ -98,10 +99,14 @@ do
 	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.75, 0.1), NumberSequenceKeypoint.new(1, 1)})
 	g.Parent = nav
 end
-local logo = left(T(nav, "DEADVAULT", 30, C.GOLD2, BOLD))
-logo.Position = UDim2.fromOffset(30, 12); logo.Size = UDim2.fromOffset(260, 34); logo.ZIndex = 6
-local logoSub = left(T(nav, "THE DUNGEON GAME", 11, C.DIM, SEMI))
-logoSub.Position = UDim2.fromOffset(31, 46); logoSub.Size = UDim2.fromOffset(260, 14); logoSub.ZIndex = 6
+local homeBtn = DarkUI.button(nav, "◀  MAIN MENU", "blue", 17)
+homeBtn.Position = UDim2.fromOffset(18, 16); homeBtn.Size = UDim2.fromOffset(180, 46); homeBtn.ZIndex = 8
+do
+	local logo = left(T(nav, "DEADVAULT", 24, C.GOLD2, BOLD))
+	logo.Position = UDim2.fromOffset(214, 12); logo.Size = UDim2.fromOffset(200, 28); logo.ZIndex = 6
+	local logoSub = left(T(nav, "THE DUNGEON GAME", 10, C.DIM, SEMI))
+	logoSub.Position = UDim2.fromOffset(215, 42); logoSub.Size = UDim2.fromOffset(200, 14); logoSub.ZIndex = 6
+end
 local navRule = DarkUI.rule(nav, 72, 1180)
 navRule.ZIndex = 6
 for _, d in ipairs(navRule:GetChildren()) do if d:IsA("Frame") and d.Rotation == 45 then d.Visible = false end end
@@ -138,12 +143,27 @@ goldLabel.AnchorPoint = Vector2.new(1, 0)
 goldLabel.Position = UDim2.new(1, -150, 0, 24); goldLabel.Size = UDim2.fromOffset(220, 26); goldLabel.ZIndex = 6
 goldLabel.TextXAlignment = Enum.TextXAlignment.Right
 goldLabel.Position = UDim2.new(1, -24, 0, 62); goldLabel.Size = UDim2.fromOffset(300, 20); goldLabel.TextSize = 16
-local leaveBtn = DarkUI.button(nav, "WALK AROUND  [M]", "blue", 15)
+local leaveBtn = DarkUI.button(nav, "WALK AROUND  [M]", "stone", 15)
 leaveBtn.AnchorPoint = Vector2.new(1, 0)
-leaveBtn.Position = UDim2.new(1, -196, 0, 16); leaveBtn.Size = UDim2.fromOffset(170, 42); leaveBtn.ZIndex = 8
-local homeBtn = DarkUI.button(nav, "TO THE COURTYARD", "red", 15)
-homeBtn.AnchorPoint = Vector2.new(1, 0)
-homeBtn.Position = UDim2.new(1, -20, 0, 16); homeBtn.Size = UDim2.fromOffset(168, 42); homeBtn.ZIndex = 8
+leaveBtn.Position = UDim2.new(1, -20, 0, 14); leaveBtn.Size = UDim2.fromOffset(176, 40); leaveBtn.ZIndex = 8
+-- the main game's wallet (what every run pays into), beside the vault's gold
+local wallet = {at = 0}
+wallet.label = T(nav, "", 14, Color3.fromRGB(226, 230, 240), SEMI)
+wallet.label.AnchorPoint = Vector2.new(1, 0)
+wallet.label.Position = UDim2.new(1, -190, 0, 63); wallet.label.Size = UDim2.fromOffset(380, 18); wallet.label.ZIndex = 6
+wallet.label.TextXAlignment = Enum.TextXAlignment.Right
+function wallet.refresh()
+	if os.clock() - wallet.at < 5 then return end
+	wallet.at = os.clock()
+	task.spawn(function()
+		local ok, res = pcall(hubRemote.InvokeServer, hubRemote, "State")
+		local prof = ok and type(res) == "table" and res.profile
+		if not prof then return end
+		local w = prof.wallet or {}
+		local function n(v) v = math.floor(tonumber(v) or 0); local s = tostring(v); local k; repeat s, k = s:gsub("^(-?%d+)(%d%d%d)", "%1,%2") until k == 0; return s end
+		wallet.label.Text = string.format("LVL %d   ·   %s MARKS   ·   %s CROWNS", prof.level or 1, n(w.marks), n(w.crowns))
+	end)
+end
 local toast = T(root, "", 16, C.GOLD2, SEMI)
 toast.AnchorPoint = Vector2.new(0.5, 1)
 toast.Position = UDim2.new(0.5, 0, 1, -16); toast.Size = UDim2.fromOffset(900, 22); toast.ZIndex = 40
@@ -1038,7 +1058,8 @@ end
 
 render = function()
 	if not view then return end
-	goldLabel.Text = "Gold  " .. fmt(view.gold)
+	goldLabel.Text = "VAULT GOLD  " .. fmt(view.gold)
+	wallet.refresh()
 	for name, b in pairs(tabBtns) do
 		b.TextColor3 = name == tab and C.TEXT or C.DIM
 		b.TextSize = name == tab and 28 or 25
@@ -1125,19 +1146,20 @@ local function inDungeonGame()
 	return def ~= nil and def.ownSpawn == true
 end
 
--- TO THE COURTYARD: asked once, then home (HubRemote Play ▸ Courtyard)
-local confirmBox = DarkUI.panel(root, {title = "Leave for the Courtyard?"})
+-- ◀ MAIN MENU: asked once, then home to the main menu (HubRemote Play ▸ Courtyard; the menu opens
+-- there by itself)
+local confirmBox = DarkUI.panel(root, {title = "Back to the main menu?"})
 confirmBox.AnchorPoint = Vector2.new(0.5, 0.5); confirmBox.Position = UDim2.fromScale(0.5, 0.5); confirmBox.Size = UDim2.fromOffset(480, 230)
 confirmBox.Visible = false; confirmBox.ZIndex = 40
-local cbLine = T(confirmBox, "You leave the Gilded Rat for the Courtyard. Your stash, your kit and your gold stay here, safe.", 16, C.DIM, SEMI)
+local cbLine = T(confirmBox, "Your stash, your kit and your gold stay here in the Gilded Rat, safe. Come back any time from PLAY ▸ ADVENTURES.", 16, C.DIM, SEMI)
 cbLine.Position = UDim2.fromOffset(28, 60); cbLine.Size = UDim2.new(1, -56, 0, 66); cbLine.TextWrapped = true
-local cbGo = DarkUI.button(confirmBox, "LEAVE", "red", 22)
+local cbGo = DarkUI.button(confirmBox, "MAIN MENU", "blue", 22)
 cbGo.AnchorPoint = Vector2.new(1, 1); cbGo.Position = UDim2.new(0.5, -8, 1, -22); cbGo.Size = UDim2.fromOffset(190, 56)
 local cbStay = DarkUI.button(confirmBox, "STAY", "stone", 22)
 cbStay.AnchorPoint = Vector2.new(0, 1); cbStay.Position = UDim2.new(0.5, 8, 1, -22); cbStay.Size = UDim2.fromOffset(190, 56)
 local function goCourtyard()
 	confirmBox.Visible = false
-	say("To the Courtyard…", true)
+	say("Back to the main menu…", true)
 	local r = hub("Play", "Courtyard")
 	if r and r.ok == false and r.msg then say(r.msg, false); return end
 	task.delay(0.4, function() if open then setOpen(false) end end)
@@ -1159,7 +1181,7 @@ local hudTitle = left(T(hudBar, "THE GILDED RAT", 22, C.GOLD2, BOLD)); hudTitle.
 local hudSub = left(T(hudBar, "Walk to a merchant, your stash or the gate", 12, C.DIM, SEMI)); hudSub.Position = UDim2.fromOffset(18, 36); hudSub.Size = UDim2.fromOffset(250, 18)
 local hudLobby = DarkUI.button(hudBar, "LOBBY  [M]", "blue", 16)
 hudLobby.AnchorPoint = Vector2.new(1, 0.5); hudLobby.Position = UDim2.new(1, -190, 0.5, 0); hudLobby.Size = UDim2.fromOffset(130, 44)
-local hudHome = DarkUI.button(hudBar, "TO THE COURTYARD", "red", 15)
+local hudHome = DarkUI.button(hudBar, "◀  MAIN MENU", "blue", 15)
 hudHome.AnchorPoint = Vector2.new(1, 0.5); hudHome.Position = UDim2.new(1, -12, 0.5, 0); hudHome.Size = UDim2.fromOffset(170, 44)
 local hudScale = Instance.new("UIScale"); hudScale.Parent = hudBar
 hudLobby.Activated:Connect(function() _G.OpenDungeon("Play") end)
@@ -1254,9 +1276,10 @@ player.CharacterAdded:Connect(function(c)
 end)
 round:GetAttributeChangedSignal("Mode"):Connect(function()
 	if not inDungeonGame() then downReason = nil; hideDown() end
-	-- (into a raid: the lobby is the Gilded Rat's, it goes)
+	-- (the lobby is the Gilded Rat's: into a raid, or home to the main menu, it goes)
 	local m = round:GetAttribute("Mode")
-	if (m == "Deadvault" or m == "Depths") and _G.CloseDungeon then _G.CloseDungeon() end
+	if m ~= "Tavern" and _G.CloseDungeon then _G.CloseDungeon() end
+	if m ~= "Tavern" then confirmBox.Visible = false; hudGui.Enabled = false end
 end)
 round:GetAttributeChangedSignal("State"):Connect(function() if round:GetAttribute("State") ~= "Round" then downReason = nil; hideDown() end end)
 WAYS.confirmBox, WAYS.hudGui, WAYS.hudScale, WAYS.downGui, WAYS.downScale, WAYS.bodyUp = confirmBox, hudGui, hudScale, downGui, downScale, bodyUp

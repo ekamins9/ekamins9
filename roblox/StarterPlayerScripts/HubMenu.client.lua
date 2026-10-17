@@ -9190,11 +9190,16 @@ end)
 -- in the Courtyard with no body: the menu opens by itself, over the cinematic
 task.spawn(function()
 	local wasAlive = false
+	local wasHub = inHub()
 	while true do
 		task.wait(0.4)
 		local a = alive()
 		if a and not wasAlive then autoOpen = true end
 		wasAlive = a
+		-- (home from elsewhere, the Gilded Rat say, in the same session: the menu comes up again)
+		local hub = inHub()
+		if hub and not wasHub then autoOpen = true end
+		wasHub = hub
 		if autoOpen and not a and not open and inHub() and not deathFadeUp() and not classScreenUp() and not _G.IntroActive and not _G.DungeonMenuUp then show("PLAY") end
 	end
 end)
