@@ -69,6 +69,7 @@ Catalog.DRILLS    = child("Drills")
 Catalog.CALENDAR  = child("Calendar")
 Catalog.BESTIARY  = child("Bestiary")   -- every monster (Combat ▸ Monsters)
 Catalog.DUNGEONS  = child("Dungeons")   -- the procedural dungeons' themes (Game ▸ Dungeon)
+Catalog.ARMS      = child("Arms")       -- your own coat of arms (LOOK ▸ YOUR ARMS)
 Catalog.LOOT      = child("Loot")       -- a run's or a raid's gear (Game ▸ Loot)
 Catalog.PERKS     = child("Perks")      -- the dungeon game's class perks (Game ▸ Perks)
 Catalog.PERK = {}

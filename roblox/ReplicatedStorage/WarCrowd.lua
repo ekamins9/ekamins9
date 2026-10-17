@@ -117,18 +117,8 @@ local function build(side, look)
 	lo.weapon, lo.shield = look.weapon, look.shield
 	local ok, m = pcall(PreviewRig.dressedRig, {loadout = lo, weight = "Medium", team = side})
 	if not ok or not m then return nil end
-	-- (its plain shield carries its side: the house its banners fly on this map, ReplicatedStorage ▸
-	-- Houses; painted once here, so every man of the front rank has it for nothing)
-	local sp = m:FindFirstChild("ShieldPreview")
-	local map = workspace:FindFirstChild("Map")
-	local seed = map and map:GetAttribute("HouseSeed")
-	if sp and seed then
-		pcall(function()
-			local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-			local emblem = require(ReplicatedStorage:WaitForChild("Houses")).forTeam(side, seed)
-			if emblem then require(ReplicatedStorage:WaitForChild("ShieldPaint")).house(sp, emblem, GameConfig.TEAMS[side].rgb) end
-		end)
-	end
+	-- (its plain shield already carries its side, the house its banners fly on this map: Dresser.
+	-- attachShield → ShieldPaint.plain; built once here, so every man has it for nothing)
 	local limbPart = {}
 	for i, n in ipairs(LIMBS) do limbPart[i] = m:FindFirstChild(n) end
 	if not limbPart[T] then m:Destroy(); return nil end

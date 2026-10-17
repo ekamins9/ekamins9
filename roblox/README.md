@@ -847,7 +847,16 @@ and a UIScale fits it to any screen.
   polearms…; its skins as pictures, yours first, then the rarest; spells; the secondary),
   **ARMOR** (one slot at a time: a HELMET / TOP / LEGS switch with what you wear in each; the
   class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
-  shield arm to you; the power, the throwable, a sidearm) and **LOOK** (the finish, the colours).
+  shield arm to you; the power, the throwable, a sidearm) and **LOOK** (YOUR ARMS, the finish,
+  the colours).
+- **YOUR ARMS** (LOOK; `Catalog ▸ Arms`): your own coat of arms: one of 24 emblems (most free,
+  the bear, raven, serpent and world tree at level 5, the griffin, thunderbolt and crowned skull at
+  10, the dragon, phoenix and kraken at 15: earned, never bought), its metal (or, argent, sable), a
+  field colour off the palette, and if you like a division with a second colour. Any shield you
+  carry without a skin wears it (`Combat ▸ Shields` → `ShieldPaint.plain`), and your mannequin's
+  does; in a team fight on your side's colour. Kept in your appearance (`armsEmblem`, `armsMetal`,
+  `armsField`, `armsDivision`, `armsColor2`; `Profile.validateAppearance` checks the level and the
+  colours).
   `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab.
   **Anything locked can be tried on** (a shield's skin too): it shows on you, with where it
   comes from and a buy button when it is in today's shop.

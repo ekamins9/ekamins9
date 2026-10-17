@@ -4766,8 +4766,130 @@ do
 		dim(page, cls.description or "", 12)
 	end
 
+	-- YOUR ARMS (Catalog ▸ Arms): what a plain shield carries, on your side's colour in a team fight
+	function LT.saveArms(change)
+		local app = {}
+		for k, v in pairs((state.profile or {}).appearance or {}) do app[k] = v end
+		for k, v in pairs(change) do app[k] = v end
+		task.spawn(function()
+			local r = call("SaveAppearance", app)
+			if r and r.ok then
+				if r.profile then state.profile = r.profile end
+				render.CLASSES()
+			else toast((r and r.msg) or "Your arms didn't save", COL.BAD) end
+		end)
+	end
+	-- a shield face on, as you'd carry it (no skin: your arms on it)
+	function LT.armsView(parent, shieldId, app, size)
+		local holder = frame(parent, Color3.fromRGB(14, 16, 26), 12)
+		holder.Size = size
+		holder.ClipsDescendants = true
+		local vp = Instance.new("ViewportFrame")
+		vp.BackgroundTransparency = 1
+		vp.Size = UDim2.fromScale(1, 1)
+		vp.Ambient = Color3.fromRGB(160, 154, 146)
+		vp.LightColor = Color3.fromRGB(255, 244, 228)
+		vp.LightDirection = Vector3.new(-0.5, -0.8, 0.7)
+		vp.Parent = holder
+		local world = Instance.new("WorldModel"); world.Parent = vp
+		local cam = Instance.new("Camera"); cam.Parent = vp
+		vp.CurrentCamera = cam
+		local t = Catalog.weaponModel(shieldId)
+		if not t then return holder end
+		local m = t:Clone()
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("LuaSourceContainer") then d:Destroy() elseif d:IsA("BasePart") then d.Anchored = true end
+		end
+		m.Parent = world
+		local handle = m:FindFirstChild("Handle", true)
+		if handle then m:PivotTo(CFrame.Angles(0, math.rad(-16), 0) * handle.CFrame:Inverse() * m:GetPivot()) end
+		pcall(function() require(ReplicatedStorage:WaitForChild("ShieldPaint")).plain(m, app, ui.team) end)
+		local cf, sz = m:GetBoundingBox()
+		m:PivotTo(CFrame.new(-cf.Position) * m:GetPivot())
+		local d = (math.max(sz.X, sz.Y) * 0.56) / math.tan(math.rad(14))
+		cam.FieldOfView = 28
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, d * 0.05, -d), Vector3.zero)
+		return holder
+	end
+	function LT.arms(page, lo)
+		local A = Catalog.ARMS
+		if not A then return end
+		local app = (state.profile or {}).appearance or {}
+		local lvl = (state.profile and state.profile.level) or 1
+		local p = panel(page, "YOUR ARMS  ·  ON A PLAIN SHIELD")
+		dim(p, "Your own coat of arms, on any shield you carry without a skin; in a team fight on your side's colour. (No arms of your own: there you carry your side's house's.)", 12)
+		local e = A.EMBLEM[app.armsEmblem or ""]
+		local metal = A.METAL[app.armsMetal or ""] or A.METALS[1]
+		local field = Catalog.COLOR[app.armsField or ""]
+		-- the shield, as you'll carry it
+		local top = clearFrame(p); top.Size = UDim2.new(1, 0, 0, 150); top.LayoutOrder = nextOrder()
+		LT.armsView(top, lo.shield or "Heater", app, UDim2.fromOffset(150, 150))
+		local n = title(top, e and string.upper(e.name) or "NO ARMS YET", 18, e and COL.TEXT or COL.DIM)
+		n.Position = UDim2.fromOffset(162, 10); n.Size = UDim2.new(1, -162, 0, 22); n.TextTruncate = Enum.TextTruncate.AtEnd
+		local what = e and string.format("%s on %s%s", metal.name, field and field.name or "the shield's own wood",
+			app.armsDivision and string.format(", %s with %s", app.armsDivision, app.armsColor2 or "white") or "") or "Pick an emblem below."
+		local sub = label(top, what, 12, FONT, COL.DIM); sub.Position = UDim2.fromOffset(162, 36); sub.Size = UDim2.new(1, -162, 0, 60)
+		if e then
+			local off = button(top, "TAKE THEM OFF", 12, COL.GLASS2); off.Position = UDim2.fromOffset(162, 114); off.Size = UDim2.new(1, -162, 0, 32)
+			off.Activated:Connect(function() LT.saveArms({armsEmblem = ""}) end)
+		end
+		-- the emblems: the pictures in your metal on your field (some open with your level)
+		heading(p, "EMBLEM")
+		local g = LT.grid(p, 6, 52)
+		local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+		for i, em in ipairs(A.EMBLEMS) do
+			local open = lvl >= (em.level or 1)
+			local on = app.armsEmblem == em.id
+			local b = button(g, "", 12, field and field.color or Color3.fromRGB(56, 60, 78))
+			b.LayoutOrder = i
+			b.Visible = open or on or not HX.hideLocked()
+			border(b, on and WHITE or COL.DIM, on and 3 or 1, on and 0 or 0.7)
+			for z, layer in ipairs({{em.id .. "_o", metal.edge}, {em.id, metal.color}}) do
+				local v = art and art:FindFirstChild(layer[1])
+				if v then
+					local il = Instance.new("ImageLabel")
+					il.BackgroundTransparency = 1
+					il.Size = UDim2.new(1, -6, 1, -6); il.Position = UDim2.fromOffset(3, 3)
+					il.Image = v.Value; il.ImageColor3 = layer[2]; il.ZIndex = 1 + z
+					il.ScaleType = Enum.ScaleType.Fit
+					il.ImageTransparency = open and 0 or 0.6
+					il.Parent = b
+				end
+			end
+			if not open then
+				local lk = title(b, "LV " .. em.level, 11, COL.TEXT)
+				lk.AnchorPoint = Vector2.new(0.5, 1); lk.Position = UDim2.new(0.5, 0, 1, -2); lk.Size = UDim2.new(1, 0, 0, 14)
+				lk.TextXAlignment = Enum.TextXAlignment.Center; lk.ZIndex = 4
+			end
+			b.Activated:Connect(function()
+				if open then LT.saveArms({armsEmblem = em.id}) else toast(em.name .. " opens at level " .. em.level .. ".", COL.DIM) end
+			end)
+		end
+		-- its metal, the field, a split with a second colour
+		heading(p, "METAL")
+		local metals = {}
+		for _, mt in ipairs(A.METALS) do table.insert(metals, {text = string.upper(mt.name) .. "  ·  " .. string.upper(mt.id), key = mt.id}) end
+		chips(p, metals, function(it) return metal.id == it.key end, function(it) LT.saveArms({armsMetal = it.key}) end, 30)
+		local function locked(it) return it.crowns and not owns("colors", it.name) end
+		heading(p, "FIELD")
+		swatches(p, Catalog.PALETTE, function(it) return app.armsField == it.name end, locked, function(it)
+			if locked(it) then toast(it.name .. " is a premium colour.", COL.DIM) else LT.saveArms({armsField = it.name}) end
+		end, 26)
+		heading(p, "DIVISION")
+		local divs = {{text = "NONE", key = ""}}
+		for _, d in ipairs(A.DIVISIONS) do table.insert(divs, {text = string.upper(d), key = d}) end
+		chips(p, divs, function(it) return (app.armsDivision or "") == it.key end, function(it) LT.saveArms({armsDivision = it.key}) end, 26)
+		if app.armsDivision then
+			dim(p, "Its second colour", 12)
+			swatches(p, Catalog.PALETTE, function(it) return app.armsColor2 == it.name end, locked, function(it)
+				if not locked(it) then LT.saveArms({armsColor2 = it.name}) end
+			end, 26)
+		end
+	end
+
 	-- LOOK: the finish over the armor, the four colours
 	function LT.look(page, lo, cls, id, t)
+		LT.arms(page, lo)
 		local fp = panel(page, "FINISH  ·  LOOKS ONLY")
 		dim(fp, "Recolours the plates, lights the trims and wraps you in an aura. Out of the Forge Crate.", 12)
 		local fg = cardGrid(fp, 40)

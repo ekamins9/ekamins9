@@ -14,6 +14,11 @@
        ShieldPaint.house(container, emblem, color)    a plain shield in a team fight: its side's
                                                       colour on the board, its house's arms on it
                                                       (ReplicatedStorage ▸ Houses), battered
+       ShieldPaint.arms(container, arms, teamColor)   a player's own arms (Catalog ▸ Arms) on a
+                                                      plain shield; in a team fight on its side's colour
+       ShieldPaint.armsOf(appearance) -> arms | nil   an appearance's arms, its colours looked up
+       ShieldPaint.plain(container, appearance, teamKey)  what a plain shield wears: your arms, else
+                                                      in a team fight your side's house's, else nothing
 
      A skin's fields (all optional):
        division      pale fess quarterly bend saltire chevron gyronny paly barry checky chief
@@ -178,16 +183,57 @@ function ShieldPaint.apply(container, skin)
 	return n > 0
 end
 
-function ShieldPaint.house(container, emblem, color)
-	local ok = ShieldPaint.apply(container, {name = "House", rarity = "Rare", emblem = emblem,
-		emblemColor = Color3.new(1.06, 0.84, 0.4), emblemEdge = Color3.fromRGB(26, 20, 18), wear = 0.5})
+-- (the board painted: its first colour kept, for ShieldPaint.clear to put back)
+local function tintBoard(container, color)
 	for _, p in ipairs(container:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("SkinPart") == "Blade" and not p:GetAttribute(TAG) then
-			p:SetAttribute("HouseColor", p.Color)
+			if p:GetAttribute("HouseColor") == nil then p:SetAttribute("HouseColor", p.Color) end
 			p.Color = color:Lerp(Color3.new(0, 0, 0), 0.15)
 		end
 	end
+end
+
+function ShieldPaint.house(container, emblem, color)
+	local ok = ShieldPaint.apply(container, {name = "House", rarity = "Rare", emblem = emblem,
+		emblemColor = Color3.new(1.06, 0.84, 0.4), emblemEdge = Color3.fromRGB(26, 20, 18), wear = 0.5})
+	tintBoard(container, color)
 	return ok
+end
+
+function ShieldPaint.armsOf(app)
+	if type(app) ~= "table" or type(app.armsEmblem) ~= "string" then return nil end
+	local Catalog = require(RS:WaitForChild("Catalog"))
+	local A = Catalog.ARMS
+	if not (A and A.EMBLEM[app.armsEmblem]) then return nil end
+	local metal = A.METAL[app.armsMetal or ""] or A.METALS[1]
+	local field = Catalog.COLOR[app.armsField or ""]
+	local c2 = Catalog.COLOR[app.armsColor2 or ""]
+	return {emblem = app.armsEmblem, metal = metal.color, edge = metal.edge, field = field and field.color,
+		division = A.DIVISION[app.armsDivision or ""] and app.armsDivision or nil, color2 = c2 and c2.color}
+end
+
+function ShieldPaint.arms(container, a, teamColor)
+	local ok = ShieldPaint.apply(container, {name = "Arms", rarity = "Rare", emblem = a.emblem, emblemColor = a.metal, emblemEdge = a.edge,
+		division = (not teamColor) and a.division or nil, divisionColor = a.color2 or Color3.fromRGB(240, 240, 236), wear = 0.35})
+	local field = teamColor or a.field
+	if field then tintBoard(container, field) end
+	return ok
+end
+
+function ShieldPaint.plain(container, app, teamKey)
+	local teamColor
+	if teamKey == "A" or teamKey == "B" then
+		local ok, GameConfig = pcall(require, RS:WaitForChild("GameConfig"))
+		teamColor = ok and GameConfig.TEAMS[teamKey] and GameConfig.TEAMS[teamKey].rgb or nil
+	end
+	local a = ShieldPaint.armsOf(app)
+	if a then return ShieldPaint.arms(container, a, teamColor) end
+	if teamColor then
+		local map = workspace:FindFirstChild("Map")
+		local emblem = require(RS:WaitForChild("Houses")).forTeam(teamKey, map and map:GetAttribute("HouseSeed"))
+		if emblem then return ShieldPaint.house(container, emblem, teamColor) end
+	end
+	return false
 end
 
 return ShieldPaint

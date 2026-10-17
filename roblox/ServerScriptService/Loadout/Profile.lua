@@ -569,6 +569,22 @@ function Profile.validateAppearance(plr, app)
 	end
 	for _, c in ipairs(Catalog.BODY.eyeColors or {}) do if c.name == app.eyeColor and (not c.crowns or Profile.has(plr, "eyeColors", c.name)) then out.eyeColor = c.name end end
 	for _, c in ipairs(Catalog.BODY.paintColors or {}) do if c.name == app.paintColor then out.paintColor = c.name end end
+	-- your arms (Catalog ▸ Arms): an emblem your level has opened, a metal, colours off the palette
+	-- (a premium one owned), a division ("" takes the emblem or the division off)
+	local A = Catalog.ARMS
+	if A then
+		if app.armsEmblem == "" then out.armsEmblem = nil
+		elseif type(app.armsEmblem) == "string" and A.open(app.armsEmblem, p) then out.armsEmblem = app.armsEmblem end
+		if type(app.armsMetal) == "string" and A.METAL[app.armsMetal] then out.armsMetal = app.armsMetal end
+		local function colour(name)
+			local c = type(name) == "string" and Catalog.COLOR[name]
+			return c and (not c.crowns or Profile.has(plr, "colors", name)) and name or nil
+		end
+		out.armsField = colour(app.armsField) or out.armsField
+		out.armsColor2 = colour(app.armsColor2) or out.armsColor2
+		if app.armsDivision == "" then out.armsDivision = nil
+		elseif type(app.armsDivision) == "string" and A.DIVISION[app.armsDivision] then out.armsDivision = app.armsDivision end
+	end
 	return out
 end
 

@@ -12,7 +12,8 @@
      RangedServer, MagicServer, Throwing ask Shields.stops), ShieldBash / ShieldStun (the
      kick is a bash), SpeedMult_Shield.
 
-       Shields.wear(character, shieldId, skinId)   Shields.unwear(character)
+       Shields.wear(character, shieldId, skinId, appearance)   Shields.unwear(character)
+                                  (appearance: the player's, for their own arms on a plain shield)
        Shields.sling(character, true | false)
        Shields.stops(target, fromPosition) -> bool
 
@@ -65,7 +66,7 @@ function Shields.unwear(c)
 	for _, a in ipairs(ATTRS) do c:SetAttribute(a, nil) end
 end
 
-function Shields.wear(c, id, skinId)
+function Shields.wear(c, id, skinId, appearance)
 	Shields.unwear(c)
 	local def = Catalog.WEAPON[id or ""]
 	if not (def and def.shield) then return false end
@@ -106,17 +107,11 @@ function Shields.wear(c, id, skinId)
 	grip.Parent = handle
 	m.Parent = c
 	if skinId then pcall(Dresser.applySkin, m, skinId) end
-	-- a plain shield in a team fight carries its side: the team's colour, the house's arms its
-	-- banners fly on this map (ReplicatedStorage ▸ Houses, ShieldPaint.house)
-	local team = c:GetAttribute("Team")
-	if (not skinId or tostring(skinId):match(":Default$")) and (team == "A" or team == "B") then
-		pcall(function()
-			local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
-			local Houses = require(ReplicatedStorage:WaitForChild("Houses"))
-			local map = workspace:FindFirstChild("Map")
-			local emblem = Houses.forTeam(team, map and map:GetAttribute("HouseSeed"))
-			if emblem then require(ReplicatedStorage:WaitForChild("ShieldPaint")).house(m, emblem, GameConfig.TEAMS[team].rgb) end
-		end)
+	-- a plain shield carries your own arms (LOOK ▸ YOUR ARMS), on your side's colour in a team
+	-- fight; with none of your own, there, your side's house's: the arms its banners fly on this map
+	-- (ShieldPaint.plain, ReplicatedStorage ▸ Houses)
+	if not skinId or tostring(skinId):match(":Default$") then
+		pcall(function() require(ReplicatedStorage:WaitForChild("ShieldPaint")).plain(m, appearance, c:GetAttribute("Team")) end)
 	end
 	-- the guard: in front of you, only there to blades while you block
 	local face

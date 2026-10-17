@@ -248,7 +248,7 @@ end
 local Shields = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Shields"))
 local Powers = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Powers"))
 local function thirdSlot(plr, char, lo)
-	if lo.shield then Shields.wear(char, lo.shield, lo.shieldSkin) else Shields.unwear(char) end
+	if lo.shield then Shields.wear(char, lo.shield, lo.shieldSkin, Profile.get(plr).appearance) else Shields.unwear(char) end
 	Powers.equip(char, plr, lo)
 	if lo.thirdKind == "sidearm" and lo.thirdId then giveWeapon(plr, char, lo.thirdId, lo.thirdSkin, false, 3, lo) end
 end

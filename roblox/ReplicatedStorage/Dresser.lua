@@ -604,7 +604,8 @@ end
 -- preview rig: a SHIELD strapped to the left arm, as a body wears it (Combat ▸ Shields' idle
 -- place, in the arm's frame: against the arm's armor)
 local SHIELD_IDLE = CFrame.new(-0.35, -0.3, 0.05) * CFrame.Angles(0, math.rad(90), 0)
-function Dresser.attachShield(rig, shieldId, skinId)
+-- (appearance, team: a plain shield wears your arms, or in a team fight your side's: ShieldPaint.plain)
+function Dresser.attachShield(rig, shieldId, skinId, appearance, team)
 	local old = rig:FindFirstChild("ShieldPreview"); if old then old:Destroy() end
 	local torso = rig:FindFirstChild("Left Arm")
 	local at = SHIELD_IDLE
@@ -626,6 +627,9 @@ function Dresser.attachShield(rig, shieldId, skinId)
 	m.Name = "ShieldPreview"
 	m.Parent = rig
 	if skinId then Dresser.applySkin(m, skinId) end
+	if (appearance or team) and (not skinId or tostring(skinId):match(":Default$")) then
+		pcall(function() require(script.Parent:WaitForChild("ShieldPaint")).plain(m, appearance, team) end)
+	end
 	return true
 end
 

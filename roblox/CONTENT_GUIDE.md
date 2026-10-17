@@ -432,6 +432,8 @@ shop is there every day, and every card says how long it has left.
     `adorn = {...}`; a new ornament is a function `A.name` there (built on the board's outline:
     `along`, `rimBars`, `tri`, `bar`, `ball`, `spike`);
   - **raised arms**, optional (`ReplicatedStorage ▸ Heraldry`): the `pattern, color` arguments.
+  A new emblem is also a choice for **YOUR ARMS** once it has a line in `Catalog ▸ Arms` EMBLEMS
+  (`{id, name, level}`: the level that opens it).
   A **new emblem picture**: white art on black, cut to a white-on-clear PNG with its outline and
   shadow (the scripts that made the first 24 cut each one, grow its silhouette for `_o` and blur
   it for `_s`), uploaded as Decals, the image ids put in StringValues `<name>`, `<name>_o`,

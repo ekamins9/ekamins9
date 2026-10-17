@@ -1,4 +1,28 @@
-# Updated scripts: the armies carry their houses' arms
+# Updated scripts: your own coat of arms
+
+- **LOOK ▸ YOUR ARMS**: pick your own emblem (24: most free, the rest open at levels 5, 10 and
+  15), its metal (or, argent, sable), a field colour and, if you like, a division with a second
+  colour, and see it on your shield as you choose. Any shield you carry without a skin wears your
+  arms, in the world and on your mannequin; in a team fight on your side's colour.
+- Without arms of your own, in a team fight you carry your side's house's, as before.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Arms.lua](ReplicatedStorage/Catalog/Arms.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | **new**: the emblems, metals and divisions |
+| [init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Catalog.ARMS |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | validates your arms |
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | `arms`, `armsOf`, `plain` |
+| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | a plain shield wears your arms (or your side's house's) |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | passes your appearance to the shield |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | a preview's plain shield wears arms too |
+| [PreviewRig.lua](ReplicatedStorage/PreviewRig.lua) | ReplicatedStorage | ModuleScript | passes the appearance and side to the shield |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | (its shields painted through Dresser now) |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | LOOK ▸ YOUR ARMS |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: the armies carry their houses' arms
 
 - **In a team fight, a plain shield carries its side**: the team's colour on the board and its
   house's arms on it (the same beast its banners fly on that map), battered like a soldier's. A
