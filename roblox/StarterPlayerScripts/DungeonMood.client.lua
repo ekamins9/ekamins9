@@ -1,5 +1,6 @@
 --[[ DUNGEON MOOD — what being down there feels like, on your screen only, on any floor Game ▸
-     Dungeon built (The Depths, Deadvault: the Map carries Generated and its Theme):
+     Dungeon built (The Depths, Deadvault: the Map carries Generated and its Theme), and on Plague
+     Night (the dread, the sounds, the apparitions and bats; not the lanterns or the arrivals):
 
        your lantern     a warm light on every adventurer's chest (yours and your party's): the
                         floors are dark now, the torches only pools on the walls
@@ -39,6 +40,7 @@ local V3 = Vector3.new
 -- each theme's grade: the tint over everything, how much colour is left
 local GRADE = {
 	BoneCrypt = {tint = Color3.fromRGB(214, 232, 226), sat = -0.32},
+	Plague = {tint = Color3.fromRGB(214, 228, 206), sat = -0.3},
 	GoblinWarrens = {tint = Color3.fromRGB(240, 226, 206), sat = -0.18},
 	CrimsonManor = {tint = Color3.fromRGB(240, 214, 220), sat = -0.15},
 	FrozenDepths = {tint = Color3.fromRGB(206, 224, 246), sat = -0.28},
@@ -48,8 +50,12 @@ local LANTERN = Color3.fromRGB(255, 190, 130)
 
 local mood = {on = false, token = 0}
 
+-- a dungeon floor (Generated) — or Plague Night, which gets the dread without the lanterns (it
+-- lights its living itself) and without the monsters' arrival (its dead claw up out of the ground)
+local round = ReplicatedStorage:WaitForChild("Round")
 local function inDungeon()
 	local m = workspace:FindFirstChild("Map")
+	if round:GetAttribute("Mode") == "Plague" and m then return true, "Plague" end
 	return m and m:GetAttribute("Generated") == true, m and m:GetAttribute("Theme")
 end
 
@@ -360,19 +366,22 @@ local function enter(theme)
 	local token = mood.token
 	airOn(theme)
 	mood.drone = WarFX.loop("Drone", 0.45)
+	local plague = theme == "Plague"
 	-- every adventurer carries a light
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p.Character then task.spawn(lantern, p.Character) end
-		table.insert(mood.conns, p.CharacterAdded:Connect(function(c) task.wait(0.3); lantern(c) end))
+	if not plague then
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p.Character then task.spawn(lantern, p.Character) end
+			table.insert(mood.conns, p.CharacterAdded:Connect(function(c) task.wait(0.3); lantern(c) end))
+		end
+		table.insert(mood.conns, Players.PlayerAdded:Connect(function(p)
+			table.insert(mood.conns, p.CharacterAdded:Connect(function(c) task.wait(0.3); lantern(c) end))
+		end))
 	end
-	table.insert(mood.conns, Players.PlayerAdded:Connect(function(p)
-		table.insert(mood.conns, p.CharacterAdded:Connect(function(c) task.wait(0.3); lantern(c) end))
-	end))
 	task.spawn(dark, token)
 	task.spawn(haunt, token)
 	task.spawn(bossWatch, token, theme)
 	task.spawn(lurk, token)
-	watchMonsters()
+	if not plague then watchMonsters() end
 end
 
 local want = 0
@@ -390,4 +399,5 @@ local function refresh()
 end
 workspace.ChildAdded:Connect(function(c) if c.Name == "Map" then refresh() end end)
 workspace.ChildRemoved:Connect(function(c) if c.Name == "Map" then refresh() end end)
+round:GetAttributeChangedSignal("Mode"):Connect(refresh)
 refresh()
