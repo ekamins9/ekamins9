@@ -63,6 +63,7 @@ local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
 local Traps = require(script.Parent.Parent:WaitForChild("Traps"))
 local Secrets = require(script.Parent.Parent:WaitForChild("Secrets"))
 local Shade = require(script.Parent.Parent:WaitForChild("Shade"))
+local Clingers = require(script.Parent.Parent:WaitForChild("Clingers"))
 local MapLoader = Game.MapLoader
 local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
@@ -74,8 +75,7 @@ local node = Game.node
 local FLOORS = 3
 local ATTRS = {"ObjKind", "ObjLabel", "ObjNote", "ObjState", "DepthsFloor", "DepthsTheme", "OwnHud"}
 local KILL_GOLD = {2, 5, 14, 60}
--- LOOK UP (Depths:cling): the kinds that climb, and the chance a waiting room has some up there, by floor
-local CLING_BODY = {spider = true, ghoul = true, goblin = true, vampire = true, wraith = true}
+-- LOOK UP (Game ▸ Clingers): the chance a waiting room has some up on its ceiling, by floor
 local CLING_CHANCE = {0.25, 0.4, 0.5}
 -- MORE COME (Depths:wave): the chance a fight's room sends a second wave, by floor; its line by theme
 local WAVE_CHANCE = {0.3, 0.5, 0.7}
@@ -424,8 +424,7 @@ function Depths:prepare(room)
 	for i, e in ipairs(self:roster(room)) do
 		local spot = room.spots[((i - 1) % #room.spots) + 1]
 		local look = Vector3.new(room.cx + math.random(-8, 8), spot.Y, room.cz + math.random(-8, 8))
-		local def = Catalog.BESTIARY and Catalog.BESTIARY[e.id]
-		local up = cling > 0 and not e.elite and def and def.look and CLING_BODY[def.look.body]
+		local up = cling > 0 and not e.elite and Clingers.can(e.id)
 		-- (one up there watches, and not far: it waits for you to come under it)
 		local how = up and {home = spot, sight = 16, hearing = 9} or {home = spot, asleep = sleepy and not e.elite}
 		local mob = Monsters.spawn(e.id, room.opts, {at = CFrame.new(spot, look), elite = e.elite, sense = how})
@@ -439,54 +438,17 @@ function Depths:prepare(room)
 	for _ in pairs(room.mobs) do room.waiting += 1 end
 end
 
--- LOOK UP: a climber waits on the ceiling over its spot, upside down in the dark
+-- LOOK UP (Game ▸ Clingers): a climber waits on the ceiling over its spot, upside down in the
+-- dark, until the room wakes or someone walks under it
 function Depths:cling(room, mob)
-	local m = mob.model
-	local r = m and rootOf(m)
-	if not r then return false end
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = {MapLoader.current}
-	local hit = workspace:Raycast(r.Position, Vector3.new(0, 60, 0), params)
-	if not hit or hit.Position.Y - r.Position.Y < 8 then return false end
-	local sc = m:GetAttribute("MonsterScale") or 1
-	local yaw = math.random() * math.pi * 2
-	mob.cling = {floorY = r.Position.Y - 3 * sc, yaw = yaw}
-	r.Anchored = true
-	m:PivotTo(CFrame.new(hit.Position - Vector3.new(0, 3 * sc, 0)) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(math.pi, 0, 0))
-	m:SetAttribute("Clinging", true)
+	if not Clingers.cling(mob, MapLoader.current) then return false end
 	room.clingers = room.clingers or {}
 	room.clingers[mob] = true
-	-- (killed up there, by an arrow or a spell: it falls)
-	local h = humOf(m)
-	if h then h.Died:Connect(function() if r.Parent then r.Anchored = false end end) end
 	return true
 end
-
--- …and drops: a shriek, a fall that rights it as it comes, a thud and a cloud of grit
 function Depths:drop(room, mob)
-	local c = mob.cling
-	if not c then return end
-	mob.cling = nil
 	if room.clingers then room.clingers[mob] = nil end
-	local m = mob.model
-	local r = m and rootOf(m)
-	if not (mob.alive and r and m.Parent) then return end
-	m:SetAttribute("Clinging", nil)
-	local from = m:GetPivot()
-	local sc = m:GetAttribute("MonsterScale") or 1
-	local land = CFrame.new(from.Position.X, c.floorY + 3 * sc + 0.2, from.Position.Z) * CFrame.Angles(0, c.yaw, 0)
-	event:FireAllClients("Drop", {at = from.Position, land = land.Position - Vector3.new(0, 3 * sc, 0), body = mob.def and mob.def.look and mob.def.look.body})
-	task.spawn(function()
-		local t0 = os.clock()
-		while m.Parent do
-			local u = math.min((os.clock() - t0) / 0.5, 1)
-			m:PivotTo(from:Lerp(land, u * u))
-			if u >= 1 then break end
-			task.wait()
-		end
-		if r.Parent then r.Anchored = false end
-	end)
+	Clingers.drop(mob)
 end
 
 -- (now and then, as a fight's gates slam, the room's torches gutter out for a few seconds: the
@@ -1068,15 +1030,7 @@ function Depths:tick(dt)
 			for _, rm in ipairs(self.layout.rooms) do
 				if rm.state == "sealed" and rm.clingers and next(rm.clingers) then
 					for mob in pairs(rm.clingers) do
-						local mr = mob.alive and mob.model and rootOf(mob.model)
-						if mr then
-							for _, p in ipairs(Players:GetPlayers()) do
-								local c = aliveChar(p)
-								local r = c and rootOf(c)
-								if r and Vector3.new(r.Position.X - mr.Position.X, 0, r.Position.Z - mr.Position.Z).Magnitude < 5 then started = true; break end
-							end
-						end
-						if started then break end
+						if Clingers.under(mob, 5) then started = true; break end
 					end
 					if started then
 						rm.engagedAt = now

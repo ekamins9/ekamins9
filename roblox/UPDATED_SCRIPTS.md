@@ -1,10 +1,12 @@
 # Updated scripts: look up
 
-- **The Depths**: now and then some of a waiting room's climbers (spiders, ghouls, goblins, vampires, wraiths) cling to the ceiling, upside down in the dark. Walk under one, or wake the room, and they drop on you: grit sifts down, a shriek, a thud and dust.
+- **The Depths and Deadvault**: now and then some of a waiting room's climbers (spiders, ghouls, goblins, vampires, wraiths) cling to the ceiling, upside down in the dark. Walk under one, or wake the room, and they drop on you: grit sifts down, a shriek, a thud and dust.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `cling`, `drop`, `CLING_BODY`, `CLING_CHANCE`; the walk-under trigger |
+| [Clingers.lua](ServerScriptService/Game/Clingers.lua) | ServerScriptService ▸ Game | ModuleScript | **new**: `can`, `cling`, `drop`, `under` (shared) |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `cling`, `drop`, `CLING_CHANCE`; the walk-under trigger |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | a third of its rooms have clingers; each drops when it notices you or you're under it |
 | [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the drop: grit, a cry, a thud |
 | [README.md](README.md) | | doc | |
 

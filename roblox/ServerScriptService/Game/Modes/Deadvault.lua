@@ -31,6 +31,10 @@
      SECRETS: three walled-up caches a raid (Game ▸ Secrets): a cracked stretch of wall with a
      draft through it; three blows bring it down, and an ornate chest waits behind.
 
+     LOOK UP: in a third of its rooms one or two of its climbers (spiders, ghouls, goblins,
+     vampires, wraiths) wait on the ceiling (Game ▸ Clingers); each drops when it notices you or
+     you walk under it.
+
      THE SHADE: SHADE_AT before the collapse the dark stirs, and Game ▸ Shade's hooded thing comes
      through the walls for whoever is still inside (it can't be fought; it doesn't stop).
 
@@ -60,6 +64,8 @@ local Powers = require(Combat:WaitForChild("Powers"))
 local Perception = require(Combat:WaitForChild("Perception"))
 local Perks = require(script.Parent.Parent:WaitForChild("Perks"))
 local Shade = require(script.Parent.Parent:WaitForChild("Shade"))
+local Clingers = require(script.Parent.Parent:WaitForChild("Clingers"))
+local CLING_CHANCE = 0.33   -- a room with a climber or two up on its ceiling
 local SHADE_AT = 180   -- seconds before the collapse that the dark stirs (the Shade comes Shade.WARN later)
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local MapLoader = Game.MapLoader
@@ -306,8 +312,16 @@ function Deadvault:populate()
 				for _ = 1, n do table.insert(list, {id = pick(rng:NextNumber() < 0.3 and th.monsters.ranged or th.monsters.common), elite = rng:NextNumber() < 0.05}) end
 			end
 			local sleepy = rng:NextNumber() < 0.35
+			local cling = rng:NextNumber() < CLING_CHANCE and 2 or 0
 			for i, e in ipairs(list) do
-				self:spawnMob(e.id, face(spot(i * 2)), {home = home, asleep = sleepy and not e.elite}, {elite = e.elite})
+				-- (LOOK UP: a climber on the ceiling watches, not far)
+				local up = cling > 0 and not e.elite and Clingers.can(e.id)
+				local how = up and {home = home, sight = 16, hearing = 9} or {home = home, asleep = sleepy and not e.elite}
+				local mob = self:spawnMob(e.id, face(spot(i * 2)), how, {elite = e.elite})
+				if up and mob and Clingers.cling(mob, MapLoader.current) then
+					cling -= 1
+					self.clingers[mob] = true
+				end
 			end
 		end
 		-- its containers
@@ -779,6 +793,7 @@ function Deadvault:start(map)
 	Game.Mode.start(self, map)
 	node:SetAttribute("FriendlyFire", true)
 	self.runs, self.mobs, self.out, self.entered, self.havenOf = {}, {}, {}, {}, {}
+	self.clingers = {}
 	self.stairsOpen = false
 	self.wave = 1
 	self.startedAt = os.clock()
@@ -928,6 +943,14 @@ function Deadvault:tick(dt)
 	node:SetAttribute("ObjNote", note)
 	node:SetAttribute("RaidersInside", inside)
 	node:SetAttribute("Objective", self:objective())
+	-- LOOK UP: one on the ceiling drops when it knows you're there, or you're under it
+	for mob in pairs(self.clingers or {}) do
+		if not (mob.alive and mob.cling) then self.clingers[mob] = nil
+		elseif (mob.model and mob.model:GetAttribute("Alert") == "!") or Clingers.under(mob, 5) then
+			self.clingers[mob] = nil
+			Clingers.drop(mob)
+		end
+	end
 	-- the dark's last minutes: it hunts
 	if self.shade then
 		if left > 0 and left <= SHADE_AT and not self.shadeStirred then self.shadeStirred = true; self.shade:stir() end

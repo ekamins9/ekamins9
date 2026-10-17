@@ -111,7 +111,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterPlayerScripts/War.client.lua`, `SiegeEpic.client.lua`, `Warfield.client.lua`, `Engines.client.lua`, `MatchIntro.client.lua`, `BattleAmbience.client.lua`, `ArenaCrowd.client.lua`, `HordeHost.client.lua`, `CourtyardGuards.client.lua`, `BossEntrance.client.lua`, `DungeonMood.client.lua`, `BannerWind.client.lua`, `Weather.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → each by its name (the battles, the crowds, the dark, the wind) | LocalScript each |
 | `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
-| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua`, `Breakables.lua`, `Shade.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
+| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua`, `Breakables.lua`, `Shade.lua`, `Clingers.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
@@ -2293,7 +2293,7 @@ and two urns by the walls (a chest in a room's very middle faces the way in: `De
   wave; AMBUSH! for whoever set it off): 2 on the first floor, 3 on the second, 4 on the third,
   more with a party. At most two a floor, 70 s apart, none in a floor's first 70 s; no gates (it's
   their own fight), and they go with the floor.
-- **Look up** (`Depths:cling` / `drop`): now and then (25% of a floor-1 room, 40% floor 2, 50%
+- **Look up** (`Game ▸ Clingers`, `Depths:cling` / `drop`): now and then (25% of a floor-1 room, 40% floor 2, 50%
   floor 3) up to two of a waiting room's monsters (three on floor 3) of the kinds that climb
   (spiders, ghouls, goblins, vampires, wraiths; never a champion) cling to its ceiling instead,
   upside down in the dark, eyes glinting, watching with short senses (sight 16, hearing 9). Walk
@@ -2485,6 +2485,9 @@ get out with what you found, or lose it all.
   a little Marks (once a raid, under the daily cap; stats.vaultOut).
 - **Fall**, and everything you carried lies in your **pack** where you fell, for whoever finds it.
   Still inside when it collapses (15 minutes): lost. Everyone out or down ends it early.
+- **Look up** (`Game ▸ Clingers`): in a third of its rooms (`CLING_CHANCE`) one or two of the
+  climbers (spiders, ghouls, goblins, vampires, wraiths) wait on the ceiling, upside down, with
+  short senses; each drops when it notices you or you walk under it (as in The Depths).
 - **The Shade** (Deadvault `SHADE_AT`, `Game ▸ Shade`): three minutes before the collapse the dark
   stirs (THE DEADVAULT KNOWS YOU'RE STILL HERE), and 40 s later the Depths' Shade rises in a room
   about 110 studs from the nearest raider and comes through the walls for whoever is still
