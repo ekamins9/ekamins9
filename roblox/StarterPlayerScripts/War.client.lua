@@ -665,6 +665,9 @@ local function enter()
 		buildField()
 		buildArmies()
 		local wk = W("Weather")
+		-- (the sky as it is now: the weather may have turned already)
+		local sky = round:GetAttribute("WarSky")
+		if type(sky) == "string" and sky ~= "" then wk = sky end
 		if type(wk) == "string" and wk ~= "" then WarFX.weather(wk) end
 		war.roar = WarFX.loop("Battle", 0.7)
 		paintField()

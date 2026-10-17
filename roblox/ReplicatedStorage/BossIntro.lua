@@ -5,8 +5,10 @@
      (Client only. The Depths' lords: Adventure.client on the boss banner; Siege's champion and
      the Horde's Warlord: BossEntrance.client.)
 
-       BossIntro.play(model | nil, title, sub, color?)   model: the boss (nil: the bars and the
-                                                         name only); one at a time
+       BossIntro.play(model | nil, title, sub, color?)   model: the boss (nil: its name only, low
+                                                         on the screen, nothing else touched: no
+                                                         bars, the HUD and the camera left alone);
+                                                         one at a time
        BossIntro.falls(feet, scale)    a boss's death: a deep boom and the ground shaking, a
                                        pillar of light where it stood, a ring of force rolling out
                                        over the floor, dust, the world washing white for a moment
@@ -123,6 +125,22 @@ function BossIntro.play(model, text, subText, color)
 	if busy then return false end
 	busy = true
 	build()
+	-- (its name only: up low on the screen and away again, nothing else touched)
+	if not model then
+		task.spawn(function()
+			title.Text, sub.Text = text or "", subText or ""
+			title.TextColor3 = color or Color3.fromRGB(255, 96, 80)
+			TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 0, TextStrokeTransparency = 0.3}):Play()
+			TweenService:Create(sub, TweenInfo.new(0.8), {TextTransparency = 0}):Play()
+			WarFX.sound("Impact", nil, {volume = 0.6, speed = 0.5})
+			task.wait(DUR)
+			TweenService:Create(title, TweenInfo.new(0.5), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
+			TweenService:Create(sub, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+			task.wait(0.55)
+			busy = false
+		end)
+		return true
+	end
 	task.spawn(function()
 		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local head = model and model:FindFirstChild("Head")

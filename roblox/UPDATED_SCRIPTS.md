@@ -1,4 +1,32 @@
-# Updated scripts: the fountain trickles; each floor its own mood
+# Updated scripts: review fixes (traps, wakers, secrets, late joiners)
+
+A pass over last night's new systems, fixing what a review turned up:
+
+- **Traps** stream to a screen whole, so a blade or a spike grate is never half there on a phone with streaming. They no longer kill a Deadvault raid's calm patrols; a monster on the hunt still blunders into them.
+- **Not every dead rests**: a woken sarcophagus can't be searched until its dead is down.
+- **Secret walls**: a room's furnishing (pillars, skirting, sconces, damp, cavern rocks, its quiet-wall props) keeps clear of the stretch a secret is walled up behind, as it does of a doorway.
+- **The Undead invasion**: its lord comes in with the full boss entrance.
+- **War**: a champion's name comes up low on the screen and nothing else is touched (no bars, no hidden HUD, no camera). A player who joins after the sky has turned sees the storm, not the morning's weather.
+- **Footsteps**: the puddle list is built once per map and kept up as the map streams in, not rebuilt every 10 seconds.
+- **What's new**: pressing Enter to send a chat message no longer closes the card.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | Atomic streaming; calm monsters spared |
+| [Traps.client.lua](StarterPlayerScripts/Traps.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | waits for each trap's key part |
+| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | woken coffin locked |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the waker guards its coffin |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | `opening(r, d)`: secret walls count as doorways |
+| [Invasion.lua](ServerScriptService/Game/Modes/Invasion.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | lord intro |
+| [BossIntro.lua](ReplicatedStorage/BossIntro.lua) | ReplicatedStorage | ModuleScript | name-only entrance |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | WarSky for late joiners |
+| [Footsteps.lua](ReplicatedStorage/Footsteps.lua) | ReplicatedStorage | ModuleScript | wet list per map |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Enter respects chat |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the fountain trickles; each floor its own mood
 
 - **The Depths**: a fountain room's water trickles into its basin, louder as you come to it.
 - **Fixed**: going down to a floor of the same theme kept the last floor's mood running. Its lying dead and its sounds stayed at the old floor's positions. Each new floor now starts its mood fresh.

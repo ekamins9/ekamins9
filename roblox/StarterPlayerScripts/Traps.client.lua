@@ -162,11 +162,13 @@ end
 --------------------------------------------------------------------
 --  FINDING THEM
 --------------------------------------------------------------------
+-- the part each kind can't do without (a trap streams whole, but wait for it to be sure)
+local KEY = {blade = "Blade", spikes = "Grate", darts = "Plate"}
 local function add(m)
 	if not m:IsA("Model") then return end
 	local kind = m:GetAttribute("Trap")
-	-- (its parts may still be arriving)
-	task.wait(0.3)
+	if KEY[kind] and not m:WaitForChild(KEY[kind], 10) then return end
+	task.wait(0.1)
 	if kind == "blade" then addBlade(m)
 	elseif kind == "spikes" then addSpikes(m)
 	elseif kind == "darts" then addDarts(m) end

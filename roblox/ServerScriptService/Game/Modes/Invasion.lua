@@ -173,7 +173,7 @@ function Invasion:spawnOne(entry, at)
 	if def.class == "Mage" then mob.model:SetAttribute("Mana", math.min(mob.model:GetAttribute("Mana") or 60, 60)) end
 	if entry.lord then
 		local ev = adventure()
-		if ev then ev:FireAllClients("Banner", {text = string.upper(def.name), sub = "THE LORD OF " .. self.army.name .. " COMES", kind = "boss"}) end
+		if ev then ev:FireAllClients("Banner", {text = string.upper(def.name), sub = "THE LORD OF " .. self.army.name .. " COMES", kind = "boss", intro = true}) end
 	end
 	if id == "OrcDrummer" and not self.drumsWarned then
 		self.drumsWarned = true

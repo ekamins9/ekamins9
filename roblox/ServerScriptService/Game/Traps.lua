@@ -12,7 +12,7 @@
                   Warrens'): cross on the cool side
 
      Each shows itself (a grate, a plate, holes in a wall, a blade you hear) and has a way past.
-     They hurt anyone who blunders in, monsters too. The server decides every hit; every screen
+     They hurt anyone who blunders in, monsters on the hunt too (a calm one knows its own dungeon). The server decides every hit; every screen
      draws the moving parts (StarterPlayerScripts ▸ Traps.client: a blade swings on the server's
      clock, so every screen sees it in the same place).
 
@@ -74,7 +74,9 @@ local function piece(parent, name, size, cf, color, mat, class)
 	return p
 end
 
--- everyone who might be caught: players and the monsters (workspace ▸ NPCs)
+-- everyone who might be caught: players, and monsters on the hunt (a monster the dark is keeping
+-- calm, walking its patrol or waiting in its room: Perceives without an Alert "!", knows its own
+-- dungeon's traps and steps round them)
 local function bodies()
 	local out = {}
 	for _, p in ipairs(Players:GetPlayers()) do
@@ -85,7 +87,8 @@ local function bodies()
 	local npcs = workspace:FindFirstChild("NPCs")
 	for _, m in ipairs(npcs and npcs:GetChildren() or {}) do
 		local h = humOf(m)
-		if h and h.Health > 0 and rootOf(m) then table.insert(out, m) end
+		local calm = m:GetAttribute("Perceives") and m:GetAttribute("Alert") ~= "!"
+		if h and h.Health > 0 and rootOf(m) and not calm then table.insert(out, m) end
 	end
 	return out
 end
@@ -149,6 +152,7 @@ function BUILD.spikes(folder, at, T, C, ceil, rng, theme)
 			s.CastShadow = false
 		end
 	end
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	m.Parent = folder
 	local cfg = Traps.SPIKES
 	local firedAt, hurt = nil, {}
@@ -202,6 +206,7 @@ function BUILD.blade(folder, at, T, C, ceil, rng, theme, phase)
 	piece(m, "BladeTip", V3(1.8, 0.8, 0.2), frame * CF(-2.6, -arm + 0.25, 0) * CFrame.Angles(0, 0, math.rad(-32)), steel)
 	piece(m, "BladeTip", V3(1.8, 0.8, 0.2), frame * CF(2.6, -arm + 0.25, 0) * CFrame.Angles(0, 0, math.rad(32)), steel)
 	piece(m, "BladeBack", V3(3.4, 0.5, 0.3), frame * CF(0, -arm + 0.5, 0), IRON)
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	m.Parent = folder
 	local cfg = Traps.BLADE
 	local last = {}
@@ -244,6 +249,7 @@ function BUILD.darts(folder, at, T, C, ceil, rng, theme)
 			hole:SetAttribute("Lane", k)
 		end
 	end
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	m.Parent = folder
 	local cfg = Traps.DARTS
 	local firedAt, done = nil, false
@@ -325,6 +331,7 @@ function BUILD.flames(folder, at, T, C, ceil, rng, theme)
 		end
 		vents[i] = {at = c, glow = glow, e = e, l = l, snd = snd, off = (i - 1) * 0.5, state = nil, last = {}}
 	end
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	m.Parent = folder
 	local base = rng:NextNumber(0, cfg.period)
 	return function(now, list)
@@ -375,6 +382,7 @@ function Traps.arm(map, layout, opts)
 	Traps.disarm()
 	opts = opts or {}
 	if not (map and layout and layout.corridors) then return 0 end
+	-- (each trap streams to a screen whole, all its parts at once: Atomic below)
 	local rng = Random.new()
 	local ceil = require(script.Parent:WaitForChild("Dungeon")).CORR_H or 14
 	local folder = map:FindFirstChild("Traps") or Instance.new("Folder")

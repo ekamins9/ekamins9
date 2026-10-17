@@ -244,6 +244,8 @@ end
 function Containers:open(plr, box)
 	local char = plr.Character
 	if not (alive(char) and rootOf(char)) then return end
+	-- (its dead is up and about: deal with it first)
+	if (box.lockedUntil and os.clock() < box.lockedUntil) or (box.guardMob and box.guardMob.model and box.guardMob.model.Parent and alive(box.guardMob.model)) then return end
 	if (rootOf(char).Position - box.pos).Magnitude > REACH then return end
 	if not box.items then
 		local classId = char:GetAttribute("Class") or "Knight"
@@ -269,7 +271,7 @@ function Containers:open(plr, box)
 			TweenService:Create(lid, info, {CFrame = to}):Play()
 		end
 		if LOUD[box.kind] then Perception.noise(box.pos, LOUD[box.kind], char) end
-		if woke then return end
+		if woke then box.lockedUntil = os.clock() + 2.5; return end
 	end
 	box.opened[plr] = true
 	box.watch = box.watch or {}

@@ -152,8 +152,9 @@ local function show()
 		task.delay(0.25, function() gui:Destroy() end)
 	end
 	go.Activated:Connect(function() close() end)
-	conn = UIS.InputBegan:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.ButtonB or input.KeyCode == Enum.KeyCode.Return then close() end
+	conn = UIS.InputBegan:Connect(function(input, typed)
+		-- (Enter only when it isn't a chat message being sent)
+		if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.ButtonB or (input.KeyCode == Enum.KeyCode.Return and not typed) then close() end
 	end)
 	-- (off to a match before reading it: put away, not marked seen, for next time in the Courtyard)
 	modeConn = round:GetAttributeChangedSignal("Mode"):Connect(function()

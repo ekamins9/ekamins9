@@ -556,9 +556,12 @@ local function wallFrame(r, c, d, inset, u)
 	return CFrame.lookAt(p, p + INWARD[d])
 end
 -- a wall with no doorway in it (shelves, cells, an altar go there), or nil
+-- an opening in a wall: a doorway, or the stretch a secret is walled up behind (furnishing keeps
+-- clear of both)
+local function opening(r, d) return r.doors[d] or (r.secret and r.secret.dir == d) end
 local function quietWall(r, rng)
 	local free = {}
-	for _, d in ipairs(DIR_LIST) do if not r.doors[d] then table.insert(free, d) end end
+	for _, d in ipairs(DIR_LIST) do if not opening(r, d) then table.insert(free, d) end end
 	if #free == 0 then return nil end
 	return free[rng:NextInteger(1, #free)]
 end
@@ -766,7 +769,7 @@ A.cavern = function(ctx, th, r, c, rng, keep)
 		local d = DIR_LIST[rng:NextInteger(1, 4)]
 		local len = wallLen(r, d)
 		local u = rng:NextNumber(-len / 2 + 3, len / 2 - 3)
-		if not (r.doors[d] and math.abs(u) < 10) then
+		if not (opening(r, d) and math.abs(u) < 10) then
 			K.rock(ctx, wallFrame(r, c, d, rng:NextNumber(2, 4), u).Position, rng:NextNumber(3, 7), shade(th.wall, rng:NextNumber(0.7, 1)))
 		end
 	end
@@ -862,7 +865,7 @@ local function grime(ctx, th, r, c, rng)
 		local d = DIR_LIST[rng:NextInteger(1, 4)]
 		local len = wallLen(r, d)
 		local u = rng:NextNumber(-len / 2 + 4, len / 2 - 4)
-		if not (r.doors[d] and math.abs(u) < DOOR_W / 2 + 2) then
+		if not (opening(r, d) and math.abs(u) < DOOR_W / 2 + 2) then
 			-- a stain spreading down from a seep, and a thinner drip running on below it
 			local h = rng:NextNumber(RH * 0.2, RH * 0.45)
 			local w = rng:NextNumber(0.8, 1.8)
@@ -1175,11 +1178,11 @@ function Dungeon.build(themeKey, opts)
 			for _, d in ipairs(DIR_LIST) do
 				local len = wallLen(r, d)
 				for u = -len / 2 + 7, len / 2 - 7, 11 do
-					if not (r.doors[d] and math.abs(u) < DOOR_W / 2 + 2.5) and math.abs(math.abs(u) - len * 0.3) > 2.5 then
+					if not (opening(r, d) and math.abs(u) < DOOR_W / 2 + 2.5) and math.abs(math.abs(u) - len * 0.3) > 2.5 then
 						box(ctx, "Pilaster", Vector3.new(1.8, RH, 0.9), wallFrame(r, c, d, 0.45, u) * CFrame.new(0, RH / 2, 0), shade(th.trim, 1.08), mat(th.trimMat))
 					end
 				end
-				local segs = r.doors[d] and {{-len / 2, -DOOR_W / 2 - 0.5}, {DOOR_W / 2 + 0.5, len / 2}} or {{-len / 2, len / 2}}
+				local segs = opening(r, d) and {{-len / 2, -DOOR_W / 2 - 0.5}, {DOOR_W / 2 + 0.5, len / 2}} or {{-len / 2, len / 2}}
 				for _, sg in ipairs(segs) do
 					local slen = sg[2] - sg[1]
 					if slen > 1 then box(ctx, "Skirting", Vector3.new(slen, 1.1, 0.5), wallFrame(r, c, d, 0.25, (sg[1] + sg[2]) / 2) * CFrame.new(0, 0.55, 0), shade(th.trim, 0.8), mat(th.trimMat), false) end
@@ -1207,7 +1210,7 @@ function Dungeon.build(themeKey, opts)
 			local along = (d == "N" or d == "S") and r.w or r.d
 			for _, f in ipairs({-0.3, 0.3}) do
 				local off = f * along
-				if not (r.doors[d] and math.abs(off) < DOOR_W) and (not opts.raid or rng:NextNumber() < 0.75 or r.kind == "start" or r.kind == "exit") then
+				if not (opening(r, d) and math.abs(off) < DOOR_W) and (not opts.raid or rng:NextNumber() < 0.75 or r.kind == "start" or r.kind == "exit") then
 					local pos
 					if d == "N" or d == "S" then pos = c + Vector3.new(off, 8, v[2] * (r.d / 2 - 0.2))
 					else pos = c + Vector3.new(v[1] * (r.w / 2 - 0.2), 8, off) end

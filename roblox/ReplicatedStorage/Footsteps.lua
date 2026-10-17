@@ -74,15 +74,20 @@ end
 
 -- WATER underfoot
 local WET = {Puddle = true, StandingWater = true, Marshwater = true}
-local wet, wetMap, wetAt = {}, nil, 0
+local wet, wetMap, wetConn = {}, nil, nil
+-- (walked once per map; what streams in later is added as it comes)
 local function refreshWet()
 	local m = workspace:FindFirstChild("Map")
-	if m == wetMap and os.clock() - wetAt < 10 then return end
-	wetMap, wetAt, wet = m, os.clock(), {}
+	if m == wetMap then return end
+	wetMap, wet = m, {}
+	if wetConn then wetConn:Disconnect(); wetConn = nil end
 	if not m then return end
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") and WET[d.Name] then table.insert(wet, d) end
 	end
+	wetConn = m.DescendantAdded:Connect(function(d)
+		if d:IsA("BasePart") and WET[d.Name] then table.insert(wet, d) end
+	end)
 end
 local function waterAt(pos)
 	refreshWet()

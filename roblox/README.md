@@ -2113,11 +2113,13 @@ of its corridors, none by a haven. Each theme has its favourites (the module's W
   across (18). Jump it.
 - **Fire grates**: two side by side breathing fire in turn (a glow, then the jet: 9 every half
   second). Cross on the cool side.
-They hurt anyone, monsters too; armour turns half of what it would turn from a blade, a dodge
+They hurt anyone, monsters on the hunt too (a calm one, walking its patrol or waiting in its room,
+knows its own dungeon and steps round them); armour turns half of what it would turn from a blade, a dodge
 slips them, spawn protection too. The server decides every hit (20 times a second); every screen
 draws the moving parts (`StarterPlayerScripts ▸ Traps.client`): a blade swings on the server's
 clock (`workspace:GetServerTimeNow()`), so every screen sees it where the server judges it, with a
-heavy whoosh each pass; the spikes rise on a trap's `FiredAt`; the darts fly from the holes.
+heavy whoosh each pass; the spikes rise on a trap's `FiredAt`; the darts fly from the holes. Each
+trap streams to a screen whole (`ModelStreamingMode` Atomic).
 
 ### Secrets (`Game ▸ Secrets`, built by `Game ▸ Dungeon` opts.secrets)
 Now and then a room has a stretch of wall newer than the rest: paler, cracked, a draft of dust
@@ -2323,7 +2325,7 @@ get out with what you found, or lose it all.
   into a sarcophagus now and then (`Deadvault.WAKE_CHANCE`, 30%) throws its lid off towards you
   (the effigy carved on it with it) and its dead climbs out of the far side, already coming for
   you (IT WAKES; the crypt's skeletons and ghouls, the manor's vampires, the ice's frozen dead;
-  `Deadvault:waken`). Deal with it, then search.
+  `Deadvault:waken`). Deal with it, then search: the coffin won't open while its dead is up.
 - **Your gear** (I, or the Bag button): what you wear (a weapon, a sidearm, armour, a tome's power,
   three relics), your **belt** (four draughts: keys **3 – 6**, on screen bottom left; drinking takes
   a moment and slows you, then a healing draught mends over four seconds) and your **bag** (20;

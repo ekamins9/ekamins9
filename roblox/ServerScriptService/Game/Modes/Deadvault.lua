@@ -188,6 +188,8 @@ function Deadvault:waken(box, char)
 	task.delay(0.3, function()
 		local look = r and Vector3.new(r.Position.X, at.Y, r.Position.Z) or at + box.cf.LookVector
 		local mob = self:spawnMob(id, CFrame.new(at, look), {home = box.pos})
+		-- (no searching it while this one's up: Game ▸ Containers)
+		box.guardMob = mob
 		if mob and mob.model then
 			mob.model:SetAttribute("Rising", true)
 			-- (it knows who woke it)
