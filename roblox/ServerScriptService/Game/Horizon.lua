@@ -349,8 +349,8 @@ function Horizon.build(map, name)
 				ball(ctx, V3(w * 0.5, h * 0.7, w * 0.4), CF(p + V3(0, h * 0.72, 0)), tint(T.groundColor, 0.2), Mat.Snow)
 			elseif themeKey == "ember" and i % 4 == 0 then
 				-- a fire mountain: a glowing crown, smoke off it
-				local cap = ball(ctx, V3(w * 0.2, h * 0.22, w * 0.2), CF(p + V3(0, h * 0.95, 0)), RGB(255, 110, 40), Mat.Neon)
-				cap.Transparency = 0.2
+				-- (not Neon: the haze must swallow it with the mountain, or it floats in the sky alone)
+				ball(ctx, V3(w * 0.2, h * 0.22, w * 0.2), CF(p + V3(0, h * 0.95, 0)), RGB(255, 120, 50), Mat.CrackedLava)
 				smokeColumn(ctx, T, p + V3(0, h, 0), true)
 			elseif not ridge or i % 2 == 0 then
 				-- (a green flank on the ridge's foot: grass climbing the rock)
