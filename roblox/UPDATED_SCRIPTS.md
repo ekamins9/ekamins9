@@ -1,4 +1,21 @@
-# Updated scripts: something walks in the dark
+# Updated scripts: crows over the battlefields; the Siege gate bursts
+
+- **Crows** wheel high over every battlefield (War's front, the Siege castle, the warfields, the team fights): black wings beating, gliding, beating again.
+- **The Siege gate bursts** in a cloud of dust and splinters with a crash that shakes the ground (more the nearer you are).
+- **Checked in Play** on Frostgate: the flock over the castle, the gate breaking.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | `WarFX.crows` |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows over the front |
+| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows; the gate's burst |
+| [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows |
+| [BattleAmbience.client.lua](StarterPlayerScripts/BattleAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | crows |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: something walks in the dark
 
 - **Apparitions in the dungeons**: every minute or two, sometimes, a pale glowing see-through figure walks a few steps across the dark well ahead of you, with a whisper, and fades away. Only on your screen, never a fighter.
 - **Checked in Play** in the Bone Crypt (Deadvault).
@@ -20,17 +37,4 @@
 |---|---|---|---|
 | [ArenaCrowd.client.lua](StarterPlayerScripts/ArenaCrowd.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | audience, roar, unarmed men, held poses |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the armies no longer stutter when they move
-
-- **Smoother battles**: when whole lines charged or the front moved, every regiment used to update on the same frame (spikes of 12–15 ms). Now each regiment keeps its own clock and each frame has a budget; worst frame measured 3.3 ms, 45–48 fps in Studio play on War (was 36–40 with dips to the 20s).
-- **Lighter soldiers**: the second rank behind a lite front is mass, and lite men carry a little less armour (unnoticeable at that distance).
-- **Debug aids**: the crowd folder reports `Busy` (which regiments moved in a heavy frame), `MovedFlying`, `Flying`.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | staggered clocks, frame budget, lighter ranks |
 | [README.md](README.md) | | doc | |

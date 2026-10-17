@@ -1773,7 +1773,8 @@ camera; further off a cheering man is a cached arms-up pose bobbing. Measured in
 
 ## The battle beyond a team fight (`BattleAmbience.client`)
 In Team Deathmatch, King of the Hill and Last Team Standing your fight is one corner of a bigger
-battle, on your screen only: columns of smoke rising beyond the map's edge (one with its fire
+battle, on your screen only: crows wheeling high over the field (`WarFX.crows`; War, Siege and the
+warfields have their flocks too), columns of smoke rising beyond the map's edge (one with its fire
 showing), the din of the battle beyond and an army's roar off to one side, a volley now and then
 arcing high over the whole field to land far beyond it, a trebuchet's fire streaking across, a
 distant horn. It reads the Map's `Centre` and `Radius` (MapLoader). War, Siege and the warfields
@@ -1803,7 +1804,9 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   burning beyond the castle, stones and fire falling on its towers and walls every 9–17 s
   (blowing men off the ladders), dust over the melee and before the gate, the din of each flank,
   the roar of the armies, fire crackling.
-- **The story follows the objective**: when the gate falls the attackers cheer, the archers on the
+- **The story follows the objective**: when the gate falls it bursts in a cloud of dust and
+  splinters with a crash that shakes the ground under you (more the nearer you are), the attackers
+  cheer, the archers on the
   walls are cut down (`WarCrowd:rout`), every ladder goes over, the reserves run for the walls and
   the sally is driven back under them; when the great hall is stormed its roof catches fire; the
   winners cheer at the end. The server's own engines land on the crowds too.

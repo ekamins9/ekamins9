@@ -84,6 +84,7 @@ local function build(A)
 		for li, x in ipairs(field.lanes) do field.hazes[s .. ":" .. li] = WarFX.haze(V3(s * x, 2, 0), {width = 46, depth = 14, rate = small and 2 or 5}) end
 	end
 	field.loops.drums = WarFX.loop("Drums", 0.45)
+	field.crows = WarFX.crows(V3(0, 0, 0), {n = small and 8 or 14, radius = 110, height = 75})
 	field.battle = WarFX.loop("Battle", 0.5)
 	for k = 1, small and 2 or 4 do
 		local sx = k % 2 == 0 and 1 or -1
@@ -190,6 +191,7 @@ local function leave()
 	field.on = false
 	field.token += 1
 	if field.crowd then field.crowd:stop(); field.crowd = nil end
+	if field.crows then field.crows.stop(); field.crows = nil end
 	-- (a 2D loop is the Sound itself; a placed one a handle)
 	for _, l in pairs(field.loops or {}) do if typeof(l) == "Instance" then WarFX.stopLoop(l, 1) elseif l then l.stop(1) end end
 	for _, h in pairs(field.hazes or {}) do h.stop() end

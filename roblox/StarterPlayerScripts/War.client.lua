@@ -441,6 +441,9 @@ local function buildArmies()
 	war.surge = {}
 	war.charged = false
 	war.chargeAt = os.clock() + 6
+	-- crows wheeling high over the front
+	if war.crows then war.crows.stop() end
+	war.crows = WarFX.crows(V3(0, 0, fz), {n = phone() and 8 or 16, radius = 120, height = 80})
 end
 
 -- THE CHARGE: horns, drums, both lines of every lane run at each other and crash
@@ -504,6 +507,7 @@ local function armiesFollow()
 		local roar = war.loops and war.loops["roar" .. s]
 		if roar then roar.move(V3(s * 210, 6, fz)) end
 	end
+	if war.crows then war.crows.move(V3(0, 0, fz)) end
 	-- the archers keep their distance behind their side's line, the reserves further back
 	for _, side in ipairs({"A", "B"}) do
 		local f = side == "A" and 1 or -1
@@ -678,6 +682,7 @@ local function leave()
 	gui.Enabled = false
 	if arrive.stop then arrive.stop() end
 	if war.crowd then war.crowd:stop(); war.crowd = nil end
+	if war.crows then war.crows.stop(); war.crows = nil end
 	-- (a 2D loop is the Sound itself; a placed one a handle)
 	for _, l in pairs(war.loops or {}) do if typeof(l) == "Instance" then WarFX.stopLoop(l, 1) elseif l then l.stop(1) end end
 	war.loops = {}

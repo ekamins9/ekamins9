@@ -34,6 +34,8 @@
                                           handle:stop()
        WarFX.loop3D(name, pos, opts)      a looping sound at a point (opts.volume, opts.near, opts.range) ·
                                           handle:move(pos), handle:stop(fade)
+       WarFX.crows(centre, opts)          a flock wheeling high over a battlefield (opts.n, opts.radius,
+                                          opts.height) · handle:move(centre), handle:stop()
        WarFX.clear()                      everything gone (leaving the mode)
      A fireball takes opts.color (a battle-mage's meteor) and opts.size; a blast opts.color. ]]
 
@@ -840,6 +842,54 @@ function WarFX.riders(path, n, opts)
 	end
 	table.insert(columns, col)
 	return col
+end
+
+--------------------------------------------------------------------
+--  CROWS: a flock wheeling high over the field, black wings beating, gliding, beating again
+--------------------------------------------------------------------
+function WarFX.crows(centre, opts)
+	opts = opts or {}
+	local n = opts.n or 12
+	local R, H = opts.radius or 80, opts.height or 70
+	local black = Color3.fromRGB(22, 20, 22)
+	local birds, ps, cfs = {}, {}, {}
+	for i = 1, n do
+		local b = {
+			body = part(V3(0.45, 0.35, 1.3), black),
+			l = part(V3(1.9, 0.08, 0.75), black), r = part(V3(1.9, 0.08, 0.75), black),
+			rad = R * (0.55 + math.random() * 0.6), h = H + (math.random() - 0.5) * 24,
+			w = (0.16 + math.random() * 0.1) * (math.random() < 0.15 and -1 or 1), ph = math.random() * 6.28,
+			flap = 7 + math.random() * 3,
+		}
+		for _, p in ipairs({b.body, b.l, b.r}) do p.CFrame = FAR; p.Parent = crowd() end
+		birds[i] = b
+	end
+	local h = {centre = centre}
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local t = os.clock()
+		local k = 0
+		for _, b in ipairs(birds) do
+			local a = b.ph + t * b.w
+			local pos = h.centre + V3(math.cos(a) * b.rad, b.h + math.sin(t * 0.4 + b.ph) * 4, math.sin(a) * b.rad)
+			local ahead = V3(-math.sin(a), 0, math.cos(a)) * (b.w > 0 and 1 or -1)
+			local bank = b.w > 0 and -0.35 or 0.35
+			local cf = CFrame.lookAt(pos, pos + ahead) * CFrame.Angles(0, 0, bank)
+			-- (beats for a while, then glides with the wings out)
+			local beat = math.sin(t * 0.7 + b.ph) > -0.2 and math.sin(t * b.flap + b.ph) * 0.7 or 0.12
+			k += 1; ps[k] = b.body; cfs[k] = cf
+			k += 1; ps[k] = b.l; cfs[k] = cf * CFrame.Angles(0, 0, beat) * CF(-1, 0, 0)
+			k += 1; ps[k] = b.r; cfs[k] = cf * CFrame.Angles(0, 0, -beat) * CF(1, 0, 0)
+		end
+		workspace:BulkMoveTo(ps, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+	end)
+	function h.move(c) h.centre = c end
+	function h.stop()
+		if conn then conn:Disconnect(); conn = nil end
+		for _, b in ipairs(birds) do b.body:Destroy(); b.l:Destroy(); b.r:Destroy() end
+		birds = {}
+	end
+	return h
 end
 
 --------------------------------------------------------------------

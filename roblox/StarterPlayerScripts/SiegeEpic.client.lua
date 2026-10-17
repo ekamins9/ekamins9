@@ -196,6 +196,7 @@ local function build(C)
 	end
 	siege.hazes.gate = WarFX.haze(V3(C.gate.X, 2, C.faceZ + f * 14), {width = 60, depth = 20, rate = small and 1 or 3, color = DUST})
 	siege.battle = WarFX.loop("Battle", 0.4)
+	siege.crows = WarFX.crows(V3(C.gate.X, 0, C.gate.Z - f * 40), {n = small and 8 or 14, radius = 90, height = 70})
 	siege.charged = false
 	siege.chargeAt = os.clock() + 8
 	siege.nextWall = os.clock() + 4
@@ -211,7 +212,18 @@ local function wallsTaken(quiet)
 	local crowd, C = siege.crowd, siege.C
 	if not crowd or siege.taken then return end
 	siege.taken = true
-	if not quiet then crowd:cheer(siege.A) end
+	if not quiet then
+		crowd:cheer(siege.A)
+		-- the gate bursts: a cloud of dust and splinters, the crash, the ground jumping under you
+		local g = C.gate
+		WarFX.dust(g + V3(0, 3, C.f * 4), 4, DUST)
+		WarFX.dust(g + V3(0, 8, -C.f * 6), 3, DUST)
+		WarFX.sound("Gate", g, {volume = 1, range = 900, near = 60, speed = 0.8})
+		WarFX.sound("Impact", g, {volume = 0.8, range = 900, near = 60, speed = 0.7})
+		local me = myPos()
+		local d = me and (me - g).Magnitude or 999
+		if d < 160 then WarFX.shake(1.4 * (1 - d / 160) + 0.15, 0.8) end
+	end
 	for _, id in ipairs(siege.ladders) do crowd:overrun(id) end
 	-- the archers on the walls cut down, the men under the walls lower their shields (no more arrows)
 	for _, w in ipairs(siege.walls) do crowd:rout(w.id, quiet and 0 or 5) end
@@ -358,6 +370,7 @@ local function leave()
 	for _, h in pairs(siege.hazes or {}) do h.stop() end
 	for _, c in ipairs(siege.columns or {}) do c.stop() end
 	if siege.ladderHome then siege.ladderHome:Destroy(); siege.ladderHome = nil end
+	if siege.crows then siege.crows.stop(); siege.crows = nil end
 	WarFX.stopLoop(siege.battle, 1)
 	siege.loops, siege.hazes, siege.columns, siege.battle = {}, {}, {}, nil
 	siege.taken, siege.roofFire = nil, nil

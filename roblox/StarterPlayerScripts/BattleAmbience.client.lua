@@ -49,6 +49,7 @@ local function leave()
 	for _, h in ipairs(amb.columns or {}) do h.stop() end
 	if amb.roar then amb.roar.stop(2) end
 	if amb.din then WarFX.stopLoop(amb.din, 2) end
+	if amb.crows then amb.crows.stop(); amb.crows = nil end
 	amb.columns, amb.roar, amb.din = {}, nil, nil
 end
 
@@ -68,6 +69,7 @@ local function enter(c, r)
 	end
 	-- the din: the battle beyond, low; an army roaring off to one side
 	amb.din = WarFX.loop("Battle", 0.2)
+	amb.crows = WarFX.crows(c, {n = small and 6 or 10, radius = math.clamp(r * 0.8, 50, 140), height = 70})
 	amb.side = base + math.pi
 	amb.roar = WarFX.loop3D("Roar", beyond(c, r, amb.side, 160) + V3(0, 10, 0), {volume = 0.6, near = 120, range = 1400})
 	task.spawn(function()
