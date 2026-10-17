@@ -5,6 +5,7 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [Undertow.client.lua](StarterPlayerScripts/Undertow.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the forge's lava: bubbles and flares |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 2026-10-17e: the Headless Knight, war cries answered, the dungeons stir |
 | [README.md](README.md) | | doc | |
 
 ---

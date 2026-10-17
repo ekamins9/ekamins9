@@ -16,16 +16,16 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-17d",
+	version = "2026-10-17e",
 	title = "NEW IN THE DARK AND ON THE FIELD",
 	lines = {
 		{"👁", "Don't linger", "dawdle in The Depths and the Shade comes through the walls for you. Keep moving"},
 		{"🕷", "Look up", "things cling to the ceilings of the dungeons, and drop on whoever walks beneath"},
+		{"💀", "The Headless Knight", "a new champion of the crypts walks the dark carrying its own skull"},
 		{"🛡", "Shields that bristle", "arrows you catch on your shield stay in it, a volley's worth at a time"},
-		{"📣", "The battle shouts", "soldiers, goblins and orcs call out as they charge, fight and fall"},
+		{"📣", "The battle shouts", "soldiers, goblins and orcs call out as they charge, and answer your war cry"},
 		{"🏰", "The Courtyard lives", "a smithy, a market row, washing on the line and bunting round the fountain"},
-		{"🖼", "The portraits watch", "the Crimson Manor's painted dead follow you with their eyes"},
-		{"🕯", "Vaults and chandeliers", "treasure vaults in The Depths; loose chandeliers that crash down on the unwary"},
+		{"🌊", "The dungeons stir", "something swims in the Drowned Halls, the frozen open their eyes, the portraits watch"},
 	},
 }
 
