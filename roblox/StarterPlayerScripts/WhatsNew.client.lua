@@ -24,7 +24,7 @@ local NEWS = {
 		{"💎", "Traps and secrets", "spike grates, swinging blades, darts, fire; cracked walls hide caches"},
 		{"🕯", "The dark is alive", "ambushes in the corridors, torches that gutter out, footsteps behind you"},
 		{"⚔", "Champions take the field", "in War the side that's behind sends its champion: cut him down"},
-		{"⛈", "The sky turns", "the sun moves over a battle; the heavens can open mid-fight"},
+		{"⛈", "Mistmarsh, and a turning sky", "a new War field lost in fog; the sun moves; the heavens can open mid-fight"},
 	},
 }
 
