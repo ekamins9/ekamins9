@@ -987,6 +987,15 @@ the map's `Spots`:
   mode board for the Lists.
 - **The Merchant's Stall** (south-west): today's packs on two mannequins and today's skins on
   the rack; E opens the SHOP.
+- **Life about the place** (scenery, `MapCourtyard` "LIFE ABOUT THE PLACE"): the smithy in the
+  north-east corner, a tiled lean-to on the wall (the forge's coals glowing and throwing embers,
+  smoke up its chimney past the wall, the anvil with a hammer left on it, the quench barrel, a
+  rack of blades, a grindstone, coal heaped by the hearth: Map ▸ Spots ▸ SmithSpot at the
+  anvil); a market row along the west wall, two stalls under striped awnings with scalloped
+  valances (apples, pears, turnips, cabbages and strings of onions; bolts of cloth and pots), jugs
+  on their back shelves, sacks and crates; a wagon, hay and a water trough by the south-west
+  gate; washing on a line, a wash tub and firewood stacked by the east wall; bunting strung
+  between the four oaks round the fountain.
 - **The Notice Board** (where you arrive): your own daily and weekly tasks with progress, the
   next playtime gift and your pass tier, written on the parchment for you; E opens TASKS.
 - **The Hatchery** (west), the stone circle (east), the inn (the Hearth & Hound) with a bard (south-east).

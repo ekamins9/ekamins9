@@ -11,7 +11,13 @@
      Spots (Map ▸ Spots) for Hub ▸ Courtyard and Hub ▸ Pastimes: HatcherySpot,
      ShrineSpot, Statue1..3, Plaque1..3, BoardKills, BoardRanked, NoticeBoard,
      WellSpot, StallMannequin1..2, StallRack, GateTraining, GateWarfront,
-     GateLists, BardSpot. ]]
+     GateLists, BardSpot, SmithSpot.
+     Life about the place: the smithy in the north-east corner (a lean-to on the wall, the forge's
+     coals glowing, embers, smoke up its chimney, the anvil, the quench barrel, a rack of blades, a
+     grindstone), a market row along the west wall (a fruit and vegetable stall and a cloth and
+     pottery stall under their awnings, sacks and crates), a wagon and hay by the south-west gate
+     with a water trough, washing on a line and firewood stacked by the east wall, and bunting
+     strung between the four oaks round the fountain. ]]
 
 return function(K)
 	local C, M = K.C, K.M
@@ -305,6 +311,206 @@ return function(K)
 	walk(V3(-27, 0, 0), V3(-56, 0, -8), 8, 0.12)    -- to the Hatchery
 	walk(V3(27, 0, 0), V3(55, 0, -8), 8, 0.12)      -- to the stone circle
 	for _, x in ipairs({-80, -60, 60, 80}) do K.banner(ctx, V3(x, 0, 84), 11, C.BLUE) end
+
+	----------------------------------------------------------------
+	-- LIFE ABOUT THE PLACE
+	----------------------------------------------------------------
+	require(script.Parent:WaitForChild("MapProps"))(K)
+	local function prop(name, size, at, color, mat, shape)
+		local q = K.box(ctx, name, size, at, color, mat, ctx.Props)
+		if shape then q.Shape = shape end
+		return q
+	end
+	local function deco(q) q.CanCollide = false; return q end
+	local r = Random.new(1717)
+
+	-- THE SMITHY (north-east): a lean-to against the east wall, its front to the west
+	do
+		local sm = CFrame.new(94, 0, -36) * CFrame.Angles(0, math.rad(90), 0)
+		local EARTH = Color3.fromRGB(92, 76, 60)
+		deco(prop("SmithyFloor", V3(18, 0.2, 14), sm * CFrame.new(0, 0.1, 1), EARTH, M.Ground))
+		for _, x in ipairs({-8.6, 8.6}) do
+			K.box(ctx, "SmithyPost", V3(0.9, 9.5, 0.9), sm * CFrame.new(x, 4.75, -5.6), C.DARKWOOD, M.Wood)
+			K.box(ctx, "SmithyPost", V3(0.9, 11.5, 0.9), sm * CFrame.new(x, 5.75, 6.6), C.DARKWOOD, M.Wood)
+			deco(K.box(ctx, "SmithyBeam", V3(0.6, 0.6, 12.6), sm * CFrame.new(x, 10.4, 0.5) * CFrame.Angles(math.atan2(2, 12.2), 0, 0), C.DARKWOOD, M.Wood))
+		end
+		K.box(ctx, "SmithyRoof", V3(19.4, 0.5, 14), sm * CFrame.new(0, 10.9, 0.5) * CFrame.Angles(math.atan2(2, 12.2), 0, 0), Color3.fromRGB(112, 64, 44), M.ClayRoofTiles)
+		-- the forge: a stone hearth, its coals, the hood and the chimney up past the roof
+		local STONE2 = Color3.fromRGB(96, 92, 88)
+		K.box(ctx, "Forge", V3(5.6, 3.2, 4.2), sm * CFrame.new(-4, 1.6, 3.6), STONE2, M.Cobblestone)
+		local coals = deco(prop("ForgeCoals", V3(4, 0.3, 2.8), sm * CFrame.new(-4, 3.3, 3.6), Color3.fromRGB(255, 104, 36), M.Neon))
+		local glow = Instance.new("PointLight"); glow.Name = "Flicker"; glow.Color = Color3.fromRGB(255, 140, 64); glow.Range = 18; glow.Brightness = 2.2; glow.Parent = coals
+		local embers = Instance.new("ParticleEmitter")
+		embers.Name = "Embers"
+		embers.Color = ColorSequence.new(Color3.fromRGB(255, 170, 70), Color3.fromRGB(255, 80, 30))
+		embers.LightEmission = 1
+		embers.Size = NumberSequence.new(0.14, 0)
+		embers.Lifetime = NumberRange.new(1, 2)
+		embers.Rate = 9
+		embers.Speed = NumberRange.new(2, 4)
+		embers.SpreadAngle = Vector2.new(25, 25)
+		embers.Acceleration = V3(0, 1.5, 0)
+		embers.Parent = coals
+		K.box(ctx, "ForgeHood", V3(5.2, 2.8, 4), sm * CFrame.new(-4, 6.6, 4.2), STONE2, M.Cobblestone)
+		K.box(ctx, "ForgeChimney", V3(2.8, 10, 2.8), sm * CFrame.new(-4, 12.6, 5), STONE2, M.Cobblestone)
+		local top = deco(prop("ChimneyTop", V3(3.2, 0.5, 3.2), sm * CFrame.new(-4, 17.85, 5), Color3.fromRGB(70, 66, 62), M.Slate))
+		local smoke = Instance.new("ParticleEmitter")
+		smoke.Name = "Smoke"
+		smoke.Color = ColorSequence.new(Color3.fromRGB(120, 116, 112))
+		smoke.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 8)})
+		smoke.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1)})
+		smoke.Lifetime = NumberRange.new(5, 7)
+		smoke.Rate = 5
+		smoke.Speed = NumberRange.new(2.5, 4)
+		smoke.SpreadAngle = Vector2.new(8, 8)
+		smoke.Acceleration = V3(1.2, 0.4, 0)
+		smoke.RotSpeed = NumberRange.new(-20, 20)
+		smoke.Parent = top
+		deco(prop("Bellows", V3(1.6, 1.1, 2.6), sm * CFrame.new(-7.6, 2.4, 3.6), Color3.fromRGB(96, 60, 36), M.Leather))
+		-- coal heaped by the hearth
+		for i = 1, 7 do deco(K.ball(ctx, "Coal", r:NextNumber(0.5, 0.8), (sm * CFrame.new(-1.2 + r:NextNumber(-0.6, 0.6), 0.3, 5.6 + r:NextNumber(-0.5, 0.5))).Position, Color3.fromRGB(30, 28, 28), M.Slate, ctx.Props)) end
+		-- the anvil on its stump, a hammer left on it
+		local IRONDARK = Color3.fromRGB(52, 54, 58)
+		K.cyl(ctx, "AnvilStump", 2.2, 2, sm * CFrame.new(1.5, 1, -1.5), C.DARKWOOD, M.Wood)
+		K.box(ctx, "AnvilFoot", V3(1.6, 0.5, 0.9), sm * CFrame.new(1.5, 2.25, -1.5), IRONDARK, M.Metal)
+		K.box(ctx, "Anvil", V3(2.6, 0.8, 1.1), sm * CFrame.new(1.5, 2.9, -1.5), IRONDARK, M.Metal)
+		deco(K.wedge(ctx, "AnvilHorn", V3(1.1, 0.6, 1.2), sm * CFrame.new(3.35, 3.0, -1.5) * CFrame.Angles(0, math.rad(-90), 0), IRONDARK, M.Metal))
+		deco(prop("HammerHaft", V3(0.2, 0.2, 1.6), sm * CFrame.new(1.2, 3.42, -1.2) * CFrame.Angles(0, math.rad(30), 0), C.WOOD, M.Wood))
+		deco(prop("HammerHead", V3(0.9, 0.45, 0.45), sm * CFrame.new(0.8, 3.5, -0.55) * CFrame.Angles(0, math.rad(30), 0), IRONDARK, M.Metal))
+		K.spot(ctx, "SmithSpot", sm * CFrame.new(1.5, 3.3, -1.5))
+		-- the quench barrel, the blades on their rack, the grindstone
+		K.barrel(ctx, (sm * CFrame.new(5, 0, -1.2)).Position)
+		deco(K.cyl(ctx, "QuenchWater", 1.9, 0.1, sm * CFrame.new(5, 2.95, -1.2), Color3.fromRGB(40, 52, 58), M.Glass, ctx.Props))
+		K.rack(ctx, sm * CFrame.new(4.4, 0, 6.2) * CFrame.Angles(0, math.pi, 0))
+		for _, x in ipairs({-0.7, 0.7}) do K.box(ctx, "GrindFrame", V3(0.3, 2.4, 1.6), sm * CFrame.new(-1.6 + x, 1.2, -4.4), C.DARKWOOD, M.Wood) end
+		K.cyl(ctx, "Grindstone", 2.8, 0.55, sm * CFrame.new(-1.6, 2.3, -4.4) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(170, 160, 140), M.Sandstone)
+		deco(prop("GrindTrough", V3(1.6, 0.6, 2.4), sm * CFrame.new(-1.6, 0.3, -4.4), C.WOOD, M.WoodPlanks))
+	end
+
+	-- THE MARKET ROW (west wall): fruit and vegetables, cloth and pots
+	do
+		-- a stall with its back to the wall (west) and its counter to the square: four poles, a
+		-- striped awning sloping down to the front with a scalloped valance, a shelf at the back
+		local function stall(at, color, goods)
+			for _, z in ipairs({-5.2, 5.2}) do
+				K.box(ctx, "MarketPole", V3(0.5, 10, 0.5), at + V3(-3.8, 5, z), C.DARKWOOD, M.Wood)
+				K.box(ctx, "MarketPole", V3(0.5, 7.8, 0.5), at + V3(3.8, 3.9, z), C.DARKWOOD, M.Wood)
+			end
+			local run, drop = 8.8, 2.4
+			local ang = math.atan2(drop, run)
+			local len = math.sqrt(run * run + drop * drop)
+			for i = -4, 4 do
+				deco(prop("MarketAwning", V3(len, 0.15, 1.2), CFrame.new(at + V3(0, 8.85, i * 1.2)) * CFrame.Angles(0, 0, -ang), (i % 2 == 0) and color or C.WHITE, M.Fabric))
+				deco(prop("MarketValance", V3(0.1, 0.9, 1.2), at + V3(4.45, 7.15, i * 1.2), (i % 2 == 0) and C.WHITE or color, M.Fabric))
+				deco(K.wedge(ctx, "MarketScallop", V3(0.1, 0.5, 0.6), CFrame.new(at + V3(4.45, 6.45, i * 1.2 - 0.3)) * CFrame.Angles(0, 0, math.pi), (i % 2 == 0) and C.WHITE or color, M.Fabric, ctx.Props))
+				deco(K.wedge(ctx, "MarketScallop", V3(0.1, 0.5, 0.6), CFrame.new(at + V3(4.45, 6.45, i * 1.2 + 0.3)) * CFrame.Angles(math.pi, 0, 0), (i % 2 == 0) and C.WHITE or color, M.Fabric, ctx.Props))
+			end
+			K.box(ctx, "MarketCounter", V3(1.8, 3, 10), at + V3(3, 1.5, 0), C.DARKWOOD, M.WoodPlanks)
+			deco(prop("MarketCloth", V3(2.3, 0.2, 10.4), at + V3(3, 3.1, 0), color, M.Fabric))
+			deco(prop("MarketShelf", V3(1.6, 0.3, 9.6), at + V3(-3.2, 4.2, 0), C.WOOD, M.WoodPlanks))
+			for i = 1, 6 do
+				local h = r:NextNumber(0.9, 1.5)
+				deco(K.cyl(ctx, "Jug", r:NextNumber(0.6, 0.9), h, at + V3(-3.2, 4.35 + h / 2, -4.2 + i * 1.35), (i % 2 == 0) and Color3.fromRGB(176, 96, 62) or Color3.fromRGB(196, 180, 150), M.Slate, ctx.Props))
+			end
+			goods(at)
+		end
+		-- (strings of onions and garlic hung along the front)
+		local function strings(at, n)
+			for i = 1, n do
+				local z = -4 + (i - 1) * (8 / math.max(n - 1, 1))
+				deco(prop("Twine", V3(0.06, 1.4, 0.06), at + V3(4.1, 6.6, z), C.ROPE, M.Fabric))
+				for k = 0, 2 do deco(K.ball(ctx, "Onion", 0.42, at + V3(4.1 + (k - 1) * 0.12, 5.9 - k * 0.35, z), (i % 2 == 0) and Color3.fromRGB(226, 220, 204) or Color3.fromRGB(186, 120, 60), M.SmoothPlastic, ctx.Props)) end
+			end
+		end
+		local function basket(pos, colors, n)
+			K.cyl(ctx, "Basket", 1.7, 0.8, pos + V3(0, 0.4, 0), Color3.fromRGB(150, 112, 64), M.Fabric, ctx.Props)
+			for i = 1, n do
+				local a = i / n * math.pi * 2
+				deco(K.ball(ctx, "Produce", 0.5, pos + V3(math.cos(a) * 0.45, 0.85 + (i % 2) * 0.25, math.sin(a) * 0.45), colors[(i % #colors) + 1], M.SmoothPlastic, ctx.Props))
+			end
+		end
+		stall(V3(-97, 0, 12), Color3.fromRGB(46, 120, 64), function(at)
+			basket(at + V3(3, 3.2, -3), {Color3.fromRGB(196, 36, 30), Color3.fromRGB(170, 24, 24)}, 7)         -- apples
+			basket(at + V3(3, 3.2, 0), {Color3.fromRGB(150, 190, 70), Color3.fromRGB(130, 170, 60)}, 7)         -- pears
+			basket(at + V3(3, 3.2, 3), {Color3.fromRGB(236, 226, 210), Color3.fromRGB(150, 70, 140)}, 6)        -- turnips
+			for i = 1, 4 do deco(K.ball(ctx, "Cabbage", 1, at + V3(1.4, 0.5, -3.5 + i * 1.4), Color3.fromRGB(110, 160, 80), M.Grass, ctx.Props)) end
+			K.crate(ctx, at + V3(-1.5, 0, 4.6), 2.4, 10)
+			K.sack(ctx, at + V3(-1.8, 0, -4.2)); K.sack(ctx, at + V3(-0.4, 0, -4.8))
+			strings(at, 4)
+			-- (more crates of it out front)
+			K.crate(ctx, at + V3(6.2, 0, -3), 2.2, 20); K.crate(ctx, at + V3(6.4, 0, 2.6), 2.2, -15)
+			basket(at + V3(6.2, 2.2, -3), {Color3.fromRGB(196, 36, 30), Color3.fromRGB(226, 160, 40)}, 7)
+		end)
+		stall(V3(-97, 0, 27), Color3.fromRGB(52, 86, 170), function(at)
+			local bolts = {Color3.fromRGB(176, 42, 42), Color3.fromRGB(222, 176, 64), Color3.fromRGB(60, 100, 170), Color3.fromRGB(236, 232, 220), Color3.fromRGB(90, 130, 70)}
+			for i, c in ipairs(bolts) do
+				deco(K.cyl(ctx, "ClothBolt", 0.8, 2.6, CFrame.new(at + V3(3, 3.6 + ((i - 1) % 2) * 0.75, -3.6 + i * 1.3)) * CFrame.Angles(0, 0, math.rad(90)), c, M.Fabric, ctx.Props))
+			end
+			local CLAY = Color3.fromRGB(176, 96, 62)
+			for i = 1, 5 do
+				local h = r:NextNumber(1.2, 2.2)
+				K.cyl(ctx, "Pot", r:NextNumber(1, 1.5), h, at + V3(r:NextNumber(-1.5, 1.2), h / 2, -3.5 + i * 1.5), (i % 2 == 0) and CLAY or Color3.fromRGB(150, 120, 90), M.Slate, ctx.Props)
+			end
+			K.crate(ctx, at + V3(-1.6, 0, 5), 2.6, -8)
+		end)
+	end
+
+	-- BY THE SOUTH-WEST GATE: a wagon, hay, a water trough
+	do
+		K.wagon(ctx, CFrame.new(-86, 0, 58) * CFrame.Angles(0, math.rad(16), 0), {nocover = true})
+		for _, p in ipairs({V3(-98, 0, 68), V3(-98, 0, 72.4), V3(-94, 0, 70), V3(-98, 3, 70)}) do K.hay(ctx, p) end
+		K.box(ctx, "Trough", V3(7, 1.8, 2.4), CFrame.new(-72, 0.9, 80), C.WOOD, M.WoodPlanks)
+		deco(prop("TroughWater", V3(6.4, 0.1, 1.8), CFrame.new(-72, 1.75, 80), Color3.fromRGB(56, 96, 120), M.Glass)).Transparency = 0.2
+	end
+
+	-- BY THE EAST WALL: washing on a line, firewood stacked
+	do
+		for _, z in ipairs({-2, 22}) do K.box(ctx, "LinePost", V3(0.5, 7.4, 0.5), CFrame.new(97, 3.7, z), C.DARKWOOD, M.Wood) end
+		deco(prop("Washline", V3(0.08, 0.08, 24), CFrame.new(97, 7, 10), C.ROPE, M.Fabric))
+		local wash = {Color3.fromRGB(236, 232, 220), Color3.fromRGB(214, 200, 170), Color3.fromRGB(110, 140, 190), Color3.fromRGB(180, 70, 60), Color3.fromRGB(236, 232, 220), Color3.fromRGB(140, 160, 110)}
+		for i, c in ipairs(wash) do
+			local w = r:NextNumber(1.8, 2.8)
+			local h = r:NextNumber(2.2, 3.4)
+			deco(prop("Washing", V3(0.06, h, w), CFrame.new(97, 7 - h / 2, -0.5 + i * 3.6) * CFrame.Angles(0, 0, math.rad(r:NextNumber(-4, 4))), c, M.Fabric))
+		end
+		K.cyl(ctx, "WashTub", 3, 1.2, CFrame.new(93, 0.6, 26), C.WOOD, M.WoodPlanks)
+		deco(K.cyl(ctx, "WashWater", 2.6, 0.1, CFrame.new(93, 1.15, 26), Color3.fromRGB(150, 180, 200), M.Glass, ctx.Props))
+		-- (logs in a stack against the wall)
+		for row = 0, 3 do
+			for i = 0, 5 - row do
+				K.cyl(ctx, "Log", 1.2, 5, CFrame.new(102.6, 0.6 + row * 1.05, -14 + i * 1.25 + row * 0.62) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(110, 78, 48), M.Wood, ctx.Props)
+			end
+		end
+	end
+
+	-- BUNTING: strung between the four oaks round the fountain
+	do
+		local cols = {C.RED, C.GOLD, C.BLUE, C.WHITE}
+		local n = 0
+		local function hang(a, b)
+			local len = (b - a).Magnitude
+			local sag = len * 0.06
+			local segs = 12
+			local prev = a
+			for i = 1, segs do
+				local t = i / segs
+				local p = a:Lerp(b, t) - V3(0, sag * (1 - (2 * t - 1) ^ 2), 0)
+				deco(prop("Bunting", V3(0.08, 0.08, (p - prev).Magnitude), CFrame.lookAt((p + prev) / 2, p), C.ROPE, M.Fabric))
+				prev = p
+			end
+			local flags = math.floor(len / 2.6)
+			for i = 1, flags - 1 do
+				local t = i / flags
+				local p = a:Lerp(b, t) - V3(0, sag * (1 - (2 * t - 1) ^ 2), 0)
+				n += 1
+				local f = deco(prop("Pennant", V3(0.9, 1.1, 0.05), CFrame.lookAt(p, p + (b - a).Unit) * CFrame.Angles(0, math.rad(90), 0) * CFrame.new(0, -0.55, 0), cols[(n % #cols) + 1], M.Fabric))
+				f.CastShadow = false
+			end
+		end
+		local H = 13.5
+		local trees = {V3(-34, H, -30), V3(34, H, -30), V3(34, H, 34), V3(-34, H, 34)}
+		for i = 1, 4 do hang(trees[i], trees[(i % 4) + 1]) end
+	end
 
 	-- arrive round the south side of the fountain, facing the Hall
 	for i = -3, 3 do K.spawn(ctx, V3(i * 6, 1, 24 + math.abs(i) * 1.5), nil, V3(i * 2, 1, -40)) end

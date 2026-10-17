@@ -1,4 +1,17 @@
-# Updated scripts: the portraits watch
+# Updated scripts: life in the Courtyard
+
+- **The Courtyard** has life about it now. A smithy in the north-east corner, its forge glowing and smoking. A market row on the west wall: two stalls under striped awnings, with fruit and vegetables, onions, cloth and pots. A wagon, hay and a trough by the gate, washing on a line, firewood stacked, and bunting strung between the oaks round the fountain.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapCourtyard.lua](ServerScriptService/Build/MapCourtyard.lua) | ServerScriptService ▸ Build | ModuleScript | "LIFE ABOUT THE PLACE"; SmithSpot |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ServerStorage ▸ Maps ▸ Courtyard was rebuilt from the code (`require(game.ServerScriptService.Build.Maps).build("Courtyard")`; a fresh build of the old code matched the saved map exactly first). Save the place. The old one is kept as ServerStorage ▸ TMP_CourtyardBackup until then; delete it once saved.
+
+---
+
+## Before that: the portraits watch
 
 - **The dungeons**: the paintings are portraits now, a pale sitter in dark clothes in a gilt frame, hung flat against the wall. Their eyes follow you about the room, and now and then, with your back to one, they burn red and something whispers.
 
