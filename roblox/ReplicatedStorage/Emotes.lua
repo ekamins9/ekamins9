@@ -344,6 +344,74 @@ DEF.HelmetToss = {d = 2.6, pose = track({
 	{2.6, REST},
 })}
 
+-- the pledge: the sword hand to the heart (the blade upright before the face), the head bowed,
+-- held; then the chin comes up, proud
+local PLEDGE = {rs = {78, 0, -46}, blade = {0, 1, -0.08}, neck = {-20, 0, 0}, waist = {-6, 0, 0}}
+DEF.Pledge = {d = 2.6, upper = true, pose = track({
+	{0, {}}, {0.14, {rs = {-10, 0, 8}, neck = {2, 0, 0}}},
+	{0.36, {rs = {84, 0, -50}, blade = {0, 1, -0.08}, neck = {-8, 0, 0}, waist = {-2, 0, 0}}},
+	{0.6, PLEDGE}, {1.7, PLEDGE},
+	{1.95, {rs = {76, 0, -44}, blade = {0, 1, -0.08}, neck = {8, 0, 0}, waist = {2, 0, 0}}},
+	{2.25, {rs = {70, 0, -40}, blade = {0, 1, -0.08}, neck = {6, 0, 0}}}, {2.6, {}},
+})}
+
+-- the challenge: the blade levelled at them, chin up, the free hand on the hip; the point
+-- flicks up twice, "you"
+local CHALLENGE = {rs = {88, 0, 4}, blade = {0, 0.04, -1}, ls = {-12, 0, -34}, neck = {8, 6, -6}, waist = {4, -14, 0}}
+DEF.Challenge = {d = 2.5, upper = true, pose = with(track({
+	{0, {}}, {0.16, {rs = {30, 0, 20}, neck = {-4, 0, 0}}},
+	{0.38, {rs = {94, 0, 2}, blade = {0, 0.04, -1}, ls = {-14, 0, -38}, neck = {10, 6, -6}, waist = {6, -16, 0}}},
+	{0.5, CHALLENGE}, {2.0, CHALLENGE}, {2.5, {}},
+}), function(t, p)
+	-- (two flicks of the point, a nod with each)
+	for _, at in ipairs({0.95, 1.4}) do
+		local k = window(t, at, at + 0.22, 0.09)
+		p.rs[1] += 12 * k
+		p.neck[1] += 5 * k
+	end
+end)}
+
+-- at rest: the sword planted ahead, both hands on the pommel, the weight on one hip, a sigh
+DEF.Rest = {d = 4.2, pose = with(track({
+	{0, REST},
+	{0.45, {rs = {0, 0, -14}, ls = {0, 0, 22}, plantW = 1, waist = {-4, 12, 0}, neck = {-2, 0, 6}, rootY = -0.08, rh = {0, 0, 6}}},
+	{3.6, {rs = {0, 0, -14}, ls = {0, 0, 22}, plantW = 1, waist = {-4, 12, 0}, neck = {-6, 0, 8}, rootY = -0.08, rh = {0, 0, 6}}},
+	{4.2, REST},
+}), function(t, p, reach)
+	local k = ease(window(t, 0, 4.2, 0.45))
+	-- (the hands where the pommel stands: higher for a longer blade, never above the chest)
+	local x = math.min(70, math.max(40, raiseFor(0.92 * reach, 3.6)))
+	p.rs[1] += x * k; p.ls[1] += (x - 4) * k
+	-- the sigh: the shoulders rise and fall once, the head with them
+	local s = window(t, 1.5, 2.6, 0.4)
+	p.rs[3] -= 5 * s; p.ls[3] += 5 * s
+	p.neck[1] += 6 * s
+	p.rootY += 0.06 * s
+end)}
+
+-- the war drum: the free fist and the sword's hilt beat the chest in turn, a stamp on each beat,
+-- the head nodding to it, then a last two-handed blow and a shout
+DEF.WarDrum = {d = 3.2, pose = with(track({
+	{0, {}}, {0.25, {rs = {40, 0, -10}, ls = {40, 0, 10}, blade = {0.1, 1, 0.1}, waist = {-6, 0, 0}}},
+	{2.5, {rs = {40, 0, -10}, ls = {40, 0, 10}, blade = {0.1, 1, 0.1}, waist = {-6, 0, 0}}},
+	{2.72, {rs = {150, 0, 26}, ls = {150, 0, -26}, blade = {0.15, 1, -0.1}, neck = {26, 0, 0}, waist = {12, 0, 0}}},
+	{2.95, {rs = {150, 0, 26}, ls = {150, 0, -26}, blade = {0.15, 1, -0.1}, neck = {26, 0, 0}, waist = {12, 0, 0}}},
+	{3.2, {}},
+}), function(t, p)
+	local w = window(t, 0.25, 2.5, 0.15)
+	-- a beat every 0.36 s, the hands taking turns
+	local beat = (t - 0.25) / 0.36
+	local phase = beat % 1
+	local hit = math.max(0, 1 - phase * 3.2)   -- (sharp in, slow out)
+	local left = math.floor(beat) % 2 == 0
+	if left then p.ls[1] += 40 * hit * w; p.ls[3] += 30 * hit * w
+	else p.rs[1] += 40 * hit * w; p.rs[3] -= 30 * hit * w end
+	p.neck[1] += -7 * hit * w
+	p.rootY = (p.rootY or 0) - 0.12 * hit * w
+	p.lh[1] += (left and 14 or 0) * hit * w
+	p.rh[1] += (left and 0 or 14) * hit * w
+end)}
+
 Emotes.DURATION = {}
 for id, d in pairs(DEF) do Emotes.DURATION[id] = d.d end
 -- motions from elsewhere, built the same way (ReplicatedStorage ▸ PowerPoses: a power's gesture).

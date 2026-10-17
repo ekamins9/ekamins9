@@ -23,4 +23,8 @@ return {
 	{id = "HelmetToss", name = "Helmet Toss", rarity = "Epic",    crate = "Relic", needs = "helmet", description = "Pull your helmet off and throw it at someone. It clangs. It stings. Then go and pick it up."},
 	{id = "Thunderlord", name = "Thunderlord", rarity = "Mythic", crate = "Relic", needs = "weapon", description = "Hold the blade up to the storm. The storm answers, three times, then you bring it down."},
 	{id = "Ascension", name = "Ascension",   rarity = "Mythic",    crate = "Relic", description = "Kneel, then rise into the air on wings of light."},
+	{id = "Pledge",    name = "Pledge",      rarity = "Common",    free = true,     description = "Hand to the heart, head bowed, then proud."},
+	{id = "Challenge", name = "Challenge",   rarity = "Rare",      crate = "Relic", needs = "weapon", description = "Point the blade at them. Flick it. You."},
+	{id = "Rest",      name = "At Rest",     rarity = "Rare",      crate = "Relic", needs = "weapon", description = "Plant the sword, lean on the pommel, sigh."},
+	{id = "WarDrum",   name = "War Drum",    rarity = "Epic",      crate = "Relic", description = "Beat your chest with fist and hilt, stamp, and roar."},
 }

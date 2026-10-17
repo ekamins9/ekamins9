@@ -1,4 +1,20 @@
-# Updated scripts: the tutorial with any class
+# Updated scripts: four new emotes
+
+- **Pledge** (free): the sword hand to the heart, head bowed, then the chin comes up.
+- **Challenge** (Rare, Relic crate): the blade levelled at them, chin up, a hand on the hip, two
+  flicks of the point.
+- **At Rest** (Rare, Relic crate): the sword planted, both hands on the pommel, weight on a hip, a sigh.
+- **War Drum** (Epic, Relic crate): fist and hilt beat the chest in turn with a stamp on every beat,
+  then both arms up and a roar.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Emotes.lua](ReplicatedStorage/Emotes.lua) | ReplicatedStorage | ModuleScript | `DEF.Pledge`, `Challenge`, `Rest`, `WarDrum` |
+| [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | their entries |
+
+---
+
+## Before that: the tutorial with any class
 
 - **The tutorial's duel works whatever class you're on**: an Archer's bow or a Mage's staff is a
   longsword in the Siege of Stormwatch (and a wand at the hip goes), so every beat of the first
