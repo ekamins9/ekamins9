@@ -653,6 +653,7 @@ end)
 local function enter()
 	if war.on then return end
 	war.on = true
+	war.breaking = {}
 	war.token = (war.token or 0) + 1
 	local token = war.token
 	gui.Enabled = true
@@ -757,6 +758,25 @@ round:GetAttributeChangedSignal("Map"):Connect(function()
 	if war.on then leave(); task.wait(0.5); if inWar() then enter() end end
 end)
 round:GetAttributeChangedSignal("Mode"):Connect(function() if inWar() then enter() else leave() end end)
+-- THE LINE IS BREAKING: the first time a side's reinforcements fall under BREAKING, a horn, and
+-- the call (ONE LAST PUSH for those winning, HOLD THE LINE for those breaking); the drums quicken
+local BREAKING = 60
+local function breakingWatch(side)
+	round:GetAttributeChangedSignal("WarTickets" .. side):Connect(function()
+		local t = round:GetAttribute("WarTickets" .. side)
+		if not (war.on and type(t) == "number") or t >= BREAKING or t <= 0 then return end
+		war.breaking = war.breaking or {}
+		if war.breaking[side] then return end
+		war.breaking[side] = true
+		local ours = side == mySide()
+		WarFX.sound("Horn", nil, {volume = 0.9, speed = ours and 0.85 or 1})
+		bigCall(sideName(side) .. " IS BREAKING", ours and "HOLD THE LINE!" or "ONE LAST PUSH!", ours and Color3.fromRGB(255, 120, 100) or Color3.fromRGB(255, 220, 120), 4)
+		local drums = war.loops and war.loops.drums
+		if typeof(drums) == "Instance" and drums:IsA("Sound") then drums.PlaybackSpeed = 1.18 end
+	end)
+end
+breakingWatch("A")
+breakingWatch("B")
 -- A CHAMPION FALLS (Round ▸ WarChampFell, "<side>@<time>"): the call, and his killers' roar
 round:GetAttributeChangedSignal("WarChampFell"):Connect(function()
 	local v = round:GetAttribute("WarChampFell")

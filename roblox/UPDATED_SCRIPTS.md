@@ -1,4 +1,15 @@
-# Updated scripts: footsteps behind you
+# Updated scripts: the line is breaking
+
+- **War**: the first time a side's tickets fall under 60, a horn sounds, the war drums quicken, and every screen calls it: IRON IS BREAKING with ONE LAST PUSH! for the side winning, HOLD THE LINE! for the side breaking.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the call |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: footsteps behind you
 
 - **The dungeons** (and Plague Night): now and then, while nothing's coming for you, slow footsteps sound somewhere behind you, a little closer each, then they stop.
 
