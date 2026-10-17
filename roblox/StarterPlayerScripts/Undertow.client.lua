@@ -5,7 +5,11 @@
      hangs there a moment, and slides back under.
 
      Only on a Drowned Halls floor (the Map's Theme), only water within 60 studs of you and not
-     right under you. Nothing here is sent to the server. ]]
+     right under you.
+
+     And the Ember Forge's lava (Dungeon P.lava: Lava parts): bubbles swell up out of it and pop in a
+     spit of sparks, and now and then a pool flares, throwing a gout of embers and a flash of light.
+     Only pools within 50 studs. Nothing here is sent to the server. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -157,6 +161,99 @@ task.spawn(function()
 					if not ok then busy = false end
 				end)
 			end
+		end
+	end
+end)
+
+--------------------------------------------------------------------
+--  THE FORGE'S LAVA
+--------------------------------------------------------------------
+local lavaHome = nil
+local function bubble(pool)
+	local cf, sz = pool.CFrame, pool.Size
+	local at = (cf * CFrame.new((math.random() - 0.5) * (sz.X - 1), sz.Y / 2, (math.random() - 0.5) * (sz.Z - 1))).Position
+	local b = part(V3(0.2, 0.2, 0.2), Color3.fromRGB(196, 64, 18), Enum.Material.Neon, lavaHome)
+	b.Shape = Enum.PartType.Ball
+	b.Position = at
+	local grow = 0.5 + math.random() * 0.6
+	TweenService:Create(b, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = V3(grow, grow, grow), Position = at + V3(0, grow * 0.25, 0)}):Play()
+	task.delay(0.75, function()
+		-- (pop: a spit of sparks)
+		local a = Instance.new("Attachment"); a.WorldPosition = b.Position
+		a.Parent = workspace.Terrain
+		local pe = Instance.new("ParticleEmitter")
+		pe.Color = ColorSequence.new(Color3.fromRGB(255, 190, 80), Color3.fromRGB(255, 80, 20))
+		pe.LightEmission, pe.Rate = 1, 0
+		pe.Size = NumberSequence.new(0.18, 0)
+		pe.Lifetime = NumberRange.new(0.3, 0.7)
+		pe.Speed = NumberRange.new(3, 7)
+		pe.SpreadAngle = Vector2.new(40, 40)
+		pe.Acceleration = V3(0, -20, 0)
+		pe.EmissionDirection = Enum.NormalId.Top
+		pe.Parent = a
+		pe:Emit(7)
+		b:Destroy()
+		task.delay(1, function() a:Destroy() end)
+	end)
+end
+local function flare(pool)
+	local light = pool:FindFirstChildOfClass("PointLight")
+	local a = Instance.new("Attachment"); a.WorldPosition = pool.Position + V3(0, 0.3, 0)
+	a.Parent = workspace.Terrain
+	local pe = Instance.new("ParticleEmitter")
+	pe.Color = ColorSequence.new(Color3.fromRGB(255, 200, 90), Color3.fromRGB(255, 70, 20))
+	pe.LightEmission, pe.Rate = 1, 0
+	pe.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0)})
+	pe.Lifetime = NumberRange.new(0.8, 1.6)
+	pe.Speed = NumberRange.new(8, 16)
+	pe.SpreadAngle = Vector2.new(18, 18)
+	pe.Acceleration = V3(0, -14, 0)
+	pe.EmissionDirection = Enum.NormalId.Top
+	pe.Parent = a
+	pe:Emit(30)
+	WarFX.sound("Fire", pool.Position, {volume = 0.5, speed = 1.3, near = 10, range = 70})
+	if light then
+		local b0 = light.Brightness
+		light.Brightness = b0 * 2.6
+		TweenService:Create(light, TweenInfo.new(1.2), {Brightness = b0}):Play()
+	end
+	task.delay(2, function() a:Destroy() end)
+end
+
+local pools = {}
+local function scanLava(map)
+	local had = {}
+	for _, p in ipairs(pools) do had[p.part] = p end
+	table.clear(pools)
+	for _, d in ipairs(map:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name == "Lava" then
+			table.insert(pools, had[d] or {part = d, next = os.clock() + math.random() * 2, flare = os.clock() + 6 + math.random() * 10})
+		end
+	end
+end
+local lavaMap, lavaScanAt = nil, 0
+local lavaAcc = 0
+RunService.Heartbeat:Connect(function(dt)
+	lavaAcc += dt
+	if lavaAcc < 0.2 then return end
+	lavaAcc = 0
+	local map = workspace:FindFirstChild("Map")
+	local forge = map and map:GetAttribute("Theme") == "EmberForge"
+	-- (the floor streams in: look again every few seconds while it's the forge)
+	if map ~= lavaMap or (forge and os.clock() > (lavaScanAt or 0)) then
+		lavaMap = map
+		lavaScanAt = os.clock() + 4
+		if forge then scanLava(map) else table.clear(pools) end
+	end
+	if #pools == 0 then return end
+	local cam = workspace.CurrentCamera
+	if not cam then return end
+	if not (lavaHome and lavaHome.Parent) then lavaHome = Instance.new("Folder"); lavaHome.Name = "LavaBubbles"; lavaHome.Parent = workspace end
+	local now = os.clock()
+	for _, p in ipairs(pools) do
+		if p.part.Parent and (p.part.Position - cam.CFrame.Position).Magnitude < 50 then
+			if now > p.next then p.next = now + 0.4 + math.random() * 0.9; bubble(p.part) end
+			if now > p.flare then p.flare = now + 8 + math.random() * 10; flare(p.part) end
 		end
 	end
 end)

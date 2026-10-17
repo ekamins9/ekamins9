@@ -1937,6 +1937,11 @@ head (WarAudio ▸ Splash as it starts); come within 7 studs and it darts on and
 splash. One time in six or so, as it sinks, a pale hand breaks the surface, hangs a moment and
 slides back under. On your screen only.
 
+The Ember Forge's lava pools (Dungeon P.lava) live too: bubbles swell up out of them and pop in a
+spit of sparks (one every half second or so a pool), and every 8-18 s a pool flares, throwing a
+gout of embers with a flash of its light and a roar of fire (WarAudio ▸ Fire). Pools within 50
+studs of your camera.
+
 ## Shouts in the fight (`Shouts.client`)
 
 The fighters round you call out, on your screen only. A soldier bot charging a foe ("FOR THE

@@ -1,4 +1,15 @@
-# Updated scripts: the frozen open their eyes
+# Updated scripts: the forge's lava
+
+- **The Ember Forge**: its lava pools bubble now, bubbles swelling and popping in sparks, and now and then a pool flares in a gout of embers and a flash of light.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Undertow.client.lua](StarterPlayerScripts/Undertow.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the forge's lava: bubbles and flares |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the frozen open their eyes
 
 - **The Frozen Depths**: pass close to a figure frozen in its block of ice and its eyes open, pale and cold, with a creak of ice. They follow you a little, and close once you've gone.
 
