@@ -1,4 +1,17 @@
-# Updated scripts: War's fields littered with fighting; boss entrances in focus; duels open with a flight
+# Updated scripts: the field before the castle is littered
+
+- **Siege**: arrows stuck in the ground thick under the walls, shields and broken spears along the road, fallen banners and helmets before the castle (set on the real ground, looks only).
+- A shared `Game ▸ Litter` module does it.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Litter.lua](ServerScriptService/Game/Litter.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | litters the field |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: War's fields littered with fighting; boss entrances in focus; duels open with a flight
 
 - **War**: every battlefield is littered with earlier fighting (dropped shields, broken spears, arrow clusters stuck in the ground, fallen banners, helmets), thickest round the banners; looks only.
 - **Boss entrance**: the boss sharp and the room behind it softly blurred (depth of field).
@@ -23,17 +36,3 @@
 | [README.md](README.md) | | doc | |
 
 Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ ArrowsOver.
-
----
-
-## Before that: two new Siege castles
-
-- **Duskwall** (a desert castle at dusk under a great moon; champion: the Dune Khan) and **Mournhold** (a castle in the dawn mist; champion: Lady Morwen). 12 Siege castles now; both get the whole siege battle (archers on the walls, ladders, towers, flank battles, fires). Vote pictures shot with the battle running.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build | ModuleScript | Duskwall, Mournhold |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Siege maps, titles, sizes |
-| [README.md](README.md) | | doc | |
-
-Studio-only (save the place): ServerStorage ▸ Maps ▸ Duskwall, Mournhold; ReplicatedStorage ▸ MapShots ▸ Duskwall, Mournhold.

@@ -1837,6 +1837,8 @@ and the defenders' (up by their keep) loose volleys at knots of the other side n
 than War's (power 0.6, trebuchets every 14–20 s, volleys every 16–24 s, after 25 s).
 The attackers' camp is dressed for it (`Game ▸ WarProps`): siege towers, ballistae and a pavilion
 round their first spawns, wherever the ground is open and level (into the map, so they go with it).
+The field before the walls is littered with the fighting of the days before (`Game ▸ Litter`):
+arrows thick under the walls, shields and spears along the road, a fallen banner or two, helmets.
 
 **The battle round the castle, on every screen** (`SiegeEpic.client`, with `ReplicatedStorage ▸
 WarCrowd` and `WarFX`; never fighters, nothing replicated):

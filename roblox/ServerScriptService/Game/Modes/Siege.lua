@@ -57,6 +57,7 @@ local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Engines = require(script.Parent.Parent:WaitForChild("Engines"))
 local WarProps = require(script.Parent.Parent:WaitForChild("WarProps"))
+local Litter = require(script.Parent.Parent:WaitForChild("Litter"))
 local Teams, MapLoader = Game.Teams, Game.MapLoader
 
 local event = ReplicatedStorage:FindFirstChild("ObjectiveEvent")
@@ -312,6 +313,19 @@ function Siege:startEngines()
 	for _, pr in ipairs(props) do
 		local at = ground(a + pr[2])
 		if at then pcall(WarProps.place, pr[1], face(at), pr[3], m) end
+	end
+	-- the field before the walls littered with the fighting of the days before: arrows thick under
+	-- the walls (the defenders' volleys), shields and spears along the road, a banner or two
+	local gateAt = m:GetAttribute("C_Gate")
+	if typeof(gateAt) == "Vector3" then
+		local fz = (m:GetAttribute("C_F") or 1)
+		local half = m:GetAttribute("C_Half") or 80
+		pcall(Litter.scatter, m, function()
+			local near = math.random() < 0.55
+			local x = gateAt.X + (math.random() - 0.5) * (near and half * 1.8 or half * 2.2)
+			local z = gateAt.Z + fz * (near and (6 + math.random() * 30) or (30 + math.random() * 150))
+			return Vector3.new(x, gateAt.Y + 20, z)
+		end, {shields = 22, spears = 18, arrows = 26, banners = 5, helms = 8})
 	end
 	local sides = {}
 	sides[self.attack] = {trebs = trebs, archers = {a + away * 30 + side * 20, a + away * 30 - side * 20}}
