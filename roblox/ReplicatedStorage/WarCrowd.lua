@@ -64,6 +64,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Sounds   -- (the fight's own sound bank, loaded the first time a line fights near you)
+local WarFX    -- (for the dust a charge kicks up, loaded the first time one runs)
+local DUST_OF = {
+	[Enum.Material.Snow] = Color3.fromRGB(236, 240, 246), [Enum.Material.Sand] = Color3.fromRGB(214, 186, 140),
+	[Enum.Material.Sandstone] = Color3.fromRGB(200, 170, 128), [Enum.Material.Mud] = Color3.fromRGB(96, 80, 62),
+}
 local PreviewRig = require(ReplicatedStorage:WaitForChild("PreviewRig"))
 
 local WarCrowd = {}
@@ -1045,6 +1050,18 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 	if moving and not reg.fixed and now > reg.nextGround then
 		reg.nextGround = now + 0.6
 		reg.y0 = self:groundAt(reg.x, reg.z, reg.y0)
+	end
+	-- a regiment at a run kicks up a trail of dust behind it (the ground's colour)
+	if moving and reg.run and not reg.fixed and now >= (reg.dustAt or 0) then
+		reg.dustAt = now + 0.45
+		if not reg.dustColor then
+			self.ray.FilterDescendantsInstances = {self.home}
+			local r = workspace:Raycast(V3(reg.x, reg.y0 + 50, reg.z), V3(0, -100, 0), self.ray)
+			reg.dustColor = (r and DUST_OF[r.Material]) or Color3.fromRGB(150, 136, 116)
+		end
+		WarFX = WarFX or require(ReplicatedStorage:WaitForChild("WarFX"))
+		local back = reg.z - reg.facing * (reg.ranks * reg.sp)
+		pcall(WarFX.dust, V3(reg.x + (math.random() - 0.5) * reg.cols * reg.sp, reg.y0 + 0.5, back), 1.6, reg.dustColor)
 	end
 	-- a hole in the front line: the man behind steps up (a fresh one from the back)
 	if reg.holes and #reg.holes > 0 and #reg.corpses > 6 then

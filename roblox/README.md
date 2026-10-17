@@ -1722,6 +1722,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   roar back (`WarCrowd.answer`, from `Cosmetics.client`).
 - **A banner taken**: every regiment of the side that took it raises its weapons and the army's
   roar rolls over the field.
+- **Dust**: a regiment at a run kicks up a trail of dust behind it in the ground's own colour (snow,
+  sand, mud, earth).
 - **The set-pieces**: the opening CHARGE (horns, drums, both lines run and crash, dust, a shake,
   men knocked flying); every 40–90 s a lane pulls apart and charges again; trebuchet fire on the
   flanks throws men through the air; volleys drop them; the cavalry ploughs through a flank.
