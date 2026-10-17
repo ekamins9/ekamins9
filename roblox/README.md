@@ -2117,7 +2117,8 @@ Hollow Abbey: `Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's
   Cultists cast Dark Litany; champions the Wraith and the Gargoyle; its lord **Malachai, the Black
   Abbot** (a crowned shadow with violet eyes: Black Psalm, Vespers, Through the Cloister, Graves
   Open, then The Last Rite and Falling Bells as THE ABBEY RINGS ITS BELLS, and the bells toll on
-  you). Vote picture: MapShots ▸ HollowAbbey.
+  you). Now and then a bell tolls far off through the stone (WarAudio ▸ AbbeyBell) or a faint
+  wordless chant drifts from another room (WarAudio ▸ Chant). Vote picture: MapShots ▸ HollowAbbey.
 - **The Drowned Halls** (the newest): flooded catacombs where the sea came in and the dead stayed:
   wet stone, rust-green corroded iron, pale teal flames, standing water across the floors and
   puddles everywhere (the theme's `wet` flag), water dripping close by all the time. Its dead: the

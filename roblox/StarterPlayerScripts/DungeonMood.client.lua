@@ -32,6 +32,9 @@
                         a darker, blood-tinged, harder grade, easing back when it falls
        bats             now and then a swarm bursts out of the dark ahead and flits past over your
                         head (WarAudio ▸ Bats)
+       the abbey        in the Hollow Abbey, now and then a bell tolls somewhere far off through the
+                        stone (WarAudio ▸ AbbeyBell), or a faint wordless chant drifts from another
+                        room (WarAudio ▸ Chant)
        vermin           now and then a few rats squeak and scurry across the floor ahead of you,
                         wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
                         water drips (WarAudio ▸ Drip; not in the Ember Forge)
@@ -228,16 +231,26 @@ local SOUNDS = {
 	{"Gate", 0.6, function() return {volume = 0.25, speed = 0.55 + math.random() * 0.15, near = 20, range = 160} end, 40, 90},
 	{"Impact", 0.5, function() return {volume = 0.3, speed = 0.4 + math.random() * 0.15, near = 60, range = 400} end, 70, 140},
 }
+-- (the Hollow Abbey's own: a far bell, a chant from another room)
+local ABBEY = {
+	{"AbbeyBell", 1, function() return {volume = 0.6 + math.random() * 0.2, speed = 0.9 + math.random() * 0.1, near = 60, range = 600} end, 60, 120},
+	{"Chant", 0.8, function() return {volume = 0.45, speed = 0.95 + math.random() * 0.1, near = 25, range = 140} end, 30, 60},
+}
 local function dark(token)
 	local nextAt = os.clock() + 12 + math.random() * 12
 	while mood.on and mood.token == token do
 		if os.clock() >= nextAt then
 			nextAt = os.clock() + 18 + math.random() * 30
-			-- (a sound by weight)
+			-- (a sound by weight; the abbey's own besides)
+			local list = SOUNDS
+			if mood.theme == "HollowAbbey" then
+				list = table.clone(SOUNDS)
+				for _, a in ipairs(ABBEY) do table.insert(list, a) end
+			end
 			local total = 0
-			for _, s in ipairs(SOUNDS) do total += s[2] end
-			local pick, roll = SOUNDS[1], math.random() * total
-			for _, s in ipairs(SOUNDS) do roll -= s[2]; if roll <= 0 then pick = s; break end end
+			for _, s in ipairs(list) do total += s[2] end
+			local pick, roll = list[1], math.random() * total
+			for _, s in ipairs(list) do roll -= s[2]; if roll <= 0 then pick = s; break end end
 			local at = somewhereNear(pick[4], pick[5])
 			if at then WarFX.sound(pick[1], at, pick[3]()) end
 		end

@@ -1,4 +1,17 @@
-# Updated scripts: a seventh dungeon, the Hollow Abbey
+# Updated scripts: the abbey's bell and chant
+
+- **The Hollow Abbey**: now and then a bell tolls far off through the stone, or a faint wordless chant drifts from another room.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the abbey's sounds |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ AbbeyBell, Chant (Sounds; save the place).
+
+---
+
+## Before that: a seventh dungeon, the Hollow Abbey
 
 - **The Depths and Deadvault** have a new theme in the vote: **the Hollow Abbey**. A desecrated monastery in violet candlelight, with chapels, libraries and crypts.
 - **Its dead** (new Bestiary lines): Hollow Monks, Penitents, Abbey Guards and Cultists. Its champions are the Wraith and the Gargoyle.
