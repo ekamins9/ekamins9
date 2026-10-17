@@ -107,7 +107,7 @@ local function default()
 		appearance = {}, owned = {pieces = {}, skins = {}, weapons = {}, colors = {}, hairColors = {}, beards = {}, titles = {}, killfx = {}, emotes = {}, companions = {}},
 		classes = {}, active = GameConfig.DEFAULT_CLASS, stats = {byWeapon = {}}, rating = {}, placements = {},
 		crates = {}, contracts = {}, receipts = {}, lastWinDay = "", queueLock = {},
-		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish"},
+		pass = {}, login = {}, killfx = "", emotes = {"Salute", "Bow", "Cheer", "Flourish", "Challenge"},
 		play = {}, eggs = {}, nests = {}, companion = "", stars = {}, drills = {}, spars = {}, wishDay = "",
 		gauntlet = 0, askedTraining = false, unlockSeen = false, dropSeen = "", copies = {}, tally = {}, claims = {}, copySeq = 0,
 		tutorial = 0, menuTour = false, starterGift = false, loadoutV = 3, funnel = {},

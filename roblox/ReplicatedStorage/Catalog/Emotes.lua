@@ -24,7 +24,8 @@ return {
 	{id = "Thunderlord", name = "Thunderlord", rarity = "Mythic", crate = "Relic", needs = "weapon", description = "Hold the blade up to the storm. The storm answers, three times, then you bring it down."},
 	{id = "Ascension", name = "Ascension",   rarity = "Mythic",    crate = "Relic", description = "Kneel, then rise into the air on wings of light."},
 	{id = "Pledge",    name = "Pledge",      rarity = "Common",    free = true,     description = "Hand to the heart, head bowed, then proud."},
-	{id = "Challenge", name = "Challenge",   rarity = "Rare",      crate = "Relic", needs = "weapon", description = "Point the blade at them. Flick it. You."},
+	-- (free for everyone: in the Courtyard it challenges whoever you face to an honor duel, Hub ▸ Duels)
+	{id = "Challenge", name = "Challenge",   rarity = "Common",    free = true,     needs = "weapon", description = "Point the blade at them. Flick it. You. In the Courtyard: an honor duel."},
 	{id = "Rest",      name = "At Rest",     rarity = "Rare",      crate = "Relic", needs = "weapon", description = "Plant the sword, lean on the pommel, sigh."},
 	{id = "WarDrum",   name = "War Drum",    rarity = "Epic",      crate = "Relic", description = "Beat your chest with fist and hilt, stamp, and roar."},
 }

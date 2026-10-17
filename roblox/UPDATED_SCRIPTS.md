@@ -1,4 +1,17 @@
-# Updated scripts: honor duels in the Courtyard
+# Updated scripts: everyone can duel
+
+- **The Challenge emote is free** (it starts the honor duels), on a new player's wheel from the
+  start, and put on an existing player's wheel once if there's a free slot.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Catalog/Emotes.lua](ReplicatedStorage/Catalog/Emotes.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Challenge free, Common |
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | the starting wheel |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub | Script | `challengeSeeded`: once onto the wheel |
+
+---
+
+## Before that: honor duels in the Courtyard
 
 - **Challenge someone to an honor duel**: in the Courtyard, face a player and play the **Challenge**
   emote. They get a card (ACCEPT [Y] / DECLINE [N]). Accepted: you're squared off in a ring of gold

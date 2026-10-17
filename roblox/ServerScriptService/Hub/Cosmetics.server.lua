@@ -269,6 +269,12 @@ task.spawn(function()
 		for _, plr in ipairs(Players:GetPlayers()) do
 			local p = Profile.get(plr)
 			if p then
+				-- (once: the Challenge on the wheel, if there's room, for the honor duels: Hub ▸ Duels)
+				if not p.challengeSeeded and type(p.emotes) == "table" then
+					p.challengeSeeded = true
+					if #p.emotes < 6 and not table.find(p.emotes, "Challenge") then table.insert(p.emotes, "Challenge") end
+					pcall(Profile.markDirty, plr)
+				end
 				local list = table.concat(type(p.emotes) == "table" and p.emotes or {}, ",")
 				if plr:GetAttribute("Emotes") ~= list then plr:SetAttribute("Emotes", list) end
 				if plr:GetAttribute("KillFx") ~= p.killfx then plr:SetAttribute("KillFx", p.killfx) end
