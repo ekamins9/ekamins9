@@ -7,7 +7,8 @@
                      up, a roar
        a parry       a fine parry (or a chamber) in the arena brings a third of them up with a
                      shout (not more than every few seconds)
-       a round won   the whole crowd on its feet, a long roar
+       a round won   the whole crowd on its feet, a long roar, and petals thrown down onto the
+                     sand for a few seconds (WarFX's petals, if the sky was clear)
        between       the murmur of the stands; now and then a few of them shout
        the echo      every sound rings round the arena (SoundService ▸ AmbientReverb Arena)
 
@@ -172,7 +173,14 @@ end
 round:GetAttributeChangedSignal("Mode"):Connect(refresh)
 round:GetAttributeChangedSignal("Map"):Connect(refresh)
 round:GetAttributeChangedSignal("State"):Connect(function()
-	if arena.on and round:GetAttribute("State") == "Intermission" then roar(5, 0.95, 1) end
+	if arena.on and round:GetAttribute("State") == "Intermission" then
+		roar(5, 0.95, 1)
+		-- (petals from the stands, if nothing else is falling)
+		if WarFX.weatherKind() == nil then
+			WarFX.weather("petals", 1)
+			task.delay(6, function() if WarFX.weatherKind() == "petals" then WarFX.weather(nil, 3) end end)
+		end
+	end
 end)
 workspace.ChildAdded:Connect(function(c) if c.Name == "Map" then refresh() end end)
 refresh()

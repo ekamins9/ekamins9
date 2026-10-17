@@ -1860,7 +1860,8 @@ hubs, the stands are full on your screen: a row of unarmed commoners along the t
 Stand part, facing the middle of the map (`WarCrowd:audience`), blue at one end and red at the
 other with strays mixed in (up to 420; 180 on a phone). Anyone going down in the arena brings
 most of them to their feet, arms up, with a roar (`WarCrowd:roar`); a fine parry or chamber there
-(the parrier's ParryTick), a third of them with a shout (at most every 3.5 s); a round won, the whole crowd;
+(the parrier's ParryTick), a third of them with a shout (at most every 3.5 s); a round won, the whole crowd,
+and petals thrown down onto the sand for six seconds (if the sky was clear);
 between, the murmur of the stands and now and then a few of them shouting. Arms and all near the
 camera; further off a cheering man is a cached arms-up pose bobbing. Measured in the Colosseum
 (FFA, bots): 56–60 fps in Studio play, the crowd ~0 ms idle and ~2 ms in a roar.

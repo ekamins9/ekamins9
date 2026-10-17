@@ -1,4 +1,15 @@
-# Updated scripts: eyes in the dark
+# Updated scripts: petals from the stands
+
+- **The arenas** (the Colosseum, the forge arenas, the Sandpit, the Bloodpit): when a round is won, the stands throw petals down onto the sand for a few seconds as they roar.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ArenaCrowd.client.lua](StarterPlayerScripts/ArenaCrowd.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | petals |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: eyes in the dark
 
 - **The dungeons**: now and then a pair of eyes watches you out of the dark far ahead. They glow in the theme's colour, blink once, and are gone when you come closer.
 - **What's new**: a seventh line, "Hear it, feel it" (armour, splashes, echoes, crates).
