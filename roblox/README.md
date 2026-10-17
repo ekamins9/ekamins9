@@ -116,6 +116,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
 | `StarterPlayerScripts/CinematicGrade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `CinematicGrade` | LocalScript |
+| `ReplicatedStorage/Hearing.lua` | `ReplicatedStorage` → `Hearing` | ModuleScript |
+| `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
@@ -1818,6 +1820,15 @@ drift over every open-air map (one `Clouds` under the Terrain: Cover 0.5, Densit
 a little at a time and left alone while a weather has the sky (`WarFX.weatherKind()`; the weather
 puts back what it found when it ends). None over the caldera (Dragonfall) or indoors. Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
 Plague Night, the Undead invasion) and the Gilded Rat, where the place's own rays come back.
+
+## Shell-shocked (`ReplicatedStorage ▸ Hearing`, rung by `WarFX.blast`)
+A trebuchet stone or a battle-mage's fireball landing right by you (within 34 studs of a big blast,
+20 of a small one) leaves you half deaf for a few seconds: the world goes muffled and quieter, a
+thin ringing fills your ears (`WarAudio ▸ EarRing`, Studio-only), your eyes swim, and it all comes
+back. The harder the blast, the longer (2 to 5 seconds). The score plays on. Every sound in
+workspace is routed through `SoundService ▸ World` (a SoundGroup, set up by `Hearing.client`) so
+its equaliser can do it; sounds already in a group stay in theirs. Scaled by the Screen shake
+setting: shake off, deafness off.
 
 ## Houses and castle stone (`Build ▸ MapKit` K.house, K.wall, K.tower)
 Every cottage in the game (War's villages, the Crownlands, Stormwatch, the Horde's town, the

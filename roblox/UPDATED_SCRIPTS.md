@@ -1,4 +1,19 @@
-# Updated scripts: clouds over the open-air maps
+# Updated scripts: shell-shocked
+
+- **A blast right by you** (a trebuchet stone, a battle-mage's fireball) leaves you half deaf for a few seconds: the battle goes muffled and far away, your ears ring, your eyes swim, and then it all comes back. Turning screen shake off turns this off too.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Hearing.lua](ReplicatedStorage/Hearing.lua) | ReplicatedStorage | ModuleScript | new |
+| [Hearing.client.lua](StarterPlayerScripts/Hearing.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | `blast` rings it |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ EarRing (a Sound; save the place).
+
+---
+
+## Before that: clouds over the open-air maps
 
 - **The sky**: fair-weather clouds drift over every open-air map (the Courtyard, War, Siege, the arenas, the Lists...). A storm, rain or snow takes the sky over while it lasts and gives it back after. None over the caldera or indoors.
 

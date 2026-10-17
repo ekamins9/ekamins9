@@ -61,6 +61,7 @@ local FIRE_TEX = "rbxasset://textures/particles/fire_main.dds"
 local SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 
 local settings
+local hearing   -- (ReplicatedStorage ▸ Hearing, on the first blast close enough)
 local function shakeSetting()
 	settings = settings or require(ReplicatedStorage:WaitForChild("ClientSettings"))
 	local v = settings.get("Shake")
@@ -506,6 +507,13 @@ function WarFX.blast(pos, opts)
 		local k = (big and 2.6 or 1.5) * math.clamp(1 - d / 240, 0, 1)
 		if k > 0.05 then WarFX.shake(k, 0.45 + k * 0.3) end
 		if d < 40 then WarFX.flash(0.25 * (1 - d / 40)) end
+		-- right on top of you: half deaf for a few seconds (ReplicatedStorage ▸ Hearing; with the
+		-- shake setting, so shake off is deafness off too)
+		local near = big and 34 or 20
+		if d < near then
+			hearing = hearing or require(ReplicatedStorage:WaitForChild("Hearing"))
+			hearing.ring((1 - d / near) * math.min(shakeSetting(), 1))
+		end
 	end
 end
 
