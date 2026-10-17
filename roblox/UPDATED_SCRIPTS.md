@@ -1,4 +1,17 @@
-# Updated scripts: battle wear on phones
+# Updated scripts: bones underfoot
+
+- **The dungeons**: walk through a pile of bones and they clatter aside from your feet, the skull rolling away.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `underfoot` |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ BoneCrunch (a Sound; save the place).
+
+---
+
+## Before that: battle wear on phones
 
 - **Phones** keep fewer battle marks (4 to a fighter rather than 12, within 40 studs), so a War brawl stays light.
 

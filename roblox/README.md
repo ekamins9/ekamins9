@@ -2151,7 +2151,8 @@ theme's colour), blinks, and is gone when you come within 22 studs. Now and then
 passing over, grit sifting down from the ceiling and your lantern trembling with each. Now and then, while nothing's coming for you, slow footsteps sound somewhere behind you on
 whatever's underfoot, a little closer each, and stop. Now and then a few rats squeak and scurry across the floor ahead of you, wall to wall,
 through your light (WarAudio ▸ Squeak), and water drips somewhere close (WarAudio ▸ Drip; not in
-the Ember Forge). Now and then a spider lets itself down on its thread from the ceiling ahead of
+the Ember Forge). Walk through a pile of bones and they clatter aside from your feet, the skull
+rolling (WarAudio ▸ BoneCrunch; on your screen). Now and then a spider lets itself down on its thread from the ceiling ahead of
 you to the height of your face, hangs there turning, legs working, eyes red in your light, and whips
 back up into the dark, sooner if you walk up to it (WarAudio ▸ Skitter; the crypt, the warrens,
 the manor, the abbey). **The score** (`Music.client`) is quiet down here: only the dungeon's dread (`Dread`:

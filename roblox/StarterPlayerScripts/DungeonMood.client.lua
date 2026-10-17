@@ -58,6 +58,8 @@
        the statues      a sleeping gargoyle stands as a statue on its plinth, stone all through,
                         its eyes dead; when it notices you the stone bursts off it in shards and
                         it moves
+       underfoot        walk through a pile of bones and they clatter aside from your feet, skulls
+                        rolling (WarAudio ▸ BoneCrunch)
        footsteps        now and then, while nothing's fighting near you, slow steps on the stone
                         somewhere behind you, coming a little closer, then they stop
        what's there     now and then, well ahead of you in the dark, a pale see-through figure
@@ -1186,6 +1188,57 @@ local function collapse(token)
 end
 
 -- what lurks: the nearest monsters groan or growl now and then, from where they stand
+-- UNDERFOOT: bones and skulls on the floor clatter aside as you walk through them
+local BONES = {Bone = true, Skull = true}
+local function underfoot(token)
+	local map = workspace:FindFirstChild("Map")
+	if not map then return end
+	local list = {}
+	local function add(d)
+		if d:IsA("BasePart") and BONES[d.Name] then table.insert(list, d) end
+	end
+	for _, d in ipairs(map:GetDescendants()) do add(d) end
+	local conn = map.DescendantAdded:Connect(add)
+	local kicked = setmetatable({}, {__mode = "k"})
+	local nextSound = 0
+	local TweenService = game:GetService("TweenService")
+	while mood.on and mood.token == token and map.Parent do
+		task.wait(0.1)
+		local c = player.Character
+		local root = c and c:FindFirstChild("HumanoidRootPart")
+		local hum = c and c:FindFirstChildOfClass("Humanoid")
+		if root and hum and hum.Health > 0 then
+			local v = root.AssemblyLinearVelocity
+			local flatV = V3(v.X, 0, v.Z)
+			if flatV.Magnitude > 3 then
+				-- (an R6 body: its feet three studs under its root)
+				local feet = root.Position - V3(0, 3, 0)
+				local now = os.clock()
+				for i = #list, 1, -1 do
+					local b = list[i]
+					if not b.Parent then table.remove(list, i)
+					elseif not kicked[b] or now - kicked[b] > 2.5 then
+						local d = V3(b.Position.X - feet.X, 0, b.Position.Z - feet.Z)
+						if d.Magnitude < 1.7 and math.abs(b.Position.Y - feet.Y) < 1.3 then
+							kicked[b] = now
+							-- (off ahead of the foot, a little to the side it was on)
+							local away = (flatV.Unit * 0.7 + (d.Magnitude > 0.05 and d.Unit or V3()) * 0.6).Unit
+							local to = b.CFrame + away * (1 + math.random() * 1.2)
+							local spin = CFrame.Angles(0, (math.random() - 0.5) * 3, b.Name == "Skull" and (math.random() - 0.5) * 4 or 0)
+							TweenService:Create(b, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = to * spin}):Play()
+							if now > nextSound then
+								nextSound = now + 0.35
+								WarFX.sound("BoneCrunch", b.Position, {volume = 0.55, speed = 0.9 + math.random() * 0.25, near = 6, range = 45})
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	conn:Disconnect()
+end
+
 local function lurk(token)
 	while mood.on and mood.token == token do
 		task.wait(2.5 + math.random() * 3)
@@ -1281,6 +1334,7 @@ local function enter(theme)
 	task.spawn(drips, token)
 	task.spawn(bossWatch, token, theme)
 	task.spawn(lurk, token)
+	task.spawn(underfoot, token)
 	if not plague then watchMonsters() end
 end
 
