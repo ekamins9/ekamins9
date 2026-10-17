@@ -692,6 +692,11 @@ function Prologue:adjustLoadout(plr, lo, classId)
 	lo.power, lo.thirdKind, lo.thirdId = nil, "none", nil
 	lo.throwable = nil
 	lo.shield, lo.shieldSkin = nil, nil
+	-- (the siege is learned with steel: a bow or a staff in your loadout is a longsword here, and a
+	-- wand at the hip goes)
+	local function melee(id) local w = id and Catalog.WEAPON[id]; return w and not w.ranged and not w.magic end
+	if lo.weapon and not melee(lo.weapon) then lo.weapon, lo.weaponSkin = "Longsword", "Longsword:Default" end
+	if lo.secondary and not melee(lo.secondary) then lo.secondary, lo.secondarySkin = nil, nil end
 	if self.armed and not self.armed[plr] and (self.step or 1) <= STEP_INDEX.arm then
 		self.kit[plr] = {weapon = lo.weapon, weaponSkin = lo.weaponSkin, secondary = lo.secondary, secondarySkin = lo.secondarySkin}
 		lo.weapon, lo.weaponSkin, lo.secondary, lo.secondarySkin = nil, nil, nil, nil

@@ -1,4 +1,16 @@
-# Updated scripts: dodge dust
+# Updated scripts: the tutorial with any class
+
+- **The tutorial's duel works whatever class you're on**: an Archer's bow or a Mage's staff is a
+  longsword in the Siege of Stormwatch (and a wand at the hip goes), so every beat of the first
+  fight (strike, stab, overhead, riposte) can be done.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Prologue.lua](ServerScriptService/Game/Modes/Prologue.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `adjustLoadout`: steel only |
+
+---
+
+## Before that: dodge dust
 
 - **A dodge kicks up the ground**: anyone's dodge (bots too) throws a burst of dust back from their
   feet, the colour of what they stand on, on every screen near them.
