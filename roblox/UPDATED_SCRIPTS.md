@@ -1,4 +1,15 @@
-# Updated scripts: the vote pictures show the new horizons; the winners' arms
+# Updated scripts: a shield bash lands like one
+
+- **A kick with a shield up (a bash)** now slams in with the board's wooden thud and knocks a few
+  chips off it, instead of sounding like a boot.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | the bash batters the basher's shield (`resolveKick`) |
+
+---
+
+## Before that: the vote pictures show the new horizons; the winners' arms
 
 - **Every map's vote picture re-shot** (41 maps) with the land round it, the houses' banners and
   the fixes below; the War battlefields keep theirs.

@@ -395,6 +395,10 @@ function CombatServer.resolveKick(character, cfg, hooks)
 		landed = true
 		character:SetAttribute("KickTick", (character:GetAttribute("KickTick") or 0) + 1)
 		if hooks.sfx then hooks.sfx("KickHit", thrp) end
+		-- (a bash: the board slams into them with its own thud, and takes a knock)
+		if character:FindFirstChild("ShieldModel") and not character:GetAttribute("ShieldSlung") then
+			CombatServer.batterShield(character, thrp.Position + Vector3.new(0, 0.8, 0) - to.Unit * 0.9, 0.03)
+		end
 		Sounds.voice("Hurt", m:FindFirstChild("Head") or thrp, {Who = m})
 		CombatServer.flinch(m, to.Unit)
 		local wasBlocking = m:GetAttribute("Blocking") == true
