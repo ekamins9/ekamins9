@@ -1654,7 +1654,7 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 ## War: the massive battle (`Game ▸ Modes ▸ War`, `Game ▸ WarMap`, `War.client`, `ReplicatedStorage ▸ WarFX`)
 
 The Play screen's first tile (DOORS.War, matchmade public servers, 24 players). Two armies on a
-battlefield built fresh each round, players and bots side by side (`botFill` 36, `fillAnywhere`),
+battlefield built fresh each round, players and bots side by side (`botFill` 32, `fillAnywhere`),
 siege engines, archers and battle-mages, and the rest of both armies clashing out on the flanks.
 - **The line**: five banners between the two camps. A side takes a banner by standing at it with
   more of its own than the enemy (up to three more count: faster together), but only the banner
@@ -1850,6 +1850,9 @@ arrows thick under the walls, shields and spears along the road, a fallen banner
 
 **The battle round the castle, on every screen** (`SiegeEpic.client`, with `ReplicatedStorage ▸
 WarCrowd` and `WarFX`; never fighters, nothing replicated):
+- **The day goes on** (`Siege:start` / `tick`, as War's): over the assault a morning brightens
+  (up to 0.8 h), an afternoon wears on towards evening (up to 1.2 h, never past 17.0) so the fires
+  show brighter as it goes; a dusk or a night keeps its tuned light.
 - **The walls**: the defenders' archers line every open stretch of the front walk and loose on the
   field (on the men under the walls, on the attackers' line on a flank); the attackers' archers
   loose back at them.

@@ -133,6 +133,14 @@ function Siege:start(map)
 	for _, c in ipairs(folder and folder:GetChildren() or {}) do table.insert(self.stages, c) end
 	table.sort(self.stages, function(x, y) return (x:GetAttribute("Order") or 0) < (y:GetAttribute("Order") or 0) end)
 	self.stage, self.done, self.bonusTime = 0, false, 0
+	-- THE DAY GOES ON over the assault (as War's): a morning brightens, an afternoon wears on
+	-- towards evening, the fires showing brighter as it does; a dusk or a night stays as it is
+	do
+		local c0 = game:GetService("Lighting").ClockTime
+		local to = (c0 >= 6 and c0 < 10 and c0 + 0.8) or (c0 >= 10 and c0 < 16.5 and math.min(c0 + 1.2, 17)) or c0
+		self.sun = to ~= c0 and {from = c0, to = to, at = os.clock(), len = 600} or nil
+		self.sunTick = 0
+	end
 	self.scores = {A = self.roundWins.A, B = self.roundWins.B}
 	node:SetAttribute("ObjStages", #self.stages)
 	-- zones start hidden; each shows while it's the stage
@@ -343,6 +351,7 @@ end
 
 function Siege:stop()
 	self.engines = nil
+	self.sun = nil
 	if self.conn then self.conn:Disconnect(); self.conn = nil end
 	if self.boss then self.boss:destroy(); self.boss = nil end
 	self.ram, self.cap = nil, nil
@@ -599,6 +608,11 @@ end
 function Siege:tick(dt)
 	if self.done then return end
 	if self.engines then self.engines:tick() end
+	if self.sun and os.clock() - (self.sunTick or 0) > 2 then
+		self.sunTick = os.clock()
+		local u = math.clamp((os.clock() - self.sun.at) / self.sun.len, 0, 1)
+		game:GetService("Lighting").ClockTime = self.sun.from + (self.sun.to - self.sun.from) * u
+	end
 	node:SetAttribute("ObjProgress", math.floor((self.progress or 0) * 1000) / 1000)
 	node:SetAttribute("ObjState", self.state or "idle")
 	node:SetAttribute("ObjAttack", self.near and self.near.a or 0)
