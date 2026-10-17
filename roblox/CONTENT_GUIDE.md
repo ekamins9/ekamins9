@@ -489,12 +489,13 @@ place — when the effect has hidden the body. A new kind of remains is a builde
 `AFTER_BODY`, so it still comes on time when a player respawns before it is due.
 
 The `id` must match a builder in `ReplicatedStorage ▸ KillFX` (`Shatter Confetti GoldRush
-CrowSwarm Inferno Frozen ShadowRift Thunderstrike Ascension RoyalDecree`, and the Grim Crate's
+CrowSwarm Inferno Frozen ShadowRift Thunderstrike Ascension RoyalDecree Standard`, and the Grim Crate's
 `Poof Tombstone Anvil Petrify Quicksand Kraken Overgrown Meteor SerpentsMaw HeavensHand
 BlackHole`). A builder makes parts that fly, spin, grow and fade around the body (so the same
 effect plays in the world and in the menu preview) and can hide or tint the body locally. To
 move the body itself, take its puppet (`puppet(folder, origin, opts)`) and pose, squash or fade
-that. Particles and lights are world-only extras.
+that. Particles and lights are world-only extras. An effect that flies the killer's arms (the
+Standard) reads `opts.banner` ({arms, team}: Hub ▸ Cosmetics sends it with every kill).
 
 **Emotes** (`Catalog ▸ Emotes`): played from the emote wheel (hold **B**, point, let go;
 rebindable), up to six on the wheel (ARMORY ▸ EMOTES). The `id` must match a motion in

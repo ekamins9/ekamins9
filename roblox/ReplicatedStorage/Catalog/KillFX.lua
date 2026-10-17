@@ -21,6 +21,8 @@ return {
 	{id = "Thunderstrike", name = "Thunderstrike",  rarity = "Legendary", crate = "Relic", description = "A bolt from a clear sky. Nothing personal.", remains = "charred", remainsAt = 0.9},
 	{id = "Ascension",     name = "Ascension",      rarity = "Legendary", crate = "Relic", description = "A pillar of light, wings, and gone.", remains = "light", remainsAt = 2.0},
 	{id = "RoyalDecree",   name = "Royal Decree",   rarity = "Legendary", pass = true,     description = "Gold rays and a crown for the fallen. By order of the king.", remains = "gold", remainsAt = 1.9},
+	-- (your own arms: Catalog ▸ Arms, the ones you chose in LOOK; in a team fight on your side's colour)
+	{id = "Standard",      name = "Raise the Standard", rarity = "Legendary", crate = "Relic", description = "Your war banner falls from the sky, plants itself beside the fallen and unfurls your own coat of arms to a fanfare.", remains = "body", remainsAt = 2.0},
 
 	-- THE GRIM CRATE: finishers from below and above
 	{id = "Poof",          name = "Poof",              rarity = "Common",    crate = "Grim", description = "A puff of smoke and a few stars. Where'd they go?", remains = "none", remainsAt = 0.3},

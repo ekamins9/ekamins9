@@ -55,8 +55,16 @@ local function coloursOf(char)
 	return out
 end
 
+-- whose kill it was, for an effect that flies their arms (the Standard): their own coat of arms
+-- (Profile.publishArms) and, in a team fight, their side's colour
+local function bannerOf(killer)
+	if typeof(killer) ~= "Instance" or not killer:IsA("Player") then return nil end
+	local arms = killer:GetAttribute("Arms")
+	return {arms = type(arms) == "string" and arms or nil, team = (killer.Team and not killer.Neutral) and killer.Team.TeamColor.Color or nil}
+end
+
 -- a kill effect on a fallen body, for everyone
-local function playKillFx(id, victimChar)
+local function playKillFx(id, victimChar, killer)
 	-- what it leaves (Combat ▸ Corpses): booked now, laid when the effect hides the body
 	local def = Catalog.KILLFX_BY[id]
 	if Corpses then Corpses.pending(victimChar, def.remains or "body", KILL_FX_DELAY + (def.remainsAt or 1.5)) end
@@ -65,7 +73,7 @@ local function playKillFx(id, victimChar)
 	local origin = originOf(victimChar)
 	if not origin then return end
 	-- (not the body itself: a client that hasn't streamed it in would get nil)
-	fx:FireAllClients("Kill", id, Corpses and Corpses.idOf(victimChar) or victimChar:GetAttribute("CorpseId") or 0, origin, coloursOf(victimChar))
+	fx:FireAllClients("Kill", id, Corpses and Corpses.idOf(victimChar) or victimChar:GetAttribute("CorpseId") or 0, origin, coloursOf(victimChar), bannerOf(killer))
 end
 
 -- the killer's kill effect on the victim's body (only one they own)
@@ -75,7 +83,7 @@ _G.KillFxHook = function(killer, victimChar)
 	local p = Profile.get(killer)
 	local id = p and p.killfx
 	if type(id) ~= "string" or not Catalog.KILLFX_BY[id] or not Profile.has(killer, "killfx", id) then return end
-	playKillFx(id, victimChar)
+	playKillFx(id, victimChar, killer)
 end
 -- a bot's (a staff showcase dresses its bots like players: Game ▸ Showcase)
 _G.KillFxPlay = function(id, victimChar)

@@ -1718,7 +1718,8 @@ function Preview.killFx(parent, id, size, still, light)
 			if (d:IsA("BasePart") and d.Name ~= "HumanoidRootPart") or d:IsA("Decal") then table.insert(bodyParts, d) end
 		end
 		local torso = rig:FindFirstChild("Torso")
-		return Preview.KillFX.play(id, world, torso and torso.CFrame or CFrame.new(), {body = bodyParts, freezeAt = freeze, sound = sound})
+		-- (yours: the Standard flies your own arms)
+		return Preview.KillFX.play(id, world, torso and torso.CFrame or CFrame.new(), {body = bodyParts, freezeAt = freeze, sound = sound, banner = {arms = player:GetAttribute("Arms")}})
 	end
 	if still then once(still); return holder end
 	task.spawn(function()

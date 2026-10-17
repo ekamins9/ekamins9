@@ -2893,7 +2893,9 @@ respawn). A kill effect decides what is left instead (`Catalog ▸ KillFX` `rema
 black feathers, Inferno a **charred skeleton** in a smoking heap of ash, Thunderstrike a
 **blackened, smoking body**, Royal Decree a **golden statue** with a crown, Shatter **rubble** in the
 body's colours, Gold Rush a **heap of coins**, Confetti Pop **confetti**, Frozen **ice shards**, Shadow
-Rift a **scorched ring**, Ascension **a few glowing feathers**. With anything but a body or a statue
+Rift a **scorched ring**, Ascension **a few glowing feathers**. Raise the Standard leaves the body as it
+fell, with the killer's war banner planted beside it a while: their own coat of arms (Catalog ▸
+Arms), on their side's colour in a team fight. With anything but a body or a statue
 the severed limbs go with it (bones for a skeleton). A body and its limbs fade together.
 
 **Clean-up (`Combat ▸ Janitor`).** What a fight leaves behind lies around a while and then fades

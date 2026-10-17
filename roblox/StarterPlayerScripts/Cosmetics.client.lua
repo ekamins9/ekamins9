@@ -95,16 +95,17 @@ local function bodyById(id)
 	return nil
 end
 
-fx.OnClientEvent:Connect(function(what, a, b, c, d)
+fx.OnClientEvent:Connect(function(what, a, b, c, d, e)
 	if what == "Kill" then
-		-- a = effect id, b = the body's CorpseId, c = where (server), d = its colours.
+		-- a = effect id, b = the body's CorpseId, c = where (server), d = its colours, e = whose
+		-- kill (their arms and side, for the Standard).
 		-- Everyone sees it: with the body streamed in it plays on it (and hides
 		-- it); without, it plays where the server says, in the body's colours.
 		local char = bodyById(b)
 		local torso = char and (char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart"))
 		local origin = torso and originOver(char, torso) or (typeof(c) == "CFrame" and c or nil)
 		if not origin then return end
-		KillFX.play(a, fxFolder, origin, {body = torso and bodyParts(char) or nil, colors = type(d) == "table" and d or nil, world = true})
+		KillFX.play(a, fxFolder, origin, {body = torso and bodyParts(char) or nil, colors = type(d) == "table" and d or nil, banner = type(e) == "table" and e or nil, world = true})
 	elseif what == "Emote" then
 		local plr, id, startedAt = a, b, c
 		if typeof(plr) ~= "Instance" or not plr.Character then return end

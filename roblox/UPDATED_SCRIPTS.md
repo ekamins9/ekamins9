@@ -1,4 +1,27 @@
-# Updated scripts: the class cards read at a glance
+# Updated scripts: Raise the Standard, a kill effect that flies your arms
+
+- **Raise the Standard** (Legendary, Relic Crate): your war banner whistles down out of the sky,
+  plants itself beside whoever you finished off with a thud and a burst of earth, and unfurls your
+  own coat of arms (LOOK ▸ YOUR ARMS) to a fanfare; in a team fight on your side's colour, with no
+  arms of your own your side's house's. The body stays where it fell. The Armory's preview flies
+  yours.
+- The server now says whose kill it was with every kill effect (their arms and side), so any
+  effect can use it.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [KillFX.lua](ReplicatedStorage/KillFX.lua) | ReplicatedStorage | ModuleScript | `FX.Standard`, `standardLook`; `opts.banner` |
+| [Catalog/KillFX.lua](ReplicatedStorage/Catalog/KillFX.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | its entry |
+| [Catalog/Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the Relic Crate's line |
+| [Cosmetics.server.lua](ServerScriptService/Hub/Cosmetics.server.lua) | ServerScriptService ▸ Hub | Script | `bannerOf(killer)` sent with "Kill" |
+| [Cosmetics.client.lua](StarterPlayerScripts/Cosmetics.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | passes it on |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the preview flies your arms |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the arms line mentions it |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: the class cards read at a glance
 
 - **CHOOSE YOUR CLASS**: each card shows three bars (TOUGHNESS, SPEED, STAMINA) where a
   paragraph used to end in "…"; the class you pick is described in full under the cards. The

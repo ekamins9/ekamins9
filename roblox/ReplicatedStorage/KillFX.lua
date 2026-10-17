@@ -15,6 +15,8 @@
            opts.freezeAt  0..1: build the effect frozen at that moment (tests)
            opts.colors    the body's colours when the body itself isn't here (a
                        client that hasn't streamed it in still sees the effect)
+           opts.banner    whose kill it was, for the effects that fly their arms (the
+                       Standard): {arms = "emblem|metal|field", team = Color3}
        KillFX.IDS      every effect id
 
      Effects only touch the body locally (LocalTransparencyModifier, a local
@@ -1474,6 +1476,166 @@ FX.Supernova = function(folder, origin, opts)
 			stepDebris(stars, sa, dt, {gravity = 4, fadeFrom = 0.5}, D * (1 - BLOW))
 		else
 			hideBits(stars)
+		end
+	end)
+	return D
+end
+
+-- YOUR STANDARD: a war banner whistles down out of the sky, plants itself beside the fallen with a
+-- thud and a burst of earth, and unfurls your own coat of arms to a fanfare (opts.banner: {arms =
+-- "emblem|metal|field", team = Color3}: your arms, on your side's colour in a team fight; none of
+-- your own, your side's house's (ReplicatedStorage ▸ Houses); neither, a gold lion on crimson).
+-- The body stays where it fell; the standard sways, flies a while, and fades.
+local function standardLook(opts)
+	local RS = game:GetService("ReplicatedStorage")
+	local b = type(opts.banner) == "table" and opts.banner or {}
+	local look = {emblem = "lion", metal = Color3.new(1.06, 0.84, 0.4), edge = Color3.fromRGB(26, 20, 18),
+		field = typeof(b.team) == "Color3" and b.team or Color3.fromRGB(150, 28, 34)}
+	local okC, Catalog = pcall(require, RS:WaitForChild("Catalog"))
+	local e, m, f
+	if type(b.arms) == "string" then e, m, f = string.match(b.arms, "^([^|]+)|([^|]*)|(.*)$") end
+	local A = okC and Catalog.ARMS
+	if e and A and A.EMBLEM[e] then
+		local metal = A.METAL[m] or A.METALS[1]
+		local field = Catalog.COLOR[f or ""]
+		look.emblem, look.metal, look.edge = e, metal.color, metal.edge
+		if typeof(b.team) ~= "Color3" and field then look.field = field.color end
+	elseif typeof(b.team) == "Color3" then
+		local okH, Houses = pcall(require, RS:WaitForChild("Houses"))
+		local map = workspace:FindFirstChild("Map")
+		local em = okH and Houses.forColor(b.team, map and map:GetAttribute("HouseSeed") or nil)
+		if em then look.emblem = em end
+	end
+	local art = RS:FindFirstChild("ShieldArt")
+	local function pic(n) local v = art and art:FindFirstChild(n); return v and v.Value ~= "" and v.Value or nil end
+	look.tex, look.texO, look.texS = pic(look.emblem), pic(look.emblem .. "_o"), pic(look.emblem .. "_s")
+	return look
+end
+
+FX.Standard = function(folder, origin, opts)
+	local D, TL = 3.8, 0.34                -- how long it all takes; when it lands
+	local L = standardLook(opts)
+	-- (smaller in a menu's preview, or the cloth would fly out of its frame)
+	local k = opts.world and 1 or 0.6
+	local function V(x, y, z) return Vector3.new(x, y, z) * k end
+	local function C(x, y, z) return CFrame.new(x * k, y * k, z * k) end
+	local floorCF = floorOf(origin)
+	-- where it stands: beside the fallen, facing as they did (a preview's stands clear of the figure)
+	local S = floorCF * (opts.world and CFrame.new(2.4, 0, 0.4) or CFrame.new(3.1, 0, 1.2))
+	local WOOD, GOLD = Color3.fromRGB(70, 46, 30), Color3.fromRGB(222, 178, 76)
+	local POLE, W, H, TOP = 13, 3.4, 4.6, 11.1   -- the pole's length, the cloth's width and drop, its top
+	local cols = {Color3.fromRGB(96, 74, 52), Color3.fromRGB(120, 96, 66), Color3.fromRGB(78, 62, 46)}
+
+	-- the standard, built rolled up: each piece's place in the standard's own space
+	local pieces = {}
+	local function piece(p, rel) table.insert(pieces, {p = p, rel = rel, t0 = p.Transparency}); return p end
+	piece(part(folder, Enum.PartType.Cylinder, V(POLE, 0.32, 0.32), CFrame.new(), WOOD, M.Wood), C(0, POLE / 2 - 1.2, 0) * CFrame.Angles(0, 0, math.pi / 2))
+	piece(part(folder, Enum.PartType.Ball, V(0.62, 0.62, 0.62), CFrame.new(), GOLD, M.Metal), C(0, POLE - 1.1, 0))
+	piece(blob(folder, V(0.36, 1.2, 0.36), CFrame.new(), GOLD, M.Metal), C(0, POLE - 0.35, 0))
+	piece(part(folder, Enum.PartType.Cylinder, V(W + 0.5, 0.22, 0.22), CFrame.new(), WOOD, M.Wood), C(0, TOP + 0.12, -0.24))
+	for _, x in ipairs({-1, 1}) do piece(part(folder, Enum.PartType.Ball, V(0.38, 0.38, 0.38), CFrame.new(), GOLD, M.Metal), C(x * (W / 2 + 0.3), TOP + 0.12, -0.24)) end
+	-- the cloth and what hangs from it (placed every frame: it unrolls, then flies)
+	local cloth = part(folder, Enum.PartType.Block, V(W, 0.3, 0.1), CFrame.new(), L.field, M.Fabric)
+	local fringe = part(folder, Enum.PartType.Block, V(W + 0.06, 0.2, 0.14), CFrame.new(), GOLD, M.Metal)
+	local dags = {}
+	for i = 1, 4 do
+		table.insert(dags, {p = part(folder, Enum.PartType.Block, V(0.6, 0.6, 0.09), CFrame.new(), L.field, M.Fabric), x = (i - 2.5) * (W / 4)})
+	end
+	-- the arms on both faces: shadow, outline, emblem (Decals on clear plates, as the shields wear them)
+	local plates, decals = {}, {}
+	local side = math.min(W, H) * 0.8 * k
+	if L.tex then
+		for _, back in ipairs({false, true}) do
+			local pl = part(folder, Enum.PartType.Block, Vector3.new(side, side, 0.01), CFrame.new(), Color3.new(), M.SmoothPlastic, 1)
+			local layers = {}
+			if L.texS then table.insert(layers, {L.texS, Color3.new(0, 0, 0), 0.3}) end
+			if L.texO then table.insert(layers, {L.texO, L.edge, 0}) end
+			table.insert(layers, {L.tex, L.metal, 0})
+			for z, l in ipairs(layers) do
+				local d = Instance.new("Decal")
+				d.Face = Enum.NormalId.Front
+				d.Texture = l[1]; d.Color3 = l[2]; d.ZIndex = z
+				d.Transparency = 1
+				d.Parent = pl
+				table.insert(decals, {d = d, t0 = l[3]})
+			end
+			table.insert(plates, {p = pl, back = back})
+		end
+	end
+	-- the landing: a scar of turned earth, a ring of dust, clods flying, a flash of gold
+	local scar = part(folder, Enum.PartType.Cylinder, V(0.08, 2.4, 2.4), S * CFrame.new(0, 0.05, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(88, 66, 46), M.Ground, 1)
+	local dust = shockRing(folder, S, Color3.fromRGB(150, 128, 100), M.SmoothPlastic)
+	dust.Transparency = 1
+	local glow = part(folder, Enum.PartType.Ball, Vector3.one, S, GOLD, M.Neon, 1)
+	local clods = debris(folder, S * CFrame.new(0, 0.4, 0), 12, function(i)
+		return part(folder, Enum.PartType.Block, Vector3.one * rng:NextNumber(0.25, 0.55) * k, CFrame.new(), cols[(i - 1) % #cols + 1], M.Ground)
+	end, {upMin = 0.7, upMax = 1.3, speedMin = 8 * k, speedMax = 16 * k})
+	hideBits(clods)
+
+	sfx(folder, opts, S * CFrame.new(0, 30, 0), SND.whoosh, {volume = 0.55, speed = 0.7, cut = 0.5, fade = 0.15})
+	sfx(folder, opts, S, SND.dirtHit, {volume = 1, delay = TL, speed = 0.85})
+	sfx(folder, opts, S, SND.metalHit, {volume = 0.5, delay = TL, speed = 0.7})
+	sfx(folder, opts, S * CFrame.new(0, 8, 0), SND.fanfare, {volume = 0.6, delay = TL + 0.25, cut = 2.6, fade = 0.7, far = 220})
+	local sparkled = false
+
+	animate(D, opts, function(a, dt)
+		local t = a * D
+		local out = seg(t, D - 0.7, D)              -- the fade at the end
+		-- (falling: from high up, tilted, faster and faster; landed: a wobble that dies away)
+		local base
+		if t < TL then
+			local f = t / TL
+			base = S * C(0, 42 * (1 - f * f), 0) * CFrame.Angles(0, 0, math.rad(9) * (1 - f))
+		else
+			local s = t - TL
+			base = S * CFrame.Angles(math.rad(5) * math.exp(-4 * s) * math.sin(16 * s), 0, 0)
+		end
+		for _, q in ipairs(pieces) do
+			q.p.CFrame = base * q.rel
+			q.p.Transparency = q.t0 + (1 - q.t0) * out
+		end
+		-- the cloth: rolled at the bar, unrolling as it lands, then flying in the wind
+		local unroll = easeOut(seg(t, TL + 0.04, TL + 0.5))
+		local h = (0.3 + (H - 0.3) * unroll) * k
+		local fly = seg(t, TL + 0.3, TL + 1.2)
+		local bar = base * C(0, TOP, -0.36) * CFrame.Angles(math.rad(4) * fly * math.sin(5.5 * t), math.rad(6) * fly * math.sin(3.7 * t + 1), 0)
+		cloth.Size = Vector3.new(W * k, h, 0.1 * k)
+		cloth.CFrame = bar * CFrame.new(0, -h / 2, 0)
+		cloth.Transparency = out
+		fringe.CFrame = bar * CFrame.new(0, -h, 0)
+		fringe.Transparency = out
+		local dagIn = seg(t, TL + 0.4, TL + 0.55)
+		for i, dg in ipairs(dags) do
+			-- (the dagged hem: points hanging under the fringe, each swinging a touch on its own)
+			local sw = math.rad(7) * fly * math.sin(6.3 * t + i * 1.7)
+			dg.p.CFrame = bar * CFrame.new(dg.x * k, -h, 0) * CFrame.Angles(0, 0, sw) * CFrame.Angles(0, 0, math.pi / 4)
+			dg.p.Transparency = 1 - dagIn * (1 - out)
+		end
+		local armsIn = seg(t, TL + 0.42, TL + 0.75)
+		for _, pl in ipairs(plates) do
+			local c = bar * CFrame.new(0, -h / 2 + H * 0.06 * k, 0)
+			pl.p.CFrame = pl.back and (c * C(0, 0, 0.07) * CFrame.Angles(0, math.pi, 0)) or (c * C(0, 0, -0.07))
+		end
+		for _, d in ipairs(decals) do
+			local seen = armsIn * (1 - out)
+			d.d.Transparency = 1 - seen * (1 - d.t0)
+		end
+		-- the landing
+		local hit = seg(t, TL, TL + 0.7)
+		if t >= TL then
+			scar.Transparency = 0.35 + 0.65 * out
+			stepRing(dust, S, hit, 6 * k, 0.3 * k)
+			dust.Transparency = hit >= 1 and 1 or 0.55 + 0.45 * hit
+			local g = seg(t, TL, TL + 0.35)
+			glow.Size = Vector3.one * (0.6 + 3 * easeOut(g)) * k
+			glow.CFrame = S * C(0, 0.8, 0)
+			glow.Transparency = 0.6 + 0.4 * g
+			stepDebris(clods, math.min((t - TL) / 1.1, 1), dt, {floor = S.Position.Y + 0.15, fadeFrom = 0.55, gravity = 30 * k}, 1.1)
+			if opts.world and not sparkled and t >= TL + 0.45 and not opts.freezeAt then
+				sparkled = true
+				emit(cloth.CFrame, folder, {Texture = SPARK, Color = ColorSequence.new(GOLD), LightEmission = 1, Size = NumberSequence.new(0.5, 0),
+					Lifetime = NumberRange.new(1, 1.8), Speed = NumberRange.new(1.5, 4), SpreadAngle = Vector2.new(180, 180), Acceleration = Vector3.new(0, 2, 0), Rate = 26})
+			end
 		end
 	end)
 	return D

@@ -34,7 +34,7 @@ return {
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(170, 130, 90),
 	},
 	Relic = {
-		name = "Relic Crate", description = "Kill effects and emotes: thunder, fire, ice, a blade toss, a jig.",
+		name = "Relic Crate", description = "Kill effects and emotes: thunder, fire, ice, your own war banner, a blade toss, a jig.",
 		cost = 80, odds = {Common = 44, Rare = 34, Epic = 17.5, Legendary = 4.2, Mythic = 0.3}, pity = 30,
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(150, 120, 255),
 	},

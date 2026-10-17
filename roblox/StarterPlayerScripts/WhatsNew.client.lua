@@ -20,7 +20,7 @@ local NEWS = {
 	title = "ARMS, BANNERS AND THE LAND BEYOND",
 	lines = {
 		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn. 33 new"},
-		{"👑", "Your own coat of arms", "pick an emblem and your colours in the loadout's LOOK tab: your plain shield carries it"},
+		{"👑", "Your own coat of arms", "pick an emblem and colours in LOOK: your shield carries it, and the new Raise the Standard kill effect plants it on the field"},
 		{"🚩", "Two houses at war", "every banner flies its house's arms, and each side's plain shields carry them to battle"},
 		{"🏞", "No map floats", "the land runs on past every map's edge: hills, woods, camps, mountains to the horizon"},
 		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
