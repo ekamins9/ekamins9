@@ -1,4 +1,30 @@
-# Updated scripts: the Siege of Stormwatch, a new player's first battle
+# Updated scripts: WAR, the massive battle
+
+- **A new mode on the Play screen's first tile: WAR.** Two armies, players and 36 bots side by side, on a battlefield built fresh each round: five banners to take one by one as a front, reinforcements that bleed away, trebuchets with red warning rings, archer volleys (raise your guard or get under a roof), battle-mages' meteor storms, chain lightning and frost, and cavalry charges.
+- **The rest of both armies clash on the flanks**: hundreds of soldiers in regiments (foot, pikes, archers, battle-mages) marching to the front and fighting there, drawn on your screen only, so the server never pays for them.
+- **Five battlefields**: Redfield, Ironridge, Frostmere, Ashvale, Kingsbridge, each with its own place in the middle (a village and windmill, a ruined fort, a frozen lake, burning farmsteads, a river with bridges and a ford), weather and light. Vote pictures for each.
+- **The HUD**: reinforcements, the clock, the banners as chips, what's happening at your banner, big calls and warnings; an opening flight over the field the first time you spawn in a round.
+- **Optimized**: the crowds live under the camera, outside the physics world, and only move when they must. Measured: from 13 fps to 53 fps in the heaviest view. The bot count follows the server's frame rate.
+- **Horde moved to the Adventures page** (WAR took its place); Powers.client: a swirling zone's inverted speed range fixed.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | armies, strikes, frost, weather, the crowd folder |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS / MODES War, maps, titles, fighters |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | a mode's botTarget |
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build | ModuleScript | K.terrain `fast` |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the WAR tile and scene; Horde to the adventures |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | range fix |
+| [README.md](README.md) | | doc | War |
+
+Studio-only (save the place): ReplicatedStorage ▸ MapShots ▸ Redfield, Ironridge, Frostmere, Ashvale, Kingsbridge.
+
+---
+
+## Before that: the Siege of Stormwatch, a new player's first battle
 
 - **A brand-new player starts in a battle**: a dark, stormy night, the Iron Host at the gate of Stormwatch. They learn every move in the middle of it: swing, stab and overhead on raiders over the wall, dodging trebuchet fire, block / parry / riposte against a raider through the breach, kicking a brute's guard open, running the gauntlet of arrows to the gate, holding the gate beside the garrison, and a duel with Lord Varg, the Host's champion.
 - **Cutscenes**: the opening (the storm, the camp, a fireball into a tower, Captain Hale), the ram breaking the gate, Lord Varg's entrance, dawn and the King's riders. Black bars, a flying camera, subtitles, title cards; any of them can be skipped.
@@ -56,18 +82,4 @@
 | [DeathScreen.client.lua](StarterPlayerScripts/DeathScreen.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the dungeon game's next-step lines |
 | [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | steps aside for the lobby |
 | [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | mannequins never naked |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: dawn burns the dead; the dragon's last flight
-
-- **Plague Night**: when the clock runs out with anyone living, the sun comes up and the dead burn away where they stand.
-- **Dragonfall**: at a fifth of its health left (enraged), Cindermaw takes to the sky one last time: man the ballistae again to bring it down for good.
-- **Checked in Play**: the dragon enraged at a third, took off again at 18%, the ballistae lit up, three bolts crashed it; compile of every touched script.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Plague.lua](ServerScriptService/Game/Modes/Plague.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | dawn burns the dead away |
-| [Dragon.lua](ServerScriptService/Combat/Dragon.lua) | ServerScriptService ▸ Combat | ModuleScript | a last flight near the end |
 | [README.md](README.md) | | doc | |

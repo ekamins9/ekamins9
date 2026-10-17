@@ -23,7 +23,13 @@
                                           thunder, heavy cloud · off: the rain thins out over `fade` s
        WarFX.riders(path, n, opts)        a column of horsemen riding along a list of points
                                           (opts.color, opts.speed, opts.lances) · handle:stop()
-       WarFX.clear()                      everything gone (leaving the mode) ]]
+       WarFX.strike(pos, opts)            a bolt from the sky onto a point (a battle-mage's lightning)
+       WarFX.frost(pos, r)                a burst of ice and cold mist (a battle-mage's frost)
+       WarFX.weather(kind, fade)          "storm" (= WarFX.storm), "rain", "snow", "embers", or nil: off
+       WarFX.army()                       the armies on the flanks: regiments of cheap figures that
+                                          march, clash, loose and cast (ARMIES below)
+       WarFX.clear()                      everything gone (leaving the mode)
+     A fireball takes opts.color (a battle-mage's meteor) and opts.size; a blast opts.color. ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -47,14 +53,24 @@ local function shakeSetting()
 	return type(v) == "number" and v or 1
 end
 
--- everything lives in one local folder
-local folder
+-- two local folders: the world's (fire, lights, smoke, scorches) and the camera's for the crowds
+-- (arrows, raindrops, soldiers, horsemen, flying stones): parts under the camera are drawn but
+-- never enter the physics world, so moving thousands of them each frame stays cheap
+local folder, crowdFolder
 local function home()
 	if folder and folder.Parent then return folder end
 	folder = Instance.new("Folder")
 	folder.Name = "WarFX"
 	folder.Parent = workspace
 	return folder
+end
+local function crowd()
+	local cam = workspace.CurrentCamera
+	if crowdFolder and crowdFolder.Parent and crowdFolder.Parent == cam then return crowdFolder end
+	crowdFolder = Instance.new("Folder")
+	crowdFolder.Name = "WarFXCrowd"
+	crowdFolder.Parent = cam or workspace
+	return crowdFolder
 end
 
 local function part(size, color, mat, transp)
@@ -190,7 +206,7 @@ end
 --  THE LOOP: arrows, shots, flying stones, horsemen (one connection, bulk moves)
 --------------------------------------------------------------------
 local pool, flying, stuck = {}, {}, {}
-local shots, stones, columns = {}, {}, {}
+local shots, stones, columns, armies = {}, {}, {}, {}
 local MAX_STUCK = 260
 local ARROW = Color3.fromRGB(86, 66, 46)
 local FLETCH = Color3.fromRGB(226, 220, 206)
@@ -203,9 +219,13 @@ local function newArrow()
 	return {shaft, tail}
 end
 local function takeArrow()
-	local a = table.remove(pool) or newArrow()
-	local h = home()
-	if a[1].Parent ~= h then a[1].Parent = h; a[2].Parent = h end
+	local h = crowd()
+	local a = table.remove(pool)
+	if a and a[1].Parent ~= h then
+		local ok = pcall(function() a[1].Parent = h; a[2].Parent = h end)
+		if not ok then a = nil end
+	end
+	if not a then a = newArrow(); a[1].Parent = h; a[2].Parent = h end
 	return a
 end
 local function giveBack(a)
@@ -259,7 +279,7 @@ local function step(dt)
 				if d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Light") then d.Enabled = false end
 			end
 			Debris:AddItem(s.ball, 3)
-			if s.opts.blast ~= false then WarFX.blast(s.p1, {big = s.opts.big, far = s.opts.far}) end
+			if s.opts.blast ~= false then WarFX.blast(s.p1, {big = s.opts.big, far = s.opts.far, color = s.opts.color}) end
 			if s.opts.onLand then task.spawn(s.opts.onLand, s.p1) end
 		else
 			if s.opts.whistle and not s.whistled and (1 - u) * s.T <= 2.3 then
@@ -283,6 +303,11 @@ local function step(dt)
 			put(s.p, CF(s.pos) * CFrame.Angles(s.spin.X * s.t, s.spin.Y * s.t, s.spin.Z * s.t))
 		end
 	end
+	-- armies
+	for i = #armies, 1, -1 do
+		local ar = armies[i]
+		if ar.dead then table.remove(armies, i) else ar:step(now, dt, put) end
+	end
 	-- horsemen
 	for i = #columns, 1, -1 do
 		local c = columns[i]
@@ -305,7 +330,7 @@ end
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 local function refreshFilter()
-	local list = {home()}
+	local list = {home(), crowd()}
 	local npcs = workspace:FindFirstChild("NPCs")
 	if npcs then table.insert(list, npcs) end
 	for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(list, p.Character) end end
@@ -349,22 +374,25 @@ end
 function WarFX.fireball(from, to, T, opts)
 	opts = opts or {}
 	ensureLoop()
-	local ball = part(V3(3.4, 3.4, 3.4), Color3.fromRGB(255, 140, 40), Enum.Material.Neon)
+	local col = opts.color or Color3.fromRGB(255, 140, 40)
+	local sz = opts.size or 3.4
+	local ball = part(V3(sz, sz, sz), col, Enum.Material.Neon)
 	ball.Shape = Enum.PartType.Ball
 	ball.CFrame = CF(from)
 	local fire = Instance.new("Fire")
-	fire.Size, fire.Heat = 9, 0
-	fire.Color, fire.SecondaryColor = Color3.fromRGB(255, 150, 50), Color3.fromRGB(200, 50, 10)
+	fire.Size, fire.Heat = sz * 2.6, 0
+	fire.Color = opts.color and col:Lerp(Color3.new(1, 1, 1), 0.3) or Color3.fromRGB(255, 150, 50)
+	fire.SecondaryColor = opts.color and col:Lerp(Color3.new(), 0.4) or Color3.fromRGB(200, 50, 10)
 	fire.Parent = ball
 	local light = Instance.new("PointLight")
-	light.Range, light.Brightness, light.Color = 36, 3, Color3.fromRGB(255, 150, 60)
+	light.Range, light.Brightness, light.Color = 36, 3, col
 	light.Parent = ball
 	local a0 = Instance.new("Attachment"); a0.Position = V3(0, 1.3, 0); a0.Parent = ball
 	local a1 = Instance.new("Attachment"); a1.Position = V3(0, -1.3, 0); a1.Parent = ball
 	local trail = Instance.new("Trail")
 	trail.Attachment0, trail.Attachment1 = a0, a1
 	trail.Lifetime, trail.LightEmission, trail.FaceCamera = 0.7, 1, true
-	trail.Color = ColorSequence.new(Color3.fromRGB(255, 190, 90), Color3.fromRGB(140, 40, 10))
+	trail.Color = opts.color and ColorSequence.new(col:Lerp(Color3.new(1, 1, 1), 0.4), col:Lerp(Color3.new(), 0.5)) or ColorSequence.new(Color3.fromRGB(255, 190, 90), Color3.fromRGB(140, 40, 10))
 	trail.Transparency = NumberSequence.new(0.15, 1)
 	trail.WidthScale = NumberSequence.new(1, 0.2)
 	trail.Parent = ball
@@ -383,7 +411,8 @@ function WarFX.blast(pos, opts)
 	local cam = workspace.CurrentCamera
 	local d = cam and (cam.CFrame.Position - pos).Magnitude or 0
 	-- the fireball itself, swelling and gone
-	local orb = part(V3(2, 2, 2), Color3.fromRGB(255, 176, 70), Enum.Material.Neon)
+	local tint = opts.color
+	local orb = part(V3(2, 2, 2), tint or Color3.fromRGB(255, 176, 70), Enum.Material.Neon)
 	orb.Shape = Enum.PartType.Ball
 	orb.CFrame = CF(pos + V3(0, 1, 0))
 	orb.Parent = home()
@@ -392,21 +421,21 @@ function WarFX.blast(pos, opts)
 	-- light, smoke, sparks, flame
 	local a = anchorAt(pos + V3(0, 2, 0), 7)
 	local light = Instance.new("PointLight")
-	light.Range, light.Brightness, light.Color = big and 60 or 40, 9, Color3.fromRGB(255, 150, 70)
+	light.Range, light.Brightness, light.Color = big and 60 or 40, 9, tint or Color3.fromRGB(255, 150, 70)
 	light.Parent = a
 	TweenService:Create(light, TweenInfo.new(1.4, Enum.EasingStyle.Quad), {Brightness = 0}):Play()
 	emitter(a, {life = NumberRange.new(3, 5.5), size = NumberSequence.new({NumberSequenceKeypoint.new(0, big and 7 or 4), NumberSequenceKeypoint.new(1, big and 22 or 13)}),
 		speed = NumberRange.new(6, big and 22 or 14), color = ColorSequence.new(Color3.fromRGB(46, 42, 40)), accel = V3(0, 3, 0)}):Emit(big and 22 or 12)
 	emitter(a, {texture = SPARK, life = NumberRange.new(0.6, 1.4), size = NumberSequence.new(1.2, 0), speed = NumberRange.new(30, 70),
-		color = ColorSequence.new(Color3.fromRGB(255, 200, 90), Color3.fromRGB(255, 90, 20)), transparency = NumberSequence.new(0, 1), glow = 1, accel = V3(0, -60, 0), drag = 0.5}):Emit(big and 40 or 22)
+		color = tint and ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.5), tint) or ColorSequence.new(Color3.fromRGB(255, 200, 90), Color3.fromRGB(255, 90, 20)), transparency = NumberSequence.new(0, 1), glow = 1, accel = V3(0, -60, 0), drag = 0.5}):Emit(big and 40 or 22)
 	emitter(a, {texture = FIRE_TEX, life = NumberRange.new(0.35, 0.8), size = NumberSequence.new(big and 10 or 6, 2), speed = NumberRange.new(8, 22),
-		color = ColorSequence.new(Color3.fromRGB(255, 180, 70), Color3.fromRGB(255, 70, 20)), transparency = NumberSequence.new(0.1, 1), glow = 1, accel = V3(0, 10, 0)}):Emit(big and 16 or 9)
+		color = tint and ColorSequence.new(tint:Lerp(Color3.new(1, 1, 1), 0.3), tint) or ColorSequence.new(Color3.fromRGB(255, 180, 70), Color3.fromRGB(255, 70, 20)), transparency = NumberSequence.new(0.1, 1), glow = 1, accel = V3(0, 10, 0)}):Emit(big and 16 or 9)
 	-- stones and splinters thrown up
 	for _ = 1, big and 10 or 5 do
 		local r = 0.5 + math.random() * (big and 1.4 or 0.9)
 		local s = part(V3(r, r * 0.8, r * 1.1), math.random() < 0.5 and Color3.fromRGB(70, 66, 62) or Color3.fromRGB(96, 74, 52), Enum.Material.Slate)
 		s.CFrame = CF(pos)
-		s.Parent = home()
+		s.Parent = crowd()
 		local ang = math.random() * math.pi * 2
 		local sp = 16 + math.random() * (big and 34 or 22)
 		table.insert(stones, {p = s, pos = pos + V3(0, 1, 0), vel = V3(math.cos(ang) * sp, 26 + math.random() * 36, math.sin(ang) * sp),
@@ -446,21 +475,21 @@ function WarFX.dust(pos, size, color)
 end
 
 --------------------------------------------------------------------
---  THE STORM: rain round the camera, lightning, cloud
+--  THE SKY: lightning, a battle-mage's strikes and frost, the weather
 --------------------------------------------------------------------
-local storm = nil
-local function bolt(at)
+local function bolt(at, exact, color)
 	local h = home()
 	local segs = {}
 	local p = at + V3(0, 330, 0)
 	local function line(a, b, w)
-		local s = part(V3(w, w, (b - a).Magnitude), Color3.fromRGB(220, 230, 255), Enum.Material.Neon)
+		local s = part(V3(w, w, (b - a).Magnitude), color or Color3.fromRGB(220, 230, 255), Enum.Material.Neon)
 		s.CFrame = CFrame.lookAt((a + b) / 2, b)
 		s.Parent = h
 		table.insert(segs, s)
 	end
 	for i = 1, 9 do
-		local q = V3(at.X + (math.random() - 0.5) * 50, 330 - i * 34, at.Z + (math.random() - 0.5) * 50)
+		local q = V3(at.X + (math.random() - 0.5) * 50 * (1 - i / 10), at.Y + 330 - i * 36.6, at.Z + (math.random() - 0.5) * 50 * (1 - i / 10))
+		if exact and i == 9 then q = at end
 		line(p, q, 1.6)
 		if math.random() < 0.35 then
 			local b = q + V3((math.random() - 0.5) * 70, -30 - math.random() * 30, (math.random() - 0.5) * 70)
@@ -494,101 +523,163 @@ function WarFX.lightning(near)
 	end)
 end
 
-function WarFX.storm(on, fade)
-	if on then
-		if storm then return end
-		local s = {drops = {}, visible = true, n = 220, alive = true}
-		storm = s
-		local h = home()
-		for i = 1, s.n do
-			local d = part(V3(0.07, 0.07, 3), Color3.fromRGB(168, 184, 210), Enum.Material.SmoothPlastic, 0.5)
-			d.CFrame = FAR
-			d.Parent = h
-			s.drops[i] = {p = d, pos = nil}
-		end
-		local WIND = V3(16, -110, 7)
-		local parts, cfs = {}, {}
-		local up = RaycastParams.new()
-		up.FilterType = Enum.RaycastFilterType.Exclude
-		local nextRoof = 0
-		s.conn = RunService.RenderStepped:Connect(function(dt)
-			local cam = workspace.CurrentCamera
-			if not cam then return end
-			local c = cam.CFrame.Position
-			local now = os.clock()
-			-- under a roof (or deep in the keep): no rain in your face
-			if now > nextRoof then
-				nextRoof = now + 0.3
-				local char = Players.LocalPlayer.Character
-				up.FilterDescendantsInstances = {h, char}
-				local roofed = workspace:Raycast(c, V3(0, 60, 0), up) ~= nil
-				if roofed == s.visible then
-					s.visible = not roofed
-					for _, dr in ipairs(s.drops) do dr.p.Transparency = s.visible and 0.5 or 1 end
-				end
+-- a battle-mage's lightning: a bolt onto the very spot, a crack of thunder, a flash
+function WarFX.strike(pos, opts)
+	opts = opts or {}
+	bolt(pos, true, opts.color)
+	local cam = workspace.CurrentCamera
+	local d = cam and (cam.CFrame.Position - pos).Magnitude or 0
+	WarFX.flash(math.clamp(0.5 - d / 600, 0.06, 0.5))
+	WarFX.sound("Thunder", pos, {range = 1600, near = 90, volume = 1.1, speed = 1.1 + math.random() * 0.15})
+	local a = anchorAt(pos + V3(0, 1, 0), 3)
+	local light = Instance.new("PointLight")
+	light.Range, light.Brightness, light.Color = 40, 10, opts.color or Color3.fromRGB(180, 200, 255)
+	light.Parent = a
+	TweenService:Create(light, TweenInfo.new(0.6), {Brightness = 0}):Play()
+	emitter(a, {texture = SPARK, life = NumberRange.new(0.3, 0.8), size = NumberSequence.new(1, 0), speed = NumberRange.new(20, 50),
+		color = ColorSequence.new(Color3.fromRGB(220, 235, 255), opts.color or Color3.fromRGB(120, 160, 255)), transparency = NumberSequence.new(0, 1), glow = 1, drag = 1}):Emit(30)
+	local sc = part(V3(0.2, 6, 6), Color3.fromRGB(24, 22, 26), Enum.Material.Slate, 0.25)
+	sc.Shape = Enum.PartType.Cylinder
+	sc.CFrame = CF(pos + V3(0, 0.08, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	sc.Parent = home()
+	Debris:AddItem(sc, 14)
+	local k = 1.3 * math.clamp(1 - d / 160, 0, 1)
+	if k > 0.05 then WarFX.shake(k, 0.4) end
+end
+
+-- a battle-mage's frost: shards of ice burst from the ground in a ring, a cold mist rolls out
+function WarFX.frost(pos, r)
+	r = r or 14
+	for i = 1, 14 do
+		local ang = i / 14 * math.pi * 2
+		local sh = part(V3(0.9, 3 + math.random() * 3, 0.9), Color3.fromRGB(170, 220, 255), Enum.Material.Ice, 0.15)
+		local at = pos + V3(math.cos(ang) * r * (0.35 + math.random() * 0.6), 0, math.sin(ang) * r * (0.35 + math.random() * 0.6))
+		local cf = CF(at - V3(0, 4, 0)) * CFrame.Angles(math.random() - 0.5, math.random() * 6, math.random() - 0.5)
+		sh.CFrame = cf
+		sh.Parent = home()
+		TweenService:Create(sh, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {CFrame = cf + V3(0, 4.5, 0)}):Play()
+		task.delay(3 + math.random(), function() if sh.Parent then TweenService:Create(sh, TweenInfo.new(0.8), {Transparency = 1}):Play() end end)
+		Debris:AddItem(sh, 5.5)
+	end
+	local a = anchorAt(pos + V3(0, 1, 0), 6)
+	emitter(a, {life = NumberRange.new(2, 3.5), size = NumberSequence.new(4, 11), speed = NumberRange.new(r * 0.5, r),
+		color = ColorSequence.new(Color3.fromRGB(205, 232, 255)), transparency = NumberSequence.new(0.4, 1), accel = V3(0, 0.5, 0)}):Emit(30)
+	local l = Instance.new("PointLight")
+	l.Range, l.Brightness, l.Color = math.min(r * 2.5, 60), 4, Color3.fromRGB(150, 200, 255)
+	l.Parent = a
+	TweenService:Create(l, TweenInfo.new(1.5), {Brightness = 0}):Play()
+	WarFX.sound("Impact", pos, {speed = 1.7, volume = 0.6, range = 600})
+end
+
+-- WEATHER round the camera: each drop a thin part, all moved in one bulk move
+local WEATHER = {
+	storm = {n = 220, size = V3(0.07, 0.07, 3), color = Color3.fromRGB(168, 184, 210), alpha = 0.5, wind = V3(16, -110, 7), lightning = true, roof = true,
+		clouds = {Cover = 0.86, Density = 0.75, Color = Color3.fromRGB(50, 56, 70)}},
+	rain = {n = 150, size = V3(0.06, 0.06, 2.6), color = Color3.fromRGB(176, 190, 214), alpha = 0.55, wind = V3(8, -100, 4), roof = true,
+		clouds = {Cover = 0.72, Density = 0.6, Color = Color3.fromRGB(120, 126, 138)}},
+	snow = {n = 200, size = V3(0.3, 0.3, 0.3), color = Color3.fromRGB(245, 248, 255), alpha = 0.1, wind = V3(4, -9, 2), drift = 3, roof = true, round = true,
+		clouds = {Cover = 0.72, Density = 0.5, Color = Color3.fromRGB(220, 226, 236)}},
+	embers = {n = 80, size = V3(0.22, 0.22, 0.22), color = Color3.fromRGB(255, 140, 50), alpha = 0, wind = V3(3, 5, 1), drift = 2.5, neon = true, rise = true, round = true},
+}
+local weather = nil
+function WarFX.weather(kind, fade)
+	local w = kind and WEATHER[kind]
+	if weather and weather.kind == kind then return end
+	-- the old weather thins out
+	local old = weather
+	weather = nil
+	if old then
+		old.alive = false
+		task.spawn(function()
+			local steps = math.max(1, math.floor((fade or 0) / 0.1))
+			for i = steps, 1, -1 do
+				old.n = math.floor(#old.drops * (i - 1) / steps)
+				for j = old.n + 1, #old.drops do old.drops[j].p.CFrame = FAR end
+				task.wait(0.1)
 			end
-			if not s.visible then return end
-			table.clear(parts); table.clear(cfs)
-			local live = s.n
-			for i, dr in ipairs(s.drops) do
-				if i > live then break end
-				local p = dr.pos
-				if not p or p.Y < c.Y - 28 or math.abs(p.X - c.X) > 40 or math.abs(p.Z - c.Z) > 40 then
-					p = V3(c.X + (math.random() - 0.5) * 80, c.Y + 10 + math.random() * 40, c.Z + (math.random() - 0.5) * 80)
-				end
-				p += WIND * dt
-				dr.pos = p
-				parts[i] = dr.p
-				cfs[i] = CFrame.lookAt(p, p + WIND)
+			if old.conn then old.conn:Disconnect() end
+			for _, dr in ipairs(old.drops) do dr.p:Destroy() end
+			if old.clouds and old.clouds.Parent then
+				if old.hadClouds then for k, v in pairs(old.oldClouds) do old.clouds[k] = v end else old.clouds:Destroy() end
 			end
-			workspace:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
 		end)
-		-- lightning, now and then
+	end
+	if not w then return end
+	local s = {kind = kind, drops = {}, visible = true, n = w.n, alive = true}
+	weather = s
+	local h = crowd()
+	for i = 1, w.n do
+		local d = part(w.size, w.color, w.neon and Enum.Material.Neon or Enum.Material.SmoothPlastic, w.alpha)
+		if w.round then d.Shape = Enum.PartType.Ball end
+		d.CFrame = FAR
+		d.Parent = h
+		s.drops[i] = {p = d, pos = nil, ph = math.random() * 6.28}
+	end
+	local parts, cfs = {}, {}
+	local up = RaycastParams.new()
+	up.FilterType = Enum.RaycastFilterType.Exclude
+	local nextRoof = 0
+	s.conn = RunService.RenderStepped:Connect(function(dt)
+		local cam = workspace.CurrentCamera
+		if not cam then return end
+		local c = cam.CFrame.Position
+		local now = os.clock()
+		-- under a roof: none in your face
+		if w.roof and now > nextRoof then
+			nextRoof = now + 0.3
+			up.FilterDescendantsInstances = {h, home(), Players.LocalPlayer.Character}
+			local roofed = workspace:Raycast(c, V3(0, 60, 0), up) ~= nil
+			if roofed == s.visible then
+				s.visible = not roofed
+				for _, dr in ipairs(s.drops) do dr.p.Transparency = s.visible and w.alpha or 1 end
+			end
+		end
+		if not s.visible then return end
+		table.clear(parts); table.clear(cfs)
+		local live = math.min(s.n, #s.drops)
+		for i = 1, live do
+			local dr = s.drops[i]
+			local p = dr.pos
+			local gone = not p or math.abs(p.X - c.X) > 40 or math.abs(p.Z - c.Z) > 40
+			if w.rise then gone = gone or p.Y > c.Y + 40 else gone = gone or p.Y < c.Y - 28 end
+			if gone then
+				local y = w.rise and (c.Y - 20 + math.random() * 10) or (c.Y + 10 + math.random() * 40)
+				p = V3(c.X + (math.random() - 0.5) * 80, y, c.Z + (math.random() - 0.5) * 80)
+			end
+			local v = w.wind
+			if w.drift then v += V3(math.sin(now * 1.3 + dr.ph) * w.drift, 0, math.cos(now * 1.1 + dr.ph) * w.drift) end
+			p += v * dt
+			dr.pos = p
+			parts[i] = dr.p
+			cfs[i] = CFrame.lookAt(p, p + v)
+		end
+		if live > 0 then workspace:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged) end
+	end)
+	if w.lightning then
 		task.spawn(function()
 			task.wait(2)
-			while storm == s and s.alive do
+			while weather == s and s.alive do
 				WarFX.lightning(math.random() < 0.15)
 				task.wait(5 + math.random() * 8)
 			end
 		end)
-		-- heavy cloud
+	end
+	if w.clouds then
 		local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
 		s.hadClouds = clouds ~= nil
 		if not clouds then clouds = Instance.new("Clouds"); clouds.Parent = workspace.Terrain end
 		s.clouds, s.oldClouds = clouds, {Cover = clouds.Cover, Density = clouds.Density, Color = clouds.Color}
-		clouds.Cover, clouds.Density, clouds.Color = 0.86, 0.75, Color3.fromRGB(50, 56, 70)
-		return
+		for k, v in pairs(w.clouds) do clouds[k] = v end
 	end
-	local s = storm
-	if not s then return end
-	storm = nil
-	s.alive = false
-	task.spawn(function()
-		-- the rain thins out
-		local steps = math.max(1, math.floor((fade or 0) / 0.1))
-		for i = steps, 1, -1 do
-			for j = math.floor(s.n * i / steps) + 1, #s.drops do s.drops[j].p.CFrame = FAR end
-			s.n = math.floor(#s.drops * (i - 1) / steps)
-			task.wait(0.1)
-		end
-		if s.conn then s.conn:Disconnect() end
-		for _, dr in ipairs(s.drops) do dr.p:Destroy() end
-		if s.clouds and s.clouds.Parent then
-			if s.hadClouds then
-				for k, v in pairs(s.oldClouds) do s.clouds[k] = v end
-			else
-				s.clouds:Destroy()
-			end
-		end
-	end)
 end
+function WarFX.storm(on, fade) WarFX.weather(on and "storm" or nil, fade) end
 
 --------------------------------------------------------------------
 --  HORSEMEN: a column riding along a path (each horse and rider a handful of parts)
 --------------------------------------------------------------------
 local HORSES = {Color3.fromRGB(70, 48, 32), Color3.fromRGB(40, 32, 28), Color3.fromRGB(120, 92, 64), Color3.fromRGB(200, 196, 186)}
 local function horseman(color, lance)
-	local h = home()
+	local h = crowd()
 	local coat = HORSES[math.random(#HORSES)]
 	local steel = Color3.fromRGB(150, 152, 158)
 	local list = {}
@@ -672,8 +763,223 @@ function WarFX.riders(path, n, opts)
 end
 
 --------------------------------------------------------------------
+--  ARMIES: regiments of cheap figures on the flanks. Never real fighters (no humanoid, no
+--  collisions, nothing replicated): a handful of parts a man, all moved in one bulk move, a
+--  far regiment less often. They march to a line, clash (lunges, thrusts, now and then one
+--  falls), loose (archers draw and shoot up) and cast (mages raise their staffs, orbs flaring).
+--
+--     local army = WarFX.army()
+--     army:regiment(id, {color, at = front-centre Vector3, facing = 1 (towards +z) | -1, cols, ranks,
+--                        kind = "foot" | "pike" | "archer" | "mage", spacing, banner = true})
+--     army:march(id, z)    its front rank heads for this line, at a walk
+--     army:clash(id, on)   its front two ranks fight
+--     army:loose(id)       archers draw and loose · mages cast
+--     army:stop()
+--------------------------------------------------------------------
+local STEEL = Color3.fromRGB(150, 152, 158)
+local function figure(kind, color, h, front)
+	local list = {}
+	local function add(size, col, mat, off, ball)
+		local p = part(size, col, mat)
+		if ball then p.Shape = Enum.PartType.Ball end
+		p.CFrame = FAR
+		p.Parent = h
+		table.insert(list, {p = p, off = off})
+		return list[#list]
+	end
+	local mage, archer = kind == "mage", kind == "archer"
+	-- the body (legs and coat in one), the head, what they carry
+	add(V3(2, 4.2, 1.05), mage and color:Lerp(Color3.new(), 0.2) or color, Enum.Material.SmoothPlastic, CF(0, 2.1, 0))
+	add(V3(1.15, 1.15, 1.15), archer and Color3.fromRGB(70, 58, 44) or (mage and color:Lerp(Color3.new(1, 1, 1), 0.2) or STEEL), Enum.Material.SmoothPlastic, CF(0, 4.8, 0), true)
+	if kind == "foot" then
+		local w = add(V3(0.18, 0.18, 4.2), STEEL, Enum.Material.SmoothPlastic, CF(0.9, 3.2, -1.6))
+		w.weapon = true
+		if front then add(V3(0.3, 2.6, 2), color:Lerp(Color3.new(), 0.25), Enum.Material.SmoothPlastic, CF(-1.15, 3, -0.4)) end
+	elseif kind == "pike" then
+		local w = add(V3(0.2, 0.2, 13), Color3.fromRGB(110, 86, 60), Enum.Material.SmoothPlastic, CF(0.7, 3.4, -4.2) * CFrame.Angles(math.rad(8), 0, 0))
+		w.weapon = true
+	elseif archer then
+		local w = add(V3(0.2, 4.4, 0.25), Color3.fromRGB(90, 66, 44), Enum.Material.SmoothPlastic, CF(-0.4, 3.4, -1.1))
+		w.bow = true
+	elseif mage then
+		local w = add(V3(0.22, 6, 0.22), Color3.fromRGB(80, 60, 44), Enum.Material.SmoothPlastic, CF(1.1, 3.2, -0.6))
+		w.staff = true
+		local o = add(V3(0.9, 0.9, 0.9), color:Lerp(Color3.new(1, 1, 1), 0.4), Enum.Material.Neon, CF(1.1, 6.4, -0.6), true)
+		o.staff, o.orb = true, true
+	end
+	return list
+end
+
+local Army = {}
+Army.__index = Army
+function WarFX.army()
+	ensureLoop()
+	local self = setmetatable({regs = {}, list = {}, dead = false, acc = 0, accFar = 0}, Army)
+	self.ray = RaycastParams.new()
+	self.ray.FilterType = Enum.RaycastFilterType.Exclude
+	table.insert(armies, self)
+	return self
+end
+
+function Army:groundAt(x, z, fallback)
+	self.ray.FilterDescendantsInstances = {home(), crowd()}
+	local r = workspace:Raycast(V3(x, 300, z), V3(0, -600, 0), self.ray)
+	return r and r.Position.Y or fallback or 0
+end
+
+function Army:regiment(id, o)
+	local h = crowd()
+	local cols, ranks = o.cols or 8, o.ranks or 5
+	local reg = {id = id, kind = o.kind or "foot", facing = o.facing or 1, x = o.at.X, z = o.at.Z, target = o.at.Z, cols = cols, ranks = ranks,
+		sp = o.spacing or 3.2, men = {}, clash = false, looseUntil = 0, y0 = o.at.Y, y1 = o.at.Y, nextGround = 0, color = o.color, dirty = true, fallen = 0}
+	reg.y0 = self:groundAt(reg.x, reg.z, o.at.Y)
+	reg.y1 = reg.y0
+	for r = 1, ranks do
+		for c = 1, cols do
+			table.insert(reg.men, {r = r, c = c, parts = figure(reg.kind, o.color, h, r == 1), ph = math.random() * 6.28,
+				jx = (math.random() - 0.5) * 0.8, jz = (math.random() - 0.5) * 0.8, fell = nil})
+		end
+	end
+	-- a standard over the second rank
+	if o.banner ~= false then
+		local pole = part(V3(0.25, 13, 0.25), Color3.fromRGB(90, 70, 50), Enum.Material.Wood)
+		local flag = part(V3(0.12, 3.4, 4.4), o.color, Enum.Material.Fabric)
+		pole.CFrame, flag.CFrame = FAR, FAR
+		pole.Parent, flag.Parent = h, h
+		reg.standard = {pole, flag}
+	end
+	self.regs[id] = reg
+	table.insert(self.list, reg)
+	return reg
+end
+function Army:march(id, z) local r = self.regs[id]; if r then r.target = z end end
+function Army:clash(id, on) local r = self.regs[id]; if r then r.clash = on and true or false end end
+function Army:loose(id)
+	local r = self.regs[id]
+	if not r then return end
+	r.looseUntil = os.clock() + 2.2
+	if r.kind == "mage" then
+		for _, m in ipairs(r.men) do
+			for _, e in ipairs(m.parts) do
+				if e.orb then
+					e.p.Size = V3(1.6, 1.6, 1.6)
+					task.delay(2.2, function() if e.p.Parent then e.p.Size = V3(0.9, 0.9, 0.9) end end)
+				end
+			end
+		end
+	end
+end
+function Army:stop()
+	if self.dead then return end
+	self.dead = true
+	for _, r in ipairs(self.list) do
+		for _, m in ipairs(r.men) do for _, e in ipairs(m.parts) do e.p:Destroy() end end
+		if r.standard then for _, p in ipairs(r.standard) do p:Destroy() end end
+	end
+	self.list, self.regs = {}, {}
+end
+
+-- one regiment: it marches (always, seen or not); its men are moved only when they need to be:
+-- all of them while it marches, looses or has just come into view; just the front two ranks
+-- while it fights; none while it stands
+function Army:place(reg, now, dt, put, visible)
+	local f = reg.facing
+	local gap = reg.target - reg.z
+	local marching = math.abs(gap) > 0.5
+	if math.abs(gap) > 0.2 then reg.z += math.clamp(gap, -6 * dt, 6 * dt); reg.dirty = true end
+	if not visible then reg.hidden = true; return end
+	if reg.hidden then reg.hidden = false; reg.dirty = true end
+	if marching and now > reg.nextGround then
+		reg.nextGround = now + 0.6
+		reg.y0 = self:groundAt(reg.x, reg.z, reg.y0)
+		reg.y1 = self:groundAt(reg.x, reg.z - f * reg.ranks * reg.sp, reg.y1)
+	end
+	local loosing = now < reg.looseUntil
+	if loosing or reg.wasLoosing then reg.dirty = true end
+	reg.wasLoosing = loosing
+	local full = reg.dirty
+	if not full and not reg.clash and reg.fallen == 0 then return end
+	local rot = CFrame.lookAt(Vector3.zero, V3(0, 0, f))
+	local fallen = 0
+	for _, m in ipairs(reg.men) do
+		local fighting = reg.clash and m.r <= 2
+		if full or fighting or m.fell then
+			local x = reg.x + (m.c - (reg.cols + 1) / 2) * reg.sp + m.jx
+			local z = reg.z - f * (m.r - 1) * reg.sp + m.jz
+			local y = reg.y0 + (reg.y1 - reg.y0) * ((m.r - 1) / math.max(reg.ranks - 1, 1))
+			local t = now + m.ph
+			local base
+			-- now and then a man in the front rank falls (and his place is taken a while later)
+			if fighting and not m.fell and math.random() < dt * 0.02 then m.fell = now end
+			if m.fell then
+				fallen += 1
+				local k = math.min((now - m.fell) / 0.5, 1)
+				base = CF(x, y, z) * rot * CFrame.Angles(-k * 1.45, 0, 0)
+				if now - m.fell > 7 then m.fell = nil end
+			else
+				local bob = marching and math.abs(math.sin(t * 6)) * 0.35 or 0
+				local lunge = fighting and math.max(0, math.sin(t * 3.1)) * 0.9 or 0
+				base = CF(x, y + bob, z) * rot * CF(0, 0, -lunge)
+			end
+			for _, e in ipairs(m.parts) do
+				local off = e.off
+				if not m.fell then
+					if e.weapon and fighting then
+						off = off * CF(0, 0, -math.max(0, math.sin(t * 3.1 + 0.4)) * 1.6)
+					elseif e.bow and loosing then
+						off = CF(-0.4, 4.2, -1) * CFrame.Angles(math.rad(-50), 0, 0)
+					elseif e.staff and loosing then
+						off = off * CF(0, 1.8, -0.4)
+					end
+				end
+				put(e.p, base * off)
+			end
+		end
+	end
+	reg.fallen = fallen
+	if reg.standard and (full or reg.clash) then
+		local sway = math.sin(now * 2) * 0.08
+		local cf = CF(reg.x, reg.y0, reg.z - f * reg.sp * 1.5) * rot * CFrame.Angles(0, 0, sway)
+		put(reg.standard[1], cf * CF(0.6, 6.5, 0))
+		put(reg.standard[2], cf * CF(0.6, 11, 2.3))
+	end
+	reg.dirty = false
+end
+
+function Army:step(now, dt, put)
+	if self.dead then return end
+	-- near regiments 20 times a second, far ones 5; ones out of sight only march
+	self.acc += dt
+	self.accFar += dt
+	local near = self.acc >= 0.05
+	local far = self.accFar >= 0.2
+	if not (near or far) then return end
+	local cam = workspace.CurrentCamera
+	local c = cam and cam.CFrame.Position or Vector3.zero
+	local vs = cam and cam.ViewportSize or Vector2.new(1, 1)
+	for _, reg in ipairs(self.list) do
+		local mid = V3(reg.x, reg.y0 + 3, reg.z)
+		local d = (mid - c).Magnitude
+		local visible = d < 60
+		if not visible and cam then
+			local v = cam:WorldToViewportPoint(mid)
+			visible = v.Z > 0 and v.X > -vs.X * 0.4 and v.X < vs.X * 1.4 and v.Y > -vs.Y * 0.6 and v.Y < vs.Y * 1.6
+		end
+		if d < 320 then
+			if near then self:place(reg, now, self.acc, put, visible) end
+		elseif far then
+			self:place(reg, now, self.accFar, put, visible)
+		end
+	end
+	if near then self.acc = 0 end
+	if far then self.accFar = 0 end
+end
+
+--------------------------------------------------------------------
 function WarFX.clear()
-	WarFX.storm(false, 0)
+	WarFX.weather(nil, 0)
+	for _, ar in ipairs(armies) do ar:stop() end
+	table.clear(armies)
 	for _, f in ipairs(flying) do giveBack(f.a) end
 	for _, s in ipairs(stuck) do giveBack(s.a) end
 	table.clear(flying); table.clear(stuck)

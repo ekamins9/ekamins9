@@ -271,6 +271,8 @@ local function tick()
 	-- never more fighters than the map suits (GameConfig.MAP_FIGHTERS), but a showcase's roster is exact
 	local _, most = GameConfig.mapFighters(Game.node:GetAttribute("Map") or "")
 	target = rosterOf() and math.min(target, MOST) or math.min(target, most)
+	-- (a mode that watches the server's frame rate may ask for fewer: War)
+	if not rosterOf() and Game.current and Game.current.botTarget then target = math.min(target, Game.current:botTarget()) end
 	local def = Game.current.def
 	local now = os.clock()
 	-- forget the fallen whose place has come round again (or, no respawns, keep them)

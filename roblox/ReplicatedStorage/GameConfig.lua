@@ -40,6 +40,9 @@ GameConfig.DOORS = {
 		blurb = "Talk, show off, hit the dummies, duel in the ring."},
 	Tiltyard  = {name = "Tiltyard",  mode = "Tiltyard", access = "Friends", maxPlayers = 3,
 		blurb = "Your own yard, you and your party. Drills and dummies."},
+	-- WAR (Game ▸ Modes ▸ War): the big battle, armies of bots beside the players, siege engines
+	War       = {name = "War", mode = "War", access = "Public", maxPlayers = 24, matchmade = true,
+		blurb = "Two armies, five banners, trebuchets, volleys and battle-mages. Hold the line."},
 	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS"}, access = "Public", vote = true,
 		blurb = "The big fight. The mode changes between rounds by vote."},
 	Horde     = {name = "Horde",     mode = "Horde",    access = "Friends", maxPlayers = 6,
@@ -69,7 +72,7 @@ GameConfig.DOORS = {
 	Invasion  = {name = "Invasions", mode = "InvGoblin", modes = {"InvGoblin", "InvElf", "InvUndead", "InvOrc"}, access = "Friends", maxPlayers = 6, party = true, page = 2,
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
-GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
+GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "War", "Warfront", "Horde", "Lists"}
 GameConfig.ADVENTURE_ORDER = {"Depths", "Deadvault", "Crownfall", "Invasion", "Dragonfall", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
@@ -219,6 +222,16 @@ GameConfig.MODES = {
 		maps = {"Caldera"}, procedural = true,
 		roundLength = 14 * 60, intermission = 15, respawnDelay = 8, hidden = true, pvp = false,
 	},
+	-- WAR (Game ▸ Modes ▸ War, Game ▸ WarMap): the maps are themes, each battlefield built fresh.
+	-- tickets: each side's reinforcements · botFill: fighters the bots make up (fillAnywhere: on
+	-- War's own servers too); War lowers it while the server struggles
+	War = {
+		name = "War", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 1,
+		description = "Two armies meet: take the five banners one by one as a front, while trebuchets, archers and battle-mages pound the field and the rest of both armies clash on the flanks.",
+		maps = {"Redfield", "Ironridge", "Frostmere", "Ashvale", "Kingsbridge"}, procedural = true,
+		roundLength = 15 * 60, intermission = 15, respawnDelay = 6, waveSpawn = 8, waveGrace = 20,
+		botFill = 36, fillAnywhere = true, tickets = 300,
+	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
@@ -238,6 +251,8 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
 	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
 	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera", Stormwatch = "Stormwatch",
+	-- War's battlefields (Game ▸ WarMap)
+	Redfield = "Redfield", Ironridge = "Ironridge", Frostmere = "Frostmere", Ashvale = "Ashvale", Kingsbridge = "Kingsbridge",
 	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
@@ -254,6 +269,7 @@ GameConfig.MAP_FIGHTERS = {
 	Cinderfall = {8, 32}, Duneshrine = {8, 32}, HollowGrove = {8, 32}, Pinewatch = {8, 32},
 	Frostgate = {8, 40}, Emberkeep = {8, 40}, Sunspire = {8, 40}, Thornwall = {8, 40}, Mistmoor = {8, 40},
 	Greenhollow = {8, 40}, Stormhold = {8, 40}, Ashenford = {8, 40}, Rimeholt = {8, 40}, Blossomgate = {8, 40},
+	Redfield = {8, 48}, Ironridge = {8, 48}, Frostmere = {8, 48}, Ashvale = {8, 48}, Kingsbridge = {8, 48},
 }
 function GameConfig.mapFighters(key)
 	local r = GameConfig.MAP_FIGHTERS[key]

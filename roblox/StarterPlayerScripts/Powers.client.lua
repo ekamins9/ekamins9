@@ -86,7 +86,8 @@ local function emitter(parent, c1, c2, o)
 	e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, o.size or 0.4), NumberSequenceKeypoint.new(1, 0)})
 	e.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, o.alpha or 0.15), NumberSequenceKeypoint.new(1, 1)})
 	e.Lifetime = NumberRange.new(o.life or 0.5, (o.life or 0.5) * 1.6)
-	e.Speed = NumberRange.new(o.speed or 2, (o.speed or 2) * 1.8)
+	local sp = o.speed or 2
+	e.Speed = NumberRange.new(math.min(sp, sp * 1.8), math.max(sp, sp * 1.8))   -- (an inward swirl: a negative speed)
 	e.SpreadAngle = Vector2.new(o.spread or 180, o.spread or 180)
 	e.Rate = o.rate or 30
 	e.Acceleration = o.accel or Vector3.zero

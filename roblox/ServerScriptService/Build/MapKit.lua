@@ -562,7 +562,11 @@ function K.terrainColors(ctx, t)
 	for mat, c in pairs(t) do ctx.model:SetAttribute("TerrainColor_" .. mat, c) end
 end
 
-function K.terrain(ctx, corner, size, paint)
+-- opts.fast (a map built while a server runs: War's battlefields): no copy of the band round
+-- the region is kept and put back (a big region's read-back costs seconds); the brushes must
+-- stay inside it, and the region is simply emptied afterwards
+function K.terrain(ctx, corner, size, paint, opts)
+	local fast = opts and opts.fast
 	local region = Region3.new(corner, corner + size):ExpandToGrid(4)
 	Terrain:FillRegion(region, 4, Enum.Material.Air)
 	-- a brush that reaches past the region (a hill ball near the edge) would
@@ -570,7 +574,8 @@ function K.terrain(ctx, corner, size, paint)
 	-- region is put back exactly as it was before painting
 	local SPILL = 96
 	local outer = Region3.new(corner - Vector3.one * SPILL, corner + size + Vector3.one * SPILL):ExpandToGrid(4)
-	local keepM, keepO = Terrain:ReadVoxels(outer, 4)
+	local keepM, keepO
+	if not fast then keepM, keepO = Terrain:ReadVoxels(outer, 4) end
 	-- Roblox draws a terrain surface half a voxel (2 studs) above where a fill
 	-- ends: ground filled up to y = 0 stands at y = 2, burying everything built
 	-- on y = 0. The brushes the maps paint with are lowered by those 2 studs, so
@@ -606,7 +611,10 @@ function K.terrain(ctx, corner, size, paint)
 		Terrain:WriteVoxels(region, 4, mats, occs)
 	end
 	local ok, err = pcall(paint, brush)
-	if not ok then Terrain:WriteVoxels(outer, 4, keepM, keepO); error(err) end
+	if not ok then
+		if fast then Terrain:FillRegion(region, 4, Enum.Material.Air) else Terrain:WriteVoxels(outer, 4, keepM, keepO) end
+		error(err)
+	end
 	-- CopyRegion wants voxel coordinates (studs / 4)
 	local lo = region.CFrame.Position - region.Size / 2
 	local hi = region.CFrame.Position + region.Size / 2
@@ -618,7 +626,7 @@ function K.terrain(ctx, corner, size, paint)
 	ctx.model:SetAttribute("TerrainCorner", c)
 	ctx.model:SetAttribute("TerrainSize", region.Size)
 	-- the region was empty before, so this clears it and undoes any spill
-	Terrain:WriteVoxels(outer, 4, keepM, keepO)
+	if fast then Terrain:FillRegion(region, 4, Enum.Material.Air) else Terrain:WriteVoxels(outer, 4, keepM, keepO) end
 end
 
 -- a spawn that ended up inside something solid (a wagon, a tent, a barrel) is

@@ -3777,6 +3777,34 @@ do
 		cam.FieldOfView = 40
 		cam.CFrame = CFrame.lookAt(Vector3.new(0, 4.5, -17), Vector3.new(0, -0.5, 2))
 	end
+	SCENES.War = function(world, cam)
+		ground(world, 60, Color3.fromRGB(104, 130, 70))
+		-- two lines meeting
+		local line = {{-6, -0.6, 75, "A", "swing"}, {-2.6, -0.2, -105, "B", "guard"}, {0.6, -1.2, 80, "A", "lunge"}, {3.8, -0.4, -95, "B", "swing"},
+			{7, -0.8, 70, "A", "guard"}, {-4.4, 3.4, -110, "B", "lunge"}, {-1, 3.2, 85, "A", "swing"}, {2.4, 3.6, -90, "B", "guard"}, {5.8, 3.2, 90, "A", "cheer"}}
+		for i, sp in ipairs(line) do soldier(world, i, {pos = Vector3.new(sp[1], 0, sp[2]), yaw = sp[3], team = sp[4], pose = POSE[sp[5]]}) end
+		local function q(size, cf, color, mat, shape)
+			local p = Instance.new("Part"); p.Anchored = true; p.Size = size; p.CFrame = cf; p.Color = color; p.Material = mat or Enum.Material.Wood
+			if shape then p.Shape = shape end
+			p.Parent = world
+			return p
+		end
+		-- a trebuchet on the far ridge, a fireball arcing over
+		local tf = CFrame.new(-9, -3, 16) * CFrame.Angles(0, math.rad(30), 0)
+		for _, s in ipairs({-1, 1}) do q(Vector3.new(0.5, 7, 0.5), tf * CFrame.new(s * 1.4, 3.5, 0) * CFrame.Angles(0, 0, math.rad(s * -12)), Color3.fromRGB(96, 70, 46)) end
+		q(Vector3.new(0.4, 0.4, 11), tf * CFrame.new(0, 7, 1) * CFrame.Angles(math.rad(-40), 0, 0), Color3.fromRGB(110, 80, 52))
+		q(Vector3.new(1.6, 1.6, 1.6), tf * CFrame.new(0, 4.4, -2.6), Color3.fromRGB(70, 56, 40), Enum.Material.WoodPlanks)
+		local fire = q(Vector3.new(1.4, 1.4, 1.4), CFrame.new(2, 9.5, 10), Color3.fromRGB(255, 150, 50), Enum.Material.Neon, Enum.PartType.Ball)
+		local tail = q(Vector3.new(0.6, 0.6, 5), CFrame.lookAt(Vector3.new(0, 10.4, 12.4), Vector3.new(2, 9.5, 10)), Color3.fromRGB(255, 190, 90), Enum.Material.Neon)
+		tail.Transparency = 0.45
+		-- the sides' banners
+		for _, b in ipairs({{-10, 6, Color3.fromRGB(56, 92, 206)}, {10, 7, Color3.fromRGB(190, 50, 44)}}) do
+			q(Vector3.new(0.3, 9, 0.3), CFrame.new(b[1], 1.3, b[2]), Color3.fromRGB(80, 60, 40))
+			q(Vector3.new(0.1, 2.6, 3.4), CFrame.new(b[1], 4.6, b[2] + 1.8), b[3], Enum.Material.Fabric)
+		end
+		cam.FieldOfView = 44
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 5, -16), Vector3.new(0, 0.6, 3))
+	end
 	SCENES.Horde = function(world, cam)
 		-- two back to back, the horde closing in
 		ground(world, 30, Color3.fromRGB(196, 168, 110))
@@ -4044,13 +4072,13 @@ do
 		if size and partySize() > size then return string.format("PARTY TOO BIG\n(%d / %d)", partySize(), size) end
 		return nil
 	end
-	-- row 1: Warfront · Training · Courtyard
-	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Big battles  ·  vote the next battle", big = true, color = Color3.fromRGB(214, 70, 60),
-		pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.4, -8, 0.46, -6), scene = "Warfront", tag = "POPULAR", tagColor = COL.RED,
+	-- row 1: War · Warfront · Training · Courtyard (Horde is with the adventures, page 2)
+	tiles.War = tile({key = "War", title = "WAR", sub = "Two armies  ·  trebuchets, volleys, battle-mages", big = true, color = Color3.fromRGB(200, 60, 44),
+		pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.4, -8, 0.46, -6), scene = "War", tag = "NEW  ·  MASSIVE", tagColor = COL.RED,
+		onClick = function() if GameConfig.DOORS.War then goDoor("War") else goDoor("Warfront") end end})
+	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Siege, TDM, the hill  ·  vote the next", color = Color3.fromRGB(214, 110, 60),
+		pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.2, -10, 0.46, -6), scene = "Warfront", tag = "POPULAR", tagColor = COL.GOLD,
 		onClick = function() goDoor("Warfront") end})
-	tiles.Horde = tile({key = "Horde", title = "HORDE", sub = "Defend the camp vs waves of bots", color = Color3.fromRGB(150, 110, 60),
-		pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.2, -10, 0.46, -6), scene = "Horde", tag = "NEW", tagColor = COL.GOLD,
-		onClick = function() goDoor("Horde") end})
 	tiles.Training = tile({key = "Training", title = "TRAINING", sub = "Your own yard  ·  drills pay Marks", color = Color3.fromRGB(70, 150, 90),
 		pos = UDim2.new(0.6, 4, 0, 0), size = UDim2.new(0.2, -8, 0.46, -6), scene = "Training",
 		onClick = function() goDoor("Tiltyard") end})
@@ -4091,14 +4119,16 @@ do
 			pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.3, -8, 0.46, -6), tag = "NEW", ambient = Color3.fromRGB(120, 130, 170), light = Color3.fromRGB(200, 220, 255)},
 		{key = "Crownfall", door = "Crownfall", title = "CROWNFALL", sub = "Battle royale  ·  the last one standing", color = Color3.fromRGB(210, 120, 40),
 			pos = UDim2.new(0.7, 4, 0, 0), size = UDim2.new(0.3, -4, 0.46, -6), tag = "NEW"},
+		{key = "Horde", door = "Horde", title = "HORDE", sub = "Hold the camp vs waves", color = Color3.fromRGB(150, 110, 60),
+			pos = UDim2.new(0, 0, 0.46, 6), size = UDim2.new(0.2, -8, 0.54, -72), count = "YOU + PARTY"},
 		{key = "Invasion", door = "Invasion", title = "INVASIONS", sub = "Goblins, elves, the dead, orcs", color = Color3.fromRGB(150, 110, 50),
-			pos = UDim2.new(0, 0, 0.46, 6), size = UDim2.new(0.25, -8, 0.54, -72), count = "YOU + PARTY"},
+			pos = UDim2.new(0.2, 2, 0.46, 6), size = UDim2.new(0.2, -8, 0.54, -72), count = "YOU + PARTY"},
 		{key = "Dragonfall", door = "Dragonfall", title = "DRAGONFALL", sub = "Bring down the dragon", color = Color3.fromRGB(170, 50, 50),
-			pos = UDim2.new(0.25, 2, 0.46, 6), size = UDim2.new(0.25, -8, 0.54, -72), count = "YOU + PARTY", ambient = Color3.fromRGB(170, 120, 110)},
-		{key = "Plague", door = "Plague", title = "PLAGUE NIGHT", sub = "Survive till dawn  ·  the fallen rise", color = Color3.fromRGB(80, 120, 60),
-			pos = UDim2.new(0.5, 4, 0.46, 6), size = UDim2.new(0.25, -8, 0.54, -72), ambient = Color3.fromRGB(90, 110, 130), light = Color3.fromRGB(170, 190, 255)},
+			pos = UDim2.new(0.4, 3, 0.46, 6), size = UDim2.new(0.2, -8, 0.54, -72), count = "YOU + PARTY", ambient = Color3.fromRGB(170, 120, 110)},
+		{key = "Plague", door = "Plague", title = "PLAGUE NIGHT", sub = "Survive till dawn", color = Color3.fromRGB(80, 120, 60),
+			pos = UDim2.new(0.6, 4, 0.46, 6), size = UDim2.new(0.2, -8, 0.54, -72), ambient = Color3.fromRGB(90, 110, 130), light = Color3.fromRGB(170, 190, 255)},
 		{key = "Kingslayer", door = "Kingslayer", title = "KINGSLAYER", sub = "Slay the king, be the king", color = Color3.fromRGB(200, 160, 40),
-			pos = UDim2.new(0.75, 6, 0.46, 6), size = UDim2.new(0.25, -6, 0.54, -72)},
+			pos = UDim2.new(0.8, 6, 0.46, 6), size = UDim2.new(0.2, -6, 0.54, -72)},
 	}
 	local INVASIONS = {
 		{mode = "InvGoblin", name = "GOBLIN RAID", line = "They want your gold. Thieves run it back to their gates: cut them down.", color = Color3.fromRGB(110, 160, 60)},
@@ -4220,8 +4250,8 @@ do
 		tiles.Warfront.count.Text = string.format("%d FIGHTING  ·  %d SERVER%s", counts.Warfront or 0, servers.Warfront or 0, (servers.Warfront or 0) == 1 and "" or "S")
 		tiles.Courtyard.count.Text = string.format("%d HERE", counts.Courtyard or #Players:GetPlayers())
 		tiles.Training.count.Text = "YOU + PARTY"
-		tiles.Horde.count.Text = "YOU + PARTY  ·  BOTS"
-		for _, key in ipairs({"Warfront", "Training", "Horde"}) do
+		tiles.War.count.Text = string.format("%d FIGHTING  ·  ARMIES OF BOTS", counts.War or 0)
+		for _, key in ipairs({"War", "Warfront", "Training"}) do
 			local why = partyLock(nil)
 			tiles[key].lock.Visible = why ~= nil
 			tiles[key].lockText.Text = why or ""

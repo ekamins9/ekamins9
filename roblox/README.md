@@ -1619,6 +1619,53 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 - A whiffed kick recovers `KICK_MISS_EXTRA` longer. Spawn protection: a `ForceField` for
   `SPAWN_PROTECT` s (LoadoutServer); attacking, kicking or blocking ends it early.
 
+## War: the massive battle (`Game ▸ Modes ▸ War`, `Game ▸ WarMap`, `War.client`, `ReplicatedStorage ▸ WarFX`)
+
+The Play screen's first tile (DOORS.War, matchmade public servers, 24 players). Two armies on a
+battlefield built fresh each round, players and bots side by side (`botFill` 36, `fillAnywhere`),
+siege engines, archers and battle-mages, and the rest of both armies clashing out on the flanks.
+- **The line**: five banners between the two camps. A side takes a banner by standing at it with
+  more of its own than the enemy (up to three more count: faster together), but only the banner
+  next to its line, so the fight moves along the field as a front (`War:canTake`, `frontFor`).
+- **Reinforcements**: each side starts with `tickets` (300); every fall costs one, players and bots
+  alike; holding more banners bleeds the other side a ticket per banner more every 4 s (all five:
+  faster). None left: lost. At the bell, more left wins (15 minutes).
+- **Coming in**: at your foremost banner nobody's attacking, else at the camp, in waves
+  (`waveSpawn` 8). Bots: most push for the banner their side is taking, some hold one under attack
+  (`War:botOpts` goal). Their number follows the server's frame rate (`War:botTarget`, read by
+  BotFill): fewer when frames run long, back up when they're quick.
+- **The engines** (each side on its own beat after the first 20 s):
+  **trebuchets** (two a side, behind the camps: a red ring where the shot lands, then the blast:
+  heavy damage and thrown back); **archers** (a company on each flank: a volley into a knot of
+  enemies; a raised guard or a roof overhead saves you); **battle-mages** (a barrage now and then:
+  a line of meteors across the enemy's front, chain lightning onto their fighters, or a frost
+  that slows them). Engines only hurt the other side.
+- **On your screen** (`War.client`): reinforcements (number and bar) and the clock, the five
+  banners as chips in their holder's colour filling as they swing, the one your side is fighting
+  for ringed in gold; at a banner: TAKING · HOLDING · LOSING IT! · CAN'T TAKE IT YET; big calls
+  when a banner falls; warnings when something's coming down on you (VOLLEY: raise your guard ·
+  TREBUCHET · METEORS · LIGHTNING · FROST). On the field: each flag in its holder's colour, a ring,
+  a beam over the banners being fought for. Your first spawn of a round: a few seconds' flight
+  over the field with THE BATTLE OF … (any key skips).
+- **The armies on the flanks** (WarFX regiments, client only: never fighters, nothing replicated):
+  three lanes a flank, a foot, pike and foot regiment of each side in each, marching to the front
+  (Round `WarFront`) and clashing there (lunges, thrusts, now and then one falls); each side's
+  archer companies (they loose with the server's volleys) and battle-mages (orbs flaring when they
+  cast); cavalry charges up the flanks now and then; distant volleys and fire out there between
+  the server's own. Phones field a third of it.
+- **The battlefields** (`WarMap.THEMES`, each with its own lighting, atmosphere and weather):
+  **Redfield** (wheat fields, a farming village and windmill), **Ironridge** (a ruined fort on a
+  rise, outcrops, rain), **Frostmere** (a frozen lake, snowy pines, snow), **Ashvale** (burning
+  farmsteads, cracks of fire, embers at dusk), **Kingsbridge** (a river across the field, two
+  stone bridges and a ford, a chapel). Terrain ground (`K.terrain` with `fast`: no read-back of
+  the surroundings), a corridor 210 wide fenced with stakes (and an unseen wall), banners named
+  for the theme (THE VILLAGE, THE OLD FORT, THE FORD…). Vote pictures: ReplicatedStorage ▸ MapShots.
+- **Performance**: the crowds (arrows, raindrops, soldiers, horsemen, flying stones) live under the
+  camera (WarFXCrowd: drawn, never in the physics world) and are moved in one bulk move; a
+  regiment's men move only when they must (all while it marches, the front two ranks while it
+  fights, none while it stands; out of sight it only marches; far ones 5 times a second).
+  Measured in Studio: about 600 soldiers on the flanks, 34 bots and the engines at 53–59 fps.
+
 ## Siege (Team Objective, after Chivalry 2)
 
 The attackers take a castle stage by stage; the defenders hold until the clock runs out
