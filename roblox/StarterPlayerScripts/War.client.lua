@@ -687,7 +687,7 @@ local function enter()
 end
 local function leave()
 	if not war.on then return end
-	if finale.on then pcall(RunService.UnbindFromRenderStep, RunService, "WarFinale"); finale.on = false end
+	if finale.on then pcall(RunService.UnbindFromRenderStep, RunService, "WarFinale"); finale.on = false; _G.FinaleCamera = nil end
 	war.on = false
 	war.token = (war.token or 0) + 1
 	gui.Enabled = false
@@ -717,6 +717,7 @@ end
 local function finaleStop()
 	if not finale.on then return end
 	finale.on = false
+	_G.FinaleCamera = nil
 	pcall(function() RunService:UnbindFromRenderStep("WarFinale") end)
 	local cam = workspace.CurrentCamera
 	if cam then cam.FieldOfView = 70 end
@@ -724,6 +725,7 @@ end
 local function finaleStart()
 	if finale.on or not war.on then return end
 	finale.on = true
+	_G.FinaleCamera = true   -- (HubMenu's cinematic holds off)
 	_G.BoardHoldUntil = os.clock() + 5   -- (the board waits: the field first)
 	local fz = round:GetAttribute("WarFront") or 0
 	local winner = round:GetAttribute("Winner") or ""

@@ -15,11 +15,13 @@
      The story follows the objective (Round ▸ ObjStage): as the gate falls the walls are
      overrun (the attackers cheer, the archers fall, the ladders all go over, the reserves pour
      in, the sally is driven back to the walls); as the great hall is stormed its roof catches.
-     The winners cheer at the end. Only while the round's Mode is "Siege", on a castle that
+     The winners cheer at the end, the camera rising and circling slowly over the castle a few
+     seconds before the board comes up. Only while the round's Mode is "Siege", on a castle that
      faces along z (a gate in Map ▸ Objectives, Walk and Wall parts in Map ▸ Geometry). ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
@@ -535,13 +537,43 @@ local function enter()
 	end)
 end
 
--- the end: the winners cheer
+-- the end: the winners cheer, the camera rises over the castle and circles it slowly (the board
+-- waits a few seconds: _G.BoardHoldUntil)
+local finale = false
+local function finaleStop()
+	if not finale then return end
+	finale = false
+	_G.FinaleCamera = nil
+	pcall(function() RunService:UnbindFromRenderStep("SiegeFinale") end)
+	local cam = workspace.CurrentCamera
+	if cam then cam.FieldOfView = 70 end
+end
 round:GetAttributeChangedSignal("State"):Connect(function()
-	if not (siege.on and siege.crowd) or round:GetAttribute("State") ~= "Intermission" then return end
+	if round:GetAttribute("State") ~= "Intermission" then finaleStop(); return end
+	if not (siege.on and siege.crowd and siege.C) then return end
 	local winner = round:GetAttribute("Winner") or ""
 	for k, d in pairs(GameConfig.TEAMS) do
-		if d.name == winner then siege.crowd:cheer(k) end
+		if d.name == winner then siege.crowd:cheer(k); siege.crowd:crewCheer(6) end
 	end
+	WarFX.sound("Horn", nil, {volume = 1})
+	task.delay(2.4, function() if finale then WarFX.sound("Horn", nil, {volume = 0.8, speed = 0.92}) end end)
+	finale = true
+	_G.FinaleCamera = true
+	_G.BoardHoldUntil = os.clock() + 5
+	local C = siege.C
+	local mid = V3(C.gate.X, C.top * 0.6, C.gate.Z - C.f * 60)
+	local t0 = os.clock()
+	RunService:BindToRenderStep("SiegeFinale", Enum.RenderPriority.Camera.Value + 6, function()
+		local cam = workspace.CurrentCamera
+		if not cam then return end
+		local t = os.clock() - t0
+		local a = t * 0.07 + math.atan2(C.f, 0) - 0.6
+		local r = 120
+		local h = 40 + math.min(t, 6) * 4
+		cam.CameraType = Enum.CameraType.Scriptable
+		cam.CFrame = CFrame.lookAt(V3(mid.X + math.cos(a) * r, h, mid.Z + math.sin(a) * r), mid)
+		cam.FieldOfView = 60
+	end)
 end)
 -- a new round (the sides swap, the castle is whole again), a new map: everything again
 local want = 0
@@ -556,5 +588,5 @@ local function rebuild()
 end
 round:GetAttributeChangedSignal("Map"):Connect(rebuild)
 round:GetAttributeChangedSignal("Attackers"):Connect(function() if round:GetAttribute("Attackers") then rebuild() end end)
-round:GetAttributeChangedSignal("Mode"):Connect(function() if inSiege() then enter() else leave() end end)
+round:GetAttributeChangedSignal("Mode"):Connect(function() if inSiege() then enter() else leave(); finaleStop() end end)
 if inSiege() then enter() end

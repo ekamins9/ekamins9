@@ -7979,7 +7979,9 @@ do
 	RunService.RenderStepped:Connect(function(dt)
 		local cam = workspace.CurrentCamera
 		if not cam then return end
+		-- (a battle's own finale has the camera at a round's end: War's, Siege's _G.FinaleCamera)
 		local wantCine = not alive() and not deathFadeUp() and not _G.SpectateActive and not _G.IntroCamera and not _G.ShowcaseActive and not _G.DungeonLobby
+			and not _G.FinaleCamera
 		if wantCine then
 			cam.CameraType = Enum.CameraType.Scriptable
 			local target = cinematicCFrame(os.clock())
