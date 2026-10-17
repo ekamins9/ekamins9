@@ -38,7 +38,7 @@ local CW, END = 105, 372                 -- the corridor's half-width (x), its e
 local BANNER_Z = {-250, -125, 0, 125, 250}
 local CAMP_Z = 330
 local RADIUS = 18
-local LANES = {150, 198, 246}            -- the flank lanes (|x|) where the armies march
+local LANES = {134, 180, 226}            -- the flank lanes (|x|) where the armies march (the first just past the stakes)
 local TEAM = {A = Color3.fromRGB(56, 92, 206), B = Color3.fromRGB(190, 50, 44)}
 local WOOD = Color3.fromRGB(104, 74, 48)
 local DARK = Color3.fromRGB(62, 44, 30)

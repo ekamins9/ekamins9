@@ -26,6 +26,12 @@
        WarFX.strike(pos, opts)            a bolt from the sky onto a point (a battle-mage's lightning)
        WarFX.frost(pos, r)                a burst of ice and cold mist (a battle-mage's frost)
        WarFX.weather(kind, fade)          "storm" (= WarFX.storm), "rain", "snow", "embers", "petals", or nil: off
+       WarFX.column(pos, opts)            a column of smoke rising high over a fire (opts.scale, opts.fire:
+                                          flames at its foot, opts.dark) · handle:stop()
+       WarFX.haze(pos, opts)              a low drifting haze of dust and smoke over a melee · handle:move(pos),
+                                          handle:stop()
+       WarFX.loop3D(name, pos, opts)      a looping sound at a point (opts.volume, opts.near, opts.range) ·
+                                          handle:move(pos), handle:stop(fade)
        WarFX.army()                       the armies on the flanks: regiments of cheap figures that
                                           march, clash, loose and cast (ARMIES below)
        WarFX.clear()                      everything gone (leaving the mode)
@@ -465,6 +471,81 @@ function WarFX.blast(pos, opts)
 		if k > 0.05 then WarFX.shake(k, 0.45 + k * 0.3) end
 		if d < 40 then WarFX.flash(0.25 * (1 - d / 40)) end
 	end
+end
+
+-- A COLUMN OF SMOKE over a burning thing: big soft puffs rising and spreading, darker at the
+-- foot, lit orange from below when there's fire there
+function WarFX.column(pos, opts)
+	opts = opts or {}
+	local k = opts.scale or 1
+	local a = anchorAt(pos)
+	local dark = opts.dark ~= false
+	local e = emitter(a, {rate = 3.2 * math.max(k, 0.5), life = NumberRange.new(14, 20),
+		size = NumberSequence.new({NumberSequenceKeypoint.new(0, 10 * k), NumberSequenceKeypoint.new(0.5, 32 * k), NumberSequenceKeypoint.new(1, 60 * k)}),
+		speed = NumberRange.new(9 * k, 14 * k), spread = Vector2.new(9, 9), accel = V3(2.5, 1.2, 1),
+		color = dark and ColorSequence.new(Color3.fromRGB(34, 30, 28), Color3.fromRGB(88, 84, 82)) or ColorSequence.new(Color3.fromRGB(120, 116, 110), Color3.fromRGB(170, 166, 160)),
+		transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(0.2, 0.25), NumberSequenceKeypoint.new(1, 1)}), drag = 0.2})
+	e.LightInfluence = 0.6
+	local h = {anchor = a}
+	if opts.fire then
+		local f = Instance.new("Fire")
+		f.Size, f.Heat = 12 * k, 16
+		f.Color, f.SecondaryColor = Color3.fromRGB(255, 140, 40), Color3.fromRGB(190, 40, 10)
+		f.Parent = a
+		emitter(a, {texture = FIRE_TEX, rate = 14 * k, life = NumberRange.new(0.6, 1.2), size = NumberSequence.new(6 * k, 1), speed = NumberRange.new(6, 12),
+			color = ColorSequence.new(Color3.fromRGB(255, 190, 80), Color3.fromRGB(255, 70, 20)), transparency = NumberSequence.new(0.15, 1), glow = 1, accel = V3(0, 8, 0), spread = Vector2.new(25, 25)})
+		local l = Instance.new("PointLight")
+		l.Range, l.Brightness, l.Color = math.min(60, 30 * k), 2.4, Color3.fromRGB(255, 130, 50)
+		l.Parent = a
+		h.light = l
+	end
+	function h.stop() if a.Parent then a:Destroy() end end
+	return h
+end
+
+-- A HAZE over a melee: dust and smoke drifting low, kicked up by thousands of feet
+function WarFX.haze(pos, opts)
+	opts = opts or {}
+	local a = anchorAt(pos)
+	a.Size = V3(opts.width or 40, 1, opts.depth or 16)
+	local e = emitter(a, {rate = opts.rate or 6, life = NumberRange.new(6, 10), size = NumberSequence.new(8, 22),
+		speed = NumberRange.new(1, 3), spread = Vector2.new(60, 60), accel = V3(1.5, 0.6, 0.5), drag = 0.5,
+		color = ColorSequence.new(opts.color or Color3.fromRGB(150, 136, 116)), transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.72), NumberSequenceKeypoint.new(1, 1)})})
+	e.Shape = Enum.ParticleEmitterShape.Box
+	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	e.LightInfluence = 0.8
+	local h = {anchor = a, emitter = e}
+	function h.move(p) if a.Parent then a.CFrame = CF(p) end end
+	function h.stop() if a.Parent then a:Destroy() end end
+	return h
+end
+
+-- A SOUND THAT LIVES SOMEWHERE: a loop at a point (the melee on the left flank, a burning tower)
+function WarFX.loop3D(name, pos, opts)
+	opts = opts or {}
+	local src = audio(name)
+	if not (src and src:IsA("Sound")) then return nil end
+	local holder = Instance.new("Attachment")
+	holder.Position = pos
+	holder.Parent = workspace.Terrain
+	local s = src:Clone()
+	s.Looped = true
+	s.RollOffMode = Enum.RollOffMode.InverseTapered
+	s.RollOffMinDistance = opts.near or 40
+	s.RollOffMaxDistance = opts.range or 600
+	s.Volume = 0
+	s.TimePosition = math.random() * math.max(s.TimeLength - 1, 0)
+	s.Parent = holder
+	s:Play()
+	TweenService:Create(s, TweenInfo.new(2), {Volume = src.Volume * (opts.volume or 1)}):Play()
+	local h = {sound = s, holder = holder}
+	function h.move(p) if holder.Parent then holder.Position = p end end
+	function h.stop(fade)
+		if not holder.Parent then return end
+		TweenService:Create(s, TweenInfo.new(fade or 1), {Volume = 0}):Play()
+		Debris:AddItem(holder, (fade or 1) + 0.2)
+	end
+	return h
 end
 
 function WarFX.dust(pos, size, color)

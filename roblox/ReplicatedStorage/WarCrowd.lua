@@ -1,0 +1,660 @@
+--[[ WARCROWD — the armies a battle is fought in the middle of, on each screen only (never fighters:
+     no humanoid, no collisions, nothing replicated). Every soldier is a copy of the game's own
+     dressed soldier (Dresser through PreviewRig: a real armour set, the side's colours on its
+     tabard, a real weapon and shield), moved limb by limb: they stand, march, charge, fight face to
+     face along a line (swing, block, lunge), loose arrows, cast, cheer, fall, and are thrown through
+     the air by a blast; the fallen stay on the field a while.
+
+     LEVELS OF DETAIL (a soldier's, by where it stands; parts under the camera, outside physics):
+       full   every piece of armour, the weapon, the shield (~25 parts): the rank nearest the action
+       lite   the main piece on each limb, the helmet, the weapon (~8): the next ranks
+       mass   helmet, body, legs, weapon (4): the ranks behind, the reserves
+     Only what moves is moved (a standing rank costs nothing), a regiment out of sight only marches,
+     a far one updates less often, and the whole crowd shrinks on a phone (WarCrowd.SCALE).
+
+       local c = WarCrowd.new()
+       c:regiment(id, {side = "A"|"B", kind = "foot"|"pike"|"archer"|"knight"|"mage", at = Vector3
+                       (front-centre), facing = 1 | -1 (towards +z / -z), cols, ranks, spacing,
+                       detail = "full" | "lite" | "mass" (its front rank's), banner = true})
+       c:march(id, z, run)    its front rank heads for this line (run: at a charge)
+       c:clash(id, on)        its front rank fights the enemy's (pairs face to face)
+       c:loose(id)            archers draw and loose · mages raise their staves
+       c:cheer(side)          every regiment of a side raises its weapons
+       c:blast(pos, r)        soldiers within r are thrown and fall
+       c:hit(pos, r, n)       up to n soldiers within r fall (a volley)
+       c:stop() ]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
+local PreviewRig = require(ReplicatedStorage:WaitForChild("PreviewRig"))
+
+local WarCrowd = {}
+WarCrowd.__index = WarCrowd
+
+local V3, CF, ANG = Vector3.new, CFrame.new, CFrame.Angles
+local RAD = math.rad
+local FAR = CF(0, -5000, 0)
+
+-- what each side's kinds wear and carry
+WarCrowd.LOOKS = {
+	A = {
+		foot = {{set = "RiverGuard", weapon = "Longsword", shield = "Kite"}, {set = "KnightSkin", weapon = "ArmingSword", shield = "Heater"}},
+		pike = {{set = "RoadLevy", weapon = "Spear"}, {set = "GambesonSkin", weapon = "Halberd"}},
+		archer = {{set = "Bowman", weapon = "Bow"}},
+		knight = {{set = "Lionheart", weapon = "Greatsword"}, {set = "SunKnights", weapon = "Longsword", shield = "Heater"}},
+		mage = {{set = "Battlemage", weapon = "Staff"}},
+	},
+	B = {
+		foot = {{set = "IronCrow", weapon = "WarAxe", shield = "RoundShield"}, {set = "Sellswords", weapon = "Falchion", shield = "Kite"}},
+		pike = {{set = "WolfCompany", weapon = "Halberd"}, {set = "PeasantSkin", weapon = "Spear"}},
+		archer = {{set = "NightHunters", weapon = "Bow"}},
+		knight = {{set = "Blackguard", weapon = "Mace", shield = "Heater"}, {set = "Obsidian", weapon = "Greatsword"}},
+		mage = {{set = "Pyromancer", weapon = "Staff"}},
+	},
+}
+-- how many soldiers a regiment really has (a phone shrinks it)
+WarCrowd.SCALE = 1
+
+local LIMBS = {"Torso", "Head", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}
+local LIMB_INDEX = {}
+for i, n in ipairs(LIMBS) do LIMB_INDEX[n] = i end
+local T, H, LA, RA, LL, RL = 1, 2, 3, 4, 5, 6
+
+--------------------------------------------------------------------
+--  TEMPLATES: a dressed soldier, taken apart limb by limb
+--------------------------------------------------------------------
+local templates = {}   -- key -> {full = {[limb] = {{proto, off}}}, lite = …, mass = …}
+local function volume(p) return p.Size.X * p.Size.Y * p.Size.Z end
+
+local function build(side, look)
+	local lo = {}
+	for _, pc in ipairs(Catalog.setPieces(look.set) or {}) do lo[pc.slot] = pc.id end
+	lo.weapon, lo.shield = look.weapon, look.shield
+	local ok, m = pcall(PreviewRig.dressedRig, {loadout = lo, weight = "Medium", team = side})
+	if not ok or not m then return nil end
+	local limbPart = {}
+	for i, n in ipairs(LIMBS) do limbPart[i] = m:FindFirstChild(n) end
+	if not limbPart[T] then m:Destroy(); return nil end
+	local groups = {}   -- limb -> list of {part, off, vol, role}
+	for i = 1, 6 do groups[i] = {} end
+	local function take(part, limb, role)
+		if not part:IsA("BasePart") or part.Transparency >= 0.95 or not limbPart[limb] then return end
+		table.insert(groups[limb], {proto = part, off = limbPart[limb].CFrame:ToObjectSpace(part.CFrame), vol = volume(part), role = role})
+	end
+	local armor = m:FindFirstChild("Armor")
+	for _, model in ipairs(armor and armor:GetChildren() or {}) do
+		local limb = LIMB_INDEX[model:GetAttribute("Limb") or ""]
+		if limb then for _, d in ipairs(model:GetDescendants()) do take(d, limb, "armor") end end
+	end
+	local body = m:FindFirstChild("Body")
+	for _, d in ipairs(body and body:GetDescendants() or {}) do take(d, H, "body") end
+	for _, d in ipairs((m:FindFirstChild("WeaponPreview") or Instance.new("Folder")):GetDescendants()) do take(d, RA, "weapon") end
+	for _, d in ipairs((m:FindFirstChild("ShieldPreview") or Instance.new("Folder")):GetDescendants()) do take(d, LA, "shield") end
+	-- the bare limbs themselves (seen between the plates)
+	for i = 1, 6 do
+		local p = limbPart[i]
+		table.insert(groups[i], {proto = p, off = CFrame.identity, vol = volume(p), role = "limb"})
+	end
+	local function pick(n, roles)
+		local out = {}
+		for i = 1, 6 do
+			local list = {}
+			for _, e in ipairs(groups[i]) do if roles[e.role] then table.insert(list, e) end end
+			table.sort(list, function(a, b) return a.vol > b.vol end)
+			out[i] = {}
+			for k = 1, math.min(n[i] or 0, #list) do table.insert(out[i], list[k]) end
+		end
+		return out
+	end
+	local t = {}
+	t.full = pick({40, 40, 40, 40, 40, 40}, {armor = true, weapon = true, shield = true, limb = true, body = true})
+	-- lite: the whole helmet and body armour (what you see of a man), the main piece on each limb,
+	-- the weapon and the shield; mass: the body's shell, the helmet, bare arms and legs, the weapon
+	local SHELL = {Primary = 1, Fixed = 2, Secondary = 3, Metal = 4, Accent = 5}
+	local function sorted(i, role, byShell)
+		local list = {}
+		for _, e in ipairs(groups[i]) do if e.role == role then table.insert(list, e) end end
+		table.sort(list, function(a, b)
+			if byShell then
+				local ra, rb = SHELL[a.proto.Name] or 9, SHELL[b.proto.Name] or 9
+				if ra ~= rb then return ra < rb end
+			end
+			return a.vol > b.vol
+		end)
+		return list
+	end
+	local function bare(i) return groups[i][#groups[i]] end
+	local function first(list, n, into)
+		for k = 1, math.min(n, #list) do table.insert(into, list[k]) end
+		return into
+	end
+	t.lite = {}
+	for i = 1, 6 do
+		local cap = (i == T and 6) or (i == H and 4) or ((i == LL or i == RL) and 2) or 1
+		local list = first(sorted(i, "armor"), cap, {})
+		if #list == 0 then table.insert(list, bare(i)) end
+		if i == RA then first(sorted(i, "weapon"), 2, list) end
+		if i == LA then first(sorted(i, "shield"), 2, list) end
+		t.lite[i] = list
+	end
+	t.mass = {}
+	for i = 1, 6 do
+		local list = {}
+		if i == T then first(sorted(i, "armor", true), 2, list)
+		elseif i == H then first(sorted(i, "armor"), 2, list) end
+		if #list == 0 then table.insert(list, bare(i)) end
+		if i == RA then first(sorted(i, "weapon"), 1, list) end
+		if i == LA then first(sorted(i, "shield"), 1, list) end
+		t.mass[i] = list
+	end
+	t.model = m   -- (kept: the protos live in it)
+	return t
+end
+
+local function template(side, kind, variant)
+	local looks = (WarCrowd.LOOKS[side] or WarCrowd.LOOKS.A)[kind] or WarCrowd.LOOKS.A.foot
+	local look = looks[(variant - 1) % #looks + 1]
+	local key = side .. kind .. look.set
+	if templates[key] == nil then templates[key] = build(side, look) or false end
+	return templates[key] or nil
+end
+-- (build them ahead, a frame apart, so the first regiment doesn't stall the screen)
+function WarCrowd.warm(sides, kinds)
+	for _, side in ipairs(sides) do
+		for _, kind in ipairs(kinds) do
+			for v = 1, 2 do template(side, kind, v); RunService.Heartbeat:Wait() end
+		end
+	end
+end
+
+--------------------------------------------------------------------
+--  A SOLDIER
+--------------------------------------------------------------------
+local function newSoldier(home, t, level)
+	local s = {limbs = {}, offs = {}, parts = {}}
+	for i = 1, 6 do
+		s.limbs[i], s.offs[i] = {}, {}
+		for _, e in ipairs(t[level][i]) do
+			local p = e.proto:Clone()
+			for _, d in ipairs(p:GetChildren()) do
+				if not (d:IsA("SurfaceAppearance") or d:IsA("SpecialMesh") or d:IsA("Decal") or d:IsA("Texture")) then d:Destroy() end
+			end
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+			p.CastShadow = level == "full"
+			p.Transparency = 0
+			p.CFrame = FAR
+			p.Parent = home
+			table.insert(s.limbs[i], p)
+			table.insert(s.offs[i], e.off)
+			table.insert(s.parts, p)
+		end
+	end
+	return s
+end
+
+-- the pose: six limb frames in the soldier's own space (origin on the ground, facing -z)
+local L = {}
+local function pose(s, now, kind, out)
+	local st = s.state
+	local t = now + s.ph
+	local bob, lean, twist = 0, 0, 0
+	local ra, la, raz, laz, rl, ll = 90, 15, 0, 0, 0, 0
+	local headPitch = 0
+	if kind == "pike" then ra, la = 90, 70 end
+	if kind == "archer" then ra, la = 10, 20 end
+	if kind == "mage" then ra, la = 70, 10 end
+	if st == "march" or st == "run" then
+		local fast = st == "run"
+		local w = fast and 11 or 7
+		local a = math.sin(t * w)
+		rl, ll = a * (fast and 45 or 26), -a * (fast and 45 or 26)
+		bob = math.abs(math.cos(t * w)) * (fast and 0.4 or 0.2)
+		la = la + a * 18
+		lean = fast and 14 or 3
+		if fast and kind == "pike" then ra = 20 end      -- (pikes levelled at a charge)
+		if fast and kind ~= "pike" and kind ~= "archer" then ra = 120 end   -- (weapons up)
+	elseif st == "fight" then
+		-- swing (wind up, strike, recover) and guard by turns, each on its own beat
+		local period = s.period
+		local u = (t % period) / period
+		if s.guard then
+			la, ra = 95, 110
+			lean = 4
+		else
+			if u < 0.45 then ra = 90 + 80 * (u / 0.45); lean = -4
+			elseif u < 0.58 then ra = 170 - 150 * ((u - 0.45) / 0.13); lean = 14; twist = 10
+			else ra = 20 + 70 * ((u - 0.58) / 0.42); lean = 6 end
+			la = 60
+		end
+		rl, ll = 12, -10
+		if math.floor(t / period) % 3 == 2 then s.guard = true else s.guard = false end
+	elseif st == "loose" then
+		if kind == "archer" then la, ra, laz, raz, headPitch = 120, 115, 0, 0, 20
+		else ra, la = 175, 160 end
+	elseif st == "cheer" then
+		ra, la = 175 + math.sin(t * 9) * 8, 170 + math.cos(t * 9) * 8
+		bob = math.abs(math.sin(t * 9)) * 0.4
+	elseif st == "brace" then
+		la, ra = 100, 100
+	end
+	local hips = CF(0, 3 + bob, 0) * ANG(0, RAD(twist * 0.3), 0)
+	local torso = hips * ANG(RAD(-lean), RAD(twist), 0)
+	out[T] = torso
+	out[H] = torso * CF(0, 1, 0) * ANG(RAD(headPitch), 0, 0) * CF(0, 0.5, 0)
+	out[RA] = torso * CF(1, 0.5, 0) * ANG(RAD(ra), 0, RAD(raz)) * CF(0.5, -0.5, 0)
+	out[LA] = torso * CF(-1, 0.5, 0) * ANG(RAD(la), 0, RAD(-laz)) * CF(-0.5, -0.5, 0)
+	out[RL] = hips * CF(0.5, -1, 0) * ANG(RAD(rl), 0, 0) * CF(0, -1, 0)
+	out[LL] = hips * CF(-0.5, -1, 0) * ANG(RAD(ll), 0, 0) * CF(0, -1, 0)
+	return out
+end
+
+-- RIGID: a soldier moved as one piece in its standing pose (cached once): what a man far off, or
+-- walking in a rear rank, needs; a fraction of the cost of posing every limb
+local function placeRigid(s, base, kind, put)
+	local rig = s.rig
+	if not rig then
+		local keep = s.state
+		s.state = "stand"
+		local Ls = {}
+		pose(s, 0, kind, Ls)
+		s.state = keep
+		rig = {}
+		for i = 1, 6 do
+			for j, p in ipairs(s.limbs[i]) do table.insert(rig, {p, Ls[i] * s.offs[i][j]}) end
+		end
+		s.rig = rig
+	end
+	for k = 1, #rig do local e = rig[k]; put(e[1], base * e[2]) end
+end
+
+local function place(s, base, now, kind, put)
+	-- fallen: laid on the ground (backwards, or where a blast flung it), still once settled
+	if s.state == "dead" or s.state == "falling" then
+		local k = s.state == "dead" and 1 or math.clamp((now - s.since) / 0.55, 0, 1)
+		k = k * k
+		base = base * CF(0, 0.55 * k, 0) * ANG(RAD(88 * k) * s.fallDir, 0, RAD(s.fallRoll * k))
+		if s.state == "falling" and k >= 1 then s.state = "dead"; s.dirty = true end
+	end
+	pose(s, now, kind, L)
+	for i = 1, 6 do
+		local limbs = s.limbs[i]
+		if #limbs > 0 then
+			local f = base * L[i]
+			local offs = s.offs[i]
+			for j = 1, #limbs do put(limbs[j], f * offs[j]) end
+		end
+	end
+end
+
+--------------------------------------------------------------------
+--  THE CROWD
+--------------------------------------------------------------------
+local crowds = {}
+local loopConn
+local bulkP, bulkC = {}, {}
+
+function WarCrowd.new()
+	local self = setmetatable({regs = {}, list = {}, flying = {}, dead = false, acc = 0, accFar = 0}, WarCrowd)
+	local cam = workspace.CurrentCamera
+	self.home = Instance.new("Folder")
+	self.home.Name = "WarCrowd"
+	self.home.Parent = cam or workspace
+	self.ray = RaycastParams.new()
+	self.ray.FilterType = Enum.RaycastFilterType.Exclude
+	table.insert(crowds, self)
+	if not (loopConn and loopConn.Connected) then
+		loopConn = RunService.RenderStepped:Connect(function(dt)
+			local now = os.clock()
+			for i = #crowds, 1, -1 do
+				local c = crowds[i]
+				if c.dead then table.remove(crowds, i)
+				else
+					local ok, err = pcall(c.step, c, now, dt)
+					if not ok then warn("[WarCrowd] " .. tostring(err)) end
+				end
+			end
+		end)
+	end
+	return self
+end
+
+function WarCrowd:groundAt(x, z, fallback)
+	self.ray.FilterDescendantsInstances = {self.home, workspace:FindFirstChild("WarFX")}
+	local r = workspace:Raycast(V3(x, 300, z), V3(0, -600, 0), self.ray)
+	return r and r.Position.Y or fallback or 0
+end
+
+function WarCrowd:regiment(id, o)
+	local scale = WarCrowd.SCALE
+	local cols = math.max(2, math.floor((o.cols or 12) * (scale < 1 and 0.6 or 1)))
+	local ranks = math.max(1, math.floor((o.ranks or 5) * (scale < 1 and 0.6 or 1)))
+	local reg = {id = id, side = o.side or "A", kind = o.kind or "foot", facing = o.facing or 1, x = o.at.X, z = o.at.Z,
+		target = o.at.Z, run = false, cols = cols, ranks = ranks, sp = o.spacing or 3, men = {}, clash = false,
+		looseUntil = 0, cheerUntil = 0, y0 = o.at.Y, nextGround = 0, dirty = true, hidden = false, corpses = {}}
+	reg.y0 = self:groundAt(reg.x, reg.z, o.at.Y)
+	local frontLevel = o.detail or "lite"
+	for r = 1, ranks do
+		for c = 1, cols do
+			local level = r == 1 and frontLevel or ((r == 2 and frontLevel ~= "mass") and "lite" or "mass")
+			local t = template(reg.side, reg.kind, (c + r) % 2 + 1)
+			if t then
+				local s = newSoldier(self.home, t, level)
+				s.r, s.c, s.level = r, c, level
+				s.ph = math.random() * 6.28
+				s.period = 1.2 + math.random() * 0.7
+				s.jx, s.jz = (math.random() - 0.5) * 0.9, (math.random() - 0.5) * 0.9
+				s.yaw = (math.random() - 0.5) * 0.25
+				s.state = "stand"
+				table.insert(reg.men, s)
+			end
+		end
+	end
+	if o.banner ~= false then
+		local col = reg.side == "A" and Color3.fromRGB(56, 92, 206) or Color3.fromRGB(190, 50, 44)
+		local pole = Instance.new("Part"); pole.Size = V3(0.25, 14, 0.25); pole.Color = Color3.fromRGB(90, 70, 50); pole.Material = Enum.Material.Wood
+		local flag = Instance.new("Part"); flag.Size = V3(0.12, 3.6, 4.6); flag.Color = col; flag.Material = Enum.Material.Fabric
+		for _, p in ipairs({pole, flag}) do
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+			p.CFrame = FAR
+			p.Parent = self.home
+		end
+		reg.standard = {pole, flag}
+	end
+	self.regs[id] = reg
+	table.insert(self.list, reg)
+	return reg
+end
+
+function WarCrowd:march(id, z, run)
+	local r = self.regs[id]
+	if not r then return end
+	r.target = z
+	r.run = run and true or false
+end
+function WarCrowd:clash(id, on)
+	local r = self.regs[id]
+	if not r or r.clash == (on and true or false) then return end
+	r.clash = on and true or false
+	r.dirty = true
+end
+function WarCrowd:loose(id)
+	local r = self.regs[id]
+	if not r then return end
+	r.looseUntil = os.clock() + 2.4
+	r.dirty = true
+end
+function WarCrowd:cheer(side)
+	for _, r in ipairs(self.list) do
+		if r.side == side then r.cheerUntil = os.clock() + 5; r.dirty = true end
+	end
+end
+
+-- where a soldier of a regiment stands in the world (and the frame it faces)
+local function slotCF(reg, s)
+	local f = reg.facing
+	local x = reg.x + (s.c - (reg.cols + 1) / 2) * reg.sp + s.jx
+	local z = reg.z - f * (s.r - 1) * reg.sp + s.jz
+	return x, z
+end
+
+-- a soldier falls (on the spot, or flung by a blast); its place is taken by the one behind it a
+-- moment later (the fallen stay a while, at most a dozen to a regiment)
+local function fall(self, reg, s, now, fling)
+	if s.corpse or s.state == "dead" or s.state == "falling" or s.state == "flying" then return end
+	-- (the fallen keep the spot they fell on, whatever their regiment does next)
+	do
+		local x, z = slotCF(reg, s)
+		s.at = CF(x, reg.y0, z) * CFrame.lookAt(Vector3.zero, V3(0, 0, reg.facing)) * ANG(0, s.yaw, 0)
+	end
+	if fling then
+		local x, z = slotCF(reg, s)
+		s.fly = {pos = V3(x, reg.y0, z), vel = fling, spin = V3(math.random() * 8 - 4, math.random() * 8 - 4, math.random() * 8 - 4), t = 0, yaw = s.yaw}
+		s.state = "flying"
+		table.insert(self.flying, {reg = reg, s = s})
+	else
+		s.state = "falling"
+	end
+	s.since = now
+	s.fallDir = (math.random() < 0.5) and 1 or -1
+	s.fallRoll = math.random(-25, 25)
+	s.deadAt = now
+	reg.dirty = true
+	-- the dead stay where they fell; a fresh soldier steps into the place soon
+	table.insert(reg.corpses, s)
+	s.corpse = true
+	local key = s.r .. ":" .. s.c
+	task.delay(2.5 + math.random() * 2, function()
+		if self.dead or not reg.men then return end
+		-- (the oldest of the fallen, past a dozen, stands up as the new man: parts are reused)
+		local fresh
+		if #reg.corpses > 12 then
+			fresh = table.remove(reg.corpses, 1)
+		end
+		local idx = table.find(reg.men, s)
+		if not idx then return end
+		if fresh and fresh ~= s then
+			fresh.corpse, fresh.at = nil, nil
+			fresh.r, fresh.c, fresh.jx, fresh.jz = s.r, s.c, s.jx, s.jz
+			fresh.state = "stand"
+			fresh.fly = nil
+			reg.men[idx] = fresh
+			s.slotLost = true
+		else
+			-- (no corpse to spare yet: the fallen one stays down, the place stays empty a while longer)
+			s.slotLost = true
+			reg.men[idx] = nil
+			reg.holes = reg.holes or {}
+			table.insert(reg.holes, {idx = idx, key = key, r = s.r, c = s.c, jx = s.jx, jz = s.jz})
+		end
+		reg.dirty = true
+	end)
+end
+
+function WarCrowd:hit(pos, r, n)
+	local now = os.clock()
+	local hits = 0
+	for _, reg in ipairs(self.list) do
+		for _, s in pairs(reg.men) do
+			if s and not s.corpse then
+				local x, z = slotCF(reg, s)
+				if (V3(x, 0, z) - V3(pos.X, 0, pos.Z)).Magnitude < r and math.random() < 0.35 then
+					fall(self, reg, s, now)
+					hits += 1
+					if hits >= (n or 4) then return end
+				end
+			end
+		end
+	end
+end
+
+function WarCrowd:blast(pos, r)
+	local now = os.clock()
+	for _, reg in ipairs(self.list) do
+		if math.abs(reg.x - pos.X) < r + reg.cols * reg.sp and math.abs(reg.z - pos.Z) < r + reg.ranks * reg.sp + 10 then
+			for _, s in pairs(reg.men) do
+				if s and not s.corpse then
+					local x, z = slotCF(reg, s)
+					local d = V3(x - pos.X, 0, z - pos.Z)
+					local m = d.Magnitude
+					if m < r then
+						local k = 1 - m / r
+						local away = m > 0.1 and d.Unit or V3(1, 0, 0)
+						fall(self, reg, s, now, away * (18 + 30 * k) + V3(0, 25 + 40 * k, 0))
+					end
+				end
+			end
+		end
+	end
+end
+
+function WarCrowd:stop()
+	if self.dead then return end
+	self.dead = true
+	self.home:Destroy()
+	self.list, self.regs, self.flying = {}, {}, {}
+end
+
+-- one regiment: march (always), then its men where they need moving
+function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
+	local f = reg.facing
+	local gap = reg.target - reg.z
+	-- (a small drift isn't a march: it starts past 1.6 studs off and stops within 0.3)
+	if reg.moving then
+		if math.abs(gap) < 0.3 then reg.moving = false; reg.dirty = true end
+	elseif math.abs(gap) > 1.6 then
+		reg.moving = true
+	end
+	local moving = reg.moving
+	local speed = reg.run and 16 or 5
+	if moving then reg.z += math.clamp(gap, -speed * dt, speed * dt); reg.dirty = true end
+	if not visible then reg.hidden = true; return end
+	if reg.hidden then reg.hidden = false; reg.dirty = true end
+	if moving and now > reg.nextGround then
+		reg.nextGround = now + 0.6
+		reg.y0 = self:groundAt(reg.x, reg.z, reg.y0)
+	end
+	-- a hole in the front line: the man behind steps up (a fresh one from the back)
+	if reg.holes and #reg.holes > 0 and #reg.corpses > 6 then
+		local h = table.remove(reg.holes, 1)
+		local fresh = table.remove(reg.corpses, 1)
+		if fresh then
+			fresh.corpse, fresh.at = nil, nil
+			fresh.r, fresh.c, fresh.jx, fresh.jz = h.r, h.c, h.jx, h.jz
+			fresh.state = "stand"
+			reg.men[h.idx] = fresh
+			reg.dirty = true
+		end
+	end
+	local cheering = now < reg.cheerUntil
+	local loosing = now < reg.looseUntil
+	local animate = moving or reg.clash or cheering or loosing or reg.dirty
+	local rot = CFrame.lookAt(Vector3.zero, V3(0, 0, f))
+	for idx, s in pairs(reg.men) do
+		if s and not s.corpse then
+			local want
+			if s.state == "dead" or s.state == "falling" then want = s.state
+			elseif cheering then want = "cheer"
+			elseif loosing then want = "loose"
+			elseif reg.clash and s.r == 1 then want = "fight"
+			elseif reg.clash and s.r == 2 then want = "brace"
+			elseif moving then want = reg.run and "run" or "march"
+			else want = "stand" end
+			if want ~= s.state then s.state = want; s.since = now end
+			local live = s.state ~= "stand" and s.state ~= "dead" and s.state ~= "brace"
+			if animate and (live or reg.dirty or s.state == "falling") then
+				local x, z = slotCF(reg, s)
+				local base = CF(x, reg.y0, z) * rot * ANG(0, s.yaw, 0)
+				local st = s.state
+				-- (a man in the front rank fighting lunges at his man)
+				if st == "fight" then base = base * CF(0, 0, -math.max(0, math.sin((now + s.ph) * 2.2)) * 0.8) end
+				-- every limb posed near the camera; further off only the fighting front rank and the
+				-- falling are, the rest move as one piece (bobbing as they walk); far off, all of them
+				local full = lod == 1 or (lod == 2 and (st == "fight" or st == "cheer" or st == "loose") and s.r <= 2)
+				if full then
+					place(s, base, now, reg.kind, put)
+				else
+					if st == "march" or st == "run" then base = base * CF(0, math.abs(math.sin((now + s.ph) * (st == "run" and 11 or 7))) * 0.3, 0) end
+					placeRigid(s, base, reg.kind, put)
+				end
+				-- now and then one in the fight goes down
+				if st == "fight" and math.random() < dt * 0.012 then fall(self, reg, s, now) end
+			end
+		end
+	end
+	-- the fallen: moved only while they go down, then left where they lie
+	for _, s in ipairs(reg.corpses) do
+		if s.state == "falling" and s.at then place(s, s.at, now, reg.kind, put) end
+	end
+	if reg.standard and (reg.dirty or moving or reg.clash) then
+		local sway = math.sin(now * 2) * 0.08
+		local cf = CF(reg.x + reg.sp * 0.5, reg.y0, reg.z - f * reg.sp * 1.5) * rot * ANG(0, 0, sway)
+		put(reg.standard[1], cf * CF(0.6, 7, 0))
+		put(reg.standard[2], cf * CF(0.6, 12, 2.4))
+	end
+	reg.dirty = false
+end
+
+function WarCrowd:step(now, dt)
+	if self.dead then return end
+	local n = 0
+	local function put(p, cf) n += 1; bulkP[n] = p; bulkC[n] = cf end
+	-- the flung, every frame
+	for i = #self.flying, 1, -1 do
+		local e = self.flying[i]
+		local s = e.s
+		local fl = s.fly
+		if not fl or s.state ~= "flying" then table.remove(self.flying, i)
+		else
+			fl.t += dt
+			fl.vel += V3(0, -90 * dt, 0)
+			fl.pos += fl.vel * dt
+			if fl.pos.Y <= e.reg.y0 and fl.t > 0.2 then
+				-- (down: lying where it landed)
+				s.state = "dead"
+				s.fly = nil
+				local landed = CF(fl.pos.X, e.reg.y0, fl.pos.Z) * ANG(0, fl.yaw + fl.t, 0) * CF(0, 0.55, 0) * ANG(RAD(88) * s.fallDir, 0, 0)
+				pose(s, now, e.reg.kind, L)
+				for li = 1, 6 do
+					local f = landed * L[li]
+					for j, p in ipairs(s.limbs[li]) do put(p, f * s.offs[li][j]) end
+				end
+				table.remove(self.flying, i)
+			else
+				local base = CF(fl.pos) * ANG(fl.spin.X * fl.t, fl.spin.Y * fl.t, fl.spin.Z * fl.t)
+				pose(s, now, e.reg.kind, L)
+				for li = 1, 6 do
+					local f = base * CF(0, -3, 0) * L[li]
+					for j, p in ipairs(s.limbs[li]) do put(p, f * s.offs[li][j]) end
+				end
+			end
+		end
+	end
+	-- the regiments by distance: near ~20 times a second (every limb), mid ~8, far ~4; out of
+	-- sight they only march
+	local t0 = os.clock()
+	self.acc += dt
+	self.accMid = (self.accMid or 0) + dt
+	self.accFar += dt
+	local near, mid, far = self.acc >= 0.05, self.accMid >= 0.12, self.accFar >= 0.25
+	if near or mid or far then
+		local cam = workspace.CurrentCamera
+		local c = cam and cam.CFrame.Position or Vector3.zero
+		local vs = cam and cam.ViewportSize or Vector2.new(1, 1)
+		for _, reg in ipairs(self.list) do
+			local m = V3(reg.x, reg.y0 + 3, reg.z)
+			local d = (m - c).Magnitude
+			local visible = d < 70
+			if not visible and cam then
+				local v = cam:WorldToViewportPoint(m)
+				visible = v.Z > 0 and v.X > -vs.X * 0.5 and v.X < vs.X * 1.5 and v.Y > -vs.Y * 0.8 and v.Y < vs.Y * 1.8
+			end
+			if d < 110 then
+				if near then self:placeReg(reg, now, self.acc, put, visible, 1) end
+			elseif d < 300 then
+				if mid then self:placeReg(reg, now, self.accMid, put, visible, 2) end
+			elseif far then
+				self:placeReg(reg, now, self.accFar, put, visible, 3)
+			end
+		end
+		if near then self.acc = 0 end
+		if mid then self.accMid = 0 end
+		if far then self.accFar = 0 end
+	end
+	if n > 0 then
+		for k = n + 1, #bulkP do bulkP[k] = nil; bulkC[k] = nil end
+		workspace:BulkMoveTo(bulkP, bulkC, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+	-- (what it cost, smoothed: the crowd's folder carries it for a look in Studio)
+	self.ms = (self.ms or 0) * 0.95 + (os.clock() - t0) * 1000 * 0.05
+	self.moved = (self.moved or 0) * 0.95 + n * 0.05
+	if now - (self.msAt or 0) > 1 then
+		self.msAt = now
+		self.home:SetAttribute("Ms", math.floor(self.ms * 100) / 100)
+		self.home:SetAttribute("Moved", math.floor(self.moved))
+	end
+end
+
+return WarCrowd

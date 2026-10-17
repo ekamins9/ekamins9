@@ -25,6 +25,7 @@ local UserInputService = game:GetService("UserInputService")
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+local WarCrowd = require(ReplicatedStorage:WaitForChild("WarCrowd"))
 local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
 local Device = require(ReplicatedStorage:WaitForChild("Device"))
 
@@ -369,72 +370,145 @@ end
 local war = {on = false}
 local finale = {}   -- (the battle's end: below)
 local function phone() return Device.kind() == "phone" end
+-- THE ARMIES ON THE FLANKS (ReplicatedStorage ▸ WarCrowd: real soldiers, drawn here only)
+local LANE_KIND = {"foot", "pike", "knight"}
 local function buildArmies()
-	if war.army then war.army:stop() end
-	local army = WarFX.army()
-	war.army = army
-	local lanes = {W("Lane1") or 150, W("Lane2") or 198, W("Lane3") or 246}
-	if phone() then lanes = {lanes[1]} end
+	if war.crowd then war.crowd:stop() end
+	WarCrowd.SCALE = phone() and 0.6 or 1
+	local crowd = WarCrowd.new()
+	war.crowd = crowd
+	local lanes = {W("Lane1") or 134, W("Lane2") or 180, W("Lane3") or 226}
+	if phone() then lanes = {lanes[1], lanes[2]} end
+	war.lanes = lanes
 	local fz = round:GetAttribute("WarFront") or 0
-	local n = 0
+	-- (they start well apart: the opening charge brings them together)
 	for _, s in ipairs({-1, 1}) do
 		for li, x in ipairs(lanes) do
 			for _, side in ipairs({"A", "B"}) do
-				n += 1
 				local f = side == "A" and 1 or -1
-				local id = side .. s .. li
-				army:regiment(id, {color = SIDE[side]:Lerp(Color3.new(), 0.15), at = V3(s * x, 0, fz - f * 40), facing = f,
-					cols = phone() and 6 or 10, ranks = phone() and 3 or 5, kind = (li == 2) and "pike" or "foot", spacing = 3.1})
+				crowd:regiment(side .. s .. li, {side = side, kind = LANE_KIND[li], at = V3(s * x, 0, fz - f * 60), facing = f,
+					cols = 12, ranks = 6, spacing = 3.1, detail = li == 1 and "full" or "lite"})
 			end
 		end
 	end
-	-- archers on both flanks, a battle-mage circle a side
 	for _, side in ipairs({"A", "B"}) do
 		local f = side == "A" and 1 or -1
+		-- archers on both flanks, a battle-mage circle a side
 		for k = 1, 2 do
 			local at = W("Arch" .. side .. k)
 			if typeof(at) == "Vector3" then
-				army:regiment("arch" .. side .. k, {color = SIDE[side]:Lerp(Color3.fromRGB(90, 80, 60), 0.4), at = at, facing = f,
-					cols = phone() and 5 or 8, ranks = phone() and 2 or 3, kind = "archer", spacing = 2.8, banner = true})
+				crowd:regiment("arch" .. side .. k, {side = side, kind = "archer", at = at, facing = f, cols = 10, ranks = 3, spacing = 2.8, detail = "lite"})
 			end
 		end
 		local mg = W("Mage" .. side)
 		if typeof(mg) == "Vector3" then
-			army:regiment("mage" .. side, {color = side == "A" and Color3.fromRGB(70, 90, 220) or Color3.fromRGB(150, 50, 160), at = mg + V3(0, 0, -f * 4), facing = f,
-				cols = 3, ranks = 2, kind = "mage", spacing = 4, banner = false})
+			crowd:regiment("mage" .. side, {side = side, kind = "mage", at = mg + V3(0, 0, -f * 4), facing = f, cols = 4, ranks = 2, spacing = 3.4, detail = "lite", banner = false})
 		end
-	end
-	war.lanes = lanes
-end
--- every half second: the regiments march to the front and clash there
-local function armiesFollow()
-	local army = war.army
-	if not army then return end
-	local fz = round:GetAttribute("WarFront") or 0
-	local t = os.clock()
-	for _, s in ipairs({-1, 1}) do
-		for li in ipairs(war.lanes or {}) do
-			-- (each lane's line wavers a little on its own)
-			local sway = math.sin(t * 0.13 + li * 1.7 + s) * 10
-			local zA, zB = fz + sway - 2, fz + sway + 2
-			army:march("A" .. s .. li, zA)
-			army:march("B" .. s .. li, zB)
-			local ra, rb = army.regs["A" .. s .. li], army.regs["B" .. s .. li]
-			local meet = ra and rb and math.abs(ra.z - rb.z) < 10
-			army:clash("A" .. s .. li, meet)
-			army:clash("B" .. s .. li, meet)
-			if meet and math.random() < 0.08 then
-				WarFX.dust(V3(s * (war.lanes[li]), 1, (ra.z + rb.z) / 2), 1.6, Color3.fromRGB(150, 136, 116))
+		-- the reserves: deep blocks waiting behind each side's lines on both flanks
+		if not phone() then
+			for _, s in ipairs({-1, 1}) do
+				crowd:regiment("res" .. side .. s, {side = side, kind = "pike", at = V3(s * 200, 0, math.clamp(fz - f * 160, -330, 330)), facing = f,
+					cols = 14, ranks = 8, spacing = 3, detail = "mass"})
 			end
 		end
 	end
-	-- the archers keep a fixed distance behind their side's line
+	-- the din of each flank's melee, from where it is; the drums and the roar of both armies over all
+	war.loops = war.loops or {}
+	for _, s in ipairs({-1, 1}) do
+		war.loops["melee" .. s] = WarFX.loop3D("Melee", V3(s * lanes[1], 3, fz), {volume = 1.2, near = 50, range = 650})
+		war.loops["roar" .. s] = WarFX.loop3D("Roar", V3(s * 210, 6, fz), {volume = 1, near = 120, range = 1400})
+	end
+	war.loops.drums = WarFX.loop("Drums", 0.55)
+	-- dust and smoke drifting over each lane's melee
+	war.hazes = {}
+	for _, s in ipairs({-1, 1}) do
+		for li, x in ipairs(lanes) do war.hazes[s .. ":" .. li] = WarFX.haze(V3(s * x, 2, fz), {width = 46, depth = 14, rate = phone() and 2 or 5}) end
+	end
+	-- columns of smoke: a burning wagon at each camp, villages burning beyond the hills
+	war.columns = {}
+	for _, side in ipairs({"A", "B"}) do
+		local camp = W("Camp" .. side)
+		if typeof(camp) == "Vector3" then
+			local f = side == "A" and -1 or 1
+			table.insert(war.columns, WarFX.column(WarFX.ground(camp + V3(math.random(-80, -50), 0, f * 30)), {fire = true, scale = 0.8}))
+		end
+	end
+	for k = 1, phone() and 2 or 5 do
+		local sx = k % 2 == 0 and 1 or -1
+		local at = V3(sx * (330 + math.random() * 120), 0, (math.random() - 0.5) * 700)
+		table.insert(war.columns, WarFX.column(at, {scale = 1.6 + math.random() * 0.8}))
+	end
+	war.surge = {}
+	war.charged = false
+	war.chargeAt = os.clock() + 6
+end
+
+-- THE CHARGE: horns, drums, both lines of every lane run at each other and crash
+local function charge()
+	war.charged = true
+	WarFX.sound("Horn", nil, {volume = 1})
+	task.delay(0.8, function() if war.on then WarFX.sound("Charge", nil, {volume = 1}) end end)
+	bigCall("CHARGE!", "THE ARMIES CLASH ON BOTH FLANKS", GOLD, 2.4)
+end
+
+-- every half second: the regiments march (or run) to the front and fight there
+local function armiesFollow()
+	local crowd = war.crowd
+	if not crowd then return end
+	local now = os.clock()
+	if not war.charged then
+		if now < war.chargeAt then return end
+		charge()
+	end
+	local fz = round:GetAttribute("WarFront") or 0
+	for _, s in ipairs({-1, 1}) do
+		for li, x in ipairs(war.lanes or {}) do
+			local key = s .. ":" .. li
+			-- (each lane's line wavers on its own; now and then a lane pulls apart and charges again)
+			local sway = math.sin(now * 0.11 + li * 1.7 + s) * 9
+			local sg = war.surge[key]
+			if not sg then sg = {next = now + 25 + math.random() * 50}; war.surge[key] = sg end
+			local apart = 0
+			if sg.phase == "back" then
+				apart = 22
+				if now > sg.til then sg.phase, sg.til = "in", now + 6 end
+			elseif sg.phase == "in" then
+				if now > sg.til then sg.phase, sg.next = nil, now + 40 + math.random() * 50 end
+			elseif now > sg.next then
+				sg.phase, sg.til = "back", now + 7
+			end
+			local zA, zB = fz + sway - 2.7 - apart, fz + sway + 2.7 + apart
+			local ra, rb = crowd.regs["A" .. s .. li], crowd.regs["B" .. s .. li]
+			if ra and rb then
+				crowd:march("A" .. s .. li, zA, math.abs(zA - ra.z) > 10)
+				crowd:march("B" .. s .. li, zB, math.abs(zB - rb.z) > 10)
+				local meet = math.abs(ra.z - rb.z) < 7.5
+				-- the crash as two lines meet at a run
+				if meet and not sg.met then
+					local mid = V3(s * x, ra.y0 or 0, (ra.z + rb.z) / 2)
+					WarFX.dust(mid + V3(0, 1, 0), 3, Color3.fromRGB(150, 136, 116))
+					WarFX.sound("Gate", mid, {range = 500, near = 40, speed = 1.3, volume = 0.7})
+					local me = myPos()
+					if me and (me - mid).Magnitude < 120 then WarFX.shake(0.9 * (1 - (me - mid).Magnitude / 120) + 0.1, 0.5) end
+					for _ = 1, 3 do crowd:blast(mid + V3((math.random() - 0.5) * 30, 0, 0), 2.5) end
+				end
+				sg.met = meet
+				crowd:clash("A" .. s .. li, meet)
+				crowd:clash("B" .. s .. li, meet)
+				local hz = war.hazes and war.hazes[key]
+				if hz then hz.move(V3(s * x, (ra.y0 or 0) + 2, (ra.z + rb.z) / 2)) end
+			end
+		end
+		local mel = war.loops and war.loops["melee" .. s]
+		if mel then mel.move(V3(s * (war.lanes[1] or 150), 3, fz)) end
+		local roar = war.loops and war.loops["roar" .. s]
+		if roar then roar.move(V3(s * 210, 6, fz)) end
+	end
+	-- the archers keep their distance behind their side's line, the reserves further back
 	for _, side in ipairs({"A", "B"}) do
 		local f = side == "A" and 1 or -1
-		for k = 1, 2 do
-			local r = army.regs["arch" .. side .. k]
-			if r then army:march("arch" .. side .. k, math.clamp(fz - f * 110, -330, 330)) end
-		end
+		for k = 1, 2 do crowd:march("arch" .. side .. k, math.clamp(fz - f * 110, -330, 330)) end
+		for _, s in ipairs({-1, 1}) do crowd:march("res" .. side .. s, math.clamp(fz - f * 165, -340, 340)) end
 	end
 end
 
@@ -444,11 +518,10 @@ end
 -- (the engines' shots and warnings are Engines.client's: here, the armies' part in them)
 local EV = {}
 function EV.Volley(d)
-	local army = war.army
-	if army then army:loose("arch" .. d.side .. (d.to.X < 0 and 1 or 2)) end
+	if war.crowd then war.crowd:loose("arch" .. d.side .. (d.to.X < 0 and 1 or 2)) end
 end
 function EV.Barrage(d)
-	if war.army then war.army:loose("mage" .. d.side) end
+	if war.crowd then war.crowd:loose("mage" .. d.side) end
 end
 function EV.Captured(d)
 	local me = mySide()
@@ -467,10 +540,17 @@ function EV.Charge(d)
 	local fz = round:GetAttribute("WarFront") or 0
 	local f = d.side == "A" and 1 or -1
 	-- (up the gap between the second and third lanes, into the enemy's flank)
-	local x = d.lane * (((W("Lane2") or 198) + (W("Lane3") or 246)) / 2)
+	local x = d.lane * (((W("Lane2") or 180) + (W("Lane3") or 226)) / 2)
 	local path = {}
 	for _, z in ipairs({-f * 420, fz - f * 120, fz + f * 10, fz + f * 90}) do table.insert(path, WarFX.ground(V3(x, 0, z))) end
 	WarFX.riders(path, phone() and 9 or 15, {color = SIDE[d.side], speed = 52})
+	-- (they plough into the enemy's flank: men thrown aside along the way)
+	local dist = (path[3] - path[1]).Magnitude
+	for k = 0, 4 do
+		task.delay(dist / 52 + k * 0.35, function()
+			if war.on and war.crowd then war.crowd:blast(V3(x, 0, fz + f * (4 + k * 8)), 9) end
+		end)
+	end
 	WarFX.sound("Horn", path[1], {range = 1500, near = 200, volume = 0.9})
 	task.delay(5, function() if war.on then WarFX.sound("Charge", path[3], {range = 1500, near = 160}) end end)
 	if mySide() == d.side then bigCall("THE CAVALRY CHARGES", d.lane < 0 and "ON THE LEFT FLANK" or "ON THE RIGHT FLANK", SIDE[d.side], 2.4) end
@@ -486,13 +566,17 @@ local function distantWar()
 	if roll < 0.45 then
 		local side = math.random() < 0.5 and "A" or "B"
 		local f = side == "A" and 1 or -1
-		WarFX.volley(V3(x + (math.random() - 0.5) * 20, 6, fz - f * 110), V3(x, 0, fz + f * (6 + math.random() * 20)), 70, {flight = 2.6, spread = 16, stick = false, range = 260})
+		local to = V3(x, 0, fz + f * (6 + math.random() * 20))
+		WarFX.volley(V3(x + (math.random() - 0.5) * 20, 6, fz - f * 110), to, 90, {flight = 2.6, spread = 16, stick = false, range = 260})
+		task.delay(2.6, function() if war.on and war.crowd then war.crowd:hit(to, 12, 6) end end)
+		if war.crowd then war.crowd:loose("arch" .. side .. (x < 0 and 1 or 2)) end
 	elseif roll < 0.75 then
 		local side = math.random() < 0.5 and "A" or "B"
 		local arm = W("Treb" .. side .. math.random(2))
 		if typeof(arm) == "Vector3" then
 			local f = side == "A" and 1 or -1
-			WarFX.fireball(arm, WarFX.ground(V3(x + (math.random() - 0.5) * 30, 0, fz + f * (10 + math.random() * 40))), 4.2, {big = math.random() < 0.5})
+			WarFX.fireball(arm, WarFX.ground(V3(x + (math.random() - 0.5) * 30, 0, fz + f * (6 + math.random() * 30))), 4.2,
+				{big = true, onLand = function(p) if war.on and war.crowd then war.crowd:blast(p, 11) end end})
 		end
 	else
 		WarFX.sound("Charge", V3(x, 0, fz), {volume = 0.5, range = 1200, near = 180})
@@ -593,7 +677,13 @@ local function leave()
 	war.token = (war.token or 0) + 1
 	gui.Enabled = false
 	if arrive.stop then arrive.stop() end
-	if war.army then war.army:stop(); war.army = nil end
+	if war.crowd then war.crowd:stop(); war.crowd = nil end
+	for _, l in pairs(war.loops or {}) do if l then l.stop(1) end end
+	war.loops = {}
+	for _, h in pairs(war.hazes or {}) do h.stop() end
+	war.hazes = {}
+	for _, c in ipairs(war.columns or {}) do c.stop() end
+	war.columns = {}
 	for _, p in pairs(field.rings) do p:Destroy() end
 	for _, p in pairs(field.beams) do p:Destroy() end
 	field.rings, field.beams = {}, {}
@@ -624,11 +714,7 @@ local function finaleStart()
 	for k, d in pairs(GameConfig.TEAMS) do if d.name == winner then side = k end end
 	WarFX.sound("Horn", nil, {volume = 1})
 	task.delay(2.5, function() if finale.on then WarFX.sound("Horn", nil, {volume = 0.8, speed = 0.92}) end end)
-	if side and war.army then
-		for id, reg in pairs(war.army.regs) do
-			if id:sub(1, #side) == side or id == "arch" .. side .. "1" or id == "arch" .. side .. "2" or id == "mage" .. side then war.army:loose(id) end
-		end
-	end
+	if side and war.crowd then war.crowd:cheer(side) end
 	local t0 = os.clock()
 	RunService:BindToRenderStep("WarFinale", Enum.RenderPriority.Camera.Value + 6, function()
 		local cam = workspace.CurrentCamera

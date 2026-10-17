@@ -1672,12 +1672,25 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
 - **The battle's end**: the camera rises and circles slowly over the field, the winners' horns
   sound and their regiments loose and cheer; the result board and the class screen hold back five
   seconds for it (`_G.BoardHoldUntil`, read by Scoreboard and LoadoutMenu).
-- **The armies on the flanks** (WarFX regiments, client only: never fighters, nothing replicated):
-  three lanes a flank, a foot, pike and foot regiment of each side in each, marching to the front
-  (Round `WarFront`) and clashing there (lunges, thrusts, now and then one falls); each side's
-  archer companies (they loose with the server's volleys) and battle-mages (orbs flaring when they
-  cast); cavalry charges up the flanks now and then; distant volleys and fire out there between
-  the server's own. Phones field a third of it.
+- **The armies on the flanks** (`ReplicatedStorage ▸ WarCrowd`, client only: never fighters,
+  nothing replicated). Every soldier is a copy of the game's own dressed soldier (Dresser through
+  PreviewRig: a real armour set per side and kind, the side's colours, a real weapon and shield),
+  moved limb by limb: they stand, march, run at a charge, fight face to face along the line (swing,
+  guard, lunge), loose and cast, cheer, fall, and are thrown through the air by blasts; the fallen
+  stay where they fell (a dozen to a regiment, then the oldest stands up as a fresh man).
+  Three lanes a flank (foot, pikes, knights; the first just past the stakes), archer companies,
+  battle-mages, and deep reserves behind each side. Levels of detail by rank: full (every piece,
+  ~25 parts: the front rank of the nearest lane), lite (helmet and body armour, the main piece on
+  each limb, weapon, shield), mass (shell, helmet, bare limbs, weapon). Every limb is posed only
+  near the camera; further off men move as one piece in a cached pose; out of sight they only
+  march; a small drift isn't a march (hysteresis); far regiments update 4 times a second. Measured:
+  16,400 crowd parts, 1.1 ms a frame, 59 fps in Studio (a phone gets 60 % of the men).
+- **The set-pieces**: the opening CHARGE (horns, drums, both lines run and crash, dust, a shake,
+  men knocked flying); every 40–90 s a lane pulls apart and charges again; trebuchet fire on the
+  flanks throws men through the air; volleys drop them; the cavalry ploughs through a flank.
+- **The atmosphere**: dust haze drifting over each lane's melee, columns of smoke (a burning wagon
+  at each camp, villages burning beyond the hills), the din of each flank's melee from where it is
+  (WarFX.loop3D), the roar of both armies, war drums (WarAudio: Melee, Roar, Drums).
 - **The battlefields** (`WarMap.THEMES`, each with its own lighting, atmosphere and weather):
   **Redfield** (wheat fields, a farming village and windmill), **Ironridge** (a ruined fort on a
   rise, outcrops, rain), **Frostmere** (a frozen lake, snowy pines, snow), **Ashvale** (burning
