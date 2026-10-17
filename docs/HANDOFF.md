@@ -246,7 +246,10 @@ step):
   its lair a nest; admin next-map now accepts a procedural mode's themes); web traps (`Traps`
   BUILD.web); boiling oil over Siege's gate (`SiegeEpic.client` oil); the Banshee and the `wail`
   boss move (deafens through `Hearing`); a glyph/emoji sweep (fonts lack ♛ ➤ ✦ ▸ ▾ ✕ and Unicode
-  13 emoji; ✔ became ✓); the class picker's selected tag colour.
+  13 emoji; ✔ became ✓); the class picker's selected tag colour. Then: gargoyles stand as statues
+  until they wake (`DungeonMood` petrify); the Abbey's ghost procession; Kingsbridge's ploughed
+  plots; pigeons in the Courtyard (`Pigeons.client`); the `web` boss move (Spider Queen,
+  Broodmother: roots through Powers.addMods, BossFX "Webbed").
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
@@ -254,7 +257,7 @@ step):
   and HollowAbbey, the sixth and seventh dungeon themes'), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
   Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur), AbbeyBell, Chant, Splash, ArmorMail,
-  ArmorPlate, Fountain, EarRing, Skitter, Wail; and the 10-17 material pass over ServerStorage ▸ Maps
+  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons; and the 10-17 material pass over ServerStorage ▸ Maps
   (stone walls, shingled spires, rebuilt houses).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
