@@ -210,10 +210,12 @@ F.MAPS = {
 	Redmeadow   = {title = "Redmeadow",    layout = "warfield", theme = "autumn",   seed = 801},
 	Ironvale    = {title = "Ironvale",     layout = "warfield", theme = "winter",   seed = 802},
 	Grimfield   = {title = "Grimfield",    layout = "warfield", theme = "ash",      seed = 803},
+	Sunfall     = {title = "Sunfall",      layout = "warfield", theme = "desertDusk", seed = 804},
+	Ravenfield  = {title = "Ravenfield",   layout = "warfield", theme = "stormNight", seed = 805},
 }
 F.ORDER = {"Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate",
 	"Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen",
-	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch", "Redmeadow", "Ironvale", "Grimfield"}
+	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch", "Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield"}
 
 --------------------------------------------------------------------
 --  SHARED PIECES

@@ -87,7 +87,7 @@ GameConfig.MODES = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one.",
 		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater",
-			"Redmeadow", "Ironvale", "Grimfield"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+			"Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},
 	-- the dungeon game's lodge (Game ▸ Modes ▸ Tavern): walk about, trade, ready up
 	Tavern = {
@@ -251,7 +251,7 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
 	-- the warfields: a duel ring in the middle of a battle (MapForge "warfield", Warfield.client)
-	Redmeadow = "Redmeadow", Ironvale = "Ironvale", Grimfield = "Grimfield",
+	Redmeadow = "Redmeadow", Ironvale = "Ironvale", Grimfield = "Grimfield", Sunfall = "Sunfall", Ravenfield = "Ravenfield",
 	-- the dungeons' themes (Catalog ▸ Dungeons: The Depths, Deadvault)
 	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera", Stormwatch = "Stormwatch",
 	-- War's battlefields (Game ▸ WarMap)
@@ -265,7 +265,7 @@ function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 -- "petals". A mode's own (MODE_WEATHER) wins over the map's. War and the Prologue draw their own.
 GameConfig.MAP_WEATHER = {
 	Frostgate = "snow", Rimeholt = "snow", Frosthollow = "snow", Ironvale = "snow",
-	Stormhold = "storm", Stormbreak = "storm", Mistmoor = "rain", Marshfen = "rain", Mistbridge = "rain", Blackwater = "rain",
+	Stormhold = "storm", Stormbreak = "storm", Ravenfield = "storm", Mistmoor = "rain", Marshfen = "rain", Mistbridge = "rain", Blackwater = "rain",
 	Emberkeep = "embers", Ashenford = "embers", Cinderfall = "embers", Grimfield = "embers",
 	Blossomgate = "petals", RoseCourt = "petals",
 }
@@ -276,7 +276,7 @@ GameConfig.MODE_WEATHER = {Plague = "storm", InvUndead = "rain"}
 -- its most (Game ▸ GameServer, BotFill). A map not listed suits anything
 GameConfig.MAP_FIGHTERS = {
 	RoseCourt = {2, 6},                                  -- a garden court: 1v1 to 3v3
-	Redmeadow = {2, 6}, Ironvale = {2, 6}, Grimfield = {2, 6},   -- a duel ring in a battle: 1v1 to 3v3
+	Redmeadow = {2, 6}, Ironvale = {2, 6}, Grimfield = {2, 6}, Sunfall = {2, 6}, Ravenfield = {2, 6},   -- a duel ring in a battle: 1v1 to 3v3
 	Colosseum = {2, 12}, Bloodpit = {2, 12}, Moonring = {2, 12}, Dustbowl = {2, 12}, Thornpit = {2, 12}, Mirepit = {2, 12},
 	Sandpit = {2, 16},
 	Highbridge = {4, 20},
