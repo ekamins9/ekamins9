@@ -109,6 +109,9 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/CleanView.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `CleanView` (Ctrl+H hides all UI, the game's and Roblox's, for filming; again to bring it back) | LocalScript |
 | `ServerScriptService/Game/Showcase.lua`, `StarterPlayerScripts/Showcase.client.lua` | `ServerScriptService` → `Game` → `Showcase` (staff stage bot matches, the Courtyard tour, the armor parade for filming); `StarterPlayerScripts` → `Showcase` (the director's camera) | ModuleScript, LocalScript |
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
+| `StarterPlayerScripts/War.client.lua`, `SiegeEpic.client.lua`, `Warfield.client.lua`, `Engines.client.lua`, `MatchIntro.client.lua`, `BattleAmbience.client.lua`, `ArenaCrowd.client.lua`, `HordeHost.client.lua`, `CourtyardGuards.client.lua`, `BossEntrance.client.lua`, `DungeonMood.client.lua`, `BannerWind.client.lua`, `Weather.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → each by its name (the battles, the crowds, the dark, the wind) | LocalScript each |
+| `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
+| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
