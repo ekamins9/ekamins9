@@ -283,7 +283,8 @@ step):
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.
    **Save the place first** if it's been open since the 2026-10-16/17 run: its maps, MapShots and
    WarAudio sounds are Studio-only (section 4f). Remove the test scaffolding (ServerScriptService ▸
-   TMP_Go, ServerStorage ▸ TMP_MapPick / TMP_Map / TMP_WarTheme) before publishing.
+   TMP_Go, ServerStorage ▸ TMP_MapPick / TMP_Map / TMP_WarTheme, StarterPlayer ▸
+   StarterPlayerScripts ▸ TMP_ClientErrs) before publishing.
 2. Finish / verify the mesh armor (section 4), look at every set on the mannequin, fix fits.
 3. Polish: weapon and helmet shapes, menu screens against `docs/reference/`, the maps' cover.
 4. Only one session should push to the branch at a time.
