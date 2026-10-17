@@ -1,6 +1,7 @@
 --[[ DUNGEON MOOD — what being down there feels like, on your screen only, on any floor Game ▸
      Dungeon built (The Depths, Deadvault: the Map carries Generated and its Theme), and on Plague
-     Night (the dread, the sounds, the apparitions and bats; not the lanterns or the arrivals):
+     Night and the Undead invasion (the dread, the sounds, the apparitions and bats; not the
+     lanterns or the arrivals):
 
        your lantern     a warm light on every adventurer's chest (yours and your party's): the
                         floors are dark now, the torches only pools on the walls
@@ -55,7 +56,8 @@ local mood = {on = false, token = 0}
 local round = ReplicatedStorage:WaitForChild("Round")
 local function inDungeon()
 	local m = workspace:FindFirstChild("Map")
-	if round:GetAttribute("Mode") == "Plague" and m then return true, "Plague" end
+	local mode = round:GetAttribute("Mode")
+	if (mode == "Plague" or mode == "InvUndead") and m then return true, "Plague" end
 	return m and m:GetAttribute("Generated") == true, m and m:GetAttribute("Theme")
 end
 

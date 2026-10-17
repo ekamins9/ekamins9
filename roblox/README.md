@@ -1976,7 +1976,7 @@ Horde); a `matchmade` one finds a public server for that mode with room, else re
 (`HubServer` ▸ play). Studio has no teleports: PLAY switches the mode here, as always.
 
 ### Down in the dark: every dungeon floor (`Game ▸ Dungeon`, `DungeonMood.client`)
-(Plague Night gets the same dread: the grade, the edge, the drone, the whispers and groans, the
+(Plague Night and the Undead invasion get the same dread: the grade, the edge, the drone, the whispers and groans, the
 bats and apparitions; not the lanterns, which it gives its living itself, or the arrivals.)
 
 The floors are dark: no daylight, a low ambient, close fog; the light is the torches' (pools on the
