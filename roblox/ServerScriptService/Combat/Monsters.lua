@@ -1013,6 +1013,10 @@ function spawnMob(id, opts, over)
 				task.delay(0.25, function()
 					if m and m.Parent and not m:GetAttribute("RemainsPending") then Corpses.pending(m, leaves, 0.5) end
 				end)
+				-- (a wraith doesn't fall: it comes apart in a burst of its own pale mist)
+				if bodyKind == "wraith" and pos then
+					task.delay(0.55, function() burst(pos, (def.look and def.look.eyes) or Color3.fromRGB(170, 220, 255), 40, 8) end)
+				end
 			end
 			if opts.onDeath then task.spawn(opts.onDeath, mob, killer) end
 		end,

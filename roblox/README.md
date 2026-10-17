@@ -2566,7 +2566,7 @@ Vampiric, Stoneskin, Savage, Undying), more health, a glow, and a big move if it
 `Monsters.display(id)` is a still copy for screens: the menu's tiles show them
 (ReplicatedStorage ▸ MonsterDisplays, made by GameServer at start). What a monster leaves when it
 falls: a skeleton falls apart into a heap of its bones, the skull on top (Corpses "bones"; not one
-that will stand back up), a wraith is simply gone ("none"); the rest leave their body as anyone
+that will stand back up), a wraith comes apart in a burst of its own pale mist and is gone ("none"); the rest leave their body as anyone
 does. The killer's own kill effect, if it has one, has the last word.
 
 **The Gargoyle's stillness**: a sleeping gargoyle (the Crimson Manor's and the Abbey's champions)

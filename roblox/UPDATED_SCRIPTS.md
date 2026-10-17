@@ -1,4 +1,15 @@
-# Updated scripts: Web Spit
+# Updated scripts: a wraith's last breath
+
+- **A wraith's death**: instead of simply vanishing, it comes apart in a burst of its own pale mist.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | mist burst |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Web Spit
 
 - **The Spider Queen and the Broodmother spit webs**: a pale ring lights under you, and a moment later a web lands there. Still in it, you're stuck fast for a moment, silk over your feet and legs. Dodge out of the ring.
 - A new boss move kind any monster can use: `web`.
