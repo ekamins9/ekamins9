@@ -1,4 +1,16 @@
-# Updated scripts: more in the dark of Deadvault
+# Updated scripts: Sir Aldric takes the field; a sweep of the modes
+
+- **War**: the Crown's champion, Sir Aldric the Unbroken, is the Training Yard's own master of steel (a comment and the README say so).
+- Soaked with today's changes, no errors in any: Depths (2½ min), Deadvault, War (Redfield, Frostmere, Kingsbridge, Nightfall), Siege, Horde, Invasion, Plague, Dragonfall, Crownfall, TDM, KOTH, Kingslayer, the Tiltyard, the Courtyard, the Prologue, the Gilded Rat.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | a comment |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: more in the dark of Deadvault
 
 - **Deadvault**: fewer empty rooms (28% of fight rooms now, was 42%), more holding two, now and then a pack of three; more pairs on patrol (four, plus one for every two raiders). A raid holds about 44 monsters; server and client both hold about 60 fps in Studio.
 
