@@ -1,7 +1,8 @@
 --[[ ROUND RESULT (client) — the moment a round ends, the screen says it big:
      VICTORY / DEFEAT / DRAW across the middle on a band in the winning side's
      colour, under it who won ("IRON WINS") and why ("FROSTGATE HAS FALLEN"),
-     and when the match is over, the match. A few seconds, then it gives way to
+     and when the match is over, the match. Behind the word, the winning side's arms rise in
+     gold (the house its banners flew on the map: ReplicatedStorage ▸ Houses). A few seconds, then it gives way to
      the scoreboard and the vote (Scoreboard).
 
      Reads the Round node: State (Round → Intermission), Winner (a team's name
@@ -78,6 +79,26 @@ local function text(size, font, y, h)
 	t.TextScaled = true
 	return t
 end
+-- the winning house's arms, big and gold behind the word (its outline under it)
+local crest = Instance.new("Frame")
+crest.BackgroundTransparency = 1
+crest.AnchorPoint = Vector2.new(0.5, 0.5)
+crest.Position = UDim2.new(0.5, 0, 0, 95)
+crest.Size = UDim2.fromOffset(180, 180)   -- (inside the band's 190)
+crest.Visible = false
+crest.Parent = band
+local crestScale = Instance.new("UIScale"); crestScale.Parent = crest
+local crestLayers = {}
+for z, col in ipairs({Color3.fromRGB(14, 10, 8), Color3.new(1.06, 0.84, 0.4)}) do
+	local il = Instance.new("ImageLabel")
+	il.BackgroundTransparency = 1
+	il.Size = UDim2.fromScale(1, 1)
+	il.ScaleType = Enum.ScaleType.Fit
+	il.ImageColor3 = col
+	il.ZIndex = z
+	il.Parent = crest
+	crestLayers[z] = il
+end
 local big = text(96, Theme.FONT_TITLE, 70, 100)       -- VICTORY
 local who = text(30, Theme.FONT_TITLE, 132, 36)       -- IRON WINS
 local why = text(18, Theme.FONT, 166, 22)             -- FROSTGATE HAS FALLEN · the match
@@ -151,6 +172,22 @@ local function show()
 	who.TextColor3 = def and def.rgb:Lerp(Color3.new(1, 1, 1), 0.35) or Color3.new(1, 1, 1)
 	why.Text = string.upper(reason)
 	band.BackgroundColor3 = (def and def.rgb or Color3.fromRGB(40, 44, 60)):Lerp(Color3.new(0, 0, 0), 0.45)
+	-- the winners' arms (a side's: its house on this map)
+	local emblem
+	if key then
+		local map = workspace:FindFirstChild("Map")
+		local ok, e = pcall(function() return require(ReplicatedStorage:WaitForChild("Houses")).forTeam(key, map and map:GetAttribute("HouseSeed")) end)
+		emblem = ok and map and map:GetAttribute("HouseSeed") and e or nil
+	end
+	local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+	local o, f = art and emblem and art:FindFirstChild(emblem .. "_o"), art and emblem and art:FindFirstChild(emblem)
+	crest.Visible = f ~= nil
+	if f then
+		crestLayers[1].Image = o and o.Value or ""
+		crestLayers[2].Image = f.Value
+		for _, il in ipairs(crestLayers) do il.ImageTransparency = 1 end
+		crestScale.Scale = 0.6
+	end
 
 	-- in: the wash darkens, the band opens, the word lands
 	showing += 1
@@ -164,6 +201,12 @@ local function show()
 	TweenService:Create(wash, TweenInfo.new(0.4), {BackgroundTransparency = 0.55}):Play()
 	TweenService:Create(band, TweenInfo.new(0.35, Enum.EasingStyle.Quint), {Size = UDim2.new(1, 0, 0, 190)}):Play()
 	task.delay(0.15, function()
+		if crest.Visible then
+			-- (it rises behind the word, half seen: the word stays the thing you read)
+			TweenService:Create(crestScale, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {Scale = 1}):Play()
+			TweenService:Create(crestLayers[1], TweenInfo.new(0.6), {ImageTransparency = 0.45}):Play()
+			TweenService:Create(crestLayers[2], TweenInfo.new(0.6), {ImageTransparency = 0.38}):Play()
+		end
 		TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back), {Scale = 1}):Play()
 		TweenService:Create(big, TweenInfo.new(0.25), {TextTransparency = 0, TextStrokeTransparency = 0.2}):Play()
 	end)
@@ -186,6 +229,7 @@ local function show()
 		TweenService:Create(wash, info, {BackgroundTransparency = 1}):Play()
 		TweenService:Create(band, info, {BackgroundTransparency = 1}):Play()
 		for _, t in ipairs({big, who, why}) do TweenService:Create(t, info, {TextTransparency = 1, TextStrokeTransparency = 1}):Play() end
+		for _, il in ipairs(crestLayers) do TweenService:Create(il, info, {ImageTransparency = 1}):Play() end
 		task.delay(0.65, function() if showing == me then gui.Enabled = false end end)
 	end)
 end
