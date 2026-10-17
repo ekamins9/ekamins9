@@ -1737,7 +1737,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   farmsteads, cracks of fire, embers at dusk), **Kingsbridge** (a river across the field, two
   stone bridges and a ford, a chapel), **Nightfall** (a moonlit battle: torches lining the field,
   a burning watchtower, standing stones), **Sunreach** (a desert valley: a ruined temple of
-  sandstone columns, obelisks, dunes).
+  sandstone columns, obelisks, dunes), **Stormvale** (a storm over a ruined abbey: broken nave
+  walls and arch, pillars, a graveyard on both sides of the road), **Duskmoor** (purple heather at
+  golden hour: a ring of cairns, a beacon burning on the tallest).
 - **Made props** (ServerStorage ▸ WarProps, Studio-only, generated): **Pavilion** (each camp's
   command tent), **SiegeTower** (two parked before each camp, ramps towards the enemy),
   **Ballista** (two at each camp's corners), **Barricade** (spiked logs before the camps, and cover

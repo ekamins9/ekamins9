@@ -48,6 +48,8 @@ local NAMES = {
 	Kingsbridge = {"THE SOUTH MEADOW", "THE CHAPEL ROAD", "THE FORD", "THE MILLRACE", "THE NORTH MEADOW"},
 	Nightfall = {"THE SOUTH WOOD", "THE BARROWS", "THE WATCHTOWER", "THE STONES", "THE NORTH WOOD"},
 	Sunreach = {"THE SOUTH WELL", "THE DUNES", "THE TEMPLE", "THE OBELISKS", "THE NORTH WELL"},
+	Stormvale = {"THE SOUTH GATE", "THE GRAVES", "THE ABBEY", "THE CLOISTER", "THE NORTH GATE"},
+	Duskmoor = {"THE SOUTH TOR", "THE HEATHER", "THE CAIRNS", "THE BEACON", "THE NORTH TOR"},
 }
 local function inWar() return round:GetAttribute("Mode") == "War" end
 local function sideName(k) local d = GameConfig.TEAMS[k]; return d and string.upper(d.name) or "" end

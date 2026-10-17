@@ -108,6 +108,24 @@ local THEMES = {
 			FogColor = Color3.fromRGB(232, 210, 172), FogEnd = 1500, FogStart = 220, ExposureCompensation = 0, EnvironmentDiffuseScale = 0.7},
 		atmo = {Density = 0.28, Offset = 0.2, Haze = 1.2, Glare = 0.4, Color = Color3.fromRGB(236, 210, 166), Decay = Color3.fromRGB(196, 150, 104)},
 	},
+	-- STORMVALE: a ruined abbey in a storm, its arches and graves on a wet green
+	Stormvale = {
+		ground = M.Grass, field = M.Mud, path = M.Cobblestone, trees = "oak", weather = "storm",
+		colors = {Grass = Color3.fromRGB(70, 104, 62), Mud = Color3.fromRGB(78, 66, 52), Cobblestone = Color3.fromRGB(110, 110, 112)},
+		slab = Color3.fromRGB(68, 100, 60), hill = Color3.fromRGB(60, 88, 58),
+		light = {ClockTime = 16.6, Brightness = 1.4, Ambient = Color3.fromRGB(96, 104, 116), OutdoorAmbient = Color3.fromRGB(118, 126, 140),
+			FogColor = Color3.fromRGB(110, 118, 132), FogEnd = 900, FogStart = 120, ExposureCompensation = 0.2, EnvironmentDiffuseScale = 0.5},
+		atmo = {Density = 0.42, Offset = 0.1, Haze = 2.2, Glare = 0, Color = Color3.fromRGB(128, 136, 150), Decay = Color3.fromRGB(80, 86, 100)},
+	},
+	-- DUSKMOOR: purple heather under a red sunset, a ring of cairns, a beacon burning
+	Duskmoor = {
+		ground = M.Grass, field = M.LeafyGrass, path = M.Ground, trees = "dead", weather = "",
+		colors = {Grass = Color3.fromRGB(104, 84, 96), LeafyGrass = Color3.fromRGB(122, 86, 120), Ground = Color3.fromRGB(96, 76, 62)},
+		slab = Color3.fromRGB(100, 80, 92), hill = Color3.fromRGB(88, 70, 84),
+		light = {ClockTime = 17.35, Brightness = 2.6, Ambient = Color3.fromRGB(140, 110, 112), OutdoorAmbient = Color3.fromRGB(176, 132, 122),
+			FogColor = Color3.fromRGB(214, 140, 110), FogEnd = 1400, FogStart = 200, ExposureCompensation = 0.25, EnvironmentDiffuseScale = 0.7},
+		atmo = {Density = 0.33, Offset = 0.2, Haze = 1.8, Glare = 0.8, Color = Color3.fromRGB(230, 150, 120), Decay = Color3.fromRGB(150, 70, 80)},
+	},
 }
 WarMap.THEMES = THEMES
 
@@ -329,6 +347,63 @@ function FEATURE.Nightfall(ctx)
 		K.box(ctx, "Stone", V3(2.4, h, 1.6), CF(60 + math.cos(a) * 14, h / 2 - 0.5, -60 + math.sin(a) * 14) * CFrame.Angles(0, -a, 0), Color3.fromRGB(96, 98, 104), M.Slate, ctx.Props)
 	end
 end
+-- STORMVALE: a ruined abbey in the middle (broken walls and arches, a roofless nave), its
+-- graveyard, a lychgate, toppled stones
+function FEATURE.Stormvale(ctx)
+	local STONE2 = Color3.fromRGB(120, 118, 114)
+	local function seg(a, b, h) K.wall(ctx, a, b, h, 3, {color = STONE2, material = M.Slate}) end
+	-- the nave: two long walls with gaps, the east end with its arch standing
+	seg(V3(-14, 0, -40), V3(-14, 0, -12), 14); seg(V3(-14, 0, 4), V3(-14, 0, 30), 11)
+	seg(V3(14, 0, -40), V3(14, 0, -22), 9); seg(V3(14, 0, -6), V3(14, 0, 30), 14)
+	pcall(K.arch, ctx, CF(0, 0, 32), 22, 20, 3, STONE2, M.Slate)
+	seg(V3(-14, 0, -40), V3(-4, 0, -40), 16); seg(V3(4, 0, -40), V3(14, 0, -40), 12)
+	for k = 0, 4 do
+		local z = -32 + k * 14
+		for _, x in ipairs({-7, 7}) do
+			local h = (k + (x > 0 and 1 or 0)) % 3 == 0 and rnd:NextNumber(3, 6) or rnd:NextNumber(12, 16)
+			K.cyl(ctx, "Pillar", 2.4, h, V3(x, h / 2, z), STONE2, M.Slate)
+		end
+	end
+	for _ = 1, 24 do
+		local s = 1 + rnd:NextNumber(0, 2.2)
+		K.box(ctx, "Rubble", V3(s, s * 0.7, s * 1.2), CF(rnd:NextNumber(-30, 30), s * 0.3, rnd:NextNumber(-50, 44)) * CFrame.Angles(rnd:NextNumber(0, 1), rnd:NextNumber(0, 6), rnd:NextNumber(0, 1)), STONE2, M.Slate, ctx.Props)
+	end
+	-- the graveyard on both sides of the road, headstones leaning
+	for _, s in ipairs({-1, 1}) do
+		for row = 0, 3 do
+			for col = 0, 4 do
+				local at = V3(s * (36 + col * 6), 0, 60 + row * 7 + rnd:NextNumber(-1, 1))
+				K.box(ctx, "Headstone", V3(2, 3 + rnd:NextNumber(0, 1), 0.6), CF(at + V3(0, 1.4, 0)) * CFrame.Angles(DEG(rnd:NextNumber(-12, 12)), 0, DEG(rnd:NextNumber(-8, 8))), Color3.fromRGB(128, 128, 126), M.Slate, ctx.Props)
+			end
+		end
+	end
+	for _ = 1, 16 do K.rock(ctx, V3(rnd:NextNumber(-95, 95), 0, rnd:NextNumber(-340, 340)), 2 + rnd:NextNumber(0, 4), Color3.fromRGB(100, 102, 104)) end
+end
+-- DUSKMOOR: a ring of cairns on a rise, a beacon burning on the tallest, wind-bent trees
+function FEATURE.Duskmoor(ctx)
+	for k = 1, 8 do
+		local a = k / 8 * math.pi * 2
+		local at = V3(math.cos(a) * 30, 0, math.sin(a) * 30)
+		local h = 0
+		for tier = 0, 3 do
+			local s = 6 - tier * 1.3
+			K.box(ctx, "Cairn", V3(s, 1.6, s), CF(at + V3(0, h + 0.8, 0)) * CFrame.Angles(0, rnd:NextNumber(0, 6), 0), Color3.fromRGB(110, 102, 98), M.Slate, ctx.Props)
+			h += 1.6
+		end
+	end
+	-- the beacon: a tall cairn with a fire on top
+	local bh = 0
+	for tier = 0, 6 do
+		local s = 9 - tier * 1.1
+		K.box(ctx, "Cairn", V3(s, 2, s), CF(0, bh + 1, -70) * CFrame.Angles(0, tier * 0.4, 0), Color3.fromRGB(104, 96, 92), M.Slate, ctx.Props)
+		bh += 2
+	end
+	local blaze = nocol(K.box(ctx, "Blaze", V3(4, 2, 4), CF(0, bh + 1, -70), Color3.fromRGB(255, 120, 40), M.Neon, ctx.Props))
+	blaze.Transparency = 0.6
+	local fire = Instance.new("Fire"); fire.Size = 12; fire.Heat = 14; fire.Color = Color3.fromRGB(255, 130, 40); fire.SecondaryColor = Color3.fromRGB(190, 40, 10); fire.Parent = blaze
+	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 130, 60); l.Range = 50; l.Brightness = 2.2; l.Parent = blaze
+	for _ = 1, 20 do K.rock(ctx, V3(rnd:NextNumber(-95, 95), 0, rnd:NextNumber(-340, 340)), 2 + rnd:NextNumber(0, 4), Color3.fromRGB(96, 88, 86)) end
+end
 -- SUNREACH: a ruined temple of sandstone in the middle, obelisks, rocks
 function FEATURE.Sunreach(ctx)
 	local SAND = Color3.fromRGB(214, 180, 128)
@@ -407,6 +482,19 @@ function PAINT.Ashvale(T, th)
 	end
 	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, M.Mud) end
 	surface(-6, -400, 6, 400, th.ground, M.Basalt)
+	rolling(T, th)
+end
+function PAINT.Stormvale(T, th)
+	-- muddy flanks churned by the rain, a cobbled road through the abbey
+	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
+	surface(-6, -400, 6, 400, th.ground, th.path)
+	rolling(T, th)
+end
+function PAINT.Duskmoor(T, th)
+	-- heather on the flanks and round the cairns, a peat track
+	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
+	disc(0, 0, 40, th.ground, th.field)
+	surface(-5, -400, 5, 400, th.ground, th.path)
 	rolling(T, th)
 end
 function PAINT.Nightfall(T, th)
