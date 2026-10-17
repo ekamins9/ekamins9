@@ -16,9 +16,9 @@
      The server decides everything (VaultRemote: Hub ▸ VaultServer; the party: HubRemote). Opened by
      _G.OpenDungeon(tab, mode); _G.OpenVault opens the stash.
 
-     PART OF THE MAIN GAME: top left, ◀ MAIN MENU (where every screen's back is) takes you back to
-     the main menu (asked once: your stash, kit and gold stay here); top right, your level, Marks and
-     Crowns (what every run pays into) beside the vault's gold. WALK AROUND (M) shuts the lobby and
+     PART OF THE MAIN GAME: top right, a big red ◀ MAIN MENU takes you back to the main menu (asked
+     once: your stash, kit and gold stay here; not top left: Roblox's own buttons sit there); under
+     it, your level, Marks and Crowns (what every run pays into) beside the vault's gold. WALK AROUND (M) shuts the lobby and
      you're on your feet in the Gilded Rat (its own little bar at the top: LOBBY, ◀ MAIN MENU). And the dungeon game never shows the battle's class screen
      (LoadoutServer: a mode's ownSpawn): when you can't go back in, its own screen says why (YOU
      FELL · DOWN) with SPECTATE and BACK TO THE GILDED RAT. ]]
@@ -99,13 +99,16 @@ do
 	g.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.75, 0.1), NumberSequenceKeypoint.new(1, 1)})
 	g.Parent = nav
 end
-local homeBtn = DarkUI.button(nav, "◀  MAIN MENU", "blue", 17)
-homeBtn.Position = UDim2.fromOffset(18, 16); homeBtn.Size = UDim2.fromOffset(180, 46); homeBtn.ZIndex = 8
+-- THE WAY OUT: top right, big and red (the top left is under Roblox's own menu, chat and mic
+-- buttons on a wide screen)
+local homeBtn = DarkUI.button(nav, "◀  MAIN MENU", "red", 19)
+homeBtn.AnchorPoint = Vector2.new(1, 0)
+homeBtn.Position = UDim2.new(1, -18, 0, 12); homeBtn.Size = UDim2.fromOffset(196, 50); homeBtn.ZIndex = 8
 do
 	local logo = left(T(nav, "DEADVAULT", 24, C.GOLD2, BOLD))
-	logo.Position = UDim2.fromOffset(214, 12); logo.Size = UDim2.fromOffset(200, 28); logo.ZIndex = 6
+	logo.Position = UDim2.fromOffset(158, 12); logo.Size = UDim2.fromOffset(200, 28); logo.ZIndex = 6
 	local logoSub = left(T(nav, "THE DUNGEON GAME", 10, C.DIM, SEMI))
-	logoSub.Position = UDim2.fromOffset(215, 42); logoSub.Size = UDim2.fromOffset(200, 14); logoSub.ZIndex = 6
+	logoSub.Position = UDim2.fromOffset(159, 42); logoSub.Size = UDim2.fromOffset(200, 14); logoSub.ZIndex = 6
 end
 local navRule = DarkUI.rule(nav, 72, 1180)
 navRule.ZIndex = 6
@@ -145,7 +148,7 @@ goldLabel.TextXAlignment = Enum.TextXAlignment.Right
 goldLabel.Position = UDim2.new(1, -24, 0, 62); goldLabel.Size = UDim2.fromOffset(300, 20); goldLabel.TextSize = 16
 local leaveBtn = DarkUI.button(nav, "WALK AROUND  [M]", "stone", 15)
 leaveBtn.AnchorPoint = Vector2.new(1, 0)
-leaveBtn.Position = UDim2.new(1, -20, 0, 14); leaveBtn.Size = UDim2.fromOffset(176, 40); leaveBtn.ZIndex = 8
+leaveBtn.Position = UDim2.new(1, -226, 0, 17); leaveBtn.Size = UDim2.fromOffset(172, 40); leaveBtn.ZIndex = 8
 -- the main game's wallet (what every run pays into), beside the vault's gold
 local wallet = {at = 0}
 wallet.label = T(nav, "", 14, Color3.fromRGB(226, 230, 240), SEMI)
@@ -542,6 +545,8 @@ local ill = Instance.new("UIListLayout"); ill.Padding = UDim.new(0, 6); ill.Pare
 local inviteClose = DarkUI.button(inviteBox, "Close", "stone", 15)
 inviteClose.AnchorPoint = Vector2.new(0.5, 1); inviteClose.Position = UDim2.new(0.5, 0, 1, -14); inviteClose.Size = UDim2.fromOffset(140, 36); inviteClose.ZIndex = 31
 inviteClose.Activated:Connect(function() inviteBox.Visible = false end)
+-- (its title and rule above the box, as everything in it: this screen layers globally)
+for _, d in ipairs(inviteBox:GetChildren()) do if d:IsA("GuiObject") and d.ZIndex < 31 then d.ZIndex = 31 end end
 inviteBtn.Activated:Connect(function()
 	inviteBox.Visible = true
 	for _, c in ipairs(inviteList:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
@@ -1151,12 +1156,16 @@ end
 local confirmBox = DarkUI.panel(root, {title = "Back to the main menu?"})
 confirmBox.AnchorPoint = Vector2.new(0.5, 0.5); confirmBox.Position = UDim2.fromScale(0.5, 0.5); confirmBox.Size = UDim2.fromOffset(480, 230)
 confirmBox.Visible = false; confirmBox.ZIndex = 40
-local cbLine = T(confirmBox, "Your stash, your kit and your gold stay here in the Gilded Rat, safe. Come back any time from PLAY ▸ ADVENTURES.", 16, C.DIM, SEMI)
+local cbLine = T(confirmBox, "Your stash, your kit and your gold stay here in the Gilded Rat, safe. Come back any time: PLAY, then ADVENTURES.", 16, C.DIM, SEMI)
 cbLine.Position = UDim2.fromOffset(28, 60); cbLine.Size = UDim2.new(1, -56, 0, 66); cbLine.TextWrapped = true
-local cbGo = DarkUI.button(confirmBox, "MAIN MENU", "blue", 22)
+local cbGo = DarkUI.button(confirmBox, "MAIN MENU", "red", 22)
 cbGo.AnchorPoint = Vector2.new(1, 1); cbGo.Position = UDim2.new(0.5, -8, 1, -22); cbGo.Size = UDim2.fromOffset(190, 56)
 local cbStay = DarkUI.button(confirmBox, "STAY", "stone", 22)
 cbStay.AnchorPoint = Vector2.new(0, 1); cbStay.Position = UDim2.new(0.5, 8, 1, -22); cbStay.Size = UDim2.fromOffset(190, 56)
+-- (this screen layers globally: everything in the box above the box itself, or it's drawn
+-- under its own background, washed out)
+confirmBox.BackgroundTransparency = 0.02
+for _, d in ipairs(confirmBox:GetDescendants()) do if d:IsA("GuiObject") then d.ZIndex = 41 end end
 local function goCourtyard()
 	confirmBox.Visible = false
 	say("Back to the main menu…", true)

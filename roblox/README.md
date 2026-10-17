@@ -1927,7 +1927,8 @@ slot takes the class's plain piece (HubMenu `_G.HubDressed`). Tabs (Q / E step t
 It opens from PLAY ▸ ADVENTURES (The Depths, Deadvault) and over the Courtyard's menu, which steps
 aside while it's up (`_G.DungeonMenuUp`). `_G.OpenDungeon(tab, mode)`, `_G.OpenVault()`. It shuts
 itself when a raid starts.
-- **Part of the main game, one way out**: top left, **◀ MAIN MENU** (where every screen's back is:
+- **Part of the main game, one way out**: top right, a big red **◀ MAIN MENU** (not top left: on a
+  wide screen Roblox's own menu, chat and mic buttons sit there;
   asked once, MAIN MENU / STAY; your stash, kit and gold stay in the Gilded Rat) takes you home and
   the main menu opens there by itself; top right, your level, Marks and Crowns (what every run pays
   into) beside the vault's gold. WALK AROUND [M] shuts the lobby and you're on your feet in the
