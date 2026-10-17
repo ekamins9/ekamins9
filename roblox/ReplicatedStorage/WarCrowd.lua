@@ -541,8 +541,19 @@ end
 
 -- a soldier falls (on the spot, or flung by a blast); its place is taken by the one behind it a
 -- moment later (the fallen stay a while, at most a dozen to a regiment)
+-- (a man going down near the camera: a cry, and the thud of him hitting the ground in his armour)
+local function fallSound(s, flung)
+	local p = s.parts[1]
+	local cam = workspace.CurrentCamera
+	if not (p and cam) or (p.Position - cam.CFrame.Position).Magnitude > 50 then return end
+	Sounds = Sounds or require(ReplicatedStorage:WaitForChild("Sounds"))
+	if math.random() < 0.6 then pcall(Sounds.bank, flung and "VoiceHurt" or (math.random() < 0.5 and "VoiceDeath" or "VoiceHurt"), p, {Volume = 0.45, MaxDistance = 60}) end
+	task.delay(flung and 0.9 or 0.45, function() if p.Parent then pcall(Sounds.bank, "BodyFallArmor", p, {Volume = 0.6, MaxDistance = 50}) end end)
+end
+
 local function fall(self, reg, s, now, fling)
 	if s.corpse or s.state == "dead" or s.state == "falling" or s.state == "flying" then return end
+	fallSound(s, fling ~= nil)
 	-- (the fallen keep the spot they fell on, whatever their regiment does next)
 	do
 		local x, z = slotCF(reg, s)

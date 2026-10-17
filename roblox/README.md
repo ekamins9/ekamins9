@@ -1715,7 +1715,8 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   dark (`WarFX.volley`'s `fire`, by default at night: the engines' volleys too).
 - **The steel up close**: within ~55 studs of a fighting line, the men fighting in its front rank
   ring out a few times a second (a clash, a parry, a block, a blow on plate: the fight's own
-  SoundBank) from where they stand, on top of the din of the melee.
+  SoundBank) from where they stand, on top of the din of the melee; a man going down within 50
+  studs cries out and hits the ground with an armoured thud.
 - **A war cry answered**: do the War Cry or Cheer emote in any battle with armies (War, Siege, the
   warfields, the Horde's host) and your side's regiments within 140 studs raise their weapons and
   roar back (`WarCrowd.answer`, from `Cosmetics.client`).

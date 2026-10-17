@@ -1,6 +1,7 @@
 # Updated scripts: the steel of the battle lines, up close
 
 - **Near a fighting line you hear the blows**: the men fighting in the front rank ring out with clashes, parries, blocks and blows on plate from where they stand (the same sounds as the real fights), a few times a second.
+- **Men falling near you** cry out and hit the ground with an armoured thud.
 - **Checked in Play** on Redmeadow: ~2.5 a second next to a line, no errors.
 
 | File | Studio location | Type | Change |
