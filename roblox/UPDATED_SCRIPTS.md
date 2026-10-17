@@ -1,4 +1,16 @@
-# Updated scripts: the Shade in Deadvault
+# Updated scripts: look up
+
+- **The Depths**: now and then some of a waiting room's climbers (spiders, ghouls, goblins, vampires, wraiths) cling to the ceiling, upside down in the dark. Walk under one, or wake the room, and they drop on you: grit sifts down, a shriek, a thud and dust.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `cling`, `drop`, `CLING_BODY`, `CLING_CHANCE`; the walk-under trigger |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the drop: grit, a cry, a thud |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Shade in Deadvault
 
 - **Deadvault**: three minutes before the collapse the dark stirs, and the Shade rises about 110 studs from the nearest raider and hunts whoever is still inside. It can't be fought; get out.
 

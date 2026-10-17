@@ -2293,6 +2293,13 @@ and two urns by the walls (a chest in a room's very middle faces the way in: `De
   wave; AMBUSH! for whoever set it off): 2 on the first floor, 3 on the second, 4 on the third,
   more with a party. At most two a floor, 70 s apart, none in a floor's first 70 s; no gates (it's
   their own fight), and they go with the floor.
+- **Look up** (`Depths:cling` / `drop`): now and then (25% of a floor-1 room, 40% floor 2, 50%
+  floor 3) up to two of a waiting room's monsters (three on floor 3) of the kinds that climb
+  (spiders, ghouls, goblins, vampires, wraiths; never a champion) cling to its ceiling instead,
+  upside down in the dark, eyes glinting, watching with short senses (sight 16, hearing 9). Walk
+  within 5 studs under one, or wake the room, and they drop one after another: grit sifts down,
+  each kind shrieks its own cry, the fall rights them, and they land in a thud and a cloud of dust
+  (AdventureEvent "Drop", drawn by `DungeonMood`). Killed up there by an arrow, one falls.
 - **Don't linger: the Shade** (`Game ▸ Shade` + `Shade.client`): a floor's time away from a fight
   is counted (a fight's own time and the stairs' countdown never are). Past the floor's patience
   (`Shade.PATIENCE`: 300 / 260 / 220 s) every torch on the floor sputters and something breathes

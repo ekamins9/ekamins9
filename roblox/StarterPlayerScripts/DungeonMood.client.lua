@@ -879,10 +879,32 @@ local function snuff(data)
 		end)
 	end
 end
+-- LOOK UP (Modes ▸ Depths: AdventureEvent "Drop"): something lets go of the ceiling: grit sifts
+-- down, it shrieks as it comes (each kind its own cry), and it lands in a thud and a cloud of dust
+local CRY = {spider = {"Skitter", 1.15, 0.9}, ghoul = {"Growl", 1.35, 0.8}, goblin = {"Growl", 1.6, 0.7},
+	vampire = {"Wail", 1.45, 0.45}, wraith = {"Wail", 0.95, 0.5}}
+local function dropFrom(data)
+	local at, land = data.at, data.land
+	if typeof(at) ~= "Vector3" or typeof(land) ~= "Vector3" then return end
+	local cam = workspace.CurrentCamera
+	if not cam or (cam.CFrame.Position - at).Magnitude > 120 then return end
+	WarFX.dust(at + Vector3.new(0, 2, 0), 0.6, Color3.fromRGB(120, 112, 100))
+	local cry = CRY[data.body or ""] or CRY.ghoul
+	WarFX.sound(cry[1], at, {volume = cry[3], speed = cry[2] * (0.95 + math.random() * 0.1), near = 14, range = 110})
+	if cry[1] ~= "Wail" then WarFX.sound("Wail", at, {volume = 0.2, speed = 1.7, near = 10, range = 70}) end
+	task.delay(0.5, function()
+		WarFX.dust(land + Vector3.new(0, 0.6, 0), 1.2, Color3.fromRGB(130, 122, 110))
+		WarFX.sound("Impact", land, {volume = 0.6, speed = 1.5, near = 12, range = 100})
+		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if me and (me.Position - land).Magnitude < 18 then WarFX.shake(0.35, 0.3) end
+	end)
+end
+
 task.spawn(function()
 	local ev = ReplicatedStorage:WaitForChild("AdventureEvent")
 	ev.OnClientEvent:Connect(function(kind, data)
 		if kind == "Snuff" and mood.on and type(data) == "table" then task.spawn(snuff, data); return end
+		if kind == "Drop" and type(data) == "table" then task.spawn(dropFrom, data); return end
 		if kind ~= "Rise" or not mood.on or type(data) ~= "table" then return end
 		for i, at in ipairs(data.at or {}) do
 			task.delay((i - 1) * 0.08, function() crackAt(at, data.theme) end)
