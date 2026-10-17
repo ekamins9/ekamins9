@@ -343,6 +343,9 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
 - **Your arms**: the **Raise the Standard** kill effect (Relic, Legendary) plants your banner
   with your coat of arms beside whoever you finish; with no side (FFA, duels, the Courtyard) your
   own arms ride on your chest on a roundel of your colour.
+- **Battle honours** (`Game ▸ Honours`, `Honours.client`): DOUBLE / TRIPLE KILL, RAMPAGE;
+  runs BATTLE-HARDENED → CHAMPION OF THE FIELD → WARLORD → BANE OF ARMIES → UNSTOPPABLE, the big
+  ones and STREAK BREAKER announced to everyone; daily tasks for a capture and for a champion run.
 - **Menus**: the class cards show TOUGHNESS / SPEED / STAMINA bars and the chosen class's full
   line under them (no more "…"); What's New fits its card (seven one-line entries at most).
 - **Studio-only, to save:** the ten new maps and the three rebuilt ruins maps (ServerStorage ▸
