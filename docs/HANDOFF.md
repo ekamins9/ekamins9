@@ -267,7 +267,13 @@ step):
   War volleys too: a Weld, not a WeldConstraint, because only clients raise the shield); a heartbeat
   and panting from WarAudio when the SoundConfig slots are silent (InjuryFX); the Courtyard's
   smithy, market row, wagon, washing and bunting (MapCourtyard, rebuilt in Studio); one EMPTY NEST
-  label at the Hatchery. What's new card: 2026-10-17d.
+  label at the Hatchery. The evening: the Headless Knight (a Bone Crypt / Hollow Abbey champion:
+  Monsters `EXTRA.headless`, in the Deadvault menu tile too); a War Cry or Cheer answered by your
+  side's soldiers (`_G.ShoutRally`); Settings ▸ Battle shouts; the undertow in the Drowned Halls'
+  water and the Ember Forge's bubbling lava (`Undertow.client`); the Frozen Depths' dead opening
+  their eyes (`Portraits.client`). What's new card: 2026-10-17e. Every mode soaked clean at the end
+  of the day with both error loggers (a full Depths run to victory too); the only line was Roblox's
+  own MemoryStore backend hiccup in the Tavern, which the game's pcall handles.
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
