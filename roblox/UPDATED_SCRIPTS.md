@@ -1,4 +1,16 @@
-# Updated scripts: your breath shows in the cold
+# Updated scripts: the cavalry are real knights
+
+- **Cavalry riders** (War's charges, the warfields, the Prologue's dawn riders) are now real armoured knights of their side sitting in the saddle with their lances, instead of a coat and a helmet block.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | riders from WarCrowd (`opts.side`) |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `figure`, the riding pose |
+| [War.client.lua](StarterPlayerScripts/War.client.lua), [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua), [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | pass the riders' side |
+
+---
+
+## Before that: your breath shows in the cold
 
 - **Cold breath**: on snowy and winter maps (Frostgate, Ironvale, Rimeholt, War's Frostmere, the Frozen Depths…) a small white puff from every player's mouth every few seconds, quicker when running.
 
@@ -18,17 +30,3 @@
 | [CourtyardGuards.client.lua](StarterPlayerScripts/CourtyardGuards.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
 | [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `sentry` |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: two more battlefield duel maps
-
-- **Sunfall** (desert dunes at dusk, a huge moon) and **Ravenfield** (night, storm and lightning, the ring lit by torches): the duel ring in the middle of the battle, now five maps in The Lists. Vote pictures shot with the battle running.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build | ModuleScript | Sunfall, Ravenfield |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | in The Lists; titles, sizes, Ravenfield's storm |
-| [README.md](README.md) | | doc | |
-
-Studio-only (save the place): ServerStorage ▸ Maps ▸ Sunfall, Ravenfield; ReplicatedStorage ▸ MapShots ▸ Sunfall, Ravenfield.

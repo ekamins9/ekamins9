@@ -547,7 +547,7 @@ function EV.Charge(d)
 	local x = d.lane * (((W("Lane2") or 180) + (W("Lane3") or 226)) / 2)
 	local path = {}
 	for _, z in ipairs({-f * 420, fz - f * 120, fz + f * 10, fz + f * 90}) do table.insert(path, WarFX.ground(V3(x, 0, z))) end
-	WarFX.riders(path, phone() and 9 or 15, {color = SIDE[d.side], speed = 52})
+	WarFX.riders(path, phone() and 9 or 15, {color = SIDE[d.side], side = d.side, speed = 52})
 	-- (they plough into the enemy's flank: men thrown aside along the way)
 	local dist = (path[3] - path[1]).Magnitude
 	for k = 0, 4 do

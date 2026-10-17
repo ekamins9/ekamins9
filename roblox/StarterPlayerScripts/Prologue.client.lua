@@ -605,7 +605,7 @@ function CINES.victory()
 		S(9, 13, look(V3(-22, 6, gz + 44), V3(0, 14, gz), 60), look(V3(-34, 34, gz + 66), V3(0, 18, gz - 60), 55)),
 	}, beats = {
 		{0, function() dawn() end},
-		{0.2, function() ui.riders = WarFX.riders(ride, 18, {color = Color3.fromRGB(56, 92, 210), speed = 44}) end},
+		{0.2, function() ui.riders = WarFX.riders(ride, 18, {color = Color3.fromRGB(56, 92, 210), side = "A", speed = 44}) end},
 		{0.4, function() WarFX.sound("Horn", nil, {volume = 1}) end},
 		{0.7, function() subtitle("CAPTAIN HALE", "Horns! Listen... the King's riders!", 3.4) end},
 		{2.9, function() WarFX.sound("Horn", nil, {volume = 0.8, speed = 0.92}) end},

@@ -172,7 +172,7 @@ local function life(now)
 		local s = math.random() < 0.5 and -1 or 1
 		local x = s * (field.lanes[#field.lanes] + 30)
 		local path = {WarFX.ground(V3(x, 0, -f * 160)), WarFX.ground(V3(x, 0, -f * 20)), WarFX.ground(V3(x - s * 30, 0, f * 40))}
-		WarFX.riders(path, phone() and 8 or 14, {color = SIDE[side], speed = 52})
+		WarFX.riders(path, phone() and 8 or 14, {color = SIDE[side], side = side, speed = 52})
 		WarFX.sound("Horn", path[1], {volume = 0.8, range = 900})
 		local dist = (path[2] - path[1]).Magnitude
 		for k = 0, 4 do

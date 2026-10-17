@@ -42,6 +42,9 @@
                               one man walking his stretch (a wall's walk: from → to and back),
                               stopping at each end a few seconds to look out (`out`)
        c:stop()
+       WarCrowd.figure(side, kind, state, level, home, unarmed) -> {{p, off}…}
+                              a dressed soldier's parts held in one pose (offsets from his
+                              feet), for something else to carry: a rider on WarFX's horses
        WarCrowd.ghost(at, {side, kind, dir, speed, secs, color})
                               an apparition: a pale see-through man walking from `at` along `dir`,
                               fading in and out over `secs` (a dungeon's dark: DungeonMood) ]]
@@ -268,6 +271,11 @@ local function pose(s, now, kind, out)
 		-- (the shield held flat over the head, the weapon low: waiting out the arrows under the walls)
 		la, laz, ra, lean, bob = 168, 10, 70, 8, -0.35
 		rl, ll = 14, -6
+	elseif st == "ride" then
+		-- (in the saddle: knees up and forward, the lance arm out, the other on the reins)
+		rl, ll = 62, 62
+		ra, la = 95, 40
+		lean = 8
 	elseif st == "climb" then
 		-- (hand over hand, a foot up a rung at a time)
 		local a = math.sin(t * 6)
@@ -822,6 +830,24 @@ function WarCrowd:stepSentries(now, dt, put, c)
 			end
 		end
 	end
+end
+
+--------------------------------------------------------------------
+--  A FIGURE: a dressed soldier held in one pose, for something else to move (a horse's rider)
+--------------------------------------------------------------------
+function WarCrowd.figure(side, kind, state, level, home, unarmed)
+	kind = kind or "knight"
+	local t = template(side or "A", kind, math.random(2))
+	if not t then return nil end
+	local s = newSoldier(home or workspace.CurrentCamera or workspace, t, level or "lite", unarmed)
+	s.state, s.ph = state or "stand", 0
+	local Ls = {}
+	pose(s, 0, kind, Ls)
+	local out = {}
+	for i = 1, 6 do
+		for j, p in ipairs(s.limbs[i]) do table.insert(out, {p = p, off = Ls[i] * s.offs[i][j]}) end
+	end
+	return out
 end
 
 --------------------------------------------------------------------

@@ -24,7 +24,8 @@
        WarFX.storm(on, fade)              rain round the camera (not under a roof), lightning and
                                           thunder, heavy cloud · off: the rain thins out over `fade` s
        WarFX.riders(path, n, opts)        a column of horsemen riding along a list of points
-                                          (opts.color, opts.speed, opts.lances) · handle:stop()
+                                          (opts.color, opts.speed, opts.lances; opts.side "A"/"B":
+                                          the riders are real knights of that side) · handle:stop()
        WarFX.strike(pos, opts)            a bolt from the sky onto a point (a battle-mage's lightning)
        WarFX.frost(pos, r)                a burst of ice and cold mist (a battle-mage's frost)
        WarFX.weather(kind, fade)          "storm" (= WarFX.storm), "rain", "snow", "embers", "petals", or nil: off
@@ -760,7 +761,20 @@ function WarFX.weatherKind() return weather and weather.kind or nil end
 --  HORSEMEN: a column riding along a path (each horse and rider a handful of parts)
 --------------------------------------------------------------------
 local HORSES = {Color3.fromRGB(70, 48, 32), Color3.fromRGB(40, 32, 28), Color3.fromRGB(120, 92, 64), Color3.fromRGB(200, 196, 186)}
-local function horseman(color, lance)
+-- (the riders are real dressed knights when WarCrowd can build them: a side given)
+local WarCrowdMod
+local function riderFigure(side, h, lance)
+	if not side then return nil end
+	if WarCrowdMod == nil then
+		local ok, m = pcall(function() return require(ReplicatedStorage:WaitForChild("WarCrowd", 2)) end)
+		WarCrowdMod = ok and m or false
+	end
+	if not WarCrowdMod then return nil end
+	local ok, fig = pcall(WarCrowdMod.figure, side, "knight", "ride", "lite", h, lance)
+	return ok and fig or nil
+end
+
+local function horseman(color, lance, side)
 	local h = crowd()
 	local coat = HORSES[math.random(#HORSES)]
 	local steel = Color3.fromRGB(150, 152, 158)
@@ -781,8 +795,18 @@ local function horseman(color, lance)
 		legs[add(V3(0.55, 2.8, 0.55), coat, nil, CF(l[1], 1.4, l[2]))] = l[2] < 0 and 0 or 1.6
 	end
 	add(V3(0.4, 2.2, 0.5), coat, nil, CF(0, 3.6, 2.9) * CFrame.Angles(math.rad(30), 0, 0))           -- tail
-	add(V3(1.9, 2, 1.1), color, Enum.Material.Fabric, CF(0, 5.9, 0.3))                               -- rider's coat
-	add(V3(1.2, 1.2, 1.2), steel, Enum.Material.Metal, CF(0, 7.5, 0.3))                              -- helm
+	-- the rider: a real knight in the saddle (his feet 2.2 up: hips on the horse's back), or a
+	-- coat and a helm when there's none to be had
+	local fig = riderFigure(side, h, lance)
+	if fig then
+		for _, e in ipairs(fig) do
+			e.p.CFrame = FAR
+			table.insert(list, {p = e.p, off = CF(0, 2.2, 0.3) * e.off})
+		end
+	else
+		add(V3(1.9, 2, 1.1), color, Enum.Material.Fabric, CF(0, 5.9, 0.3))                           -- rider's coat
+		add(V3(1.2, 1.2, 1.2), steel, Enum.Material.Metal, CF(0, 7.5, 0.3))                          -- helm
+	end
 	if lance then
 		add(V3(0.22, 0.22, 11), Color3.fromRGB(110, 84, 56), Enum.Material.Wood, CF(1.1, 6.6, -2.6) * CFrame.Angles(math.rad(-12), 0, 0))
 		add(V3(0.06, 0.9, 1.6), color, Enum.Material.Fabric, CF(1.1, 7.6, -6.6) * CFrame.Angles(math.rad(-12), 0, 0))
@@ -810,7 +834,7 @@ function WarFX.riders(path, n, opts)
 	for i = 1, #path - 1 do lens[i] = (path[i + 1] - path[i]).Magnitude; total += lens[i] end
 	local riders = {}
 	for i = 1, n do
-		local list, legs = horseman(opts.color or Color3.fromRGB(60, 90, 200), opts.lances ~= false)
+		local list, legs = horseman(opts.color or Color3.fromRGB(60, 90, 200), opts.lances ~= false, opts.side)
 		riders[i] = {list = list, legs = legs, row = math.floor((i - 1) / 3), col = ((i - 1) % 3) - 1, phase = math.random() * 6, jit = math.random() * 2}
 	end
 	local speed = opts.speed or 46
