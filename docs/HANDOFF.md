@@ -347,7 +347,8 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   line under them (no more "…"); What's New fits its card (seven one-line entries at most).
 - **Studio-only, to save:** the ten new maps and the three rebuilt ruins maps (ServerStorage ▸
   Maps), their MapShots (ids in gitignored blender/out/mapshots/images_v3.txt), Ashenford's and
-  Grimfield's softened scorch marks. **Test scaffolding added:** ServerStorage ▸ TMP_ShotKit (the
+  Grimfield's softened scorch marks, and the six Lists warfields' vote pictures re-shot in Play with
+  their armies fighting round the ring. **Test scaffolding added:** ServerStorage ▸ TMP_ShotKit (the
   vote-picture kit).
 - **Rojo's plugin dropped mid-run** (the Studio MCP reconnected and the plugin stopped receiving;
   rojo.exe kept serving). Every change from commit `eeba7c9`'s What's New line on was mirrored into Studio by hand with
