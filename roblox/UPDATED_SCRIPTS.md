@@ -1,4 +1,27 @@
-# Updated scripts: a shield takes the fight
+# Updated scripts: the second muster
+
+- **12 new emblems** (unicorn, owl, bull, hound, scorpion, longship, anchor, crown, crossed axes,
+  crossed keys, trident, salamander): on the banners' houses, and in YOUR ARMS (36 now; the open ones
+  listed first, the rest by the level that opens them, up to 20).
+- **12 new shields** in the Heraldry Crate (59 now): Harbourmaster, Red Bull, Longship, Trident of
+  the Deep, Hound of the Hunt, Unicorn's Grace, Salamander, Owl of the Watch, Axeman's Oath, Scorpion
+  Legion, Royal Guard, Keys of the City.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ArsenalSkins.lua](ReplicatedStorage/Catalog/ArsenalSkins.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | 12 shields |
+| [Arms.lua](ReplicatedStorage/Catalog/Arms.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | 12 emblems |
+| [Houses.lua](ReplicatedStorage/Houses.lua) | ReplicatedStorage | ModuleScript | the houses' lists |
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | (the emblem list in its header) |
+| [Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the Heraldry Crate's description |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | YOUR ARMS lists the open emblems first |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 59 shields |
+| *(Studio-only)* ShieldArt | ReplicatedStorage | Folder | 36 more StringValues (188) — save the place |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a shield takes the fight
 
 - **Every blow you catch on your shield chips its paint**: its scratches deepen through the life,
   and a few splinters of the board fly off it (blocks, parries a little, caught arrows too). A plain

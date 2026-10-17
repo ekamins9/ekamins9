@@ -20,6 +20,11 @@ Arms.EMBLEMS = {
 	{id = "tree", name = "World Tree", level = 5},
 	{id = "griffin", name = "Griffin", level = 10}, {id = "thunderbolt", name = "Thunderbolt", level = 10}, {id = "skull", name = "Crowned Skull", level = 10},
 	{id = "dragon", name = "Dragon", level = 15}, {id = "phoenix", name = "Phoenix", level = 15}, {id = "kraken", name = "Kraken", level = 15},
+	-- the second muster
+	{id = "anchor", name = "Anchor", level = 1}, {id = "hound", name = "Hound", level = 1}, {id = "axes", name = "Crossed Axes", level = 1},
+	{id = "bull", name = "Bull", level = 5}, {id = "owl", name = "Owl", level = 5}, {id = "keys", name = "Crossed Keys", level = 5},
+	{id = "longship", name = "Longship", level = 10}, {id = "trident", name = "Trident", level = 10}, {id = "crown", name = "Crown", level = 10},
+	{id = "scorpion", name = "Scorpion", level = 15}, {id = "salamander", name = "Salamander", level = 20}, {id = "unicorn", name = "Unicorn", level = 20},
 }
 Arms.EMBLEM = {}
 for _, e in ipairs(Arms.EMBLEMS) do Arms.EMBLEM[e.id] = e end

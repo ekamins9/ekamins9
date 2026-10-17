@@ -70,7 +70,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Build/ArsenalBlueprints.lua` | `ServerScriptService` → `Build` → `ArsenalBlueprints` (shields' and throwables' bodies) | ModuleScript |
 | `ReplicatedStorage/Heraldry.lua` | `ReplicatedStorage` → `Heraldry` (arms painted on shields) | ModuleScript |
 | `ReplicatedStorage/ShieldPaint.lua` | `ReplicatedStorage` → `ShieldPaint` (a shield skin's painted face: emblem, field split, scratches, light) | ModuleScript |
-| *(Studio-only)* | `ReplicatedStorage` → `ShieldArt` (a StringValue per picture: the 24 emblems with their `_o` outlines and `_s` shadows, and per board shape its 14 field splits, `_shade` and `_wear`) | Folder |
+| *(Studio-only)* | `ReplicatedStorage` → `ShieldArt` (a StringValue per picture: the 36 emblems with their `_o` outlines and `_s` shadows, and per board shape its 14 field splits, `_shade` and `_wear`) | Folder |
 | `ReplicatedStorage/Catalog/Powers.lua`, `Arsenal.lua`, `ArsenalSkins.lua`, `PowerSkins.lua`, `Mastery.lua` | `ReplicatedStorage` → `Catalog` → … | ModuleScript each |
 | `StarterPlayerScripts/Powers.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Powers` (the orb, the Power key, every power's FX, thrown things, shields raised) | LocalScript |
 | `StarterPlayerScripts/StatusFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `StatusFX` (burning, frozen, poisoned, rooted, dazed, shocked bodies) | LocalScript |
@@ -736,7 +736,7 @@ flown on an arc by the server, drawn on every screen (`ThrowFX`); bursts are pow
 only), their bodies from `Build ▸ ArsenalBlueprints`, so Blueprints builds them and their menu
 displays like any weapon's. **Skins**: power skins are spell skins (`Catalog ▸ PowerSkins`,
 appended to SpellSkins; the **Spellforge Crate**, Mythic *Seraph*); shield and throwable skins
-are weapon skins (`Catalog ▸ ArsenalSkins`): the **Heraldry Crate**'s 47 shields (each board
+are weapon skins (`Catalog ▸ ArsenalSkins`): the **Heraldry Crate**'s 59 shields (each board
 with its own emblem and colours: ShieldPaint, Heraldry, ShieldDress; Mythic *Aegis of the First
 King*) and the **Quartermaster's
 Crate** dresses throwables (Mythic *Phoenix Feathers*). All three are in the daily rotation
@@ -852,9 +852,9 @@ and a UIScale fits it to any screen.
   class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
   shield arm to you; the power, the throwable, a sidearm) and **LOOK** (YOUR ARMS, the finish,
   the colours).
-- **YOUR ARMS** (LOOK; `Catalog ▸ Arms`): your own coat of arms: one of 24 emblems (most free,
-  the bear, raven, serpent and world tree at level 5, the griffin, thunderbolt and crowned skull at
-  10, the dragon, phoenix and kraken at 15: earned, never bought), its metal (or, argent, sable), a
+- **YOUR ARMS** (LOOK; `Catalog ▸ Arms`): your own coat of arms: one of 36 emblems (most free,
+  others open with your level, up to the salamander and the unicorn at 20: earned, never bought:
+  `Catalog ▸ Arms` EMBLEMS), its metal (or, argent, sable), a
   field colour off the palette, and if you like a division with a second colour. Any shield you
   carry without a skin wears it (`Combat ▸ Shields` → `ShieldPaint.plain`), and your mannequin's
   does; in a team fight on your side's colour. Kept in your appearance (`armsEmblem`, `armsMetal`,

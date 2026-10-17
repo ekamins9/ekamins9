@@ -183,6 +183,42 @@ sh("Pavise", "Sentinel's Moon", "Legendary", C(14, 20, 44), SILVER, nil, nil,
 	{fx = "frost", trail = true, field = "Fabric", rim = "Metal", division = "bordure", divisionColor = C(190, 200, 220), glow = C(160, 200, 255),
 		emblem = "moon", emblemColor = SILVERLEAF, emblemGlow = 1.2, accent = C(200, 210, 230), adorn = {"merlons", "glowedge", "studs"}})
 
+-- THE SECOND MUSTER: twelve more houses
+sh("Buckler", "Harbourmaster", "Common", C(28, 44, 86), C(150, 150, 160), nil, nil,
+	{field = "Metal", rim = "Metal", emblem = "anchor", emblemColor = SILVERLEAF, emblemEdge = INK, emblemSize = 1.1, adorn = {"studs"}})
+sh("Targe", "Red Bull", "Rare", C(150, 24, 30), GOLD, nil, nil,
+	{field = "Leather", rim = "Metal", division = "bordure", divisionColor = C(26, 22, 20), emblem = "bull", emblemColor = C(26, 22, 20),
+		emblemEdge = C(236, 196, 90), accent = C(200, 170, 110), adorn = {"studs", "horns"}, horn = BONE})
+sh("RoundShield", "Longship", "Rare", C(36, 58, 92), C(120, 110, 100), nil, nil,
+	{field = "WoodPlanks", rim = "Metal", division = "barry", divisionColor = C(26, 42, 70), emblem = "longship", emblemColor = BONE, emblemSize = 1.05,
+		adorn = {"studs", "bands"}})
+sh("RoundShield", "Trident of the Deep", "Epic", C(20, 76, 84), C(90, 130, 130), nil, nil,
+	{fx = "storm", field = "Wood", rim = "Metal", division = "gyronny", divisionColor = C(14, 52, 60), emblem = "trident", emblemColor = C(200, 250, 240),
+		emblemGlow = 1.15, accent = C(130, 190, 180), glow = C(120, 255, 230), adorn = {"studs", "glowedge"}})
+sh("Heater", "Hound of the Hunt", "Common", C(46, 92, 52), C(130, 100, 70), nil, nil,
+	{field = "Fabric", accent = C(200, 180, 130), division = "chief", divisionColor = C(214, 196, 150), emblem = "hound", emblemColor = WHITE,
+		emblemEdge = INK, emblemY = -0.15, adorn = {"studs"}})
+sh("Heater", "Unicorn's Grace", "Legendary", C(24, 34, 84), SILVER, nil, nil,
+	{fx = "holy", trail = true, glow = C(200, 220, 255), field = "Fabric", rim = "Foil", division = "bordure", divisionColor = C(214, 218, 230),
+		emblem = "unicorn", emblemColor = SILVERLEAF, emblemGlow = 1.1, accent = C(220, 226, 240), adorn = {"gilded", "crown", "glowedge"}})
+sh("SpikedShield", "Salamander", "Legendary", C(24, 18, 16), C(60, 40, 30), nil, nil,
+	{fx = "embers", trail = true, field = "Slate", rim = "Metal", emblem = "salamander", emblemColor = C(255, 130, 50), emblemGlow = 1.2,
+		emblemEdge = C(40, 10, 4), emblemSize = 1.15, glow = EMBER, adorn = {"flames", "thorns"}})
+sh("Kite", "Owl of the Watch", "Rare", C(70, 56, 42), C(60, 50, 44), nil, nil,
+	{field = "Wood", rim = "Metal", division = "chief", divisionColor = C(28, 26, 30), emblem = "owl", emblemColor = BONE, emblemEdge = INK,
+		emblemY = -0.2, adorn = {"studs"}})
+sh("Kite", "Axeman's Oath", "Common", C(52, 70, 44), C(110, 80, 50), nil, nil,
+	{field = "Wood", emblem = "axes", emblemColor = C(214, 216, 222), emblemEdge = INK, adorn = {"bands"}})
+sh("Scutum", "Scorpion Legion", "Epic", C(110, 18, 26), GOLD, nil, nil,
+	{fx = "gold", field = "Wood", rim = "Foil", division = "bordure", divisionColor = C(214, 168, 70), emblem = "scorpion", emblemColor = GILT,
+		emblemEdge = INK, emblemSize = 1.15, glow = C(255, 220, 120), adorn = {"gilded"}})
+sh("Scutum", "Royal Guard", "Rare", C(26, 36, 90), GOLD, nil, nil,
+	{field = "Fabric", rim = "Foil", division = "pale", divisionColor = C(150, 24, 32), emblem = "crown", emblemColor = GILT, emblemEdge = INK,
+		emblemSize = 1.1, adorn = {"bands"}})
+sh("Pavise", "Keys of the City", "Epic", C(150, 24, 32), GOLD, nil, nil,
+	{fx = "gold", field = "WoodPlanks", rim = "Foil", division = "bordure", divisionColor = C(214, 170, 70), emblem = "keys", emblemColor = GILT,
+		emblemEdge = INK, accent = GOLD, adorn = {"merlons", "gilded"}})
+
 -- THE MYTHIC: one shield everyone stops to look at: a sunburst behind it, white-gold wings, a
 -- crown, a burning golden lion on a field bordered in gold, a rim of light
 sh("Heater", "Aegis of the First King", "Mythic", C(232, 226, 210), GOLD, nil, nil,

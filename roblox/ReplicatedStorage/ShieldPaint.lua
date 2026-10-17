@@ -25,6 +25,7 @@
                      bordure pile cross: the field split, the second part in divisionColor
        emblem        bear boar cross dragon eagle fleur griffin horse knot kraken lion moon
                      phoenix raven rose serpent skull stag sun swords thunderbolt tower tree wolf
+                     anchor axes bull crown hound keys longship owl salamander scorpion trident unicorn
        emblemColor   (else the heraldry colour, else the accent, else gold)
        emblemEdge    the outline's colour (false: none)    emblemGlow  how bright (1.1–1.3: it shines; more blooms it away)
        emblemSize    × the shape's usual size              emblemY     studs up from its usual spot

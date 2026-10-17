@@ -11,13 +11,13 @@
 
 local Houses = {}
 Houses.LIST = {
-	blue = {"eagle", "lion", "griffin", "fleur", "horse"},
-	red = {"dragon", "wolf", "boar", "bear", "phoenix"},
-	green = {"stag", "tree", "serpent", "knot"},
-	gold = {"sun", "lion", "tower"},
-	purple = {"fleur", "moon", "rose"},
-	dark = {"raven", "tower", "moon", "swords"},
-	pale = {"cross", "rose", "tower"},
+	blue = {"eagle", "lion", "griffin", "fleur", "horse", "unicorn", "longship", "anchor"},
+	red = {"dragon", "wolf", "boar", "bear", "phoenix", "bull", "scorpion", "salamander"},
+	green = {"stag", "tree", "serpent", "knot", "hound"},
+	gold = {"sun", "lion", "tower", "crown", "keys"},
+	purple = {"fleur", "moon", "rose", "crown"},
+	dark = {"raven", "tower", "moon", "swords", "owl", "axes"},
+	pale = {"cross", "rose", "tower", "keys", "trident"},
 }
 
 function Houses.kindOf(c)

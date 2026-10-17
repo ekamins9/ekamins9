@@ -4837,7 +4837,11 @@ do
 		heading(p, "EMBLEM")
 		local g = LT.grid(p, 6, 52)
 		local art = ReplicatedStorage:FindFirstChild("ShieldArt")
-		for i, em in ipairs(A.EMBLEMS) do
+		-- (the open ones first: by the level that opens them, then as listed)
+		local emblems, at = {}, {}
+		for i, em in ipairs(A.EMBLEMS) do table.insert(emblems, em); at[em] = i end
+		table.sort(emblems, function(x, y) if (x.level or 1) ~= (y.level or 1) then return (x.level or 1) < (y.level or 1) end return at[x] < at[y] end)
+		for i, em in ipairs(emblems) do
 			local open = lvl >= (em.level or 1)
 			local on = app.armsEmblem == em.id
 			local b = button(g, "", 12, field and field.color or Color3.fromRGB(56, 60, 78))
