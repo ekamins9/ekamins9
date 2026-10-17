@@ -556,15 +556,27 @@ function Deadvault:adjustLoadout(plr, lo, classId)
 		if not r.weapons[2] and cls and cls.secondary and cls.secondary ~= (r.weapons[1] and r.weapons[1].weapon) then r.weapons[2] = freeWeapon(cls.secondary, 2) end
 		if #r.belt == 0 then table.insert(r.belt, {kind = "potion", uid = uid(), potion = "Healing", rarity = "Common", name = "Healing Draught", free = true}) end
 	end
+	-- NOTHING OF YOUR LOADOUT COMES IN: the dungeon game is its own. You go in as your class in
+	-- its plain kit (the class's starting pieces, no finish, no colours of yours) with what the
+	-- vault holds for you and what you find: the weapons on your run (looted ones in their own
+	-- looks, the free pair plain), a power only from a tome found inside, no throwable, no shield
+	local plain = Profile.defaultLoadout(classId)
+	lo.helmet, lo.top, lo.bottom, lo.noHelm = plain.helmet, plain.top, plain.bottom, nil
+	lo.colors, lo.armorFx, lo.spellSkins = plain.colors, "", {}
 	local w1, w2 = r.weapons[1], r.weapons[2]
 	lo.weapon, lo.weaponSkin = w1 and w1.weapon or nil, w1 and w1.skin or nil
 	lo.secondary, lo.secondarySkin = w2 and w2.weapon or nil, w2 and w2.skin or nil
 	if lo.secondary == lo.weapon then lo.secondary, lo.secondarySkin = nil, nil end
 	lo.shield, lo.shieldSkin = nil, nil
-	-- (your class's own power goes in with you; a tome found inside takes its place)
-	r.classPower = lo.power
-	if r.power then lo.power = r.power.power; lo.thirdKind, lo.thirdId = "power", r.power.power end
-	lo.throwable = nil
+	lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil
+	lo.throwable, lo.throwableSkin = "none", nil
+	lo.power = r.power and r.power.power or "none"
+	-- (a Mage's staff and wand cast their plain spells: MagicSpells DEFAULT / WAND_DEFAULT)
+	local Spells = Catalog.SPELLS
+	if lo.spells and Spells and Spells.DEFAULT then lo.spells = table.clone(Spells.DEFAULT) end
+	if lo.wandSpells and Spells and Spells.WAND_DEFAULT then lo.wandSpells = table.clone(Spells.WAND_DEFAULT) end
+	-- (no weekend's roulette in here either: LoadoutServer)
+	lo.lootOnly = true
 end
 
 local function partyKey(plr)
@@ -712,7 +724,7 @@ function Deadvault:inv(plr, what, a)
 			Loot.setArmor(char, nil)
 		elseif a == "power" and r.power then
 			table.insert(r.bag, r.power); r.power = nil
-			Powers.equip(char, plr, {power = r.classPower})
+			Powers.equip(char, plr, nil)
 		else
 			local n = tonumber(a:match("^relic(%d)$") or "")
 			if n and r.relics[n] then
@@ -745,7 +757,7 @@ function Deadvault:inv(plr, what, a)
 				if worn and worn.uid == a then
 					if k == "weapon1" or k == "weapon2" then removeTools(plr, k == "weapon1" and 1 or 2); r.weapons[k == "weapon1" and 1 or 2] = nil
 					elseif k == "armor" then r.armor = nil; Loot.setArmor(char, nil)
-					elseif k == "power" then r.power = nil; Powers.equip(char, plr, {power = r.classPower})
+					elseif k == "power" then r.power = nil; Powers.equip(char, plr, nil)
 					else table.remove(r.relics, tonumber(k:match("%d"))); Loot.setRelics(char, relicIds(r)) end
 					self:dropItem(worn, here)
 					break

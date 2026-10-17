@@ -1,4 +1,26 @@
-# Updated scripts: War is part of Warfront
+# Updated scripts: Deadvault starts from nothing; the kick's follow-up
+
+- **Deadvault: nothing of your loadout comes in.** You go in as your class in its plain starting
+  pieces (no armour finish, no colours of yours), with the weapons on your run (the free pair
+  plain, looted ones in their own looks), **no power unless you find a tome**, no throwable, no
+  shield, no sidearm, and the Mage's plain spells. The weekend's Armory Roulette doesn't reach in
+  either. (The Depths and the other adventures are unchanged.)
+- **Strike right after a kick.** A swing pressed any time during a kick goes off the moment the
+  leg comes back. A kick that lands is back in 0.12 s (was 0.55 s) and for a second after it your
+  windup is 1.4× quicker, so a kicked guard (staggered 1.2 s) can actually be punished: the
+  follow-up is in the air at about 0.6 s. A kick that misses is still slow and costly.
+- **Bots follow their kicks** with a strike the same way.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `adjustLoadout` strips the loadout; no class power fallback |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | no roulette for a `lootOnly` loadout |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `KICK_HIT_RECOVERY`, `KICK_FOLLOW_WINDOW/SPEED`; a strike queued mid-kick (`afterKick`) |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | a kick is followed by a strike |
+
+---
+
+## Before that: War is part of Warfront
 
 - **The massive battle is now one of Warfront's modes** ("Massive Battle"): a fresh Warfront
   server opens with it, and the vote between rounds brings it round with Siege, TDM, the

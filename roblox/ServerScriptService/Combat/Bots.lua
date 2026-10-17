@@ -982,7 +982,13 @@ function Bot:think()
 	-- a guard held up too long: kick it
 	if self.foeGuardAt and now - self.foeGuardAt > 0.45 and dist <= 6.5 and now >= (self.nextKick or 0) then
 		self.nextKick = now + 1.5
-		if math.random() < sk.kick and st >= 10 + sk.reserve * 0.3 then ctrl.kick(); return end
+		if math.random() < sk.kick and st >= 10 + sk.reserve * 0.3 then
+			ctrl.kick()
+			-- and the blade follows it in (pressed mid-kick: it goes off as the leg comes back)
+			local follow = st >= 22 and pickAttack(self)
+			if follow then ctrl.attack(follow); self.nextAttack = now + rand(sk.interval) end
+			return
+		end
 	end
 	if dist > strike then return end
 	local punish = foeOpen and self.punished ~= f.windupStart

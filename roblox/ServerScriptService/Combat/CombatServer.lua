@@ -617,6 +617,10 @@ CombatServer.DEFAULTS = {
 	KICK_COST        = 10,
 	KICK_BLOCK_DRAIN = 15,
 	KICK_MISS_EXTRA  = 0.45,  -- a kick that hits nobody recovers this much longer (punishable)
+	KICK_HIT_RECOVERY = 0.12, -- a kick that LANDS: the leg's back this soon after it connects, and a
+	                          --    strike pressed any time during the kick goes off then (the follow-up)
+	KICK_FOLLOW_WINDOW = 1.0, -- and for this long after it lands, your windup is KICK_FOLLOW_SPEED ×
+	KICK_FOLLOW_SPEED  = 1.4, --    quicker: the opening a kick makes is yours to take
 
 	-- geometry
 	ANIMATED_GRIP  = true,   -- swap Roblox's RightGrip Weld for a "ToolGrip" Motor6D so animations can move the weapon
@@ -1507,6 +1511,7 @@ function CombatServer.attach(Tool, weaponConfig)
 			* ((GameConfig.TEMPO or {}).swing or 1)   -- (the whole game's tempo)
 		local wl = info.windup or cfg.WINDUP
 		if (attr("FastUntil") or 0) > os.clock() then wl = wl / cfg.RIPOSTE_SPEED end   -- riposte: quicker windup only
+		if (state.kickFollowUntil or 0) > os.clock() then wl = wl / (cfg.KICK_FOLLOW_SPEED or 1) end   -- straight in behind a kick
 		local al = CombatServer.clipLength(animId(info.anim)) or info.active or cfg.DEFAULT_ACTIVE
 		local rl = info.recovery or cfg.RECOVERY
 		return speed,
@@ -1717,6 +1722,12 @@ function CombatServer.attach(Tool, weaponConfig)
 		if (attr("ReelUntil") or 0) > os.clock() then dprint("attack denied: reeling from a hit"); return end
 		if not inWindup() and not canAfford(name) then return end
 		if inWindup() then morph(name); return end
+		-- mid-kick: the strike waits for the leg to come back and goes off then (doKick)
+		if state.phase == "kick" then
+			state.afterKick = name
+			dprint("queued after the kick ->", name)
+			return
+		end
 		if state.phase == "release" or state.phase == "recovery" then
 			if not state.attack then return end
 			if name == state.attackName then dprint("combo denied: same attack"); return end
@@ -1855,6 +1866,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		state.token += 1
 		local token = state.token
 		state.attack, state.attackName, state.phase = nil, nil, "kick"
+		state.afterKick = nil
 		state.nextActionTime = now + cfg.KICK_WINDUP + cfg.KICK_RECOVERY
 		state.nextKickTime   = now + cfg.KICK_COOLDOWN
 		spend(cfg.KICK_COST)
@@ -1863,12 +1875,26 @@ function CombatServer.attach(Tool, weaponConfig)
 		Sounds.voice("Kick", headPart(), {Who = character})
 		setAttr("TurnCapUntil", now + cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA)
 		tell("PlayKick", cfg.KICK_WINDUP + cfg.TURN_CAP_EXTRA, cfg.KICK_WINDUP)
+		-- the leg's back: a strike pressed during the kick goes off now
+		local function kickDone()
+			if state.phase ~= "kick" then return end
+			state.phase = "idle"
+			setSwinging(false)
+			local q = state.afterKick
+			state.afterKick = nil
+			if q and not isIncapacitated() and not attr("Blocking") and canAfford(q) then startAttack(q) end
+		end
 		task.delay(cfg.KICK_WINDUP, function()
 			if state.token ~= token then return end
 			local landed = false
 			if not isStunned() then landed = resolveKick() end
 			if landed then
 				CombatServer.refundStamina(character, cfg.KICK_REFUND)
+				-- it connected: back on your feet at once, the blade free to follow it in quick
+				local t = os.clock()
+				state.nextActionTime = math.min(state.nextActionTime, t + (cfg.KICK_HIT_RECOVERY or cfg.KICK_RECOVERY))
+				state.kickFollowUntil = t + (cfg.KICK_FOLLOW_WINDOW or 0)
+				at(token, function() return state.nextActionTime end, kickDone)
 			elseif CombatServer.wallAhead(character, 3) then
 				dprint("kicked a wall")   -- no refund, no penalty
 			else
@@ -1877,10 +1903,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				state.nextActionTime = state.nextActionTime + cfg.KICK_MISS_EXTRA
 			end
 		end)
-		at(token, function() return state.nextActionTime end, function()
-			state.phase = "idle"
-			setSwinging(false)
-		end)
+		at(token, function() return state.nextActionTime end, kickDone)
 	end
 
 	----------------------------------------------------------------
