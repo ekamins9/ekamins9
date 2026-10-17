@@ -2199,7 +2199,8 @@ Hollow Abbey, the Silk Caverns: `Catalog ▸ Dungeons`). Three floors; floor 3 e
   up again), Skeleton Archers and Goblin Shamans; champions the Broodmother and the Wraith; its
   queen **Arachnessa, Queen of the Silk** (a spider the size of a cart, venom-green eyes, a red
   mark on her back: Pounce, Skittering Rush, Venom Burst, Web Spit, then Brood Beneath and Falling
-  Brood as THE BROOD AWAKENS, her brood called up about her, and the ceiling crawls on you).
+  Brood as THE BROOD AWAKENS, her brood called up about her, and the ceiling crawls on you); her
+  lair is her nest (webs, egg sacs and cocoons about her dais).
   Vote picture: MapShots ▸ SilkCaverns.
 - **The Hollow Abbey**: a desecrated monastery where the monks kept praying after they died:
   violet candlelight, chapels, libraries and crypts, statues and banners. Its dead: Hollow Monks

@@ -1369,6 +1369,11 @@ function Dungeon.build(themeKey, opts)
 		elseif r.kind ~= "combat" and r.kind ~= "elite" then
 			feature(ctx, th, r, mid)
 		end
+		-- (the Spider Queen's lair is her nest: webs, egg sacs, cocoons about her dais)
+		if themeKey == "SilkCaverns" and r.kind == "boss" and r.arch ~= "nest" then
+			local okN, errN = pcall(A.nest, ctx, th, r, c, rng, nil)
+			if not okN then warn("[Dungeon] lair nest", errN) end
+		end
 		-- (what's left of someone who came before; the odd crate, urn or sack by the walls)
 		if opts.raid and r.kind ~= "start" and r.kind ~= "exit" then
 			local taken = {c}

@@ -1,4 +1,15 @@
-# Updated scripts: clouds spared on phones
+# Updated scripts: the Spider Queen's lair
+
+- **The Silk Caverns' boss room** is dressed as the Queen's nest: webs strung across its corners, egg sacs heaped by the walls, cocoons hanging about her dais.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | lair nest |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: clouds spared on phones
 
 - **Phones** skip the fair-weather clouds (they cost about a tenth of the frame in War); the weather's own clouds still come.
 - The Depths' header comment lists the Silk Caverns.
