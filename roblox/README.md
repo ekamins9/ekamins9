@@ -132,6 +132,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Undertow.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Undertow` | LocalScript |
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/ClashFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `ClashFX` | LocalScript |
+| `StarterPlayerScripts/HitReact.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HitReact` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2034,6 +2035,15 @@ down the guard's edge, cooling to orange as they fall, with a blink of light at 
 perfect parry adds a glint. Laid over the animation (the joints' Transform after the Animator),
 the clips untouched. Within 120 studs; a phone throws half the sparks. Tuning: `KINDS` at the top
 of the script (knock, give, sparks, light, ring).
+
+## A blow that lands (`HitReact.client`, `CombatServer.flinch` HitDir / HitTick)
+Whoever is struck (a clean hit, a kick, a bash) is seen struck on every screen within 120 studs:
+a bot's whole body rocks away from the blow and twists with it, the head snapping a beat later and
+further, the arms flying a little (damped springs on the RootJoint, Neck and shoulders, laid over
+the animation), harder for a harder blow (the damage it took, `TakenText`; half on a boss); and
+whoever is struck flashes white for a blink (a Highlight; six at most at once). A player's body
+already jolts through their own CameraRig and the pose relay, so only bots are rocked here; your
+own body isn't flashed (your screen flashes instead).
 
 ## The portraits watch (`Portraits.client`, Dungeon `P.painting`)
 

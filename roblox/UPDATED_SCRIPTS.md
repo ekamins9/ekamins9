@@ -1,4 +1,18 @@
-# Updated scripts: the tutorial's first fight, in slow time
+# Updated scripts: a blow that lands, seen landing
+
+- **Bots now visibly take a hit**: struck, a bot's body rocks away from the blow and twists with
+  it, its head snapping a beat later, its arms flying a little, harder for a harder blow. (Players'
+  bodies already jolted; bots, who fill most matches, stood there.)
+- **Whoever is struck flashes white** for a blink, so every landed blow reads at a glance.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HitReact.client.lua](StarterPlayerScripts/HitReact.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [README.md](README.md) | | doc | "A blow that lands" |
+
+---
+
+## Before that: the tutorial's first fight, in slow time
 
 - **You wake in first person** in the barracks (now a real room: bunks, a brazier, a candle on
   the table, windows the lightning comes through), the opening cutscene ending in your own eyes
