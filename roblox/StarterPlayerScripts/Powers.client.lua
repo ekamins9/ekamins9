@@ -442,7 +442,7 @@ if remote then
 	end)
 end
 
-local GLYPH = {blade = "🗡", axe = "🪓", spear = "🔱", dart = "🎯", flask = "🧪", bomb = "💣", bolas = "🪢"}
+local GLYPH = {blade = "🗡", axe = "🪓", spear = "🔱", dart = "🎯", flask = "🧪", bomb = "💣", bolas = "⛓"}
 RunService.RenderStepped:Connect(function()
 	local c = player.Character
 	local power = c and c:GetAttribute("Power")

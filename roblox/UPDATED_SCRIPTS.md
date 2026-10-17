@@ -1,4 +1,26 @@
-# Updated scripts: every symbol draws
+# Updated scripts: every emoji draws
+
+- **Fixed: six emoji too new for the game's emoji font showed as boxes**:
+  - Lucky Coin 🪙 is now 🍀.
+  - Eagle Feather 🪶 is now 🦅.
+  - Elixir of Stone 🪨 is now ⛰.
+  - Second Wind 🫁 is now 💨.
+  - Mirror Image 🪞 is now 🎭.
+  - Levitate 🪶 is now ☁.
+  - The bolas 🪢 are now ⛓.
+- The What's new card's spider 🕷 drew almost black on the dark card, so it's now 🕸.
+- Every other emoji the game uses was rendered and checked.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Loot.lua](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | glyphs |
+| [Powers.lua](ReplicatedStorage/Catalog/Powers.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | glyphs |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | bolas glyph |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 🕸 |
+
+---
+
+## Before that: every symbol draws
 
 - **Fixed: symbols the game's fonts can't draw** (they showed as boxes or nothing). A sweep rendered every non-ASCII character the UI uses in both fonts (GothamBold, FredokaOne) and replaced the failures:
   - The tutorial's guide arrows (the Prologue's, the training yard's) were ➤ and are now ▶.

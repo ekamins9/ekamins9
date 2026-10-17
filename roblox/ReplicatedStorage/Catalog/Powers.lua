@@ -108,7 +108,7 @@ add{id = "AvatarOfWar", class = "Knight", name = "Avatar of War", glyph = "👑"
 add{id = "Quickstep", class = "Footman", name = "Quickstep", glyph = "💨", level = AT[1], cooldown = 22, el = WIND,
 	kind = "buff", time = 6, mods = {speed = 1.3}, aura = "wind",
 	desc = "Run 30% faster for 6 seconds."}
-add{id = "SecondWind", class = "Footman", name = "Second Wind", glyph = "🫁", level = AT[2], cooldown = 32, el = WIND, cast = 0,
+add{id = "SecondWind", class = "Footman", name = "Second Wind", glyph = "💨", level = AT[2], cooldown = 32, el = WIND, cast = 0,
 	kind = "buff", time = 3, instant = {stamina = 60}, mods = {regen = 5}, aura = "renew",
 	desc = "Catch your breath at once: 60 stamina back, and 15 health over 3 seconds."}
 add{id = "Windstep", class = "Footman", name = "Windstep", glyph = "🌀", level = AT[3], cooldown = 30, el = WIND,
@@ -218,7 +218,7 @@ add{id = "ManaSurge", class = "Mage", name = "Mana Surge", glyph = "🔷", level
 add{id = "TimeWarp", class = "Mage", name = "Time Warp", glyph = "⏳", level = AT[3], cooldown = 38, el = ARCANE,
 	kind = "zone", at = "aim", range = 50, radius = 9, time = 5, foes = {slow = 0.5},
 	desc = "Slow time where you aim for 5 seconds: foes inside move at half speed."}
-add{id = "MirrorImage", class = "Mage", name = "Mirror Image", glyph = "🪞", level = AT[4], cooldown = 34, el = ARCANE,
+add{id = "MirrorImage", class = "Mage", name = "Mirror Image", glyph = "🎭", level = AT[4], cooldown = 34, el = ARCANE,
 	kind = "stealth", time = 3, decoy = true,
 	desc = "Leave an image of yourself and vanish for 3 seconds."}
 add{id = "WardDome", class = "Mage", name = "Ward Dome", glyph = "🔮", level = AT[5], cooldown = 50, el = ARCANE,
@@ -230,7 +230,7 @@ add{id = "Spellsurge", class = "Mage", name = "Spellsurge", glyph = "✴", level
 add{id = "GravityWell", class = "Mage", name = "Gravity Well", glyph = "🌌", level = AT[7], cooldown = 40, el = SHADOW,
 	kind = "zone", at = "aim", range = 50, radius = 10, time = 4, foes = {dps = 4, pull = 14, slow = 0.3},
 	desc = "Tear open a well where you aim: for 4 seconds it drags foes to its heart and grinds them."}
-add{id = "Levitate", class = "Mage", name = "Levitate", glyph = "🪶", level = AT[8], cooldown = 18, el = WIND,
+add{id = "Levitate", class = "Mage", name = "Levitate", glyph = "☁", level = AT[8], cooldown = 18, el = WIND,
 	kind = "leap", up = 52, forward = 24, float = 1.6,
 	desc = "Lift off and drift: a high, slow leap out of trouble."}
 add{id = "SoulSiphon", class = "Mage", name = "Soul Siphon", glyph = "💀", level = AT[9], cooldown = 24, el = BLOOD,

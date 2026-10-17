@@ -64,9 +64,9 @@ L.RELICS = {
 	{id = "OxHeart",      name = "Ox Heart",           glyph = "❤️", rarity = "Uncommon",  health = 25,                          text = "+25 health"},
 	{id = "WindBoots",    name = "Boots of the Wind",  glyph = "👢", rarity = "Uncommon",  mods = {dodgeCooldown = 0.7, dodgeCost = 0.75}, text = "Dodge sooner, and for less wind"},
 	{id = "BellowsLung",  name = "Bellows Lung",       glyph = "💨", rarity = "Uncommon",  mods = {stamina = 1.3},                text = "Your stamina comes back 30% faster"},
-	{id = "LuckyCoin",    name = "Lucky Coin",         glyph = "🪙", rarity = "Uncommon",  effect = "luck",                       text = "Chests are kinder to you"},
+	{id = "LuckyCoin",    name = "Lucky Coin",         glyph = "🍀", rarity = "Uncommon",  effect = "luck",                       text = "Chests are kinder to you"},
 	{id = "ManaPearl",    class = "Mage", name = "Mana Pearl",         glyph = "🔮", rarity = "Uncommon",  mods = {cast = 0.85},                  text = "Spells come 15% quicker"},
-	{id = "EagleFeather", class = "Archer", name = "Eagle Feather",      glyph = "🪶", rarity = "Uncommon",  mods = {draw = 0.8},                   text = "Draw your bow 20% quicker"},
+	{id = "EagleFeather", class = "Archer", name = "Eagle Feather",      glyph = "🦅", rarity = "Uncommon",  mods = {draw = 0.8},                   text = "Draw your bow 20% quicker"},
 	{id = "EmberCharm",   name = "Ember Charm",        glyph = "🔥", rarity = "Rare",      effect = "burn",                       text = "Your blows set them burning"},
 	{id = "FrostShard",   name = "Frost Shard",        glyph = "❄️", rarity = "Rare",      effect = "chill",                      text = "Your blows chill them"},
 	{id = "CountessFang", name = "Fang of the Countess", glyph = "🦇", rarity = "Rare",    effect = "lifesteal",                  text = "8% of every hit heals you"},
@@ -86,7 +86,7 @@ L.POTIONS = {
 	{id = "Healing",  name = "Healing Draught",  glyph = "🧪", rarity = "Common",   heal = 0.5,                                     text = "Heals half your health"},
 	{id = "Greater",  name = "Greater Healing",  glyph = "🧪", rarity = "Rare",     heal = 1.0,                                     text = "Heals you whole"},
 	{id = "Fury",     name = "Elixir of Fury",   glyph = "💢", rarity = "Uncommon", mods = {dealt = 1.3}, time = 30,                 text = "30% more damage for 30 seconds"},
-	{id = "Stone",    name = "Elixir of Stone",  glyph = "🪨", rarity = "Uncommon", mods = {taken = 0.7}, time = 30,                 text = "30% less damage taken for 30 seconds"},
+	{id = "Stone",    name = "Elixir of Stone",  glyph = "⛰", rarity = "Uncommon", mods = {taken = 0.7}, time = 30,                 text = "30% less damage taken for 30 seconds"},
 	{id = "Swift",    name = "Swiftness Tonic",  glyph = "🍃", rarity = "Uncommon", mods = {speed = 1.3, stamina = 1.5}, time = 30,  text = "Faster, quicker breath, for 30 seconds"},
 }
 L.POTION = {}
