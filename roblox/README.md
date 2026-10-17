@@ -1247,7 +1247,7 @@ A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
 names them. Every mode has 10 or more: the hand-built ones (`Build ▸ Maps`, `Build ▸ Map<Name>`)
-and 25 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
+and 28 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
 - **Siege:** Emberkeep (ember night), Sunspire (desert noon), Thornwall (autumn), Mistmoor
   (swamp mist), Greenhollow (summer), Stormhold (storm night), Ashenford (ash), Rimeholt (moonlit
   snow), Blossomgate (spring). Each is a castle to take: the ram up the road, the bailey, the great
@@ -1258,6 +1258,16 @@ and 25 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
 - **Bridges:** Redgorge (a dry gorge), Mistbridge.
 - **Ruins:** Cinderfall, Duneshrine.
 - **Clearings:** Hollow Grove (fireflies at night), Pinewatch.
+- **Warfields** (The Lists, 1v1 to 3v3): Redmeadow (autumn wheat), Ironvale (snow), Grimfield
+  (ash and embers). A duel ring of pavises and planted spears in the middle of a battle: two
+  armies fight all round it on every screen (`StarterPlayerScripts ▸ Warfield`, with
+  `ReplicatedStorage ▸ WarCrowd` and `WarFX`; the map's `Warfield` attribute, the ring's radius,
+  turns it on): three lanes a side meet either side of the ring (foot, pikes, knights), charging
+  together after 5 s with horns and drums, wavering, pulling apart and charging again; each side's
+  archers stand straight behind the ring, so their volleys arc over it onto the enemy's lines; the
+  battle-mages' fire crosses the sky; the cavalry rides down a flank now and then; reserves,
+  standards, burning wagons, dust and the din. The winners of a round cheer. About 13,700 crowd
+  parts, 1.8–3.5 ms a frame, 52–56 fps in Studio play.
 
 Every forge map carries its weather (snow, rain, ash, leaves, petals, embers, fireflies, dust or
 mist, an emitter inside it) and everything every mode needs (team and free spawns, a hill,

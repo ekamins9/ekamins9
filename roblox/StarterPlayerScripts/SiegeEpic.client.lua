@@ -196,7 +196,6 @@ local function build(C)
 	end
 	siege.hazes.gate = WarFX.haze(V3(C.gate.X, 2, C.faceZ + f * 14), {width = 60, depth = 20, rate = small and 1 or 3, color = DUST})
 	siege.battle = WarFX.loop("Battle", 0.4)
-	siege.surge = {}
 	siege.charged = false
 	siege.chargeAt = os.clock() + 8
 	siege.nextWall = os.clock() + 4
@@ -245,40 +244,17 @@ local function flanks(now)
 		task.delay(0.8, function() if siege.on then WarFX.sound("Charge", nil, {volume = 0.8}) end end)
 	end
 	for _, s in ipairs({-1, 1}) do
-		for li, x in ipairs(siege.lanes) do
-			local key = s .. ":" .. li
-			local sway = math.sin(now * 0.12 + li * 1.7 + s) * 7
-			local sg = siege.surge[key]
-			if not sg then sg = {next = now + 25 + math.random() * 40}; siege.surge[key] = sg end
-			local apart = 0
-			if sg.phase == "back" then
-				apart = 20
-				if now > sg.til then sg.phase, sg.til = "in", now + 6 end
-			elseif sg.phase == "in" then
-				if now > sg.til then sg.phase, sg.next = nil, now + 35 + math.random() * 45 end
-			elseif now > sg.next then
-				sg.phase, sg.til = "back", now + 7
+		for li in ipairs(siege.lanes) do
+			local crash, at = crowd:lane("D" .. s .. li, "A" .. s .. li, siege.front, now, f)
+			if crash then
+				WarFX.dust(crash + V3(0, 1, 0), 3, DUST)
+				WarFX.sound("Gate", crash, {range = 450, near = 40, speed = 1.3, volume = 0.6})
+				local me = myPos()
+				if me and (me - crash).Magnitude < 110 then WarFX.shake(0.8 * (1 - (me - crash).Magnitude / 110) + 0.1, 0.5) end
+				for _ = 1, 3 do crowd:blast(crash + V3((math.random() - 0.5) * 30, 0, 0), 2.5) end
 			end
-			local zD, zA = siege.front + f * sway - f * (2.7 + apart), siege.front + f * sway + f * (2.7 + apart)
-			local rd, ra = crowd.regs["D" .. s .. li], crowd.regs["A" .. s .. li]
-			if rd and ra then
-				crowd:march("D" .. s .. li, zD, math.abs(zD - rd.z) > 10)
-				crowd:march("A" .. s .. li, zA, math.abs(zA - ra.z) > 10)
-				local meet = math.abs(ra.z - rd.z) < 7.5
-				if meet and not sg.met then
-					local mid = V3(C.gate.X + s * x, ra.y0 or 0, (ra.z + rd.z) / 2)
-					WarFX.dust(mid + V3(0, 1, 0), 3, DUST)
-					WarFX.sound("Gate", mid, {range = 450, near = 40, speed = 1.3, volume = 0.6})
-					local me = myPos()
-					if me and (me - mid).Magnitude < 110 then WarFX.shake(0.8 * (1 - (me - mid).Magnitude / 110) + 0.1, 0.5) end
-					for _ = 1, 3 do crowd:blast(mid + V3((math.random() - 0.5) * 30, 0, 0), 2.5) end
-				end
-				sg.met = meet
-				crowd:clash("D" .. s .. li, meet)
-				crowd:clash("A" .. s .. li, meet)
-				local hz = siege.hazes[key]
-				if hz then hz.move(V3(C.gate.X + s * x, (ra.y0 or 0) + 2, (ra.z + rd.z) / 2)) end
-			end
+			local hz = siege.hazes[s .. ":" .. li]
+			if hz and at then hz.move(at + V3(0, 2, 0)) end
 		end
 		local mel = siege.loops["melee" .. s]
 		if mel then mel.move(V3(C.gate.X + s * (siege.lanes[1] or C.half + 24), 3, siege.front)) end
@@ -377,7 +353,8 @@ local function leave()
 	siege.on = false
 	siege.token += 1
 	if siege.crowd then siege.crowd:stop(); siege.crowd = nil end
-	for _, l in pairs(siege.loops or {}) do if l then l.stop(1) end end
+	-- (a 2D loop is the Sound itself; a placed one a handle)
+	for _, l in pairs(siege.loops or {}) do if typeof(l) == "Instance" then WarFX.stopLoop(l, 1) elseif l then l.stop(1) end end
 	for _, h in pairs(siege.hazes or {}) do h.stop() end
 	for _, c in ipairs(siege.columns or {}) do c.stop() end
 	if siege.ladderHome then siege.ladderHome:Destroy(); siege.ladderHome = nil end

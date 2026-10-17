@@ -1,4 +1,25 @@
-# Updated scripts: the Siege is a real siege now
+# Updated scripts: duels in the middle of a battle (three new Lists maps)
+
+- **Redmeadow, Ironvale, Grimfield** (The Lists, 1v1 to 3v3): a duel ring of painted pavises and planted spears in an open field where two whole armies fight all round you. Battle lines meet either side of the ring, archers behind it loose volleys right over your heads, battle-mages' fire crosses the sky, cavalry rides down a flank, wagons burn. The winners of a round cheer.
+- **A new map layout** (`warfield` in MapForge): any map built with it gets the battle by itself.
+- **Fixed**: leaving War (or the new maps) threw an error while stopping the drums, so some battle sounds and effects could keep going after you left.
+- **Checked in Play**: all three maps, from inside the ring and from above, 52–56 fps in Studio play. Vote pictures shot with the battle running.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build | ModuleScript | warfield layout; Redmeadow, Ironvale, Grimfield |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | the maps in The Lists, titles, sizes, weather |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `lane()`: two lines fighting |
+| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | uses `lane()`; stops its loops cleanly |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | stops its drums cleanly |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+Studio-only (save the place): ServerStorage ▸ Maps ▸ Redmeadow, Ironvale, Grimfield (built with `require(game.ServerScriptService.Build.Maps).build(name)`); ReplicatedStorage ▸ MapShots ▸ Redmeadow, Ironvale, Grimfield.
+
+---
+
+## Before that: the Siege is a real siege now
 
 - **Defenders' archers line the castle walls** and loose on the field; the attackers' archers loose back.
 - **Ladders against the walls** with men swarming up them under a block of raised shields: some go over the top and fight on the walk, some are thrown off.
@@ -36,17 +57,3 @@
 | [README.md](README.md) | | doc | |
 
 Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Drums, Roar, Melee, Fire, Drone, Whisper.
-
----
-
-## Before that: weather on the battle maps
-
-- **Snow, rain, storms, embers and petals** on the maps that suit them (Frostgate snows, Stormhold storms, Emberkeep's air is full of embers, Blossomgate's of petals…), and Plague Night is always a storm. One table in GameConfig sets it.
-- **Checked in Play**: Siege on Frostgate: snow falling, heavier cloud.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [Weather.client.lua](StarterPlayerScripts/Weather.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | MAP_WEATHER, MODE_WEATHER |
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | petals; weatherKind() |
-| [README.md](README.md) | | doc | |

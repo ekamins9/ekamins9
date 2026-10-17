@@ -19,6 +19,8 @@
                        fixed = true: stands at at.Y exactly (a wall's walk), not on the ground below})
        c:march(id, z, run)    its front rank heads for this line (run: at a charge)
        c:clash(id, on)        its front rank fights the enemy's (pairs face to face)
+       c:lane(idA, idB, z, now, f)  two lines fighting along z (wavering, pulling apart and
+                              charging again): call it twice a second; returns the crash point
        c:loose(id)            archers draw and loose · mages raise their staves
        c:cheer(side)          every regiment of a side raises its weapons
        c:hold(id, state)      what its men do while idle: nil (stand) | "cover" (shields raised
@@ -408,6 +410,37 @@ function WarCrowd:loose(id)
 	r.looseUntil = os.clock() + 2.4
 	r.dirty = true
 end
+-- TWO LINES FIGHTING: regiment idA (facing +f along z) and idB (facing -f) meet along `front`;
+-- they waver, and now and then pull apart and charge again. Call it every half second or so.
+-- Returns where they crashed together (just now; nil otherwise) and where they fight.
+function WarCrowd:lane(idA, idB, front, now, f)
+	local ra, rb = self.regs[idA], self.regs[idB]
+	if not (ra and rb) then return nil, nil end
+	f = f or 1
+	local sg = ra.surge
+	if not sg then sg = {next = now + 25 + math.random() * 45, ph = math.random() * 6}; ra.surge = sg end
+	local apart = 0
+	if sg.phase == "back" then
+		apart = 20
+		if now > sg.til then sg.phase, sg.til = "in", now + 6 end
+	elseif sg.phase == "in" then
+		if now > sg.til then sg.phase, sg.next = nil, now + 35 + math.random() * 45 end
+	elseif now > sg.next then
+		sg.phase, sg.til = "back", now + 7
+	end
+	local sway = math.sin(now * 0.12 + sg.ph) * 7
+	local zA, zB = front + f * (sway - 2.7 - apart), front + f * (sway + 2.7 + apart)
+	self:march(idA, zA, math.abs(zA - ra.z) > 10)
+	self:march(idB, zB, math.abs(zB - rb.z) > 10)
+	local meet = math.abs(ra.z - rb.z) < 7.5
+	local at = V3(ra.x, ra.y0 or 0, (ra.z + rb.z) / 2)
+	local crash = (meet and not sg.met) and at or nil
+	sg.met = meet
+	self:clash(idA, meet)
+	self:clash(idB, meet)
+	return crash, at
+end
+
 function WarCrowd:hold(id, state)
 	local r = self.regs[id]
 	if not r or r.hold == state then return end

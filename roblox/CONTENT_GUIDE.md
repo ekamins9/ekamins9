@@ -660,7 +660,8 @@ it should be heard standing next to someone, never across the yard. Licensed lib
   `champion = {name = "…", weapon = "Greatsword"}`), add the name to `F.ORDER`, to
   `GameConfig.MAP_TITLES`, `GameConfig.MAP_FIGHTERS` (below) and to the modes' `maps`, then in Studio
   `require(game.ServerScriptService.Build.Maps).build("Name")`, shoot its picture (below), **save
-  the place**. Layouts: `arena bailey village bridge ruins clearing siege`. Themes (time of day,
+  the place**. Layouts: `arena bailey village bridge ruins clearing siege warfield` (warfield: a
+  duel ring in the middle of a battle; its armies come by themselves, `Warfield.client`). Themes (time of day,
   season, palette, trees, weather): `summer autumn winter winterNight desert desertDusk swamp
   stormNight ember spring dawnMist ash nightForest`; a new theme is one table in `F.THEMES`
   (`weather`: snow rain ash leaves petals embers fireflies dust mist). Every forge map has team,

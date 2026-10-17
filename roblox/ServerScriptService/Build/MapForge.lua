@@ -15,6 +15,9 @@
        clearing  a forest clearing round a stone circle, a woodcutter's hut
        siege     a castle to take (Siege): the ram up the road to the gate, the
                  bailey, the great hall, its champion on the throne
+       warfield  a duel ring of planted shields and spears in the middle of an open
+                 field where two armies fight all round it (drawn on every screen by
+                 Warfield.client: the Map's Warfield attribute is the ring's radius)
      Every map carries what every mode wants: team spawns A / B, free spawns,
      a KOTH hill (Zones ▸ Hill), Horde gates (Spots ▸ HordeGate1..8), three menu
      cameras, lighting and atmosphere, and its weather (an emitter in the map).
@@ -203,10 +206,14 @@ F.MAPS = {
 	-- CLEARINGS
 	HollowGrove = {title = "Hollow Grove", layout = "clearing", theme = "nightForest", seed = 701},
 	Pinewatch   = {title = "Pinewatch",    layout = "clearing", theme = "winter",   seed = 702},
+	-- WARFIELDS: a duel in the middle of a battle (The Lists)
+	Redmeadow   = {title = "Redmeadow",    layout = "warfield", theme = "autumn",   seed = 801},
+	Ironvale    = {title = "Ironvale",     layout = "warfield", theme = "winter",   seed = 802},
+	Grimfield   = {title = "Grimfield",    layout = "warfield", theme = "ash",      seed = 803},
 }
 F.ORDER = {"Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate",
 	"Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen",
-	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch"}
+	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch", "Redmeadow", "Ironvale", "Grimfield"}
 
 --------------------------------------------------------------------
 --  SHARED PIECES
@@ -978,7 +985,101 @@ local function siege(ctx, T, r, def)
 	finishLook(ctx, T)
 end
 
-local LAYOUTS = {arena = arena, bailey = bailey, village = village, bridge = bridge, ruins = ruins, clearing = clearing, siege = siege}
+--------------------------------------------------------------------
+--  LAYOUT: WARFIELD — a duel ring in the middle of a battle: pavises and planted spears round
+--  a trampled circle, an open field all round it where the armies fight (Warfield.client draws
+--  them: two battle lines meeting either side of the ring, archers and reserves behind)
+--------------------------------------------------------------------
+local function warfield(ctx, T, r)
+	local A = 30
+	ground(ctx, T, r, 180, function(B)
+		B:FillCylinder(CFrame.new(0, -2, 0), 4, A + 3, T.path)
+		-- (the ground churned where the lines meet, either side of the ring)
+		for _, sx in ipairs({-1, 1}) do
+			for k = 0, 5 do B:FillBlock(CFrame.new(sx * (52 + k * 22), -2, r:NextNumber(-4, 4)), V3(24, 4, r:NextNumber(16, 26)), T.path) end
+		end
+	end)
+	local wood, dark = T.wood, T.woodDark
+	local cloth = {RGB(52, 86, 190), RGB(176, 42, 42), T.house, T.house2}
+	-- the ring: pavises (tall standing shields, propped from behind) with spears planted between
+	local N = 44
+	for i = 0, N - 1 do
+		local a = (i + 0.5) / N * 2 * math.pi
+		local at = V3(math.cos(a) * (A + 1), 0, math.sin(a) * (A + 1))
+		local face = CFrame.lookAt(at, V3(0, 0, 0))
+		local lean = DEG(r:NextNumber(-10, -4))
+		local tall = r:NextNumber(4.2, 5.2)
+		local pav = face * CFrame.Angles(lean, DEG(r:NextNumber(-6, 6)), DEG(r:NextNumber(-4, 4))) * CFrame.new(0, tall / 2, 0)
+		local col = cloth[(i % 4) + 1]
+		K.box(ctx, "Pavise", V3(3.1, tall, 0.45), pav, i % 3 == 0 and wood or col, i % 3 == 0 and M.WoodPlanks or M.Fabric)
+		K.box(ctx, "PaviseRim", V3(3.3, 0.35, 0.55), pav * CFrame.new(0, tall / 2 - 0.1, 0), dark, M.Wood).CanCollide = false
+		if i % 3 == 0 then
+			-- (a plain wooden one: iron bands across it)
+			for _, y in ipairs({-tall * 0.28, tall * 0.22}) do K.box(ctx, "PaviseBand", V3(3.2, 0.3, 0.1), pav * CFrame.new(0, y, -0.26), K.C.IRON, M.Metal).CanCollide = false end
+		else
+			-- (a painted one: a pale stripe down it, its company's colour either side)
+			K.box(ctx, "PaviseStripe", V3(0.8, tall * 0.92, 0.1), pav * CFrame.new(0, 0, -0.26), K.C.WHITE, M.Fabric).CanCollide = false
+		end
+		K.cyl(ctx, "PaviseBoss", 1.1, 0.3, pav * CFrame.new(0, 0.3, -0.36) * CFrame.Angles(DEG(90), 0, 0), K.C.IRON, M.Metal).CanCollide = false
+		K.box(ctx, "Prop", V3(0.3, 0.3, tall * 0.9), face * CFrame.new(0, tall * 0.35, 1.2) * CFrame.Angles(DEG(50), 0, 0), dark, M.Wood).CanCollide = false
+		if i % 2 == 0 then
+			-- a spear (or two, crossed) driven into the ground between the shields
+			local b = (i + 1) / N * 2 * math.pi
+			local sp = V3(math.cos(b) * (A + 1.6), 0, math.sin(b) * (A + 1.6))
+			local len = r:NextNumber(8, 11)
+			local tilt = CFrame.lookAt(sp, V3(0, 0, 0)) * CFrame.Angles(DEG(r:NextNumber(-22, -8)), 0, DEG(r:NextNumber(-12, 12)))
+			K.cyl(ctx, "Spear", 0.25, len, tilt * CFrame.new(0, len / 2, 0), dark, M.Wood).CanCollide = false
+			K.box(ctx, "SpearHead", V3(0.2, 1.4, 0.5), tilt * CFrame.new(0, len + 0.6, 0), K.C.IRON, M.Metal).CanCollide = false
+			if i % 6 == 0 then
+				local cl = K.box(ctx, "Pennant", V3(0.08, 1.2, 2.4), tilt * CFrame.new(0, len - 1, 1.2), cloth[(i / 2 % 2) + 1], M.Fabric)
+				cl.CanCollide = false
+			end
+		end
+	end
+	-- (and nobody leaves the ring: an invisible wall round it, tall)
+	local SEG = 24
+	for i = 0, SEG - 1 do
+		local a0, a1 = i / SEG * 2 * math.pi, (i + 1) / SEG * 2 * math.pi
+		local p0, p1 = V3(math.cos(a0) * (A + 3), 0, math.sin(a0) * (A + 3)), V3(math.cos(a1) * (A + 3), 0, math.sin(a1) * (A + 3))
+		local w = K.box(ctx, "Bound", V3(4, 80, (p1 - p0).Magnitude + 1), CFrame.lookAt((p0 + p1) / 2, p1) * CFrame.new(0, 40, 0), C.STONE, M.SmoothPlastic)
+		w.Transparency, w.CanQuery, w.CanTouch, w.CastShadow = 1, false, false, false
+	end
+	-- the two sides' great standards at the ring's ends, braziers between
+	K.banner(ctx, V3(0, 0, -(A + 5)), 14, RGB(52, 86, 190))
+	K.banner(ctx, V3(0, 0, A + 5), 14, RGB(176, 42, 42))
+	for i = 0, 3 do
+		local a = i / 4 * 2 * math.pi + math.pi / 4
+		K.torchPost(ctx, V3(math.cos(a) * (A - 2), 0, math.sin(a) * (A - 2)), 5)
+	end
+	-- what the fight before this one left in the ring: shields, broken spears, a fallen banner
+	for k = 1, 9 do
+		local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(6, A - 5)
+		local at = V3(math.cos(a) * d, 0, math.sin(a) * d)
+		if k % 3 == 0 then
+			K.cyl(ctx, "DroppedShield", r:NextNumber(2.4, 3), 0.3, CFrame.new(at + V3(0, 0.15, 0)) * CFrame.Angles(DEG(r:NextNumber(-8, 8)), 0, DEG(r:NextNumber(-8, 8))), cloth[k % 2 + 1], M.Wood).CanCollide = false
+		elseif k % 3 == 1 then
+			local len = r:NextNumber(3, 5)
+			K.cyl(ctx, "BrokenSpear", 0.25, len, CFrame.new(at + V3(0, 0.15, 0)) * CFrame.Angles(0, a, 0) * CFrame.Angles(DEG(88), 0, 0), dark, M.Wood).CanCollide = false
+		else
+			K.box(ctx, "FallenBanner", V3(2.4, 0.1, 3.4), CFrame.new(at + V3(0, 0.06, 0)) * CFrame.Angles(0, a, 0), cloth[k % 2 + 1], M.Fabric).CanCollide = false
+		end
+	end
+	burntMarks(ctx, T, r, 5, A - 4)
+	-- far off: the woods (past where the armies stand), rocks
+	forest(ctx, T, r, T.trees, 184, 200, nil)
+	for i = 1, 8 do local a, d = r:NextNumber(0, 2 * math.pi), r:NextNumber(150, 190); K.rock(ctx, V3(math.cos(a) * d, -0.4, math.sin(a) * d), r:NextNumber(3, 6), T.cliffColor) end
+	weather(ctx, T, 260, 260)
+	ctx.model:SetAttribute("Warfield", A)
+	markers(ctx, {
+		a = line(-8, 8, -18, 4), b = line(-8, 8, 18, 4), free = ring(6, 18, 1, math.pi / 6),
+		hill = {V3(0, 0.7, 0), 9}, gates = {V3(0, 3, -(A - 4)), V3(0, 3, A - 4), V3(-(A - 4), 3, 0), V3(A - 4, 3, 0),
+			V3(-18, 3, -18), V3(18, 3, 18), V3(-18, 3, 18), V3(18, 3, -18)},
+		cams = {{V3(-64, 26, 58), V3(0, 4, 0)}, {V3(24, 7, -22), V3(-4, 4, 6)}, {V3(0, 80, 0.1), V3(0, 0, 0)}},
+	})
+	finishLook(ctx, T)
+end
+
+local LAYOUTS = {arena = arena, bailey = bailey, village = village, bridge = bridge, ruins = ruins, clearing = clearing, siege = siege, warfield = warfield}
 
 --------------------------------------------------------------------
 --  BUILD

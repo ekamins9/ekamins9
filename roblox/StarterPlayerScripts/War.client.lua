@@ -678,7 +678,8 @@ local function leave()
 	gui.Enabled = false
 	if arrive.stop then arrive.stop() end
 	if war.crowd then war.crowd:stop(); war.crowd = nil end
-	for _, l in pairs(war.loops or {}) do if l then l.stop(1) end end
+	-- (a 2D loop is the Sound itself; a placed one a handle)
+	for _, l in pairs(war.loops or {}) do if typeof(l) == "Instance" then WarFX.stopLoop(l, 1) elseif l then l.stop(1) end end
 	war.loops = {}
 	for _, h in pairs(war.hazes or {}) do h.stop() end
 	war.hazes = {}
