@@ -96,6 +96,15 @@ function War:start(map)
 		alive = function() return Game.current == self end,
 	})
 	self.botCap = def.botFill or 32
+	-- THE DAY GOES ON over a battle: a morning brightens, an afternoon wears on towards golden hour
+	-- and long shadows by the end; a dusk or a night (tuned as they are) stays as it is
+	do
+		local Lighting = game:GetService("Lighting")
+		local c0 = Lighting.ClockTime
+		local to = (c0 >= 6 and c0 < 10 and c0 + 1.5) or (c0 >= 10 and c0 < 16.5 and math.min(c0 + 2.2, 17.1)) or c0
+		self.sun = to ~= c0 and {from = c0, to = to, at = now, len = def.roundLength or 900} or nil
+		self.sunTick = 0
+	end
 	self.frame = 1 / 60
 	self.capAt = now + 6
 	self.lastFront = nil
@@ -110,6 +119,7 @@ end
 
 function War:stop()
 	if self.beat then self.beat:Disconnect(); self.beat = nil end
+	self.sun = nil
 	self.engines = nil
 	for _, k in ipairs(FIELD_ATTRS) do node:SetAttribute(k, nil) end
 	for i = 1, 5 do
@@ -153,6 +163,12 @@ function War:tick(dt)
 	local L = self.layout
 	if not L then return end
 	local now = os.clock()
+	-- (the sun moves: a little every couple of seconds)
+	if self.sun and now - (self.sunTick or 0) > 2 then
+		self.sunTick = now
+		local u = math.clamp((now - self.sun.at) / self.sun.len, 0, 1)
+		game:GetService("Lighting").ClockTime = self.sun.from + (self.sun.to - self.sun.from) * u
+	end
 	-- WHO STANDS AT EACH BANNER
 	local counts = {}
 	for i = 1, 5 do counts[i] = {A = 0, B = 0} end

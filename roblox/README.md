@@ -1662,6 +1662,10 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
 - **Reinforcements**: each side starts with `tickets` (300); every fall costs one, players and bots
   alike; holding more banners bleeds the other side a ticket per banner more every 4 s (all five:
   faster). None left: lost. At the bell, more left wins (15 minutes).
+- **The day goes on** (`War:start` / `tick`): the sun moves over the battle. A morning field
+  (ClockTime 6–10) brightens an hour and a half; an afternoon one wears on towards golden hour
+  (up to 2.2 hours, never past 17.1), long shadows and a warm sky by the bell. A dusk or a night
+  theme stays as it was tuned.
 - **Coming in**: at your foremost banner nobody's attacking, else at the camp, in waves
   (`waveSpawn` 8). Bots: most push for the banner their side is taking, some hold one under attack
   (`War:botOpts` goal). Their number follows the server's frame rate (`War:botTarget`, read by

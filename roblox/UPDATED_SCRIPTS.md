@@ -1,4 +1,16 @@
-# Updated scripts: the class picker's mode line
+# Updated scripts: the sun moves over a War battle
+
+- **War**: the day goes on while you fight. A morning field brightens; an afternoon one wears on towards golden hour, with long shadows and a warm sky by the bell. Dusk and night themes keep their tuned light.
+- Soaked Invasion (Undead Night) with today's changes: no errors.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the sun's drift |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the class picker's mode line
 
 - **Fixed**: on CHOOSE YOUR CLASS, the mode's line ("Crownfall on The Crownlands" and its description) spilled up over the title. It now reads from the top down under it, two lines at most, and the class cards sit a little lower.
 - Soaked Dragonfall and Crownfall with today's changes: no errors (60 / 55 fps in Studio).
