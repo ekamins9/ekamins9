@@ -15,13 +15,23 @@
        local c = WarCrowd.new()
        c:regiment(id, {side = "A"|"B", kind = "foot"|"pike"|"archer"|"knight"|"mage", at = Vector3
                        (front-centre), facing = 1 | -1 (towards +z / -z), cols, ranks, spacing,
-                       detail = "full" | "lite" | "mass" (its front rank's), banner = true})
+                       detail = "full" | "lite" | "mass" (its front rank's), banner = true,
+                       fixed = true: stands at at.Y exactly (a wall's walk), not on the ground below})
        c:march(id, z, run)    its front rank heads for this line (run: at a charge)
        c:clash(id, on)        its front rank fights the enemy's (pairs face to face)
        c:loose(id)            archers draw and loose · mages raise their staves
        c:cheer(side)          every regiment of a side raises its weapons
+       c:hold(id, state)      what its men do while idle: nil (stand) | "cover" (shields raised
+                              over their heads, waiting under the walls) | "brace"
        c:blast(pos, r)        soldiers within r are thrown and fall
        c:hit(pos, r, n)       up to n soldiers within r fall (a volley)
+       c:ladder(id, {side, kind, from = Vector3 (its foot), to = Vector3 (its top, at the wall),
+                     n, speed, rate})
+                              men run to a ladder and swarm up it one after another; at the top
+                              they go over the wall (and fight there a moment), now and then one is
+                              thrown off backwards (rate: how often, a second)
+       c:overrun(id)          a ladder's men all go over now (the wall is taken)
+       c:rout(id, secs)       a regiment cut down: all fall within secs, none steps up after
        c:stop() ]]
 
 local Players = game:GetService("Players")
@@ -239,6 +249,16 @@ local function pose(s, now, kind, out)
 		bob = math.abs(math.sin(t * 9)) * 0.4
 	elseif st == "brace" then
 		la, ra = 100, 100
+	elseif st == "cover" then
+		-- (the shield held flat over the head, the weapon low: waiting out the arrows under the walls)
+		la, laz, ra, lean, bob = 168, 10, 70, 8, -0.35
+		rl, ll = 14, -6
+	elseif st == "climb" then
+		-- (hand over hand, a foot up a rung at a time)
+		local a = math.sin(t * 6)
+		ra, la = 150 + a * 22, 150 - a * 22
+		rl, ll = 38 + a * 28, 38 - a * 28
+		lean = 6
 	end
 	local hips = CF(0, 3 + bob, 0) * ANG(0, RAD(twist * 0.3), 0)
 	local torso = hips * ANG(RAD(-lean), RAD(twist), 0)
@@ -334,7 +354,9 @@ function WarCrowd:regiment(id, o)
 	local reg = {id = id, side = o.side or "A", kind = o.kind or "foot", facing = o.facing or 1, x = o.at.X, z = o.at.Z,
 		target = o.at.Z, run = false, cols = cols, ranks = ranks, sp = o.spacing or 3, men = {}, clash = false,
 		looseUntil = 0, cheerUntil = 0, y0 = o.at.Y, nextGround = 0, dirty = true, hidden = false, corpses = {}}
-	reg.y0 = self:groundAt(reg.x, reg.z, o.at.Y)
+	-- (on the ground below them, or exactly where they're put: on a wall's walk)
+	reg.fixed = o.fixed
+	if not o.fixed then reg.y0 = self:groundAt(reg.x, reg.z, o.at.Y) end
 	local frontLevel = o.detail or "lite"
 	for r = 1, ranks do
 		for c = 1, cols do
@@ -386,6 +408,12 @@ function WarCrowd:loose(id)
 	r.looseUntil = os.clock() + 2.4
 	r.dirty = true
 end
+function WarCrowd:hold(id, state)
+	local r = self.regs[id]
+	if not r or r.hold == state then return end
+	r.hold = state
+	r.dirty = true
+end
 function WarCrowd:cheer(side)
 	for _, r in ipairs(self.list) do
 		if r.side == side then r.cheerUntil = os.clock() + 5; r.dirty = true end
@@ -427,7 +455,7 @@ local function fall(self, reg, s, now, fling)
 	s.corpse = true
 	local key = s.r .. ":" .. s.c
 	task.delay(2.5 + math.random() * 2, function()
-		if self.dead or not reg.men then return end
+		if self.dead or not reg.men or reg.routed then return end
 		-- (the oldest of the fallen, past a dozen, stands up as the new man: parts are reused)
 		local fresh
 		if #reg.corpses > 12 then
@@ -453,6 +481,22 @@ local function fall(self, reg, s, now, fling)
 	end)
 end
 
+local ladderAt, knockOff   -- (the ladders, below)
+
+-- a regiment cut down: every man falls over the next few seconds, and none steps up after
+function WarCrowd:rout(id, secs)
+	local reg = self.regs[id]
+	if not reg or reg.routed then return end
+	reg.routed = true
+	for _, s in pairs(reg.men) do
+		if s and not s.corpse then
+			task.delay(math.random() * (secs or 4), function()
+				if not self.dead and not s.corpse then fall(self, reg, s, os.clock()) end
+			end)
+		end
+	end
+end
+
 function WarCrowd:hit(pos, r, n)
 	local now = os.clock()
 	local hits = 0
@@ -472,6 +516,11 @@ end
 
 function WarCrowd:blast(pos, r)
 	local now = os.clock()
+	for _, lad in pairs(self.ladders or {}) do
+		for _, s in ipairs(lad.men) do
+			if s.state == "climb" and not s.over and s.u > 0 and (ladderAt(lad, s) - pos).Magnitude < r then knockOff(self, lad, s, now) end
+		end
+	end
 	for _, reg in ipairs(self.list) do
 		if math.abs(reg.x - pos.X) < r + reg.cols * reg.sp and math.abs(reg.z - pos.Z) < r + reg.ranks * reg.sp + 10 then
 			for _, s in pairs(reg.men) do
@@ -490,11 +539,115 @@ function WarCrowd:blast(pos, r)
 	end
 end
 
+--------------------------------------------------------------------
+--  LADDERS: men swarming up against a wall
+--------------------------------------------------------------------
+function WarCrowd:ladder(id, o)
+	local from, to = o.from, o.to
+	local up = to - from
+	local flat = V3(up.X, 0, up.Z)
+	local lad = {id = id, side = o.side or "A", kind = o.kind or "foot", from = from, to = to, up = up, len = up.Magnitude,
+		fwd = flat.Magnitude > 0.1 and flat.Unit or V3(0, 0, -1), men = {}, y0 = from.Y, speed = o.speed or 3.6,
+		rate = o.rate or 0.05, acc = 0}
+	lad.yaw = math.atan2(-lad.fwd.X, -lad.fwd.Z)
+	local n = math.max(2, math.floor((o.n or 5) * (WarCrowd.SCALE < 1 and 0.6 or 1)))
+	for k = 1, n do
+		local t = template(lad.side, lad.kind, k % 2 + 1)
+		if t then
+			local s = newSoldier(self.home, t, o.detail or "lite")
+			s.ph = math.random() * 6.28
+			s.u = 1.05 - k * (1.5 / n)     -- (spread up the ladder, the rest coming up behind)
+			s.state = s.u >= 0 and "climb" or "run"
+			table.insert(lad.men, s)
+		end
+	end
+	self.ladders = self.ladders or {}
+	self.ladders[id] = lad
+	return lad
+end
+
+function WarCrowd:overrun(id)
+	local lad = self.ladders and self.ladders[id]
+	if lad then lad.overrun = true end
+end
+
+-- where a man on (or coming to) a ladder stands: his feet on its rung, or on the ground behind it
+function ladderAt(lad, s)
+	if s.u >= 0 then return lad.from + lad.up * math.min(s.u, 1) - lad.fwd * 0.5 end
+	local back = lad.from - lad.fwd * (-s.u * lad.len * 0.7)
+	return V3(back.X, lad.y0, back.Z)
+end
+
+function knockOff(self, lad, s, now)
+	local at = ladderAt(lad, s)
+	s.fly = {pos = at + V3(0, 3, 0), vel = -lad.fwd * (10 + math.random() * 10) + V3(0, 10 + math.random() * 10, 0),
+		spin = V3(math.random() * 6 - 3, math.random() * 4 - 2, math.random() * 6 - 3), t = 0, yaw = lad.yaw}
+	s.state = "flying"
+	s.since, s.deadAt = now, now
+	s.fallDir = -1
+	s.fallRoll = math.random(-25, 25)
+	table.insert(self.flying, {reg = lad, s = s})
+end
+
+function WarCrowd:stepLadders(now, dt, put, cam, c, vs)
+	for _, lad in pairs(self.ladders or {}) do
+		local mid = lad.from + lad.up * 0.5
+		local d = (mid - c).Magnitude
+		lad.acc += dt
+		local every = d < 110 and 0.05 or (d < 300 and 0.12 or 0.25)
+		if lad.acc >= every then
+			local step = lad.acc
+			lad.acc = 0
+			local visible = d < 70
+			if not visible and cam then
+				local v = cam:WorldToViewportPoint(mid)
+				visible = v.Z > 0 and v.X > -vs.X * 0.5 and v.X < vs.X * 1.5 and v.Y > -vs.Y * 0.8 and v.Y < vs.Y * 1.8
+			end
+			local face = ANG(0, lad.yaw, 0)
+			for _, s in ipairs(lad.men) do
+				local st = s.state
+				if st == "flying" then
+					-- (the flight is the crowd's: nothing to do)
+				elseif st == "dead" then
+					-- (thrown off: lies at the foot a while, then he's one of those coming up again)
+					if now - (s.deadAt or now) > 7 then s.u = -0.5 - math.random() * 0.5; s.state = "run" end
+				elseif s.over then
+					-- (over the wall: fighting on the walk a moment, then gone; another comes up behind)
+					if now - s.over > 2.6 then
+						if not s.hidden then
+							s.hidden = true
+							for _, p in ipairs(s.parts) do put(p, FAR) end
+						end
+						if now - s.over > 4 + math.random() * 3 and not lad.overrun then s.over = nil; s.hidden = nil; s.u = -0.6 - math.random() * 0.4; s.state = "run" end
+					elseif visible then
+						s.state = "fight"
+						local at = lad.to + lad.fwd * 2.2
+						place(s, CF(at.X, lad.to.Y - 1, at.Z) * face, now, lad.kind, put)
+					end
+				else
+					local sp = s.u < 0 and 9 or lad.speed * (lad.overrun and 1.6 or 1)
+					s.u += sp * step / lad.len
+					s.state = s.u < 0 and "run" or "climb"
+					if s.u >= 1 then
+						s.over = now
+					elseif s.u > 0.35 and not lad.overrun and math.random() < lad.rate * step then
+						knockOff(self, lad, s, now)
+					elseif visible then
+						local at = ladderAt(lad, s)
+						local base = CF(at) * face
+						if d < 300 then place(s, base, now, lad.kind, put) else placeRigid(s, base, lad.kind, put) end
+					end
+				end
+			end
+		end
+	end
+end
+
 function WarCrowd:stop()
 	if self.dead then return end
 	self.dead = true
 	self.home:Destroy()
-	self.list, self.regs, self.flying = {}, {}, {}
+	self.list, self.regs, self.flying, self.ladders = {}, {}, {}, nil
 end
 
 -- one regiment: march (always), then its men where they need moving
@@ -512,7 +665,7 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 	if moving then reg.z += math.clamp(gap, -speed * dt, speed * dt); reg.dirty = true end
 	if not visible then reg.hidden = true; return end
 	if reg.hidden then reg.hidden = false; reg.dirty = true end
-	if moving and now > reg.nextGround then
+	if moving and not reg.fixed and now > reg.nextGround then
 		reg.nextGround = now + 0.6
 		reg.y0 = self:groundAt(reg.x, reg.z, reg.y0)
 	end
@@ -541,9 +694,9 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 			elseif reg.clash and s.r == 1 then want = "fight"
 			elseif reg.clash and s.r == 2 then want = "brace"
 			elseif moving then want = reg.run and "run" or "march"
-			else want = "stand" end
+			else want = reg.hold or "stand" end
 			if want ~= s.state then s.state = want; s.since = now end
-			local live = s.state ~= "stand" and s.state ~= "dead" and s.state ~= "brace"
+			local live = s.state ~= "stand" and s.state ~= "dead" and s.state ~= "brace" and s.state ~= "cover"
 			if animate and (live or reg.dirty or s.state == "falling") then
 				local x, z = slotCF(reg, s)
 				local base = CF(x, reg.y0, z) * rot * ANG(0, s.yaw, 0)
@@ -553,6 +706,7 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 				-- every limb posed near the camera; further off only the fighting front rank and the
 				-- falling are, the rest move as one piece (bobbing as they walk); far off, all of them
 				local full = lod == 1 or (lod == 2 and (st == "fight" or st == "cheer" or st == "loose") and s.r <= 2)
+					or st == "cover" or st == "brace"
 				if full then
 					place(s, base, now, reg.kind, put)
 				else
@@ -642,6 +796,10 @@ function WarCrowd:step(now, dt)
 		if near then self.acc = 0 end
 		if mid then self.accMid = 0 end
 		if far then self.accFar = 0 end
+	end
+	if self.ladders then
+		local cam = workspace.CurrentCamera
+		self:stepLadders(now, dt, put, cam, cam and cam.CFrame.Position or Vector3.zero, cam and cam.ViewportSize or Vector2.new(1, 1))
 	end
 	if n > 0 then
 		for k = n + 1, #bulkP do bulkP[k] = nil; bulkC[k] = nil end

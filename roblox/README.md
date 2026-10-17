@@ -1748,6 +1748,32 @@ than War's (power 0.6, trebuchets every 14–20 s, volleys every 16–24 s, afte
 The attackers' camp is dressed for it (`Game ▸ WarProps`): siege towers, ballistae and a pavilion
 round their first spawns, wherever the ground is open and level (into the map, so they go with it).
 
+**The battle round the castle, on every screen** (`SiegeEpic.client`, with `ReplicatedStorage ▸
+WarCrowd` and `WarFX`; never fighters, nothing replicated):
+- **The walls**: the defenders' archers line every open stretch of the front walk and loose on the
+  field (on the men under the walls, on the attackers' line on a flank); the attackers' archers
+  loose back at them.
+- **The ladders**: under each stretch (clear of the defenders' spawns) a block of attackers waits
+  with shields raised over their heads, two ladders against the wall and men swarming up them:
+  at the top they go over (and fight on the walk a moment), now and then one is thrown off.
+- **The flanks**: on both sides of the castle the defenders' sally fights the attackers' lines
+  (foot against foot, pikes against knights): a charge with horns after 8 s, the crash, the lines
+  wavering, pulling apart and charging again. The attackers' reserves wait beside their camp.
+- **The castle burning**: two towers on fire at their peaks with smoke rising high, villages
+  burning beyond the castle, stones and fire falling on its towers and walls every 9–17 s
+  (blowing men off the ladders), dust over the melee and before the gate, the din of each flank,
+  the roar of the armies, fire crackling.
+- **The story follows the objective**: when the gate falls the attackers cheer, the archers on the
+  walls are cut down (`WarCrowd:rout`), every ladder goes over, the reserves run for the walls and
+  the sally is driven back under them; when the great hall is stormed its roof catches fire; the
+  winners cheer at the end. The server's own engines land on the crowds too.
+- **How it knows the castle**: a client streams the map in bit by bit, so the server reads it
+  once (`Siege.describeCastle`) and puts it on the Map as attributes (`C_Gate`, `C_Spans`,
+  `C_Span<i>`, `C_Towers`, `C_Roof`…; the header of `Modes ▸ Siege`). Any castle facing along z
+  with a gate in `Objectives` and `Walk` / `Wall` / `Tower` parts in `Geometry` gets it.
+- Measured: about 9,700 crowd parts, the crowd 1–2.5 ms a frame, 45 fps in Studio play (server
+  and client in one process, 40 bots fighting).
+
 The attackers take a castle stage by stage; the defenders hold until the clock runs out
 (5 minutes to start). The mode's `attack` table (`GameConfig.MODES.Siege`) eases the map's stage
 numbers for the attackers: `addTime` ×1.3, `ramSpeed` ×1.3, `gateHits` ×0.8, `captureTime`

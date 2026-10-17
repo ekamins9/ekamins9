@@ -31,7 +31,16 @@
      THE WAR ROUND IT (Game ▸ Engines, drawn by Engines.client): the attackers' trebuchets out
      beyond their first spawns lob fire onto the defenders near the objective (a red ring first),
      and both sides' archers loose volleys at knots of the other near it (a raised guard or a roof
-     spares you). Gentler than War's (power 0.6). ]]
+     spares you). Gentler than War's (power 0.6).
+
+     THE CASTLE, DESCRIBED for the war drawn round it on every screen (SiegeEpic.client): a client
+     streams the map in bit by bit, so the server reads it once and puts what matters on the Map
+     model as attributes: C_Gate, C_Att (the attackers' first spawns), C_F (+1/-1: the field
+     lies towards +z/-z), C_FaceZ / C_Top (the front wall's outer face, its top), C_Ground (the
+     ground before it), C_Half (the castle's half width), C_Bound (the field's edge in x),
+     C_Spans + C_Span<i> (x0, walk y, z) / C_SpanEnd<i> (x1): the open stretches of the front
+     walk; C_Towers + C_Tower<i>: the top of each tower's roof; C_Roof: the great hall's;
+     C_Defs + C_Def<i>: the defenders' first spawns. Only a castle facing along z. ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -129,11 +138,104 @@ function Siege:start(map)
 	end
 	self:nextStage()
 	self:publishScores()
+	pcall(Siege.describeCastle, MapLoader.current)
 	self:startEngines()
 	self.conn = RunService.Heartbeat:Connect(function(dt)
 		local ok, err = pcall(self.step, self, dt)
 		if not ok then warn("[Siege]", err) end
 	end)
+end
+
+-- THE CASTLE, DESCRIBED (the header): attributes on the Map for every screen's war round it
+local function extent(p)
+	local cf, sz = p.CFrame, p.Size
+	local r, u, l = cf.RightVector, cf.UpVector, cf.LookVector
+	return Vector3.new(math.abs(r.X) * sz.X + math.abs(u.X) * sz.Y + math.abs(l.X) * sz.Z,
+		math.abs(r.Y) * sz.X + math.abs(u.Y) * sz.Y + math.abs(l.Y) * sz.Z,
+		math.abs(r.Z) * sz.X + math.abs(u.Z) * sz.Y + math.abs(l.Z) * sz.Z)
+end
+function Siege.describeCastle(m)
+	local obj = m and m:FindFirstChild("Objectives")
+	local geo = m and m:FindFirstChild("Geometry")
+	local spawns = m and m:FindFirstChild("Spawns")
+	if not (obj and geo and spawns) then return end
+	local gate
+	for _, c in ipairs(obj:GetChildren()) do
+		local g = c:FindFirstChild("Gate")
+		if g then gate = g:GetPivot().Position end
+	end
+	if not gate then return end
+	local att, n, defs = Vector3.zero, 0, {}
+	for _, p in ipairs(spawns:GetChildren()) do
+		if p:IsA("BasePart") then
+			local side, st = p:GetAttribute("Side"), p:GetAttribute("Stage") or 1
+			if side == "Attack" and st == 1 then att += p.Position; n += 1 end
+			if side == "Defend" and st == 1 then table.insert(defs, p.Position) end
+		end
+	end
+	if n == 0 then return end
+	att /= n
+	if math.abs(att.Z - gate.Z) < math.abs(att.X - gate.X) * 2 then return end
+	local f = att.Z > gate.Z and 1 or -1
+	local faceZ, top, half, bound = gate.Z + f * 2, gate.Y + 10, 40, 400
+	local walks, towers, roof = {}, {}, nil
+	for _, p in ipairs(geo:GetDescendants()) do
+		if p:IsA("BasePart") then
+			local nm, e, pos = p.Name, extent(p), p.Position
+			if (nm == "Walk" or nm == "Wall") and e.X > e.Z * 3 and math.abs(pos.Z - gate.Z) < 6 then
+				if nm == "Walk" then table.insert(walks, {x0 = pos.X - e.X / 2, x1 = pos.X + e.X / 2, y = pos.Y + e.Y / 2, z = pos.Z})
+				else faceZ = pos.Z + f * e.Z / 2; top = pos.Y + e.Y / 2 end
+			elseif nm == "Tower" then
+				table.insert(towers, {x0 = pos.X - e.X / 2, x1 = pos.X + e.X / 2, z = pos.Z, dz = e.Z / 2, at = pos})
+				if math.abs(pos.Z - gate.Z) < e.Z then half = math.max(half, math.abs(pos.X - gate.X) + e.X / 2) end
+			elseif nm == "HallRidge" or (nm == "HallRoof" and not roof) then
+				roof = pos
+			elseif nm == "Bound" and e.Z > e.X * 3 then
+				bound = math.min(bound, math.abs(pos.X - gate.X) - 6)
+			end
+		end
+	end
+	if #walks == 0 then return end
+	-- the top of whatever stands at a point (a roof's peak), and the ground before the wall
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Include
+	ray.FilterDescendantsInstances = {m, workspace.Terrain}
+	local function topAt(p)
+		local r = workspace:Raycast(Vector3.new(p.X, p.Y + 120, p.Z), Vector3.new(0, -240, 0), ray)
+		return r and r.Position or p
+	end
+	local spans = {}
+	for _, w in ipairs(walks) do
+		local cuts = {}
+		for _, t in ipairs(towers) do
+			if math.abs(t.z - w.z) < t.dz + 4 and t.x1 > w.x0 and t.x0 < w.x1 then table.insert(cuts, t) end
+		end
+		table.sort(cuts, function(a, b) return a.x0 < b.x0 end)
+		local x = w.x0
+		for _, t in ipairs(cuts) do
+			if t.x0 - x >= 12 then table.insert(spans, {x, t.x0, w}) end
+			x = math.max(x, t.x1)
+		end
+		if w.x1 - x >= 12 then table.insert(spans, {x, w.x1, w}) end
+	end
+	m:SetAttribute("C_Gate", gate)
+	m:SetAttribute("C_Att", att)
+	m:SetAttribute("C_F", f)
+	m:SetAttribute("C_FaceZ", faceZ)
+	m:SetAttribute("C_Top", top)
+	m:SetAttribute("C_Ground", topAt(Vector3.new(gate.X, gate.Y, faceZ + f * 8)).Y)
+	m:SetAttribute("C_Half", half)
+	m:SetAttribute("C_Bound", bound)
+	m:SetAttribute("C_Spans", #spans)
+	for i, sp in ipairs(spans) do
+		m:SetAttribute("C_Span" .. i, Vector3.new(sp[1], sp[3].y, sp[3].z))
+		m:SetAttribute("C_SpanEnd" .. i, sp[2])
+	end
+	m:SetAttribute("C_Towers", #towers)
+	for i, t in ipairs(towers) do m:SetAttribute("C_Tower" .. i, topAt(t.at)) end
+	if roof then m:SetAttribute("C_Roof", topAt(roof)) end
+	m:SetAttribute("C_Defs", #defs)
+	for i, d in ipairs(defs) do m:SetAttribute("C_Def" .. i, d) end
 end
 
 -- the war round the castle: where each side's engines stand (from the map's spawns)

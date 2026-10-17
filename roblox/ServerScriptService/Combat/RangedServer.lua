@@ -218,6 +218,7 @@ function RangedServer.attach(Tool, cfgIn)
 
 	local character, humanoid, player
 	local drawStart, lastShot, lastKick = nil, -1e9, -1e9
+	local lastPower = 1
 	local holdCostFrom = nil
 	local ammo = cfg.QUIVER
 	local loaded = not isBow
@@ -365,7 +366,9 @@ local function kindSound(fx, which, at)
 		if not (head and hrp) then return end
 		local power = 1
 		if isBow then
-			power = math.clamp((os.clock() - drawStart) / (cfg.DRAW_TIME * (character:GetAttribute("DrawMult") or 1)), cfg.MIN_POWER, 1)
+			-- (a split arrow's others leave a moment after the string is let down: the same power)
+			power = drawStart and math.clamp((os.clock() - drawStart) / (cfg.DRAW_TIME * (character:GetAttribute("DrawMult") or 1)), cfg.MIN_POWER, 1) or lastPower
+			lastPower = power
 		end
 		local speed = cfg.SPEED_MIN + (cfg.SPEED_MAX - cfg.SPEED_MIN) * power
 		local g = cfg.GRAVITY * (isBow and (1.4 - 0.4 * power) or 1)

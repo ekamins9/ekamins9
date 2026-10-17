@@ -13,6 +13,8 @@
                                           opts.stick = false: they vanish where they land)
        WarFX.fireball(from, to, t, opts)  a burning shot on a high arc landing at `to` after t s
                                           (opts.blast = false: no blast; opts.big; opts.onLand(pos);
+                                          opts.scorch = false: no burnt mark; opts.floor: where its
+                                          stones come to rest, if not where it lands;
                                           opts.whistle: the scream of it coming down)
        WarFX.blast(pos, opts)             flash, fire, smoke, flying stones, a scorch, a boom, a shake
                                           by distance (opts.big; opts.far: no shake, a deep far boom)
@@ -285,7 +287,7 @@ local function step(dt)
 				if d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Light") then d.Enabled = false end
 			end
 			Debris:AddItem(s.ball, 3)
-			if s.opts.blast ~= false then WarFX.blast(s.p1, {big = s.opts.big, far = s.opts.far, color = s.opts.color}) end
+			if s.opts.blast ~= false then WarFX.blast(s.p1, {big = s.opts.big, far = s.opts.far, color = s.opts.color, scorch = s.opts.scorch, floor = s.opts.floor}) end
 			if s.opts.onLand then task.spawn(s.opts.onLand, s.p1) end
 		else
 			if s.opts.whistle and not s.whistled and (1 - u) * s.T <= 2.3 then
@@ -445,15 +447,17 @@ function WarFX.blast(pos, opts)
 		local ang = math.random() * math.pi * 2
 		local sp = 16 + math.random() * (big and 34 or 22)
 		table.insert(stones, {p = s, pos = pos + V3(0, 1, 0), vel = V3(math.cos(ang) * sp, 26 + math.random() * 36, math.sin(ang) * sp),
-			spin = V3(math.random() * 10, math.random() * 10, math.random() * 10), t = 0, life = 4 + math.random() * 3, floor = pos.Y + r * 0.3})
+			spin = V3(math.random() * 10, math.random() * 10, math.random() * 10), t = 0, life = 4 + math.random() * 3, floor = (opts.floor or pos.Y) + r * 0.3})
 	end
-	-- a black scorch where it hit, for a while
-	local sc = part(V3(0.2, big and 17 or 10, big and 17 or 10), Color3.fromRGB(22, 18, 16), Enum.Material.Slate, 0.2)
-	sc.Shape = Enum.PartType.Cylinder
-	sc.CFrame = CF(pos + V3(0, 0.08, 0)) * CFrame.Angles(0, 0, math.rad(90))
-	sc.Parent = home()
-	task.delay(22, function() if sc.Parent then TweenService:Create(sc, TweenInfo.new(3), {Transparency = 1}):Play() end end)
-	Debris:AddItem(sc, 26)
+	-- a black scorch where it hit, for a while (not where nothing flat is: a roof, a wall's top)
+	local sc = opts.scorch ~= false and part(V3(0.2, big and 17 or 10, big and 17 or 10), Color3.fromRGB(22, 18, 16), Enum.Material.Slate, 0.2)
+	if sc then
+		sc.Shape = Enum.PartType.Cylinder
+		sc.CFrame = CF(pos + V3(0, 0.08, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		sc.Parent = home()
+		task.delay(22, function() if sc.Parent then TweenService:Create(sc, TweenInfo.new(3), {Transparency = 1}):Play() end end)
+		Debris:AddItem(sc, 26)
+	end
 	if big then
 		local burn = anchorAt(pos + V3(0, 1, 0), 9)
 		local f = Instance.new("Fire")
