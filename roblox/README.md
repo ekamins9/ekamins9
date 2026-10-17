@@ -1680,6 +1680,10 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   regiment's men move only when they must (all while it marches, the front two ranks while it
   fights, none while it stands; out of sight it only marches; far ones 5 times a second).
   Measured in Studio: about 600 soldiers on the flanks, 34 bots and the engines at 53–59 fps.
+  Bots are the server's cost (a humanoid each, reflexes every frame): War fields 32 by default and
+  lets the frame rate take it down (a stress test at 46 brought Studio's shared server to ~24 fps;
+  the cap stepped 46 → 38 → 34 → 30 on its own). A bot no player is within 90 studs of watches
+  every third frame and thinks five times a second, not ten (Combat ▸ Bots).
 
 ## Siege engines, volleys and battle-mages for any mode (`Game ▸ Engines`, `Engines.client`)
 `Engines.new{sides = {A = {trebs, archers, mages}, B = …}, target = fn(side), beats, grace, power,

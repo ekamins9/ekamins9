@@ -230,7 +230,7 @@ GameConfig.MODES = {
 		description = "Two armies meet: take the five banners one by one as a front, while trebuchets, archers and battle-mages pound the field and the rest of both armies clash on the flanks.",
 		maps = {"Redfield", "Ironridge", "Frostmere", "Ashvale", "Kingsbridge", "Nightfall", "Sunreach"}, procedural = true,
 		roundLength = 15 * 60, intermission = 15, respawnDelay = 6, waveSpawn = 8, waveGrace = 20,
-		botFill = 36, fillAnywhere = true, tickets = 300,
+		botFill = 32, fillAnywhere = true, tickets = 300,
 	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,

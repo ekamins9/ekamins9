@@ -1376,8 +1376,12 @@ function Bots.spawn(opts)
 	end
 
 	-- face the opponent (or the weapon it's going for) every frame, yaw only, at a
-	-- player's turn rate; then the reflexes
+	-- player's turn rate; then the reflexes (a bot no player is near watches every third frame
+	-- and thinks half as often: nobody sees its parries, and both sides are the same; a War of
+	-- three dozen of them costs far less)
 	local lastWarn = 0
+	local frame = 0
+	bot.nearPlayer = true
 	table.insert(bot.conns, RunService.Heartbeat:Connect(function(dt)
 		local f = bot.facing
 		local down = not bot.alive or hum.Health <= 0 or model:GetAttribute("Ragdolled") == true
@@ -1393,14 +1397,26 @@ function Bots.spawn(opts)
 			bot.yaw = cur + math.clamp(diff, -step, step)
 			align.CFrame = CFrame.Angles(0, bot.yaw, 0)
 		end
+		frame += 1
+		if not bot.nearPlayer and frame % 3 ~= 0 then return end
 		local ok, err = pcall(bot.reflex, bot)
 		if not ok and os.clock() - lastWarn > 2 then lastWarn = os.clock(); warn("[Bots] reflex:", err) end
 	end))
 	task.spawn(function()
+		local beat = 0
 		while bot.alive and model.Parent do
 			local ok, err = pcall(bot.think, bot)
 			if not ok then warn("[Bots]", err) end
-			task.wait(0.1)
+			beat += 1
+			if beat % 8 == 1 then
+				local near = false
+				for _, p in ipairs(Players:GetPlayers()) do
+					local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+					if r and (r.Position - hrp.Position).Magnitude < 90 then near = true; break end
+				end
+				bot.nearPlayer = near
+			end
+			task.wait(bot.nearPlayer and 0.1 or 0.2)
 		end
 	end)
 	hum.Died:Once(function()

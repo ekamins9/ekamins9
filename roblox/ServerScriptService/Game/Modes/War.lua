@@ -93,7 +93,7 @@ function War:start(map)
 		grace = CFG.grace,
 		alive = function() return Game.current == self end,
 	})
-	self.botCap = def.botFill or 36
+	self.botCap = def.botFill or 32
 	self.frame = 1 / 60
 	self.capAt = now + 6
 	self.lastFront = nil
@@ -216,7 +216,7 @@ function War:tick(dt)
 	-- THE BOTS FOLLOW THE SERVER'S BREATH
 	if now >= self.capAt then
 		self.capAt = now + 5
-		local most = self.def.botFill or 36
+		local most = self.def.botFill or 32
 		if self.frame > CFG.slow then self.botCap = math.max(CFG.least, self.botCap - 4)
 		elseif self.frame < CFG.quick and self.botCap < most then self.botCap = math.min(most, self.botCap + 2) end
 	end

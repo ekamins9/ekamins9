@@ -1,4 +1,18 @@
-# Updated scripts: ballistae you man in War; the engines' kills on the feed
+# Updated scripts: cheaper bots far from players; War fields 32
+
+- **Stress test** (War, 46 bots held): Studio's shared server fell to about 24 fps; with the cap free, it stepped itself down 46 → 38 → 34 → 30 as designed. War now fields 32 by default for headroom.
+- **Bots no player is near** (90 studs) watch for parries every third frame and think five times a second instead of ten: nobody sees those fights, and both sides are treated the same.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | far bots cheaper |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War botFill 32 |
+| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | default cap 32 |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: ballistae you man in War; the engines' kills on the feed
 
 - **Man a ballista**: two a side behind your second banner. Hold E: it swings onto the nearest knot of enemies ahead and looses a bolt that goes through up to three of them; the kills are yours; six seconds to wind. Only your side sees its prompt (and nobody while it winds). Works the same on keyboard, controller and touch.
 - **The kill feed names the engines**: "Crown Trebuchet", "Iron Archers", "Crown Battle-Mages".
@@ -30,23 +44,3 @@
 | [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | 120-arrow volleys |
 | [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | bigger distant volleys |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: War's camps get made siege towers, ballistae, pavilions and barricades; two more battlefields
-
-- **Made props in every War battlefield** (generated models, Studio-only): a striped command pavilion in each camp, siege towers parked before the camps with their ramps towards the enemy, ballistae at the camps' corners, spiked barricades before the camps and as cover beside banners 2 and 4.
-- **Nightfall**: a moonlit battle, torches lining the field, a burning watchtower, standing stones. **Sunreach**: a desert valley with a ruined sandstone temple, obelisks and dunes. Both with vote pictures.
-- **Fixes**: the banner plinths and the battle-mages' sigils stood on edge (a cylinder turned twice); the match intro no longer repeats the FIGHT! banner's mode and map, and the HUD steps aside while it plays (Celebrate, MatchIntro: the last commit).
-- **Checked in Play**: Nightfall and Sunreach built and shot; each prop seen in place (top-down for which way it faces).
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | made props, Nightfall, Sunreach, fixes |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War's maps |
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the new banners' names |
-| [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | (last commit) |
-| [Celebrate.client.lua](StarterPlayerScripts/Celebrate.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | (last commit) `_G.FightBannerAt` |
-| [README.md](README.md) | | doc | |
-
-Studio-only (save the place): ServerStorage ▸ WarProps (Pavilion, SiegeTower, Ballista, Barricade); ReplicatedStorage ▸ MapShots ▸ Nightfall, Sunreach.
