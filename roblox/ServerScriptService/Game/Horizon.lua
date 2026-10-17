@@ -380,7 +380,8 @@ function Horizon.build(map, name)
 
 	-- THE ARMIES' CAMPS (a fighting map) or A VILLAGE down a road (a quiet one), and fields
 	if warlike then
-		for i, a in ipairs(sectors) do
+		-- (War's field has its own camps at both ends: Game ▸ WarMap)
+		for i, a in ipairs(map:GetAttribute("W_Theme") and {} or sectors) do
 			local p = at(a, E + r:NextNumber(70, 130))
 			if outside(p, 30) then camp(ctx, T, r, p, (V3(cx, p.Y, cz) - p).Unit, TEAM[i]) end
 		end
