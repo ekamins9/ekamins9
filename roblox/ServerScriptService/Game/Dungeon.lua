@@ -520,12 +520,13 @@ local ARCH_W = {   -- by theme: which rooms its dungeon has, by weight
 	FrozenDepths = {cavern = 3, crypt = 2, hall = 2, armory = 1, storeroom = 2},
 	EmberForge = {armory = 3, storeroom = 2, hall = 2, cells = 1, cavern = 2},
 	DrownedHalls = {crypt = 3, cavern = 3, hall = 2, cells = 2, chapel = 1, storeroom = 1},
+	HollowAbbey = {chapel = 4, library = 3, crypt = 2, hall = 2, cells = 1, storeroom = 1},
 }
 local ARCH_ORDER = {"hall", "crypt", "cells", "library", "armory", "storeroom", "chapel", "cavern"}
 -- the odd container by a raid room's walls, by theme
 local RAID_ODDS = {BoneCrypt = {"urn", "urn", "crate", "sack"}, GoblinWarrens = {"sack", "sack", "crate", "barrel"},
 	CrimsonManor = {"urn", "crate", "barrel"}, FrozenDepths = {"crate", "barrel", "sack"}, EmberForge = {"crate", "barrel", "barrel"},
-	DrownedHalls = {"barrel", "urn", "crate"}}
+	DrownedHalls = {"barrel", "urn", "crate"}, HollowAbbey = {"urn", "urn", "crate", "sack"}}
 local ARCH_SIZE = {hall = {30, 36}, crypt = {19, 26}, cells = {21, 26}, library = {21, 27}, armory = {18, 24},
 	storeroom = {14, 19}, chapel = {21, 27}, cavern = {20, 27}, vault = {18, 22}, lair = {33, 35}}   -- ×2 studs
 local ARCH_H = {hall = 30, cavern = 26, chapel = 28, lair = 30}

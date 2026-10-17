@@ -2109,8 +2109,15 @@ hide one (the builder's `r.secret`, its wall `Map ▸ Secrets ▸ SecretWall<roo
 
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone
-Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned Halls:
-`Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's boss.
+Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned Halls, the
+Hollow Abbey: `Catalog ▸ Dungeons`). Three floors; floor 3 ends in the theme's boss.
+- **The Hollow Abbey**: a desecrated monastery where the monks kept praying after they died:
+  violet candlelight, chapels, libraries and crypts, statues and banners. Its dead: Hollow Monks
+  (hooded skeletons that reassemble), Penitents (quick ghouls in rags), Abbey Guards in mail;
+  Cultists cast Dark Litany; champions the Wraith and the Gargoyle; its lord **Malachai, the Black
+  Abbot** (a crowned shadow with violet eyes: Black Psalm, Vespers, Through the Cloister, Graves
+  Open, then The Last Rite and Falling Bells as THE ABBEY RINGS ITS BELLS, and the bells toll on
+  you). Vote picture: MapShots ▸ HollowAbbey.
 - **The Drowned Halls** (the newest): flooded catacombs where the sea came in and the dead stayed:
   wet stone, rust-green corroded iron, pale teal flames, standing water across the floors and
   puddles everywhere (the theme's `wet` flag), water dripping close by all the time. Its dead: the

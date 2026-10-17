@@ -75,4 +75,13 @@ return {
 		monsters = {common = {"Drowned", "Drowned", "DrownedSkeleton", "DeepGuard"}, ranged = {"DrownedArcher", "TideCaller"}, elite = {"DrownedKnight", "BrineHulk"}},
 		boss = "DrownedKing", bossName = "Thalassar, the Drowned King",
 	},
+	HollowAbbey = {
+		name = "The Hollow Abbey", sub = "The monks still keep the hours",
+		floor = C(92, 86, 96), floorMat = "Slate", wall = C(112, 104, 112), wallMat = "Cobblestone", trim = C(70, 52, 76), trimMat = "Wood",
+		accent = C(190, 120, 255), torch = C(214, 170, 255),
+		light = {ClockTime = 0, Ambient = C(82, 74, 96), OutdoorAmbient = C(76, 68, 90), Brightness = 0.6, FogColor = C(28, 20, 38), FogEnd = 260, FogStart = 60},
+		props = {"candles", "statue", "pillar", "bookcase", "banner", "carpet", "cobweb", "bones"},
+		monsters = {common = {"HollowMonk", "HollowMonk", "Penitent", "AbbeyGuard"}, ranged = {"Cultist", "Crossbowman"}, elite = {"Wraith", "Gargoyle"}},
+		boss = "BlackAbbot", bossName = "Malachai, the Black Abbot",
+	},
 }

@@ -1,7 +1,7 @@
 --[[ THE DEPTHS — a roguelike crawl for a party of 1–4 (GameConfig.MODES.Depths). Three floors of
      a dungeon built fresh every run (Game ▸ Dungeon) in the theme the vote picked: the Bone
      Crypt, the Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Drowned
-     Halls (Catalog ▸ Dungeons). You go in as your class with your own gear; you come out (if you do) carrying
+     Halls, the Hollow Abbey (Catalog ▸ Dungeons). You go in as your class with your own gear; you come out (if you do) carrying
      whatever the dungeon gave you.
 
      THE ROOMS. Step into one and its gates slam shut: whoever's left in the corridor is pulled
@@ -68,7 +68,8 @@ local KILL_GOLD = {2, 5, 14, 60}
 -- MORE COME (Depths:wave): the chance a fight's room sends a second wave, by floor; its line by theme
 local WAVE_CHANCE = {0.3, 0.5, 0.7}
 local WAVE_LINE = {BoneCrypt = "THE DEAD RISE", GoblinWarrens = "MORE POUR IN", CrimsonManor = "THE HOUSE STIRS",
-	FrozenDepths = "THE ICE CRACKS", EmberForge = "THE FORGE WAKES", DrownedHalls = "THE DEEP GIVES UP ITS DEAD"}
+	FrozenDepths = "THE ICE CRACKS", EmberForge = "THE FORGE WAKES", DrownedHalls = "THE DEEP GIVES UP ITS DEAD",
+	HollowAbbey = "THE BROTHERS RISE FOR PRAYER"}
 
 local event = ReplicatedStorage:FindFirstChild("AdventureEvent")
 if not event then event = Instance.new("RemoteEvent"); event.Name = "AdventureEvent"; event.Parent = ReplicatedStorage end

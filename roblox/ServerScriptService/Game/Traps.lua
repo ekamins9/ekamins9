@@ -50,6 +50,7 @@ local WEIGHTS = {
 	FrozenDepths = {spikes = 3, blade = 2, darts = 2},
 	EmberForge = {flames = 4, spikes = 2, blade = 2, darts = 1},
 	DrownedHalls = {blade = 3, spikes = 3, darts = 2},
+	HollowAbbey = {blade = 3, darts = 3, spikes = 2},
 }
 local IRON, DARK = Color3.fromRGB(70, 70, 76), Color3.fromRGB(26, 24, 24)
 local DODGE_IFRAMES = 0.45

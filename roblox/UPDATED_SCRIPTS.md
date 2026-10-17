@@ -1,4 +1,28 @@
-# Updated scripts: blows knock off what monsters are made of
+# Updated scripts: a seventh dungeon, the Hollow Abbey
+
+- **The Depths and Deadvault** have a new theme in the vote: **the Hollow Abbey**. A desecrated monastery in violet candlelight, with chapels, libraries and crypts.
+- **Its dead** (new Bestiary lines): Hollow Monks, Penitents, Abbey Guards and Cultists. Its champions are the Wraith and the Gargoyle.
+- **Its lord**: Malachai, the Black Abbot, a crowned shadow with violet eyes. He has six moves, a second phase (THE ABBEY RINGS ITS BELLS), and tolling bells.
+- It joins every per-theme system (waves, wakers, the lying dead, traps, the mood, raid rooms), and the What's new card names both new dungeons.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeons.lua](ReplicatedStorage/Catalog/Dungeons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the theme |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the abbey's dead |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | both modes' maps, the title |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | raid rooms, odd containers |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | its wave line |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | its wakers |
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | its traps |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | grade, ghosts, glow, the dead lie |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | both dungeons |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ MapShots ▸ HollowAbbey (the vote picture; save the place).
+
+---
+
+## Before that: blows knock off what monsters are made of
 
 - **Every monster** (the game stays Mild: no blood): a clean hit sheds what the thing is made of instead of the plain white-gold flash. Bone chips off skeletons, grave dust off ghouls, ice off frost things, embers off fire creatures, stone off golems, a wisp off wraiths. Players and human foes keep the flash.
 

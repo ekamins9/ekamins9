@@ -19,7 +19,7 @@ local NEWS = {
 	version = "2026-10-17",
 	title = "NEW IN THE DARK AND ON THE FIELD",
 	lines = {
-		{"🌊", "The Drowned Halls", "a sixth dungeon, flooded, and its drowned king"},
+		{"🌊", "Two new dungeons", "the flooded Drowned Halls and the desecrated Hollow Abbey, each with its lord"},
 		{"💀", "The dead don't stay down", "second waves burst up through the floor; sleeping dead lie among the bones"},
 		{"💎", "Traps and secrets", "spike grates, swinging blades, darts, fire; cracked walls hide caches"},
 		{"🕯", "The dark is alive", "ambushes in the corridors, torches that gutter out, footsteps behind you"},

@@ -43,6 +43,34 @@ local M = {}
 local function add(id, t) t.id = id; M[id] = t end
 
 --------------------------------------------------------------------
+--  THE HOLLOW ABBEY: the monks who kept praying after they died, and those who came to them
+--------------------------------------------------------------------
+local VIOLET = C(190, 120, 255)
+add("HollowMonk", {name = "Hollow Monk", faction = "Undead", skill = "Squire", weapon = {"Mace", "Quarterstaff", "Shortsword"}, hp = 75, weight = "Light",
+	look = {body = "skeleton", skin = C(214, 204, 196), eyes = VIOLET, armor = "none", extras = {"hood", "rags", "ribs"}, colors = {Primary = "Plum"}}, traits = {"reassemble"}, tier = 1})
+add("Penitent", {name = "Penitent", faction = "Undead", skill = "Squire", weapon = {"Cleaver", "Dagger"}, hp = 85, speed = 1.15, weight = "Light",
+	look = {body = "ghoul", skin = C(150, 140, 150), eyes = VIOLET, set = "PeasantSkin", noHelm = true, cloth = "Plum", extras = {"rags", "claws"}}, traits = {"regen"}, tier = 1})
+add("AbbeyGuard", {name = "Abbey Guard", faction = "Undead", skill = "Knight", weapon = {"Halberd", "ArmingSword", "MorningStar"}, hp = 115, weight = "Medium",
+	look = {body = "skeleton", skin = C(180, 172, 166), eyes = VIOLET, armor = "medium", colors = {Primary = "Plum", Secondary = "Jet", Accent = "Gold", Metal = "Steel"}}, traits = {"reassemble"}, tier = 2})
+add("Cultist", {name = "Cultist", faction = "Human", skill = "Knight", class = "Mage", weapon = "Staff", hp = 80,
+	look = {body = "human", skin = C(176, 160, 150), eyes = VIOLET, set = "Necromancer", aura = "shadow"}, power = "SoulSiphon", moveFx = "shadow", moves = {
+			{kind = "nova", name = "Dark Litany", dmg = 14, cd = 13, radius = 5},
+		},
+		tier = 2})
+add("BlackAbbot", {name = "Malachai, the Black Abbot", faction = "Undead", skill = "Champion", class = "Mage", weapon = "Staff", hp = 950, scale = 1.7,
+	look = {body = "wraith", skin = C(30, 24, 40), eyes = VIOLET, aura = "shadow", extras = {"hood", "crown", "cape"}}, traits = {"summon", "enrage"}, power = "Shadowstep", moveFx = "shadow", phaseLine = "THE ABBEY RINGS ITS BELLS",
+		moves = {
+			{kind = "barrage", name = "Black Psalm", dmg = 12, cd = 7, count = 5, volleys = 3, spread = 46},
+			{kind = "nova", name = "Vespers", dmg = 24, cd = 9, radius = 6},
+			{kind = "blink", name = "Through the Cloister", dmg = 26, cd = 11, range = {14, 90}},
+			{kind = "eruption", name = "Graves Open", dmg = 20, cd = 8, count = 8},
+			{kind = "beam", name = "The Last Rite", dmg = 11, cd = 14, phase = 2, time = 2.6, sweep = 130},
+			{kind = "rain", name = "Falling Bells", dmg = 20, cd = 11, phase = 2, count = 8, radius = 5},
+		},
+		hazard = {kind = "rain", name = "The Bells Toll", every = 8, count = 7, dmg = 14, radius = 4, fx = "shadow"},
+		tier = 4})
+
+--------------------------------------------------------------------
 --  THE DROWNED (the Drowned Halls): the dead the sea left behind
 --------------------------------------------------------------------
 local DROWNED, BRINE, WETBONE = C(104, 134, 124), C(110, 240, 210), C(176, 186, 164)
