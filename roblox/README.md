@@ -1884,7 +1884,7 @@ MIDDLE OF A BATTLE · WIN IT").
 
 ## Battle wear (`Scuffs.client`, `CombatServer` ScuffEvent)
 A fight shows on you: every clean blow leaves its mark where it landed, on every screen near it
-(within 70 studs): a bright scratch across plate and mail, a dark scuff on cloth and leather, laid
+(within 70 studs; 40 on a phone, which keeps 4 a fighter rather than 12): a bright scratch across plate and mail, a dark scuff on cloth and leather, laid
 along the blade's path on the visible piece it met (the armour over the limb the server struck). A
 dozen to a fighter at most, the oldest going first; gone with the body. A blade that hits the world
 leaves its nick there too (each screen finds the surface from where the swing came): a dark groove

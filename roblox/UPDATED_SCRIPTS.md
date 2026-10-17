@@ -1,4 +1,15 @@
-# Updated scripts: the blade nicks the walls
+# Updated scripts: battle wear on phones
+
+- **Phones** keep fewer battle marks (4 to a fighter rather than 12, within 40 studs), so a War brawl stays light.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Scuffs.client.lua](StarterPlayerScripts/Scuffs.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | phone caps |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the blade nicks the walls
 
 - **A blade that hits the world leaves its mark**: a dark groove with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal. Each fades after a minute and a half.
 

@@ -9,7 +9,10 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local NEAR, MAX_EACH = 70, 12
+local Device = require(ReplicatedStorage:WaitForChild("Device"))
+-- (a phone keeps fewer, nearer: a War brawl would otherwise lay hundreds)
+local PHONE = Device.kind() == "phone"
+local NEAR, MAX_EACH = PHONE and 40 or 70, PHONE and 4 or 12
 local METAL = {[Enum.Material.Metal] = true, [Enum.Material.DiamondPlate] = true, [Enum.Material.CorrodedMetal] = true, [Enum.Material.Foil] = true}
 
 local marks = setmetatable({}, {__mode = "k"})   -- [character model] = {scuff parts}
