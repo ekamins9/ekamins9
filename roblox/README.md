@@ -111,7 +111,8 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterPlayerScripts/War.client.lua`, `SiegeEpic.client.lua`, `Warfield.client.lua`, `Engines.client.lua`, `MatchIntro.client.lua`, `BattleAmbience.client.lua`, `ArenaCrowd.client.lua`, `HordeHost.client.lua`, `CourtyardGuards.client.lua`, `BossEntrance.client.lua`, `DungeonMood.client.lua`, `BannerWind.client.lua`, `Weather.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → each by its name (the battles, the crowds, the dark, the wind) | LocalScript each |
 | `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
-| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
+| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
+| `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
 | `StarterCharacterScripts/HUD.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `HUD` | LocalScript |
@@ -2020,6 +2021,27 @@ entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords on their banner
 bot becomes a `Boss`): black bars close in and the rest of the HUD steps aside, the camera finds
 the boss and creeps towards it while its name comes up big on the bars, a deep boom and the ground
 shaking; about three seconds, then back to you.
+
+### Traps (`Game ▸ Traps`, `Traps.client`)
+The corridors of a generated floor are trapped (`Traps.arm(map, layout, opts)` once the map is
+loaded; the builder lists its corridors in `layout.corridors`). The Depths: two corridors on the
+first floor, a corridor more each floor down, the first floor's start clear; Deadvault: a third
+of its corridors, none by a haven. Each theme has its favourites (the module's WEIGHTS: the Ember Forge breathes fire, the Warrens shoot darts, the Manor swings blades).
+- **Spike grate**: iron slots in the floor; step on it and it clicks, and half a second later iron
+  points punch up through it (26) and throw you up. Step off fast, keep to the wall beside it,
+  or jump it.
+- **Pendulum blade**: a crescent on an iron arm swinging across the corridor from a slot in the
+  ceiling (two in a long one, out of step); it hits for 30 and throws you the way it swings.
+  Time it: cross when it's on the far side.
+- **Dart plate**: a plate right across the corridor, holes in one wall; step on it and darts hiss
+  across (18). Jump it.
+- **Fire grates**: two side by side breathing fire in turn (a glow, then the jet: 9 every half
+  second). Cross on the cool side.
+They hurt anyone, monsters too; armour turns half of what it would turn from a blade, a dodge
+slips them, spawn protection too. The server decides every hit (20 times a second); every screen
+draws the moving parts (`StarterPlayerScripts ▸ Traps.client`): a blade swings on the server's
+clock (`workspace:GetServerTimeNow()`), so every screen sees it where the server judges it, with a
+heavy whoosh each pass; the spikes rise on a trap's `FiredAt`; the darts fly from the holes.
 
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone

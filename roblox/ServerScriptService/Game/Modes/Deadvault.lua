@@ -25,6 +25,9 @@
      everything you carry and your gold go into your vault. Still inside when it COLLAPSES (the
      round's end)? Lost.
 
+     TRAPS in a third of its corridors (Game ▸ Traps: spike grates, swinging blades, dart plates,
+     fire grates); none by a haven.
+
      Pay: Marks for getting out (`vault_extract`, once a raid, under the daily cap) and a
      monster's kill by its rank; the vault gold is the raids' own coin. ]]
 
@@ -38,6 +41,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
+local Traps = require(script.Parent.Parent:WaitForChild("Traps"))
 local Vault = require(script.Parent.Parent:WaitForChild("Vault"))
 local Containers = require(script.Parent.Parent:WaitForChild("Containers"))
 local Combat = ServerScriptService:WaitForChild("Combat")
@@ -700,6 +704,12 @@ function Deadvault:start(map)
 	self.boxes = Containers.new(self)
 	self:stairs()
 	self:dressRooms()
+	do
+		-- (a third of the corridors trapped; none by a way in)
+		local skip = {}
+		for _, r in ipairs(self.layout.rooms) do if r.kind == "start" then skip[r.id] = true end end
+		Traps.arm(MapLoader.current, self.layout, {count = math.floor(#(self.layout.corridors or {}) * 0.3), theme = self.layout.theme, skip = skip})
+	end
 	self:populate()
 	node:SetAttribute("OwnHud", true)
 	node:SetAttribute("ObjKind", "Deadvault")
@@ -726,6 +736,7 @@ function Deadvault:start(map)
 end
 
 function Deadvault:stop()
+	Traps.disarm()
 	-- (still inside when it collapses: lost)
 	for plr, r in pairs(self.runs or {}) do
 		if not self.out[plr] and plr.Parent and #carried(r) > 0 then banner({text = "LOST IN THE DARK", sub = "THE DEADVAULT KEEPS WHAT YOU CARRIED", kind = "boss"}, plr) end

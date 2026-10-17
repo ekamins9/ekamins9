@@ -23,6 +23,8 @@
                            feature (Vector3: a shrine's altar, a fountain, the stairs, the boss's
                            dais, an exit portal), gates = {gate names}}
        layout.start · layout.final · layout.order (ids by depth) · layout.theme
+       layout.corridors = {{a, b (the rooms it joins), axis ("X" | "Z": the way it runs), mid
+                           (Vector3, on its floor), len}} (Game ▸ Traps sets its traps in them)
      Rooms: start · combat · elite · treasure · shrine · fountain · stairs · boss · exit.
      A doorway carries a portcullis (Map ▸ Gates ▸ <name>: a Model with an anchored GateRoot,
      up inside the wall; the mode drops it to shut a fight in: Dungeon.setGate). ]]
@@ -42,7 +44,7 @@ local T = 2            -- wall thickness
 local WALL_H = 22      -- a room's walls (its ceiling sits on them)
 local DOOR_W, DOOR_H = 12, 12
 local CORR_H = 14      -- a corridor's ceiling
-Dungeon.CELL, Dungeon.DOOR_W = CELL, DOOR_W
+Dungeon.CELL, Dungeon.DOOR_W, Dungeon.CORR_H = CELL, DOOR_W, CORR_H
 
 local DIRS = {N = {0, -1}, S = {0, 1}, E = {1, 0}, W = {-1, 0}}
 local OPP = {N = "S", S = "N", E = "W", W = "E"}
@@ -1217,6 +1219,7 @@ function Dungeon.build(themeKey, opts)
 	end
 
 	-- corridors (each joined pair once)
+	local corridors = {}
 	for _, r in ipairs(list) do
 		for d, nid in pairs(r.doors) do
 			if d == "E" or d == "S" then
@@ -1232,6 +1235,7 @@ function Dungeon.build(themeKey, opts)
 						K.box(ctx, "CorridorWall", Vector3.new(len + 0.2, CORR_H, T), CFrame.new(mid + Vector3.new(0, CORR_H / 2, s * (DOOR_W / 2 + T / 2))), shade(th.wall, 0.92), mat(th.wallMat))
 					end
 					c = mid
+					table.insert(corridors, {a = r.id, b = o.id, axis = "X", mid = mid, len = len})
 					if len > 18 and (not opts.raid or rng:NextNumber() < 0.5) then sconce(ctx, th, mid + Vector3.new(0, 8, -DOOR_W / 2 + 0.2), Vector3.new(0, 0, 1)) end
 				else
 					local z0, z1 = r.cz + r.d / 2 + T, o.cz - o.d / 2 - T
@@ -1243,6 +1247,7 @@ function Dungeon.build(themeKey, opts)
 						K.box(ctx, "CorridorWall", Vector3.new(T, CORR_H, len + 0.2), CFrame.new(mid + Vector3.new(s * (DOOR_W / 2 + T / 2), CORR_H / 2, 0)), shade(th.wall, 0.92), mat(th.wallMat))
 					end
 					c = mid
+					table.insert(corridors, {a = r.id, b = o.id, axis = "Z", mid = mid, len = len})
 					if len > 18 and (not opts.raid or rng:NextNumber() < 0.5) then sconce(ctx, th, mid + Vector3.new(-DOOR_W / 2 + 0.2, 8, 0), Vector3.new(1, 0, 0)) end
 				end
 			end
@@ -1287,7 +1292,7 @@ function Dungeon.build(themeKey, opts)
 		maps.Name = "Maps"; maps.Parent = ServerStorage
 		ctx.model.Parent = maps
 	end
-	local layout = {rooms = list, start = 1, final = finalId, exits = exits, order = order, theme = themeKey, name = name, seed = seed, grid = {W, H}}
+	local layout = {rooms = list, start = 1, final = finalId, exits = exits, order = order, theme = themeKey, name = name, seed = seed, grid = {W, H}, corridors = corridors}
 	return name, layout
 end
 

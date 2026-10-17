@@ -22,6 +22,9 @@
      a fight's room or the stairs', never a champion's): the floor cracks where they'll come, then
      they burst up out of it. A boss in its second phase calls its servants the same way, once.
 
+     TRAPS. The corridors between are trapped too (Game ▸ Traps: spike grates, swinging blades,
+     dart plates, fire grates), more of them each floor down; the first floor's start is clear.
+
      DOWN, NOT OUT. Fall in a fight and you watch until the room is cleared; then you're back on
      your feet in it (with what you carried). Everyone down at once: the run is over. A Phoenix
      Plume brings you back where you fell, once.
@@ -43,6 +46,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Game = require(script.Parent.Parent:WaitForChild("Game"))
 local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
+local Traps = require(script.Parent.Parent:WaitForChild("Traps"))
 local MapLoader = Game.MapLoader
 local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
@@ -609,6 +613,7 @@ function Depths:descend()
 	MapLoader.load(name)
 	Dungeon.sweep(name)
 	self:dressRooms()
+	self:setTraps()
 	local spawns = MapLoader.spawns(nil)
 	local i = 0
 	for _, p in ipairs(Players:GetPlayers()) do
@@ -627,6 +632,13 @@ function Depths:descend()
 	event:FireAllClients("Fade", {on = false})
 	local th = Catalog.DUNGEONS[self.theme]
 	event:FireAllClients("Banner", {text = "FLOOR " .. self.floor, sub = self.floor >= FLOORS and ("THE LAIR OF " .. string.upper(th.bossName or "THE BOSS")) or string.upper(th.name), kind = "floor"})
+end
+
+-- the floor's traps: two on the first, a corridor more each floor down (the first floor's start
+-- room's corridors clear)
+function Depths:setTraps()
+	Traps.arm(MapLoader.current, self.layout, {count = 1 + self.floor, theme = self.theme,
+		skip = self.floor == 1 and {[self.layout.start] = true} or nil})
 end
 
 function Depths:sendLayout(plr)
@@ -660,6 +672,7 @@ function Depths:start(map)
 		MapLoader.load(name)
 	end
 	self:dressRooms()
+	self:setTraps()
 	node:SetAttribute("ObjKind", "Depths")
 	node:SetAttribute("OwnHud", true)   -- (Adventure.client draws it; Objectives steps aside)
 	node:SetAttribute("DepthsFloor", 1)
@@ -682,6 +695,7 @@ function Depths:start(map)
 end
 
 function Depths:stop()
+	Traps.disarm()
 	if self.active and self.active.opts then Monsters.halt(self.active.opts) end
 	for _, room in ipairs(self.layout and self.layout.rooms or {}) do
 		for mob in pairs(room.mobs or {}) do Monsters.despawn(mob) end
