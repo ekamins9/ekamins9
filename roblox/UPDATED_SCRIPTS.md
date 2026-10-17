@@ -1,4 +1,38 @@
-# Updated scripts: the forge's lava
+# Updated scripts: shields worth looking at, and a loadout you don't scroll through
+
+- **Every shield skin repainted** (all 26 kept by name, 21 new: 47 in the Heraldry Crate). Each
+  board now has a great painted emblem (24 of them: lion, dragon, eagle, griffin, phoenix, kraken,
+  wolf, stag, bear, boar, raven, horse, serpent, tower, sun, moon, rose, fleur-de-lis, tree,
+  knotwork, crossed swords, thunderbolt, cross, skull) with a dark outline and a drop shadow, its
+  field split in a second colour (14 divisions), battle scratches (more on the commoner ones) and
+  painted light across the board. Shown the same in the world and in every menu picture.
+- **New shields**: Serpent's Coil, Moonlit Duelist (buckler); Stag Lord, Bear Clan (targe);
+  Knotwork, Wolf of the North, Kraken's Maw (round); Saint's Cross, Fleur Royale, Griffin Guard,
+  Black Knight, Phoenix Ascendant (heater); Boar Tusk, Sunspike, Dragonscale (spiked); Silver
+  Horse, Crossed Blades, Dragon Knight (kite); Praetorian (scutum); Rose Wall, Sentinel's Moon
+  (pavise).
+- **Better shield bodies**: the kite has a long true point and an iron rim all round; the heater's
+  rim runs down its point.
+- **The LOADOUT in four tabs** (WEAPONS · ARMOR · GEAR · LOOK), each saying what's in it now.
+  Weapons and skins are 3D pictures in a grid (yours first, then the rarest), weapons narrowed by
+  kind; armor one slot at a time; shields face-on in their skins, and the mannequin turns its
+  shield arm to you on GEAR. A shield skin you don't own can be tried on.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | **new**: emblem, division, wear, light (Decals on clear plates) |
+| [ShieldDress.lua](ReplicatedStorage/ShieldDress.lua) | ReplicatedStorage | ModuleScript | the kite's outline; `ShieldDress.outline` shared |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | applies and clears ShieldPaint |
+| [ArsenalSkins.lua](ReplicatedStorage/Catalog/ArsenalSkins.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | all 47 shield skins |
+| [Crates.lua](ReplicatedStorage/Catalog/Crates.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the Heraldry Crate's description |
+| [ArsenalBlueprints.lua](ServerScriptService/Build/ArsenalBlueprints.lua) | ServerScriptService ▸ Build | ModuleScript | the kite's point and rim, the heater's rim, the pavise's PaintZ |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the loadout's tabs and picture tiles; shields face-on in pictures; `LoadoutTab` on the menu bus |
+| *(Studio-only)* ShieldArt | ReplicatedStorage | Folder | **new**: 152 StringValues (the pictures) — save the place |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | | doc | |
+
+---
+
+## Before that: the forge's lava
 
 - **The Ember Forge**: its lava pools bubble now, bubbles swelling and popping in sparks, and now and then a pool flares in a gout of embers and a flash of light.
 

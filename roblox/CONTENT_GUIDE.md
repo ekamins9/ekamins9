@@ -421,10 +421,22 @@ shop is there every day, and every card says how long it has left.
   so arms can be painted on it), and a folder `Tools/<Id>` (init.meta.json + Config.lua: copy one).
 - **A throwable**: the same three: `Catalog ▸ Arsenal` throwables (charges, recharge, speed,
   gravity, damage, snare, burst, look), a blueprint, a Tools folder.
-- **Their skins**: `Catalog ▸ ArsenalSkins` (`sh(...)` for shields with a heraldry pattern and a
-  dress: `field` / `rim` materials, `accent`, `glow`, `adorn = {...}` from `ReplicatedStorage ▸
-  ShieldDress`; `th(...)` for throwables). A new ornament is a function `A.name` in ShieldDress
-  (built on the board's outline: `along`, `rimBars`, `tri`, `bar`, `ball`, `spike`). New heraldry patterns: `ReplicatedStorage ▸ Heraldry`.
+- **Their skins**: `Catalog ▸ ArsenalSkins` (`sh(...)` for shields, `th(...)` for throwables). A
+  shield skin is three layers, all config:
+  - **its paint** (`ReplicatedStorage ▸ ShieldPaint`): `emblem = "lion"` (any picture in
+    `ReplicatedStorage ▸ ShieldArt`), `emblemColor` (gold leaf: `GILT`), `emblemEdge` (the outline's
+    colour, `false` for none), `emblemGlow` (1.1–1.3; more blooms the emblem away), `emblemSize`,
+    `emblemY`, `emblemCount` (2 or 3 stacked), `division = "quarterly"` + `divisionColor`, `wear`
+    (0–1; by rarity if left out), `keepBoss` (keep the boss an emblem would hide);
+  - **its dress** (`ReplicatedStorage ▸ ShieldDress`): `field` / `rim` materials, `accent`, `glow`,
+    `adorn = {...}`; a new ornament is a function `A.name` there (built on the board's outline:
+    `along`, `rimBars`, `tri`, `bar`, `ball`, `spike`);
+  - **raised arms**, optional (`ReplicatedStorage ▸ Heraldry`): the `pattern, color` arguments.
+  A **new emblem picture**: white art on black, cut to a white-on-clear PNG with its outline and
+  shadow (the scripts that made the first 24 cut each one, grow its silhouette for `_o` and blur
+  it for `_s`), uploaded as Decals, the image ids put in StringValues `<name>`, `<name>_o`,
+  `<name>_s` in ShieldArt. A new **board shape** needs its outline in `ShieldDress.outline` and its
+  `<shape>_<division>`, `_shade` and `_wear` pictures.
 - **Class levels**: `Catalog ▸ Mastery` (the XP curve, titles at levels, a Key every N levels).
 
 ## 6f. Season rewards

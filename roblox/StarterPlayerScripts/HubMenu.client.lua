@@ -25,7 +25,7 @@
      Every mannequin is a real dressed rig (Dresser) in a ViewportFrame, so what
      you see is what spawns (HX.myLook: you, as your avatar). Talks to HubServer (HubRemote / HubEvent) and
      LoadoutServer (LoadoutRemote "Catalog", LoadoutEvent "Spawn").
-     _G.MenuBus: "OpenHub", screen · "HubOpened" · "HubClosed" (class screen).
+     _G.MenuBus: "OpenHub", screen · "LoadoutTab", WEAPONS|ARMOR|GEAR|LOOK · "HubOpened" · "HubClosed" (class screen).
      Test hooks (set from the command bar / Studio MCP): ScreenGui attributes
      Tab, ShopTab, ArmoryTab, OpenCrowns. ]]
 
@@ -1495,7 +1495,17 @@ local function weaponThumb(parent, weaponId, skinId, size, zoom)
 	local cam = Instance.new("Camera"); cam.Parent = vp
 	vp.CurrentCamera = cam
 	local m = weaponDisplay(world, weaponId, skinId)
-	if m then
+	local wdef = weaponId and Catalog.WEAPON[weaponId]
+	local handle = m and wdef and wdef.family == "Shield" and m:FindFirstChild("Handle", true)
+	if handle then
+		-- a shield face on (its front is the handle's -Z), turned a little, filling the card
+		m:PivotTo(CFrame.Angles(0, math.rad(-14), 0) * handle.CFrame:Inverse() * m:GetPivot())
+		local cf, sz = m:GetBoundingBox()
+		m:PivotTo(CFrame.new(-cf.Position) * m:GetPivot())
+		local d = (math.max(sz.X, sz.Y) * 0.56) / math.tan(math.rad(14)) / (zoom or 1)
+		cam.FieldOfView = 28
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, d * 0.06, -d), Vector3.zero)
+	elseif m then
 		-- the model's longest side becomes the card's diagonal
 		local cf, sz = m:GetBoundingBox()
 		local axis = (sz.X >= sz.Y and sz.X >= sz.Z) and Vector3.xAxis or (sz.Y >= sz.Z and Vector3.yAxis or Vector3.zAxis)
@@ -4297,8 +4307,17 @@ do
 	local foot = clearFrame(left); foot.AnchorPoint = Vector2.new(0, 1); foot.Position = UDim2.new(0, 0, 1, 0); foot.Size = UDim2.new(1, 0, 0, 60)
 	screenFoot.CLASSES = foot
 	local right = clearFrame(f); right.AnchorPoint = Vector2.new(1, 0); right.Position = UDim2.new(1, 0, 0, 0); right.Size = UDim2.new(0, 380, 1, 0)
-	local list = scroll(right, 10)
-	HX.sleep.CLASSES = function() clear(list) end
+	-- the loadout's four parts as tabs over the page (WEAPONS · ARMOR · GEAR · LOOK)
+	local tabBar = clearFrame(right); tabBar.Size = UDim2.new(1, 0, 0, 56)
+	hlist(tabBar, 6)
+	local listHolder = clearFrame(right); listHolder.Position = UDim2.fromOffset(0, 64); listHolder.Size = UDim2.new(1, 0, 1, -64)
+	local list = scroll(listHolder, 10)
+	HX.sleep.CLASSES = function()
+		clear(list)
+		-- (the shield arm turned to you on GEAR turns back for the other screens' stages)
+		if ui.loFacing and ui.facing == ui.loFacing then ui.facing = 0 end
+		ui.loFacing = 0
+	end
 
 	local function edit()
 		local id = ui.editing
@@ -4320,6 +4339,7 @@ do
 		for k, v in pairs(lo) do if k ~= "colors" then w[k] = v end end
 		if t.slot == "weapon" then w.weapon = t.id; w.weaponSkin = nil
 		elseif t.slot == "weaponSkin" then w.weapon = Catalog.SKIN[t.id] and Catalog.SKIN[t.id].weapon or w.weapon; w.weaponSkin = t.id
+		elseif t.slot == "shieldSkin" then w.shield = Catalog.SKIN[t.id] and Catalog.SKIN[t.id].weapon or w.shield; w.shieldSkin = t.id; w.secondary, w.secondarySkin = nil, nil
 		else w[t.slot] = t.id end
 		return w
 	end
@@ -4335,7 +4355,7 @@ do
 			name = w and w.name or t.id
 			how = "Unlock: " .. (w and unlockText(w) or "?") .. ((w and (w.marks or 0) > 0) and ("  ·  or " .. fmt(w.marks) .. " Marks") or "")
 			if w and (w.marks or 0) > 0 then table.insert(buys, {"UNLOCK  ·  " .. fmt(w.marks) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "weapon", w.id, "marks"), render.CLASSES) end}) end
-		elseif t.slot == "weaponSkin" then
+		elseif t.slot == "weaponSkin" or t.slot == "shieldSkin" then
 			local s = Catalog.SKIN[t.id]
 			name = s and ((Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. "  ·  " .. s.name) or t.id
 			local text, kind = skinWhere(s)
@@ -4494,114 +4514,191 @@ do
 		b.Activated:Connect(onClick)
 		return b
 	end
-	render.CLASSES = function()
-		local drawN = HX.draw("CLASSES")
-		local id = ui.editing
-		local cls = GameConfig.CLASSES[id]
-		local lo = edit()
-		renderClassRow()
-		renderStage()
-		-- (the lists are drawn on a page off screen, the old page still up, and swapped in whole)
-		local live = list
-		local list = clearFrame(nil); list.AutomaticSize = Enum.AutomaticSize.Y; list.Size = UDim2.new(1, 0, 0, 0)
-		vlist(list, 10)
-		local function stale() if HX.slice("CLASSES", drawN) then list:Destroy(); return true end return false end
-		local t = ui.tryOn and ui.tryOn.class == id and ui.tryOn or nil
-		do   -- the 🔒 switch: everything there is, or only what you own
-			local bar = clearFrame(list); bar.Size = UDim2.new(1, 0, 0, 40); bar.LayoutOrder = nextOrder()
-			local sw = HX.lockSwitch(bar, 230, 38); sw.AnchorPoint = Vector2.new(1, 0); sw.Position = UDim2.new(1, 0, 0, 0)
+	-- THE PARTS OF A LOADOUT, one at a time (the stage shows the whole of it), and the picture
+	-- tiles they're picked from (LT: kept in a table, not more locals)
+	local LT = {}
+	LT.FAMILY = {OneHanded = "ONE-HANDED", TwoHanded = "TWO-HANDED", Polearm = "POLEARMS", Ranged = "RANGED", Magic = "MAGIC"}
+	LT.TABS = {
+		{key = "WEAPONS", text = "WEAPONS"}, {key = "ARMOR", text = "ARMOR"},
+		{key = "GEAR", text = "GEAR"}, {key = "LOOK", text = "LOOK"},
+	}
+	function LT.familyOf(w)
+		return w.family == "OneHanded" and "one-handed" or (w.family == "TwoHanded" and "two-handed" or (w.family == "Ranged" and "ranged"
+			or (w.family == "Magic" and (w.slots and w.slots > 0 and (w.slots .. " spells") or "magic") or "polearm")))
+	end
+	-- a grid of picture tiles, `cols` across
+	function LT.grid(parent, cols, cellH)
+		local g = clearFrame(parent)
+		g.AutomaticSize = Enum.AutomaticSize.Y
+		g.Size = UDim2.new(1, 0, 0, 0)
+		g.LayoutOrder = nextOrder()
+		local gl = Instance.new("UIGridLayout", g)
+		gl.CellSize = UDim2.new(1 / cols, -math.ceil(8 * (cols - 1) / cols), 0, cellH or 100)
+		gl.CellPadding = UDim2.fromOffset(8, 8)
+		gl.SortOrder = Enum.SortOrder.LayoutOrder
+		return g
+	end
+	-- a picture tile: o = {name, sub, on, have, trying, rarity, weapon, skin, zoom, onClick}
+	function LT.tile(parent, order, o)
+		local rc = o.rarity and RARITY_COL[o.rarity]
+		local b = button(parent, "", 12, o.on and Color3.fromRGB(38, 66, 132) or COL.GLASS2)
+		b.LayoutOrder = order
+		b.AutoButtonColor = true
+		b.ClipsDescendants = true
+		b.Visible = o.have or o.on or o.trying or not HX.hideLocked()   -- (a grid skips it when hidden)
+		b.BackgroundTransparency = o.have and 0 or 0.3
+		border(b, o.trying and COL.ACCENT or (o.on and WHITE or (rc or COL.DIM)), (o.on or o.trying) and 3 or 1.5, (o.on or o.trying) and 0 or (rc and 0.35 or 0.82))
+		if rc then
+			-- (its rarity's colour rising from the foot of the tile)
+			local glow = frame(b, rc, 10)
+			glow.Size = UDim2.fromScale(1, 1)
+			glow.BackgroundTransparency = 0.3
+			local gr = Instance.new("UIGradient", glow)
+			gr.Rotation = 90
+			gr.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.94), NumberSequenceKeypoint.new(1, 0.35)})
 		end
-		HX.classLevelPanel(list, id)
-		local p = panel(list, "ARMOR  ·  " .. string.upper(cls.weight))
-		for _, slot in ipairs(Catalog.SLOTS) do
-			heading(p, slot == "bottom" and "LEGS" or string.upper(slot))
-			local pieces = Catalog.piecesFor(slot, cls.weight)
-			local g = cardGrid(p, 40)
-			for i, pc in ipairs(pieces) do
-				local have = owns("pieces", pc.id)
-				local pk = Catalog.PACKS[pc.pack]
-				local sub = have and (pk and pk.name or "")
-					or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
-				itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t and not (slot == "helmet" and lo.noHelm), have, RARITY_COL[pc.rarity], function()
-					if have then if slot == "helmet" then lo.noHelm = nil end; choose(slot, pc.id) else tryOn(slot, pc.id) end
-				end, t and t.slot == slot and t.id == pc.id)
-			end
-			if slot == "helmet" then
-				-- bareheaded: your face and hair on show, your head unprotected
-				itemCard(g, 0, "No helmet", "show your face · the head takes full damage", lo.noHelm == true and not t, true, COL.BAD, function()
-					lo.noHelm = not lo.noHelm or nil; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
-				end)
-			end
-			if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet.") end
+		if o.weapon then
+			local th = weaponThumb(b, o.weapon, o.skin, UDim2.new(1, -8, 1, -38), o.zoom or (Catalog.WEAPON[o.weapon] and Catalog.WEAPON[o.weapon].family == "Shield" and 1.15 or 1.9))
+			th.Position = UDim2.fromOffset(4, 4)
+			th.BackgroundTransparency = 1
+			local vp = th:FindFirstChildOfClass("ViewportFrame")
+			if vp and not o.have then vp.ImageTransparency = 0.35 end
 		end
-		if stale() then return end
-		-- THE FINISH (Catalog ▸ ArmorFX): looks only, on any set
-		do
-			local fp = panel(list, "FINISH  ·  LOOKS ONLY")
-			dim(fp, "Recolours the plates, lights the trims and wraps you in an aura. Out of the Forge Crate.", 12)
-			local fg = cardGrid(fp, 40)
-			local top = Catalog.PIECE[lo.top or ""]
-			local own = top and top.fx and Catalog.ARMORFX_BY[top.fx]
-			itemCard(fg, 0, "None", own and ("the set's own: " .. own.name) or "plain", (lo.armorFx or "") == "" and not (t and t.slot == "armorFx"), true, nil, function()
-				lo.armorFx = ""; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
+		local t = title(b, o.name, 12, o.have and COL.TEXT or COL.DIM)
+		t.AnchorPoint = Vector2.new(0, 1); t.Position = UDim2.new(0, 5, 1, -17); t.Size = UDim2.new(1, -10, 0, 15)
+		t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
+		local s = label(b, o.sub or "", 10, FONT, o.on and COL.TEXT or ((o.have and rc) or COL.DIM))
+		s.AnchorPoint = Vector2.new(0, 1); s.Position = UDim2.new(0, 5, 1, -3); s.Size = UDim2.new(1, -10, 0, 13)
+		s.TextXAlignment = Enum.TextXAlignment.Center; s.TextWrapped = false; s.TextTruncate = Enum.TextTruncate.AtEnd
+		if not o.have then
+			local lk = label(b, "🔒", 13, FONT, COL.TEXT); lk.Position = UDim2.fromOffset(6, 4); lk.Size = UDim2.fromOffset(18, 18)
+		end
+		if o.on then
+			local ck = title(b, "✓", 15, COL.GOOD); ck.AnchorPoint = Vector2.new(1, 0); ck.Position = UDim2.new(1, -6, 0, 3); ck.Size = UDim2.fromOffset(18, 18)
+			ck.TextXAlignment = Enum.TextXAlignment.Right
+		end
+		b.Activated:Connect(o.onClick)
+		return b
+	end
+	-- a skin list sorted: yours first, then the rarest
+	function LT.sorted(skins)
+		local idx = {}
+		for i, s in ipairs(skins) do idx[s] = i end
+		table.sort(skins, function(a, b)
+			local ha, hb = owns("skins", a.id), owns("skins", b.id)
+			if ha ~= hb then return ha end
+			if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
+			return idx[a] < idx[b]
+		end)
+		return skins
+	end
+	-- the four tabs, each with what's in it now under its name
+	function LT.tabs(lo, cls)
+		clear(tabBar)
+		local cur = Catalog.WEAPON[lo.weapon or ""]
+		local sh = Catalog.WEAPON[lo.shield or ""]
+		local th = Catalog.WEAPON[lo.throwable or ""]
+		local fx = Catalog.ARMORFX_BY[lo.armorFx or ""]
+		local subs = {
+			WEAPONS = cur and cur.name or "—",
+			ARMOR = cls.weight,
+			GEAR = sh and sh.name or (th and th.name or "power · throwable"),
+			LOOK = fx and fx.name or "colours",
+		}
+		for i, tb in ipairs(LT.TABS) do
+			local on = ui.loTab == tb.key
+			local b = button(tabBar, "", 12, on and COL.BLUE or COL.GLASS)
+			b.Size = UDim2.new(1 / #LT.TABS, -6, 1, 0)
+			b.LayoutOrder = i
+			b.BackgroundTransparency = on and 0 or 0.12
+			border(b, on and WHITE or COL.DIM, on and 2.5 or 1.2, on and 0 or 0.7)
+			local n = title(b, tb.text, 15, on and COL.TEXT or COL.DIM)
+			n.Position = UDim2.fromOffset(4, 8); n.Size = UDim2.new(1, -8, 0, 20); n.TextXAlignment = Enum.TextXAlignment.Center
+			local s = label(b, subs[tb.key] or "", 10, FONT, on and COL.TEXT or COL.DIM)
+			s.Position = UDim2.fromOffset(4, 31); s.Size = UDim2.new(1, -8, 0, 16); s.TextXAlignment = Enum.TextXAlignment.Center
+			s.TextWrapped = false; s.TextTruncate = Enum.TextTruncate.AtEnd
+			if on then
+				local bar = frame(b, COL.ACCENT, 2); bar.AnchorPoint = Vector2.new(0.5, 1); bar.Position = UDim2.new(0.5, 0, 1, -3); bar.Size = UDim2.new(0.5, 0, 0, 3)
+			end
+			b.Activated:Connect(function()
+				if ui.loTab ~= tb.key then ui.loTab = tb.key; list.CanvasPosition = Vector2.zero; render.CLASSES() end
 			end)
-			for i, f in ipairs(Catalog.ARMORFX or {}) do
-				local have = owns("armorfx", f.id)
-				itemCard(fg, i, f.name, have and f.rarity or ((Catalog.CRATES[f.crate or ""] or {}).name or "a crate"), lo.armorFx == f.id and not t, have, RARITY_COL[f.rarity], function()
-					if have then lo.armorFx = f.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("armorFx", f.id) end
-				end, t and t.slot == "armorFx" and t.id == f.id)
-			end
 		end
-		if stale() then return end
-		local cp = panel(list, "COLORS")
-		for _, slot in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
-			dim(cp, slot .. (slot == "Primary" and "  ·  your team's colour in team modes" or ""), 12)
-			swatches(cp, Catalog.PALETTE, function(it) return lo.colors[slot] == it.name end, function(it) return it.crowns and not owns("colors", it.name) end, function(it)
-				if it.crowns and not owns("colors", it.name) then
-					modal(it.name, string.format("A premium colour: %d Crowns once, usable on every slot of every class.", it.crowns), {{"BUY  ·  " .. it.crowns .. " CROWNS", COL.GOLD, function()
-						afterBuy(call("Buy", "color", it.name, "crowns"), render.CLASSES) end}})
-				else lo.colors[slot] = it.name; ui.dirty[id] = true; render.CLASSES() end
-			end, 28)
-		end
-		if stale() then return end
+	end
+
+	-- WEAPONS: what you carry, big; the rest as pictures, narrowed by kind; its skins as pictures
+	function LT.weapons(page, lo, cls, id, t, stale)
 		local function allowed(w, slot) return Catalog.weaponFits(cls, w, slot or "primary") end
-		local wp = panel(list, "PRIMARY WEAPON")
-		local g = cardGrid(wp, 40)
-		local n = 0
-		for _, w in ipairs(Catalog.WEAPONS) do
-			if allowed(w) then
-				n += 1
-				local have = owns("weapons", w.id)
-				itemCard(g, n, w.name, have and (w.family == "OneHanded" and "one-handed" or (w.family == "TwoHanded" and "two-handed" or (w.family == "Ranged" and "ranged" or (w.family == "Magic" and (w.slots and w.slots > 0 and (w.slots .. " spells") or "magic") or "polearm")))) or unlockText(w), lo.weapon == w.id and not (t and (t.slot == "weapon" or t.slot == "weaponSkin")), have, nil, function()
-					if have then choose("weapon", w.id) else tryOn("weapon", w.id) end
-				end, t and t.slot == "weapon" and t.id == w.id)
-			end
+		local cur = Catalog.WEAPON[lo.weapon or ""]
+		local wp = panel(page, "PRIMARY WEAPON")
+		if cur then
+			local hero = clearFrame(wp); hero.Size = UDim2.new(1, 0, 0, 96); hero.LayoutOrder = nextOrder()
+			local sk = Catalog.SKIN[lo.weaponSkin or ""]
+			local th = weaponThumb(hero, cur.id, lo.weaponSkin, UDim2.fromOffset(150, 96), 1.7)
+			if sk and RARITY_COL[sk.rarity] then border(th, RARITY_COL[sk.rarity], 2, 0.2) end
+			local n = title(hero, string.upper(cur.name), 20); n.Position = UDim2.fromOffset(162, 8); n.Size = UDim2.new(1, -162, 0, 24); n.TextTruncate = Enum.TextTruncate.AtEnd
+			local f = title(hero, string.upper(LT.familyOf(cur)), 12, COL.DIM); f.Position = UDim2.fromOffset(162, 36); f.Size = UDim2.new(1, -162, 0, 16)
+			local named = sk and sk.name ~= "Default"
+			local s = title(hero, named and string.upper(sk.name) or "DEFAULT LOOK", 13, named and (RARITY_COL[sk.rarity] or COL.TEXT) or COL.DIM)
+			s.Position = UDim2.fromOffset(162, 58); s.Size = UDim2.new(1, -162, 0, 18); s.TextTruncate = Enum.TextTruncate.AtEnd
+			if named then local r = label(hero, string.upper(sk.rarity or ""), 10, FONT, COL.DIM); r.Position = UDim2.fromOffset(162, 77); r.Size = UDim2.new(1, -162, 0, 14) end
 		end
+		-- the kinds this class can carry, to narrow the list
+		local fams, seen = {{text = "ALL", key = "All"}}, {}
+		for _, w in ipairs(Catalog.WEAPONS) do
+			if allowed(w) and LT.FAMILY[w.family] and not seen[w.family] then seen[w.family] = true; table.insert(fams, {text = LT.FAMILY[w.family], key = w.family}) end
+		end
+		local fam = seen[ui.loFamily or ""] and ui.loFamily or "All"
+		if #fams > 2 then chips(wp, fams, function(it) return fam == it.key end, function(it) ui.loFamily = it.key; render.CLASSES() end, 28) end
+		local ws, order = {}, {}
+		for i, w in ipairs(Catalog.WEAPONS) do
+			if allowed(w) and (fam == "All" or w.family == fam) then table.insert(ws, w); order[w] = i end
+		end
+		table.sort(ws, function(a, b)
+			local ha, hb = owns("weapons", a.id), owns("weapons", b.id)
+			if ha ~= hb then return ha end
+			return order[a] < order[b]
+		end)
+		local g = LT.grid(wp, 3, 100)
+		for i, w in ipairs(ws) do
+			local have = owns("weapons", w.id)
+			LT.tile(g, i, {name = w.name, sub = have and LT.familyOf(w) or unlockText(w), have = have, weapon = w.id,
+				skin = lo.weapon == w.id and lo.weaponSkin or nil,
+				on = lo.weapon == w.id and not (t and (t.slot == "weapon" or t.slot == "weaponSkin")),
+				trying = t and t.slot == "weapon" and t.id == w.id,
+				onClick = function() if have then choose("weapon", w.id) else tryOn("weapon", w.id) end end})
+			if i % 6 == 0 and stale() then return true end
+		end
+		-- ITS SKINS, as pictures
 		if lo.weapon then
-			heading(wp, "SKIN")
-			local sg = cardGrid(wp, 40)
-			itemCard(sg, 0, "Default", "free", (lo.weaponSkin or ""):match(":Default$") ~= nil and not (t and t.slot == "weaponSkin"), true, nil, function() lo.weaponSkin = lo.weapon .. ":Default"; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() end)
-			local skins = Catalog.skinsFor(lo.weapon)
-			table.sort(skins, function(a, b)
-				local ha, hb = owns("skins", a.id), owns("skins", b.id)
-				if ha ~= hb then return ha end
-				if (RARITY_ORDER[a.rarity] or 0) ~= (RARITY_ORDER[b.rarity] or 0) then return (RARITY_ORDER[a.rarity] or 0) > (RARITY_ORDER[b.rarity] or 0) end
-				return a.name < b.name
-			end)
+			local skins = LT.sorted(Catalog.skinsFor(lo.weapon))
+			local owned = 0
+			for _, s in ipairs(skins) do if owns("skins", s.id) then owned += 1 end end
+			local sp = panel(page, "SKINS  ·  " .. string.upper(cur and cur.name or lo.weapon) .. "  ·  " .. owned .. " / " .. #skins)
+			dim(sp, "Pick one you own; click one you don't to try it on.", 12)
+			local sg = LT.grid(sp, 3, 100)
+			LT.tile(sg, 0, {name = "Default", sub = "free", have = true, weapon = lo.weapon,
+				on = (lo.weaponSkin or ""):match(":Default$") ~= nil and not (t and t.slot == "weaponSkin"),
+				onClick = function() lo.weaponSkin = lo.weapon .. ":Default"; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() end})
 			for i, s in ipairs(skins) do
 				local have = owns("skins", s.id)
-				itemCard(sg, i, s.name, have and s.rarity or (skinWhere(s)), lo.weaponSkin == s.id and not (t and t.slot == "weaponSkin"), have, RARITY_COL[s.rarity], function()
-					if have then lo.weaponSkin = s.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("weaponSkin", s.id) end
-				end, t and t.slot == "weaponSkin" and t.id == s.id)
+				LT.tile(sg, i, {name = s.name, sub = have and s.rarity or (skinWhere(s)), have = have, rarity = s.rarity, weapon = s.weapon, skin = s.id,
+					on = lo.weaponSkin == s.id and not (t and t.slot == "weaponSkin"),
+					trying = t and t.slot == "weaponSkin" and t.id == s.id,
+					onClick = function()
+						if have then lo.weaponSkin = s.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("weaponSkin", s.id) end
+					end})
+				if i % 6 == 0 and stale() then return true end
 			end
 		end
-		if stale() then return end
-		if cls.magic then HX.spellsPanel(list, lo, id, cardGrid, itemCard) end
-		if stale() then return end
-		local sp = panel(list, "SECONDARY")
+		if stale() then return true end
+		if cls.magic then HX.spellsPanel(page, lo, id, cardGrid, itemCard) end
+		if stale() then return true end
+		-- THE SECONDARY (or a shield: GEAR)
+		local sp = panel(page, "SECONDARY")
 		local sg2 = cardGrid(sp, 40)
-		itemCard(sg2, 0, "None", "", lo.secondary == nil, true, nil, function() choose("secondary", nil) end)
-		n = 0
+		itemCard(sg2, 0, "None", lo.shield and "you carry a shield" or "", lo.secondary == nil, true, nil, function() choose("secondary", nil) end)
+		local n = 0
 		for _, w in ipairs(Catalog.WEAPONS) do
 			if w.id ~= lo.weapon and allowed(w, "secondary") then
 				n += 1
@@ -4613,17 +4710,124 @@ do
 		end
 		if lo.secondary then
 			heading(sp, "SECONDARY SKIN")
-			local sg3 = cardGrid(sp, 40)
-			itemCard(sg3, 0, "Default", "free", (lo.secondarySkin or ""):match(":Default$") ~= nil, true, nil, function() lo.secondarySkin = lo.secondary .. ":Default"; ui.dirty[id] = true; render.CLASSES() end)
-			for i, s in ipairs(Catalog.skinsFor(lo.secondary)) do
-				if owns("skins", s.id) then itemCard(sg3, i, s.name, s.rarity, lo.secondarySkin == s.id, true, RARITY_COL[s.rarity], function() lo.secondarySkin = s.id; ui.dirty[id] = true; render.CLASSES() end) end
+			local sg3 = LT.grid(sp, 3, 100)
+			LT.tile(sg3, 0, {name = "Default", sub = "free", have = true, weapon = lo.secondary, on = (lo.secondarySkin or ""):match(":Default$") ~= nil,
+				onClick = function() lo.secondarySkin = lo.secondary .. ":Default"; ui.dirty[id] = true; render.CLASSES() end})
+			for i, s in ipairs(LT.sorted(Catalog.skinsFor(lo.secondary))) do
+				if owns("skins", s.id) then
+					LT.tile(sg3, i, {name = s.name, sub = s.rarity, have = true, rarity = s.rarity, weapon = s.weapon, skin = s.id, on = lo.secondarySkin == s.id,
+						onClick = function() lo.secondarySkin = s.id; ui.dirty[id] = true; render.CLASSES() end})
+				end
 			end
 		end
+		return false
+	end
+
+	-- ARMOR: one slot at a time (a switch with what you wear in each), the class's level
+	function LT.armor(page, lo, cls, id, t)
+		local p = panel(page, "ARMOR  ·  " .. string.upper(cls.weight))
+		dim(p, string.format("%s:  %s. Looks never change stats.", cls.weight, weightLine(cls.weight)), 12)
+		local slot = table.find(Catalog.SLOTS, ui.loSlot) and ui.loSlot or Catalog.SLOTS[1]
+		local seg = clearFrame(p); seg.Size = UDim2.new(1, 0, 0, 52); seg.LayoutOrder = nextOrder()
+		hlist(seg, 6)
+		for i, s in ipairs(Catalog.SLOTS) do
+			local on = s == slot
+			local b = button(seg, "", 12, on and COL.BLUE or COL.GLASS2)
+			b.Size = UDim2.new(1 / #Catalog.SLOTS, -6, 1, 0)
+			b.LayoutOrder = i
+			border(b, on and WHITE or COL.DIM, on and 2 or 1, on and 0 or 0.75)
+			local n = title(b, s == "bottom" and "LEGS" or string.upper(s), 14, on and COL.TEXT or COL.DIM)
+			n.Position = UDim2.fromOffset(4, 7); n.Size = UDim2.new(1, -8, 0, 18); n.TextXAlignment = Enum.TextXAlignment.Center
+			local pc = Catalog.PIECE[lo[s] or ""]
+			local w = label(b, (s == "helmet" and lo.noHelm) and "bareheaded" or (pc and pc.name or "—"), 10, FONT, on and COL.TEXT or COL.DIM)
+			w.Position = UDim2.fromOffset(4, 28); w.Size = UDim2.new(1, -8, 0, 16); w.TextXAlignment = Enum.TextXAlignment.Center
+			w.TextWrapped = false; w.TextTruncate = Enum.TextTruncate.AtEnd
+			b.Activated:Connect(function() ui.loSlot = s; render.CLASSES() end)
+		end
+		local pieces = Catalog.piecesFor(slot, cls.weight)
+		local g = cardGrid(p, 44)
+		for i, pc in ipairs(pieces) do
+			local have = owns("pieces", pc.id)
+			local pk = Catalog.PACKS[pc.pack]
+			local sub = have and ((pc.rarity and pc.rarity ~= "Common" and (pc.rarity .. "  ·  ") or "") .. (pk and pk.name or ""))
+				or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
+			itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t and not (slot == "helmet" and lo.noHelm), have, RARITY_COL[pc.rarity], function()
+				if have then if slot == "helmet" then lo.noHelm = nil end; choose(slot, pc.id) else tryOn(slot, pc.id) end
+			end, t and t.slot == slot and t.id == pc.id)
+		end
+		if slot == "helmet" then
+			-- bareheaded: your face and hair on show, your head unprotected
+			itemCard(g, 0, "No helmet", "show your face · the head takes full damage", lo.noHelm == true and not t, true, COL.BAD, function()
+				lo.noHelm = not lo.noHelm or nil; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
+			end)
+		end
+		if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet.") end
+		HX.classLevelPanel(page, id)
+		dim(page, cls.description or "", 12)
+	end
+
+	-- LOOK: the finish over the armor, the four colours
+	function LT.look(page, lo, cls, id, t)
+		local fp = panel(page, "FINISH  ·  LOOKS ONLY")
+		dim(fp, "Recolours the plates, lights the trims and wraps you in an aura. Out of the Forge Crate.", 12)
+		local fg = cardGrid(fp, 40)
+		local top = Catalog.PIECE[lo.top or ""]
+		local own = top and top.fx and Catalog.ARMORFX_BY[top.fx]
+		itemCard(fg, 0, "None", own and ("the set's own: " .. own.name) or "plain", (lo.armorFx or "") == "" and not (t and t.slot == "armorFx"), true, nil, function()
+			lo.armorFx = ""; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
+		end)
+		for i, f in ipairs(Catalog.ARMORFX or {}) do
+			local have = owns("armorfx", f.id)
+			itemCard(fg, i, f.name, have and f.rarity or ((Catalog.CRATES[f.crate or ""] or {}).name or "a crate"), lo.armorFx == f.id and not t, have, RARITY_COL[f.rarity], function()
+				if have then lo.armorFx = f.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("armorFx", f.id) end
+			end, t and t.slot == "armorFx" and t.id == f.id)
+		end
+		local cp = panel(page, "COLORS")
+		for _, slot in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
+			dim(cp, slot .. (slot == "Primary" and "  ·  your team's colour in team modes" or ""), 12)
+			swatches(cp, Catalog.PALETTE, function(it) return lo.colors[slot] == it.name end, function(it) return it.crowns and not owns("colors", it.name) end, function(it)
+				if it.crowns and not owns("colors", it.name) then
+					modal(it.name, string.format("A premium colour: %d Crowns once, usable on every slot of every class.", it.crowns), {{"BUY  ·  " .. it.crowns .. " CROWNS", COL.GOLD, function()
+						afterBuy(call("Buy", "color", it.name, "crowns"), render.CLASSES) end}})
+				else lo.colors[slot] = it.name; ui.dirty[id] = true; render.CLASSES() end
+			end, 28)
+		end
+	end
+
+	render.CLASSES = function()
+		local drawN = HX.draw("CLASSES")
+		local id = ui.editing
+		local cls = GameConfig.CLASSES[id]
+		local lo = edit()
+		ui.loTab = ui.loTab or "WEAPONS"
+		-- (on GEAR the mannequin turns its shield arm to you, and back after; unless you've turned it yourself)
+		local want = (ui.loTab == "GEAR" and (lo.shield or (ui.tryOn and ui.tryOn.slot == "shieldSkin"))) and -58 or 0
+		if ui.loFacing ~= want and ui.facing == (ui.loFacing or 0) then ui.facing = want end
+		ui.loFacing = want
+		renderClassRow()
+		renderStage()
+		LT.tabs(lo, cls)
+		-- (the page is drawn off screen, the old page still up, and swapped in whole)
+		local live = list
+		local page = clearFrame(nil); page.AutomaticSize = Enum.AutomaticSize.Y; page.Size = UDim2.new(1, 0, 0, 0)
+		vlist(page, 10)
+		local function stale() if HX.slice("CLASSES", drawN) then page:Destroy(); return true end return false end
+		local t = ui.tryOn and ui.tryOn.class == id and ui.tryOn or nil
+		do   -- the 🔒 switch: everything there is, or only what you own
+			local bar = clearFrame(page); bar.Size = UDim2.new(1, 0, 0, 40); bar.LayoutOrder = nextOrder()
+			local sw = HX.lockSwitch(bar, 230, 38); sw.AnchorPoint = Vector2.new(1, 0); sw.Position = UDim2.new(1, 0, 0, 0)
+		end
+		if ui.loTab == "WEAPONS" then
+			if LT.weapons(page, lo, cls, id, t, stale) then return end
+		elseif ui.loTab == "ARMOR" then
+			LT.armor(page, lo, cls, id, t)
+		elseif ui.loTab == "GEAR" then
+			HX.arsenalPanels(page, lo, id, cardGrid, itemCard, {grid = LT.grid, tile = LT.tile, sorted = LT.sorted, tryOn = tryOn, t = t})
+		else
+			LT.look(page, lo, cls, id, t)
+		end
 		if stale() then return end
-		HX.arsenalPanels(list, lo, id, cardGrid, itemCard)
-		dim(list, string.format("%s.  Weight %s:  %s. Looks never change stats.", cls.description or "", cls.weight, weightLine(cls.weight)), 12)
-		if stale() then return end
-		clear(live); list.Parent = live
+		clear(live); page.Parent = live
 		renderSide()
 	end
 	render.CLASSES_save = function()
@@ -6037,11 +6241,31 @@ end
 
 -- THE SHIELD (beside a one-handed primary), THE POWER (E), THE THROWABLE (C), and beside a
 -- shield a SIDEARM on 3
-function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
+function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 	local cls = GameConfig.CLASSES[classId]
 	local P = state.profile or {}
 	local function dirty() ui.dirty[classId] = true; ui.tryOn = nil; render.CLASSES() end
-	local function skinCards(parent, weaponId, current, set)
+	-- (with `tiles`, the loadout's picture tiles: a skin you don't own is tried on, by `slot`)
+	local function skinCards(parent, weaponId, current, set, slot)
+		if tiles then
+			local skins = tiles.sorted(Catalog.skinsFor(weaponId))
+			local owned = 0
+			for _, sk in ipairs(skins) do if owns("skins", sk.id) then owned += 1 end end
+			dim(parent, string.format("You own %d of %d.%s", owned, #skins, slot and " Click one you don't to try it on." or ""), 12)
+			local g = tiles.grid(parent, 3, 100)
+			local t = tiles.t
+			tiles.tile(g, 0, {name = "Default", sub = "free", have = true, weapon = weaponId,
+				on = ((current or ""):match(":Default$") ~= nil or current == nil) and not (t and slot and t.slot == slot), onClick = function() set(weaponId .. ":Default") end})
+			for i, sk in ipairs(skins) do
+				local have = owns("skins", sk.id)
+				local trying = t and slot and t.slot == slot and t.id == sk.id
+				tiles.tile(g, i, {name = sk.name, sub = have and sk.rarity or (skinWhere(sk)), have = have, rarity = sk.rarity, weapon = weaponId, skin = sk.id,
+					on = current == sk.id and not trying, trying = trying, onClick = function()
+						if have then set(sk.id) elseif slot then tiles.tryOn(slot, sk.id) else toast(sk.name .. ": " .. (skinWhere(sk)), COL.DIM) end
+					end})
+			end
+			return
+		end
 		local g = cardGrid(parent, 40)
 		itemCard(g, 0, "Default", "free", (current or ""):match(":Default$") ~= nil or current == nil, true, nil, function() set(weaponId .. ":Default") end)
 		for i, sk in ipairs(Catalog.skinsFor(weaponId)) do
@@ -6056,12 +6280,29 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
 	if w and w.family == "OneHanded" and not cls.ranged and not cls.magic then
 		local sp = panel(list, "SHIELD  ·  INSTEAD OF A SECONDARY")
 		dim(sp, "Beside a one-handed weapon, up in front of you while you block: it catches blows from wider, for less stamina, and stops arrows, bolts and thrown things. Your kick becomes a bash.", 12)
-		local g = cardGrid(sp, 40)
-		itemCard(g, 0, "No shield", "carry a secondary", lo.shield == nil, true, nil, function()
+		local function noShield()
 			lo.shield, lo.shieldSkin = nil, nil
 			if lo.thirdKind == "sidearm" then lo.thirdKind, lo.thirdId, lo.thirdSkin = nil, nil, nil end
 			dirty()
-		end)
+		end
+		if tiles then
+			local g = tiles.grid(sp, 3, 100)
+			tiles.tile(g, 0, {name = "No shield", sub = "carry a secondary", have = true, on = lo.shield == nil, onClick = noShield})
+			for i, sh in ipairs(Catalog.ARSENAL.shields) do
+				local have = owns("weapons", sh.id)
+				tiles.tile(g, i, {name = sh.name, sub = have and string.format("+%d° · %d%% cheaper", sh.cone, math.floor((1 - sh.block) * 100 + 0.5)) or unlockText(sh),
+					have = have, weapon = sh.id, skin = lo.shield == sh.id and lo.shieldSkin or nil, on = lo.shield == sh.id, onClick = function()
+						if have then
+							lo.shield, lo.shieldSkin = sh.id, sh.id .. ":Default"
+							lo.secondary, lo.secondarySkin = nil, nil
+							dirty()
+						else toast(sh.name .. ": " .. unlockText(sh) .. (sh.marks and (" (or " .. fmt(sh.marks) .. " Marks in the ARMORY)") or ""), COL.DIM) end
+					end})
+			end
+		end
+		local g = cardGrid(sp, 40)
+		g.Visible = not tiles
+		itemCard(g, 0, "No shield", "carry a secondary", lo.shield == nil, true, nil, noShield)
 		for i, sh in ipairs(Catalog.ARSENAL.shields) do
 			local have = owns("weapons", sh.id)
 			local stats = string.format("blocks %d%% cheaper · +%d°%s", math.floor((1 - sh.block) * 100 + 0.5), sh.cone, sh.arrows and " · arrows" or "")
@@ -6075,10 +6316,16 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard)
 		end
 		if lo.shield then
 			local sh = Catalog.WEAPON[lo.shield]
-			if sh then dim(sp, sh.desc or "", 12) end
+			if sh then
+				dim(sp, string.format("%s  Blocks %d%% cheaper, +%d° of guard%s%s.", sh.desc or "", math.floor((1 - sh.block) * 100 + 0.5), sh.cone,
+					sh.arrows and ", stops arrows" or "", (sh.speed or 1) < 1 and string.format(", %d%% walk speed", math.floor(sh.speed * 100 + 0.5)) or ""), 12)
+			end
 			heading(sp, "SHIELD SKIN  ·  HERALDRY")
-			skinCards(sp, lo.shield, lo.shieldSkin, function(v) lo.shieldSkin = v; dirty() end)
+			skinCards(sp, lo.shield, lo.shieldSkin, function(v) lo.shieldSkin = v; dirty() end, "shieldSkin")
 		end
+	elseif tiles and not cls.ranged and not cls.magic then
+		local sp = panel(list, "SHIELD")
+		dim(sp, "A shield goes beside a one-handed weapon: pick one under WEAPONS (a sword, an axe, a mace…) and your shields show here.", 12)
 	end
 	-- (a loadout saved when the power and the throwable shared the third slot)
 	if lo.power == nil and lo.thirdKind == "power" then lo.power = lo.thirdId end
@@ -9188,7 +9435,12 @@ bus.Event:Connect(function(what, tab)
 		-- (a showcase over, mid-battle: the spawn screen, not this; CleanView may have turned the
 		-- screen back on after the menu had closed itself)
 		if open then hide() else gui.Enabled = false; bus:Fire("HubClosed") end
-	elseif what == "PlayDoor" then goDoor(tab) end   -- the Courtyard's gates
+	elseif what == "PlayDoor" then goDoor(tab)   -- the Courtyard's gates
+	-- (straight to a part of the loadout: "WEAPONS", "ARMOR", "GEAR" or "LOOK")
+	elseif what == "LoadoutTab" then
+		ui.loTab = tab
+		if not open or currentTab ~= "CLASSES" then show("CLASSES") elseif render.CLASSES then render.CLASSES() end
+	end
 end)
 
 -- in the Courtyard with no body: the menu opens by itself, over the cinematic

@@ -69,18 +69,33 @@ return function(W, B)
 		local out = grip()
 		table.insert(out, B.box("Face", v(2.3, 1.55, 0.14), cf(0, 0.55, -0.3), C.CLOTH, M.WOOD, FACE(2.3, 2.6, 0.05, -0.37, false, "heater")))
 		table.insert(out, B.box("Point", v(1.63, 1.63, 0.14), cf(0, -0.2, -0.29, 0, 0, 45), C.CLOTH, M.WOOD, BOARD))
-		table.insert(out, B.box("Rim", v(2.42, 0.12, 0.18), cf(0, 1.34, -0.3), C.IRON, M.METAL, RIM))
+		table.insert(out, B.box("Rim", v(2.42, 0.12, 0.2), cf(0, 1.34, -0.3), C.IRON, M.METAL, RIM))
 		for _, s in ipairs({-1, 1}) do
-			table.insert(out, B.box("Rim", v(0.1, 1.7, 0.16), cf(s * 1.16, 0.52, -0.3), C.IRON, M.METAL, RIM))
+			table.insert(out, B.box("Rim", v(0.1, 1.7, 0.2), cf(s * 1.16, 0.52, -0.3), C.IRON, M.METAL, RIM))
+			-- (and down the point's two edges, so the rim runs all the way round)
+			table.insert(out, B.box("Rim", v(1.7, 0.1, 0.2), cf(s * 0.585, -0.785, -0.3, 0, 0, s * 45), C.IRON, M.METAL, RIM))
 		end
 		return out
 	end
 	W.Kite = function()
 		local out = grip()
 		table.insert(out, B.cyl("Crown", 2.2, 0.14, cf(0, 0.75, -0.31, 90, 0, 0), C.CLOTH, M.WOOD, BOARD))
-		table.insert(out, B.box("Face", v(2.2, 1.3, 0.14), cf(0, 0.15, -0.3), C.CLOTH, M.WOOD, FACE(2.0, 3.2, 0.1, -0.38, false, "kite")))
-		table.insert(out, B.box("Point", v(1.56, 1.56, 0.14), cf(0, -0.9, -0.29, 0, 0, 45), C.CLOTH, M.WOOD, BOARD))
+		table.insert(out, B.box("Face", v(2.2, 1.25, 0.14), cf(0, 0.125, -0.3), C.CLOTH, M.WOOD, FACE(2.0, 3.2, 0.1, -0.38, false, "kite")))
+		-- the long point: two wedges meeting at x = 0, from the board's foot (y -0.5) down to y -2
+		local down = CFrame.new(0, 0, -0.3) * CFrame.Angles(0, 0, math.pi)
+		for _, s in ipairs({-1, 1}) do
+			table.insert(out, B.wedge("Point", v(0.14, 1.5, 1.1), down * cf(s * 0.55, 1.25, 0, 0, -s * 90, 0), C.CLOTH, M.WOOD, BOARD))
+		end
 		table.insert(out, B.ball("Boss", 0.4, cf(0, 0.3, -0.4), C.STEEL, M.METAL, RIM))
+		-- the iron rim all round: over the top in short lengths, down the sides, down the point
+		for k = 0, 7 do
+			local a = math.pi * (k + 0.5) / 8
+			table.insert(out, B.box("Rim", v(0.46, 0.1, 0.2), cf(math.cos(a) * 1.13, 0.75 + math.sin(a) * 1.13, -0.31, 0, 0, math.deg(a) + 90), C.IRON, M.METAL, RIM))
+		end
+		for _, s in ipairs({-1, 1}) do
+			table.insert(out, B.box("Rim", v(0.1, 1.3, 0.2), cf(s * 1.13, 0.125, -0.3), C.IRON, M.METAL, RIM))
+			table.insert(out, B.box("Rim", v(1.92, 0.1, 0.2), cf(s * 0.565, -1.25, -0.3, 0, 0, s * math.deg(math.atan2(1.5, 1.1))), C.IRON, M.METAL, RIM))
+		end
 		return out
 	end
 	-- the scutum: a tall board bent round you (a middle panel and two angled sides)
@@ -97,7 +112,10 @@ return function(W, B)
 	end
 	W.Pavise = function()
 		local out = grip()
-		table.insert(out, B.box("Face", v(2.6, 4.0, 0.2), cf(0, 0.2, -0.32), C.CLOTH, M.WOOD, FACE(2.5, 3.9, 0.2, -0.55, false, "rect")))
+		-- (its paint lies on the board itself, under the ridge: PaintZ, ReplicatedStorage ▸ ShieldPaint)
+		local face = FACE(2.5, 3.9, 0.2, -0.55, false, "rect")
+		face.PaintZ = -0.425
+		table.insert(out, B.box("Face", v(2.6, 4.0, 0.2), cf(0, 0.2, -0.32), C.CLOTH, M.WOOD, face))
 		table.insert(out, B.box("Ridge", v(0.42, 4.0, 0.14), cf(0, 0.2, -0.47), C.CLOTH, M.WOOD, BOARD))
 		for _, s in ipairs({-1, 1}) do
 			table.insert(out, B.box("Rim", v(0.12, 4.1, 0.24), cf(s * 1.3, 0.2, -0.32), C.IRON, M.METAL, RIM))

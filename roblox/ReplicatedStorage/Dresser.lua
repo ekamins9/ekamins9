@@ -503,7 +503,7 @@ end
 -- real Tool on the server (or a preview copy): tint SkinPart parts (or swap
 -- in the skin model's parts around the Handle), then build the skin's trim —
 -- the parts that change the weapon's shape (SkinTrims)
-local Heraldry, ShieldDress
+local Heraldry, ShieldDress, ShieldPaint
 function Dresser.applySkin(tool, skinId, variant)
 	local skin = skinId and Catalog.SKIN[skinId]
 	SkinTrims.clear(tool)
@@ -512,6 +512,8 @@ function Dresser.applySkin(tool, skinId, variant)
 	ShieldDress = ShieldDress or require(script.Parent:WaitForChild("ShieldDress"))
 	Heraldry.clear(tool)   -- (a shield's arms: ReplicatedStorage ▸ Heraldry)
 	ShieldDress.clear(tool)   -- (and its dress: materials put back, ornaments gone)
+	ShieldPaint = ShieldPaint or require(script.Parent:WaitForChild("ShieldPaint"))
+	ShieldPaint.clear(tool)   -- (and its paint: the emblem, the division, the scratches)
 	-- (whatever the last skin hid, a staff's plain claws and orb, comes back first)
 	for _, p in ipairs(tool:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
@@ -563,6 +565,8 @@ function Dresser.applySkin(tool, skinId, variant)
 	if skin.heraldry and Heraldry.apply(tool, skin) then n += 1 end
 	-- a shield skin's materials and ornaments (wings, a crown, a sunburst…: ReplicatedStorage ▸ ShieldDress)
 	if (skin.adorn or skin.field or skin.rim) and ShieldDress.apply(tool, skin) then n += 1 end
+	-- its painted face: a great emblem, the field split, the scratches, the light (ReplicatedStorage ▸ ShieldPaint)
+	if (skin.crate == "Heraldry" or skin.emblem or skin.division) and ShieldPaint.apply(tool, skin) then n += 1 end
 	return n > 0
 end
 

@@ -80,7 +80,7 @@ return {
 		refund = {Rare = 450, Epic = 1000, Legendary = 2400, Mythic = 7000}, accent = C(120, 200, 255),
 	},
 	Heraldry = {
-		name = "Heraldry Crate", description = "Shields painted with arms: lions, crosses, suns and chevrons. Mythic: the Aegis of the First King.",
+		name = "Heraldry Crate", description = "47 shields with real arms on them: gold lions, a phoenix in flames, the kraken, a dragon knight's black board, the moonlit duelist. Mythic: the Aegis of the First King.",
 		cost = 75, odds = {Common = 50, Rare = 32, Epic = 13.7, Legendary = 4, Mythic = 0.3}, pity = 35,
 		refund = {Common = 150, Rare = 400, Epic = 900, Legendary = 2000, Mythic = 6000}, accent = C(200, 40, 50),
 	},

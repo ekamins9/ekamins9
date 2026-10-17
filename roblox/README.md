@@ -66,6 +66,8 @@ Folder layout mirrors where each script lives in Studio.
 | `ServerScriptService/Combat/Powers.lua`, `Throwing.lua`, `Shields.lua` | `ServerScriptService` → `Combat` → `Powers` / `Throwing` / `Shields` (powers, throwables, shields) | ModuleScript each |
 | `ServerScriptService/Build/ArsenalBlueprints.lua` | `ServerScriptService` → `Build` → `ArsenalBlueprints` (shields' and throwables' bodies) | ModuleScript |
 | `ReplicatedStorage/Heraldry.lua` | `ReplicatedStorage` → `Heraldry` (arms painted on shields) | ModuleScript |
+| `ReplicatedStorage/ShieldPaint.lua` | `ReplicatedStorage` → `ShieldPaint` (a shield skin's painted face: emblem, field split, scratches, light) | ModuleScript |
+| *(Studio-only)* | `ReplicatedStorage` → `ShieldArt` (a StringValue per picture: the 24 emblems with their `_o` outlines and `_s` shadows, and per board shape its 14 field splits, `_shade` and `_wear`) | Folder |
 | `ReplicatedStorage/Catalog/Powers.lua`, `Arsenal.lua`, `ArsenalSkins.lua`, `PowerSkins.lua`, `Mastery.lua` | `ReplicatedStorage` → `Catalog` → … | ModuleScript each |
 | `StarterPlayerScripts/Powers.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Powers` (the orb, the Power key, every power's FX, thrown things, shields raised) | LocalScript |
 | `StarterPlayerScripts/StatusFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `StatusFX` (burning, frozen, poisoned, rooted, dazed, shocked bodies) | LocalScript |
@@ -695,7 +697,15 @@ it, against its armor, so it goes wherever the arm goes); blocking brings the ar
 (`RigPose` SHIELD_RAISE / SHIELD_ACROSS) and the shield turns upright on it, just in front of you
 (the weld's IdleC0 / BlockC0, in the arm's frame); the weapon keeps its guard (no block clip with a
 shield, CombatClient). **Their skins are things of their own** (`Catalog ▸ ArsenalSkins`): a board
-material and a rim material, arms raised and outlined (`Heraldry`), and ornaments built onto the
+material and a rim material, **a painted face** (`ReplicatedStorage ▸ ShieldPaint`: a great emblem
+(lion, dragon, eagle, griffin, phoenix, kraken, wolf, stag, bear, boar, raven, horse, serpent,
+tower, sun, moon, rose, fleur-de-lis, tree, knotwork, crossed swords, thunderbolt, cross, skull)
+with its dark outline and drop shadow, the field split in a second colour (per pale, per fess,
+quarterly, per bend, per saltire, per chevron, gyronny, paly, barry, checky, chief, bordure, pile,
+cross), the scratches of its fights (more on the commoner ones) and a painted light across the
+board; each a Decal on a clear plate just in front of the board, so it shows the same in a menu's
+ViewportFrame; the pictures are Studio-only, `ReplicatedStorage ▸ ShieldArt`), arms raised and
+outlined (`Heraldry`), and ornaments built onto the
 shield following its outline (`ReplicatedStorage ▸ ShieldDress`: studs, a gilded edge, a glowing
 edge, a boss, a gem, a spike, thorns, wings, a crown, a sunburst behind it, horns, hanging
 feathers, vines, runes, iron bands, ribbons, battlements, flames). Buckler, Targe, Round Shield,
@@ -720,9 +730,9 @@ flown on an arc by the server, drawn on every screen (`ThrowFX`); bursts are pow
 only), their bodies from `Build ▸ ArsenalBlueprints`, so Blueprints builds them and their menu
 displays like any weapon's. **Skins**: power skins are spell skins (`Catalog ▸ PowerSkins`,
 appended to SpellSkins; the **Spellforge Crate**, Mythic *Seraph*); shield and throwable skins
-are weapon skins (`Catalog ▸ ArsenalSkins`): the **Heraldry Crate** paints arms on shields
-(`ReplicatedStorage ▸ Heraldry`: cross, saltire, chevron, pale, fess, bend, quarterly, bordure,
-chief, sun, star, lion, tower; Mythic *Aegis of the First King*) and the **Quartermaster's
+are weapon skins (`Catalog ▸ ArsenalSkins`): the **Heraldry Crate**'s 47 shields (each board
+with its own emblem and colours: ShieldPaint, Heraldry, ShieldDress; Mythic *Aegis of the First
+King*) and the **Quartermaster's
 Crate** dresses throwables (Mythic *Phoenix Feathers*). All three are in the daily rotation
 (4 of 11 a day).
 
@@ -829,8 +839,15 @@ and a UIScale fits it to any screen.
   `PARTY_MAX` = 3 and always travels together. Friends in other servers can be invited: the
   invite crosses servers by MessagingService, and accepting teleports them to the leader.
 - **LOADOUT**: one loadout per class (weight → stats), with a live mannequin and TEAM PREVIEW.
-  **Anything locked can be tried on**: it shows on you, with where it comes from and a buy
-  button when it is in today's shop.
+  **Four tabs** over the page, each saying what's in it now: **WEAPONS** (what you carry, big,
+  with its skin; every weapon as a 3D picture, narrowed by kind: one-handed, two-handed,
+  polearms…; its skins as pictures, yours first, then the rarest; spells; the secondary),
+  **ARMOR** (one slot at a time: a HELMET / TOP / LEGS switch with what you wear in each; the
+  class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
+  shield arm to you; the power, the throwable, a sidearm) and **LOOK** (the finish, the colours).
+  `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab.
+  **Anything locked can be tried on** (a shield's skin too): it shows on you, with where it
+  comes from and a buy button when it is in today's shop.
 - **🔒 LOCKED: SHOWN / HIDDEN** (the Loadout and the Armory; Settings ▸ *Locked items in menus*,
   saved): everything there is to get with how to get it (the default), or only what you own —
   every list at once (armor, finishes, weapons, skins, spells and their looks, kill effects,

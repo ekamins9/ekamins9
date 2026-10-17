@@ -29,7 +29,7 @@ local function outline(shape, W, H)
 			local a = math.pi * (k / 8)
 			table.insert(pts, {math.cos(a) * 1.1, 0.65 + math.sin(a) * 1.1})
 		end
-		table.insert(pts, {-1.1, -1.0}); table.insert(pts, {0, -2.1}); table.insert(pts, {1.1, -1.0})
+		table.insert(pts, {-1.1, -0.6}); table.insert(pts, {0, -2.1}); table.insert(pts, {1.1, -0.6})
 		-- (counter-clockwise from the right: the arc runs right → left over the top)
 		local out = {}
 		for i = 1, #pts do out[i] = pts[i] end
@@ -41,6 +41,9 @@ local function outline(shape, W, H)
 	end
 	return nil   -- round: a circle of W
 end
+
+-- (ShieldPaint's pictures cover this outline's box)
+ShieldDress.outline = outline
 
 local function darker(c, k) return c:Lerp(Color3.new(0, 0, 0), k or 0.45) end
 
