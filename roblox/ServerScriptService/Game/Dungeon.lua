@@ -203,15 +203,23 @@ local function wallRun(ctx, th, c, axis, len, h, gaps, doorH)
 	seg(at, len / 2, 0, h)
 end
 
--- a sconce on a wall: bracket, flame, the theme's light
-local function sconce(ctx, th, pos, facing)
+-- a sconce on a wall: bracket, flame, the theme's light (a pool of it on the wall and the floor
+-- below, darkness between: the rooms aren't lit evenly). `out`: it has guttered, a wisp of smoke
+-- over cold embers and no light (the dark stretches a raid's rooms have)
+local function sconce(ctx, th, pos, facing, out)
 	local iron = Color3.fromRGB(56, 54, 58)
 	local f = CFrame.lookAt(pos, pos + facing)
 	K.box(ctx, "Bracket", Vector3.new(0.4, 0.4, 1.2), f * CFrame.new(0, 0, -0.4), iron, Enum.Material.Metal, ctx.Props)
 	K.cyl(ctx, "Cup", 0.9, 0.5, f * CFrame.new(0, 0.3, -1), iron, Enum.Material.Metal, ctx.Props)
+	if out then
+		local ember = K.ball(ctx, "Embers", 0.6, f * CFrame.new(0, 0.6, -1), Color3.fromRGB(70, 34, 22), Enum.Material.Neon, ctx.Props)
+		ember.CanCollide = false
+		local smoke = Instance.new("Smoke"); smoke.Size = 0.4; smoke.RiseVelocity = 1.4; smoke.Opacity = 0.08; smoke.Color = Color3.fromRGB(70, 70, 70); smoke.Parent = ember
+		return
+	end
 	local flame = K.ball(ctx, "Flame", 0.8, f * CFrame.new(0, 0.85, -1), th.torch, Enum.Material.Neon, ctx.Props)
 	flame.CanCollide = false
-	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = th.torch; l.Range = 18; l.Brightness = 1.5; l.Shadows = true; l.Parent = flame
+	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = th.torch; l.Range = 12; l.Brightness = 1.9; l.Shadows = true; l.Parent = flame
 	local fire = Instance.new("Fire"); fire.Size = 2; fire.Heat = 5; fire.Color = th.torch; fire.SecondaryColor = shade(th.torch, 0.6); fire.Parent = flame
 end
 
@@ -282,7 +290,7 @@ P.brazier = function(ctx, th, cf)
 	K.cyl(ctx, "BrazierBowl", 2.6, 0.9, cf * CFrame.new(0, 3.2, 0), iron, Enum.Material.Metal, ctx.Props)
 	local coal = K.cyl(ctx, "Coals", 2.2, 0.3, cf * CFrame.new(0, 3.65, 0), th.accent, Enum.Material.Neon, ctx.Props)
 	coal.CanCollide = false
-	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = th.torch; l.Range = 20; l.Brightness = 1.6; l.Parent = coal
+	local l = Instance.new("PointLight"); l.Name = "Flicker"; l.Color = th.torch; l.Range = 15; l.Brightness = 1.8; l.Parent = coal
 	local fire = Instance.new("Fire"); fire.Size = 3.5; fire.Heat = 6; fire.Color = th.torch; fire.SecondaryColor = shade(th.torch, 0.6); fire.Parent = coal
 end
 P.mushroom = function(ctx, th, cf, rng)
@@ -1109,7 +1117,8 @@ function Dungeon.build(themeKey, opts)
 					local pos
 					if d == "N" or d == "S" then pos = c + Vector3.new(off, 8, v[2] * (r.d / 2 - 0.2))
 					else pos = c + Vector3.new(v[1] * (r.w / 2 - 0.2), 8, off) end
-					sconce(ctx, th, pos, inward[d])
+					local lit = r.kind == "start" or r.kind == "exit" or rng:NextNumber() > (opts.raid and 0.3 or 0.12)
+					sconce(ctx, th, pos, inward[d], not lit)
 				end
 			end
 		end
@@ -1255,19 +1264,20 @@ function Dungeon.build(themeKey, opts)
 	local fin = finalId and list[finalId] or s
 	K.camera(ctx, Vector3.new(s.cx + s.w * 0.35, 12, s.cz + s.d * 0.35), Vector3.new(s.cx, 3, s.cz))
 	K.camera(ctx, Vector3.new(fin.cx - fin.w * 0.4, 14, fin.cz - fin.d * 0.4), Vector3.new(fin.cx, 4, fin.cz))
-	local light = th.light
-	if opts.raid then
-		light = table.clone(th.light)
-		light.Ambient = shade(th.light.Ambient, 0.62)
-		light.OutdoorAmbient = shade(th.light.OutdoorAmbient, 0.62)
-		light.Brightness = math.min(th.light.Brightness, 0.4)
-		light.FogEnd = math.min(th.light.FogEnd or 260, 210)
-		light.ExposureCompensation = -0.3
-		light.EnvironmentDiffuseScale = 0.2
-		light.EnvironmentSpecularScale = 0.35
-	end
+	-- the dark: what light there is comes from the torches (pools on the walls, darkness between)
+	-- and the lantern you carry (StarterPlayerScripts ▸ DungeonMood); a raid's darker still
+	local light = table.clone(th.light)
+	light.Ambient = shade(th.light.Ambient, opts.raid and 0.3 or 0.42)
+	light.OutdoorAmbient = shade(th.light.OutdoorAmbient, opts.raid and 0.3 or 0.42)
+	light.Brightness = 0
+	light.FogStart = opts.raid and 16 or 30
+	light.FogEnd = opts.raid and 150 or 200
+	light.FogColor = shade(th.light.FogColor, 0.6)
+	light.ExposureCompensation = 0.1
+	light.EnvironmentDiffuseScale = 0.12
+	light.EnvironmentSpecularScale = 0.4
 	K.lighting(ctx, light)
-	K.atmosphere(ctx, {Density = opts.raid and 0.4 or 0.32, Offset = 0, Color = th.light.FogColor, Decay = th.light.FogColor, Glare = 0, Haze = opts.raid and 2 or 1.5})
+	K.atmosphere(ctx, {Density = opts.raid and 0.45 or 0.38, Offset = 0, Color = shade(th.light.FogColor, 0.7), Decay = shade(th.light.FogColor, 0.4), Glare = 0, Haze = opts.raid and 2.4 or 1.8})
 	ctx.model:SetAttribute("Theme", themeKey)
 	ctx.model:SetAttribute("Generated", true)
 	local okF, errF = pcall(K.finish, ctx)

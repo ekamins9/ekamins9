@@ -1,4 +1,20 @@
-# Updated scripts: duels in the middle of a battle (three new Lists maps)
+# Updated scripts: the dungeons are dark now
+
+- **Dark floors** (The Depths, Deadvault): low ambient light and close fog; torches throw pools of light on the walls with darkness between, and in a raid some have guttered out.
+- **Your lantern**: every adventurer carries a warm light, so you see what's around you and not much more.
+- **The air**: dust drifting through the light, colder colours per theme, darker screen edges.
+- **The sounds of the dark**: a low drone; now and then a whisper, an iron clank or a deep thud somewhere behind or beside you.
+- **Checked in Play** in the Bone Crypt (Deadvault): about 40 fps in Studio play, the mood costing ~3.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | dark lighting, pooled torches, guttered sconces |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: duels in the middle of a battle (three new Lists maps)
 
 - **Redmeadow, Ironvale, Grimfield** (The Lists, 1v1 to 3v3): a duel ring of painted pavises and planted spears in an open field where two whole armies fight all round you. Battle lines meet either side of the ring, archers behind it loose volleys right over your heads, battle-mages' fire crosses the sky, cavalry rides down a flank, wagons burn. The winners of a round cheer.
 - **A new map layout** (`warfield` in MapForge): any map built with it gets the battle by itself.
@@ -37,23 +53,3 @@ Studio-only (save the place): ServerStorage ▸ Maps ▸ Redmeadow, Ironvale, Gr
 | [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | blasts without a burn mark |
 | [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | split-arrow fix |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: War's armies are real soldiers now
-
-- **The background armies look real**: every soldier on the flanks is a copy of the game's own armoured soldier (real armour sets, the side's colours, real weapons and shields), animated limb by limb: marching, charging, fighting face to face, falling, flung by blasts. The fallen stay on the field.
-- **Set-pieces**: an opening charge with horns and drums where both lines crash together; lanes that pull back and charge again; trebuchet fire throwing men through the air; volleys cutting men down; cavalry ploughing through a flank.
-- **Atmosphere**: dust over each melee, columns of smoke, the din of each flank coming from its own side, the roar of the armies, war drums (new generated sounds).
-- **Performance**: 16,400 crowd parts at 59 fps in Studio, the crowd costing about 1 ms a frame (levels of detail by rank, full posing only near the camera, cached poses further off, culling). First try ran at 18 fps; the fix was not re-posing men for small drifts.
-- The flank lanes moved in, right up to the stakes, so the battle is close.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | new |
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | smoke columns, haze, positional loops |
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the crowds, charges, atmosphere |
-| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | lanes nearer |
-| [README.md](README.md) | | doc | |
-
-Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Drums, Roar, Melee, Fire, Drone, Whisper.

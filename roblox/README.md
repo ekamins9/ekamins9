@@ -1892,6 +1892,15 @@ isn't built yet shows COMING SOON. A `party` door reserves your party's own serv
 Horde); a `matchmade` one finds a public server for that mode with room, else reserves one
 (`HubServer` ▸ play). Studio has no teleports: PLAY switches the mode here, as always.
 
+### Down in the dark: every dungeon floor (`Game ▸ Dungeon`, `DungeonMood.client`)
+The floors are dark: no daylight, a low ambient, close fog; the light is the torches' (pools on the
+walls, 12 studs, darkness between; a raid's rooms have more of them guttered, a wisp of smoke over
+cold embers) and the lantern every adventurer carries (`DungeonMood.client`: a warm light on each
+player's chest, drawn on every screen). Dust drifts through the light round you, the colours go
+cold (each theme its own grade), the screen's edges darken, a low drone sits under everything, and
+now and then, somewhere in the dark behind or beside you, a whisper, an iron clank, a deep thud
+from far below (WarAudio: Drone, Whisper, Gate, Impact).
+
 ### The Depths (`Game ▸ Modes ▸ Depths`, `Game ▸ Dungeon`)
 A party of 1–4 crawls a dungeon **built fresh every run**, in the theme the vote picked (the Bone
 Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge: `Catalog ▸ Dungeons`).
