@@ -340,9 +340,13 @@ function Horizon.build(map, name)
 		local h = ridge and r:NextNumber(110, 220) or r:NextNumber(260, 480)   -- (how high it rises)
 		local p = at(a, d, G)
 		if themeKey == "desert" or themeKey == "desertDusk" then
-			-- mesas: flat-topped and steep, low dunes between
-			cyl(ctx, w * 0.6, h, p + V3(0, h / 2 - 4, 0), shade(T.cliffColor, r:NextNumber(0, 0.12)), Mat.Sandstone)
-			ball(ctx, V3(w * 1.1, h * 0.7, w * 0.8), CF(p + V3(r:NextNumber(-1, 1) * w * 0.4, 0, 0)), T.groundColor, T.ground)
+			-- buttes: a sloping skirt of fallen rock, a flat-topped cliff band rising out of it (two
+			-- tiers, not quite round), low dunes between
+			local rock = shade(T.cliffColor, r:NextNumber(0, 0.12))
+			ball(ctx, V3(w * 1.0, h * 1.1, w * 0.85), CF(p) * CFrame.Angles(0, r:NextNumber(0, 3), 0), shade(rock, 0.06), Mat.Sandstone)
+			part(ctx, "Part", V3(h * 0.45, w * 0.52, w * 0.44), CF(p + V3(0, h * 0.62, 0)) * CFrame.Angles(0, r:NextNumber(0, 3), math.rad(90)), rock, Mat.Sandstone, Enum.PartType.Cylinder)
+			part(ctx, "Part", V3(h * 0.2, w * 0.36, w * 0.3), CF(p + V3(w * 0.05, h * 0.92, 0)) * CFrame.Angles(0, r:NextNumber(0, 3), math.rad(90)), tint(rock, 0.06), Mat.Sandstone, Enum.PartType.Cylinder)
+			ball(ctx, V3(w * 1.1, h * 0.5, w * 0.8), CF(p + V3(r:NextNumber(-1, 1) * w * 0.5, 0, r:NextNumber(-1, 1) * w * 0.3)), T.groundColor, T.ground)
 		else
 			ball(ctx, V3(w, h * 2, w * 0.75), CF(p) * CFrame.Angles(0, -a + math.pi / 2 + r:NextNumber(-0.3, 0.3), 0), shade(T.cliffColor, r:NextNumber(0, 0.12)), rocky)
 			if T.snow or (themeKey == "dawnMist" and i % 3 == 0) then
