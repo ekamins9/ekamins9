@@ -1,4 +1,18 @@
-# Updated scripts: pigeons in the Courtyard
+# Updated scripts: Web Spit
+
+- **The Spider Queen and the Broodmother spit webs**: a pale ring lights under you, and a moment later a web lands there. Still in it, you're stuck fast for a moment, silk over your feet and legs. Dodge out of the ring.
+- A new boss move kind any monster can use: `web`.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BossMoves.lua](ServerScriptService/Combat/BossMoves.lua) | ServerScriptService ▸ Combat | ModuleScript | `K.web` |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Queen and Broodmother get it |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | BossFX "Webbed" |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: pigeons in the Courtyard
 
 - **The Courtyard** has a flock of pigeons pecking about the fountain. Run through them and they all go up at once in a clatter of wings, off over the walls, and drift back down a while later.
 

@@ -2213,7 +2213,9 @@ Hollow Abbey, the Silk Caverns: `Catalog ▸ Dungeons`). Three floors; floor 3 e
   ahead of you every little while. Its brood: Cave Spiders by the dozen, Ghouls (the cocooned dead,
   up again), Skeleton Archers and Goblin Shamans; champions the Broodmother and the Wraith; its
   queen **Arachnessa, Queen of the Silk** (a spider the size of a cart, venom-green eyes, a red
-  mark on her back: Pounce, Skittering Rush, Venom Burst, Web Spit, then Brood Beneath and Falling
+  mark on her back: Pounce, Skittering Rush, Venom Burst, Web Spit (a ring under each of you, then
+  a web lands there: still in it, you're stuck fast 1.8 s; the Broodmother spits one too), then
+  Brood Beneath and Falling
   Brood as THE BROOD AWAKENS, her brood called up about her, and the ceiling crawls on you); her
   lair is her nest (webs, egg sacs and cocoons about her dais).
   Vote picture: MapShots ▸ SilkCaverns.

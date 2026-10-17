@@ -716,6 +716,43 @@ if bossFx then
 				shakePower = math.max(os.clock() < shakeUntil and shakePower or 0, (b or 1) * (1 - d / 100))
 				shakeUntil = os.clock() + SHAKE
 			end
+		elseif kind == "Webbed" then
+			-- caught in a spider's web: silk over the feet and legs, strands up to the waist, a while
+			if typeof(a) ~= "Instance" or not a.Parent then return end
+			local root = a:FindFirstChild("HumanoidRootPart")
+			if not root then return end
+			local secs = type(b) == "number" and b or 1.6
+			local feet = root.Position - Vector3.new(0, 2.9, 0)
+			local f = Instance.new("Folder"); f.Name = "Webbed"; f.Parent = workspace
+			local SILK = Color3.fromRGB(236, 236, 228)
+			local function strand(p0, p1, w)
+				local d = p1 - p0
+				local s = Instance.new("Part")
+				s.Size = Vector3.new(w, w, math.max(d.Magnitude, 0.1))
+				s.CFrame = CFrame.lookAt((p0 + p1) / 2, p1)
+				s.Color, s.Material, s.Transparency = SILK, Enum.Material.Fabric, 0.25
+				s.Anchored, s.CanCollide, s.CanQuery, s.CanTouch, s.CastShadow = true, false, false, false, false
+				s.Parent = f
+			end
+			local disc = Instance.new("Part")
+			disc.Shape = Enum.PartType.Cylinder
+			disc.Size = Vector3.new(0.08, 5, 5)
+			disc.CFrame = CFrame.new(feet + Vector3.new(0, 0.05, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+			disc.Color, disc.Material, disc.Transparency = SILK, Enum.Material.Fabric, 0.45
+			disc.Anchored, disc.CanCollide, disc.CanQuery, disc.CanTouch, disc.CastShadow = true, false, false, false, false
+			disc.Parent = f
+			for i = 1, 8 do
+				local ang = i / 8 * math.pi * 2 + math.random() * 0.3
+				local out = feet + Vector3.new(math.cos(ang) * 2.3, 0.1, math.sin(ang) * 2.3)
+				local up = root.Position + Vector3.new(math.cos(ang + 1.2) * 0.7, -0.4 - math.random() * 1.2, math.sin(ang + 1.2) * 0.7)
+				strand(out, up, 0.06)
+			end
+			local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+			WarFX.sound("Skitter", feet, {volume = 0.5, speed = 1.3, near = 8, range = 60})
+			task.delay(secs, function()
+				for _, p in ipairs(f:GetChildren()) do TweenService:Create(p, TweenInfo.new(0.4), {Transparency = 1}):Play() end
+				task.delay(0.45, function() f:Destroy() end)
+			end)
 		elseif kind == "Wail" then
 			-- a banshee's scream: heard far off; caught near it, half deaf a few seconds
 			-- (ReplicatedStorage ▸ Hearing) and the screen shaken

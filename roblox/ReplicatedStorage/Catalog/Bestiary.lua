@@ -49,7 +49,8 @@ local function add(id, t) t.id = id; M[id] = t end
 add("CaveSpider", {name = "Cave Spider", faction = "Beast", skill = "Beast", weapon = "Dagger", hp = 60, speed = 1.3, weight = "Light", scale = 0.72,
 	look = {body = "spider", skin = C(54, 44, 36), eyes = C(255, 64, 40), mark = C(112, 88, 62)}, tier = 1})
 add("Broodmother", {name = "Broodmother", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 260, speed = 1.05, weight = "Medium", scale = 1.45,
-	look = {body = "spider", skin = C(34, 28, 30), eyes = C(255, 40, 30), mark = C(168, 34, 28)}, traits = {"summon"}, summons = {"CaveSpider"}, tier = 3})
+	look = {body = "spider", skin = C(34, 28, 30), eyes = C(255, 40, 30), mark = C(168, 34, 28)}, traits = {"summon"}, summons = {"CaveSpider"},
+	moves = {{kind = "web", name = "Web Spit", dmg = 6, cd = 12, radius = 4, hold = 1.4}}, tier = 3})
 
 -- the BANSHEE: a pale wraith whose scream leaves you half deaf (Combat ▸ BossMoves "wail"); a
 -- champion of the crypt, the manor and the abbey
@@ -66,7 +67,7 @@ add("SpiderQueen", {name = "Arachnessa, Queen of the Silk", faction = "Beast", s
 		{kind = "leap", name = "Pounce", dmg = 34, cd = 9, radius = 8, range = {10, 55}},
 		{kind = "charge", name = "Skittering Rush", dmg = 28, cd = 11, range = {12, 50}},
 		{kind = "nova", name = "Venom Burst", dmg = 22, cd = 9, radius = 6},
-		{kind = "barrage", name = "Web Spit", dmg = 12, cd = 8, count = 5, volleys = 2, spread = 40},
+		{kind = "web", name = "Web Spit", dmg = 8, cd = 9, radius = 5, hold = 1.8},
 		{kind = "eruption", name = "Brood Beneath", dmg = 20, cd = 10, phase = 2, count = 8},
 		{kind = "rain", name = "Falling Brood", dmg = 18, cd = 11, phase = 2, count = 8, radius = 5},
 	},

@@ -25,6 +25,9 @@
        barrage    a fan of bolts at you (step aside, dodge)
        beam       a lance of light sweeps across the room
        roar       (the second phase's start) a burst that throws everyone back
+       web        it spits: a pale ring lights under each of you, and a moment later a web lands
+                  there; anyone still in it is stuck fast for a moment (slowed to a crawl:
+                  BossFX "Webbed" draws the silk on every screen). Dodge out of the ring
        wail       a ring round it fills as it throws its head back, then it SCREAMS: everyone in
                   the ring is hurt a little, thrown off their feet a step, slowed a moment, and
                   half deaf for a few seconds (every screen: BossFX "Wail", Adventure.client); get
@@ -814,6 +817,37 @@ K.roar = function(mob, spec)
 	areaHit(mob, at, 12 + 3 * scaleOf(mob), spec.dmg or 10, spec, {knock = 55, lift = 24})
 	task.wait(0.8)
 end
+-- WEB: a web spat over each of them; caught, stuck fast a moment
+K.web = function(mob, spec)
+	local fx = fxOf(spec, mob)
+	local list = playersNear(mob, 70)
+	if #list == 0 then return end
+	hold(mob, 1.4)
+	pose(mob, "PwCast")
+	flash(mob, Color3.fromRGB(230, 230, 220), 1)
+	local r = spec.radius or 5
+	for _, c in ipairs(list) do
+		local at = groundUnder(rootOf(c).Position, mob)
+		Moves.circle(at, r, Color3.fromRGB(230, 230, 220), 1.1)
+		task.delay(1.1, function()
+			if not mob.alive then return end
+			sound(SND.land, at, 0.5, 1.6)
+			emitAt(at + Vector3.new(0, 1, 0), Color3.fromRGB(236, 236, 228), 30, 10, 2, nil, 1)
+			for _, v in ipairs(victims(mob)) do
+				local vr = rootOf(v)
+				if vr and flat(vr.Position - at).Magnitude <= r and math.abs(vr.Position.Y - at.Y) < 7 then
+					if strike(mob, v, spec.dmg or 8, spec, at, {knock = false}) then
+						local secs = spec.hold or 1.8
+						powers().addMods(v, {speed = 0.08}, secs, "Webbed")
+						fxRemote:FireAllClients("Webbed", v, secs)
+					end
+				end
+			end
+		end)
+	end
+	task.wait(1.2)
+end
+
 -- WAIL: the banshee's scream
 K.wail = function(mob, spec)
 	local fx = fxOf(spec, mob)
