@@ -387,7 +387,7 @@ local function buildArmies()
 			for _, side in ipairs({"A", "B"}) do
 				local f = side == "A" and 1 or -1
 				crowd:regiment(side .. s .. li, {side = side, kind = LANE_KIND[li], at = V3(s * x, 0, fz - f * 60), facing = f,
-					cols = 12, ranks = 6, spacing = 3.1, detail = li == 1 and "full" or "lite"})
+					cols = 12, ranks = 6, spacing = 3.1, detail = li == 1 and "full" or "lite", torches = WarCrowd.night()})
 			end
 		end
 	end
@@ -408,7 +408,7 @@ local function buildArmies()
 		if not phone() then
 			for _, s in ipairs({-1, 1}) do
 				crowd:regiment("res" .. side .. s, {side = side, kind = "pike", at = V3(s * 200, 0, math.clamp(fz - f * 160, -330, 330)), facing = f,
-					cols = 14, ranks = 8, spacing = 3, detail = "mass"})
+					cols = 14, ranks = 8, spacing = 3, detail = "mass", torches = WarCrowd.night()})
 			end
 			-- the host: the rest of each army, drawn up in great blocks out on the flanks by its
 			-- camp (they never move: placed once, they cost nothing a frame)
@@ -416,7 +416,7 @@ local function buildArmies()
 			local cz = typeof(camp) == "Vector3" and camp.Z or -f * 330
 			for _, s in ipairs({-1, 1}) do
 				crowd:regiment("host" .. side .. s, {side = side, kind = s < 0 and "foot" or "pike", at = V3(s * 230, 0, cz + f * 60), facing = f,
-					cols = 16, ranks = 8, spacing = 3, detail = "mass", still = true})
+					cols = 16, ranks = 8, spacing = 3, detail = "mass", still = true, torches = WarCrowd.night()})
 			end
 		end
 	end

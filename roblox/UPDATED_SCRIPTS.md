@@ -1,4 +1,17 @@
-# Updated scripts: the armies answer your war cry
+# Updated scripts: torches in the night battles
+
+- **At night the armies carry torches**: on night maps (Nightfall in War, the night castles in Siege, Ravenfield) the battle lines show as firelight in the dark.
+- **Checked in Play** on Ravenfield: 52 torches, 52–58 fps in Studio play.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `torches`, `WarCrowd.night()` |
+| [War.client.lua](StarterPlayerScripts/War.client.lua), [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua), [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | torches at night |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the armies answer your war cry
 
 - **War Cry / Cheer in a battle**: your side's regiments nearby (within 140 studs) raise their weapons and roar back. Works in War, Siege, the warfields and anywhere the armies stand.
 - **Checked in Play** on Redfield (War): the cry by the Crown's lines; 90 s soak with no errors.
@@ -23,15 +36,3 @@
 | [README.md](README.md) | | doc | |
 
 Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Groan, Growl.
-
----
-
-## Before that: War's armies stand deeper
-
-- **Each army's host**: great blocks of men drawn up on the flanks by each camp (four blocks of 128), standing on the slopes properly (each man on the ground under him). They never march, so they cost nothing a frame after they're placed. About 20,400 crowd parts in War now; 42–48 fps in Studio play.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the hosts |
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `still` regiments (each man on his own ground) |
-| [README.md](README.md) | | doc | |

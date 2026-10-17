@@ -1709,6 +1709,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   ms a frame (before the budget: spikes of 12–15 ms on a surge), 45–48 fps in Studio play (server
   and client in one process; a phone gets 60 % of the men). In a heavy frame the crowd folder's
   `Busy` attribute lists which regiments were moving and why.
+- **Night battles**: on a night map (Lighting's clock, `WarCrowd.night()`) every fourth man of the
+  second rank holds a burning torch up (`torches = true`), so the lines show as firelight in the
+  dark (War, Siege, the warfields).
 - **A war cry answered**: do the War Cry or Cheer emote in any battle with armies (War, Siege, the
   warfields, the Horde's host) and your side's regiments within 140 studs raise their weapons and
   roar back (`WarCrowd.answer`, from `Cosmetics.client`).

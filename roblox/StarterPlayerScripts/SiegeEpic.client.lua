@@ -162,9 +162,9 @@ local function build(C)
 	for _, s in ipairs({-1, 1}) do
 		for li, x in ipairs(siege.lanes) do
 			crowd:regiment("D" .. s .. li, {side = D, kind = kinds[li].D, at = V3(C.gate.X + s * x, 0, siege.front - f * 26), facing = f,
-				cols = 12, ranks = 5, spacing = 3.1, detail = li == 1 and "full" or "lite"})
+				cols = 12, ranks = 5, spacing = 3.1, detail = li == 1 and "full" or "lite", torches = WarCrowd.night()})
 			crowd:regiment("A" .. s .. li, {side = A, kind = kinds[li].A, at = V3(C.gate.X + s * x, 0, siege.front + f * 40), facing = -f,
-				cols = 12, ranks = 5, spacing = 3.1, detail = li == 1 and "full" or "lite"})
+				cols = 12, ranks = 5, spacing = 3.1, detail = li == 1 and "full" or "lite", torches = WarCrowd.night()})
 		end
 	end
 	-- BEHIND: the attackers' archers loosing on the walls, their reserves beside the camp
@@ -172,7 +172,7 @@ local function build(C)
 		local ax = C.gate.X + s * math.max(C.half - 12, 40)
 		crowd:regiment("arch" .. s, {side = A, kind = "archer", at = V3(ax, 0, C.gate.Z + f * 95), facing = -f, cols = 10, ranks = 2, spacing = 2.8, detail = "lite"})
 		if not small then
-			crowd:regiment("res" .. s, {side = A, kind = "pike", at = V3(C.att.X + s * 50, 0, C.att.Z), facing = -f, cols = 10, ranks = 6, spacing = 3, detail = "lite"})
+			crowd:regiment("res" .. s, {side = A, kind = "pike", at = V3(C.att.X + s * 50, 0, C.att.Z), facing = -f, cols = 10, ranks = 6, spacing = 3, detail = "lite", torches = WarCrowd.night()})
 		end
 	end
 	-- THE CASTLE BURNING: towers on fire, smoke over the keep, villages burning beyond

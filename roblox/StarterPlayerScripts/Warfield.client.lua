@@ -61,7 +61,7 @@ local function build(A)
 				local f = side == "A" and 1 or -1
 				-- (they start well apart: the opening charge brings them together)
 				crowd:regiment(side .. s .. li, {side = side, kind = KINDS[li], at = V3(s * x, 0, -f * 46), facing = f,
-					cols = 12, ranks = li == 1 and 5 or 6, spacing = 3.1, detail = li == 1 and "full" or (li == 2 and "lite" or "mass")})
+					cols = 12, ranks = li == 1 and 5 or 6, spacing = 3.1, detail = li == 1 and "full" or (li == 2 and "lite" or "mass"), torches = WarCrowd.night()})
 			end
 		end
 	end
@@ -72,7 +72,7 @@ local function build(A)
 		crowd:regiment("mage" .. side, {side = side, kind = "mage", at = V3(f * 34, 0, -f * (A + 52)), facing = f, cols = 4, ranks = 2, spacing = 3.4, detail = "lite", banner = false})
 		if not small then
 			for _, s in ipairs({-1, 1}) do
-				crowd:regiment("res" .. side .. s, {side = side, kind = "pike", at = V3(s * 66, 0, -f * (A + 86)), facing = f, cols = 14, ranks = 6, spacing = 3, detail = "mass"})
+				crowd:regiment("res" .. side .. s, {side = side, kind = "pike", at = V3(s * 66, 0, -f * (A + 86)), facing = f, cols = 14, ranks = 6, spacing = 3, detail = "mass", torches = WarCrowd.night()})
 			end
 		end
 	end

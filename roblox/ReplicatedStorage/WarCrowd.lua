@@ -18,7 +18,9 @@
                        detail = "full" | "lite" | "mass" (its front rank's), banner = true,
                        fixed = true: stands at at.Y exactly (a wall's walk), not on the ground below,
                        still = true: never marches, so each man stands on the ground under him
-                       (a block on a hillside))
+                       (a block on a hillside), torches = true: every fourth man of the second
+                       rank holds a burning torch up (a night battle))
+       WarCrowd.night()       is it dark out (Lighting's clock): what passes torches = true
        c:march(id, z, run)    its front rank heads for this line (run: at a charge)
        c:clash(id, on)        its front rank fights the enemy's (pairs face to face)
        c:lane(idA, idB, z, now, f)  two lines fighting along z (wavering, pulling apart and
@@ -426,6 +428,26 @@ function WarCrowd:regiment(id, o)
 					s.gy = self:groundAt(x, z, reg.y0) - reg.y0
 				end
 			end
+		end
+	end
+	-- torches held up in the second rank (one a man in four), their light on the men round them
+	if o.torches and ranks >= 2 then
+		reg.torchAt = {}
+		for c = 2, cols, 4 do
+			local fire = Instance.new("Part")
+			fire.Name = "Torch"
+			fire.Shape = Enum.PartType.Ball
+			fire.Size = V3(0.8, 0.8, 0.8)
+			fire.Material = Enum.Material.Neon
+			fire.Color = Color3.fromRGB(255, 150, 60)
+			fire.Anchored, fire.CanCollide, fire.CanQuery, fire.CanTouch, fire.CastShadow = true, false, false, false, false
+			fire.CFrame = FAR
+			local l = Instance.new("PointLight")
+			l.Name = "Flicker"
+			l.Color, l.Range, l.Brightness = Color3.fromRGB(255, 150, 70), 14, 1.3
+			l.Parent = fire
+			fire.Parent = self.home
+			reg.torchAt[c] = fire
 		end
 	end
 	if o.banner ~= false then
@@ -914,6 +936,11 @@ function WarCrowd.ghost(at, o)
 	return home
 end
 
+function WarCrowd.night()
+	local t = game:GetService("Lighting").ClockTime
+	return t < 6.3 or t > 18.7
+end
+
 function WarCrowd.answer(side, pos, r)
 	local now, n = os.clock(), 0
 	local at = V3(pos.X, 0, pos.Z)
@@ -1002,6 +1029,9 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 					if st == "march" or st == "run" then base = base * CF(0, math.abs(math.sin((now + s.ph) * (st == "run" and 11 or 7))) * 0.3, 0) end
 					placeRigid(s, base, reg.kind, put)
 				end
+				-- (a torch held up over his head)
+				local torch = reg.torchAt and s.r == 2 and reg.torchAt[s.c]
+				if torch then put(torch, base * CF(1.1, 7.3, -0.4)) end
 				-- now and then one in the fight goes down
 				if st == "fight" and math.random() < dt * 0.012 then fall(self, reg, s, now) end
 			end
