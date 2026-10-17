@@ -211,7 +211,8 @@ end
 --  A SOLDIER
 --------------------------------------------------------------------
 local function newSoldier(home, t, level, unarmed)
-	local s = {limbs = {}, offs = {}, parts = {}}
+	-- (his own beat: where he is in a swing, how long his swings take; anyone may come to fight)
+	local s = {limbs = {}, offs = {}, parts = {}, ph = math.random() * 6.28, period = 1.2 + math.random() * 0.7}
 	for i = 1, 6 do
 		s.limbs[i], s.offs[i] = {}, {}
 		for _, e in ipairs(t[level][i]) do
