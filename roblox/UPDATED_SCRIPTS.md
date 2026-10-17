@@ -1,4 +1,15 @@
-# Updated scripts: the house on every chest
+# Updated scripts: the houses by the score
+
+- **Each side's house shows beside its score** in the round strip at the top (a gold emblem, the
+  arms its banners fly on this map).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the houses' icons by the scores |
+
+---
+
+## Before that: the house on every chest
 
 - **Every fighter in a team fight wears their house's arms on the chest**: a gold badge (the
   same beast their side's banners, standards and shields carry) on the front of their armor,

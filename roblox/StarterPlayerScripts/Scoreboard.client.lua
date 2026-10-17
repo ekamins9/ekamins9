@@ -214,7 +214,7 @@ scoreRow.Size = UDim2.new(1, 0, 0, 22)
 scoreRow.Visible = false
 scoreRow.Parent = strip
 local scoreA = label(scoreRow, "", 18, FONT_BLACK, GameConfig.TEAMS.A.rgb)
-scoreA.Size = UDim2.new(0.5, -30, 1, 0)
+scoreA.Size = UDim2.new(0.5, -64, 1, 0)
 scoreA.TextXAlignment = Enum.TextXAlignment.Right
 scoreA.TextStrokeTransparency = 0.5
 local scoreDash = label(scoreRow, "—", 14, FONT, COL_DIM)
@@ -223,9 +223,47 @@ scoreDash.Position = UDim2.new(0.5, 0, 0, 0)
 scoreDash.Size = UDim2.fromOffset(40, 22)
 scoreDash.TextXAlignment = Enum.TextXAlignment.Center
 local scoreB = label(scoreRow, "", 18, FONT_BLACK, GameConfig.TEAMS.B.rgb)
-scoreB.Position = UDim2.new(0.5, 30, 0, 0)
-scoreB.Size = UDim2.new(0.5, -30, 1, 0)
+scoreB.Position = UDim2.new(0.5, 64, 0, 0)
+scoreB.Size = UDim2.new(0.5, -64, 1, 0)
 scoreB.TextStrokeTransparency = 0.5
+-- each side's house beside its score (ReplicatedStorage ▸ Houses: the arms its banners fly on this map)
+local houseIcon = {}
+for k, x in pairs({A = -48, B = 48}) do
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.new(0.5, x, 0.5, 0)
+	holder.Size = UDim2.fromOffset(30, 30)
+	holder.Parent = scoreRow
+	local layers = {}
+	for z, col in ipairs({Color3.fromRGB(20, 16, 14), Color3.new(1.06, 0.84, 0.4)}) do
+		local il = Instance.new("ImageLabel")
+		il.BackgroundTransparency = 1
+		il.Size = UDim2.fromScale(1, 1)
+		il.ScaleType = Enum.ScaleType.Fit
+		il.ImageColor3 = col
+		il.ZIndex = z
+		il.Parent = holder
+		layers[z] = il
+	end
+	houseIcon[k] = {holder = holder, layers = layers, emblem = nil}
+end
+local function paintHouses()
+	local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+	local map = workspace:FindFirstChild("Map")
+	local seed = map and map:GetAttribute("HouseSeed")
+	for k, ic in pairs(houseIcon) do
+		local ok, emblem = pcall(function() return require(ReplicatedStorage:WaitForChild("Houses")).forTeam(k, seed) end)
+		emblem = ok and seed and emblem or nil
+		if emblem ~= ic.emblem then
+			ic.emblem = emblem
+			local o, f = art and emblem and art:FindFirstChild(emblem .. "_o"), art and emblem and art:FindFirstChild(emblem)
+			ic.layers[1].Image = o and o.Value or ""
+			ic.layers[2].Image = f and f.Value or ""
+		end
+		ic.holder.Visible = ic.emblem ~= nil
+	end
+end
 
 --------------------------------------------------------------------
 --  LEADERBOARD (hold Tab; forced up during the intermission)
@@ -584,6 +622,7 @@ local function refreshRound()
 		if teams == 2 and not ownHud then
 			scoreA.Text = string.format("%s  %d", string.upper(GameConfig.TEAMS.A.name), roundNode:GetAttribute("ScoreA") or 0)
 			scoreB.Text = string.format("%d  %s", roundNode:GetAttribute("ScoreB") or 0, string.upper(GameConfig.TEAMS.B.name))
+			paintHouses()
 		end
 	end
 end
