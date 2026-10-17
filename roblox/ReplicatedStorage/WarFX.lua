@@ -10,7 +10,8 @@
        WarFX.stopLoop(sound, secs)        fades one out and lets it go
        WarFX.volley(from, to, n, opts)    n arrows loosed round `from`, falling round `to`
                                           (opts.spread, opts.flight seconds, opts.height, opts.stagger,
-                                          opts.stick = false: they vanish where they land)
+                                          opts.stick = false: they vanish where they land; opts.fire:
+                                          fire arrows, a streak of flame each — by default at night)
        WarFX.fireball(from, to, t, opts)  a burning shot on a high arc landing at `to` after t s
                                           (opts.blast = false: no blast; opts.big; opts.onLand(pos);
                                           opts.scorch = false: no burnt mark; opts.floor: where its
@@ -237,6 +238,15 @@ local function takeArrow()
 	if not a then a = newArrow(); a[1].Parent = h; a[2].Parent = h end
 	return a
 end
+local FIRE_TIP = Color3.fromRGB(255, 140, 50)
+-- (a fire arrow: its fletching burns, a streak of flame in the dark)
+local function setFire(a, on)
+	if (a.fire or false) == on then return end
+	a.fire = on
+	a[2].Material = on and Enum.Material.Neon or Enum.Material.SmoothPlastic
+	a[2].Color = on and FIRE_TIP or FLETCH
+	a[2].Size = on and V3(0.3, 0.3, 1.1) or V3(0.36, 0.05, 0.75)
+end
 local function giveBack(a)
 	a[1].CFrame, a[2].CFrame = FAR, FAR
 	table.insert(pool, a)
@@ -357,8 +367,15 @@ function WarFX.volley(from, to, n, opts)
 	local now = os.clock()
 	local cam = workspace.CurrentCamera
 	local camPos = cam and cam.CFrame.Position or to
+	-- (at night a volley is fire arrows, unless told otherwise)
+	local fire = opts.fire
+	if fire == nil then
+		local t = game:GetService("Lighting").ClockTime
+		fire = t < 6.3 or t > 18.7
+	end
 	for _ = 1, n do
 		local a = takeArrow()
+		setFire(a, fire)
 		local p0 = from + V3((math.random() - 0.5) * spread, math.random() * 2, (math.random() - 0.5) * spread)
 		local p1 = ground(to + V3((math.random() - 0.5) * spread * 1.7, 0, (math.random() - 0.5) * spread * 1.7))
 		local stick = opts.stick ~= false and (p1 - camPos).Magnitude < (opts.stickRange or 170)
