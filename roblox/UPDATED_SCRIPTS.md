@@ -1,4 +1,14 @@
-# Updated scripts: every emoji draws
+# Updated scripts: the chosen class's armour reads
+
+- **Choose your class**: on the selected (bright blue) card, the armour line (HEAVY ARMOR in red, and the rest) is lifted towards white so it reads; the other cards keep their colours.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [LoadoutMenu.client.lua](StarterPlayerScripts/LoadoutMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | selected card's tag colour |
+
+---
+
+## Before that: every emoji draws
 
 - **Fixed: six emoji too new for the game's emoji font showed as boxes**:
   - Lucky Coin 🪙 is now 🍀.

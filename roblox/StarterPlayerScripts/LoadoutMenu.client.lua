@@ -187,6 +187,8 @@ local function paint()
 		local on = id == selected
 		TweenService:Create(c.btn, TweenInfo.new(0.12), {BackgroundColor3 = on and COL_CARD_ON or COL_CARD}):Play()
 		c.stroke.Transparency = on and 0 or 1
+		-- (its armour's colour, lifted towards white on the bright card so it still reads)
+		if c.tagCol then c.tag.TextColor3 = on and c.tagCol:Lerp(Color3.new(1, 1, 1), 0.65) or c.tagCol end
 	end
 end
 
@@ -238,7 +240,7 @@ for i, id in ipairs(GameConfig.CLASS_ORDER) do
 		lt.Size = UDim2.new(1, 0, 0, 30); lt.Position = UDim2.new(0, 0, 0.5, -15); lt.TextXAlignment = Enum.TextXAlignment.Center; lt.ZIndex = 21
 		lockVeils[id] = veil
 	end
-	cards[id] = {btn = b, sum = sum, tag = tag, stroke = s, vp = vp, cam = cam, desc = d}
+	cards[id] = {btn = b, sum = sum, tag = tag, tagCol = tag.TextColor3, stroke = s, vp = vp, cam = cam, desc = d}
 end
 
 -- each class's fighter: dressed by the same Dresser as a real spawn
