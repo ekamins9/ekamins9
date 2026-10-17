@@ -1,4 +1,19 @@
-# Updated scripts: arrows whistle overhead
+# Updated scripts: War's fields littered with fighting; boss entrances in focus; duels open with a flight
+
+- **War**: every battlefield is littered with earlier fighting (dropped shields, broken spears, arrow clusters stuck in the ground, fallen banners, helmets), thickest round the banners; looks only.
+- **Boss entrance**: the boss sharp and the room behind it softly blurred (depth of field).
+- **Warfield duels** open with the cinematic flight over the battle down into the ring, once a match.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | the debris |
+| [BossIntro.lua](ReplicatedStorage/BossIntro.lua) | ReplicatedStorage | ModuleScript | depth of field |
+| [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | warfield duels |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: arrows whistle overhead
 
 - **A volley passing over you** (not landing on you) now whistles and hisses as it goes over, from the sky above, in every mode with volleys (War, Siege, the warfields, the battle beyond team fights, the Prologue). A new generated sound.
 
@@ -22,20 +37,3 @@ Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ ArrowsOver.
 | [README.md](README.md) | | doc | |
 
 Studio-only (save the place): ServerStorage ▸ Maps ▸ Duskwall, Mournhold; ReplicatedStorage ▸ MapShots ▸ Duskwall, Mournhold.
-
----
-
-## Before that: two new War battlefields
-
-- **Stormvale**: a storm over a ruined abbey (broken nave walls, a standing arch, pillars), a graveyard either side of the road, mud on the flanks.
-- **Duskmoor**: purple heather at golden hour, a ring of cairns, a beacon burning on the tallest.
-- Both in War's rotation (9 battlefields now), with banner names and vote pictures shot in Play.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | Stormvale, Duskmoor |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War's maps, titles, sizes |
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | their banner names |
-| [README.md](README.md) | | doc | |
-
-Studio-only (save the place): ReplicatedStorage ▸ MapShots ▸ Stormvale, Duskmoor.
