@@ -305,21 +305,116 @@ function K.fence(ctx, a, b, h)
 	for i = 0, n do K.box(ctx, "Post", Vector3.new(0.4, h, 0.4), look * CFrame.new(0, h / 2, -len / 2 + i * len / n), K.C.DARKWOOD, K.M.Wood, ctx.Props) end
 	for _, y in ipairs({h * 0.45, h * 0.85}) do K.box(ctx, "Rail", Vector3.new(0.25, 0.3, len), look * CFrame.new(0, y, 0), K.C.WOOD, K.M.Wood, ctx.Props).CanCollide = false end
 end
+-- a half-timbered cottage (the door, +Z, on a gable end): plastered walls on a stone plinth, the
+-- dark timber frame standing proud of them (corner posts, studs, a brace in each end bay, the
+-- plates), shuttered windows on every side but the back, a clay-tiled roof (snow where its colour
+-- is snow-white) under a ridge beam, and now and then a chimney with a thread of smoke. Only the walls, the roof and the gables collide: the frame,
+-- the plinth and the rest are dressing, so a house stands where it always stood.
+local TIMBER = Color3.fromRGB(64, 44, 30)
+local PLINTH = Color3.fromRGB(128, 122, 114)
 function K.house(ctx, frame, w, len, h, wallColor, roofColor)
-	K.box(ctx, "House", Vector3.new(w, h, len), frame * CFrame.new(0, h / 2, 0), wallColor or K.C.WHITE, K.M.Concrete)
-	K.box(ctx, "Beams", Vector3.new(w + 0.2, 0.4, len + 0.2), frame * CFrame.new(0, h * 0.55, 0), K.C.DARKWOOD, K.M.Wood).CanCollide = false
-	local rh = w * 0.45
-	for _, s in ipairs({-1, 1}) do
-		local side = math.sqrt((w / 2 + 0.6) ^ 2 + rh ^ 2)
-		K.box(ctx, "Roof", Vector3.new(side, 0.4, len + 1.2), frame * CFrame.new(s * (w / 4 + 0.3), h + rh / 2, 0) * CFrame.Angles(0, 0, -s * math.atan2(rh, w / 2 + 0.6)), roofColor or K.C.DARKWOOD, K.M.WoodPlanks)
+	local wall = wallColor or K.C.WHITE
+	K.box(ctx, "House", Vector3.new(w, h, len), frame * CFrame.new(0, h / 2, 0), wall, K.M.Plaster)
+	local function trim(name, size, at, color, mat)
+		local t = K.box(ctx, name, size, frame * at, color or TIMBER, mat or K.M.Wood)
+		t.CanCollide, t.CanQuery, t.CanTouch, t.CastShadow = false, false, false, false
+		return t
 	end
-	for _, zf in ipairs({len / 2 - 0.15, -len / 2 + 0.15}) do
-		for _, s in ipairs({-1, 1}) do
-			K.wedge(ctx, "Gable", Vector3.new(0.3, rh, w / 2), frame * CFrame.new(s * w / 4, h + rh / 2, zf) * CFrame.Angles(0, DEG(-90 * s), 0), wallColor or K.C.WHITE, K.M.Concrete)
+	-- a beam from a to b (points in the house's own space)
+	local function brace(a, b)
+		local d = b - a
+		return trim("Timber", Vector3.new(0.3, 0.35, d.Magnitude), CFrame.lookAt((a + b) / 2, b))
+	end
+	local mid, top, foot = h * 0.55, h - 0.2, 1.2
+	local hw, hl = w / 2, len / 2
+	-- the plinth (open at the door) and the step
+	trim("Plinth", Vector3.new(w + 0.5, foot, len - 0.05), CFrame.new(0, foot / 2, -0.3), PLINTH, K.M.Cobblestone)
+	for _, sx in ipairs({-1, 1}) do
+		local x0, x1 = 1.4, hw + 0.25
+		trim("Plinth", Vector3.new(x1 - x0, foot, 0.6), CFrame.new(sx * (x0 + x1) / 2, foot / 2, hl - 0.05), PLINTH, K.M.Cobblestone)
+	end
+	trim("Step", Vector3.new(2.8, 0.4, 1.1), CFrame.new(0, 0.2, hl + 0.55), PLINTH, K.M.Slate)
+	K.box(ctx, "Beams", Vector3.new(w + 0.2, 0.4, len + 0.2), frame * CFrame.new(0, mid, 0), TIMBER, K.M.Wood).CanCollide = false
+	-- corner posts and the top plates
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do trim("Timber", Vector3.new(0.6, h - foot, 0.6), CFrame.new(sx * hw, (h + foot) / 2, sz * hl)) end
+		trim("Timber", Vector3.new(0.3, 0.4, len), CFrame.new(sx * (hw + 0.1), top, 0))
+		trim("Timber", Vector3.new(w, 0.4, 0.3), CFrame.new(0, top, sx * (hl + 0.1)))
+	end
+	-- the long walls: studs bay by bay, a brace in each end bay, a window in the middle one
+	local bays = math.max(2, math.floor(len / 4 + 0.5))
+	local zAt = function(i) return -hl + i * len / bays end
+	-- (the middle bay, or the middle two: a long wall's windows sit symmetric)
+	local winBays = bays >= 3 and {math.floor((bays - 1) / 2), math.ceil((bays - 1) / 2)} or {}
+	if winBays[1] == winBays[2] then winBays[2] = nil end
+	for _, sx in ipairs({-1, 1}) do
+		local x = sx * (hw + 0.1)
+		for i = 1, bays - 1 do trim("Timber", Vector3.new(0.3, h - foot, 0.35), CFrame.new(x, (h + foot) / 2, zAt(i))) end
+		brace(Vector3.new(x, foot, zAt(0) + 0.3), Vector3.new(x, mid, zAt(1) - 0.2))
+		brace(Vector3.new(x, foot, zAt(bays) - 0.3), Vector3.new(x, mid, zAt(bays - 1) + 0.2))
+		for _, winBay in ipairs(winBays) do
+			local zc, yc = (zAt(winBay) + zAt(winBay + 1)) / 2, (mid + top) / 2
+			trim("Window", Vector3.new(0.2, 1.4, 1.4), CFrame.new(sx * (hw + 0.05), yc, zc), Color3.fromRGB(46, 52, 64), K.M.Glass)
+			trim("Timber", Vector3.new(0.4, 0.25, 1.9), CFrame.new(sx * (hw + 0.15), yc - 0.85, zc))
 		end
 	end
-	K.box(ctx, "Door", Vector3.new(2.2, 3.4, 0.2), frame * CFrame.new(0, 1.7, len / 2 + 0.05), K.C.DARKWOOD, K.M.Wood).CanCollide = false
-	for _, s in ipairs({-1, 1}) do K.box(ctx, "Window", Vector3.new(1.6, 1.6, 0.2), frame * CFrame.new(s * w * 0.3, h * 0.6, len / 2 + 0.05), Color3.fromRGB(60, 70, 90), K.M.Glass).CanCollide = false end
+	-- the front: the door framed, a shuttered window either side up in the upper storey
+	for _, sx in ipairs({-1, 1}) do trim("Timber", Vector3.new(0.35, 3.7, 0.3), CFrame.new(sx * 1.35, 1.85, hl + 0.1)) end
+	trim("Timber", Vector3.new(3.0, 0.35, 0.3), CFrame.new(0, 3.55, hl + 0.12))
+	-- (a brace each side of the door, rising from the corners)
+	for _, sx in ipairs({-1, 1}) do
+		if hw - 1.9 > 1.2 then brace(Vector3.new(sx * (hw - 0.3), foot, hl + 0.1), Vector3.new(sx * 1.9, mid, hl + 0.1)) end
+	end
+	local wy = math.max(mid + 1, (mid + top) / 2)
+	for _, sx in ipairs({-1, 1}) do
+		local wx = sx * math.max(2.4, w * 0.3)
+		K.box(ctx, "Window", Vector3.new(1.4, 1.4, 0.2), frame * CFrame.new(wx, wy, hl + 0.05), Color3.fromRGB(46, 52, 64), K.M.Glass).CanCollide = false
+		for _, ox in ipairs({-1.15, 1.15}) do trim("Shutter", Vector3.new(0.85, 1.6, 0.14), CFrame.new(wx + ox, wy, hl + 0.16) * CFrame.Angles(0, DEG(ox > 0 and -14 or 14), 0)) end
+		trim("Timber", Vector3.new(1.9, 0.25, 0.4), CFrame.new(wx, wy - 0.85, hl + 0.15))
+	end
+	-- the back: two studs, braced
+	for _, sx in ipairs({-1, 1}) do
+		local x = sx * w / 4
+		trim("Timber", Vector3.new(0.35, h - foot, 0.3), CFrame.new(x, (h + foot) / 2, -hl - 0.1))
+		brace(Vector3.new(sx * (hw - 0.3), foot, -hl - 0.1), Vector3.new(x + sx * 0.2, mid, -hl - 0.1))
+	end
+	-- the roof, its gables (a king post up each), the ridge
+	local rh = w * 0.45
+	local roof = roofColor or K.C.DARKWOOD
+	local snowy = math.min(roof.R, roof.G, roof.B) > 0.8
+	for _, s in ipairs({-1, 1}) do
+		local side = math.sqrt((w / 2 + 0.6) ^ 2 + rh ^ 2)
+		K.box(ctx, "Roof", Vector3.new(side, 0.4, len + 1.2), frame * CFrame.new(s * (w / 4 + 0.3), h + rh / 2, 0) * CFrame.Angles(0, 0, -s * math.atan2(rh, w / 2 + 0.6)), roof, snowy and K.M.Snow or K.M.ClayRoofTiles)
+	end
+	for _, zf in ipairs({hl - 0.15, -hl + 0.15}) do
+		for _, s in ipairs({-1, 1}) do
+			K.wedge(ctx, "Gable", Vector3.new(0.3, rh, w / 2), frame * CFrame.new(s * w / 4, h + rh / 2, zf) * CFrame.Angles(0, DEG(-90 * s), 0), wall, K.M.Plaster)
+		end
+		trim("Timber", Vector3.new(0.35, rh * 0.8, 0.3), CFrame.new(0, h + rh * 0.4, zf + (zf > 0 and 0.25 or -0.25)))
+	end
+	trim("Ridge", Vector3.new(0.6, 0.5, len + 1.4), CFrame.new(0, h + rh + 0.2, 0), snowy and roof or roof:Lerp(Color3.new(0, 0, 0), 0.3), snowy and K.M.Snow or K.M.Wood)
+	K.box(ctx, "Door", Vector3.new(2.2, 3.4, 0.2), frame * CFrame.new(0, 1.7, hl + 0.05), K.C.DARKWOOD, K.M.WoodPlanks).CanCollide = false
+	-- now and then a chimney, smoking (a hearth lit inside)
+	if rnd:NextNumber() < 0.55 then
+		local cx, cz = (rnd:NextNumber() < 0.5 and -1 or 1) * w * 0.2, (rnd:NextNumber() < 0.5 and -1 or 1) * (hl - 1.6)
+		local y0, y1 = h * 0.5, h + rh + 1.8
+		trim("Chimney", Vector3.new(1.8, y1 - y0, 1.8), CFrame.new(cx, (y0 + y1) / 2, cz), PLINTH:Lerp(Color3.new(0, 0, 0), 0.15), K.M.Cobblestone)
+		local cap = trim("Chimney", Vector3.new(2.2, 0.35, 2.2), CFrame.new(cx, y1 + 0.15, cz), PLINTH:Lerp(Color3.new(0, 0, 0), 0.3), K.M.Slate)
+		local smoke = Instance.new("ParticleEmitter")
+		smoke.Name = "ChimneySmoke"
+		smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		smoke.Color = ColorSequence.new(Color3.fromRGB(150, 146, 140))
+		smoke.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 6)})
+		smoke.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1)})
+		smoke.Lifetime = NumberRange.new(5, 8)
+		smoke.Speed = NumberRange.new(2, 3.5)
+		smoke.Acceleration = Vector3.new(1.2, 0.4, 0.5)
+		smoke.SpreadAngle = Vector2.new(8, 8)
+		smoke.Rate = 1.6
+		smoke.EmissionDirection = Enum.NormalId.Top
+		smoke.LightInfluence = 1
+		smoke.Parent = cap
+	end
 end
 
 --------------------------------------------------------------------

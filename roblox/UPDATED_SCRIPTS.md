@@ -1,4 +1,19 @@
-# Updated scripts: review fixes (traps, wakers, secrets, late joiners)
+# Updated scripts: half-timbered villages, a filmic grade
+
+- **Every house in the game** is now a half-timbered cottage: plaster on a stone plinth, a dark timber frame (posts, studs, braces), shuttered windows on three sides, a framed door on a step, clay-tiled roofs with a ridge beam, and on about half a smoking chimney. War's villages, the Crownlands, Stormwatch, the Horde's town and the Courtyard's backdrop all change at once. The new trim doesn't collide, so nobody's path changes.
+- **The open-air maps' grade**: the colour is pulled back from Roblox's lime greens and bright blues, with more contrast and warm light, for a painted, sunlit-field look.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build | ModuleScript | `K.house` rebuilt |
+| [CinematicGrade.client.lua](StarterPlayerScripts/CinematicGrade.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | filmic values |
+| [README.md](README.md) | | doc | Houses section |
+
+Maps saved in Studio from MapForge (the Lists' warfields) keep their old houses until rebuilt; every procedural map gets the new ones.
+
+---
+
+## Before that: review fixes (traps, wakers, secrets, late joiners)
 
 A pass over last night's new systems, fixing what a review turned up:
 

@@ -1811,10 +1811,19 @@ seconds later it's back where it was (if the map's still the same). Not Deadvaul
 containers (those live in workspace ▸ LootDrops). Started once by `GameServer`.
 
 ## The cinematic grade (`CinematicGrade.client`)
-Over every open-air map, on your screen only, a gentle film look: a touch more contrast (+0.08)
-and colour (+0.08), the light a shade warm, and the sun's rays visible through the haze by day
-(SunRays 0.06, spread 0.3). Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
+Over every open-air map, on your screen only, a film look: more contrast (+0.13), the colour
+pulled back (-0.12) from Roblox's toy greens and blues, a breath darker (-0.02), the light warm,
+and the sun's rays visible through the haze by day (SunRays 0.06, spread 0.3). Off in the dungeons (DungeonMood grades those: The Depths, Deadvault,
 Plague Night, the Undead invasion) and the Gilded Rat, where the place's own rays come back.
+
+## Houses (`Build ▸ MapKit` K.house)
+Every cottage in the game (War's villages, the Crownlands, Stormwatch, the Horde's town, the
+Courtyard's backdrop) is half-timbered: plaster walls on a cobbled plinth, the dark frame standing
+proud of them (corner posts, studs bay by bay, a brace in each end bay and either side of the
+door, the plates), shuttered windows, a framed door on a stone step, a clay-tiled roof (snow where
+its colour is snow-white) under a ridge beam, and on about half of them a chimney with a thread of
+smoke. Only the walls, roof and gables collide; the rest is dressing (no collision, no queries, no
+shadows), about 45 parts a house.
 
 ## Weather (`Weather.client`, `GameConfig.MAP_WEATHER` / `MODE_WEATHER`, drawn by WarFX)
 Rain, storms (rain, lightning, heavy cloud), snow, embers and petals on the maps that have them:
