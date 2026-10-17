@@ -135,6 +135,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/HitReact.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HitReact` | LocalScript |
 | `StarterPlayerScripts/SwingArcs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SwingArcs` | LocalScript |
 | `StarterPlayerScripts/BattleEnd.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `BattleEnd` | LocalScript |
+| `StarterPlayerScripts/DodgeFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `DodgeFX` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2046,6 +2047,11 @@ the animation), harder for a harder blow (the damage it took, `TakenText`; half 
 whoever is struck flashes white for a blink (a Highlight; six at most at once). A player's body
 already jolts through their own CameraRig and the pose relay, so only bots are rocked here; your
 own body isn't flashed (your screen flashes instead).
+
+## Dodge dust (`DodgeFX.client`, MovementServer `LastDodgeAt`)
+Anyone's dodge (players and bots) kicks up a burst of dust at their feet on every screen within 100
+studs, thrown back against the way they went, the colour of the ground (grass, sand, mud, snow,
+stone, or a part's own colour browned). Nothing is sent to the server.
 
 ## Swing arcs (`SwingArcs.client`)
 Your own blade draws its trail itself (CombatClient `TRAIL`, on your screen only); this draws a

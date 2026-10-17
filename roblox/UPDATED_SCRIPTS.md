@@ -1,4 +1,16 @@
-# Updated scripts: the class screen reads the whole mode
+# Updated scripts: dodge dust
+
+- **A dodge kicks up the ground**: anyone's dodge (bots too) throws a burst of dust back from their
+  feet, the colour of what they stand on, on every screen near them.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DodgeFX.client.lua](StarterPlayerScripts/DodgeFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [README.md](README.md) | | doc | "Dodge dust" |
+
+---
+
+## Before that: the class screen reads the whole mode
 
 - **The class screen's mode description is never cut off**: it has its own line under the mode and
   map, the panel's whole width and two lines deep (the massive battle's used to stop at "…and the
