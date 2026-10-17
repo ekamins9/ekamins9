@@ -63,6 +63,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
+local Sounds   -- (the fight's own sound bank, loaded the first time a line fights near you)
 local PreviewRig = require(ReplicatedStorage:WaitForChild("PreviewRig"))
 
 local WarCrowd = {}
@@ -1179,6 +1180,28 @@ function WarCrowd:step(now, dt)
 	if n > 0 then
 		for k = n + 1, #bulkP do bulkP[k] = nil; bulkC[k] = nil end
 		workspace:BulkMoveTo(bulkP, bulkC, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+	-- the steel of it close up: near the camera, a man fighting in a front rank now and then rings
+	-- out (a clash, a parry, a block, a blow on plate) from where he stands
+	self.ringAt = self.ringAt or 0
+	if now >= self.ringAt then
+		self.ringAt = now + 0.22 + math.random() * 0.3
+		local cam = workspace.CurrentCamera
+		local c = cam and cam.CFrame.Position
+		if c then
+			local pick
+			for _, reg in ipairs(self.list) do
+				if reg.clash and not reg.hidden and (V3(reg.x, reg.y0, reg.z) - c).Magnitude < 70 then
+					local s = reg.men[math.random(1, math.max(1, reg.cols))]
+					if s and s.state == "fight" and s.parts[1] and (s.parts[1].Position - c).Magnitude < 55 then pick = s; break end
+				end
+			end
+			if pick then
+				Sounds = Sounds or require(ReplicatedStorage:WaitForChild("Sounds"))
+				local pools = {"Clash", "Parry", "Block", "HitPlate", "Block"}
+				pcall(Sounds.bank, pools[math.random(#pools)], pick.parts[1], {Volume = 0.55, MaxDistance = 70})
+			end
+		end
 	end
 	-- (in a heavy frame, which regiments were busy and why: the folder's Busy attribute)
 	if n > 1500 and now - (self.busyAt or 0) > 2 then

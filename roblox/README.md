@@ -1713,6 +1713,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   second rank holds a burning torch up (`torches = true`), so the lines show as firelight in the
   dark (War, Siege, the warfields), and every volley is fire arrows, streaks of flame across the
   dark (`WarFX.volley`'s `fire`, by default at night: the engines' volleys too).
+- **The steel up close**: within ~55 studs of a fighting line, the men fighting in its front rank
+  ring out a few times a second (a clash, a parry, a block, a blow on plate: the fight's own
+  SoundBank) from where they stand, on top of the din of the melee.
 - **A war cry answered**: do the War Cry or Cheer emote in any battle with armies (War, Siege, the
   warfields, the Horde's host) and your side's regiments within 140 studs raise their weapons and
   roar back (`WarCrowd.answer`, from `Cosmetics.client`).
