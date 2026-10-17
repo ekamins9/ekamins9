@@ -16,7 +16,9 @@
        c:regiment(id, {side = "A"|"B", kind = "foot"|"pike"|"archer"|"knight"|"mage", at = Vector3
                        (front-centre), facing = 1 | -1 (towards +z / -z), cols, ranks, spacing,
                        detail = "full" | "lite" | "mass" (its front rank's), banner = true,
-                       fixed = true: stands at at.Y exactly (a wall's walk), not on the ground below})
+                       fixed = true: stands at at.Y exactly (a wall's walk), not on the ground below,
+                       still = true: never marches, so each man stands on the ground under him
+                       (a block on a hillside))
        c:march(id, z, run)    its front rank heads for this line (run: at a charge)
        c:clash(id, on)        its front rank fights the enemy's (pairs face to face)
        c:lane(idA, idB, z, now, f)  two lines fighting along z (wavering, pulling apart and
@@ -415,6 +417,12 @@ function WarCrowd:regiment(id, o)
 				s.yaw = (math.random() - 0.5) * 0.25
 				s.state = "stand"
 				table.insert(reg.men, s)
+				if o.still then
+					-- (each man on the ground under his own feet)
+					local x = reg.x + (c - (cols + 1) / 2) * reg.sp + s.jx
+					local z = reg.z - reg.facing * (r - 1) * reg.sp + s.jz
+					s.gy = self:groundAt(x, z, reg.y0) - reg.y0
+				end
 			end
 		end
 	end
@@ -960,7 +968,7 @@ function WarCrowd:placeReg(reg, now, dt, put, visible, lod)
 			local live = s.state ~= "stand" and s.state ~= "dead" and s.state ~= "brace" and s.state ~= "cover"
 			if animate and (live or reg.dirty or s.state == "falling") then
 				local x, z = slotCF(reg, s)
-				local base = CF(x, reg.y0, z) * rot * ANG(0, s.yaw, 0)
+				local base = CF(x, reg.y0 + (s.gy or 0), z) * rot * ANG(0, s.yaw, 0)
 				local st = s.state
 				-- (a man in the front rank fighting lunges at his man)
 				if st == "fight" then base = base * CF(0, 0, -math.max(0, math.sin((now + s.ph) * 2.2)) * 0.8) end

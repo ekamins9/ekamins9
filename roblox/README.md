@@ -1695,7 +1695,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   guard, lunge), loose and cast, cheer, fall, and are thrown through the air by blasts; the fallen
   stay where they fell (a dozen to a regiment, then the oldest stands up as a fresh man).
   Three lanes a flank (foot, pikes, knights; the first just past the stakes), archer companies,
-  battle-mages, and deep reserves behind each side. Levels of detail by rank: full (every piece,
+  battle-mages, deep reserves behind each side, and each army's host drawn up in great blocks on
+  the flanks by its camp (`still`: never marching, each man on the ground under him; placed once,
+  they cost nothing a frame). Levels of detail by rank: full (every piece,
   ~25 parts: the front rank of the nearest lane), lite (helmet and body armour, the main piece on
   each limb, weapon, shield), mass (shell, helmet, bare limbs, weapon). Every limb is posed only
   near the camera; further off men move as one piece in a cached pose; out of sight they only

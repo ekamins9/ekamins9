@@ -410,6 +410,14 @@ local function buildArmies()
 				crowd:regiment("res" .. side .. s, {side = side, kind = "pike", at = V3(s * 200, 0, math.clamp(fz - f * 160, -330, 330)), facing = f,
 					cols = 14, ranks = 8, spacing = 3, detail = "mass"})
 			end
+			-- the host: the rest of each army, drawn up in great blocks out on the flanks by its
+			-- camp (they never move: placed once, they cost nothing a frame)
+			local camp = W("Camp" .. side)
+			local cz = typeof(camp) == "Vector3" and camp.Z or -f * 330
+			for _, s in ipairs({-1, 1}) do
+				crowd:regiment("host" .. side .. s, {side = side, kind = s < 0 and "foot" or "pike", at = V3(s * 230, 0, cz + f * 60), facing = f,
+					cols = 16, ranks = 8, spacing = 3, detail = "mass", still = true})
+			end
 		end
 	end
 	-- the din of each flank's melee, from where it is; the drums and the roar of both armies over all
