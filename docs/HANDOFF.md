@@ -249,7 +249,11 @@ step):
   13 emoji; ✔ became ✓); the class picker's selected tag colour. Then: gargoyles stand as statues
   until they wake (`DungeonMood` petrify); the Abbey's ghost procession; Kingsbridge's ploughed
   plots; pigeons in the Courtyard (`Pigeons.client`); the `web` boss move (Spider Queen,
-  Broodmother: roots through Powers.addMods, BossFX "Webbed").
+  Broodmother: roots through Powers.addMods, BossFX "Webbed"). Then: battle wear
+  (`Scuffs.client` + CombatServer's ScuffEvent: scratches where clean blows land on armour, nicks
+  where a blade hits the world); a wraith's death mist. Testing tip: a temporary LocalScript can
+  call `TouchInput.press("Swing", true, "Right")` to swing through the game's own path (no input
+  simulation); the character faces the camera's way, so aim the camera to aim a swing.
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
