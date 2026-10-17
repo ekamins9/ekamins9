@@ -5,6 +5,8 @@
 
        a fall        anyone going down in the arena brings most of the crowd to its feet, arms
                      up, a roar
+       a parry       a fine parry (or a chamber) in the arena brings a third of them up with a
+                     shout (not more than every few seconds)
        a round won   the whole crowd on its feet, a long roar
        between       the murmur of the stands; now and then a few of them shout
 
@@ -66,9 +68,22 @@ local function roar(secs, share, volume)
 	WarFX.sound("Roar", arena.centre + V3(0, 10, 0), {volume = volume or 0.8, near = 80, range = 600, speed = 1.05 + math.random() * 0.1})
 end
 
+local lastParry = 0
 local function watchDeaths(radius)
 	local function hookHum(h)
 		if not h then return end
+		-- (a parry: ParryTick goes up on the one who made it)
+		local body = h.Parent
+		if body then
+			table.insert(arena.conns, body:GetAttributeChangedSignal("ParryTick"):Connect(function()
+				local r = body:FindFirstChild("HumanoidRootPart")
+				if not (arena.on and r) or os.clock() - lastParry < 3.5 then return end
+				if (V3(r.Position.X, 0, r.Position.Z) - V3(arena.centre.X, 0, arena.centre.Z)).Magnitude < radius + 10 then
+					lastParry = os.clock()
+					roar(1.4, 0.35, 0.45)
+				end
+			end))
+		end
 		table.insert(arena.conns, h.Died:Connect(function()
 			local r = h.Parent and h.Parent:FindFirstChild("HumanoidRootPart")
 			if not (arena.on and r) then return end

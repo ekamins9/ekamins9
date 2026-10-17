@@ -1278,7 +1278,8 @@ and 32 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
   archers stand straight behind the ring, so their volleys arc over it onto the enemy's lines; the
   battle-mages' fire crosses the sky; the cavalry rides down a flank now and then; reserves,
   standards, burning wagons, dust and the din. A duelist down in the ring brings a roar from the
-  other side's army; the winners of a round cheer. About 13,700 crowd
+  other side's army; a fine parry (or chamber) there, a shout from the parrier's (at most every
+  3.5 s); the winners of a round cheer. About 13,700 crowd
   parts, 1.8–3.5 ms a frame, 52–56 fps in Studio play.
 
 Every forge map carries its weather (snow, rain, ash, leaves, petals, embers, fireflies, dust or
@@ -1839,7 +1840,8 @@ On any map with `Stand` parts (the Colosseum, the forge arenas, the Sandpit), in
 hubs, the stands are full on your screen: a row of unarmed commoners along the top of every
 Stand part, facing the middle of the map (`WarCrowd:audience`), blue at one end and red at the
 other with strays mixed in (up to 420; 180 on a phone). Anyone going down in the arena brings
-most of them to their feet, arms up, with a roar (`WarCrowd:roar`); a round won, the whole crowd;
+most of them to their feet, arms up, with a roar (`WarCrowd:roar`); a fine parry or chamber there
+(the parrier's ParryTick), a third of them with a shout (at most every 3.5 s); a round won, the whole crowd;
 between, the murmur of the stands and now and then a few of them shouting. Arms and all near the
 camera; further off a cheering man is a cached arms-up pose bobbing. Measured in the Colosseum
 (FFA, bots): 56–60 fps in Studio play, the crowd ~0 ms idle and ~2 ms in a roar.

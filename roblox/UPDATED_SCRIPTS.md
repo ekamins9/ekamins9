@@ -1,4 +1,17 @@
-# Updated scripts: the dark falls as the gates slam
+# Updated scripts: the crowd shouts for a fine parry
+
+- **Arenas** (the Colosseum, the forge arenas, the Sandpit): a parry or a chamber in the arena brings a third of the stands up with a shout.
+- **The warfields** (the Lists): a parry or a chamber in the ring brings a shout from the parrier's army. At most once every 3.5 s.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ArenaCrowd.client.lua](StarterPlayerScripts/ArenaCrowd.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | parries |
+| [Warfield.client.lua](StarterPlayerScripts/Warfield.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | parries |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the dark falls as the gates slam
 
 - **The Depths**: one fight in five, as the gates slam, a cold gust puts out the room's torches. The fight starts by lantern light alone, and the torches sputter back one by one a few seconds later.
 

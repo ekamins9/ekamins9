@@ -11,7 +11,8 @@
                            dust over the melee, smoke from burning wagons, the din of it all
 
      The side in blue (A) stands to the south (towards -z), red (B) to the north. A duelist down
-     in the ring brings a roar from the other side's army; the winners of a round cheer. ]]
+     in the ring brings a roar from the other side's army; a fine parry there, a shout from the
+     parrier's; the winners of a round cheer. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -232,9 +233,20 @@ local function fell(char)
 	field.crowd:cheer(winners)
 	WarFX.sound("Roar", V3(0, 8, 0), {volume = 0.9, near = 80, range = 900})
 end
+-- a fine parry in the ring: the parrier's army shouts (not more than every few seconds)
+local lastParry = 0
+local function parried(char)
+	if not (field.on and field.crowd) or os.clock() - lastParry < 3.5 then return end
+	local side = char and char:GetAttribute("Team")
+	if side ~= "A" and side ~= "B" then return end
+	lastParry = os.clock()
+	field.crowd:cheer(side)
+	WarFX.sound("Roar", V3(0, 8, 0), {volume = 0.45, near = 80, range = 900, speed = 1.12})
+end
 local function hookChar(c)
 	local h = c and c:WaitForChild("Humanoid", 5)
 	if h then h.Died:Connect(function() fell(c) end) end
+	if c then c:GetAttributeChangedSignal("ParryTick"):Connect(function() parried(c) end) end
 end
 for _, p in ipairs(Players:GetPlayers()) do
 	if p.Character then task.spawn(hookChar, p.Character) end
