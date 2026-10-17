@@ -78,6 +78,7 @@ end
 --------------------------------------------------------------------
 local roundToken = 0
 local function roundBegins()
+	_G.FightBannerAt = os.clock()   -- (MatchIntro doesn't say the mode and map again)
 	roundToken += 1
 	local me = roundToken
 	local mode = round:GetAttribute("Mode") or ""

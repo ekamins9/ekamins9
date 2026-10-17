@@ -1,8 +1,9 @@
 --[[ MATCH INTRO — a battle's opening, on your first body of a round in Siege, Team Deathmatch, King
      of the Hill, Free-for-All, Last Team Standing and Horde: black bars slide in, the camera flies
      from the map's own shot (MapLoader's Shot1… on the Map) down to just behind you, the mode and
-     the map come up as a title with what you're there to do, and a horn. About four seconds; any
-     key skips it. Not for a newcomer's first battle (Intro briefs them), nor while anything else
+     the map come up as a title with what you're there to do, and a horn (just the "what you're there
+     to do", low in the black bar, when the round's FIGHT! banner has only now said the rest:
+     Celebrate). The HUD steps aside while it plays. About four seconds; any key skips it. Not for a newcomer's first battle (Intro briefs them), nor while anything else
      has the camera. War flies its own (War.client). ]]
 
 local Players = game:GetService("Players")
@@ -73,11 +74,15 @@ local function fadeAll(to, t)
 end
 
 local playing = nil
+local hidden = {}
+local KEEP = {MatchIntro = true, Celebrate = true, Chat = true, TravelScreen = true, EngineWarnings = true}
 local function stop()
 	if not playing then return end
 	playing = nil
 	_G.CinematicUp = nil
 	pcall(function() RunService:UnbindFromRenderStep("MatchIntro") end)
+	for g in pairs(hidden) do if g.Parent then g.Enabled = true end end
+	table.clear(hidden)
 	fadeAll(1, 0.3)
 	TweenService:Create(top, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0)}):Play()
 	TweenService:Create(bottom, TweenInfo.new(0.4), {Size = UDim2.new(1, 0, 0, 0)}):Play()
@@ -106,18 +111,21 @@ local function play()
 	playing = token
 	_G.CinematicUp = true
 	gui.Enabled = true
-	kicker.Text = string.upper(round:GetAttribute("ModeName") or "")
-	title.Text = string.upper(round:GetAttribute("MapName") or "")
+	-- (the FIGHT! banner has just said the mode and the map: only what you're there to do, low)
+	local banner = _G.FightBannerAt and os.clock() - _G.FightBannerAt < 6
+	kicker.Text = banner and "" or string.upper(round:GetAttribute("ModeName") or "")
+	title.Text = banner and "" or string.upper(round:GetAttribute("MapName") or "")
 	local g = GOAL[modeId] or ""
 	if modeId == "Siege" then
 		g = (round:GetAttribute("Attackers") == mySide()) and "TAKE THE CASTLE  ·  STAGE BY STAGE" or "HOLD THE CASTLE  ·  TILL THE BELL"
 	end
 	goal.Text = g
+	goal.Position = banner and UDim2.fromScale(0.5, 0.94) or UDim2.fromScale(0.5, 0.56)
 	for _, l in ipairs({kicker, title, goal}) do l.TextTransparency = 1; l:FindFirstChildOfClass("UIStroke").Transparency = 1 end
 	fadeAll(0, 0.5)
 	TweenService:Create(top, TweenInfo.new(0.5), {Size = UDim2.new(1, 0, 0.1, 0)}):Play()
 	TweenService:Create(bottom, TweenInfo.new(0.5), {Size = UDim2.new(1, 0, 0.1, 0)}):Play()
-	WarFX.sound("Horn", nil, {volume = 0.7})
+	if not banner then WarFX.sound("Horn", nil, {volume = 0.7}) end
 	task.delay(LEN - 1.2, function() if playing == token then fadeAll(1, 0.6) end end)
 	local t0 = os.clock()
 	RunService:BindToRenderStep("MatchIntro", Enum.RenderPriority.Camera.Value + 5, function()
@@ -126,6 +134,10 @@ local function play()
 		local cam = workspace.CurrentCamera
 		cam.CameraType = Enum.CameraType.Scriptable
 		cam.CFrame = shot:Lerp(finish, u)
+		-- (the HUD steps aside till it's over)
+		for _, gg in ipairs(playerGui:GetChildren()) do
+			if gg:IsA("ScreenGui") and gg.Enabled and not KEEP[gg.Name] then gg.Enabled = false; hidden[gg] = true end
+		end
 		if u >= 1 then stop() end
 	end)
 end
