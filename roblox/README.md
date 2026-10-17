@@ -2132,6 +2132,12 @@ Crypt, Goblin Warrens, Crimson Manor, the Frozen Depths, the Ember Forge, the Dr
   a bigger cloud of grave-dust) under a banner in the theme's words (THE DEAD RISE, MORE POUR IN,
   THE HOUSE STIRS, THE ICE CRACKS, THE FORGE WAKES). A boss in its second phase calls its servants
   the same way, once (THEY ANSWER), a moment after its fury's roar. Those coming count as foes left.
+- **Ambush** (`Depths:ambushCheck` / `ambush`): the corridors aren't safe. Walking one (18 studs or
+  longer, no fight on), each second there's a small chance (2.5%) that the floor cracks open at both
+  ends of it, either side of you, and the floor's commons climb out (the same Rise as a second
+  wave; AMBUSH! for whoever set it off): 2 on the first floor, 3 on the second, 4 on the third,
+  more with a party. At most two a floor, 70 s apart, none in a floor's first 70 s; no gates (it's
+  their own fight), and they go with the floor.
 - **Difficulty** (`Depths:engage`): gentle first floors. Monsters start at 80% health and damage
   and grow with each floor; how well they fight is capped by the floor (Squires on the first,
   Knights on the second; the boss never fights better than a Knight); elites come from the second

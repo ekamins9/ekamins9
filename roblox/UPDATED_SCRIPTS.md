@@ -1,4 +1,15 @@
-# Updated scripts: Sir Aldric takes the field; a sweep of the modes
+# Updated scripts: ambushes in the Depths' corridors
+
+- **The Depths**: the corridors aren't safe. Walking one, now and then (twice a floor at most) the floor cracks open at both ends and the dead climb out on either side of you: AMBUSH! with 2 to 4 of the floor's commons, more with a party.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `ambushCheck`, `ambush`, `clearAmbushers` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: Sir Aldric takes the field; a sweep of the modes
 
 - **War**: the Crown's champion, Sir Aldric the Unbroken, is the Training Yard's own master of steel (a comment and the README say so).
 - Soaked with today's changes, no errors in any: Depths (2½ min), Deadvault, War (Redfield, Frostmere, Kingsbridge, Nightfall), Siege, Horde, Invasion, Plague, Dragonfall, Crownfall, TDM, KOTH, Kingslayer, the Tiltyard, the Courtyard, the Prologue, the Gilded Rat.

@@ -25,6 +25,9 @@
      TRAPS. The corridors between are trapped too (Game ▸ Traps: spike grates, swinging blades,
      dart plates, fire grates), more of them each floor down; the first floor's start is clear.
 
+     AMBUSH. The corridors aren't safe either: now and then (twice a floor at most) the dead crack
+     up through the floor at both ends of the one you're walking, and you're caught between them.
+
      SECRETS. A floor hides a walled-up cache or two (Game ▸ Secrets): a cracked stretch of wall
      with a draft through it. Three blows bring it down: a gilded chest behind it, for everyone.
 
@@ -428,6 +431,84 @@ function Depths:engage(room)
 	end
 end
 
+-- AMBUSH: someone walking a corridor (no fight on, not on the first minute of a floor) now and
+-- then finds it cracking open at both ends, the floor's commons climbing out (the same Rise as a
+-- second wave); at most AMBUSH_MAX a floor, AMBUSH_GAP apart. Those that come are their own
+-- little fight (no gates), cleared away with the floor.
+local AMBUSH_MAX, AMBUSH_GAP, AMBUSH_CHANCE = 2, 70, 0.025   -- (the chance: each second in a corridor)
+function Depths:ambushCheck(now)
+	local L = self.layout
+	if not (L and L.corridors) or self.active then return end
+	self.ambushState = self.ambushState or {n = 0, at = now, floor = self.floor}
+	local a = self.ambushState
+	if a.floor ~= self.floor then a.n, a.at, a.floor = 0, now, self.floor end
+	if a.n >= AMBUSH_MAX or now - a.at < AMBUSH_GAP or now - (a.tick or 0) < 1 then return end
+	a.tick = now
+	for _, p in ipairs(Players:GetPlayers()) do
+		local r = rootOf(aliveChar(p))
+		if r and not Dungeon.roomAt(L, r.Position) and math.random() < AMBUSH_CHANCE then
+			-- (the corridor it's in)
+			for _, c in ipairs(L.corridors) do
+				local T = c.axis == "X" and Vector3.new(1, 0, 0) or Vector3.new(0, 0, 1)
+				local rel = r.Position - c.mid
+				local along = rel:Dot(T)
+				if math.abs(along) < c.len / 2 + 1 and (rel - T * along - Vector3.new(0, rel.Y, 0)).Magnitude < Dungeon.DOOR_W / 2 + 1 and c.len >= 18 then
+					a.n += 1
+					a.at = now
+					self:ambush(c, T, along, p)
+					return
+				end
+			end
+		end
+	end
+end
+function Depths:ambush(c, T, along, plr)
+	local th = Catalog.DUNGEONS[self.theme]
+	local mons = th.monsters
+	-- (both ends of the corridor, a little in from them, on either side of whoever's walking it)
+	local ends = {}
+	for _, s in ipairs({-1, 1}) do
+		local u = math.clamp(along + s * 11, -c.len / 2 + 3, c.len / 2 - 3)
+		if math.abs(u - along) > 5 then table.insert(ends, c.mid + T * u + Vector3.new(0, 3, 0)) end
+	end
+	if #ends == 0 then return end
+	local n = math.min(4, 1 + self.floor + math.floor((playersN() - 1) / 2))
+	local at = {}
+	for i = 1, n do
+		local e = ends[((i - 1) % #ends) + 1]
+		local C = Vector3.new(T.Z, 0, T.X)
+		at[i] = e + C * ((i % 2 == 0) and 2.2 or -2.2) + T * (math.random() - 0.5) * 2
+	end
+	-- (their own rules: the floor's, round the corridor and a little beyond it)
+	local pseudo = {cx = c.mid.X, cz = c.mid.Z, w = (c.axis == "X") and c.len + 40 or 40, d = (c.axis == "X") and 40 or c.len + 40, mobs = {}, state = "ambush", kind = "ambush"}
+	local opts = self:roomOpts(pseudo)
+	pseudo.opts = opts
+	local r0 = plr and rootOf(plr.Character)
+	local target = r0 and r0.Position or (c.mid + T * along)
+	self.ambushers = self.ambushers or {}
+	table.insert(self.ambushers, pseudo)
+	event:FireAllClients("Rise", {at = at, theme = self.theme})
+	if plr then event:FireClient(plr, "Banner", {text = "AMBUSH!", sub = "THEY'RE ON BOTH SIDES", kind = "fight"}) end
+	task.delay(1.1, function()
+		if Game.current ~= self or not self.layout then return end
+		for i, p in ipairs(at) do
+			local id = mons.common[math.random(#mons.common)]
+			local mob = Monsters.spawn(id, opts, {at = CFrame.lookAt(p, Vector3.new(target.X, p.Y, target.Z)), elite = false})
+			if mob then
+				pseudo.mobs[mob] = true
+				if mob.model then mob.model:SetAttribute("Rising", true) end
+			end
+		end
+	end)
+end
+function Depths:clearAmbushers()
+	for _, pseudo in ipairs(self.ambushers or {}) do
+		for mob in pairs(pseudo.mobs) do Monsters.despawn(mob) end
+		if pseudo.opts then Monsters.halt(pseudo.opts) end
+	end
+	self.ambushers = {}
+end
+
 -- MORE COME: a second wave for a fight down to its last few (room.wave, decided as it starts), or a
 -- boss's servants (servants): every screen sees the floor crack where they'll come (AdventureEvent
 -- "Rise"), then they burst up out of it a second later (the Rising attribute: StarterPlayerScripts ▸
@@ -612,6 +693,7 @@ function Depths:descend()
 		for mob in pairs(room.mobs or {}) do Monsters.despawn(mob) end
 		if room.opts then Monsters.halt(room.opts) end
 	end
+	self:clearAmbushers()
 	Loot.clear()
 	local name, layout = Dungeon.build(self.theme, floorOpts(self.floor, playersN()))
 	self.layout = layout
@@ -714,6 +796,8 @@ end
 function Depths:stop()
 	Traps.disarm()
 	Secrets.disarm()
+	self:clearAmbushers()
+	self.ambushState = nil
 	if self.active and self.active.opts then Monsters.halt(self.active.opts) end
 	for _, room in ipairs(self.layout and self.layout.rooms or {}) do
 		for mob in pairs(room.mobs or {}) do Monsters.despawn(mob) end
@@ -860,6 +944,7 @@ function Depths:tick(dt)
 				end
 			end
 		end
+		if not started and not self.descendAt then self:ambushCheck(now) end
 		node:SetAttribute("ObjLabel", "FLOOR " .. self.floor .. " OF " .. FLOORS)
 		node:SetAttribute("ObjNote", self.descendAt and string.format("DESCENDING IN %d", math.max(0, math.ceil(self.descendAt - now))) or "EXPLORE")
 		node:SetAttribute("ObjState", "explore")
