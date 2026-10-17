@@ -126,9 +126,17 @@ end
 
 -- THE TOP: reinforcements, the clock, the banners
 do
-	local top = glass(gui, UDim2.new(0.94, 0, 0, 104), UDim2.new(0.5, 0, 0, 10))
-	local lim = Instance.new("UISizeConstraint"); lim.MaxSize = Vector2.new(620, 104); lim.Parent = top
-	ui.top = top
+	-- (a fixed 620 wide, scaled down on a narrow screen so nothing in it overlaps)
+	local top = glass(gui, UDim2.fromOffset(620, 104), UDim2.new(0.5, 0, 0, 10))
+	local sc = Instance.new("UIScale"); sc.Parent = top
+	local function fit()
+		local cam = workspace.CurrentCamera
+		local w = cam and cam.ViewportSize.X or 1000
+		sc.Scale = math.clamp((w - 24) / 620, 0.55, 1)
+	end
+	fit()
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
+	ui.top, ui.topScale = top, sc
 	for _, k in ipairs({"A", "B"}) do
 		local left = k == "A"
 		local name = label(top, sideName(k), 14, Theme.FONT, SIDE[k]:Lerp(WHITE, 0.35))
@@ -183,8 +191,14 @@ do
 end
 -- AT A BANNER
 do
-	local p = glass(gui, UDim2.new(0.6, 0, 0, 64), UDim2.new(0.5, 0, 0, 124))
-	local lim = Instance.new("UISizeConstraint"); lim.MaxSize = Vector2.new(420, 64); lim.Parent = p
+	local p = glass(gui, UDim2.fromOffset(420, 64), UDim2.new(0.5, 0, 0, 124))
+	local psc = Instance.new("UIScale"); psc.Parent = p
+	ui.top:FindFirstChildOfClass("UIScale"):GetPropertyChangedSignal("Scale"):Connect(function()
+		psc.Scale = ui.top:FindFirstChildOfClass("UIScale").Scale
+		p.Position = UDim2.new(0.5, 0, 0, 10 + 114 * psc.Scale)
+	end)
+	psc.Scale = ui.top:FindFirstChildOfClass("UIScale").Scale
+	p.Position = UDim2.new(0.5, 0, 0, 10 + 114 * psc.Scale)
 	local name = label(p, "", 18, Theme.FONT_TITLE, WHITE); name.Position = UDim2.fromOffset(0, 6); name.Size = UDim2.new(1, 0, 0, 20)
 	local state = label(p, "", 13, Theme.FONT, GOLD); state.Position = UDim2.fromOffset(0, 26); state.Size = UDim2.new(1, 0, 0, 16)
 	local track = Instance.new("Frame"); track.BackgroundColor3 = Color3.fromRGB(30, 34, 50); track.BorderSizePixel = 0
