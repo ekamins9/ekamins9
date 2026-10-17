@@ -1913,6 +1913,9 @@ a pale face, hair) in a gilt frame with its moulding and plaque, one model each 
 Painting). On your screen their pupils turn in their whites toward you wherever you stand in the
 room (within 40 studs). Now and then, near one (18 studs) with your back to it, its eyes burn red
 and something whispers (35% of a chance every 40-100 s); turn round and they're only paint again.
+The Frozen Depths' dead in their ice (P.frozen) watch too: come within 12 studs and a figure's eyes
+open in the ice, pale and cold, with a creak; they turn a little after you and close again once
+you're 22 studs off.
 
 ## Arrows in the shield (`RangedServer`)
 

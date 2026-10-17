@@ -1,4 +1,15 @@
-# Updated scripts: the undertow
+# Updated scripts: the frozen open their eyes
+
+- **The Frozen Depths**: pass close to a figure frozen in its block of ice and its eyes open, pale and cold, with a creak of ice. They follow you a little, and close once you've gone.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Portraits.client.lua](StarterPlayerScripts/Portraits.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the frozen dead's eyes (IceBlock) |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the undertow
 
 - **The Drowned Halls**: something lives in the water. Now and then a long dim shape glides beneath the standing water across a room's floor, ripples spreading off it; come near and it darts away with a splash. Once in a while, as it sinks, a pale hand breaks the surface.
 
