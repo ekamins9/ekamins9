@@ -1,4 +1,16 @@
-# Updated scripts: the cavalry are real knights
+# Updated scripts: the garrison drills outside the Courtyard
+
+- **Outside the walls**: on the east field two companies of the garrison drill against each other (charging, crashing together, pulling apart); on the west field an archery range, archers loosing at straw butts. Seen from the battlements and the menu's flyover.
+- **Checked in Play** in the Courtyard.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CourtyardGuards.client.lua](StarterPlayerScripts/CourtyardGuards.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the drill, the archery range |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the cavalry are real knights
 
 - **Cavalry riders** (War's charges, the warfields, the Prologue's dawn riders) are now real armoured knights of their side sitting in the saddle with their lances, instead of a coat and a helmet block.
 
@@ -17,16 +29,3 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [Weather.client.lua](StarterPlayerScripts/Weather.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | cold breath |
-
----
-
-## Before that: sentries on the Courtyard's walls
-
-- **The Courtyard is a garrison**: Crown sentries walk the battlements, stopping at the ends of their stretch to look out over the walls.
-- **Checked in Play** in the Courtyard.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [CourtyardGuards.client.lua](StarterPlayerScripts/CourtyardGuards.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | `sentry` |
-| [README.md](README.md) | | doc | |
