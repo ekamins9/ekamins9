@@ -1272,7 +1272,8 @@ and 30 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
   together after 5 s with horns and drums, wavering, pulling apart and charging again; each side's
   archers stand straight behind the ring, so their volleys arc over it onto the enemy's lines; the
   battle-mages' fire crosses the sky; the cavalry rides down a flank now and then; reserves,
-  standards, burning wagons, dust and the din. The winners of a round cheer. About 13,700 crowd
+  standards, burning wagons, dust and the din. A duelist down in the ring brings a roar from the
+  other side's army; the winners of a round cheer. About 13,700 crowd
   parts, 1.8–3.5 ms a frame, 52–56 fps in Studio play.
 
 Every forge map carries its weather (snow, rain, ash, leaves, petals, embers, fireflies, dust or

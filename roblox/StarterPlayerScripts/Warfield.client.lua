@@ -10,8 +10,8 @@
        all round           the opening charge with horns and drums, cavalry riding down a flank,
                            dust over the melee, smoke from burning wagons, the din of it all
 
-     The side in blue (A) stands to the south (towards -z), red (B) to the north. The winners of
-     a round cheer. ]]
+     The side in blue (A) stands to the south (towards -z), red (B) to the north. A duelist down
+     in the ring brings a roar from the other side's army; the winners of a round cheer. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -222,6 +222,25 @@ local function enter()
 		end
 	end)
 end
+
+-- a duelist down in the ring: the other side's army raises its weapons and roars
+local function fell(char)
+	if not (field.on and field.crowd) then return end
+	local side = char and char:GetAttribute("Team")
+	if side ~= "A" and side ~= "B" then return end
+	local winners = side == "A" and "B" or "A"
+	field.crowd:cheer(winners)
+	WarFX.sound("Roar", V3(0, 8, 0), {volume = 0.9, near = 80, range = 900})
+end
+local function hookChar(c)
+	local h = c and c:WaitForChild("Humanoid", 5)
+	if h then h.Died:Connect(function() fell(c) end) end
+end
+for _, p in ipairs(Players:GetPlayers()) do
+	if p.Character then task.spawn(hookChar, p.Character) end
+	p.CharacterAdded:Connect(hookChar)
+end
+Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(hookChar) end)
 
 -- a round won: the winners cheer
 round:GetAttributeChangedSignal("State"):Connect(function()
