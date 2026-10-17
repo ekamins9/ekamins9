@@ -1035,6 +1035,53 @@ end
 --------------------------------------------------------------------
 --  BUILD
 --------------------------------------------------------------------
+-- a SHAFT of light from above: an iron grate in the ceiling with a pale glow behind it, the light
+-- falling through in a soft column to a pool on the floor, dust turning slowly in it. A few rooms a
+-- floor (Dungeon.build); none in the Ember Forge, whose light is its fires.
+local SHAFT_TINT = {DrownedHalls = Color3.fromRGB(170, 230, 220), HollowAbbey = Color3.fromRGB(222, 212, 255),
+	FrozenDepths = Color3.fromRGB(200, 226, 255), CrimsonManor = Color3.fromRGB(214, 214, 236)}
+local SHAFT_IRON = Color3.fromRGB(40, 38, 36)
+local function shaft(ctx, at, RH, tint)
+	local top = Vector3.new(at.X, RH, at.Z)
+	local function dress(p) p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = false, false, false, false; return p end
+	-- the opening: the glow behind the bars, flush under the ceiling
+	local glow = dress(K.box(ctx, "ShaftGlow", Vector3.new(4.6, 0.1, 4.6), CFrame.new(top - Vector3.new(0, 0.08, 0)), tint, Enum.Material.Neon))
+	for _, s in ipairs({-1, 1}) do
+		dress(K.box(ctx, "Grate", Vector3.new(5.4, 0.35, 0.45), CFrame.new(top + Vector3.new(0, -0.22, s * 2.5)), SHAFT_IRON, Enum.Material.Metal))
+		dress(K.box(ctx, "Grate", Vector3.new(0.45, 0.35, 5.4), CFrame.new(top + Vector3.new(s * 2.5, -0.22, 0)), SHAFT_IRON, Enum.Material.Metal))
+	end
+	for i = -1, 1 do dress(K.box(ctx, "Grate", Vector3.new(0.22, 0.22, 4.6), CFrame.new(top + Vector3.new(i * 1.2, -0.24, 0)), SHAFT_IRON, Enum.Material.Metal)) end
+	-- the light, and its column (a ribbon that turns to face you: it reads as a shaft)
+	local spot = Instance.new("SpotLight")
+	spot.Face, spot.Angle, spot.Range, spot.Brightness, spot.Color, spot.Shadows = Enum.NormalId.Bottom, 40, RH + 8, 2.6, tint, true
+	spot.Parent = glow
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.Position, a1.Position = Vector3.new(0, -0.1, 0), Vector3.new(0, -(RH - 0.4), 0)
+	a0.Parent, a1.Parent = glow, glow
+	local beam = Instance.new("Beam")
+	beam.Attachment0, beam.Attachment1 = a0, a1
+	beam.Width0, beam.Width1, beam.FaceCamera, beam.Segments = 4.2, 7, true, 1
+	beam.LightEmission, beam.LightInfluence = 0.7, 0
+	beam.Color = ColorSequence.new(tint)
+	beam.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.74), NumberSequenceKeypoint.new(0.75, 0.87), NumberSequenceKeypoint.new(1, 1)})
+	beam.Parent = glow
+	-- the dust in it
+	local box = dress(K.box(ctx, "ShaftDust", Vector3.new(4.2, math.max(RH - 1.5, 2), 4.2), CFrame.new(Vector3.new(at.X, RH / 2, at.Z)), tint, Enum.Material.SmoothPlastic))
+	box.Transparency = 1
+	local e = Instance.new("ParticleEmitter")
+	e.Shape, e.ShapeStyle = Enum.ParticleEmitterShape.Box, Enum.ParticleEmitterShapeStyle.Volume
+	e.Color = ColorSequence.new(tint)
+	e.LightEmission, e.LightInfluence = 1, 0
+	e.Size = NumberSequence.new(0.12)
+	e.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.35), NumberSequenceKeypoint.new(0.7, 0.35), NumberSequenceKeypoint.new(1, 1)})
+	e.Lifetime = NumberRange.new(6, 10)
+	e.Speed = NumberRange.new(0.1, 0.4)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Acceleration = Vector3.new(0, -0.05, 0)
+	e.Rate = 5
+	e.Parent = box
+end
+
 function Dungeon.build(themeKey, opts)
 	opts = opts or {}
 	local th = Catalog.DUNGEONS[themeKey] or Catalog.DUNGEONS.BoneCrypt
@@ -1089,6 +1136,7 @@ function Dungeon.build(themeKey, opts)
 	local secretsFolder = Instance.new("Folder"); secretsFolder.Name = "Secrets"; secretsFolder.Parent = ctx.model
 
 	local floorC, floorM = th.floor, mat(th.floorMat)
+	local shaftsLeft = opts.raid and 4 or 3
 	for _, r in ipairs(list) do
 		local c = Vector3.new(r.cx, 0, r.cz)
 		local fw, fd = r.w + T * 2, r.d + T * 2
@@ -1105,6 +1153,16 @@ function Dungeon.build(themeKey, opts)
 		K.box(ctx, "Ceiling", Vector3.new(fw, 1, fd), CFrame.new(c + Vector3.new(0, RH + 0.5, 0)), shade(th.wall, 0.6), mat(th.wallMat))
 		for x = -r.w / 2 + 8, r.w / 2 - 8, 12 do
 			K.box(ctx, "Beam", Vector3.new(1.4, 1.4, r.d), CFrame.new(c + Vector3.new(x, RH - 0.7, 0)), th.trim, mat(th.trimMat)).CanCollide = false
+		end
+		-- (now and then a grate in the ceiling, light falling through it: between two beams, off the
+		-- room's middle)
+		if shaftsLeft > 0 and themeKey ~= "EmberForge" and r.kind ~= "boss" and r.w >= 24 and r.d >= 20 and rng:NextNumber() < 0.3 then
+			shaftsLeft -= 1
+			local nx = math.max(1, math.floor((r.w - 16) / 12))
+			local x = -r.w / 2 + 14 + 12 * rng:NextInteger(0, nx - 1)
+			local z = rng:NextNumber(-r.d / 2 + 6, r.d / 2 - 6)
+			if math.abs(x) < 5 and math.abs(z) < 5 then z = (z < 0 and -1 or 1) * 6 end
+			shaft(ctx, c + Vector3.new(x, 0, z), RH, SHAFT_TINT[themeKey] or Color3.fromRGB(200, 214, 236))
 		end
 		-- the walls, a gap where a corridor comes in
 		local gapsN, gapsS, gapsE, gapsW = {}, {}, {}, {}

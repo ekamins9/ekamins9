@@ -2129,6 +2129,12 @@ Cindermaw, three times the size; within 200 studs of you): a deep boom and the g
 shaking, a pillar of light where it stood fading up into the dark, a ring of force rolling out
 over the floor, a cloud of dust, the world washing white for a moment.
 
+**Light from above** (`Dungeon.build`, `shaft`): in up to three rooms a floor (four in a raid),
+an iron grate in the ceiling glows pale with the light beyond it, and the light falls through in a
+soft column (a camera-facing Beam) to a pool on the floor (a SpotLight with shadows), dust turning
+slowly in it. Cool moonlight; sea-green in the Drowned Halls, violet-white in the Abbey; none in
+the Ember Forge.
+
 ### Traps (`Game ▸ Traps`, `Traps.client`)
 The corridors of a generated floor are trapped (`Traps.arm(map, layout, opts)` once the map is
 loaded; the builder lists its corridors in `layout.corridors`). The Depths: two corridors on the

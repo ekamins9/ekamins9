@@ -1,4 +1,15 @@
-# Updated scripts: castle walls in rubble stone
+# Updated scripts: light from above
+
+- **The dungeons**: in a few rooms a floor, an iron grate in the ceiling glows with pale light from somewhere above, and the light falls through in a soft column to a pool on the floor, dust turning slowly in it. The Drowned Halls' light is sea-green and the Abbey's violet-white; the Ember Forge has none.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | `shaft` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: castle walls in rubble stone
 
 - **Castle walls, towers and the Courtyard's keep** are rubble masonry (Cobblestone) instead of this morning's brick, which came out pinkish on white and grey castles. The saved maps were switched too (save the place).
 
