@@ -225,6 +225,14 @@ end
 function War:captured(i, side, lost)
 	self.owner[i] = side
 	remote:FireAllClients("Captured", {id = i, side = side, lost = lost})
+	-- (everyone of the side standing at it when it fell is paid for it: Catalog ▸ Economy war_banner)
+	local b = side and self.layout and self.layout.banners[i]
+	if b and _G.RoundBump then
+		for model, hrp in pairs(Teams.fighters(side)) do
+			local plr = Players:GetPlayerFromCharacter(model)
+			if plr and (flat(hrp.Position) - flat(b.pos)).Magnitude <= self.layout.radius + 2 then _G.RoundBump(plr, "war_banner") end
+		end
+	end
 end
 
 --------------------------------------------------------------------

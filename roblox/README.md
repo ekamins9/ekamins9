@@ -1646,6 +1646,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   and looses a bolt that goes through up to three of them (85 / 70 / 55, thrown back; the kills
   yours); six seconds to wind. Its prompt shows only to its own side, and to nobody while it winds
   (Prompts.client: a prompt's `Team` and `Ready` attributes).
+- **Pay**: everyone of a side standing at a banner when it falls to them earns `war_banner`
+  (Catalog ▸ Economy: 20 Marks, 45 XP each), on top of the round's usual (round, win, kills);
+  War's kills count on the season's kill board like Warfront's.
 - **The engines' kills on the feed**: "Crown Trebuchet", "Iron Archers", "Crown Battle-Mages"
   (Engines sets LastHitByName / LastHitWith on whoever it hurts).
 - **On your screen** (`War.client`): reinforcements (number and bar) and the clock, the five
