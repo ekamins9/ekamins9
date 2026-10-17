@@ -1,4 +1,17 @@
-# Updated scripts: traps in the dungeons' corridors
+# Updated scripts: not every dead rests
+
+- **Deadvault**: the first search of a sarcophagus sometimes (30%) throws the lid off towards you and its dead climbs out of the far side, already coming for you (IT WAKES). Search it once it's dealt with.
+- A sliding sarcophagus lid now takes the effigy carved on it along (it was left floating).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | the thrown lid, the effigy |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `waken` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: traps in the dungeons' corridors
 
 - **The Depths and Deadvault**: the corridors are trapped. Spike grates punch up when stepped on; pendulum blades swing across (two out of step in a long corridor); dart plates fire across from one wall; fire grates breathe in turn. Each shows itself and has a way past (the wall beside it, a jump, timing, the cool side).
 - They hurt anyone, monsters too. The server decides every hit; every screen draws the motion on the server's clock.

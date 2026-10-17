@@ -2190,7 +2190,11 @@ get out with what you found, or lose it all.
   weapon racks, armour stands, bookshelves, sarcophagi, remains, chests (plain, ornate, the
   hoard). Search one (V) and a **loot window** shows what's in it, rolled for the first opener's
   class and shared: TAKE one, or TAKE ALL (Y). **Valuables** (`TREASURES`: cups, rings, idols,
-  gems) only sell, at their full worth to the Treasurer.
+  gems) only sell, at their full worth to the Treasurer. **Not every dead rests**: the first look
+  into a sarcophagus now and then (`Deadvault.WAKE_CHANCE`, 30%) throws its lid off towards you
+  (the effigy carved on it with it) and its dead climbs out of the far side, already coming for
+  you (IT WAKES; the crypt's skeletons and ghouls, the manor's vampires, the ice's frozen dead;
+  `Deadvault:waken`). Deal with it, then search.
 - **Your gear** (I, or the Bag button): what you wear (a weapon, a sidearm, armour, a tome's power,
   three relics), your **belt** (four draughts: keys **3 – 6**, on screen bottom left; drinking takes
   a moment and slows you, then a healing draught mends over four seconds) and your **bag** (20;

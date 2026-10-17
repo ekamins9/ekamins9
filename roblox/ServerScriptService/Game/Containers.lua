@@ -12,7 +12,9 @@
                                                decides where it goes (false: it stays)
        set:clear()
 
-     Opening a chest is loud (Combat ▸ Perception.noise): the dark hears it. ]]
+     Opening a chest is loud (Combat ▸ Perception.noise): the dark hears it. A sarcophagus's dead
+     isn't always resting: on the first look the mode's waken(box, char) may raise it, and then
+     the lid is thrown off, it climbs out, and there's no searching it till it's dealt with. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -252,10 +254,22 @@ function Containers:open(plr, box)
 		box.looked = true
 		if box.chest and box.chest.swing then box.chest.swing() end
 		local lid = box.model:FindFirstChild("Lid")
+		local woke = box.kind == "coffin" and self.mode and self.mode.waken and self.mode:waken(box, char)
 		if lid and lid:GetAttribute("Slides") then
-			TweenService:Create(lid, TweenInfo.new(0.9, Enum.EasingStyle.Quad), {CFrame = lid.CFrame * CFrame.new(1.6, 0.2, 1.2) * CFrame.Angles(0, math.rad(18), 0)}):Play()
+			-- (slid aside; or, its dead awake, thrown off to land against its side) with the effigy
+			-- carved on it
+			-- (thrown towards the one who opened it: its dead climbs out of the far side)
+			local sx = (rootOf(char).Position - box.pos):Dot(lid.CFrame.RightVector) < 0 and -1 or 1
+			local to = woke and lid.CFrame * CFrame.new(3.6 * sx, -1.2, 0.4) * CFrame.Angles(0, math.rad(12), math.rad(-72 * sx))
+				or lid.CFrame * CFrame.new(1.6, 0.2, 1.2) * CFrame.Angles(0, math.rad(18), 0)
+			local info = woke and TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out) or TweenInfo.new(0.9, Enum.EasingStyle.Quad)
+			if woke then lid.CanCollide = false end
+			local effigy = box.model:FindFirstChild("Effigy")
+			if effigy then TweenService:Create(effigy, info, {CFrame = to * lid.CFrame:ToObjectSpace(effigy.CFrame)}):Play() end
+			TweenService:Create(lid, info, {CFrame = to}):Play()
 		end
 		if LOUD[box.kind] then Perception.noise(box.pos, LOUD[box.kind], char) end
+		if woke then return end
 	end
 	box.opened[plr] = true
 	box.watch = box.watch or {}

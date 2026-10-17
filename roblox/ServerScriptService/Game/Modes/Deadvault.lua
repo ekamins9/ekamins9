@@ -28,6 +28,9 @@
      TRAPS in a third of its corridors (Game ▸ Traps: spike grates, swinging blades, dart plates,
      fire grates); none by a haven.
 
+     NOT EVERY DEAD RESTS: search a sarcophagus and now and then (WAKE_CHANCE) the lid is thrown off
+     and its dead climbs out at you (Deadvault:waken, for Game ▸ Containers).
+
      Pay: Marks for getting out (`vault_extract`, once a raid, under the daily cap) and a
      monster's kill by its rank; the vault gold is the raids' own coin. ]]
 
@@ -158,6 +161,35 @@ function Deadvault:spawnMob(id, at, how, extra)
 		if mob.bot and not self.senses.bots[mob.bot] then self.senses:add(mob.bot, how) end
 	end
 	return mob
+end
+
+-- NOT EVERY DEAD RESTS (Game ▸ Containers, the first look into a sarcophagus): now and then its
+-- dead climbs out of it, on the far side from whoever opened it, already coming for them (the
+-- Rising attribute: a bigger cloud of grave-dust, StarterPlayerScripts ▸ DungeonMood). Its own
+-- kind where the dungeon's are dead things; else a skeleton.
+Deadvault.WAKE_CHANCE = 0.3
+local WAKERS = {BoneCrypt = {"Skeleton", "Ghoul", "SkeletonKnight"}, CrimsonManor = {"Vampire", "Thrall"}, FrozenDepths = {"FrostSkeleton", "IceWraith"}}
+function Deadvault:waken(box, char)
+	if math.random() >= Deadvault.WAKE_CHANCE then return false end
+	local pool = WAKERS[self.theme] or {"Skeleton", "Ghoul"}
+	local id = pool[math.random(#pool)]
+	if not Monsters.def(id) then return false end
+	local r = rootOf(char)
+	local side = box.cf.RightVector
+	if r and (r.Position - box.pos):Dot(side) > 0 then side = -side end
+	local at = box.pos + side * 3.4 + Vector3.new(0, 3, 0)
+	local plr = Players:GetPlayerFromCharacter(char)
+	if plr then banner({text = "IT WAKES", sub = "NOT EVERY DEAD RESTS", kind = "fight"}, plr) end
+	task.delay(0.3, function()
+		local look = r and Vector3.new(r.Position.X, at.Y, r.Position.Z) or at + box.cf.LookVector
+		local mob = self:spawnMob(id, CFrame.new(at, look), {home = box.pos})
+		if mob and mob.model then
+			mob.model:SetAttribute("Rising", true)
+			-- (it knows who woke it)
+			if char.Parent then Perception.noise(at, 12, char) end
+		end
+	end)
+	return true
 end
 
 -- a walk of a few rooms, there and back (corridor to corridor)
