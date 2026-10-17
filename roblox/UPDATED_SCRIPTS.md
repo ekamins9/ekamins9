@@ -1,4 +1,15 @@
-# Updated scripts: look up
+# Updated scripts: shouts in the fight
+
+- **Every fight**: the soldiers and monsters round you call out, in a short shout over their heads in their side's colour. They cry "FOR THE CROWN!" as they charge, "SHIELDS UP!" in the thick of it, "I'M HIT!" when hurt, "NEXT!" over a fallen foe, "AVENGE THEM!" when a friend falls. Goblins, orcs, elves and bandits have their own lines; the undead stay silent.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shouts.client.lua](StarterPlayerScripts/Shouts.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: look up
 
 - **The Depths and Deadvault**: now and then some of a waiting room's climbers (spiders, ghouls, goblins, vampires, wraiths) cling to the ceiling, upside down in the dark. Walk under one, or wake the room, and they drop on you: grit sifts down, a shriek, a thud and dust.
 

@@ -121,6 +121,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/SpiderLegs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SpiderLegs` | LocalScript |
 | `StarterPlayerScripts/Pigeons.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pigeons` | LocalScript |
 | `StarterPlayerScripts/Shade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shade` | LocalScript |
+| `StarterPlayerScripts/Shouts.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shouts` | LocalScript |
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
@@ -1892,6 +1893,17 @@ leaves its nick there too (each screen finds the surface from where the swing ca
 with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal, fading after a
 minute and a half. The server sends only the part (or none, for the world), the point, the
 direction and where the swing came from (`ScuffEvent`); nothing is replicated.
+
+## Shouts in the fight (`Shouts.client`)
+
+The fighters round you call out, on your screen only. A soldier bot charging a foe ("FOR THE
+CROWN!", "AT THEM!", "WITH ME!"), in the thick of it ("HOLD THE LINE!", "SHIELDS UP!"), badly
+hurt ("I'M HIT!", "NOT YET!"), felling someone ("NEXT!", "STAY DOWN!"), or seeing a friend fall
+within 16 studs ("AVENGE THEM!"). Goblins ("SHINIES!", "STAB STAB STAB!"), orcs ("SMASH!"), elves
+("BEGONE!") and bandits have their own lines; the undead, beasts, frost and fire things and
+vampires keep their silence. A shout pops over the speaker's head (white, edged in its side's
+colour), rises a little and fades. Only fighters within 40 studs and in view; at most 3 up at
+once (2 on a phone), 2.2 s between any two, 12 s between one fighter's. Not in the Hub.
 
 ## The Courtyard's pigeons (`Pigeons.client`)
 A flock (11, 6 on a phone) pecks about the fountain, on the cobbles and up on its rim, hopping a
