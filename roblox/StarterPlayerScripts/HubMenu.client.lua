@@ -4585,7 +4585,7 @@ do
 			gr.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.94), NumberSequenceKeypoint.new(1, 0.35)})
 		end
 		if o.piece then
-			local th = LT.pieceThumb(b, o.piece, o.colors, UDim2.new(1, -8, 1, -38))
+			local th = LT.pieceThumb(b, o.piece, o.colors, UDim2.new(1, -8, 1, -38), o.finish)
 			th.Position = UDim2.fromOffset(4, 4)
 			th.BackgroundTransparency = 1
 			local vp = th:FindFirstChildOfClass("ViewportFrame")
@@ -4619,7 +4619,7 @@ do
 	LT.LIMB_AT = {HeadClothing = CFrame.new(0, 1.5, 0), TorsoClothing = CFrame.new(), LeftArmClothing = CFrame.new(-1.5, 0, 0),
 		RightArmClothing = CFrame.new(1.5, 0, 0), LeftLegClothing = CFrame.new(-0.5, -2, 0), RightLegClothing = CFrame.new(0.5, -2, 0)}
 	LT.pieceCache = {}
-	function LT.pieceThumb(parent, pieceId, colors, size)
+	function LT.pieceThumb(parent, pieceId, colors, size, finishId)
 		local holder = frame(parent, COL.GLASS2, 10)
 		holder.Size = size
 		holder.ClipsDescendants = true
@@ -4633,7 +4633,7 @@ do
 		local world = Instance.new("WorldModel"); world.Parent = vp
 		local cam = Instance.new("Camera"); cam.Parent = vp
 		vp.CurrentCamera = cam
-		local okS, sig = pcall(function() return game:GetService("HttpService"):JSONEncode({pieceId, colors}) end)
+		local okS, sig = pcall(function() return game:GetService("HttpService"):JSONEncode({pieceId, colors, finishId or ""}) end)
 		local folder = okS and LT.pieceCache[sig] and LT.pieceCache[sig]:Clone()
 		if not folder then
 			folder = Instance.new("Model")
@@ -4650,6 +4650,10 @@ do
 				m.Parent = folder
 			end
 			pcall(Dresser.paint, folder, colors)
+			-- (wearing a finish: its metal, its glowing trims: ReplicatedStorage ▸ ArmorFX, as on a mannequin)
+			if finishId and finishId ~= "" then
+				pcall(function() require(ReplicatedStorage:WaitForChild("ArmorFX")).apply(folder, nil, finishId, true) end)
+			end
 			if okS then LT.pieceCache[sig] = folder:Clone() end
 		end
 		folder.Parent = world
@@ -4985,21 +4989,38 @@ do
 	end
 
 	-- LOOK: the finish over the armor, the four colours
-	function LT.look(page, lo, cls, id, t)
+	function LT.look(page, lo, cls, id, t, stale)
 		LT.arms(page, lo)
 		local fp = panel(page, "FINISH  ·  LOOKS ONLY")
-		dim(fp, "Recolours the plates, lights the trims and wraps you in an aura. Out of the Forge Crate.", 12)
-		local fg = cardGrid(fp, 40)
+		dim(fp, "Recolours the plates, lights the trims and wraps you in an aura. Out of the Forge Crate. Shown on the armour you wear.", 12)
 		local top = Catalog.PIECE[lo.top or ""]
 		local own = top and top.fx and Catalog.ARMORFX_BY[top.fx]
-		itemCard(fg, 0, "None", own and ("the set's own: " .. own.name) or "plain", (lo.armorFx or "") == "" and not (t and t.slot == "armorFx"), true, nil, function()
-			lo.armorFx = ""; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
-		end)
+		local fg = LT.grid(fp, 3, 110)
+		LT.tile(fg, 0, {name = "None", sub = own and ("the set's own: " .. own.name) or "plain", have = true, piece = lo.top, colors = lo.colors,
+			on = (lo.armorFx or "") == "" and not (t and t.slot == "armorFx"), onClick = function()
+				lo.armorFx = ""; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
+			end})
+		-- (yours first, then the rarest; never the Beta Testers' own to those who weren't)
+		local fins = {}
 		for i, f in ipairs(Catalog.ARMORFX or {}) do
+			if not f.beta or owns("armorfx", f.id) then table.insert(fins, {f = f, i = i}) end
+		end
+		table.sort(fins, function(a, b)
+			local ha, hb = owns("armorfx", a.f.id), owns("armorfx", b.f.id)
+			if ha ~= hb then return ha end
+			local ra, rb = RARITY_ORDER[a.f.rarity] or 0, RARITY_ORDER[b.f.rarity] or 0
+			if ra ~= rb then return ra > rb end
+			return a.i < b.i
+		end)
+		for k, e in ipairs(fins) do
+			local f = e.f
 			local have = owns("armorfx", f.id)
-			itemCard(fg, i, f.name, have and f.rarity or ((Catalog.CRATES[f.crate or ""] or {}).name or "a crate"), lo.armorFx == f.id and not t, have, RARITY_COL[f.rarity], function()
-				if have then lo.armorFx = f.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("armorFx", f.id) end
-			end, t and t.slot == "armorFx" and t.id == f.id)
+			LT.tile(fg, k, {name = f.name, sub = have and f.rarity or ((Catalog.CRATES[f.crate or ""] or {}).name or "a crate"), have = have, rarity = f.rarity,
+				piece = lo.top, colors = lo.colors, finish = f.id, on = lo.armorFx == f.id and not t, trying = t and t.slot == "armorFx" and t.id == f.id,
+				onClick = function()
+					if have then lo.armorFx = f.id; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES() else tryOn("armorFx", f.id) end
+				end})
+			if k % 6 == 0 and stale and stale() then return true end
 		end
 		local cp = panel(page, "COLORS")
 		for _, slot in ipairs({"Primary", "Secondary", "Accent", "Metal"}) do
@@ -5043,7 +5064,7 @@ do
 		elseif ui.loTab == "GEAR" then
 			HX.arsenalPanels(page, lo, id, cardGrid, itemCard, {grid = LT.grid, tile = LT.tile, sorted = LT.sorted, tryOn = tryOn, t = t})
 		else
-			LT.look(page, lo, cls, id, t)
+			if LT.look(page, lo, cls, id, t, stale) then return end
 		end
 		if stale() then return end
 		clear(live); page.Parent = live

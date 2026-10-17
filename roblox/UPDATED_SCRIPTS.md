@@ -3,6 +3,8 @@
 - **Every map's vote picture re-shot** (41 maps) with the land round it, the houses' banners and
   the fixes below; the War battlefields keep theirs.
 - **The round result** raises the winning side's arms in gold behind VICTORY / DEFEAT.
+- **LOADOUT ▸ LOOK ▸ FINISH**: every finish a picture, worn by the breastplate you have on (yours
+  first, then the rarest).
 - **Horizon**: the far castle stands whole on a taller hill; desert buttes (a sloping skirt and two
   flat-topped tiers) instead of tall drums; the ember maps' fire mountains fade with the haze; no
   pale snow caps floating in a night sky; no camps of its own round War's field.
@@ -10,6 +12,7 @@
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [RoundResult.client.lua](StarterPlayerScripts/RoundResult.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the winners' crest |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the finishes as pictures (`LT.pieceThumb` wears one) |
 | [Horizon.lua](ServerScriptService/Game/Horizon.lua) | ServerScriptService ▸ Game | ModuleScript | the fixes above |
 | *(Studio-only)* MapShots | ReplicatedStorage | StringValues | 41 new pictures (each keeps its old one as attribute Old) — save the place |
 

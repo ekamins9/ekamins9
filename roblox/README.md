@@ -851,8 +851,8 @@ and a UIScale fits it to any screen.
   polearms…; its skins as pictures, yours first, then the rarest; spells; the secondary),
   **ARMOR** (one slot at a time: a HELMET / TOP / LEGS switch with what you wear in each; every
   piece as a picture in your colours, yours first; the class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
-  shield arm to you; the power, the throwable, a sidearm) and **LOOK** (YOUR ARMS, the finish,
-  the colours).
+  shield arm to you; the power, the throwable, a sidearm) and **LOOK** (YOUR ARMS, the finish:
+  each shown on the breastplate you wear, the colours).
 - **YOUR ARMS** (LOOK; `Catalog ▸ Arms`): your own coat of arms: one of 36 emblems (most free,
   others open with your level, up to the salamander and the unicorn at 20: earned, never bought:
   `Catalog ▸ Arms` EMBLEMS), its metal (or, argent, sable), a
