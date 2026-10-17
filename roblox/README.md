@@ -2853,8 +2853,8 @@ material name, plus `Default`) still overrides the table. Roblox's own looping `
 too): a step into snow, sand, salt, mud or bare earth presses an oval print there (left, right,
 along the way it walks; darker than the ground, half see-through: an impression), fading over
 its life (snow 40 s, sand 24, mud 26, earth 10); a run (over 17 studs a second) kicks up a little
-puff of snow, sand or dust. At most 220 prints at once, the oldest reused first (workspace ▸
-GroundMarks, on your screen only).
+puff of snow, sand or dust. At most 220 prints at once (100 on a phone, and no puffs), the oldest
+reused first (workspace ▸ GroundMarks, on your screen only).
 
 ## Movement modifiers (composable)
 

@@ -686,8 +686,12 @@ local function rise(m)
 	e.proxy:Destroy()
 	hideBody(m, false)
 end
+local LYING_MAX = Device.kind() == "phone" and 8 or 24   -- (each is a copy of a body: a phone lays fewer)
 local function playDead(m)
 	if not mood.on or lying[m] or not PLAY_DEAD[m:GetAttribute("Monster") or ""] or m:GetAttribute("Alert") ~= "z" then return end
+	local n = 0
+	for _ in pairs(lying) do n += 1 end
+	if n >= LYING_MAX then return end
 	local root = m:FindFirstChild("HumanoidRootPart")
 	local h = m:FindFirstChildOfClass("Humanoid")
 	if not (root and h and h.Health > 0) then return end

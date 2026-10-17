@@ -11,20 +11,22 @@
      MARKS ON THE GROUND (every body near the camera, yours too): a step into snow, sand, mud or
      bare earth presses a print there (left, right, along the way it walks), fading over a while
      (snow keeps them longest); a run kicks up a little puff of it (snow, sand, dust). At most
-     MARKS prints at once, the oldest going first. ]]
+     MARKS prints at once, the oldest going first (a phone: fewer, and no puffs). ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Footsteps = require(ReplicatedStorage:WaitForChild("Footsteps"))
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
+local Device = require(ReplicatedStorage:WaitForChild("Device"))
 
 local player = Players.LocalPlayer
 local STEP_RATE = 2.25                      -- steps a second at BASE_SPEED (CameraRig's cadence)
 local BASE = MovementConfig.BASE_SPEED
 local HEAR = 70                             -- studs: farther bodies are skipped
 local VOLUME = 0.45
-local MARKS = 220                           -- prints on the ground at once, at most
+local PHONE = Device.kind() == "phone"
+local MARKS = PHONE and 100 or 220          -- prints on the ground at once, at most (fewer on a phone)
 
 --------------------------------------------------------------------
 --  ROBLOX'S RUN LOOP: muted wherever it appears
@@ -122,7 +124,7 @@ local function mark(m, hrp, side, speed)
 	e.part.Color = Color3.new(base.R * soft.k * tint.R, base.G * soft.k * tint.G, base.B * soft.k * tint.B)
 	e.part.Transparency = soft.a
 	e.born, e.life, e.a = os.clock(), soft.life, soft.a
-	if soft.puff and speed > 17 then puff(hit.Position + up * 0.3, soft.puff) end
+	if soft.puff and speed > 17 and not PHONE then puff(hit.Position + up * 0.3, soft.puff) end
 end
 -- (prints fade out over their life: a few at a time, a few times a second)
 task.spawn(function()

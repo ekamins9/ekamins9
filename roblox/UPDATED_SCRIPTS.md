@@ -1,4 +1,17 @@
-# Updated scripts: a "What's new" card
+# Updated scripts: lighter on a phone
+
+- **Footprints**: on a phone, at most 100 on the ground (220 elsewhere) and no puffs when running.
+- **The dead lie**: at most 8 lying copies at once on a phone (24 elsewhere); the rest just sleep standing.
+- A three-minute soak of the Depths with everything from today (waves, ambush checks, snuffed torches, traps, secrets, the lying dead, the score) ran with no errors at about 59 fps.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Footsteps.client.lua](StarterPlayerScripts/Footsteps.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | phone caps |
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | phone caps |
+
+---
+
+## Before that: a "What's new" card
 
 - **The Courtyard**: once per update, a WHAT'S NEW card shows what's new (the Drowned Halls; the dead that don't stay down; traps and secrets; the living dark; War's champions; the turning sky). It shows only for players past the welcome and the menu tour, and is remembered with their settings so it never repeats.
 - To announce the next update, change `NEWS` at the top of the script.
