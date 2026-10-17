@@ -1,4 +1,17 @@
-# Updated scripts: the round's honours on the result screen
+# Updated scripts: the hill flies its holders' banner
+
+- **King of the Hill** has a flagpole on the hill. Whoever holds it has their banner run up it,
+  their house's arms on it; when the hill changes hands it comes down and the new one goes up;
+  half-mast while it's fought over; a plain cloth low on the pole while it's nobody's.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ObjectiveFX.client.lua](StarterPlayerScripts/ObjectiveFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the hill's standard (`flagSpot`, `buildFlag`, `dressFlag`, `stepFlag`) |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the round's honours on the result screen
 
 - **Under VICTORY / DEFEAT**, three plaques: the round's TOP BLADE (most kills, a player's or a
   bot's), its LONGEST RUN (from the honours) and YOUR kills and deaths; whichever have something

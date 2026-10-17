@@ -4,7 +4,11 @@
      says who holds it:
 
        KOTH hill      segments split by how many of each team stand on it;
-                      the rim takes the holder's colour, flashes when contested
+                      the rim takes the holder's colour, flashes when contested; and a
+                      flagpole on the hill (in the middle, or by the ring if something stands
+                      there): the holders' banner, their house's arms on it, run up to the top;
+                      when the hill changes hands it comes down and the new one goes up; half-
+                      mast while it's fought over; a plain one low on the pole while nobody has it
        Siege ram      segments split attackers vs defenders round the ram
                       ("who's holding it"); the ring rolls with the ram
        Siege capture  segments fill with the attackers' colour as it's taken
@@ -196,6 +200,116 @@ local function groundBelow(pos)
 end
 
 --------------------------------------------------------------------
+--  THE HILL'S STANDARD (KOTH): a pole on the hill, the holders' banner run up it
+--------------------------------------------------------------------
+local Houses = require(ReplicatedStorage:WaitForChild("Houses"))
+local GILT, INK = Color3.new(1.06, 0.84, 0.4), Color3.fromRGB(26, 20, 18)
+local flag = nil
+local flagMissed = nil   -- (a hill with no clear spot: not searched again every frame)
+local function destroyFlag() if flag then flag.model:Destroy(); flag = nil end end
+-- where it stands: the hill's middle if nothing's there, else round the ring
+local function flagSpot(centre, radius)
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local ignore = {workspace.Terrain}
+	for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(ignore, p.Character) end end
+	local npcs = workspace:FindFirstChild("NPCs"); if npcs then table.insert(ignore, npcs) end
+	if fx then table.insert(ignore, fx.part); table.insert(ignore, fx.pillar) end
+	params.FilterDescendantsInstances = ignore
+	local function clear(p)
+		for _, h in ipairs(workspace:GetPartBoundsInBox(CFrame.new(p + Vector3.new(0, 8.5, 0)), Vector3.new(4, 14, 4), params)) do
+			if h.CanCollide and h.Transparency < 1 then return false end
+		end
+		return true
+	end
+	if clear(centre) then return centre end
+	for i = 0, 11 do
+		local a = i / 12 * 2 * math.pi
+		local q = groundBelow(centre + Vector3.new(math.cos(a), 0, math.sin(a)) * radius * 0.75)
+		if clear(q) then return q end
+	end
+	return nil
+end
+local function buildFlag(at)
+	destroyFlag()
+	local m = Instance.new("Model")
+	m.Name = "HillStandard"
+	local function part(name, size, cf, col, mat, shape)
+		local x = Instance.new("Part")
+		x.Name = name
+		if shape then x.Shape = shape end
+		x.Size, x.CFrame, x.Color, x.Material = size, cf, col, mat
+		x.Anchored, x.CanCollide, x.CanQuery, x.CanTouch = true, false, false, false
+		x.TopSurface, x.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		x.Parent = m
+		return x
+	end
+	local H = 16
+	part("Pole", Vector3.new(H, 0.34, 0.34), CFrame.new(at + Vector3.new(0, H / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(70, 46, 30), Enum.Material.Wood, Enum.PartType.Cylinder)
+	part("Finial", Vector3.new(0.8, 0.8, 0.8), CFrame.new(at + Vector3.new(0, H + 0.3, 0)), Color3.fromRGB(222, 178, 76), Enum.Material.Metal, Enum.PartType.Ball)
+	part("Foot", Vector3.new(1.8, 0.7, 1.8), CFrame.new(at + Vector3.new(0, 0.35, 0)), Color3.fromRGB(96, 92, 86), Enum.Material.Slate)
+	local cloth = part("Cloth", Vector3.new(3.6, 2.5, 0.08), CFrame.new(at), NEUTRAL, Enum.Material.Fabric)
+	local plates = {}
+	for _, back in ipairs({false, true}) do
+		local pl = part("Arms", Vector3.new(2, 2, 0.01), CFrame.new(at), Color3.new(), Enum.Material.SmoothPlastic)
+		pl.Transparency = 1
+		pl.CastShadow = false
+		local layers = {}
+		for z = 1, 2 do
+			local d = Instance.new("Decal")
+			d.Face = Enum.NormalId.Front
+			d.ZIndex = z
+			d.Transparency = 1
+			d.Parent = pl
+			layers[z] = d
+		end
+		table.insert(plates, {p = pl, back = back, layers = layers})
+	end
+	-- (its face toward the middle of the map, where most of the fight is)
+	local map = workspace:FindFirstChild("Map")
+	local c = map and map:GetAttribute("Centre")
+	local toward = typeof(c) == "Vector3" and Vector3.new(c.X - at.X, 0, c.Z - at.Z) or Vector3.new(0, 0, -1)
+	if toward.Magnitude < 1 then toward = Vector3.new(0, 0, -1) end
+	m.Parent = workspace
+	flag = {model = m, at = at, H = H, cloth = cloth, plates = plates, h = 0.12, shown = "",
+		base = CFrame.lookAt(at, at + toward.Unit)}
+end
+-- its cloth: the holders' colour and their house's arms (none: plain)
+local function dressFlag(owner)
+	flag.shown = owner
+	local key = owner ~= "" and owner or nil
+	flag.cloth.Color = key and teamColor(key) or NEUTRAL
+	local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+	local map = workspace:FindFirstChild("Map")
+	local emblem = key and art and Houses.forTeam(key, map and map:GetAttribute("HouseSeed")) or nil
+	local o, f = emblem and art:FindFirstChild(emblem .. "_o"), emblem and art:FindFirstChild(emblem)
+	for _, pl in ipairs(flag.plates) do
+		pl.layers[1].Texture, pl.layers[1].Color3 = o and o.Value or "", INK
+		pl.layers[2].Texture, pl.layers[2].Color3 = f and f.Value or "", GILT
+		for _, d in ipairs(pl.layers) do d.Transparency = f and 0 or 1 end
+	end
+end
+local function stepFlag(dt, t, owner, contested)
+	-- a new holder: down with the old cloth (quickly), then theirs up (with ceremony)
+	local want
+	if owner ~= flag.shown then
+		want = 0
+		if flag.h <= 0.02 then dressFlag(owner) end
+	else
+		want = contested and 0.55 or (owner ~= "" and 1 or 0.12)
+	end
+	local rate = want < flag.h and 1.5 or 0.5
+	flag.h += math.clamp(want - flag.h, -rate * dt, rate * dt)
+	local top = 3 + (flag.H - 3.4) * flag.h
+	local sway = math.sin(t * 2.1) * 0.14 + math.sin(t * 3.7 + 1) * 0.07
+	local cf = flag.base * CFrame.new(0, top - 1.25, 0) * CFrame.Angles(0, sway, 0) * CFrame.new(1.97, 0, 0) * CFrame.Angles(0, 0, math.sin(t * 2.9) * 0.03)
+	flag.cloth.CFrame = cf
+	for _, pl in ipairs(flag.plates) do
+		pl.p.CFrame = pl.back and (cf * CFrame.new(0, 0, 0.06) * CFrame.Angles(0, math.pi, 0)) or (cf * CFrame.new(0, 0, -0.06))
+	end
+end
+
+--------------------------------------------------------------------
 --  EVERY FRAME
 --------------------------------------------------------------------
 local shownAt, groundAt, lastPos = nil, nil, nil
@@ -207,9 +321,11 @@ RunService.RenderStepped:Connect(function(dt)
 	local live = KINDS[kind or ""] and round:GetAttribute("State") == "Round" and typeof(pos) == "Vector3" and type(radius) == "number" and radius > 0
 	if not live then
 		if fx then destroyFx() end
+		destroyFlag()
 		shownAt, groundAt, lastPos = nil, nil, nil
 		return
 	end
+	if kind ~= "Hill" then destroyFlag() end
 	if not fx or math.abs(fx.radius - radius) > 0.05 then build(radius) end
 
 	-- follow the objective (the ram rolls) along the ground, smoothly
@@ -292,4 +408,13 @@ RunService.RenderStepped:Connect(function(dt)
 	fx.beam.Color = ColorSequence.new(rimCol:Lerp(WHITE, 0.2), rimCol)
 	-- the pillar fades when you're right there (it'd be in your face)
 	fx.beam.Enabled = not inside
+
+	-- the hill's standard (built once the hill is known, and again if it moves)
+	if kind == "Hill" then
+		if (not flag or (flag.centreKey - pos).Magnitude > 0.5) and not (flagMissed and (flagMissed - pos).Magnitude < 0.5) then
+			local spot = flagSpot(groundAt, radius)
+			if spot then buildFlag(spot); flag.centreKey = pos; flagMissed = nil else flagMissed = pos end
+		end
+		if flag then stepFlag(dt, t, round:GetAttribute("ObjOwner") or "", contested) end
+	end
 end)

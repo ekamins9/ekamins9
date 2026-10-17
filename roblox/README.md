@@ -1367,7 +1367,10 @@ Siege capture zone are drawn on the ground as a glowing ring every client sees, 
 it: a soft floor glow, a rim in the holder's colour (flashing between the two sides when contested),
 48 segments split by how many of each side stand on it (a capture: filled as it's taken), spinning
 dashes (faster while it's moving or being taken), a light pillar to find it from across the map
-(hidden while you stand in it), and a ground light. It rolls with the ram. Data: Round attributes
+(hidden while you stand in it), and a ground light. It rolls with the ram. The KOTH hill also has a
+flagpole (in its middle, or by the ring when something stands there): the holders' banner, their
+house's arms on it, run up to the top; when the hill changes hands it comes down and the new one goes
+up; half-mast while it's fought over; a plain cloth low on the pole while nobody holds it. Data: Round attributes
 `ObjKind` (`Hill` / `Ram` / `Capture`), `ObjPos`, `ObjRadius`, `ObjState`, plus `ObjOwner` /
 `ObjCountA` / `ObjCountB` (KOTH) or `Attackers` / `ObjAttack` / `ObjDefend` / `ObjProgress` (Siege). Nothing to author for the menu camera: it measures the map's bounding
 box and circles above its edge, looking down and wandering its gaze across the ground. A public
