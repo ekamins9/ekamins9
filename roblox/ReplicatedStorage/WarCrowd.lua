@@ -33,6 +33,10 @@
                               they go over the wall (and fight there a moment), now and then one is
                               thrown off backwards (rate: how often, a second)
        c:overrun(id)          a ladder's men all go over now (the wall is taken)
+       c:audience(id, {side, kind, spots = {CFrame…} (where each stands, facing the show),
+                       detail = "mass", unarmed = true})
+                              a crowd watching (an arena's stands): still, and on c:roar(secs) a
+                              good part of it on its feet, arms up, cheering
        c:rout(id, secs)       a regiment cut down: all fall within secs, none steps up after
        c:stop() ]]
 
@@ -187,11 +191,12 @@ end
 --------------------------------------------------------------------
 --  A SOLDIER
 --------------------------------------------------------------------
-local function newSoldier(home, t, level)
+local function newSoldier(home, t, level, unarmed)
 	local s = {limbs = {}, offs = {}, parts = {}}
 	for i = 1, 6 do
 		s.limbs[i], s.offs[i] = {}, {}
 		for _, e in ipairs(t[level][i]) do
+			if unarmed and (e.role == "weapon" or e.role == "shield") then continue end
 			local p = e.proto:Clone()
 			for _, d in ipairs(p:GetChildren()) do
 				if not (d:IsA("SurfaceAppearance") or d:IsA("SpecialMesh") or d:IsA("Decal") or d:IsA("Texture")) then d:Destroy() end
@@ -290,6 +295,25 @@ local function placeRigid(s, base, kind, put)
 			for j, p in ipairs(s.limbs[i]) do table.insert(rig, {p, Ls[i] * s.offs[i][j]}) end
 		end
 		s.rig = rig
+	end
+	for k = 1, #rig do local e = rig[k]; put(e[1], base * e[2]) end
+end
+
+-- the same, in another held pose (arms up: a cheering man far off), cached per pose
+local function placeHeld(s, base, kind, put, state)
+	s.held = s.held or {}
+	local rig = s.held[state]
+	if not rig then
+		local keep = s.state
+		s.state = state
+		local Ls = {}
+		pose(s, 0, kind, Ls)
+		s.state = keep
+		rig = {}
+		for i = 1, 6 do
+			for j, p in ipairs(s.limbs[i]) do table.insert(rig, {p, Ls[i] * s.offs[i][j]}) end
+		end
+		s.held[state] = rig
 	end
 	for k = 1, #rig do local e = rig[k]; put(e[1], base * e[2]) end
 end
@@ -680,11 +704,71 @@ function WarCrowd:stepLadders(now, dt, put, cam, c, vs)
 	end
 end
 
+--------------------------------------------------------------------
+--  AN AUDIENCE: men standing where they're put, watching; on a roar most of them cheer
+--------------------------------------------------------------------
+function WarCrowd:audience(id, o)
+	local a = {id = id, kind = o.kind or "pike", men = {}, cheerUntil = 0, acc = math.random() * 0.1, dirty = true, centre = Vector3.zero}
+	local sides = type(o.side) == "table" and o.side or {o.side or "A"}
+	for k, cf in ipairs(o.spots or {}) do
+		local side = sides[(k - 1) % #sides + 1]
+		local t = template(side, a.kind, k % 2 + 1)
+		if t then
+			local s = newSoldier(self.home, t, o.detail or "mass", o.unarmed ~= false)
+			s.at = cf * ANG(0, (math.random() - 0.5) * 0.4, 0)
+			s.ph = math.random() * 6.28
+			s.state = "stand"
+			s.keen = 0.5 + math.random() * 0.5   -- (how readily this one gets up and shouts)
+			table.insert(a.men, s)
+			a.centre += cf.Position
+		end
+	end
+	if #a.men > 0 then a.centre /= #a.men end
+	self.audiences = self.audiences or {}
+	self.audiences[id] = a
+	return a
+end
+
+function WarCrowd:roar(secs, share)
+	local now = os.clock()
+	for _, a in pairs(self.audiences or {}) do
+		a.cheerUntil = now + (secs or 3)
+		for _, s in ipairs(a.men) do s.cheering = math.random() < (share or 0.75) * s.keen end
+		a.dirty = true
+	end
+end
+
+function WarCrowd:stepAudiences(now, dt, put, cam, c)
+	for _, a in pairs(self.audiences or {}) do
+		a.acc += dt
+		local d = (a.centre - c).Magnitude
+		local cheering = now < a.cheerUntil
+		local every = cheering and (d < 90 and 0.07 or 0.14) or 0.5
+		if a.acc >= every and (cheering or a.dirty or a.wasCheering) then
+			a.acc = 0
+			for _, s in ipairs(a.men) do
+				local want = (cheering and s.cheering) and "cheer" or "stand"
+				if want == "cheer" then
+					s.state = "cheer"
+					-- (arms and all near the camera; further off they jump up and down as one piece)
+					if (s.at.Position - c).Magnitude < 50 then place(s, s.at, now, a.kind, put)
+					else placeHeld(s, s.at * CF(0, math.abs(math.sin((now + s.ph) * 9)) * 0.4, 0), a.kind, put, "cheer") end
+				elseif s.state ~= "stand" or a.dirty then
+					s.state = "stand"
+					placeRigid(s, s.at, a.kind, put)
+				end
+			end
+			a.dirty = false
+			a.wasCheering = cheering
+		end
+	end
+end
+
 function WarCrowd:stop()
 	if self.dead then return end
 	self.dead = true
 	self.home:Destroy()
-	self.list, self.regs, self.flying, self.ladders = {}, {}, {}, nil
+	self.list, self.regs, self.flying, self.ladders, self.audiences = {}, {}, {}, nil, nil
 end
 
 -- one regiment: march (always), then its men where they need moving
@@ -829,6 +913,10 @@ function WarCrowd:step(now, dt)
 			self:placeReg(reg, now, reg.acc, put, visible, lod)
 			reg.acc = 0
 		end
+	end
+	if self.audiences then
+		local camA = workspace.CurrentCamera
+		self:stepAudiences(now, dt, put, camA, camA and camA.CFrame.Position or Vector3.zero)
 	end
 	if self.ladders then
 		local cam = workspace.CurrentCamera

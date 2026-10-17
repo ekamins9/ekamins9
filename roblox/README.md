@@ -1761,6 +1761,16 @@ the map's Shot1 down to just behind you, the mode and the map as a title and wha
 do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four seconds; any key
 skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …).
 
+## The crowd in the stands (`ArenaCrowd.client`)
+On any map with `Stand` parts (the Colosseum, the forge arenas, the Sandpit), in any mode but the
+hubs, the stands are full on your screen: a row of unarmed commoners along the top of every
+Stand part, facing the middle of the map (`WarCrowd:audience`), blue at one end and red at the
+other with strays mixed in (up to 420; 180 on a phone). Anyone going down in the arena brings
+most of them to their feet, arms up, with a roar (`WarCrowd:roar`); a round won, the whole crowd;
+between, the murmur of the stands and now and then a few of them shouting. Arms and all near the
+camera; further off a cheering man is a cached arms-up pose bobbing. Measured in the Colosseum
+(FFA, bots): 56–60 fps in Studio play, the crowd ~0 ms idle and ~2 ms in a roar.
+
 ## The battle beyond a team fight (`BattleAmbience.client`)
 In Team Deathmatch, King of the Hill and Last Team Standing your fight is one corner of a bigger
 battle, on your screen only: columns of smoke rising beyond the map's edge (one with its fire
