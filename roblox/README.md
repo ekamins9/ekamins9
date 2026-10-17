@@ -2121,7 +2121,9 @@ away, then it eases back. **Deadvault's last minute** comes down round you: deep
 ground shaking harder, grit pouring from the ceiling and stones dropping, your lantern stuttering;
 in the last seconds, without a break.
 Now and then, well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
-path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen); or a
+path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen; in the
+Hollow Abbey, sometimes a procession of five to seven of its dead brothers filing slowly across,
+chanting); or a
 swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸
 Bats). While a
 boss lives within 90 studs, the grade turns darker, blood-tinged and harder, easing back when it
