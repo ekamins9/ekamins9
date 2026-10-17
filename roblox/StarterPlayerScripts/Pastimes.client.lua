@@ -382,7 +382,8 @@ end
 local function nestGui(i, marker)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "NestTimer" .. i
-	bb.Size = UDim2.fromOffset(170, 46); bb.StudsOffsetWorldSpace = Vector3.new(0, 3.4, 0); bb.MaxDistance = 70; bb.Adornee = marker
+	-- (shown from close by only: from across the Courtyard the three nests' labels pile into one)
+	bb.Size = UDim2.fromOffset(170, 46); bb.StudsOffsetWorldSpace = Vector3.new(0, 3.4, 0); bb.MaxDistance = 28; bb.Adornee = marker
 	bb.Parent = nestFolder
 	local a = Instance.new("TextLabel")
 	a.Name = "Top"; a.BackgroundTransparency = 1; a.Size = UDim2.new(1, 0, 0, 20); a.Font = Theme.FONT_TITLE; a.TextSize = 16; a.TextColor3 = Color3.new(1, 1, 1)

@@ -1,4 +1,16 @@
-# Updated scripts: castle stone in courses, shingled spires
+# Updated scripts: the Courtyard's keep in stone; the Hatchery's labels
+
+- **The Courtyard**: the keep is coursed stone on a cobbled footing like the walls; the Rest Inn is plastered under clay tiles. The saved Courtyard was converted too (save the place).
+- **Fixed**: from across the Courtyard, the Hatchery's three nest labels ("EMPTY NEST", "[E] GET EGGS") piled into one garbled line. They now show only from close by (28 studs).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapCourtyard.lua](ServerScriptService/Build/MapCourtyard.lua) | ServerScriptService ▸ Build | ModuleScript | keep / inn materials |
+| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | nest labels' range |
+
+---
+
+## Before that: castle stone in courses, shingled spires
 
 - **Castle walls and towers** (the Courtyard, every castle, Frostgate, the arenas' towers, the Crownlands, Stormwatch, the Gilded Rat) are coursed stone instead of smooth slate: dressed blocks on rough cobbled footings. Tower spires are shingled instead of cloth.
 - **The saved maps** (ServerStorage ▸ Maps, Studio-only) were converted the same way. Their 30 old box houses (Millfield, Marshfen, Frosthollow, HollowGrove, Harvestvale, Pinewatch) were rebuilt in place as half-timbered cottages. **Save the place** to keep this.

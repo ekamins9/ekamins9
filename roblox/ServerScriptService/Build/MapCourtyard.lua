@@ -48,9 +48,9 @@ return function(K)
 	for i = -4, 4 do K.box(ctx, "Portcullis", V3(0.4, 18, 0.4), V3(i * 2.2, 9, Z - 1), C.IRON, M.Metal) end
 	for j = 1, 6 do K.box(ctx, "PortcullisBar", V3(18, 0.4, 0.4), V3(0, j * 2.8, Z - 1), C.IRON, M.Metal) end
 	-- the keep behind the north wall
-	K.box(ctx, "Keep", V3(80, 44, 26), V3(0, 22, -Z - 18), C.STONE, M.Slate)
-	K.box(ctx, "KeepFooting", V3(83, 3.4, 29), V3(0, 1.7, -Z - 18), C.STONEDARK, M.Slate)
-	K.box(ctx, "KeepTop", V3(84, 1.4, 30), V3(0, 44.7, -Z - 18), C.STONEDARK, M.Slate)
+	K.box(ctx, "Keep", V3(80, 44, 26), V3(0, 22, -Z - 18), C.STONE, M.Brick)
+	K.box(ctx, "KeepFooting", V3(83, 3.4, 29), V3(0, 1.7, -Z - 18), C.STONEDARK, M.Cobblestone)
+	K.box(ctx, "KeepTop", V3(84, 1.4, 30), V3(0, 44.7, -Z - 18), C.STONEDARK, M.Brick)
 	for i = -9, 9 do K.box(ctx, "KeepCrenel", V3(2, 2.2, 2), V3(i * 4.4, 46.5, -Z - 3.4), C.STONE, M.Slate) end
 	for i = -3, 3 do
 		K.box(ctx, "KeepWindow", V3(2.4, 6, 0.6), V3(i * 10, 30, -Z - 4.8), Color3.fromRGB(26, 30, 44), M.SmoothPlastic)
@@ -200,11 +200,11 @@ return function(K)
 	-- alcohol anywhere). Its parts keep their old "Tavern" names (Courtyard's sign spot).
 	----------------------------------------------------------------
 	local tav = CFrame.new(78, 0, 52) * CFrame.Angles(0, math.rad(-90), 0)
-	K.box(ctx, "Tavern", V3(26, 12, 14), tav * CFrame.new(0, 6, 0), C.WHITE, M.Concrete)
+	K.box(ctx, "Tavern", V3(26, 12, 14), tav * CFrame.new(0, 6, 0), C.WHITE, M.Plaster)
 	for _, x in ipairs({-12.6, -4.2, 4.2, 12.6}) do K.box(ctx, "TavernBeam", V3(0.8, 12, 14.4), tav * CFrame.new(x, 6, 0), C.DARKWOOD, M.Wood) end
 	K.box(ctx, "TavernBeamH", V3(26.4, 0.8, 14.4), tav * CFrame.new(0, 6.2, 0), C.DARKWOOD, M.Wood)
 	for _, s in ipairs({-1, 1}) do
-		K.wedge(ctx, "TavernRoof", V3(27, 6, 7.6), tav * CFrame.new(0, 15, s * 3.8) * CFrame.Angles(0, s < 0 and 0 or math.pi, 0), Color3.fromRGB(120, 60, 40), M.Slate)
+		K.wedge(ctx, "TavernRoof", V3(27, 6, 7.6), tav * CFrame.new(0, 15, s * 3.8) * CFrame.Angles(0, s < 0 and 0 or math.pi, 0), Color3.fromRGB(120, 60, 40), M.ClayRoofTiles)
 	end
 	K.box(ctx, "TavernDoor", V3(4, 7, 0.4), tav * CFrame.new(0, 3.5, -7.2), C.DARKWOOD, M.WoodPlanks).CanCollide = false
 	for _, x in ipairs({-8, 8}) do K.box(ctx, "TavernWindow", V3(3.4, 3, 0.4), tav * CFrame.new(x, 6.8, -7.2), Color3.fromRGB(255, 204, 120), M.Neon).CanCollide = false end
