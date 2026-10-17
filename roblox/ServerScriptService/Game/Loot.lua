@@ -832,6 +832,9 @@ end
 local chests = {}
 function Loot.chest(cf, opts)
 	opts = opts or {}
+	-- (a facing looked from a point at itself is no facing (NaN), and would lose the chest below
+	-- the world: keep where it stands)
+	if cf.LookVector.X ~= cf.LookVector.X then cf = CFrame.new(cf.Position) end
 	local r = CFG[opts.rarity or "Common"] or CFG.Common
 	local m = Instance.new("Model")
 	m.Name = "Chest"

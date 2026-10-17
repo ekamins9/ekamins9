@@ -1,4 +1,24 @@
-# Updated scripts: treasure vaults, and the lost chests
+# Updated scripts: the Shade
+
+- **The Depths: don't linger.** Dawdle on a floor (300 / 260 / 220 s away from any fight) and every torch sputters as THE DARK STIRS. 40 s later THE SHADE COMES: a tall hooded thing with two pale eyes and long grey claws, drifting through the walls after the nearest of you. It can't be fought, only outpaced. Its touch is cold (30, halved by armour), and then it sinks away and comes again. It waits outside the room while you fight, and goes when you take the stairs. Near it, the torches gutter, the world drains of colour, your heart pounds and its breath and whispers close in.
+- **Chests**: `Loot.chest` keeps any chest whose facing is no facing at all (NaN), so none can be lost below the map again.
+- What's new card: version 2026-10-17c.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shade.lua](ServerScriptService/Game/Shade.lua) | ServerScriptService ▸ Game | ModuleScript | **new**: the count, the stir, the hunt, the touch |
+| [Shade.client.lua](StarterPlayerScripts/Shade.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new**: the figure, its breath, the drained colour, the heartbeat |
+| [TorchFlicker.client.lua](StarterPlayerScripts/TorchFlicker.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | sputters as the dark stirs; gutters near the Shade |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | runs the Shade (start, tick, descend, stop) |
+| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | NaN facing guard in `Loot.chest` |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 2026-10-17c |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ ShadeBreath and Heartbeat (Sounds; save the place).
+
+---
+
+## Before that: treasure vaults, and the lost chests
 
 - **The Depths**: a treasure room is now always a vault: its chest gilded (Rare) on a dais under a chandelier, gold piled round it, stone guardians and urns by the walls. It is the room the treasure-room mimic waits in, and now it actually can.
 - **Fixed**: a chest set in a room's very middle (a treasure room's, a boss's hoard) was turned to face that same point. That gave it no facing at all and lost it far below the map. It now faces the way in.

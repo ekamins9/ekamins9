@@ -28,6 +28,10 @@
      AMBUSH. The corridors aren't safe either: now and then (twice a floor at most) the dead crack
      up through the floor at both ends of the one you're walking, and you're caught between them.
 
+     DON'T LINGER. A floor's time away from a fight is counted; dawdle past its patience and the
+     dark stirs, and then THE SHADE comes through the walls for you (Game ▸ Shade): it can't be
+     fought, only outpaced, and it goes when you take the stairs down.
+
      SECRETS. A floor hides a walled-up cache or two (Game ▸ Secrets): a cracked stretch of wall
      with a draft through it. Three blows bring it down: a gilded chest behind it, for everyone.
 
@@ -54,6 +58,7 @@ local Dungeon = require(script.Parent.Parent:WaitForChild("Dungeon"))
 local Loot = require(script.Parent.Parent:WaitForChild("Loot"))
 local Traps = require(script.Parent.Parent:WaitForChild("Traps"))
 local Secrets = require(script.Parent.Parent:WaitForChild("Secrets"))
+local Shade = require(script.Parent.Parent:WaitForChild("Shade"))
 local MapLoader = Game.MapLoader
 local Combat = ServerScriptService:WaitForChild("Combat")
 local Monsters = require(Combat:WaitForChild("Monsters"))
@@ -737,6 +742,7 @@ end
 -- the next floor: built, loaded, everyone (the fallen too) at its start
 function Depths:descend()
 	self.descendAt = nil
+	if self.shade then self.shade:reset() end
 	self.floor += 1
 	for _, p in ipairs(Players:GetPlayers()) do if _G.RoundBump then _G.RoundBump(p, "depths_floor") end
 		local st = Profile.get(p).stats
@@ -829,6 +835,8 @@ function Depths:start(map)
 	end
 	self:dressRooms()
 	self:setTraps()
+	self.shade = self.shade or Shade.new(node, function(t) event:FireAllClients("Banner", t) end)
+	self.shade:reset()
 	node:SetAttribute("ObjKind", "Depths")
 	node:SetAttribute("OwnHud", true)   -- (Adventure.client draws it; Objectives steps aside)
 	node:SetAttribute("DepthsFloor", 1)
@@ -851,6 +859,7 @@ function Depths:start(map)
 end
 
 function Depths:stop()
+	if self.shade then self.shade:stop() end
 	Traps.disarm()
 	Secrets.disarm()
 	self:clearAmbushers()
@@ -907,6 +916,8 @@ function Depths:tick(dt)
 	for _, p in ipairs(Players:GetPlayers()) do if aliveChar(p) then up += 1 end end
 	if up > 0 then self.everUp = true end
 	if self.descendAt and now >= self.descendAt then self:descend(); return end
+	-- (dawdle and the Shade comes; it goes when the stairs are counting down)
+	if self.shade then self.shade:tick(dt, {floor = self.floor, fighting = self.active, calm = self.descendAt ~= nil or self.won, layout = self.layout}) end
 	-- the party fell
 	if self.everUp and up == 0 and not next(self.reviving) then
 		self.wiped = true

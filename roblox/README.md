@@ -111,7 +111,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterPlayerScripts/War.client.lua`, `SiegeEpic.client.lua`, `Warfield.client.lua`, `Engines.client.lua`, `MatchIntro.client.lua`, `BattleAmbience.client.lua`, `ArenaCrowd.client.lua`, `HordeHost.client.lua`, `CourtyardGuards.client.lua`, `BossEntrance.client.lua`, `DungeonMood.client.lua`, `BannerWind.client.lua`, `Weather.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → each by its name (the battles, the crowds, the dark, the wind) | LocalScript each |
 | `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
-| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua`, `Breakables.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
+| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua`, `Breakables.lua`, `Shade.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
@@ -120,6 +120,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/NightWindows.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NightWindows` | LocalScript |
 | `StarterPlayerScripts/SpiderLegs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SpiderLegs` | LocalScript |
 | `StarterPlayerScripts/Pigeons.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pigeons` | LocalScript |
+| `StarterPlayerScripts/Shade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shade` | LocalScript |
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
@@ -2292,6 +2293,21 @@ and two urns by the walls (a chest in a room's very middle faces the way in: `De
   wave; AMBUSH! for whoever set it off): 2 on the first floor, 3 on the second, 4 on the third,
   more with a party. At most two a floor, 70 s apart, none in a floor's first 70 s; no gates (it's
   their own fight), and they go with the floor.
+- **Don't linger: the Shade** (`Game ▸ Shade` + `Shade.client`): a floor's time away from a fight
+  is counted (a fight's own time and the stairs' countdown never are). Past the floor's patience
+  (`Shade.PATIENCE`: 300 / 260 / 220 s) every torch on the floor sputters and something breathes
+  far off: **THE DARK STIRS**. 40 s later **THE SHADE COMES**: a tall hooded thing from the room
+  farthest from you, faceless but for two pale eyes, long grey claws hanging to the floor, its
+  hem trailing smoke. It drifts through the walls straight at the nearest of you, 7 studs/s and
+  0.6 quicker every half minute up to 11 (a walk outpaces it at first, a sprint always does). It
+  can't be fought. Its touch is cold: 30, halved by armour as a trap's is, a flinch, a shriek;
+  then it sinks into the dark and comes again from 34 studs off 5 s later. It won't enter a room
+  you're fighting in: it waits 5 studs outside the walls, watching, until the gates rise. It goes
+  when the stairs start counting down (or the boss falls). On your screen: its breath and
+  whispers move with it (WarAudio ▸ ShadeBreath, Whisper), torches within 26 studs of it gutter
+  low (`TorchFlicker`), and near it the world drains of colour, your heart pounds (WarAudio ▸
+  Heartbeat), the view trembles, and its arms lift to reach for you. The Round node carries
+  ShadeState / ShadePos / ShadeHit / ShadeHitPos.
 - **Difficulty** (`Depths:engage`): gentle first floors. Monsters start at 80% health and damage
   and grow with each floor; how well they fight is capped by the floor (Squires on the first,
   Knights on the second; the boss never fights better than a Knight); elites come from the second

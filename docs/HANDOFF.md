@@ -254,6 +254,12 @@ step):
   where a blade hits the world); a wraith's death mist. Testing tip: a temporary LocalScript can
   call `TouchInput.press("Swing", true, "Right")` to swing through the game's own path (no input
   simulation); the character faces the camera's way, so aim the camera to aim a swing.
+  Then: chandeliers that fall (`Traps` BUILD.chandelier); most of the Depths' fight rooms dressed
+  as halls, crypts, chapels…; its treasure rooms are vaults; a lost-chest bug fixed (a chest in a
+  room's very middle got a NaN facing: `Loot.chest` now guards it); and **the Shade**
+  (`Game ▸ Shade` + `Shade.client`): linger on a Depths floor and an unkillable hooded thing comes
+  through the walls for you. To test it, a temporary Script can set
+  `require(Game.Shade).PATIENCE = {15, 15, 15}` before the run starts.
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
@@ -261,7 +267,7 @@ step):
   and HollowAbbey, the sixth and seventh dungeon themes'), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
   Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur), AbbeyBell, Chant, Splash, ArmorMail,
-  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons, BoneCrunch, Creak; and the 10-17 material pass over ServerStorage ▸ Maps
+  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons, BoneCrunch, Creak, ShadeBreath, Heartbeat; and the 10-17 material pass over ServerStorage ▸ Maps
   (stone walls, shingled spires, rebuilt houses).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
