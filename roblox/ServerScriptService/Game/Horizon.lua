@@ -411,9 +411,10 @@ function Horizon.build(map, name)
 		local a = sectors[2] + r:NextNumber(0.7, 1.2)
 		local d = E + SKIRT + r:NextNumber(110, 200)
 		local p = at(a, d, G)
-		local hw = 260
-		ball(ctx, V3(hw, hw * 0.4, hw), CF(p - V3(0, hw * 0.06, 0)), T.groundColor, hillMat)
-		castle(ctx, T, p + V3(0, hw * 0.13, 0), 1)
+		-- (its hill tall enough that the whole castle stands over the hills in front of it)
+		local hw = 280
+		ball(ctx, V3(hw, hw * 0.78, hw), CF(p - V3(0, hw * 0.05, 0)), T.groundColor, hillMat)
+		castle(ctx, T, p + V3(0, hw * 0.33, 0), 1)
 	end
 	-- SMOKE off the horizon
 	local fires = (warlike and 3 or 1) + ((T.burnt or themeKey == "ember") and 3 or 0)
