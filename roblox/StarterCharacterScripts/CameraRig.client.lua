@@ -315,7 +315,8 @@ if S("StartView") == "First person" then camDist, camDistTarget = 0, 0 end
 local function viewWanted(snap)
 	local w = character:GetAttribute("ViewWant")
 	if w == "First" then camDistTarget = 0; if snap then camDist = 0 end
-	elseif w == "Third" then camDistTarget = DEFAULT_DIST end
+	-- (back out to third, unless first person is how you play: Settings ▸ Start in)
+	elseif w == "Third" and S("StartView") ~= "First person" then camDistTarget = DEFAULT_DIST end
 end
 character:GetAttributeChangedSignal("ViewWant"):Connect(function() viewWanted(false) end)
 viewWanted(true)

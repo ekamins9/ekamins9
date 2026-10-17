@@ -1,4 +1,15 @@
-# Updated scripts: the sound of it
+# Updated scripts: first person stays first person
+
+- Stepping out of the tutorial's barracks pulls the view back to third person only if you don't
+  play in first person (Settings ▸ Start in).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | `ViewWant` "Third" respects Start in |
+
+---
+
+## Before that: the sound of it
 
 - **A blade turned aside scrapes**: under a block's or a parry's clang (blade on blade, not on a
   board), the steel is heard sliding off steel a beat later (the game's Clash sounds, until now
