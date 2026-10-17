@@ -25,6 +25,7 @@ local NEWS = {
 		{"🏞", "No map floats", "the land runs on past every map's edge: hills, woods, camps, mountains to the horizon"},
 		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
 		{"💥", "Shields take the fight", "each blow you catch chips its paint and knocks splinters off the board"},
+		{"🏰", "Your banner in the Courtyard", "bear your own arms and your banner flies over the Courtyard, your name under it"},
 	},
 }
 
