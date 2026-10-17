@@ -1,4 +1,20 @@
-# Updated scripts: swing arcs
+# Updated scripts: the battle's end
+
+- **A won battle ends on the field, not on a board.** For a few seconds after a TDM, a Standard,
+  a hill or an LTS round is won, the winners raise their weapons and roar, half the beaten drop to a
+  knee, a horn sounds, and the camera glides down in front of the winning side as the VICTORY band
+  comes up; then the scoreboard and the vote. (Before, the bots vanished the instant it ended and
+  the view jumped to a high orbit over the map.)
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BattleEnd.client.lua](StarterPlayerScripts/BattleEnd.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | the round's end: emotes, a stand-down, the clear 4.6 s later |
+| [README.md](README.md) | | doc | "The battle's end" |
+
+---
+
+## Before that: swing arcs
 
 - **Every swing draws a faint arc**, not just your own: other players' and the bots' blades leave a
   soft crescent as they cut (gold on a riposte), so a blow coming at you reads as a blow and a

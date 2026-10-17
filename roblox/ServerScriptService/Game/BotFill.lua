@@ -346,9 +346,33 @@ function BotFill.start()
 		clear(true)
 		startedAt = os.clock()
 	end)
+	-- THE BATTLE'S END: before the bots go, the side that won raises its weapons and roars and
+	-- the beaten go to a knee (everyone stands down: EmoteUntil, Combat ▸ Bots); a few seconds
+	-- behind the result, then the field clears
 	Game.roundEnded.Event:Connect(function()
 		roundId += 1
-		clear()
+		local mine = roundId
+		local winner = Game.node:GetAttribute("Winner")
+		local winKey = nil
+		for key, t in pairs(GameConfig.TEAMS) do if t.name == winner then winKey = key end end
+		local until_ = workspace:GetServerTimeNow() + 5
+		for _, e in ipairs(fill) do
+			local m = e.bot and e.bot.alive and e.bot.model
+			if m and m.Parent then
+				local emote = nil
+				if winKey and e.team == winKey then
+					emote = ({"Cheer", "WarCry", "Cheer", "Salute"})[math.random(4)]
+				elseif winKey and math.random() < 0.55 then
+					emote = "Kneel"
+				end
+				task.delay(math.random() * 0.9, function()
+					if roundId ~= mine or not m.Parent then return end
+					if emote and _G.BotEmote then pcall(_G.BotEmote, m, emote) end
+					m:SetAttribute("EmoteUntil", until_)
+				end)
+			end
+		end
+		task.delay(winKey and 4.6 or 0, function() if roundId == mine then clear() end end)
 	end)
 	task.spawn(function()
 		while true do

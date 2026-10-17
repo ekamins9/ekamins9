@@ -134,6 +134,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/ClashFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `ClashFX` | LocalScript |
 | `StarterPlayerScripts/HitReact.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HitReact` | LocalScript |
 | `StarterPlayerScripts/SwingArcs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SwingArcs` | LocalScript |
+| `StarterPlayerScripts/BattleEnd.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `BattleEnd` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2052,6 +2053,15 @@ faint arc behind every OTHER fighter's blade (other players and the bots) along 
 its Hitbox, lit only while the tip is really moving (over 26 studs a second) during their action
 (`Acting`), so a swing coming at you reads as one and a melee looks like one. A riposte's arc is
 gold (`RiposteUntil`). Within 140 studs of your camera; nothing is sent to the server.
+
+## The battle's end (`BattleEnd.client`, `Game ▸ BotFill`)
+A two-sided battle won (TDM, the Standard, the hill, LTS…; the massive battle and the sieges have
+their own finales, War.client and SiegeEpic): the fill bots aren't swept away the moment it ends.
+For 4.6 s the winning side raises its weapons and roars (Cheer, War Cry, Salute: `_G.BotEmote`),
+about half the beaten go to a knee, and nobody fights (`EmoteUntil`); then the field clears. On
+every screen a horn sounds and the camera glides down from wherever it was to the thickest knot of
+the winners, in front of them, slowly circling, under the result's band (`_G.FinaleCamera` holds the
+Hub menu's orbit off; `_G.BoardHoldUntil` holds back the board, the vote and the class screen).
 
 ## The portraits watch (`Portraits.client`, Dungeon `P.painting`)
 
