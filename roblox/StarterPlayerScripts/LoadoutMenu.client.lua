@@ -387,6 +387,9 @@ local function show(active, reason)
 	local fade = playerGui:FindFirstChild("DeathFade")
 	local hold = fade and fade:GetAttribute("HoldUntil")
 	if hold and os.clock() < hold then task.delay(hold - os.clock(), show, active, reason); return end
+	-- (a battle's own finale has the screen a few seconds first: War.client's _G.BoardHoldUntil)
+	local held = _G.BoardHoldUntil
+	if held and os.clock() < held then task.delay(held - os.clock(), show, active, reason); return end
 	clearDeathFade()
 	waitReason = reason
 	if inCourtyard() then

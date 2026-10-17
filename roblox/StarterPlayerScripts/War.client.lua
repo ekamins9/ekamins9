@@ -367,6 +367,7 @@ end
 --  THE ARMIES ON THE FLANKS
 --------------------------------------------------------------------
 local war = {on = false}
+local finale = {}   -- (the battle's end: below)
 local function phone() return Device.kind() == "phone" end
 local function buildArmies()
 	if war.army then war.army:stop() end
@@ -587,6 +588,7 @@ local function enter()
 end
 local function leave()
 	if not war.on then return end
+	if finale.on then pcall(RunService.UnbindFromRenderStep, RunService, "WarFinale"); finale.on = false end
 	war.on = false
 	war.token = (war.token or 0) + 1
 	gui.Enabled = false
@@ -601,6 +603,49 @@ local function leave()
 end
 
 -- a new round (a new field): everything again
+--------------------------------------------------------------------
+--  THE BATTLE'S END: the camera rises and circles slowly over the field behind the result,
+--  the winners' horns, every regiment of theirs loosing and cheering
+--------------------------------------------------------------------
+local function finaleStop()
+	if not finale.on then return end
+	finale.on = false
+	pcall(function() RunService:UnbindFromRenderStep("WarFinale") end)
+	local cam = workspace.CurrentCamera
+	if cam then cam.FieldOfView = 70 end
+end
+local function finaleStart()
+	if finale.on or not war.on then return end
+	finale.on = true
+	_G.BoardHoldUntil = os.clock() + 5   -- (the board waits: the field first)
+	local fz = round:GetAttribute("WarFront") or 0
+	local winner = round:GetAttribute("Winner") or ""
+	local side = nil
+	for k, d in pairs(GameConfig.TEAMS) do if d.name == winner then side = k end end
+	WarFX.sound("Horn", nil, {volume = 1})
+	task.delay(2.5, function() if finale.on then WarFX.sound("Horn", nil, {volume = 0.8, speed = 0.92}) end end)
+	if side and war.army then
+		for id, reg in pairs(war.army.regs) do
+			if id:sub(1, #side) == side or id == "arch" .. side .. "1" or id == "arch" .. side .. "2" or id == "mage" .. side then war.army:loose(id) end
+		end
+	end
+	local t0 = os.clock()
+	RunService:BindToRenderStep("WarFinale", Enum.RenderPriority.Camera.Value + 6, function()
+		local cam = workspace.CurrentCamera
+		if not cam then return end
+		local t = os.clock() - t0
+		local a = t * 0.06 + 0.6
+		local r = 170
+		local h = 70 + math.min(t, 6) * 6
+		cam.CameraType = Enum.CameraType.Scriptable
+		cam.CFrame = CFrame.lookAt(Vector3.new(math.cos(a) * r, h, fz + math.sin(a) * r), Vector3.new(0, 6, fz))
+		cam.FieldOfView = 60
+	end)
+end
+round:GetAttributeChangedSignal("State"):Connect(function()
+	if inWar() and round:GetAttribute("State") == "Intermission" then finaleStart() else finaleStop() end
+end)
+
 round:GetAttributeChangedSignal("Map"):Connect(function()
 	if war.on then leave(); task.wait(0.5); if inWar() then enter() end end
 end)

@@ -625,7 +625,8 @@ RunService.RenderStepped:Connect(function(dt)
 		acc = 0
 		refreshRound()
 		sizeBoard()
-		local show = holding or (intermission() and not hubMenuUp())
+		-- (a battle's own finale may hold the board back a few seconds: War.client's _G.BoardHoldUntil)
+		local show = holding or (intermission() and not hubMenuUp() and os.clock() >= (_G.BoardHoldUntil or 0))
 		if board.Visible ~= show then board.Visible = show end
 		-- the class screen (DisplayOrder 2000) is up during the intermission: sit above it
 		gui.DisplayOrder = intermission() and 2100 or 30

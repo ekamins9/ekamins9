@@ -1669,6 +1669,9 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   TREBUCHET · METEORS · LIGHTNING · FROST). On the field: each flag in its holder's colour, a ring,
   a beam over the banners being fought for. Your first spawn of a round: a few seconds' flight
   over the field with THE BATTLE OF … (any key skips).
+- **The battle's end**: the camera rises and circles slowly over the field, the winners' horns
+  sound and their regiments loose and cheer; the result board and the class screen hold back five
+  seconds for it (`_G.BoardHoldUntil`, read by Scoreboard and LoadoutMenu).
 - **The armies on the flanks** (WarFX regiments, client only: never fighters, nothing replicated):
   three lanes a flank, a foot, pike and foot regiment of each side in each, marching to the front
   (Round `WarFront`) and clashing there (lunges, thrusts, now and then one falls); each side's
