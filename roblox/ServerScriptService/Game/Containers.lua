@@ -12,7 +12,8 @@
                                                decides where it goes (false: it stays)
        set:clear()
 
-     Opening a chest is loud (Combat ▸ Perception.noise): the dark hears it. A sarcophagus's dead
+     Opening a chest is loud (Combat ▸ Perception.noise): the dark hears it. Now and then a chest
+     is a mimic (the mode's :mimic): it gets up, and its hoard waits till it's dead. A sarcophagus's dead
      isn't always resting: on the first look the mode's waken(box, char) may raise it, and then
      the lid is thrown off, it climbs out, and there's no searching it till it's dealt with. ]]
 
@@ -254,6 +255,12 @@ function Containers:open(plr, box)
 	-- the first look: the lid comes up, a coffin's slides aside, the dark hears a chest
 	if not box.looked then
 		box.looked = true
+		-- (a chest that was never a chest: it gets up and comes for you; its hoard is here when it's dead)
+		if (box.kind == "chest" or box.kind == "ornate") and self.mode and self.mode.mimic and self.mode:mimic(box, char) then
+			if LOUD[box.kind] then Perception.noise(box.pos, LOUD[box.kind], char) end
+			box.lockedUntil = os.clock() + 3
+			return
+		end
 		if box.chest and box.chest.swing then box.chest.swing() end
 		local lid = box.model:FindFirstChild("Lid")
 		local woke = box.kind == "coffin" and self.mode and self.mode.waken and self.mode:waken(box, char)

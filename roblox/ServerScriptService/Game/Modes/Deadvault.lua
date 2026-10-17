@@ -199,6 +199,50 @@ function Deadvault:waken(box, char)
 	return true
 end
 
+-- A MIMIC (Game ▸ Containers, the first look into a chest): now and then the chest was never a
+-- chest. It vanishes and a mimic stands in its place, facing whoever opened it (A MIMIC!); a gilded
+-- one for an ornate chest. Its hoard can't be searched while it lives (box.guardMob); when it's
+-- dead the chest is back where it stood, open.
+Deadvault.MIMIC_CHANCE = 0.12
+function Deadvault:mimic(box, char)
+	if math.random() >= Deadvault.MIMIC_CHANCE then return false end
+	local id = box.kind == "ornate" and "GildedMimic" or "Mimic"
+	if not Monsters.def(id) then return false end
+	local plr = Players:GetPlayerFromCharacter(char)
+	if plr then banner({text = "A MIMIC!", sub = "IT WAS NEVER A CHEST", kind = "fight"}, plr) end
+	-- the chest out of sight, its prompt off
+	local hidden = {}
+	for _, d in ipairs(box.model:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			table.insert(hidden, {d, "Transparency", d.Transparency}); table.insert(hidden, {d, "CanCollide", d.CanCollide})
+			d.Transparency, d.CanCollide = 1, false
+		elseif d:IsA("ProximityPrompt") or d:IsA("Light") or d:IsA("ParticleEmitter") then
+			table.insert(hidden, {d, "Enabled", d.Enabled}); d.Enabled = false
+		end
+	end
+	-- (a step out from where the chest stood, towards you: a chest in a corner would wedge it there)
+	local r = rootOf(char)
+	local toward = r and Vector3.new(r.Position.X - box.pos.X, 0, r.Position.Z - box.pos.Z) or box.cf.LookVector
+	toward = toward.Magnitude > 0.1 and toward.Unit or Vector3.new(0, 0, -1)
+	local at = box.pos + toward * 2.5 + Vector3.new(0, 3, 0)
+	local look = r and Vector3.new(r.Position.X, at.Y, r.Position.Z) or at + toward
+	local mob = self:spawnMob(id, CFrame.new(at, look), {home = box.pos})
+	if mob and mob.model and char.Parent then
+		-- (it knows who found it)
+		task.delay(0.3, function() if char.Parent then Perception.noise(at, 14, char) end end)
+	end
+	box.guardMob = mob
+	-- (its hoard back where it stood when it's dead, the lid up)
+	task.spawn(function()
+		while mob and mob.alive and box.model.Parent do task.wait(0.5) end
+		task.wait(1)
+		if not box.model.Parent then return end
+		for _, h in ipairs(hidden) do if h[1].Parent then h[1][h[2]] = h[3] end end
+		if box.chest and box.chest.swing then box.chest.swing() end
+	end)
+	return true
+end
+
 -- a walk of a few rooms, there and back (corridor to corridor)
 local function route(L, from, rng)
 	local path = {from}

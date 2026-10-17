@@ -8,6 +8,10 @@
        its skitter  running, now and then the dry click of its legs (WarAudio ▸ Skitter)
        its death    the legs curl in under it
 
+     And Deadvault's MIMICS (body = "mimic": MimicLeg_n, MimicLid, MimicBody): the lid breathes
+     a little as it waits, chatters as it scuttles on its four legs, snaps wide as it bites, and
+     hangs open when it's dead.
+
      Only the ones within 140 studs are moved. Nothing here is sent to the server. ]]
 
 local RunService = game:GetService("RunService")
@@ -20,10 +24,37 @@ local HEAR = 45
 local spiders = {}   -- [model] = rig
 local skitterGap = 0
 
+local function mimicRig(m, root)
+	root:WaitForChild("MimicLeg_4", 3)
+	local torso = m:FindFirstChild("Torso")
+	local body = torso and torso:FindFirstChild("MimicBody")
+	local lid = root:FindFirstChild("MimicLid")
+	if not (body and lid) then return nil end
+	local legs = {}
+	for n = 1, 4 do
+		local hip = root:FindFirstChild("MimicLeg_" .. n)
+		-- (diagonal pairs step together)
+		if hip then table.insert(legs, {hip = hip, set = (n == 1 or n == 4) and 0 or 1, ph = math.random() * 6}) end
+	end
+	return {
+		kind = "mimic", model = m, body = body, lid = lid, legs = legs, shoulder = torso:FindFirstChild("Right Shoulder"),
+		root = m:FindFirstChild("HumanoidRootPart"), hum = m:FindFirstChildOfClass("Humanoid"),
+		scale = m:GetAttribute("MonsterScale") or 1, phase = math.random() * 6, lunge = 0, curl = 0,
+		speed = 0, last = nil, nextSkitter = 0, arm = nil,
+	}
+end
+
 local function rigOf(m)
 	local look = m:WaitForChild("MonsterLook", 6)
-	local root = look and look:WaitForChild("SpiderRoot", 3)
+	if not look then return nil end
+	local root
+	for _ = 1, 30 do
+		root = look:FindFirstChild("SpiderRoot") or look:FindFirstChild("MimicRoot")
+		if root then break end
+		task.wait(0.1)
+	end
 	if not root then return nil end
+	if root.Name == "MimicRoot" then return mimicRig(m, root) end
 	root:WaitForChild("SpiderHip_8", 3)
 	local torso = m:FindFirstChild("Torso")
 	local body = torso and torso:FindFirstChild("SpiderBody")
@@ -106,10 +137,23 @@ RunService.Stepped:Connect(function(_, dt)
 		r.lunge += (want - r.lunge) * math.clamp(dt * (want > r.lunge and 14 or 5), 0, 1)
 		r.curl += ((dead and 1 or 0) - r.curl) * math.clamp(dt * 4, 0, 1)
 		local k = r.scale
-		local bob = math.abs(math.sin(r.phase * 2)) * 0.07 * moveK
 		local l = r.lunge
-		r.body.Transform = CFrame.new(0, (bob + 0.25 * l) * k, -0.55 * l * k) * CFrame.Angles(math.rad(24) * l, 0, 0)
-		for _, leg in ipairs(r.legs) do
+		if r.kind == "mimic" then
+			-- the chest on its legs: a little lift and thrust as it bites, its lid the mouth
+			local hop = math.abs(math.sin(r.phase * 2.6)) * 0.12 * moveK
+			r.body.Transform = CFrame.new(0, (hop + 0.15 * l) * k, -0.4 * l * k) * CFrame.Angles(math.rad(10) * l, 0, 0)
+			local breathe = 0.07 + math.sin(t * 2.1 + r.phase) * 0.04
+			local chatter = math.abs(math.sin(r.phase * 3.4)) * 0.22 * moveK
+			local open = dead and 1.25 or (breathe + chatter + 1.05 * l)
+			r.lid.Transform = CFrame.Angles(open * (dead and r.curl or 1), 0, 0)
+			for _, leg in ipairs(r.legs) do
+				local a = r.phase * 2.6 + leg.set * math.pi
+				leg.hip.Transform = CFrame.Angles(math.sin(a) * 0.5 * moveK - 0.7 * r.curl, 0, 0)
+			end
+		end
+		local bob = math.abs(math.sin(r.phase * 2)) * 0.07 * moveK
+		if r.kind ~= "mimic" then r.body.Transform = CFrame.new(0, (bob + 0.25 * l) * k, -0.55 * l * k) * CFrame.Angles(math.rad(24) * l, 0, 0) end
+		for _, leg in ipairs(r.kind ~= "mimic" and r.legs or {}) do
 			local a = r.phase * 2 + leg.set * math.pi
 			local sweep = math.sin(a) * 0.38 * moveK * leg.side
 			local lift = math.max(0, math.cos(a)) * 0.4 * moveK

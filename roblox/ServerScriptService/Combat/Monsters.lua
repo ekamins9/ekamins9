@@ -256,6 +256,65 @@ local function buildSpider(f, model, skin, eye, mark)
 	end
 end
 
+-- a MIMIC: a chest that was never a chest. The body it fights with is hidden like a spider's; a
+-- chest stands in its place on four stubby legs (MimicLeg_n), its lid on a hinge (MimicLid) over a
+-- mouth of teeth, a tongue, two eyes glowing in the dark inside, the whole of it on MimicBody, so
+-- each screen can scuttle it and snap its lid (StarterPlayerScripts ▸ SpiderLegs)
+local function buildMimic(f, model, wood, eye, gilded)
+	hideBody(model, f)
+	local tool = model:FindFirstChildOfClass("Tool")
+	if tool then tool:SetAttribute("NoDrop", true) end
+	model:SetAttribute("Skitters", true)
+	local torso = model:FindFirstChild("Torso")
+	if not torso then return end
+	local root = bare(f, Vector3.new(0.2, 0.2, 0.2), wood)
+	root.Name, root.Transparency = "MimicRoot", 1
+	root.CFrame = torso.CFrame * CFrame.new(0, -2, 0)
+	joint("MimicBody", torso, root, CFrame.new(0, -2, 0))
+	local band = gilded and Color3.fromRGB(214, 170, 64) or Color3.fromRGB(70, 70, 76)
+	local bandMat = gilded and Enum.Material.Metal or Enum.Material.DiamondPlate
+	-- the chest
+	piece(f, root, "block", Vector3.new(2.6, 1.4, 1.8), wood, Enum.Material.WoodPlanks, CFrame.new())
+	for _, x in ipairs({-0.95, 0.95}) do piece(f, root, "block", Vector3.new(0.2, 1.44, 1.84), band, bandMat, CFrame.new(x, 0, 0)) end
+	-- the lid on its hinge (the back of the chest's top)
+	local lid = bare(f, Vector3.new(2.6, 0.55, 1.8), wood, Enum.Material.WoodPlanks)
+	lid.Name = "MimicLidPart"
+	local h0, h1 = CFrame.new(0, 0.7, 0.9), CFrame.new(0, -0.275, 0.9)
+	lid.CFrame = root.CFrame * h0 * h1:Inverse()
+	joint("MimicLid", root, lid, h0, h1)
+	for _, x in ipairs({-0.95, 0.95}) do piece(f, lid, "block", Vector3.new(0.2, 0.59, 1.84), band, bandMat, CFrame.new(x, 0, 0)) end
+	piece(f, lid, "block", Vector3.new(0.5, 0.5, 0.12), band, bandMat, CFrame.new(0, -0.15, -0.92))
+	-- its mouth: teeth along both lips, a tongue, eyes in the dark under the lid
+	local TOOTH = Color3.fromRGB(236, 230, 210)
+	for i = -4, 4 do
+		local x = i * 0.27
+		piece(f, lid, "wedge", Vector3.new(0.16, 0.32, 0.14), TOOTH, nil, CFrame.new(x, -0.42, -0.8) * CFrame.Angles(math.pi, 0, 0))
+		piece(f, root, "wedge", Vector3.new(0.16, 0.28, 0.14), TOOTH, nil, CFrame.new(x, 0.84, -0.8))
+	end
+	local tongue = piece(f, root, "block", Vector3.new(0.7, 0.25, 1.3), Color3.fromRGB(176, 64, 86), nil, CFrame.new(0, 0.62, -0.25))
+	if tongue then local m = Instance.new("SpecialMesh"); m.MeshType = Enum.MeshType.Sphere; m.Parent = tongue end
+	for _, x in ipairs({-0.42, 0.42}) do piece(f, lid, "ball", Vector3.new(0.24, 0.24, 0.24), eye, Enum.Material.Neon, CFrame.new(x, -0.2, -0.45)) end
+	local l = Instance.new("PointLight")
+	l.Color, l.Range, l.Brightness, l.Shadows = eye, 6, 1.2, false
+	l.Name = "EyeGlow"
+	l.Parent = lid
+	-- four stubby legs from its corners, down and out to the floor
+	local LEG = Color3.fromRGB(58, 40, 30)
+	local n = 0
+	for _, sx in ipairs({-1, 1}) do
+		for _, sz in ipairs({-1, 1}) do
+			n += 1
+			local hip = Vector3.new(sx * 1.05, -0.55, sz * 0.65)
+			local dir = Vector3.new(sx * 0.5, -0.86, 0)
+			local leg = bare(f, Vector3.new(0.32, 0.32, 1.1), LEG)
+			leg.Name = "MimicLeg"
+			local c0 = CFrame.lookAt(hip, hip + dir)
+			leg.CFrame = root.CFrame * c0 * CFrame.new(0, 0, -0.55)
+			joint("MimicLeg_" .. n, root, leg, c0, CFrame.new(0, 0, 0.55))
+		end
+	end
+end
+
 -- a wraith: a robe where its legs were, a hood round a face of nothing
 local function buildWraith(f, model, cloth, eye)
 	for _, n in ipairs({"Left Leg", "Right Leg"}) do local p = model:FindFirstChild(n); if p then p.Transparency = 1 end end
@@ -592,6 +651,8 @@ local function build(model, def)
 		buildGolem(f, model, skin or Color3.fromRGB(110, 112, 118), eye)
 	elseif body == "spider" then
 		buildSpider(f, model, skin or Color3.fromRGB(46, 38, 34), eye, look.mark or Color3.fromRGB(176, 150, 112))
+	elseif body == "mimic" then
+		buildMimic(f, model, skin or Color3.fromRGB(112, 74, 42), eye, look.gilded)
 	else
 		if skin then paintSkin(model, skin, body == "cinder" and Enum.Material.Basalt or nil) end
 		if body == "cinder" then hideFace(model); local h = model:FindFirstChild("Head"); if h then glowEyes(f, h, eye, 0.24) end end
@@ -1032,7 +1093,7 @@ function Monsters.display(id)
 	local w = pick(def.weapon)
 	if w then pcall(Dresser.attachWeapon, model, w, nil) end
 	-- (a spider's fangs are its weapon: out of sight like the rest of what it was dressed in)
-	if (def.look or {}).body == "spider" then hideBody(model, model:FindFirstChild("MonsterLook")) end
+	if (def.look or {}).body == "spider" or (def.look or {}).body == "mimic" then hideBody(model, model:FindFirstChild("MonsterLook")) end
 	if (def.scale or 1) ~= 1 then pcall(function() model:ScaleTo(def.scale) end) end
 	-- (its clothes, its bits and its weapon hang off the limbs by welds, which only place them
 	-- once physics steps: a moment in the world, held by the root, before it's frozen)

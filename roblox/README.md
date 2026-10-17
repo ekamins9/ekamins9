@@ -2376,6 +2376,13 @@ get out with what you found, or lose it all.
   (the effigy carved on it with it) and its dead climbs out of the far side, already coming for
   you (IT WAKES; the crypt's skeletons and ghouls, the manor's vampires, the ice's frozen dead;
   `Deadvault:waken`). Deal with it, then search: the coffin won't open while its dead is up.
+  **A mimic**: the first look into a chest now and then (`Deadvault.MIMIC_CHANCE`, 12%) finds it
+  was never a chest (A MIMIC!): it vanishes and a mimic stands a step out from where it stood,
+  facing you, on four stubby legs, its lid a mouth of teeth over a tongue, eyes glowing inside it;
+  an ornate chest is a Gilded Mimic, bigger and harder. Its hoard can't be searched while it lives;
+  when it's dead the chest is back where it stood, open (`Deadvault:mimic`, body `mimic` in
+  `Combat ▸ Monsters`, walked by `SpiderLegs`: the lid breathes, chatters as it scuttles, snaps wide
+  as it bites, hangs open in death).
 - **Your gear** (I, or the Bag button): what you wear (a weapon, a sidearm, armour, a tome's power,
   three relics), your **belt** (four draughts: keys **3 – 6**, on screen bottom left; drinking takes
   a moment and slows you, then a healing draught mends over four seconds) and your **bag** (20;

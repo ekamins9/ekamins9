@@ -1,4 +1,19 @@
-# Updated scripts: skeletons fall to bones
+# Updated scripts: mimics
+
+- **Deadvault**: now and then the chest you open was never a chest. A MIMIC! It stands up on four stubby legs, its lid a mouth of teeth over a tongue, eyes glowing inside, and comes for you, snapping. An ornate chest is a bigger, harder Gilded Mimic. Kill it and the chest is back where it stood, open, with its hoard to search.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `Deadvault:mimic`, `MIMIC_CHANCE` |
+| [Containers.lua](ServerScriptService/Game/Containers.lua) | ServerScriptService ▸ Game | ModuleScript | a chest's first look may be a mimic |
+| [Monsters.lua](ServerScriptService/Combat/Monsters.lua) | ServerScriptService ▸ Combat | ModuleScript | `buildMimic` |
+| [Bestiary.lua](ReplicatedStorage/Catalog/Bestiary.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | Mimic, GildedMimic |
+| [SpiderLegs.client.lua](StarterPlayerScripts/SpiderLegs.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the mimic's lid and legs |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: skeletons fall to bones
 
 - **Monsters' deaths**: a skeleton falls apart into a heap of its bones with the skull on top (one about to stand back up doesn't), and a wraith simply vanishes. A player's kill effect still overrides both.
 

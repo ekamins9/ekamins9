@@ -51,6 +51,13 @@ add("CaveSpider", {name = "Cave Spider", faction = "Beast", skill = "Beast", wea
 add("Broodmother", {name = "Broodmother", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 260, speed = 1.05, weight = "Medium", scale = 1.45,
 	look = {body = "spider", skin = C(34, 28, 30), eyes = C(255, 40, 30), mark = C(168, 34, 28)}, traits = {"summon"}, summons = {"CaveSpider"}, tier = 3})
 
+-- the MIMIC: a raid's chest that was never a chest (Game ▸ Modes ▸ Deadvault:mimic); a gilded one
+-- for an ornate chest
+add("Mimic", {name = "Mimic", faction = "Beast", skill = "Beast", weapon = "Dagger", hp = 150, speed = 0.95, weight = "Medium",
+	look = {body = "mimic", skin = C(112, 74, 42), eyes = C(255, 214, 90)}, tier = 2})
+add("GildedMimic", {name = "Gilded Mimic", faction = "Beast", skill = "Beast", weapon = "Shortsword", hp = 230, speed = 1, weight = "Medium", scale = 1.15,
+	look = {body = "mimic", skin = C(96, 30, 34), eyes = C(255, 120, 60), gilded = true}, tier = 3})
+
 --------------------------------------------------------------------
 --  THE HOLLOW ABBEY: the monks who kept praying after they died, and those who came to them
 --------------------------------------------------------------------
