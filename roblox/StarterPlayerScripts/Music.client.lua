@@ -1,7 +1,13 @@
 --[[ MUSIC — plays the score for where you are (ReplicatedStorage ▸ MusicConfig):
      the Courtyard, a match, the horde's waves and breaks, a boss fight, and a
      win / lose sting when a round ends. Changes of mood crossfade; a list plays
-     shuffled, one track into the next. Volume: Settings ▸ Music volume. ]]
+     shuffled, one track into the next. Volume: Settings ▸ Music volume.
+
+     The dungeons (The Depths, Deadvault) are quiet: only their dread (Dread) until a fight is
+     on — a Depths room's gates shut, a blow struck or taken in the last few seconds, or something
+     near has seen you and is coming (a monster's Alert "!") — and then the battle score swells in,
+     easing back out a while after. A mood with no tracks of its own in MusicConfig plays
+     ReplicatedStorage ▸ WarAudio ▸ <mood> if the place has one (Studio-only), else silence. ]]
 
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
@@ -29,13 +35,37 @@ ClientSettings.onChanged(function(key) if key == "Music" then applyVolume() end 
 --------------------------------------------------------------------
 --  WHAT SHOULD BE PLAYING
 --------------------------------------------------------------------
-local function bossAlive()
+-- a boss alive (within `near` studs of you, if given: a dungeon's lord is only its lair's score)
+local function bossAlive(near)
 	local npcs = workspace:FindFirstChild("NPCs")
 	if not npcs then return false end
+	local me = near and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if near and not me then return false end
 	for _, m in ipairs(npcs:GetChildren()) do
 		if m:GetAttribute("Boss") then
 			local hum = m:FindFirstChildOfClass("Humanoid")
-			if hum and hum.Health > 0 then return true end
+			local r = m:FindFirstChild("HumanoidRootPart")
+			if hum and hum.Health > 0 and (not near or (r and (r.Position - me.Position).Magnitude < near)) then return true end
+		end
+	end
+	return false
+end
+
+-- (the dungeons: a fight on near you?)
+local lastBlow, battleUntil = -1e9, 0
+local function watchBlows(c)
+	c:GetAttributeChangedSignal("LastCombatAt"):Connect(function() lastBlow = os.clock() end)
+end
+if player.Character then watchBlows(player.Character) end
+player.CharacterAdded:Connect(watchBlows)
+local function hunted()
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local npcs = workspace:FindFirstChild("NPCs")
+	if not (me and npcs) then return false end
+	for _, m in ipairs(npcs:GetChildren()) do
+		if m:GetAttribute("Alert") == "!" then
+			local r = m:FindFirstChild("HumanoidRootPart")
+			if r and (r.Position - me.Position).Magnitude < 60 then return true end
 		end
 	end
 	return false
@@ -47,8 +77,17 @@ local function moodNow()
 	local mode, state = round:GetAttribute("Mode"), round:GetAttribute("State")
 	if mode == nil or mode == "Hub" or mode == "Tiltyard" then return "Hub" end
 	if state ~= "Round" then return "Intermission" end
-	if bossAlive() then return "Boss" end
-	if round:GetAttribute("ObjKind") == "Horde" then
+	local kind = round:GetAttribute("ObjKind")
+	local dungeon = kind == "Depths" or kind == "Deadvault"
+	if bossAlive(dungeon and 110 or nil) then return "Boss" end
+	if dungeon then
+		-- (the dark is quiet till a fight is on; the fight's score holds a while after)
+		if (kind == "Depths" and round:GetAttribute("ObjState") == "fight") or os.clock() - lastBlow < 8 or hunted() then
+			battleUntil = os.clock() + 10
+		end
+		return os.clock() < battleUntil and "Battle" or "Dread"
+	end
+	if kind == "Horde" then
 		return round:GetAttribute("ObjState") == "break" and "HordeBreak" or "HordeWave"
 	end
 	return "Battle"
@@ -63,7 +102,12 @@ local bag = {}             -- shuffled ids left to play, per mood
 
 local function nextId(m)
 	local list = Config.TRACKS[m]
-	if not list or #list == 0 then return nil end
+	if not list or #list == 0 then
+		-- (none of its own: the place's WarAudio ▸ <mood>, if it has one)
+		local wa = ReplicatedStorage:FindFirstChild("WarAudio")
+		local s = wa and wa:FindFirstChild(m)
+		return s and s:IsA("Sound") and s.SoundId ~= "" and s.SoundId or nil
+	end
 	local b = bag[m]
 	if not b or #b == 0 then
 		b = table.clone(list)
@@ -92,7 +136,7 @@ local function play(m)
 			local id = nextId(m)
 			if not id then return end
 			local s = Instance.new("Sound")
-			s.SoundId = "rbxassetid://" .. tostring(id)
+			s.SoundId = type(id) == "string" and id or ("rbxassetid://" .. tostring(id))
 			s.Volume = 0
 			s.SoundGroup = group
 			s.Parent = SoundService
