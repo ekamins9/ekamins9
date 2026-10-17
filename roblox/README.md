@@ -1952,6 +1952,11 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   cut down and the attackers cheer.
 - **The ram's crew**: six of the attackers under the ram's roof walk it up the road and lean into it
   when it stops (`WarCrowd:crew`, riding along with the ram's body); they cheer when the gate falls.
+- **Boiling oil**: while the gate holds, every 18–32 s (for anyone within 320 studs of it) the
+  defenders tip an iron cauldron over the edge of the gatehouse (off its chamber's top when it's
+  there, else the wall's battlement): a column of smoking oil pours down onto the gate's foot (a
+  Beam with a stream of particles round it), steam rolls off the ground with a hiss, and the men
+  massed there scatter and fall (`WarCrowd:hit`). Looks only: it hurts no player.
 - **The flanks**: on both sides of the castle the defenders' sally fights the attackers' lines
   (foot against foot, pikes against knights): a charge with horns after 8 s, the crash, the lines
   wavering, pulling apart and charging again. The attackers' reserves wait beside their camp.

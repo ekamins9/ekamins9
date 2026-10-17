@@ -11,6 +11,9 @@
        behind         the attackers' archers loosing on the walls, their reserves by the camp
        the castle     towers burning, smoke rising high, trebuchet fire falling on the walls,
                       villages burning beyond; dust over the melee, the din of it all
+       the oil        while the gate holds, now and then the defenders tip a cauldron over it from
+                      the wall above: smoking oil pours down onto the gate's foot, steam rolls off
+                      the ground with a hiss, and the men massed there scatter and fall
 
      The story follows the objective (Round ▸ ObjStage): as the gate falls the walls are
      overrun (the attackers cheer, the archers fall, the ladders all go over, the reserves pour
@@ -307,6 +310,7 @@ local function build(C)
 	siege.nextWall = os.clock() + 4
 	siege.nextArch = os.clock() + 7
 	siege.nextBomb = os.clock() + 10
+	siege.nextOil = os.clock() + 20
 	siege.stage = 0
 end
 
@@ -521,6 +525,102 @@ local function bombard(now)
 		onLand = function(p) if siege.crowd then siege.crowd:blast(p, 9) end end})
 end
 
+-- BOILING OIL over the gate: a cauldron tipped on the wall above it, the pour, the steam below
+local OIL, IRON = Color3.fromRGB(70, 50, 22), Color3.fromRGB(46, 44, 42)
+local function oil(now)
+	local C = siege.C
+	if siege.taken or now < (siege.nextOil or 0) then return end
+	siege.nextOil = now + 18 + math.random() * 14
+	local me = myPos()
+	if me and (me - C.gate).Magnitude > 320 then return end
+	local f = C.f
+	local x = C.gate.X + (math.random() - 0.5) * 8
+	-- (off the top of the gatehouse's chamber over the doors when it's there to see; else the
+	-- wall's own battlement)
+	local lipY, lipZ = C.top + 2.2, C.faceZ + f * 0.8
+	local map = workspace:FindFirstChild("Map")
+	for _, d in ipairs(map and map:GetDescendants() or {}) do
+		if d:IsA("BasePart") and d.Name == "GateChamber" and math.abs(d.Position.X - C.gate.X) < 12 then
+			lipY, lipZ = d.Position.Y + d.Size.Y / 2 + 1.3, d.Position.Z + f * (d.Size.Z / 2 + 0.6)
+			break
+		end
+	end
+	local lip = V3(x, lipY, lipZ)
+	local foot = WarFX.ground(V3(x, C.top, lipZ + f * 2.5))
+	local folder = Instance.new("Folder")
+	folder.Name = "SiegeOil"
+	folder.Parent = workspace
+	-- the cauldron on the battlement, tipping out over the edge
+	local pot = Instance.new("Part")
+	pot.Shape = Enum.PartType.Cylinder
+	pot.Size = V3(2.2, 2.6, 2.6)
+	pot.Color, pot.Material = IRON, Enum.Material.Metal
+	pot.Anchored, pot.CanCollide, pot.CanQuery, pot.CanTouch = true, false, false, false
+	local upright = CFrame.new(lip - V3(0, 0, f * 1.4)) * CFrame.Angles(0, 0, math.pi / 2)
+	pot.CFrame = upright
+	pot.Parent = folder
+	local glow = Instance.new("PointLight")
+	glow.Color, glow.Range, glow.Brightness = Color3.fromRGB(255, 150, 60), 10, 1.2
+	glow.Parent = pot
+	game:GetService("TweenService"):Create(pot, TweenInfo.new(0.7, Enum.EasingStyle.Quad), {CFrame = upright * CFrame.Angles(f * math.rad(70), 0, 0)}):Play()
+	-- the pour: a thick stream falling the height of the wall, smoking as it goes
+	local a = Instance.new("Attachment")
+	a.WorldPosition = lip + V3(0, -0.4, f * 0.6)
+	a.Parent = workspace.Terrain
+	local stream = Instance.new("ParticleEmitter")
+	stream.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	stream.Color = ColorSequence.new(OIL, Color3.fromRGB(120, 90, 40))
+	stream.LightEmission, stream.LightInfluence = 0.2, 0.6
+	stream.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 1.1), NumberSequenceKeypoint.new(1, 2.2)})
+	stream.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.8, 0.2), NumberSequenceKeypoint.new(1, 1)})
+	stream.Lifetime = NumberRange.new(0.7, 0.9)
+	stream.Speed = NumberRange.new(2, 4)
+	stream.EmissionDirection = Enum.NormalId.Bottom
+	stream.SpreadAngle = Vector2.new(6, 6)
+	stream.Acceleration = V3(0, -(lipY - C.ground) * 2.4, 0)
+	stream.Rate = 0
+	stream.Parent = a
+	local smoke = stream:Clone()
+	smoke.Color = ColorSequence.new(Color3.fromRGB(150, 146, 140))
+	smoke.LightEmission = 0
+	smoke.Size = NumberSequence.new(2, 6)
+	smoke.Transparency = NumberSequence.new(0.6, 1)
+	smoke.Lifetime = NumberRange.new(1.5, 2.5)
+	smoke.Acceleration = V3(0, 3, 0)
+	smoke.Speed = NumberRange.new(0.5, 1.5)
+	smoke.SpreadAngle = Vector2.new(30, 30)
+	smoke.Parent = a
+	-- (the column itself: a beam from the lip to the ground, there while it pours)
+	local a1 = Instance.new("Attachment")
+	a1.WorldPosition = foot + V3(0, 0.3, 0)
+	a1.Parent = workspace.Terrain
+	local column = Instance.new("Beam")
+	column.Attachment0, column.Attachment1 = a, a1
+	column.Color = ColorSequence.new(Color3.fromRGB(96, 70, 30), OIL)
+	column.LightEmission, column.LightInfluence = 0.15, 0.7
+	column.Transparency = NumberSequence.new(1)
+	column.Width0, column.Width1, column.FaceCamera, column.Segments = 0.9, 1.6, true, 1
+	column.Parent = a
+	task.delay(0.55, function()
+		stream.Rate, smoke.Rate = 60, 8
+		column.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 0.25)})
+		WarFX.sound("Fire", lip, {volume = 0.7, speed = 1.3, near = 20, range = 220})
+		task.wait(0.55)
+		-- the steam off the ground where it lands, and the men there scattering
+		WarFX.dust(foot + V3(0, 1, 0), 1.6, Color3.fromRGB(200, 196, 188))
+		WarFX.sound("Fire", foot, {volume = 1, speed = 0.8, near = 25, range = 260})
+		if siege.crowd then siege.crowd:hit(foot, 9, 6) end
+		task.wait(1.4)
+		stream.Rate, smoke.Rate = 0, 0
+		column.Transparency = NumberSequence.new(1)
+		WarFX.dust(foot + V3(0, 1, 0), 1.2, Color3.fromRGB(210, 206, 198))
+		game:GetService("TweenService"):Create(pot, TweenInfo.new(1.2, Enum.EasingStyle.Quad), {CFrame = upright}):Play()
+		task.wait(3)
+		a:Destroy(); a1:Destroy()
+		folder:Destroy()
+	end)
+end
+
 -- the server's engines: their volleys land on the crowds too, its trebuchets throw men
 local function hookEngines()
 	task.spawn(function()
@@ -590,7 +690,7 @@ local function enter()
 			local now = os.clock()
 			local ok, err = pcall(stageChanged, false)
 			if not ok then warn("[SiegeEpic] " .. tostring(err)) end
-			for _, step in ipairs({flanks, arrows, bombard, baileyStep}) do
+			for _, step in ipairs({flanks, arrows, bombard, oil, baileyStep}) do
 				ok, err = pcall(step, now)
 				if not ok then warn("[SiegeEpic] " .. tostring(err)) end
 			end

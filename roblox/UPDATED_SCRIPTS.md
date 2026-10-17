@@ -1,4 +1,15 @@
-# Updated scripts: what a blow knocks off spiders and mimics
+# Updated scripts: boiling oil over the gate
+
+- **Siege**: while the gate holds, the defenders now and then tip a cauldron over the edge of the gatehouse. A column of smoking oil pours down onto the gate's foot, steam rolls off the ground with a hiss, and the men massed there scatter. It's for looks only and hurts no player.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `oil` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: what a blow knocks off spiders and mimics
 
 - **Hitting a spider** knocks flecks of dark shell off it; **hitting a mimic**, wood splinters (the game stays Mild: no blood).
 
