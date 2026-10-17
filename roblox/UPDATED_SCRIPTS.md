@@ -1,4 +1,19 @@
-# Updated scripts: bones underfoot
+# Updated scripts: chandeliers fall
+
+- **Deadvault**: about a third of the chandeliers in the raid's halls, libraries and vaults hang loose. Walk under one and its chain creaks, grit sifts down, it shudders, and a second later it crashes to the floor. Get clear, or it hurts. It stays down with its candles out.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Traps.lua](ServerScriptService/Game/Traps.lua) | ServerScriptService ▸ Game | ModuleScript | `BUILD.chandelier`, `Traps.CHANDELIER`; chandeliers kept on re-arm |
+| [Traps.client.lua](StarterPlayerScripts/Traps.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the creak, the fall, the crash |
+| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | a chandelier is one model |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Creak (a Sound; save the place).
+
+---
+
+## Before that: bones underfoot
 
 - **The dungeons**: walk through a pile of bones and they clatter aside from your feet, the skull rolling away.
 

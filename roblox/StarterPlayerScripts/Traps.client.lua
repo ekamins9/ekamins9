@@ -6,6 +6,8 @@
        spikes   the click when someone steps on it (FiredAt), then the spikes punch up through
                 the grate with a ring of steel, stand, and sink back
        darts    the click, then darts hiss out of the holes and across the corridor
+       chandelier its chain creaks (WarAudio ▸ Creak), grit sifts down, it shudders; then it drops
+                to the floor (the server puts it there too: Rest) in a crash of dust
 
      Only traps near the camera are moved. Nothing here is sent to the server. ]]
 
@@ -163,7 +165,45 @@ end
 --  FINDING THEM
 --------------------------------------------------------------------
 -- the part each kind can't do without (a trap streams whole, but wait for it to be sure)
-local KEY = {blade = "Blade", spikes = "Grate", darts = "Plate"}
+local KEY = {blade = "Blade", spikes = "Grate", darts = "Plate", chandelier = "Ring"}
+
+-- CHANDELIERS
+local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+local function addChandelier(m)
+	local function fall()
+		local fired = m:GetAttribute("FiredAt")
+		local rest = m:GetAttribute("Rest")
+		if type(fired) ~= "number" or typeof(rest) ~= "CFrame" or m:GetAttribute("Fallen") then return end
+		local cam = workspace.CurrentCamera
+		local ring = m.PrimaryPart or m:FindFirstChild("Ring")
+		if not (cam and ring) or (cam.CFrame.Position - ring.Position).Magnitude > NEAR then return end
+		local top = m:GetPivot()
+		WarFX.sound("Creak", ring.Position, {volume = 0.9, near = 12, range = 90})
+		WarFX.dust(ring.Position + V3(0, 4, 0), 0.6, Color3.fromRGB(140, 130, 116))
+		-- (it shudders on its chain)
+		local t0 = os.clock()
+		while os.clock() - t0 < 1.05 and m.Parent and not m:GetAttribute("Fallen") do
+			local k = (os.clock() - t0) / 1.05
+			m:PivotTo(top * CFrame.Angles(math.sin(os.clock() * 40) * 0.03 * k, 0, math.cos(os.clock() * 37) * 0.03 * k))
+			task.wait()
+		end
+		if not m.Parent then return end
+		-- (and down)
+		local t1 = os.clock()
+		while m.Parent and not m:GetAttribute("Fallen") do
+			local u = math.min((os.clock() - t1) / 0.3, 1)
+			m:PivotTo(top:Lerp(rest, u * u))
+			if u >= 1 then break end
+			task.wait()
+		end
+		m:PivotTo(rest)
+		WarFX.dust(rest.Position + V3(0, 0.8, 0), 1.6, Color3.fromRGB(150, 140, 126))
+		WarFX.sound("Impact", rest.Position, {volume = 0.9, speed = 1.25, near = 15, range = 160})
+		local me = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if me and (me.Position - rest.Position).Magnitude < 30 then WarFX.shake(0.6, 0.4) end
+	end
+	m:GetAttributeChangedSignal("FiredAt"):Connect(function() task.spawn(fall) end)
+end
 local function add(m)
 	if not m:IsA("Model") then return end
 	local kind = m:GetAttribute("Trap")
@@ -171,7 +211,8 @@ local function add(m)
 	task.wait(0.1)
 	if kind == "blade" then addBlade(m)
 	elseif kind == "spikes" then addSpikes(m)
-	elseif kind == "darts" then addDarts(m) end
+	elseif kind == "darts" then addDarts(m)
+	elseif kind == "chandelier" then addChandelier(m) end
 end
 local function watchFolder(f)
 	for _, m in ipairs(f:GetChildren()) do task.spawn(add, m) end

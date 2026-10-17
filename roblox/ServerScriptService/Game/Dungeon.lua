@@ -361,18 +361,25 @@ P.bookcase = function(ctx, th, cf, rng)
 		end
 	end
 end
+-- (one model, Props ▸ Chandelier: Game ▸ Traps may loosen it to fall on whoever walks under it)
 P.chandelier = function(ctx, th, cf)
 	local gold = Color3.fromRGB(210, 170, 80)
 	local at = cf * CFrame.new(0, (ctx.H or WALL_H) - 5, 0)
-	K.cyl(ctx, "Chain", 0.2, 4, at * CFrame.new(0, 3, 0), gold, Enum.Material.Metal, ctx.Props).CanCollide = false
-	K.cyl(ctx, "Ring", 5, 0.4, at, gold, Enum.Material.Metal, ctx.Props).CanCollide = false
+	local m = Instance.new("Model")
+	m.Name = "Chandelier"
+	K.cyl(ctx, "Chain", 0.2, 4, at * CFrame.new(0, 3, 0), gold, Enum.Material.Metal, m).CanCollide = false
+	local ring = K.cyl(ctx, "Ring", 5, 0.4, at, gold, Enum.Material.Metal, m)
+	ring.CanCollide = false
+	m.PrimaryPart = ring
+	local last
 	for i = 0, 5 do
 		local a = i / 6 * math.pi * 2
-		local f = K.ball(ctx, "Flame", 0.4, at * CFrame.new(math.cos(a) * 2.3, 0.6, math.sin(a) * 2.3), Color3.fromRGB(255, 200, 120), Enum.Material.Neon, ctx.Props)
-		f.CanCollide = false
+		last = K.ball(ctx, "Flame", 0.4, at * CFrame.new(math.cos(a) * 2.3, 0.6, math.sin(a) * 2.3), Color3.fromRGB(255, 200, 120), Enum.Material.Neon, m)
+		last.CanCollide = false
 	end
 	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 200, 130); l.Range = 22; l.Brightness = 1.4
-	l.Parent = ctx.Props:GetChildren()[#ctx.Props:GetChildren()]
+	l.Parent = last
+	m.Parent = ctx.Props
 end
 P.table = function(ctx, th, cf)
 	local wood = Color3.fromRGB(96, 64, 40)

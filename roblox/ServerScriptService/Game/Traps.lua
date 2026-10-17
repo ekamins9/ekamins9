@@ -10,6 +10,8 @@
                   in one wall (jump it)
        flames     two grates side by side that breathe fire in turn (the Ember Forge's, the
                   Warrens'): cross on the cool side
+       chandelier a great hall's chandelier, now and then hung loose: walk under it and its chain
+                  creaks, grit sifts down, and a second later it crashes to the floor (move!)
        web        a sheet of web strung right across the corridor (the spiders' dungeons): walk
                   into it and it clings, slowing you a moment as it tears (CAUGHT IN A WEB), and
                   now and then its spider comes down for whoever tore it; cut it first (any blow
@@ -48,6 +50,7 @@ Traps.BLADE = {dmg = 30, knock = 42, again = 1.2}
 Traps.DARTS = {dmg = 18, delay = 0.18, rearm = 4}
 Traps.FLAMES = {dmg = 9, every = 0.5, period = 4.4, warn = 0.9, burn = 1.7}
 Traps.WEB = {slow = 0.45, time = 2.2, spider = 0.5}
+Traps.CHANDELIER = {chance = 0.35, dmg = 32, radius = 5.5, warn = 1.1, fall = 0.3}
 local WEIGHTS = {
 	BoneCrypt = {spikes = 3, blade = 3, darts = 2, web = 2},
 	GoblinWarrens = {darts = 3, spikes = 3, flames = 2, blade = 1, web = 3},
@@ -445,6 +448,71 @@ function BUILD.web(folder, at, T, C, ceil, rng, theme)
 	end
 end
 
+-- CHANDELIER: the room's own (Dungeon P.chandelier), loose on its chain
+function BUILD.chandelier(folder, m, rng)
+	local ring = m.PrimaryPart or m:FindFirstChild("Ring")
+	if not ring then return nil end
+	m:SetAttribute("Trap", "chandelier")
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Exclude
+	ray.FilterDescendantsInstances = {m}
+	local hit = workspace:Raycast(ring.Position, V3(0, -60, 0), ray)
+	if not hit then return nil end
+	local floor = hit.Position
+	m.Parent = folder
+	local cfg = Traps.CHANDELIER
+	local pivot = m:GetPivot()
+	-- where it comes to rest, found as it falls (a chest set under it since lands on the chest):
+	-- on its side, tipped and turned
+	local function settle()
+		local skip = {m}
+		for _, n in ipairs({"NPCs", "DroppedWeapons"}) do local f = workspace:FindFirstChild(n); if f then table.insert(skip, f) end end
+		for _, p in ipairs(Players:GetPlayers()) do if p.Character then table.insert(skip, p.Character) end end
+		ray.FilterDescendantsInstances = skip
+		local h2 = workspace:Raycast(ring.Position, V3(0, -60, 0), ray)
+		local at = h2 and h2.Position or floor
+		local rest = CF(at + V3(0, 0.35, 0)) * (pivot - pivot.Position) * CFrame.Angles(rng:NextNumber(-0.35, 0.35), rng:NextNumber(0, 6.28), rng:NextNumber(-0.35, 0.35))
+		m:SetAttribute("Rest", rest)
+		return rest
+	end
+	local rest
+	local firedAt, done = nil, false
+	return function(now, list)
+		if done then return end
+		if firedAt then
+			if now - firedAt >= cfg.warn + cfg.fall then
+				done = true
+				for _, c in ipairs(list) do
+					local r = rootOf(c)
+					local d = V3(r.Position.X - floor.X, 0, r.Position.Z - floor.Z)
+					if d.Magnitude < cfg.radius and r.Position.Y - floor.Y < 7 then
+						harm(c, cfg.dmg, floor, (d.Magnitude > 0.1 and d.Unit or V3(1, 0, 0)) * 34 + V3(0, 20, 0))
+					end
+				end
+				-- (down for good, for everyone and anyone who comes later; its candles out)
+				m:PivotTo(rest)
+				for _, d in ipairs(m:GetDescendants()) do
+					if d:IsA("Light") then d.Enabled = false
+					elseif d:IsA("BasePart") and d.Name == "Flame" then d.Material = Enum.Material.SmoothPlastic; d.Color = Color3.fromRGB(60, 50, 44) end
+				end
+				m:SetAttribute("Fallen", true)
+			end
+			return
+		end
+		for _, c in ipairs(list) do
+			local r = rootOf(c)
+			local d = V3(r.Position.X - floor.X, 0, r.Position.Z - floor.Z)
+			if d.Magnitude < 4 and r.Position.Y < ring.Position.Y then
+				firedAt = now
+				rest = settle()
+				m:SetAttribute("FiredAt", now)
+				return
+			end
+		end
+	end
+end
+
 local function pick(rng, weights)
 	local total = 0
 	for _, w in pairs(weights) do total += w end
@@ -469,6 +537,13 @@ function Traps.arm(map, layout, opts)
 	local rng = Random.new()
 	local ceil = require(script.Parent:WaitForChild("Dungeon")).CORR_H or 14
 	local folder = map:FindFirstChild("Traps") or Instance.new("Folder")
+	-- (a hall's chandelier armed last time goes back to hanging, not out with the traps)
+	for _, m in ipairs(folder:GetChildren()) do
+		if m:GetAttribute("Trap") == "chandelier" and not m:GetAttribute("Fallen") then
+			m:SetAttribute("Trap", nil); m:SetAttribute("FiredAt", nil)
+			m.Parent = map:FindFirstChild("Props") or map
+		end
+	end
 	folder:ClearAllChildren()
 	folder.Name = "Traps"
 	folder.Parent = map
@@ -502,6 +577,17 @@ function Traps.arm(map, layout, opts)
 			table.insert(steps, BUILD.blade(folder, at(3.5), T, C, ceil, rng, layout.theme, ph + math.pi * 0.6))
 		else
 			table.insert(steps, BUILD[kind](folder, at(rng:NextNumber(-room, room) * 0.6), T, C, ceil, rng, layout.theme))
+		end
+	end
+	-- the halls' chandeliers: some hang loose
+	local hanging = {}
+	for _, d in ipairs(map:GetDescendants()) do
+		if d:IsA("Model") and d.Name == "Chandelier" and not d:GetAttribute("Trap") then table.insert(hanging, d) end
+	end
+	for _, m in ipairs(hanging) do
+		if rng:NextNumber() < (opts.chandeliers or Traps.CHANDELIER.chance) then
+			local step = BUILD.chandelier(folder, m, rng)
+			if step then table.insert(steps, step) end
 		end
 	end
 	live.map, live.traps = map, steps
