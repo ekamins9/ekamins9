@@ -61,6 +61,9 @@ local Sounds      = require(ReplicatedStorage:WaitForChild("Sounds"))
 local SoundBank   = require(ReplicatedStorage:WaitForChild("SoundBank"))
 local MovementConfig = require(ReplicatedStorage:WaitForChild("MovementConfig"))
 local Injury      = require(script.Parent:WaitForChild("Injury"))
+-- (a clean hit's mark on what it struck: StarterPlayerScripts ▸ Scuffs draws it on each screen)
+local scuffRemote = ReplicatedStorage:FindFirstChild("ScuffEvent")
+if not scuffRemote then scuffRemote = Instance.new("RemoteEvent"); scuffRemote.Name = "ScuffEvent"; scuffRemote.Parent = ReplicatedStorage end
 -- GameConfig (friendly-fire multiplier); optional so the combat still runs without it
 local GameConfig = (function()
 	local m = ReplicatedStorage:FindFirstChild("GameConfig")
@@ -1062,6 +1065,7 @@ function CombatServer.attach(Tool, weaponConfig)
 		if claimedGuard then dprint("guard touched but invalid (up:", guardUp, "facing:", facing, ") -> body hit") end
 		Injury.bloodBurst(part)
 		flinch(target, dir)
+		if typeof(hitPos) == "Vector3" and typeof(dir) == "Vector3" then scuffRemote:FireAllClients(part, hitPos, dir) end
 		-- a clean hit breaks whatever they were doing, so trades are rarer
 		interrupt(target, "hit")
 		-- reeling: no swinging back for HIT_STUN (bosses shrug it off)

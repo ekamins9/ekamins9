@@ -120,6 +120,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/NightWindows.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NightWindows` | LocalScript |
 | `StarterPlayerScripts/SpiderLegs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SpiderLegs` | LocalScript |
 | `StarterPlayerScripts/Pigeons.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pigeons` | LocalScript |
+| `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -1880,6 +1881,13 @@ do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four 
 skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …). A duel on a
 warfield gets it once a match: the flight over the battle down into the ring ("A DUEL IN THE
 MIDDLE OF A BATTLE · WIN IT").
+
+## Battle wear (`Scuffs.client`, `CombatServer` ScuffEvent)
+A fight shows on you: every clean blow leaves its mark where it landed, on every screen near it
+(within 70 studs): a bright scratch across plate and mail, a dark scuff on cloth and leather, laid
+along the blade's path on the visible piece it met (the armour over the limb the server struck). A
+dozen to a fighter at most, the oldest going first; gone with the body. The server sends only the
+part, the point and the direction (`ScuffEvent`); nothing is replicated.
 
 ## The Courtyard's pigeons (`Pigeons.client`)
 A flock (11, 6 on a phone) pecks about the fountain, on the cobbles and up on its rim, hopping a

@@ -1,4 +1,16 @@
-# Updated scripts: a wraith's last breath
+# Updated scripts: battle wear
+
+- **A fight shows on you**: every clean blow leaves its mark where it landed, a bright scratch on plate and mail or a dark scuff on cloth and leather, laid along the blade's path. There are a dozen at most to a fighter, and they're gone when you respawn. It's drawn on each screen near the fight and costs no network traffic beyond the hit itself.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Scuffs.client.lua](StarterPlayerScripts/Scuffs.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | ScuffEvent on a clean hit |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a wraith's last breath
 
 - **A wraith's death**: instead of simply vanishing, it comes apart in a burst of its own pale mist.
 
