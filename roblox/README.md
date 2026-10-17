@@ -1829,7 +1829,8 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   cheer, the archers on the
   walls are cut down (`WarCrowd:rout`), every ladder goes over, the reserves run for the walls and
   the sally is driven back under them; when the great hall is stormed its roof catches fire; the
-  winners cheer at the end. The server's own engines land on the crowds too.
+  winners cheer at the end; once the fight is inside the walls, smoke from the burning castle
+  drifts through the yard being fought over. The server's own engines land on the crowds too.
 - **How it knows the castle**: a client streams the map in bit by bit, so the server reads it
   once (`Siege.describeCastle`) and puts it on the Map as attributes (`C_Gate`, `C_Spans`,
   `C_Span<i>`, `C_Towers`, `C_Roof`…; the header of `Modes ▸ Siege`). Any castle facing along z

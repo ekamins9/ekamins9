@@ -238,6 +238,12 @@ local function stageChanged(quiet)
 	if st == siege.stage then return end
 	siege.stage = st
 	if st >= 2 then wallsTaken(quiet) end
+	-- (inside the walls: smoke from the burning castle drifts through the yard being fought over)
+	local at = round:GetAttribute("ObjPos")
+	if st >= 2 and typeof(at) == "Vector3" and round:GetAttribute("ObjKind") == "Capture" then
+		if siege.hazes.inner then siege.hazes.inner.move(at + V3(0, 3, 0))
+		else siege.hazes.inner = WarFX.haze(at + V3(0, 3, 0), {width = 70, depth = 50, rate = 4, color = Color3.fromRGB(96, 90, 86)}) end
+	end
 	if st >= 3 and siege.C.roof and not siege.roofFire then
 		siege.roofFire = WarFX.column(siege.C.roof, {fire = true, scale = 1.5})
 		table.insert(siege.columns, siege.roofFire)

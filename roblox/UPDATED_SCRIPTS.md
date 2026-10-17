@@ -1,10 +1,12 @@
 # Updated scripts: the monsters groan and growl in the dark
 
 - **What lurks**: in the dungeons, monsters near you groan (the undead) or growl (everything else) now and then from where they stand, the big ones deeper. Two new generated sounds.
+- **Siege**: once the fight is inside the walls, smoke from the burning castle drifts through the yard being fought over.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | groans and growls |
+| [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | smoke in the bailey |
 | [README.md](README.md) | | doc | |
 
 Studio-only (save the place): ReplicatedStorage ▸ WarAudio ▸ Groan, Growl.
