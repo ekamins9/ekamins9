@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local WarCrowd = require(ReplicatedStorage:WaitForChild("WarCrowd"))
 local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
+local Device = require(ReplicatedStorage:WaitForChild("Device"))
 
 local round = ReplicatedStorage:WaitForChild("Round")
 local V3 = Vector3.new
@@ -114,6 +115,8 @@ local function enter(m)
 		if guards.token ~= token or #walks == 0 then return end
 		local c = m:GetAttribute("Centre")
 		local centre = typeof(c) == "Vector3" and c or V3()
+		-- (a phone gets fewer men in the drill: the hub is where everyone spends their time)
+		WarCrowd.SCALE = Device.kind() == "phone" and 0.6 or 1
 		local crowd = WarCrowd.new()
 		guards.crowd = crowd
 		local half = 0
