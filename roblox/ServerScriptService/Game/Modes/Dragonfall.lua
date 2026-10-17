@@ -235,7 +235,7 @@ function Dragonfall:summon()
 	})
 	self.dragon = d
 	self.fightAt = os.clock()
-	banner({text = string.upper(Dragon.NAME), sub = Dragon.TITLE, kind = "boss"})
+	banner({text = string.upper(Dragon.NAME), sub = Dragon.TITLE, kind = "boss", intro = true})
 end
 
 function Dragonfall:slay(killer)

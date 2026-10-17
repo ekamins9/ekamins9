@@ -1,4 +1,19 @@
-# Updated scripts: the dead lie among the bones
+# Updated scripts: Deadvault comes down; the boss cinematic only for entrances
+
+- **Deadvault's last minute**: deep rumbles closer and closer together, the ground shaking harder, grit pouring from the ceiling and stones dropping round you, your lantern stuttering.
+- **Fixed**: every red ("boss") banner played the boss cinematic. Deadvault's IT IS COLLAPSING and YOU FELL, Crownfall's ring closing and Dragonfall's warnings all took the camera for 3 s. Now only a boss's entrance does it (the Depths' lord, the dragon: `intro = true` on the banner).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the collapse |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | intro only on `intro` |
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the boss banner's `intro` |
+| [Dragonfall.lua](ServerScriptService/Game/Modes/Dragonfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the dragon's banner's `intro` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the dead lie among the bones
 
 - **The Depths, Deadvault**: a sleeping skeleton or ghoul now lies on its back among the bones like the dead it is (no "z z" over it). The moment it notices anything it gets up, tipping up off the floor in a puff of grave-dust with a groan. Sneak attacks still land where it lies.
 

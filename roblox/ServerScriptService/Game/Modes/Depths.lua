@@ -415,7 +415,7 @@ function Depths:engage(room)
 	end
 	if room.kind == "boss" then
 		local th = Catalog.DUNGEONS[self.theme]
-		event:FireAllClients("Banner", {text = string.upper(th.bossName or "THE BOSS"), sub = "THE LORD OF " .. string.upper(th.name), kind = "boss"})
+		event:FireAllClients("Banner", {text = string.upper(th.bossName or "THE BOSS"), sub = "THE LORD OF " .. string.upper(th.name), kind = "boss", intro = true})
 	elseif room.kind == "elite" then
 		event:FireAllClients("Banner", {text = "A CHAMPION", sub = "THE GATES SLAM SHUT", kind = "elite"})
 	else

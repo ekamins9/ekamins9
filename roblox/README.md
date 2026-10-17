@@ -2014,7 +2014,9 @@ come); one of a second wave climbs out of a pit cracked in the floor (The Depths
 it lies on its back among the bones like the dead it is (its body hidden, a laid-down copy in its
 place, its middle over where it really stands so a sneak attack still lands), and the moment it
 notices anything it gets up, tipping up off the floor from its feet in a puff of grave-dust with a
-groan.
+groan. **Deadvault's last minute** comes down round you: deep rumbles coming closer together, the
+ground shaking harder, grit pouring from the ceiling and stones dropping, your lantern stuttering;
+in the last seconds, without a break.
 Now and then, well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your
 path with a whisper and is gone (`WarCrowd.ghost`; never a fighter, only on your screen); or a
 swarm of bats bursts out of the dark ahead and flits past over your head (`WarFX.bats`, WarAudio ▸
@@ -2027,7 +2029,7 @@ ReplicatedStorage ▸ WarAudio ▸ Dread, a Studio-only Sound; silence without i
 (a Depths room's gates shut, a blow struck or taken in the last 8 s, something within 60 studs
 has seen you and is coming: Alert "!"), when the battle score swells in, easing back out 10 s
 after; a lord's score only near its lair (110 studs). **A boss's
-entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords on their banner through
+entrance** (`ReplicatedStorage ▸ BossIntro`; the Depths' lords and the dragon on their entrance banner (`intro = true`; other red banners are only banners) through
 `Adventure.client`, Siege's champion and the Horde's Warlord through `BossEntrance.client` when a
 bot becomes a `Boss`): black bars close in and the rest of the HUD steps aside, the camera finds
 the boss and creeps towards it while its name comes up big on the bars, a deep boom and the ground

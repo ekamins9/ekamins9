@@ -20,6 +20,9 @@
                         the bones like the dead it is (its body hidden on your screen, a laid-down
                         copy in its place, no "z z" over it), and when it notices you it gets up
                         (the body tipping up off the floor from its feet, grave-dust, a groan)
+       the collapse     Deadvault's last minute: deep rumbles coming closer together, the ground
+                        shaking harder, grit pouring from the ceiling round you and stones dropping,
+                        your lantern stuttering; at the end, without a break
        what lurks       a monster near you (within 70 studs) groans or growls now and then, from
                         where it stands: the dead groan (WarAudio ▸ Groan), the rest growl (Growl)
        a boss near      while a boss is alive near you (Boss, within 90 studs) the colours turn
@@ -650,6 +653,81 @@ local function dropDead()
 	lying = {}
 end
 
+-- THE COLLAPSE (Deadvault's last minute, Round ▸ TimeLeft): it comes down round you, harder
+-- the closer the end
+local grit
+local function gritAt(pos)
+	if not grit then
+		grit = Instance.new("Attachment")
+		grit.Name = "CollapseGrit"
+		grit.Parent = workspace.Terrain
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		e.Color = ColorSequence.new(Color3.fromRGB(150, 140, 124))
+		e.LightEmission = 0.15
+		e.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(0.5, 2.4), NumberSequenceKeypoint.new(1, 3.6)})
+		e.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.3, 0.25), NumberSequenceKeypoint.new(1, 1)})
+		e.Lifetime = NumberRange.new(2, 3)
+		e.Speed = NumberRange.new(0.5, 1.5)
+		e.SpreadAngle = Vector2.new(25, 25)
+		e.EmissionDirection = Enum.NormalId.Bottom
+		e.Acceleration = V3(0, -6, 0)
+		e.Drag = 0.6
+		e.Rate = 0
+		e.Parent = grit
+	end
+	grit.WorldPosition = pos
+	grit:FindFirstChildOfClass("ParticleEmitter"):Emit(26)
+end
+local function quake(k)
+	local c = player.Character
+	local r = c and c:FindFirstChild("HumanoidRootPart")
+	if not r then return end
+	WarFX.sound("Impact", r.Position + V3(math.random(-30, 30), -10, math.random(-30, 30)), {volume = 0.3 + 0.5 * k, speed = 0.3 + math.random() * 0.1, near = 40, range = 300})
+	WarFX.shake(0.15 + 0.55 * k, 1 + k)
+	deadRay.FilterDescendantsInstances = {c, workspace:FindFirstChild("NPCs")}
+	-- (grit and stones from the ceiling, here and there round you)
+	for _ = 1, 1 + math.floor(k * 3) do
+		local at = r.Position + V3(math.random(-12, 12), 0, math.random(-12, 12))
+		local up = workspace:Raycast(at, V3(0, 30, 0), deadRay)
+		if up then
+			local top = up.Position - V3(0, 0.4, 0)
+			gritAt(top)
+			for _ = 1, math.random(0, 2) do
+				local sz = 0.4 + math.random() * 0.7
+				local st = Instance.new("Part")
+				st.Size = V3(sz, sz * 0.8, sz)
+				st.Color, st.Material = Color3.fromRGB(96, 92, 88), Enum.Material.Slate
+				st.CanQuery, st.CanTouch, st.CastShadow = false, false, false
+				st.CFrame = CFrame.new(top + V3(math.random() - 0.5, -0.4, math.random() - 0.5)) * CFrame.Angles(math.random() * 6, math.random() * 6, 0)
+				st.Parent = workspace
+				task.delay(4, function() if st.Parent then st:Destroy() end end)
+			end
+		end
+	end
+	-- (your lantern stutters)
+	for _, l in ipairs(mood.lights or {}) do
+		if l.Parent and l:IsDescendantOf(c) then
+			task.spawn(function()
+				local b = l.Brightness
+				for _ = 1, 3 do l.Brightness = b * 0.3; task.wait(0.05 + math.random() * 0.06); l.Brightness = b; task.wait(0.05) end
+			end)
+		end
+	end
+end
+local function collapse(token)
+	while mood.on and mood.token == token do
+		local left = round:GetAttribute("TimeLeft")
+		if round:GetAttribute("ObjKind") == "Deadvault" and type(left) == "number" and left > 0 and left <= 60 then
+			local k = 1 - left / 60
+			pcall(quake, k)
+			task.wait(math.max(0.8, 5 - 4.2 * k) * (0.8 + math.random() * 0.4))
+		else
+			task.wait(1)
+		end
+	end
+end
+
 -- what lurks: the nearest monsters groan or growl now and then, from where they stand
 local function lurk(token)
 	while mood.on and mood.token == token do
@@ -724,6 +802,7 @@ local function enter(theme)
 	task.spawn(dark, token)
 	task.spawn(haunt, token)
 	task.spawn(vermin, token)
+	task.spawn(collapse, token)
 	task.spawn(drips, token)
 	task.spawn(bossWatch, token, theme)
 	task.spawn(lurk, token)

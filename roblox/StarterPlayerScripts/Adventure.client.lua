@@ -414,7 +414,8 @@ local function bossIntro(b)
 end
 
 local function showBanner(b)
-	if b.kind == "boss" then bossIntro(b); return end
+	-- (a boss's entrance only: the other red banners, a ring closing, YOU FELL, are banners)
+	if b.kind == "boss" and b.intro then bossIntro(b); return end
 	bannerToken += 1
 	local my = bannerToken
 	bannerText.Text = b.text or ""
