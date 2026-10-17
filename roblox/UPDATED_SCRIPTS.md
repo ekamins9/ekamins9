@@ -1,4 +1,21 @@
-# Updated scripts: shields worth looking at, and a loadout you don't scroll through
+# Updated scripts: no map floats any more
+
+- **Every outdoor map sits in a world now** (all 42 in ServerStorage ▸ Maps). Round its edge the
+  map's own ground runs on into country: mounds, rocky outcrops, mud or lava patches, pools, rolling
+  hills; then a plain, woods in the map's own trees, and an unbroken ridge of mountains closing the
+  view all round (snow-capped in winter, mesas in the desert, burning cones by the ember maps).
+  A fighting map has both armies' camps outside the walls (tents, banners, fires); a quiet one a
+  village down a road, with fields. A castle stands on a far hill; smoke rises on the horizon.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Horizon.lua](ServerScriptService/Game/Horizon.lua) | ServerScriptService ▸ Game | ModuleScript | **new** |
+| [MapLoader.lua](ServerScriptService/Game/MapLoader.lua) | ServerScriptService ▸ Game | ModuleScript | builds and clears the horizon with each map |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: shields worth looking at, and a loadout you don't scroll through
 
 - **Every shield skin repainted** (all 26 kept by name, 21 new: 47 in the Heraldry Crate). Each
   board now has a great painted emblem (24 of them: lion, dragon, eagle, griffin, phoenix, kraken,

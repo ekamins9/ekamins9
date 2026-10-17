@@ -37,6 +37,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/GameConfig.lua` | `ReplicatedStorage` → `GameConfig` | ModuleScript |
 | `ServerScriptService/Game/Game.lua` | `ServerScriptService` → `Game` (Folder) → `Game` | ModuleScript |
 | `ServerScriptService/Game/MapLoader.lua` | `ServerScriptService` → `Game` → `MapLoader` | ModuleScript |
+| `ServerScriptService/Game/Horizon.lua` | `ServerScriptService` → `Game` → `Horizon` (the land round every outdoor map) | ModuleScript |
 | `ServerScriptService/Game/Teams.lua` | `ServerScriptService` → `Game` → `Teams` | ModuleScript |
 | `ServerScriptService/Game/GameServer.server.lua` | `ServerScriptService` → `Game` → `GameServer` | Script |
 | `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `Tiltyard`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH`, `Lists` | ModuleScript each |
@@ -1336,7 +1337,21 @@ dashes (faster while it's moving or being taken), a light pillar to find it from
 box and circles above its edge, looking down and wandering its gaze across the ground. A public
 server is the Hub and loads its map the moment it starts, so there is a courtyard to look at
 before anyone has spawned. `MapLoader` clones one into `workspace.Map` per round
-and picks the spawn farthest from enemies; no such map → whatever is in workspace, and
+and picks the spawn farthest from enemies.
+
+**No map floats** (`Game ▸ Horizon`, built by MapLoader with each map into workspace ▸
+MapHorizon, Persistent so every screen draws it however far): a skirt of the map's own terrain
+runs on from its edge (flush with its ground, mounds, rocky outcrops, its mud, lava or pools),
+rolling into hills; a plain goes on past it; an unbroken ridge of mountains closes the view all
+round inside what a screen draws (snow-capped in winter, mesas in the desert, burning cones by the
+ember maps), bigger ones behind for the screens that see further; woods in groves in the theme's
+trees; a fighting map has both armies' camps outside it (tents, banners, fires), a quiet one a
+village down a road and fields; a castle on a far hill; smoke on the horizon (black from a war's
+burning farms, pale from a quiet map's chimneys). Its look is the map's MapForge theme (the
+hand-made maps are named in `Horizon`'s HAND); `NoHorizon = true` on a map leaves it alone (the
+Courtyard has its own, `HubBackdrop`).
+
+No such map → whatever is in workspace, and
 `SpawnLocation`s. `GameServer` runs the loop: mode → map (vote or rotation) → round (mode
 ticks, clock, early end) → result → intermission with the board up and a vote on three cards
 (Round `Vote1..3` maps, `VoteMode1..3` modes, `Votes1..3` counts, `VoteRemote`). On the

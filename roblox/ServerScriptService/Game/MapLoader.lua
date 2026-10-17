@@ -100,8 +100,13 @@ local function applyLighting(m)
 	end
 end
 
+-- the land round the map (Game ▸ Horizon), so it doesn't float in the fog
+local Horizon
+local function horizon() Horizon = Horizon or require(script.Parent:WaitForChild("Horizon")); return Horizon end
+
 function MapLoader.unload()
 	if MapLoader.current then MapLoader.current:Destroy() end
+	pcall(function() horizon().clear() end)
 	clearTerrain()
 	applyTerrainColors(nil)
 	MapLoader.current, MapLoader.name = nil, nil
@@ -180,6 +185,10 @@ function MapLoader.load(name)
 	pasteTerrain(m)
 	applyTerrainColors(m)
 	applyLighting(m)
+	do
+		local ok, err = pcall(function() return horizon().build(m, name) end)
+		if not ok then warn("[Map] horizon:", err) end
+	end
 	MapLoader.current, MapLoader.name = m, name
 	log("loaded", name)
 	return true
