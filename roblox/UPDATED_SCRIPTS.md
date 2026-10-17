@@ -1,4 +1,15 @@
-# Updated scripts: spiders' nests
+# Updated scripts: a spider on the Depths card
+
+- **The Play menu's Depths card** shows a Cave Spider among its skeletons (its still copy is published with the others at start).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | CaveSpider display |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Depths scene |
+
+---
+
+## Before that: spiders' nests
 
 - **The dungeons** (the Goblin Warrens, the Bone Crypt): some rooms are spiders' nests, with webs strung across the corners, egg sacs heaped on silk, cocoons hanging on threads from the ceiling, and the bones of what was caught. In The Depths, a nest's fighters are mostly Cave Spiders; in a Deadvault raid, the remains there can be searched.
 

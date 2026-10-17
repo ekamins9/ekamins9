@@ -3902,6 +3902,7 @@ do
 		monster(world, "SkeletonKnight", Vector3.new(-2, 0, 0.5), 80)
 		monster(world, "Skeleton", Vector3.new(-4.5, 0, 3), 60)
 		monster(world, "Wraith", Vector3.new(-0.8, 0, 4.2), 110)
+		monster(world, "CaveSpider", Vector3.new(-5.4, 0, -1.2), 55)
 		cam.FieldOfView = 42
 		cam.CFrame = CFrame.lookAt(Vector3.new(0, 3.2, -14), Vector3.new(0, -0.4, 1.5))
 	end
