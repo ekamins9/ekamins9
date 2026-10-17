@@ -133,6 +133,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/ClashFX.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `ClashFX` | LocalScript |
 | `StarterPlayerScripts/HitReact.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `HitReact` | LocalScript |
+| `StarterPlayerScripts/SwingArcs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SwingArcs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -2044,6 +2045,13 @@ the animation), harder for a harder blow (the damage it took, `TakenText`; half 
 whoever is struck flashes white for a blink (a Highlight; six at most at once). A player's body
 already jolts through their own CameraRig and the pose relay, so only bots are rocked here; your
 own body isn't flashed (your screen flashes instead).
+
+## Swing arcs (`SwingArcs.client`)
+Your own blade draws its trail itself (CombatClient `TRAIL`, on your screen only); this draws a
+faint arc behind every OTHER fighter's blade (other players and the bots) along the outer half of
+its Hitbox, lit only while the tip is really moving (over 26 studs a second) during their action
+(`Acting`), so a swing coming at you reads as one and a melee looks like one. A riposte's arc is
+gold (`RiposteUntil`). Within 140 studs of your camera; nothing is sent to the server.
 
 ## The portraits watch (`Portraits.client`, Dungeon `P.painting`)
 

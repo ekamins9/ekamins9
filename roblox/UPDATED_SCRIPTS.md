@@ -1,4 +1,19 @@
-# Updated scripts: a blow that lands, seen landing
+# Updated scripts: swing arcs
+
+- **Every swing draws a faint arc**, not just your own: other players' and the bots' blades leave a
+  soft crescent as they cut (gold on a riposte), so a blow coming at you reads as a blow and a
+  brawl looks like one. Only while the blade is really moving; nothing when it's carried.
+- What's New's title leads with the steel.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [SwingArcs.client.lua](StarterPlayerScripts/SwingArcs.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | title |
+| [README.md](README.md) | | doc | "Swing arcs" |
+
+---
+
+## Before that: a blow that lands, seen landing
 
 - **Bots now visibly take a hit**: struck, a bot's body rocks away from the blow and twists with
   it, its head snapping a beat later, its arms flying a little, harder for a harder blow. (Players'

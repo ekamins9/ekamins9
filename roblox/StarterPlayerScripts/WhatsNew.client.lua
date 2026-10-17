@@ -18,7 +18,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
 	version = "2026-10-18b",
-	title = "ARMS, BANNERS AND THE LAND BEYOND",
+	title = "STEEL, BANNERS AND THE LAND BEYOND",
 	lines = {
 		{"✨", "Steel on steel", "a blocked blow glances off where the blades cross: sparks, the ring of the blade"},
 		{"💥", "Kick, then strike", "press a strike during your kick: it goes in the moment their guard drops"},
