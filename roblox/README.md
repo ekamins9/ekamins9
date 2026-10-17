@@ -2253,7 +2253,8 @@ get out with what you found, or lose it all.
   between rooms; they come when they **see or hear** you (`Combat ▸ Perception`: a run is loud, a
   fight louder, a crouch is quiet and half as visible), shout for those near, hunt where they
   last saw you and go back. Over a monster's head: **!** (it knows), **?** (looking), **z z**
-  (asleep). Opening a chest is loud. The lair's lord fights whoever comes in.
+  (asleep; a sleeping skeleton or ghoul shows nothing: it lies among the bones like the dead,
+  `DungeonMood`). Opening a chest is loud. The lair's lord fights whoever comes in.
 - **Containers** (`Game ▸ Containers`, Catalog ▸ Loot CONTAINERS): crates, barrels, sacks, urns,
   weapon racks, armour stands, bookshelves, sarcophagi, remains, chests (plain, ornate, the
   hoard). Search one (V) and a **loot window** shows what's in it, rolled for the first opener's
