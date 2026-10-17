@@ -542,6 +542,9 @@ function EV.Captured(d)
 		local ours = d.side == me
 		bigCall((d.side == "A" and "THE CROWN" or "THE IRON HOST") .. " TOOK " .. name, ours and "PUSH ON!" or "TAKE IT BACK!", SIDE[d.side], 3)
 		WarFX.sound(ours and "Horn" or "Charge", nil, {volume = ours and 0.8 or 0.6})
+		-- (the whole of that side's army roars it: every regiment of theirs raises its weapons)
+		if war.crowd then war.crowd:cheer(d.side) end
+		WarFX.sound("Roar", nil, {volume = 0.7})
 	elseif d.lost then
 		local ours = d.lost == me
 		bigCall((ours and "WE'RE LOSING " or "THEY'RE LOSING ") .. name, ours and "HOLD IT!" or "PUSH!", ours and Color3.fromRGB(255, 110, 90) or GOLD, 2.4)
