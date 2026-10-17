@@ -3,10 +3,14 @@
 - **The preview stages** (LOADOUT, the Armory's armour, and the others that use a stage) stand
   your fighter in a dark armoury with warm light falling behind them and the floor going off into
   shadow, instead of a flat lavender panel.
+- **The fighter stands on a stone dais** with a gilt edge (a faint glow of the stage's colour round
+  its foot) instead of a cyan neon disc.
+- (HubMenu's main chunk is at Luau's 200-locals limit: new constants go on an existing table,
+  here `Stage.PLATFORM_Y`.)
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `Stage.new`'s backdrop |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `Stage.new`'s backdrop; `platformDisc` a dais |
 
 ---
 

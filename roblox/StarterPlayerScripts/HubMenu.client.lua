@@ -1181,25 +1181,25 @@ local function project(cam, absSize, pos)
 	return (nx * 0.5 + 0.5), (0.5 - ny * 0.5)
 end
 
+-- a stone dais with a gilt edge, a faint glow of `color` round its foot (each part's height
+-- under the feet: Stage.PLATFORM_Y; a table field, not a local: this chunk is at its 200)
+Stage.PLATFORM_Y = {-3.175, -3.24, -3.36}
 local function platformDisc(world, x, z, color)
-	local d = Instance.new("Part")
-	d.Shape = Enum.PartType.Cylinder
-	d.Anchored = true
-	d.CanCollide = false
-	d.Size = Vector3.new(0.25, 4.6, 4.6)
-	d.CFrame = CFrame.new(x, -3.1, z) * CFrame.Angles(0, 0, math.pi / 2)
-	d.Material = Enum.Material.Neon
-	d.Color = color
-	d.Transparency = 0.45
-	d.Parent = world
-	local r = d:Clone()
-	r.Size = Vector3.new(0.22, 5.4, 5.4)
-	r.CFrame = d.CFrame * CFrame.new(-0.02, 0, 0)
-	r.Color = darker(color, 0.5)
-	r.Transparency = 0.25
-	r.Material = Enum.Material.SmoothPlastic
-	r.Parent = world
-	return d, r
+	local function disc(th, d, y, col, mat, tr)
+		local p = Instance.new("Part")
+		p.Shape = Enum.PartType.Cylinder
+		p.Anchored, p.CanCollide = true, false
+		p.Size = Vector3.new(th, d, d)
+		p.CFrame = CFrame.new(x, y, z) * CFrame.Angles(0, 0, math.pi / 2)
+		p.Color, p.Material, p.Transparency = col, mat, tr or 0
+		p.Parent = world
+		return p
+	end
+	local Y = Stage.PLATFORM_Y
+	local d = disc(0.4, 4.6, Y[1], Color3.fromRGB(82, 84, 94), Enum.Material.Slate)
+	local r = disc(0.3, 5.05, Y[2], Color3.fromRGB(196, 156, 76), Enum.Material.Metal)
+	local g = disc(0.04, 5.7, Y[3], color, Enum.Material.Neon, 0.62)
+	return d, r, g
 end
 
 -- parent: where the viewport goes (it fills it). opts: transparent, dist,
@@ -1410,9 +1410,10 @@ function Stage:set(slots)
 		m.Parent = self.world
 		local props = {}
 		if self.platform then
-			local a, b = platformDisc(self.world, 0, 0, s.ghost and Color3.fromRGB(90, 100, 130) or self.platform)
-			table.insert(props, {part = a, offset = CFrame.new(0, -3.1, 0) * CFrame.Angles(0, 0, math.pi / 2)})
-			table.insert(props, {part = b, offset = CFrame.new(0, -3.12, 0) * CFrame.Angles(0, 0, math.pi / 2)})
+			local discs = {platformDisc(self.world, 0, 0, s.ghost and Color3.fromRGB(90, 100, 130) or self.platform)}
+			for i, part in ipairs(discs) do
+				table.insert(props, {part = part, offset = CFrame.new(0, Stage.PLATFORM_Y[i], 0) * CFrame.Angles(0, 0, math.pi / 2)})
+			end
 		end
 		local ov = {}
 		-- under the feet: name, status, buttons
