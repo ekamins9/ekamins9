@@ -1850,8 +1850,10 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   splinters with a crash that shakes the ground under you (more the nearer you are), the attackers
   cheer, the archers on the
   walls are cut down (`WarCrowd:rout`), every ladder goes over, the reserves run for the walls and
-  the sally is driven back under them; when the great hall is stormed its roof catches fire; the
-  winners cheer at the end; once the fight is inside the walls, smoke from the burning castle
+  the sally is driven back under them; when the great hall is stormed its roof catches fire; at
+  the round's end horns sound, the winners cheer and the camera rises and circles slowly over the
+  castle a few seconds before the board (`_G.FinaleCamera` keeps the menu's cinematic off it, as
+  War's finale does); once the fight is inside the walls, smoke from the burning castle
   drifts through the yard being fought over. The server's own engines land on the crowds too.
 - **How it knows the castle**: a client streams the map in bit by bit, so the server reads it
   once (`Siege.describeCastle`) and puts it on the Map as attributes (`C_Gate`, `C_Spans`,
