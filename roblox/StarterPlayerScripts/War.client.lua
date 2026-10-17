@@ -269,6 +269,40 @@ local function buildField()
 		end
 	end
 end
+-- a held banner raises its side's arms (the house its standards and shields carry: ReplicatedStorage ▸
+-- Houses; the pictures in ShieldArt), both faces; a neutral one is bare
+local flagArms = {}   -- flag -> {owner, plates}
+local function armFlag(flag, owner)
+	local had = flagArms[flag]
+	if had and had.owner == owner then return end
+	if had then for _, p in ipairs(had.plates) do p:Destroy() end end
+	flagArms[flag] = {owner = owner, plates = {}}
+	if owner ~= "A" and owner ~= "B" then return end
+	local art = ReplicatedStorage:FindFirstChild("ShieldArt")
+	local map = workspace:FindFirstChild("Map")
+	local ok, emblem = pcall(function() return require(ReplicatedStorage:WaitForChild("Houses")).forTeam(owner, map and map:GetAttribute("HouseSeed")) end)
+	if not (ok and emblem and art and art:FindFirstChild(emblem)) then return end
+	local side = math.min(flag.Size.Y, flag.Size.Z) * 0.78
+	for _, sgn in ipairs({1, -1}) do
+		local p = Instance.new("Part")
+		p.Name = "FlagArms"
+		p.Size = Vector3.new(side, side, 0.01)
+		p.Transparency = 1
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.CFrame = flag.CFrame * CFrame.new(sgn * (flag.Size.X / 2 + 0.03), 0, 0) * CFrame.Angles(0, math.rad(-90 * sgn), 0)
+		for z, layer in ipairs({{emblem .. "_s", Color3.new(0, 0, 0), 0.25}, {emblem .. "_o", Color3.fromRGB(26, 20, 18), 0}, {emblem, Color3.new(1.06, 0.84, 0.4), 0}}) do
+			local v = art:FindFirstChild(layer[1])
+			if v then
+				local d = Instance.new("Decal")
+				d.Face = Enum.NormalId.Front
+				d.Texture, d.Color3, d.Transparency, d.ZIndex = v.Value, layer[2], layer[3], z
+				d.Parent = p
+			end
+		end
+		p.Parent = flag
+		table.insert(flagArms[flag].plates, p)
+	end
+end
 local function paintField()
 	local m = mapModel()
 	local me = mySide()
@@ -277,6 +311,7 @@ local function paintField()
 		local col = colorOf(owner)
 		local flag = m and m:FindFirstChild("WarFlag_" .. i, true)
 		if flag and flag.Color ~= col then flag.Color = col end
+		if flag then armFlag(flag, owner) end
 		local ring = field.rings[i]
 		if ring then ring.Color = col end
 		-- a beam over the banners being fought for

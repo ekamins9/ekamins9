@@ -1,4 +1,16 @@
-# Updated scripts: regiments march under their arms
+# Updated scripts: a taken banner raises the taker's arms
+
+- **War's five banners** raise the arms of whichever side holds them (the lion for blue, the wolf
+  for red, or whatever this field's houses are), and come down bare when no one does.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a held banner's arms |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: regiments march under their arms
 
 - **Every regiment's standard flies its house's arms** (on both faces of the flag): the armies of
   War, the sieges and the warfields march under the same beasts as their banners and shields.
