@@ -339,11 +339,73 @@ local function wallsTaken(quiet)
 	siege.front = C.gate.Z + C.f * 26
 end
 
+-- THE BAILEY: once the gate is down, a melee on each side of the yard being fought over (where
+-- the ground is clear and level: no building, no stair), defenders against attackers; when the
+-- bailey falls its defenders are cut down
+local function clearGround(x, z, w, d, y)
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Exclude
+	ray.FilterDescendantsInstances = {workspace.CurrentCamera, workspace:FindFirstChild("NPCs")}
+	for _, u in ipairs({-0.5, 0, 0.5}) do
+		for _, v in ipairs({-0.5, 0, 0.5}) do
+			local r = workspace:Raycast(V3(x + u * w, y + 40, z + v * d), V3(0, -80, 0), ray)
+			if not r or math.abs(r.Position.Y - y) > 1.5 then return false end
+		end
+	end
+	return true
+end
+local function baileyFight(at)
+	local crowd, C = siege.crowd, siege.C
+	if not crowd or siege.bailey then return end
+	siege.bailey = {}
+	local f = C.f
+	-- (the yard's own level: the zone part lies on it; not the well or whatever stands in the middle)
+	local floor = at.Y
+	for _, s in ipairs({-1, 1}) do
+		local placed = false
+		for _, dz in ipairs({0, -f * 24, f * 22}) do
+			for _, off in ipairs({40, 32, 48, 24}) do
+				local x, z = at.X + s * off, at.Z + dz
+				if not placed and clearGround(x, z, 20, 34, floor) then
+					placed = true
+					local idD, idA = "bD" .. s, "bA" .. s
+					crowd:regiment(idD, {side = siege.D, kind = "foot", at = V3(x, 0, z - f * 3), facing = f, cols = 6, ranks = 3, spacing = 3, detail = "lite", torches = WarCrowd.night()})
+					crowd:regiment(idA, {side = siege.A, kind = "foot", at = V3(x, 0, z + f * 12), facing = -f, cols = 6, ranks = 3, spacing = 3, detail = "lite", torches = WarCrowd.night()})
+					table.insert(siege.bailey, {D = idD, A = idA, z = z})
+				end
+			end
+		end
+	end
+end
+local function baileyStep(now)
+	local crowd = siege.crowd
+	-- (the yard's fight starts once its zone is known: ObjPos follows the stage a moment later)
+	if not siege.bailey and siege.stage == 2 and round:GetAttribute("ObjKind") == "Capture" then
+		local at = round:GetAttribute("ObjPos")
+		if typeof(at) == "Vector3" and math.abs(at.Z - siege.C.gate.Z) > 20 then baileyFight(at) end
+	end
+	for _, b in ipairs(siege.bailey or {}) do
+		if not b.done then crowd:lane(b.D, b.A, b.z, now, siege.C.f) end
+	end
+end
+local function baileyTaken()
+	local crowd = siege.crowd
+	for _, b in ipairs(siege.bailey or {}) do
+		if not b.done then
+			b.done = true
+			crowd:clash(b.D, false); crowd:clash(b.A, false)
+			crowd:rout(b.D, 3)
+			task.delay(1, function() if siege.crowd == crowd then crowd:cheer(siege.A) end end)
+		end
+	end
+end
+
 local function stageChanged(quiet)
 	local st = round:GetAttribute("ObjStage") or 1
 	if st == siege.stage then return end
 	siege.stage = st
 	if st >= 2 then wallsTaken(quiet) end
+	if st >= 3 then baileyTaken() end
 	-- (inside the walls: smoke from the burning castle drifts through the yard being fought over)
 	local at = round:GetAttribute("ObjPos")
 	if st >= 2 and typeof(at) == "Vector3" and round:GetAttribute("ObjKind") == "Capture" then
@@ -496,7 +558,7 @@ local function leave()
 	if siege.crows then siege.crows.stop(); siege.crows = nil end
 	WarFX.stopLoop(siege.battle, 1)
 	siege.loops, siege.hazes, siege.columns, siege.battle = {}, {}, {}, nil
-	siege.taken, siege.roofFire = nil, nil
+	siege.taken, siege.roofFire, siege.bailey = nil, nil, nil
 end
 
 local function enter()
@@ -528,7 +590,7 @@ local function enter()
 			local now = os.clock()
 			local ok, err = pcall(stageChanged, false)
 			if not ok then warn("[SiegeEpic] " .. tostring(err)) end
-			for _, step in ipairs({flanks, arrows, bombard}) do
+			for _, step in ipairs({flanks, arrows, bombard, baileyStep}) do
 				ok, err = pcall(step, now)
 				if not ok then warn("[SiegeEpic] " .. tostring(err)) end
 			end

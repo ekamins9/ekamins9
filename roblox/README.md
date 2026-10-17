@@ -1842,6 +1842,10 @@ WarCrowd` and `WarFX`; never fighters, nothing replicated):
   onto the walk (a WarCrowd ladder through the tower). The server keeps one tower model under the
   map for the clients to copy (`Map ▸ TowerModel`, always streamed) and publishes where the side
   walls are (`C_SideX`, `C_SideY`, `C_SideZ`, `C_TowerYaw`).
+- **The bailey**: once the gate is down, a melee breaks out on each side of the yard being fought
+  over (defenders against attackers, 18 a side, wherever the ground beside the zone is clear and
+  level: the stables, forges and stairs are kept out of it); when the yard falls its defenders are
+  cut down and the attackers cheer.
 - **The ram's crew**: six of the attackers under the ram's roof walk it up the road and lean into it
   when it stops (`WarCrowd:crew`, riding along with the ram's body); they cheer when the gate falls.
 - **The flanks**: on both sides of the castle the defenders' sally fights the attackers' lines
