@@ -42,7 +42,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Houses.lua` | `ReplicatedStorage` → `Houses` (which house's arms each colour flies on a map) | ModuleScript |
 | `ServerScriptService/Game/Teams.lua` | `ServerScriptService` → `Game` → `Teams` | ModuleScript |
 | `ServerScriptService/Game/GameServer.server.lua` | `ServerScriptService` → `Game` → `GameServer` | Script |
-| `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `Tiltyard`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH`, `Lists` | ModuleScript each |
+| `ServerScriptService/Game/Modes/<Id>.lua` | `ServerScriptService` → `Game` → `Modes` (Folder) → `Hub`, `Tiltyard`, `FFA`, `Duel`, `TDM`, `LTS`, `KOTH`, `Standards`, `Lists` | ModuleScript each |
 | `ServerScriptService/Hub/HubServer.server.lua` | `ServerScriptService` → `Hub` (Folder) → `HubServer` | Script |
 | `ServerScriptService/Hub/Matchmaker.lua` | `ServerScriptService` → `Hub` → `Matchmaker` | ModuleScript |
 | `ServerScriptService/Hub/Cheats.server.lua` | `ServerScriptService` → `Hub` → `Cheats` | Script |
@@ -1310,11 +1310,23 @@ join), `Locked` (only the user ids the server was made for — ranked matches; `
 kicks anyone else). One place means one set of scripts to update. Studio has no teleports, so it
 runs `STUDIO_MODE` (Hub) and PLAY switches the mode locally. `GameConfig.MODES`: `Hub` (courtyard, no clock),
 `Siege` (below), `FFA`, `Duel`, `TDM` (tickets), `LTS` (one life per round, first to `roundsToWin`), `KOTH`
-(`Zones/Hill`, `pointsToWin`) — each with `maps`, `roundLength`, `intermission`,
+(`Zones/Hill`, `pointsToWin`), `Standards` (Capture the Standard, `captures`: below) — each with `maps`, `roundLength`, `intermission`,
 `respawnDelay`, `teams` (0 or 2), `maxPlayers`, a `category` (the browser's *type of
 gameplay*). Every place is an empty world with a skybox: the map is cloned in at runtime.
 A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 `start / tick / onKill / onDeath / canSpawn / spawnCFrame / isOver / objective / result`.
+
+**Capture the Standard** (`Modes ▸ Standards`, a Warfront mode): each side's war banner stands
+at its camp (the middle of its spawns, a little toward the fight) in a glowing dashed ring, with
+its house's arms on the cloth and a marker over it every screen sees through walls. Touch the
+enemy's to take it: you carry it on your back, towering over the fight, a little slower
+(`SpeedMult_Standard`). Bring it into your own ring while yours stands there: a capture. A
+carrier who falls drops it; its own side touches it to send it home, or it goes home by itself
+after 20 s. First to `captures` (3) wins. The calls ("THE IRON STANDARD IS TAKEN") are
+AdventureEvent banners; Round `ObjKind = "Standards"`, `StdA`/`StdB`, `StdCarrierA`/`StdCarrierB`.
+Bots (`botOpts`): a carrier runs home, a side whose standard is taken runs the thief down or
+fetches it where it lies, otherwise a bit over half raid (escorting their own carrier) and the
+rest guard. Any map with two sides' spawns works; the list is in its `maps`.
 
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
 names them. Every mode has 10 or more: the hand-built ones (`Build ▸ Maps`, `Build ▸ Map<Name>`)

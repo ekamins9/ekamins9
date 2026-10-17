@@ -21,11 +21,12 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local round = ReplicatedStorage:WaitForChild("Round")
 
-local MODES = {Siege = true, TDM = true, KOTH = true, FFA = true, LTS = true, Horde = true}
+local MODES = {Siege = true, TDM = true, KOTH = true, FFA = true, LTS = true, Horde = true, Standards = true}
 local GOAL = {
 	TDM = "MORE KILLS THAN THE ENEMY", KOTH = "TAKE THE HILL  ·  HOLD IT", FFA = "EVERY BLADE FOR ITSELF",
 	LTS = "ONE LIFE  ·  LAST TEAM STANDING", Horde = "HOLD THE CAMP  ·  WAVE AFTER WAVE",
 	Lists = "A DUEL IN THE MIDDLE OF A BATTLE  ·  WIN IT",
+	Standards = "TAKE THEIR STANDARD  ·  CARRY IT HOME",
 }
 local LEN = 4.2
 

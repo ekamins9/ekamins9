@@ -22,11 +22,11 @@ local NEWS = {
 	lines = {
 		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn. 33 new"},
 		{"👑", "Your own coat of arms", "in LOOK: on your shield, your Courtyard banner and the new Raise the Standard effect"},
-		{"🚩", "Two houses at war", "every banner flies its house's arms; each side's plain shields carry them to battle"},
+		{"🏰", "Two houses at war", "every banner flies its house's arms; each side's plain shields carry them to battle"},
 		{"🗺", "Ten new maps", "storm Frostmarch and Gloamhold, hold Snowcrest, fight in Witchfen's rain"},
 		{"🏞", "No map floats", "the land runs on past every edge, and the fields are strewn with the last fight"},
 		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
-		{"💥", "Shields take the fight", "each blow you catch chips its paint and knocks splinters off the board"},
+		{"🚩", "Capture the Standard", "a new Warfront mode: take their war banner and carry it home. Three captures win"},
 	},
 }
 

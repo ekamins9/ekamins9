@@ -1,4 +1,25 @@
-# Updated scripts: your arms on your chest when you fight alone
+# Updated scripts: a new mode, Capture the Standard
+
+- **Capture the Standard** (Warfront votes it like the rest): each side's war banner stands at its
+  camp in a glowing ring. Take theirs, carry it home on your back (a little slower, seen by
+  everyone), bring it into your ring while yours stands there: a capture. Drop it when you fall;
+  your side sends a dropped one home with a touch, or it walks home after 20 s. Three captures
+  win. Called out across the screen as it happens; bots raid, guard, chase and escort.
+- What's New swaps its last line for the mode.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Standards.lua](ServerScriptService/Game/Modes/Standards.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new: the mode |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | `MODES.Standards`, in Warfront's modes and `MODE_ORDER` |
+| [Objectives.client.lua](StarterPlayerScripts/Objectives.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | steps aside for it (the standards carry their own markers) |
+| [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | its opening line |
+| [BattleAmbience.client.lua](StarterPlayerScripts/BattleAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the war beyond the map plays under it |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | its line |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: your arms on your chest when you fight alone
 
 - **With no side** (a free-for-all, a duel, the Lists, the Courtyard) you now wear your own coat
   of arms on your chest, in its metal on a roundel of your colour, where a team fight puts your

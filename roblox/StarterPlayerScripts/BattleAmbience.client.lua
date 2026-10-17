@@ -17,7 +17,7 @@ local Device = require(ReplicatedStorage:WaitForChild("Device"))
 
 local round = ReplicatedStorage:WaitForChild("Round")
 local V3 = Vector3.new
-local MODES = {TDM = true, KOTH = true, LTS = true, FFA = true, Kingslayer = true}
+local MODES = {TDM = true, KOTH = true, LTS = true, FFA = true, Kingslayer = true, Standards = true}
 
 local amb = {on = false, token = 0}
 

@@ -219,6 +219,11 @@ RunService.RenderStepped:Connect(function()
 	panel.Visible = live and not hubMenuUp()
 	bb.Enabled = live and (kind ~= "Horde" or typeof(round:GetAttribute("ObjPos")) == "Vector3")
 	if not live then return end
+	if kind == "Standards" then
+		-- (the standards carry their own markers; the top line says where each is)
+		panel.Visible, bb.Enabled = false, false
+		return
+	end
 	if kind == "Hill" then
 		-- KOTH: the scoreboard has the points; here, just the marker over the hill
 		panel.Visible = false

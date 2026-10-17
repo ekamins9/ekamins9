@@ -43,7 +43,7 @@ GameConfig.DOORS = {
 	-- WAR (Game ▸ Modes ▸ War): the big battle, armies of bots beside the players, siege engines
 	War       = {name = "War", mode = "War", access = "Public", maxPlayers = 24, matchmade = true,
 		blurb = "Two armies, five banners, trebuchets, volleys and battle-mages. Hold the line."},
-	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS"}, access = "Public", vote = true,
+	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS", "Standards"}, access = "Public", vote = true,
 		blurb = "The big fight. The mode changes between rounds by vote."},
 	Horde     = {name = "Horde",     mode = "Horde",    access = "Friends", maxPlayers = 6,
 		blurb = "You and your party defend the camp against waves of bots: keep the fire burning, the caravan whole, the villagers safe."},
@@ -233,6 +233,13 @@ GameConfig.MODES = {
 		roundLength = 15 * 60, intermission = 15, respawnDelay = 6, waveSpawn = 8, waveGrace = 20,
 		botFill = 32, fillAnywhere = true, tickets = 300,
 	},
+	-- CAPTURE THE STANDARD (Game ▸ Modes ▸ Standards): carry their war banner home to yours
+	Standards = {
+		name = "Capture the Standard", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
+		description = "Take their war banner and carry it home to yours. Three captures win.",
+		maps = {"Highbridge", "Millfield", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen", "Redgorge", "Mistbridge", "Cinderfall", "Snowcrest", "Sunhold", "Blossomby", "Frostford", "Witchfen", "Amberglade"},
+		roundLength = 8 * 60, intermission = 15, respawnDelay = 6, botFill = 12, captures = 3, waveSpawn = 8,
+	},
 	KOTH = {
 		name = "King of the Hill", category = "Battlefield", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Hold the hill. Points tick for the team that owns it.",
@@ -311,7 +318,7 @@ function GameConfig.mapFit(key, players, bots)
 end
 
 -- order on the Play tab
-GameConfig.MODE_ORDER = {"Siege", "FFA", "Duel", "TDM", "LTS", "KOTH"}
+GameConfig.MODE_ORDER = {"Siege", "FFA", "Duel", "TDM", "LTS", "KOTH", "Standards"}
 
 GameConfig.TEAMS = {
 	A = {name = "Crown", color = BrickColor.new("Bright blue"), rgb = Color3.fromRGB(70, 110, 220)},
