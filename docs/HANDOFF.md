@@ -261,7 +261,7 @@ step):
   and HollowAbbey, the sixth and seventh dungeon themes'), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
   Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur), AbbeyBell, Chant, Splash, ArmorMail,
-  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons; and the 10-17 material pass over ServerStorage ▸ Maps
+  ArmorPlate, Fountain, EarRing, Skitter, Wail, Pigeons, BoneCrunch; and the 10-17 material pass over ServerStorage ▸ Maps
   (stone walls, shingled spires, rebuilt houses).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
