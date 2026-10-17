@@ -119,6 +119,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Hearing.lua` | `ReplicatedStorage` → `Hearing` | ModuleScript |
 | `StarterPlayerScripts/NightWindows.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `NightWindows` | LocalScript |
 | `StarterPlayerScripts/SpiderLegs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `SpiderLegs` | LocalScript |
+| `StarterPlayerScripts/Pigeons.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Pigeons` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
 | `StarterCharacterScripts/InjuryFX.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `InjuryFX` | LocalScript |
@@ -1879,6 +1880,13 @@ do (Siege: TAKE THE CASTLE or HOLD THE CASTLE by your side), a horn. About four 
 skips; never for a newcomer's first battle. War flies its own (THE BATTLE OF …). A duel on a
 warfield gets it once a match: the flight over the battle down into the ring ("A DUEL IN THE
 MIDDLE OF A BATTLE · WIN IT").
+
+## The Courtyard's pigeons (`Pigeons.client`)
+A flock (11, 6 on a phone) pecks about the fountain, on the cobbles and up on its rim, hopping a
+step now and then. When anyone hurries through them (a player or a bot faster than a stroll, within
+8 studs of one) the whole flock goes up at once in a clatter of wings (WarAudio ▸ Pigeons) and off
+over the walls; a while later they drift back down to new spots. Only in the Hub, round Map ▸
+Spots ▸ WellSpot; only on your screen.
 
 ## The Courtyard's garrison (`CourtyardGuards.client`)
 In the hub, on your screen only: sentries in the Crown's colours walk the Courtyard's battlements

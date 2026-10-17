@@ -1,4 +1,17 @@
-# Updated scripts: Kingsbridge's fields
+# Updated scripts: pigeons in the Courtyard
+
+- **The Courtyard** has a flock of pigeons pecking about the fountain. Run through them and they all go up at once in a clatter of wings, off over the walls, and drift back down a while later.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Pigeons.client.lua](StarterPlayerScripts/Pigeons.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Pigeons (a Sound; save the place).
+
+---
+
+## Before that: Kingsbridge's fields
 
 - **War: Kingsbridge** has plots of dark ploughed earth on its flanks (farmland seen from the hills), and its mud is a darker, earthier brown.
 
