@@ -706,7 +706,7 @@ local WEATHER = {
 		clouds = {Cover = 0.72, Density = 0.5, Color = Color3.fromRGB(220, 226, 236)}},
 	embers = {n = 80, size = V3(0.22, 0.22, 0.22), color = Color3.fromRGB(255, 140, 50), alpha = 0, wind = V3(3, 5, 1), drift = 2.5, neon = true, rise = true, round = true},
 	petals = {n = 70, size = V3(0.5, 0.06, 0.4), color = Color3.fromRGB(255, 186, 214), alpha = 0.05, wind = V3(5, -4, 2), drift = 3.5},
-	leaves = {n = 60, size = V3(0.6, 0.05, 0.5), color = Color3.fromRGB(200, 104, 40), alpha = 0.05, wind = V3(6, -3.5, 2.5), drift = 4},
+	leaves = {n = 70, size = V3(0.42, 0.04, 0.34), color = Color3.fromRGB(200, 104, 40), alpha = 0.05, wind = V3(6, -3.5, 2.5), drift = 4},
 }
 local weather = nil
 function WarFX.weather(kind, fade)
