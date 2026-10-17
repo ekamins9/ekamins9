@@ -4584,6 +4584,13 @@ do
 			gr.Rotation = 90
 			gr.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.94), NumberSequenceKeypoint.new(1, 0.35)})
 		end
+		if o.piece then
+			local th = LT.pieceThumb(b, o.piece, o.colors, UDim2.new(1, -8, 1, -38))
+			th.Position = UDim2.fromOffset(4, 4)
+			th.BackgroundTransparency = 1
+			local vp = th:FindFirstChildOfClass("ViewportFrame")
+			if vp and not o.have then vp.ImageTransparency = 0.35 end
+		end
 		if o.weapon then
 			local th = weaponThumb(b, o.weapon, o.skin, UDim2.new(1, -8, 1, -38), o.zoom or (Catalog.WEAPON[o.weapon] and Catalog.WEAPON[o.weapon].family == "Shield" and 1.15 or 1.9))
 			th.Position = UDim2.fromOffset(4, 4)
@@ -4606,6 +4613,53 @@ do
 		end
 		b.Activated:Connect(o.onClick)
 		return b
+	end
+	-- an armour piece on its own, as it sits on a body (its models on an unseen R6's limbs), in your
+	-- colours, a little turned (cached by piece and colours: a grid redrawn on every click stays cheap)
+	LT.LIMB_AT = {HeadClothing = CFrame.new(0, 1.5, 0), TorsoClothing = CFrame.new(), LeftArmClothing = CFrame.new(-1.5, 0, 0),
+		RightArmClothing = CFrame.new(1.5, 0, 0), LeftLegClothing = CFrame.new(-0.5, -2, 0), RightLegClothing = CFrame.new(0.5, -2, 0)}
+	LT.pieceCache = {}
+	function LT.pieceThumb(parent, pieceId, colors, size)
+		local holder = frame(parent, COL.GLASS2, 10)
+		holder.Size = size
+		holder.ClipsDescendants = true
+		local vp = Instance.new("ViewportFrame")
+		vp.BackgroundTransparency = 1
+		vp.Size = UDim2.fromScale(1, 1)
+		vp.Ambient = Color3.fromRGB(150, 144, 136)
+		vp.LightColor = Color3.fromRGB(255, 244, 228)
+		vp.LightDirection = Vector3.new(-0.5, -1, 0.6)
+		vp.Parent = holder
+		local world = Instance.new("WorldModel"); world.Parent = vp
+		local cam = Instance.new("Camera"); cam.Parent = vp
+		vp.CurrentCamera = cam
+		local okS, sig = pcall(function() return game:GetService("HttpService"):JSONEncode({pieceId, colors}) end)
+		local folder = okS and LT.pieceCache[sig] and LT.pieceCache[sig]:Clone()
+		if not folder then
+			folder = Instance.new("Model")
+			for mn, model in pairs(Catalog.pieceModels(pieceId)) do
+				local m = model:Clone()
+				for _, d in ipairs(m:GetDescendants()) do if d:IsA("LuaSourceContainer") or d:IsA("JointInstance") or d:IsA("WeldConstraint") then d:Destroy() end end
+				local middle = m:FindFirstChild("Middle")
+				if middle and LT.LIMB_AT[mn] then
+					m:PivotTo(LT.LIMB_AT[mn] * middle.CFrame:ToObjectSpace(m:GetPivot()))
+					middle.Transparency = 1
+				end
+				for _, d in ipairs(m:GetDescendants()) do if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = false end end
+				m:SetAttribute("Piece", pieceId)
+				m.Parent = folder
+			end
+			pcall(Dresser.paint, folder, colors)
+			if okS then LT.pieceCache[sig] = folder:Clone() end
+		end
+		folder.Parent = world
+		local cf, sz = folder:GetBoundingBox()
+		if sz.Magnitude < 0.1 then return holder end
+		folder:PivotTo(CFrame.Angles(0, math.rad(22), 0) * CFrame.new(-cf.Position) * folder:GetPivot())
+		local d = (math.max(sz.X, sz.Y, sz.Z) * 0.6) / math.tan(math.rad(17))
+		cam.FieldOfView = 34
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, d * 0.12, -d), Vector3.zero)
+		return holder
 	end
 	-- a skin list sorted: yours first, then the rarest
 	function LT.sorted(skins)
@@ -4751,7 +4805,7 @@ do
 	end
 
 	-- ARMOR: one slot at a time (a switch with what you wear in each), the class's level
-	function LT.armor(page, lo, cls, id, t)
+	function LT.armor(page, lo, cls, id, t, stale)
 		local p = panel(page, "ARMOR  ·  " .. string.upper(cls.weight))
 		dim(p, string.format("%s:  %s. Looks never change stats.", cls.weight, weightLine(cls.weight)), 12)
 		local slot = table.find(Catalog.SLOTS, ui.loSlot) and ui.loSlot or Catalog.SLOTS[1]
@@ -4772,21 +4826,33 @@ do
 			b.Activated:Connect(function() ui.loSlot = s; render.CLASSES() end)
 		end
 		local pieces = Catalog.piecesFor(slot, cls.weight)
-		local g = cardGrid(p, 44)
-		for i, pc in ipairs(pieces) do
-			local have = owns("pieces", pc.id)
-			local pk = Catalog.PACKS[pc.pack]
-			local sub = have and ((pc.rarity and pc.rarity ~= "Common" and (pc.rarity .. "  ·  ") or "") .. (pk and pk.name or ""))
-				or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
-			itemCard(g, i, pc.name, sub, lo[slot] == pc.id and not t and not (slot == "helmet" and lo.noHelm), have, RARITY_COL[pc.rarity], function()
-				if have then if slot == "helmet" then lo.noHelm = nil end; choose(slot, pc.id) else tryOn(slot, pc.id) end
-			end, t and t.slot == slot and t.id == pc.id)
-		end
+		-- (yours first, then as the catalogue lists them)
+		local order = {}
+		for i, pc in ipairs(pieces) do order[pc] = i end
+		local sorted = table.clone(pieces)
+		table.sort(sorted, function(a, b)
+			local ha, hb = owns("pieces", a.id), owns("pieces", b.id)
+			if ha ~= hb then return ha end
+			return order[a] < order[b]
+		end)
+		local g = LT.grid(p, 3, 110)
 		if slot == "helmet" then
 			-- bareheaded: your face and hair on show, your head unprotected
-			itemCard(g, 0, "No helmet", "show your face · the head takes full damage", lo.noHelm == true and not t, true, COL.BAD, function()
+			LT.tile(g, 0, {name = "No helmet", sub = "face on show · full head damage", have = true, on = lo.noHelm == true and not t, onClick = function()
 				lo.noHelm = not lo.noHelm or nil; ui.dirty[id] = true; ui.tryOn = nil; render.CLASSES()
-			end)
+			end})
+		end
+		for i, pc in ipairs(sorted) do
+			local have = owns("pieces", pc.id)
+			local pk = Catalog.PACKS[pc.pack]
+			local sub = have and ((pc.rarity and pc.rarity ~= "Common" and pc.rarity) or (pk and pk.name) or "")
+				or (pc.unlock and Catalog.unlockText(pc.unlock) or (pc.crate and ((Catalog.CRATES[pc.crate] or {}).name or "a crate") or priceText(pc.marks, pc.crowns)))
+			LT.tile(g, i, {name = pc.name, sub = sub, have = have, rarity = pc.rarity ~= "Common" and pc.rarity or nil, piece = pc.id, colors = lo.colors,
+				on = lo[slot] == pc.id and not t and not (slot == "helmet" and lo.noHelm), trying = t and t.slot == slot and t.id == pc.id,
+				onClick = function()
+					if have then if slot == "helmet" then lo.noHelm = nil end; choose(slot, pc.id) else tryOn(slot, pc.id) end
+				end})
+			if i % 6 == 0 and stale and stale() then return true end
 		end
 		if #pieces == 0 then dim(p, "No " .. string.lower(cls.weight) .. " " .. slot .. " yet.") end
 		HX.classLevelPanel(page, id)
@@ -4973,7 +5039,7 @@ do
 		if ui.loTab == "WEAPONS" then
 			if LT.weapons(page, lo, cls, id, t, stale) then return end
 		elseif ui.loTab == "ARMOR" then
-			LT.armor(page, lo, cls, id, t)
+			if LT.armor(page, lo, cls, id, t, stale) then return end
 		elseif ui.loTab == "GEAR" then
 			HX.arsenalPanels(page, lo, id, cardGrid, itemCard, {grid = LT.grid, tile = LT.tile, sorted = LT.sorted, tryOn = tryOn, t = t})
 		else

@@ -1,4 +1,16 @@
-# Updated scripts: the houses by the score
+# Updated scripts: armor as pictures
+
+- **LOADOUT ▸ ARMOR shows every piece as a picture**: the helmet, the top or the legs on their own as
+  they sit on a body, in your class's colours, yours first; a tile for going bareheaded.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | `LT.pieceThumb`; the ARMOR tab's picture tiles |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the houses by the score
 
 - **Each side's house shows beside its score** in the round strip at the top (a gold emblem, the
   arms its banners fly on this map).

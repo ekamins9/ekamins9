@@ -849,8 +849,8 @@ and a UIScale fits it to any screen.
   **Four tabs** over the page, each saying what's in it now: **WEAPONS** (what you carry, big,
   with its skin; every weapon as a 3D picture, narrowed by kind: one-handed, two-handed,
   polearms…; its skins as pictures, yours first, then the rarest; spells; the secondary),
-  **ARMOR** (one slot at a time: a HELMET / TOP / LEGS switch with what you wear in each; the
-  class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
+  **ARMOR** (one slot at a time: a HELMET / TOP / LEGS switch with what you wear in each; every
+  piece as a picture in your colours, yours first; the class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
   shield arm to you; the power, the throwable, a sidearm) and **LOOK** (YOUR ARMS, the finish,
   the colours).
 - **YOUR ARMS** (LOOK; `Catalog ▸ Arms`): your own coat of arms: one of 36 emblems (most free,
