@@ -227,14 +227,24 @@ step):
   (`WhatsNew.client`: edit its NEWS for the next update). Phone caps on prints and the lying dead.
   Note: every procedural map carries the Generated attribute (War, the caldera, the Crownlands,
   the Tavern, dungeon floors): test the mode, not Generated, to mean "a dungeon".
+- **The morning of 10-17:** every house in the game is half-timbered (`MapKit` K.house); castle
+  walls and towers are rubble stone with shingled spires (K.wall / K.tower defaults; the saved maps
+  in ServerStorage ▸ Maps were converted in Studio and their 30 old houses rebuilt in place); a
+  filmic grade and fair-weather clouds over the open-air maps (`CinematicGrade.client`, yielding
+  to WarFX weather); shell-shock (`ReplicatedStorage ▸ Hearing`: every world sound routed through
+  SoundService ▸ World, muffled by a near blast); spiders on threads and light shafts through
+  ceiling grates in the dungeons; Amberwood, an eleventh War field (autumn); Settings ▸ Start in
+  (first person); the review fixes (traps stream Atomic and spare calm patrols, woken coffins
+  locked, secret walls kept clear of furnishing, late joiners get WarSky).
 - **Combat feel:** the swing's weight on the camera (`CameraRig` reads `LocalWindAt` /
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
-  their MapShots (and Stormvale's, Duskmoor's and Mistmarsh's, War's new themes, and DrownedHalls
+  their MapShots (and Stormvale's, Duskmoor's, Mistmarsh's and Amberwood's, War's new themes, and DrownedHalls
   and HollowAbbey, the sixth and seventh dungeon themes'), WarAudio ▸ Drums, Roar,
   Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver, Dread (the dungeons' quiet score),
   Squeak, Drip, Tavern (the Gilded Rat's tune), TavernRoom (its murmur), AbbeyBell, Chant, Splash, ArmorMail,
-  ArmorPlate, Fountain.
+  ArmorPlate, Fountain, EarRing, Skitter; and the 10-17 material pass over ServerStorage ▸ Maps
+  (stone walls, shingled spires, rebuilt houses).
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
   too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
