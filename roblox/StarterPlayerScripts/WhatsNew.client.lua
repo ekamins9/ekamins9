@@ -21,7 +21,7 @@ local NEWS = {
 	lines = {
 		{"🍂", "Amberwood", "a new War field: an autumn wood's edge, red and gold oaks, leaves drifting down"},
 		{"🏰", "Stone, timber and sky", "castles of rough stone, half-timbered villages, clouds over every field"},
-		{"💥", "Shell-shocked", "a trebuchet stone lands beside you: the world goes muffled and your ears ring"},
+		{"💥", "Feel every blow", "a blast beside you leaves you deaf a moment; your armour scratches where blows land"},
 		{"🕸", "The Silk Caverns", "a new dungeon of webs and nests, giant spiders, and their Queen"},
 		{"🗡", "Through your own eyes", "in Settings, Start in: begin every fight in first person"},
 		{"👻", "Banshees and gargoyles", "a scream that leaves you deaf; statues that wake as you pass"},
