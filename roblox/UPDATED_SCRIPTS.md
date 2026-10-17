@@ -1,4 +1,15 @@
-# Updated scripts: mimics
+# Updated scripts: mimics in the Depths too
+
+- **The Depths**: a treasure room's chest is now and then a mimic (gilded from the third floor). Kill it and the chest is back, and everyone gets their pick as before.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Depths.lua](ServerScriptService/Game/Modes/Depths.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `Depths:mimic`, `MIMIC_CHANCE` |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: mimics
 
 - **Deadvault**: now and then the chest you open was never a chest. A MIMIC! It stands up on four stubby legs, its lid a mouth of teeth over a tongue, eyes glowing inside, and comes for you, snapping. An ornate chest is a bigger, harder Gilded Mimic. Kill it and the chest is back where it stood, open, with its hoard to search.
 

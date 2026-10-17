@@ -240,6 +240,37 @@ function Depths:chestFor(plr, kind, luckBonus)
 	self:offer(plr, cards, kind == "boss" and "THE BOSS'S HOARD" or (kind == "elite" and "A CHAMPION'S CHEST" or "A CHEST"), "Pick one")
 end
 
+-- A MIMIC: now and then a treasure room's chest was never a chest. Touched, it vanishes and a mimic
+-- stands a step out from it, facing whoever reached for it; dead, the chest is back where it stood,
+-- for everyone to take their pick from (Combat ▸ Monsters, body "mimic").
+Depths.MIMIC_CHANCE = 0.15
+function Depths:mimic(chest, cf, plr, room)
+	local hidden = {}
+	for _, d in ipairs(chest.model:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			table.insert(hidden, {d, "Transparency", d.Transparency}); table.insert(hidden, {d, "CanCollide", d.CanCollide})
+			d.Transparency, d.CanCollide = 1, false
+		elseif d:IsA("ProximityPrompt") or d:IsA("Light") or d:IsA("ParticleEmitter") then
+			table.insert(hidden, {d, "Enabled", d.Enabled}); d.Enabled = false
+		end
+	end
+	if event then event:FireAllClients("Banner", {text = "A MIMIC!", sub = "IT WAS NEVER A CHEST", kind = "fight"}) end
+	local r = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+	local pos = cf.Position
+	local toward = r and Vector3.new(r.Position.X - pos.X, 0, r.Position.Z - pos.Z) or cf.LookVector
+	toward = toward.Magnitude > 0.1 and toward.Unit or Vector3.new(0, 0, -1)
+	local at = pos + toward * 2.5 + Vector3.new(0, 3, 0)
+	local look = r and Vector3.new(r.Position.X, at.Y, r.Position.Z) or at + toward
+	local mob = Monsters.spawn(self.floor >= 3 and "GildedMimic" or "Mimic", room.opts or {}, {at = CFrame.new(at, look)})
+	chest.guard = mob
+	task.spawn(function()
+		while mob and mob.alive and chest.model.Parent do task.wait(0.5) end
+		task.wait(1)
+		if not chest.model.Parent then return end
+		for _, h in ipairs(hidden) do if h[1].Parent then h[1][h[2]] = h[3] end end
+	end)
+end
+
 function Depths:placeChest(room, kind, luck)
 	-- (clear of the room's centrepiece: the start's brazier, an altar, a fountain, the stairs)
 	local at = room.chest or room.feature
@@ -249,9 +280,18 @@ function Depths:placeChest(room, kind, luck)
 	end
 	local cf = CFrame.lookAt(at, Vector3.new(room.cx, at.Y, room.cz))
 	local rarity = kind == "boss" and "Legendary" or (kind == "elite" and "Epic" or (kind == "treasure" and "Rare" or "Uncommon"))
-	Loot.chest(cf, {rarity = rarity, perPlayer = true, gilded = kind ~= "depths", label = kind == "boss" and "The Hoard" or "Chest",
+	local mimicked = kind == "treasure" and math.random() < Depths.MIMIC_CHANCE
+	local chest
+	chest = Loot.chest(cf, {rarity = rarity, perPlayer = true, gilded = kind ~= "depths", label = kind == "boss" and "The Hoard" or "Chest",
 		onOpen = function(plr)
 			if not aliveChar(plr) then return false end
+			if mimicked and chest then
+				mimicked = false
+				self:mimic(chest, cf, plr, room)
+				return false
+			end
+			-- (its mimic still up: no reaching past it)
+			if chest and chest.guard and chest.guard.alive then return false end
 			self:chestFor(plr, kind, luck)
 			return true
 		end})

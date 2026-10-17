@@ -2382,7 +2382,9 @@ get out with what you found, or lose it all.
   an ornate chest is a Gilded Mimic, bigger and harder. Its hoard can't be searched while it lives;
   when it's dead the chest is back where it stood, open (`Deadvault:mimic`, body `mimic` in
   `Combat ▸ Monsters`, walked by `SpiderLegs`: the lid breathes, chatters as it scuttles, snaps wide
-  as it bites, hangs open in death).
+  as it bites, hangs open in death). The Depths have them too: a treasure room's chest is now and
+  then a mimic (`Depths.MIMIC_CHANCE`, 15%; gilded from the third floor), and dead, its chest gives
+  everyone their pick as before (`Depths:mimic`).
 - **Your gear** (I, or the Bag button): what you wear (a weapon, a sidearm, armour, a tome's power,
   three relics), your **belt** (four draughts: keys **3 – 6**, on screen bottom left; drinking takes
   a moment and slows you, then a healing draught mends over four seconds) and your **bag** (20;
