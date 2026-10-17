@@ -1,4 +1,16 @@
-# Updated scripts: the Shade
+# Updated scripts: the Shade in Deadvault
+
+- **Deadvault**: three minutes before the collapse the dark stirs, and the Shade rises about 110 studs from the nearest raider and hunts whoever is still inside. It can't be fought; get out.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shade.lua](ServerScriptService/Game/Shade.lua) | ServerScriptService ▸ Game | ModuleScript | `shade:stir()`, `manual`, `near`, banner `words` |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `SHADE_AT`; runs the Shade |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Shade
 
 - **The Depths: don't linger.** Dawdle on a floor (300 / 260 / 220 s away from any fight) and every torch sputters as THE DARK STIRS. 40 s later THE SHADE COMES: a tall hooded thing with two pale eyes and long grey claws, drifting through the walls after the nearest of you. It can't be fought, only outpaced. Its touch is cold (30, halved by armour), and then it sinks away and comes again. It waits outside the room while you fight, and goes when you take the stairs. Near it, the torches gutter, the world drains of colour, your heart pounds and its breath and whispers close in.
 - **Chests**: `Loot.chest` keeps any chest whose facing is no facing at all (NaN), so none can be lost below the map again.

@@ -31,6 +31,9 @@
      SECRETS: three walled-up caches a raid (Game ▸ Secrets): a cracked stretch of wall with a
      draft through it; three blows bring it down, and an ornate chest waits behind.
 
+     THE SHADE: SHADE_AT before the collapse the dark stirs, and Game ▸ Shade's hooded thing comes
+     through the walls for whoever is still inside (it can't be fought; it doesn't stop).
+
      NOT EVERY DEAD RESTS: search a sarcophagus and now and then (WAKE_CHANCE) the lid is thrown off
      and its dead climbs out at you (Deadvault:waken, for Game ▸ Containers).
 
@@ -56,6 +59,8 @@ local Monsters = require(Combat:WaitForChild("Monsters"))
 local Powers = require(Combat:WaitForChild("Powers"))
 local Perception = require(Combat:WaitForChild("Perception"))
 local Perks = require(script.Parent.Parent:WaitForChild("Perks"))
+local Shade = require(script.Parent.Parent:WaitForChild("Shade"))
+local SHADE_AT = 180   -- seconds before the collapse that the dark stirs (the Shade comes Shade.WARN later)
 local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild("Profile"))
 local MapLoader = Game.MapLoader
 local node = Game.node
@@ -786,6 +791,10 @@ function Deadvault:start(map)
 	self.groundParams.FilterType = Enum.RaycastFilterType.Include
 	self.groundParams.FilterDescendantsInstances = {MapLoader.current}
 	self.boxes = Containers.new(self)
+	self.shade = self.shade or Shade.new(node, function(t) banner(t) end,
+		{stir = "THE DEADVAULT KNOWS YOU'RE STILL HERE  ·  GET OUT", hunt = "IT CANNOT BE FOUGHT  ·  FIND A WAY OUT"})
+	self.shade:reset()
+	self.shadeStirred = false
 	self:stairs()
 	self:dressRooms()
 	do
@@ -824,6 +833,7 @@ function Deadvault:start(map)
 end
 
 function Deadvault:stop()
+	if self.shade then self.shade:stop() end
 	Traps.disarm()
 	Secrets.disarm()
 	-- (still inside when it collapses: lost)
@@ -918,7 +928,11 @@ function Deadvault:tick(dt)
 	node:SetAttribute("ObjNote", note)
 	node:SetAttribute("RaidersInside", inside)
 	node:SetAttribute("Objective", self:objective())
-	-- the dark's last minute: it hunts
+	-- the dark's last minutes: it hunts
+	if self.shade then
+		if left > 0 and left <= SHADE_AT and not self.shadeStirred then self.shadeStirred = true; self.shade:stir() end
+		self.shade:tick(dt, {manual = true, layout = self.layout, near = 110})
+	end
 	if left > 0 and left <= 60 and not self.lastCall then
 		self.lastCall = true
 		banner({text = "IT IS COLLAPSING", sub = "ONE MINUTE: GET OUT", kind = "boss"})

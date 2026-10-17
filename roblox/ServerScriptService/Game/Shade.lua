@@ -15,10 +15,15 @@
        ShadePos     where it is (a Vector3, ~12 times a second)
        ShadeHit     a counter, one more each touch; ShadeHitPos where
 
-     Shade.new(node, banner) -> shade
+     Deadvault calls it in for its last minutes instead (`manual`: no counting, `shade:stir()` at
+     the time it chooses): it hunts whoever is still inside as the dungeon comes down.
+
+     Shade.new(node, banner, words?) -> shade   words = {stir = sub, hunt = sub}: the banners' lines
        shade:tick(dt, ctx)   from the mode's tick: ctx = {floor, fighting = the room being fought
                              or nil, calm = true while the stairs count down or the run is won,
-                             layout}
+                             layout, manual = true: only shade:stir() begins it, near = studs:
+                             it rises in the room nearest that far from you, not the farthest)
+       shade:stir()          the dark stirs now (if it hasn't)
        shade:reset()         a new floor: it's gone and the count starts again
        shade:stop()          the run is over ]]
 
@@ -68,8 +73,8 @@ local function outside(room, p, m)
 	return V3(room.cx + x, p.Y, room.cz + z), true
 end
 
-function Shade.new(node, banner)
-	local self = setmetatable({node = node, banner = banner}, Shade)
+function Shade.new(node, banner, words)
+	local self = setmetatable({node = node, banner = banner, words = words or {}}, Shade)
 	self:reset()
 	return self
 end
@@ -94,16 +99,25 @@ function Shade:stop()
 	self.node:SetAttribute("ShadeHitPos", nil)
 end
 
--- where it comes from: the room farthest from all of you
-function Shade:origin(layout, list)
-	local best, bd = nil, -1
+-- where it comes from: the room farthest from all of you (or, given `want`, the one nearest
+-- that far from the nearest of you: a raid's dungeon is too big to cross in its last minutes)
+function Shade:origin(layout, list, want)
+	local best, bd = nil, -math.huge
 	for _, rm in ipairs(layout and layout.rooms or {}) do
 		local near = math.huge
 		for _, l in ipairs(list) do near = math.min(near, (flat(l.root.Position) - V3(rm.cx, 0, rm.cz)).Magnitude) end
-		if near > bd then best, bd = rm, near end
+		local score = want and -math.abs(near - want) or near
+		if score > bd then best, bd = rm, score end
 	end
 	local y = (list[1] and list[1].root.Position.Y or 3) + 1.5
 	return best and V3(best.cx, y, best.cz) or (list[1] and list[1].root.Position + V3(60, 1.5, 0)) or V3(0, y, 0)
+end
+
+function Shade:stir()
+	if self.stirAt then return end
+	self.stirAt = os.clock()
+	self:publish("stir")
+	if self.banner then self.banner({text = "THE DARK STIRS", sub = self.words.stir or "SOMETHING HAS NOTICED YOU LINGER  ·  KEEP MOVING", kind = "fight"}) end
 end
 
 function Shade:tick(dt, ctx)
@@ -114,23 +128,20 @@ function Shade:tick(dt, ctx)
 	end
 	local now = os.clock()
 	if not self.stirAt then
+		if ctx.manual then return end
 		if not ctx.fighting then self.idle += dt end
 		local patience = Shade.PATIENCE[math.clamp(ctx.floor or 1, 1, #Shade.PATIENCE)]
-		if self.idle >= patience then
-			self.stirAt = now
-			self:publish("stir")
-			if self.banner then self.banner({text = "THE DARK STIRS", sub = "SOMETHING HAS NOTICED YOU LINGER  ·  KEEP MOVING", kind = "fight"}) end
-		end
+		if self.idle >= patience then self:stir() end
 		return
 	end
 	if not self.huntAt and now - self.stirAt >= Shade.WARN then
 		local list = living()
 		if #list == 0 then return end
 		self.huntAt = now
-		self.pos = self:origin(ctx.layout, list)
+		self.pos = self:origin(ctx.layout, list, ctx.near)
 		self.node:SetAttribute("ShadePos", self.pos)
 		self:publish("hunt")
-		if self.banner then self.banner({text = "THE SHADE COMES", sub = "IT CANNOT BE FOUGHT  ·  FIND THE WAY DOWN", kind = "boss"}) end
+		if self.banner then self.banner({text = "THE SHADE COMES", sub = self.words.hunt or "IT CANNOT BE FOUGHT  ·  FIND THE WAY DOWN", kind = "boss"}) end
 		self:run()
 	end
 end

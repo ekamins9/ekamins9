@@ -2307,7 +2307,7 @@ and two urns by the walls (a chest in a room's very middle faces the way in: `De
   whispers move with it (WarAudio ▸ ShadeBreath, Whisper), torches within 26 studs of it gutter
   low (`TorchFlicker`), and near it the world drains of colour, your heart pounds (WarAudio ▸
   Heartbeat), the view trembles, and its arms lift to reach for you. The Round node carries
-  ShadeState / ShadePos / ShadeHit / ShadeHitPos.
+  ShadeState / ShadePos / ShadeHit / ShadeHitPos. Deadvault calls it in for its last minutes too.
 - **Difficulty** (`Depths:engage`): gentle first floors. Monsters start at 80% health and damage
   and grow with each floor; how well they fight is capped by the floor (Squires on the first,
   Knights on the second; the boss never fights better than a Knight); elites come from the second
@@ -2478,6 +2478,10 @@ get out with what you found, or lose it all.
   a little Marks (once a raid, under the daily cap; stats.vaultOut).
 - **Fall**, and everything you carried lies in your **pack** where you fell, for whoever finds it.
   Still inside when it collapses (15 minutes): lost. Everyone out or down ends it early.
+- **The Shade** (Deadvault `SHADE_AT`, `Game ▸ Shade`): three minutes before the collapse the dark
+  stirs (THE DEADVAULT KNOWS YOU'RE STILL HERE), and 40 s later the Depths' Shade rises in a room
+  about 110 studs from the nearest raider and comes through the walls for whoever is still
+  inside, faster as the minutes run out. It can't be fought; get out.
 - **The vault** (PLAY ▸ ADVENTURES ▸ DEADVAULT ▸ YOUR VAULT; Profile ▸ vault): KIT & STASH (a
   stash of 60; the kit: weapon, sidearm, armour, 3 relics, 4 draughts; the class you raid as)
   and MERCHANTS: **Hrothgar the Smith** (four weapons for your class, new each day, each sold
