@@ -19,7 +19,8 @@
          and the weapon's ARMOR_PEN). The arrow flashes and is gone (GameConfig.GORE on:
          it sticks where it went in).
          A hit flinches and interrupts like a blade; credit "arrow" / "headshot".
-       • a raised guard facing it: blocked (stamina, a clang), the arrow falls.
+       • a raised guard facing it: blocked (stamina, a clang), the arrow falls; caught on a
+         shield, it stays standing in the board (a few to a shield, STICK_LIFE each).
        • the world: it sticks there a while (a thunk by material).
      Ammo: QUIVER arrows, one back every REGEN seconds; a fresh life, a full quiver.
      Player attributes on the character: Ammo, Drawing (0..1 for everyone's pose),
@@ -136,8 +137,13 @@ local function stick(kind, cf, part, life, fx)
 		end
 	end
 	local body = part and part.Parent and not part.Anchored and part:FindFirstAncestorOfClass("Model")
+	-- (a worn shield is a model of its own inside the body: the body it's on)
+	while body and not body:FindFirstChildOfClass("Humanoid") do body = body:FindFirstAncestorOfClass("Model") end
 	if body and body:FindFirstChildOfClass("Humanoid") then
-		for _, p in ipairs(m:GetDescendants()) do if p:IsA("BasePart") then p.Anchored = false end end
+		-- (weightless on the body it's in, and nothing a later shot or blade can catch on)
+		for _, p in ipairs(m:GetDescendants()) do
+			if p:IsA("BasePart") then p.Anchored, p.Massless, p.CanQuery, p.CanCollide, p.CanTouch = false, true, false, false, false end
+		end
 		local w = Instance.new("WeldConstraint"); w.Part0, w.Part1 = part, m.PrimaryPart; w.Parent = m.PrimaryPart
 		m.Parent = body
 	else
@@ -146,6 +152,45 @@ local function stick(kind, cf, part, life, fx)
 	end
 	Debris:AddItem(m, life or 20)
 	return m
+end
+
+-- AN ARROW IN THE SHIELD: one caught on a raised shield stays standing in the board (the board,
+-- never the body: the game is Mild), welded to it, a few to a shield at most
+local SHIELD_ARROWS = 5
+local function shieldFace(target)
+	if not target:GetAttribute("ShieldId") or target:GetAttribute("ShieldSlung") then return nil end
+	for _, d in ipairs(target:GetDescendants()) do
+		if d:IsA("BasePart") and d:GetAttribute("ShieldFace") then return d end
+	end
+	return nil
+end
+-- where on the board, and which way in: worked out in the board's own frame, since only the
+-- clients raise the shield (Powers.client: ShieldGrip BlockC0) and the server's stays at ease.
+-- Its outer face (the side away from the body, the one toward the shot when it's raised), a
+-- point somewhere in its middle, the shaft driven in square to it with a little tilt.
+local function onBoard(face, body)
+	local cf, sz = face.CFrame, face.Size
+	local h = sz / 2
+	local torso = body:FindFirstChild("Torso") or body:FindFirstChild("HumanoidRootPart")
+	local lt = torso and cf:PointToObjectSpace(torso.Position) or Vector3.zero
+	local r = Random.new()
+	local function across(half) return r:NextNumber(-0.55, 0.55) * half end
+	local normal, x, y, z
+	if sz.X <= sz.Y and sz.X <= sz.Z then
+		local s = lt.X > 0 and -1 or 1
+		normal, x, y, z = Vector3.new(s, 0, 0), s * h.X, across(h.Y), across(h.Z)
+	elseif sz.Y <= sz.Z then
+		local s = lt.Y > 0 and -1 or 1
+		normal, x, y, z = Vector3.new(0, s, 0), across(h.X), s * h.Y, across(h.Z)
+	else
+		local s = lt.Z > 0 and -1 or 1
+		normal, x, y, z = Vector3.new(0, 0, s), across(h.X), across(h.Y), s * h.Z
+	end
+	local p = cf:PointToWorldSpace(Vector3.new(x, y, z))
+	local n = cf:VectorToWorldSpace(normal)
+	local tilt = CFrame.Angles(r:NextNumber(-0.3, 0.3), r:NextNumber(-0.3, 0.3), 0)
+	local dir = (CFrame.lookAt(Vector3.zero, -n) * tilt).LookVector
+	return p, dir
 end
 
 -- which body part a part is, as a region
@@ -313,6 +358,17 @@ local function kindSound(fx, which, at)
 			if ench and Powers then Powers.arrowHit(shooter, ench, res.Position, nil, dir) end
 			target:SetAttribute("GuardText", parried and "ARROW PARRIED" or "ARROW BLOCKED")
 			target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
+			-- (on a shield, it stays standing in the board)
+			local face = shieldFace(target)
+			if face then
+				local n = 0
+				for _, d in ipairs(target:GetChildren()) do if d:GetAttribute("OnShield") then n += 1 end end
+				if n < SHIELD_ARROWS then
+					local p, inward = onBoard(face, target)
+					local stuck = stick(shotKind, CFrame.lookAt(p - inward * 0.6, p + inward) * CFrame.new(0, 0, 0.5), face, cfg.STICK_LIFE, fx)
+					if stuck then stuck:SetAttribute("OnShield", true) end
+				end
+			end
 			return
 		end
 		local region, limbName = regionOf(part, target)

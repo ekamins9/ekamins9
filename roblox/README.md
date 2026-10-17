@@ -1913,6 +1913,14 @@ Painting). On your screen their pupils turn in their whites toward you wherever 
 room (within 40 studs). Now and then, near one (18 studs) with your back to it, its eyes burn red
 and something whispers (35% of a chance every 40-100 s); turn round and they're only paint again.
 
+## Arrows in the shield (`RangedServer`)
+
+An arrow caught on a raised shield stays standing in its board (`SHIELD_ARROWS`, 5 at most, each
+`STICK_LIFE`), welded to it so it goes where the shield goes. It's placed in the board's own
+frame (its outer face, somewhere in its middle, square into it with a little tilt): only the
+clients raise the shield (Powers.client), so the server's board is still at ease. Never in a
+body: the game stays Mild (`GameConfig.GORE` off).
+
 ## Shouts in the fight (`Shouts.client`)
 
 The fighters round you call out, on your screen only. A soldier bot charging a foe ("FOR THE

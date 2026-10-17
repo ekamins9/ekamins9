@@ -1,4 +1,15 @@
-# Updated scripts: wanderers in the Depths
+# Updated scripts: arrows in the shield
+
+- **Every fight with bows**: an arrow you catch on a raised shield stays standing in the board, five at most, each for 20 seconds. After a volley your shield bristles. Never in a body: the game stays Mild.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `shieldFace`, `onBoard` (in the board's own frame: only clients raise the shield), `SHIELD_ARROWS`; arrows on a body weightless and not catchable |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: wanderers in the Depths
 
 - **The Depths**: from the second floor, a pair of the floor's monsters (two pairs on the third) walk the halls from room to room, to be met in a corridor. Their own fight, no gates; they go with the floor.
 
