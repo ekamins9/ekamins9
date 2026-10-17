@@ -16,16 +16,15 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-17e",
-	title = "NEW IN THE DARK AND ON THE FIELD",
+	version = "2026-10-18",
+	title = "ARMS, BANNERS AND THE LAND BEYOND",
 	lines = {
-		{"👁", "Don't linger", "dawdle in The Depths and the Shade comes through the walls for you. Keep moving"},
-		{"🕷", "Look up", "things cling to the ceilings of the dungeons, and drop on whoever walks beneath"},
-		{"💀", "The Headless Knight", "a new champion of the crypts walks the dark carrying its own skull"},
-		{"🛡", "Shields that bristle", "arrows you catch on your shield stay in it, a volley's worth at a time"},
-		{"📣", "The battle shouts", "soldiers, goblins and orcs call out as they charge, and answer your war cry"},
-		{"🏰", "The Courtyard lives", "a smithy, a market row, washing on the line and bunting round the fountain"},
-		{"🌊", "The dungeons stir", "something swims in the Drowned Halls, the frozen open their eyes, the portraits watch"},
+		{"🛡", "Every shield repainted", "47 shields with real arms: gold lions, a burning phoenix, the kraken. 21 new"},
+		{"👑", "Your own coat of arms", "pick an emblem and your colours in the loadout's LOOK tab: your plain shield carries it"},
+		{"🚩", "Two houses at war", "every banner flies its house's arms, and each side's plain shields carry them to battle"},
+		{"🏞", "No map floats", "the land runs on past every map's edge: hills, woods, camps, mountains to the horizon"},
+		{"🎒", "A new loadout", "weapons, armor, gear and looks in tabs, every weapon and skin as a picture"},
+		{"💥", "Shields take the fight", "each blow you catch chips its paint and knocks splinters off the board"},
 	},
 }
 
