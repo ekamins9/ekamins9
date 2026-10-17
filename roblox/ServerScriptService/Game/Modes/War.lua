@@ -432,6 +432,7 @@ end
 -- puts his name up (BossEntrance.client: the bars and his name, the camera left alone). Cut him
 -- down and his side loses CHAMP_COST tickets (Round ▸ WarChampFell, War.client calls it).
 local CHAMP_COST = 25
+-- (the Crown's is the Training Yard's own master of steel, Sir Aldric)
 local CHAMPS = {A = {name = "Sir Aldric the Unbroken", weapon = "Zweihander"}, B = {name = "Grimwald Ironhand", weapon = "Executioner"}}
 function War:champion()
 	local L, t = self.layout, self.tickets

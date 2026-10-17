@@ -1671,7 +1671,7 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   and the call on every screen (IRON IS BREAKING: ONE LAST PUSH! for the side winning, HOLD THE
   LINE! for the side breaking), and the war drums quicken.
 - **A champion takes the field** (`War:champion`, five to seven minutes in): the side that's behind
-  (a coin toss when even) sends its champion from its camp: Sir Aldric the Unbroken for the Crown,
+  (a coin toss when even) sends its champion from its camp: Sir Aldric the Unbroken for the Crown (the Training Yard's own master of steel),
   Grimwald Ironhand for Iron, a Champion bot in heavy plate with a great blade, a head taller than
   the rest, 900 health and 120 more for each enemy player; he pushes the front with his army. Every
   screen puts his name up on the bars (`BossEntrance.client`: YOUR / THEIR CHAMPION TAKES THE FIELD;
