@@ -1,4 +1,16 @@
-# Updated scripts: a cinematic grade over the open air
+# Updated scripts: crates and barrels break
+
+- **Every map's crates and barrels** (war camps, the Courtyard, the dungeons' storerooms): strike one with a blade and it bursts. Planks or staves fly, wood crunches, dust puffs, and anything stacked on it comes down too. It's back 90 seconds later. Deadvault's searchable containers are untouched.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Breakables.lua](ServerScriptService/Game/Breakables.lua) | ServerScriptService ▸ Game | ModuleScript | new |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | starts it |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a cinematic grade over the open air
 
 - **Every open-air map**: a gentle film look. A touch more contrast and colour, the light a shade warm, and the sun's rays visible through the haze by day. It's off in the dungeons (they have their own grade) and the Gilded Rat.
 

@@ -111,7 +111,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/RigReplicator.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `RigReplicator` | LocalScript |
 | `StarterPlayerScripts/War.client.lua`, `SiegeEpic.client.lua`, `Warfield.client.lua`, `Engines.client.lua`, `MatchIntro.client.lua`, `BattleAmbience.client.lua`, `ArenaCrowd.client.lua`, `HordeHost.client.lua`, `CourtyardGuards.client.lua`, `BossEntrance.client.lua`, `DungeonMood.client.lua`, `BannerWind.client.lua`, `Weather.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → each by its name (the battles, the crowds, the dark, the wind) | LocalScript each |
 | `ReplicatedStorage/WarFX.lua`, `WarCrowd.lua`, `BossIntro.lua` | `ReplicatedStorage` → `WarFX`, `WarCrowd`, `BossIntro` | ModuleScript each |
-| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
+| `ServerScriptService/Game/WarMap.lua`, `WarProps.lua`, `Engines.lua`, `Litter.lua`, `Traps.lua`, `Secrets.lua`, `Breakables.lua` | `ServerScriptService` → `Game` → each by its name | ModuleScript each |
 | `StarterPlayerScripts/Traps.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Traps` | LocalScript |
 | `StarterPlayerScripts/TavernAmbience.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `TavernAmbience` | LocalScript |
 | `StarterPlayerScripts/WhatsNew.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `WhatsNew` | LocalScript |
@@ -1801,6 +1801,14 @@ fighters, or a frost that slows (`SpeedMult_Frost`). A mode's `target` returning
 `Engines.client` draws every shot (ReplicatedStorage ▸ WarEvent) and warns you when one's coming
 down on you (TREBUCHET / VOLLEY: raise your guard / METEORS / LIGHTNING / FROST); `_G.EngineShout`.
 Used by War (everything) and Siege (below: power 0.6).
+
+## Crates and barrels break (`Game ▸ Breakables`)
+A map's crates and barrels (MapKit's `crate` / `barrel`: the war camps, the Courtyard, the
+dungeons' storerooms) give way to a blade: a blow that hits the world on one
+(`CombatServer.worldHitHooks`) bursts it, planks or staves flung out and tumbling, a crunch of
+wood, a puff of dust; a crate stacked on it comes down with it; its bands and hoops go too. Ninety
+seconds later it's back where it was (if the map's still the same). Not Deadvault's searchable
+containers (those live in workspace ▸ LootDrops). Started once by `GameServer`.
 
 ## The cinematic grade (`CinematicGrade.client`)
 Over every open-air map, on your screen only, a gentle film look: a touch more contrast (+0.08)

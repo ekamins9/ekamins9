@@ -16,6 +16,8 @@ local Game       = require(script.Parent:WaitForChild("Game"))
 local MapLoader  = Game.MapLoader
 -- Warfront matches are filled up with bots while players are few (Game ▸ BotFill)
 require(script.Parent:WaitForChild("BotFill")).start()
+-- (a map's crates and barrels give way to a blade: Game ▸ Breakables)
+require(script.Parent:WaitForChild("Breakables")).init()
 
 -- someone with no body (the menu, the intro, the class screen) still sees the map: the
 -- world streams in around its middle (MapLoader.focus) instead of around nothing
