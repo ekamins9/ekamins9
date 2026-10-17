@@ -143,7 +143,7 @@ edge.Size = UDim2.fromOffset(120, 64)
 edge.BackgroundTransparency = 1
 edge.Visible = false
 edge.Parent = gui
-local edgeArrow = text(edge, "➤", 40, GUIDE); edgeArrow.AnchorPoint = Vector2.new(0.5, 0.5); edgeArrow.Position = UDim2.fromScale(0.5, 0.36); edgeArrow.Size = UDim2.fromOffset(46, 46); edgeArrow.TextXAlignment = Enum.TextXAlignment.Center
+local edgeArrow = text(edge, "▶", 40, GUIDE); edgeArrow.AnchorPoint = Vector2.new(0.5, 0.5); edgeArrow.Position = UDim2.fromScale(0.5, 0.36); edgeArrow.Size = UDim2.fromOffset(46, 46); edgeArrow.TextXAlignment = Enum.TextXAlignment.Center
 local edgeName = text(edge, "", 13, WHITE); edgeName.Position = UDim2.new(0, 0, 1, -18); edgeName.Size = UDim2.new(1, 0, 0, 16); edgeName.TextXAlignment = Enum.TextXAlignment.Center
 
 local fighting = false   -- in the ring / the gauntlet / practice: no guide
@@ -393,7 +393,7 @@ markFeet = function(action)
 	local r = feetRows[action]
 	if not r or tried[action] then return end
 	tried[action] = true
-	r.tick.Text = "✔"
+	r.tick.Text = "✓"
 	r.row.BackgroundColor3 = Color3.fromRGB(40, 90, 50)
 	local sc = r.tick:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", r.tick)
 	sc.Scale = 1.8
@@ -502,7 +502,7 @@ local function lessonBoard(track)
 		r.LayoutOrder = i; r.ZIndex = 8
 		local t1 = text(r, string.format("%d.  %s", i, string.upper(l.title)), 17); t1.Position = UDim2.fromOffset(12, 4); t1.Size = UDim2.new(1, -150, 0, 20); t1.ZIndex = 9
 		local t2 = text(r, say(l.text), 11, Theme.DIM, Theme.FONT); t2.Position = UDim2.fromOffset(12, 24); t2.Size = UDim2.new(1, -150, 0, 18); t2.TextTruncate = Enum.TextTruncate.AtEnd; t2.TextWrapped = false; t2.ZIndex = 9
-		local st = text(r, done[l.id] and "DONE ✔" or (on and "NOW" or "START ›"), 15, done[l.id] and Theme.GOOD or (on and WHITE or Theme.ACCENT)); st.AnchorPoint = Vector2.new(1, 0.5)
+		local st = text(r, done[l.id] and "DONE ✓" or (on and "NOW" or "START ›"), 15, done[l.id] and Theme.GOOD or (on and WHITE or Theme.ACCENT)); st.AnchorPoint = Vector2.new(1, 0.5)
 		st.Position = UDim2.new(1, -12, 0.5, 0); st.Size = UDim2.fromOffset(120, 20); st.TextXAlignment = Enum.TextXAlignment.Right; st.ZIndex = 9
 		r.MouseButton1Click:Connect(function() remote:FireServer("Lesson", l.id); closeBoard() end)
 	end

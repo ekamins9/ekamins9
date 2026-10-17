@@ -468,7 +468,7 @@ tabs.SERVER = function()
 		local dl = flow(s); dl.LayoutOrder = order; order += 1
 		for i, d in ipairs(Drops.list()) do
 			local out = Drops.released(d.id)
-			local b = button(dl, (out and "✔ " or "") .. string.upper(d.name), out and Theme.GLASS2 or Theme.BLUE); b.LayoutOrder = i; b.TextSize = 12
+			local b = button(dl, (out and "✓ " or "") .. string.upper(d.name), out and Theme.GLASS2 or Theme.BLUE); b.LayoutOrder = i; b.TextSize = 12
 			b.Activated:Connect(function()
 				confirm("drop" .. d.id, function() act("drop", {op = out and "hold" or "now", id = d.id}) end)
 			end)

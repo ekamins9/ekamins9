@@ -17,7 +17,7 @@ local function isBack(b)
 	local n = string.lower(b.Name)
 	if n:find("close") or n:find("back") then return true end
 	local t = b:IsA("TextButton") and string.upper(b.Text) or ""
-	return t == "✕" or t == "X" or t == "BACK" or t == "CLOSE" or t == "‹ BACK" or t == "< BACK"
+	return t == "✕" or t == "×" or t == "X" or t == "BACK" or t == "CLOSE" or t == "‹ BACK" or t == "< BACK"
 end
 
 local function bind(b)

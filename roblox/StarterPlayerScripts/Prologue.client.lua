@@ -150,7 +150,7 @@ do
 end
 -- the arrow at the screen's edge
 do
-	local a = label(gui, "➤", 40, Theme.FONT_TITLE, GOLD, 44)
+	local a = label(gui, "▶", 40, Theme.FONT_TITLE, GOLD, 44)
 	a.Size = UDim2.fromOffset(44, 44); a.AnchorPoint = Vector2.new(0.5, 0.5); a.Visible = false
 	ui.edge = a
 end

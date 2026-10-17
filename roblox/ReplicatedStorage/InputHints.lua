@@ -34,7 +34,7 @@ InputHints.PAD = {
 -- what the button is called (Xbox / PlayStation)
 local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", ButtonL1 = "LB", ButtonR1 = "RB", ButtonL2 = "LT", ButtonR2 = "RT",
 	ButtonL3 = "LS", ButtonR3 = "RS", DPadUp = "D-PAD ↑", DPadDown = "D-PAD ↓", DPadLeft = "D-PAD ←", DPadRight = "D-PAD →", ButtonSelect = "VIEW"}
-local PS = {ButtonA = "✕", ButtonB = "○", ButtonX = "□", ButtonY = "△", ButtonL1 = "L1", ButtonR1 = "R1", ButtonL2 = "L2", ButtonR2 = "R2",
+local PS = {ButtonA = "×", ButtonB = "○", ButtonX = "□", ButtonY = "△", ButtonL1 = "L1", ButtonR1 = "R1", ButtonL2 = "L2", ButtonR2 = "R2",
 	ButtonL3 = "L3", ButtonR3 = "R3", DPadUp = "D-PAD ↑", DPadDown = "D-PAD ↓", DPadLeft = "D-PAD ←", DPadRight = "D-PAD →", ButtonSelect = "TOUCHPAD"}
 -- (special cases said in words)
 local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s"}

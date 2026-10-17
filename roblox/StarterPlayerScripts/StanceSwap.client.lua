@@ -45,7 +45,7 @@ local function refresh()
 	local t = held()
 	if not t then hint.Text = ""; return end
 	local melee = t:GetAttribute("TwinHidden") == true
-	hint.Text = (melee and "⚔ MELEE" or "✦ MAGIC") .. "  ·  " .. keyName() .. " FOR " .. (melee and "MAGIC" or "MELEE")
+	hint.Text = (melee and "⚔ MELEE" or "✨ MAGIC") .. "  ·  " .. keyName() .. " FOR " .. (melee and "MAGIC" or "MELEE")
 end
 
 local function ask()

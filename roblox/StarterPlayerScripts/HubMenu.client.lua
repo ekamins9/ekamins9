@@ -3019,7 +3019,7 @@ do
 			local sub, subColor = className(cls), COL.DIM
 			if party then
 				if m.leader then sub, subColor = "👑 LEADER", COL.ACCENT
-				elseif m.ready then sub, subColor = "READY ✔", COL.GOOD
+				elseif m.ready then sub, subColor = "READY ✓", COL.GOOD
 				else sub, subColor = "NOT READY", COL.BAD end
 			end
 			local buttons = {}
@@ -3084,7 +3084,7 @@ do
 		barH.Position = UDim2.new(0, 0, 1, 0)
 		barH.Size = UDim2.new(1, 0, 0, big and 20 or 16)
 		progressBar(barH, ct.goal > 0 and ct.n / ct.goal or 0, ct.done and COL.GOOD or (ct.weekly and COL.PURPLE or COL.BLUE),
-			ct.done and "DONE ✔" or string.format("%s / %s", fmt(ct.n), fmt(ct.goal)), big and 20 or 16)
+			ct.done and "DONE ✓" or string.format("%s / %s", fmt(ct.n), fmt(ct.goal)), big and 20 or 16)
 		return r
 	end
 
@@ -3103,7 +3103,7 @@ do
 				row(ep, string.upper(ev.title), live and "LIVE NOW" or (ev.start and ("IN " .. HX.span(ev.start - os.time())) or ""), false, nil, live and COL.GOOD or COL.DIM)
 				if not live then
 					local going = ev.status == Enum.RsvpStatus.Going
-					local rb = bigBtn(ep, going and "✔  YOU'LL BE REMINDED" or "🔔  REMIND ME", going and COL.GLASS2 or COL.PURPLE, function()
+					local rb = bigBtn(ep, going and "✓  YOU'LL BE REMINDED" or "🔔  REMIND ME", going and COL.GLASS2 or COL.PURPLE, function()
 						local ok, st = pcall(function() return game:GetService("SocialService"):PromptRsvpToEventAsync(ev.id) end)
 						if ok and st then ev.status = st; renderLeft() end
 					end)
@@ -3587,7 +3587,7 @@ do
 			status = string.format("%s %s  ·  WINDOW ±%d", state.queue.ranked and "RANKED" or "CASUAL", state.queue.bracket or "", math.min(1000, 100 + 40 * math.floor(s / 4)))
 		elseif party and not leader then
 			local ready = me and me.ready
-			paintFat(playHolder, playFace, ready and "READY ✔" or "READY UP", ready and Color3.fromRGB(70, 90, 120) or COL.GREEN)
+			paintFat(playHolder, playFace, ready and "READY ✓" or "READY UP", ready and Color3.fromRGB(70, 90, 120) or COL.GREEN)
 			playAction = function()
 				local r = call("PartyReady", not ready)
 				if r.party then state.party = r.party end
@@ -4680,7 +4680,7 @@ local function skinStrip(parent, pool, selectedId, onPick, height, showWeapon)
 		local t = title(c, s.name, 13); t.Position = UDim2.new(0, 6, 0, 84); t.Size = UDim2.new(1, -12, 0, 16); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
 		local text, kind = skinWhere(s)
 		local subText = have and "OWNED" or (kind == "crate" and "CRATE" or (kind == "earned" and "EARN" or (kind == "buy" and "IN SHOP" or (kind == "pack" and "PACK" or (kind == "pass" and "PASS" or "SHOP")))))
-		if showWeapon then subText = string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. (have and "  ✔" or "") end
+		if showWeapon then subText = string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon) .. (have and "  ✓" or "") end
 		local sub = title(c, subText, 11, have and COL.GOOD or (kind == "buy" and COL.ACCENT or COL.DIM)); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center
 		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
 		c.Activated:Connect(function() onPick(s) end)
@@ -4719,7 +4719,7 @@ function Preview.strip(parent, pool, selectedKey, onPick, height)
 		local subText = it.kind == "skin" and string.upper(Catalog.WEAPON[it.weapon] and Catalog.WEAPON[it.weapon].name or it.weapon)
 			or (it.kind == "spellfx" and string.upper((Catalog.SPELLS[it.spell] or {}).name or "SPELL"))
 			or ({killfx = "KILL FX", piece = "ARMOR", armorset = "ARMOR SET", armorfx = "ARMOR FINISH"})[it.kind] or "EMOTE"
-		local sub = title(c, subText .. (have and "  ✔" or ""), 11, have and COL.GOOD or COL.DIM); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
+		local sub = title(c, subText .. (have and "  ✓" or ""), 11, have and COL.GOOD or COL.DIM); sub.Position = UDim2.new(0, 6, 0, 102); sub.Size = UDim2.new(1, -12, 0, 14); sub.TextXAlignment = Enum.TextXAlignment.Center; sub.TextTruncate = Enum.TextTruncate.AtEnd
 		if not have then local lk = label(c, "🔒", 13, FONT, COL.TEXT); lk.AnchorPoint = Vector2.new(1, 0); lk.Position = UDim2.new(1, -6, 0, 4); lk.Size = UDim2.fromOffset(18, 18); lk.TextXAlignment = Enum.TextXAlignment.Right end
 		c.Activated:Connect(function() onPick(it) end)
 	end
@@ -5025,7 +5025,7 @@ do
 		local stripH = clearFrame(right); stripH.AnchorPoint = Vector2.new(0, 1); stripH.Position = UDim2.new(0, 0, 1, 0); stripH.Size = UDim2.new(1, 0, 0, 186)
 		local owned = 0
 		for _, s in ipairs(pool) do if owns("skins", s.id) then owned += 1 end end
-		local h = title(stripH, string.format("SKINS  ·  %d / %d OWNED", owned, #all + 1) .. (hidden > 0 and string.format("  ·  %d MORE TO UNLOCK: TAP  ✔ OWNED ONLY  TO SEE THEM", hidden) or ""), 15, COL.DIM)
+		local h = title(stripH, string.format("SKINS  ·  %d / %d OWNED", owned, #all + 1) .. (hidden > 0 and string.format("  ·  %d MORE TO UNLOCK: TAP  ✓ OWNED ONLY  TO SEE THEM", hidden) or ""), 15, COL.DIM)
 		h.Size = UDim2.new(1, 0, 0, 20); h.TextTruncate = Enum.TextTruncate.AtEnd
 		local sh = clearFrame(stripH); sh.Position = UDim2.new(0, 0, 0, 24); sh.Size = UDim2.new(1, 0, 1, -24)
 		skinStrip(sh, pool, sel.id, function(s) ui.shopSkin = s.id; render.ARMORY() end, 162)
@@ -5089,7 +5089,7 @@ do
 			local pc = set.pieces[slot]
 			if pc then
 				local on = ui.armorSlots[slot]
-				local h, b = fatButton(toggles, (slot == "bottom" and "LEGS" or string.upper(slot)) .. (on and "  ✔" or ""), on and COL.BLUE or COL.GLASS2, 17)
+				local h, b = fatButton(toggles, (slot == "bottom" and "LEGS" or string.upper(slot)) .. (on and "  ✓" or ""), on and COL.BLUE or COL.GLASS2, 17)
 				h.Size = UDim2.fromOffset(150, 52); h.LayoutOrder = i
 				b.Activated:Connect(function() ui.armorSlots[slot] = not ui.armorSlots[slot]; render.ARMORY() end)
 			end
@@ -5114,7 +5114,7 @@ do
 			if pc then
 				local have = owns("pieces", pc.id)
 				if not have then allOwned = false end
-				local rightText = have and "OWNED ✔" or ((pc.classStarter and pc.unlock) and ("comes with the " .. className(pc.classStarter) .. "  ·  " .. Catalog.unlockText(pc.unlock))
+				local rightText = have and "OWNED ✓" or ((pc.classStarter and pc.unlock) and ("comes with the " .. className(pc.classStarter) .. "  ·  " .. Catalog.unlockText(pc.unlock))
 					or (pc.unlock and (Catalog.unlockText(pc.unlock) .. "  ·  " .. progressText(pc.unlock)) or priceText(pc.marks, pc.crowns)))
 				row(p, pc.name, rightText, false, nil, have and COL.GOOD or (pc.unlock and COL.PURPLE or COL.DIM))
 			end
@@ -5385,7 +5385,7 @@ do
 			local rl = scroll(right, 6)
 			for _, pc in ipairs(pieces) do
 				local have = owns("pieces", pc.id)
-				row(rl, pc.name, have and "owned ✔" or priceText(pc.marks, pc.crowns), false, (not have and onSale) and function()
+				row(rl, pc.name, have and "owned ✓" or priceText(pc.marks, pc.crowns), false, (not have and onSale) and function()
 					local opts = {}
 					if (pc.marks or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "piece", pc.id, "marks"), render.SHOP) end}) end
 					if (pc.crowns or 0) > 0 then table.insert(opts, {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL.GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns"), render.SHOP) end}) end
@@ -5395,7 +5395,7 @@ do
 			end
 			for _, sk in ipairs(skins) do
 				local have = owns("skins", sk.id)
-				row(rl, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name, have and "owned ✔" or priceText(sk.marks, sk.crowns), false, (not have and onSale) and function()
+				row(rl, (Catalog.WEAPON[sk.weapon] and Catalog.WEAPON[sk.weapon].name or sk.weapon) .. "  ·  " .. sk.name, have and "owned ✓" or priceText(sk.marks, sk.crowns), false, (not have and onSale) and function()
 					modal(sk.name, sk.rarity or "", skinBuyButtons(sk, render.SHOP), function(b2) local th2 = weaponStage(b2, sk.weapon, sk.id, UDim2.new(1, 0, 0, 200)); th2.LayoutOrder = 5 end)
 				end or nil, have and COL.GOOD or (RARITY_COL[sk.rarity] or COL.MARKS))
 			end
@@ -5412,7 +5412,7 @@ do
 			(not have and skinOnSale(s.id)) and skinBuyButtons(s, render.SHOP) or nil, function(box)
 				local st = weaponStage(box, s.weapon, s.id, UDim2.new(1, 0, 0, 300)); st.LayoutOrder = 5
 				border(st, RARITY_COL[s.rarity] or COL.DIM, 2, 0.2)
-				if have then local o = title(box, "OWNED ✔", 18, COL.GOOD); o.Size = UDim2.new(1, 0, 0, 22); o.LayoutOrder = 6 end
+				if have then local o = title(box, "OWNED ✓", 18, COL.GOOD); o.Size = UDim2.new(1, 0, 0, 22); o.LayoutOrder = 6 end
 			end, 620)
 	end
 
@@ -5480,7 +5480,7 @@ do
 				s.Position = UDim2.new(0, 14, 0, 254); s.Size = UDim2.new(1, -28, 0, 18)
 				local priceH = frame(card, all and COL.GLASS2 or COL.GOLD, 10); priceH.AnchorPoint = Vector2.new(0, 1); priceH.Position = UDim2.new(0, 12, 1, -12); priceH.Size = UDim2.new(1, -24, 0, 38)
 				gloss(priceH, 0.2)
-				local pr = title(priceH, all and "OWNED ✔" or (any and ("REST  ·  " .. priceText(m, c)) or priceText(m, c)), 16); pr.Size = UDim2.fromScale(1, 1); pr.TextXAlignment = Enum.TextXAlignment.Center
+				local pr = title(priceH, all and "OWNED ✓" or (any and ("REST  ·  " .. priceText(m, c)) or priceText(m, c)), 16); pr.Size = UDim2.fromScale(1, 1); pr.TextXAlignment = Enum.TextXAlignment.Center
 				hoverScale(card, card, 1.02)
 				card.Activated:Connect(function() packDetail(k) end)
 			end
@@ -5513,7 +5513,7 @@ do
 				local wn = title(card, string.upper(w and w.name or s.weapon), 13, COL.DIM); wn.Position = UDim2.new(0, 12, 0, 226); wn.Size = UDim2.new(1, -24, 0, 16); wn.TextTruncate = Enum.TextTruncate.AtEnd
 				local priceH = frame(card, have and COL.GLASS2 or COL.GOLD, 10); priceH.AnchorPoint = Vector2.new(0, 1); priceH.Position = UDim2.new(0, 10, 1, -10); priceH.Size = UDim2.new(1, -20, 0, 36)
 				gloss(priceH, 0.2)
-				local pr = title(priceH, have and "OWNED ✔" or priceText(s.marks, s.crowns), 14); pr.Size = UDim2.fromScale(1, 1); pr.TextXAlignment = Enum.TextXAlignment.Center; pr.TextTruncate = Enum.TextTruncate.AtEnd
+				local pr = title(priceH, have and "OWNED ✓" or priceText(s.marks, s.crowns), 14); pr.Size = UDim2.fromScale(1, 1); pr.TextXAlignment = Enum.TextXAlignment.Center; pr.TextTruncate = Enum.TextTruncate.AtEnd
 				hoverScale(card, card, 1.03)
 				card.Activated:Connect(function() skinDetail(s) end)
 			end
@@ -5605,7 +5605,7 @@ do
 			local nOf = 0
 			for _, it in ipairs(pool) do if it.rarity == sel.rarity then nOf += 1 end end
 			local each = (crate.odds[sel.rarity] or 0) / math.max(1, nOf)
-			local note = title(stg, have and "OWNED ✔" or string.format("%s CHANCE FOR A %s PER OPEN  ·  %s FOR THIS ONE", HX.pct(crate.odds[sel.rarity] or 0), string.upper(sel.rarity), HX.pct(each)), 14, have and COL.GOOD or COL.DIM)
+			local note = title(stg, have and "OWNED ✓" or string.format("%s CHANCE FOR A %s PER OPEN  ·  %s FOR THIS ONE", HX.pct(crate.odds[sel.rarity] or 0), string.upper(sel.rarity), HX.pct(each)), 14, have and COL.GOOD or COL.DIM)
 			note.AnchorPoint = Vector2.new(0, 1); note.Position = UDim2.new(0, 20, 1, -14); note.Size = UDim2.new(1, -40, 0, 18)
 			-- a Mythic is numbered: how many anyone has ever pulled
 			if sel.rarity == "Mythic" or sel.rarity == "Unique" then
@@ -5876,9 +5876,9 @@ do
 		local pay = title(rw, "+" .. fmt(ct.pay), 18, COL.MARKS); pay.Position = UDim2.fromOffset(40, 9); pay.Size = UDim2.fromOffset(64, 22)
 		local barH = clearFrame(r); barH.AnchorPoint = Vector2.new(0, 1); barH.Position = UDim2.new(0, 0, 1, 0); barH.Size = UDim2.new(1, 0, 0, 24)
 		progressBar(barH, ct.goal > 0 and ct.n / ct.goal or 0, ct.done and COL.GOOD or (ct.weekly and COL.PURPLE or COL.BLUE),
-			ct.done and "DONE ✔  ·  PAID" or string.format("%s / %s", fmt(ct.n), fmt(ct.goal)), 24)
+			ct.done and "DONE ✓  ·  PAID" or string.format("%s / %s", fmt(ct.n), fmt(ct.goal)), 24)
 		if ct.done then
-			local check = title(r, "✔", 40, COL.GOOD); check.AnchorPoint = Vector2.new(1, 0.5); check.Position = UDim2.new(1, -4, 0.5, 0); check.Size = UDim2.fromOffset(40, 40); check.TextXAlignment = Enum.TextXAlignment.Right
+			local check = title(r, "✓", 40, COL.GOOD); check.AnchorPoint = Vector2.new(1, 0.5); check.Position = UDim2.new(1, -4, 0.5, 0); check.Size = UDim2.fromOffset(40, 40); check.TextXAlignment = Enum.TextXAlignment.Right
 			rw.Visible = false
 		end
 		return r
@@ -5954,7 +5954,7 @@ do
 			local n = title(card, s.name, 16); n.Position = UDim2.fromOffset(10, 130); n.Size = UDim2.new(1, -20, 0, 20); n.TextTruncate = Enum.TextTruncate.AtEnd
 			local w = title(card, string.upper(Catalog.WEAPON[s.weapon] and Catalog.WEAPON[s.weapon].name or s.weapon), 12, COL.DIM); w.Position = UDim2.fromOffset(10, 150); w.Size = UDim2.new(1, -20, 0, 16); w.TextTruncate = Enum.TextTruncate.AtEnd
 			local rt = rarityTag(card, s.rarity); rt.Position = UDim2.fromOffset(10, 170)
-			local st = title(card, have and "✔ YOURS" or "🔒", 14, have and COL.GOOD or COL.DIM); st.AnchorPoint = Vector2.new(1, 0); st.Position = UDim2.new(1, -10, 0, 170); st.Size = UDim2.fromOffset(70, 20); st.TextXAlignment = Enum.TextXAlignment.Right
+			local st = title(card, have and "✓ YOURS" or "🔒", 14, have and COL.GOOD or COL.DIM); st.AnchorPoint = Vector2.new(1, 0); st.Position = UDim2.new(1, -10, 0, 170); st.Size = UDim2.fromOffset(70, 20); st.TextXAlignment = Enum.TextXAlignment.Right
 			local bh2 = clearFrame(card); bh2.AnchorPoint = Vector2.new(0, 1); bh2.Position = UDim2.new(0, 10, 1, -8); bh2.Size = UDim2.new(1, -20, 0, 10)
 			progressBar(bh2, math.clamp(done / math.max(s.unlock.n or 1, 1), 0, 1), have and COL.GOOD or COL.PURPLE, nil, 10)
 		end
@@ -5987,7 +5987,7 @@ do
 			padding(r, 12, 12, 6, 8)
 			local bar = frame(r, it.color or COL.DIM, 3); bar.Size = UDim2.fromOffset(4, 38); bar.Position = UDim2.new(0, -8, 0, 0)
 			local tt = title(r, it.text, 15, it.have and COL.DIM or COL.TEXT); tt.Size = UDim2.new(1, -150, 0, 20); tt.TextTruncate = Enum.TextTruncate.AtEnd
-			local need = title(r, it.have and "EARNED ✔" or Catalog.unlockText(it.u), 12, it.have and COL.GOOD or COL.DIM); need.AnchorPoint = Vector2.new(1, 0); need.Position = UDim2.new(1, 0, 0, 2); need.Size = UDim2.fromOffset(240, 16); need.TextXAlignment = Enum.TextXAlignment.Right; need.TextTruncate = Enum.TextTruncate.AtEnd
+			local need = title(r, it.have and "EARNED ✓" or Catalog.unlockText(it.u), 12, it.have and COL.GOOD or COL.DIM); need.AnchorPoint = Vector2.new(1, 0); need.Position = UDim2.new(1, 0, 0, 2); need.Size = UDim2.fromOffset(240, 16); need.TextXAlignment = Enum.TextXAlignment.Right; need.TextTruncate = Enum.TextTruncate.AtEnd
 			local bh3 = clearFrame(r); bh3.AnchorPoint = Vector2.new(0, 1); bh3.Position = UDim2.new(0, 0, 1, 0); bh3.Size = UDim2.new(1, 0, 0, 16)
 			progressBar(bh3, it.have and 1 or progressFrac(it.u), it.have and COL.GOOD or COL.BLUE, it.have and nil or progressText(it.u), 16)
 		end
@@ -6400,7 +6400,7 @@ local function rewardCard(parent, r, state, onClaim, premium)
 		b.AnchorPoint = Vector2.new(0.5, 1); b.Position = UDim2.new(0.5, 0, 1, -6); b.Size = UDim2.new(1, -12, 0, 30)
 		b.Activated:Connect(onClaim)
 	elseif state == "claimed" then
-		local c = title(card, "✔", 26, COL.GOOD); c.AnchorPoint = Vector2.new(0.5, 1); c.Position = UDim2.new(0.5, 0, 1, -4); c.Size = UDim2.new(1, 0, 0, 30); c.TextXAlignment = Enum.TextXAlignment.Center
+		local c = title(card, "✓", 26, COL.GOOD); c.AnchorPoint = Vector2.new(0.5, 1); c.Position = UDim2.new(0.5, 0, 1, -4); c.Size = UDim2.new(1, 0, 0, 30); c.TextXAlignment = Enum.TextXAlignment.Center
 	else
 		local lock = frame(card, Color3.new(0, 0, 0), 14); lock.Size = UDim2.fromScale(1, 1); lock.BackgroundTransparency = 0.55
 		local l = title(lock, "🔒", 26); l.AnchorPoint = Vector2.new(0.5, 1); l.Position = UDim2.new(0.5, 0, 1, -6); l.Size = UDim2.new(1, 0, 0, 30); l.TextXAlignment = Enum.TextXAlignment.Center
@@ -7117,7 +7117,7 @@ local function loginPopup()
 				local text, col, sub = rewardVisual(holder, r, 84)
 				local t = title(c, text or "", 14, col or COL.TEXT); t.Position = UDim2.fromOffset(4, 120); t.Size = UDim2.new(1, -8, 0, 18); t.TextXAlignment = Enum.TextXAlignment.Center; t.TextTruncate = Enum.TextTruncate.AtEnd
 				local s2 = title(c, sub or "", 10, COL.DIM); s2.Position = UDim2.fromOffset(4, 138); s2.Size = UDim2.new(1, -8, 0, 14); s2.TextXAlignment = Enum.TextXAlignment.Center; s2.TextTruncate = Enum.TextTruncate.AtEnd
-				if past then local ck = title(c, "✔", 30, COL.GOOD); ck.Position = UDim2.fromOffset(0, 40); ck.Size = UDim2.new(1, 0, 0, 40); ck.TextXAlignment = Enum.TextXAlignment.Center end
+				if past then local ck = title(c, "✓", 30, COL.GOOD); ck.Position = UDim2.fromOffset(0, 40); ck.Size = UDim2.new(1, 0, 0, 40); ck.TextXAlignment = Enum.TextXAlignment.Center end
 			end
 			local streak = title(box, string.format("STREAK: %d DAY%s", L.streak or 1, (L.streak or 1) == 1 and "" or "S"), 14, COL.ACCENT)
 			streak.Size = UDim2.new(1, 0, 0, 18); streak.LayoutOrder = 6; streak.TextXAlignment = Enum.TextXAlignment.Center
@@ -7804,7 +7804,7 @@ renderSide = function()
 	end
 	if currentTab == "CLASSES" then
 		local d = ui.dirty[ui.editing]
-		fat(d and ("SAVE " .. string.upper(className(ui.editing))) or "SAVED ✔", d and COL.GREEN or COL.GLASS2, function() if d then render.CLASSES_save() end end)
+		fat(d and ("SAVE " .. string.upper(className(ui.editing))) or "SAVED ✓", d and COL.GREEN or COL.GLASS2, function() if d then render.CLASSES_save() end end)
 		if not Catalog.classOpen(ui.editing, state.profile) then
 			local c = GameConfig.CLASSES[ui.editing]
 			fat("🔒 OPENS AT " .. string.upper(Catalog.unlockText(c and c.unlock)), COL.GLASS2, function() toast("Reach " .. Catalog.unlockText(c and c.unlock) .. " to play the " .. className(ui.editing), COL.BAD) end)
@@ -8827,7 +8827,7 @@ do
 			if #list == 0 then return end
 			local hp = title(la, heading2, 13, COL.DIM); hp.Size = UDim2.new(1, 0, 0, 18); hp.LayoutOrder = nextOrder()
 			for _, it in ipairs(list) do
-				row(la, it.name, (HX.giftTo and HX.giftTo.userId == it.id) and "✔" or "PICK", HX.giftTo and HX.giftTo.userId == it.id, function() findWho(it.id) end, COL.ACCENT)
+				row(la, it.name, (HX.giftTo and HX.giftTo.userId == it.id) and "✓" or "PICK", HX.giftTo and HX.giftTo.userId == it.id, function() findWho(it.id) end, COL.ACCENT)
 			end
 		end
 		local here = {}

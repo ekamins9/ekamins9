@@ -1,4 +1,28 @@
-# Updated scripts: the pass crown shows
+# Updated scripts: every symbol draws
+
+- **Fixed: symbols the game's fonts can't draw** (they showed as boxes or nothing). A sweep rendered every non-ASCII character the UI uses in both fonts (GothamBold, FredokaOne) and replaced the failures:
+  - The tutorial's guide arrows (the Prologue's, the training yard's) were ➤ and are now ▶.
+  - The magic stance hint and a threat's default mark were ✦ and are now ✨.
+  - The showcase's MAPS dropdown was ▾ and is now ▼.
+  - The PlayStation cross in controller hints was ✕ and is now ×.
+- **"OWNED ✔", "READY ✔", "DONE ✔" and the rest** (28 places): ✔ draws as a dark emoji that ignores the text's colour, nearly invisible on the dark panels. ✓ draws in the text's own colour (the green of "owned").
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✓ |
+| [AdminPanel.client.lua](StarterPlayerScripts/AdminPanel.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✓ |
+| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✓ |
+| [Showcase.client.lua](StarterPlayerScripts/Showcase.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✓, ▼ |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✓, ▶ |
+| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ▶ |
+| [StanceSwap.client.lua](StarterPlayerScripts/StanceSwap.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✨ |
+| [Threats.client.lua](StarterPlayerScripts/Threats.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ✨ |
+| [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage | ModuleScript | × |
+| [UIClicks.client.lua](StarterPlayerScripts/UIClicks.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | × is a close button too |
+
+---
+
+## Before that: the pass crown shows
 
 - **Fixed**: the season pass holder's crown before a name (the scoreboard, the round's result, the dungeon lobby, name tags) was a chess-piece glyph the game's font lacks, so it showed as a box. It's now the crown emoji, which renders everywhere.
 

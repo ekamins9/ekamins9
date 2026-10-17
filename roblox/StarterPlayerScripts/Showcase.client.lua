@@ -436,7 +436,7 @@ local function mapChips(maps)
 end
 local function realChip()
 	local g = section("THE BOTS", 496, 46)
-	chip(g, choice.real and "✔  LOOK LIKE REAL PLAYERS: rare skins, kill effects, emotes, no name tags" or "LOOK LIKE REAL PLAYERS: OFF (plain bots)",
+	chip(g, choice.real and "✓  LOOK LIKE REAL PLAYERS: rare skins, kill effects, emotes, no name tags" or "LOOK LIKE REAL PLAYERS: OFF (plain bots)",
 		choice.real, 0, function() choice.real = not choice.real end, 14)
 end
 local function paintSetup()
@@ -592,7 +592,7 @@ barBtn("Q  ◀ FIGHTER", Theme.GLASS2, 118, function() pickSubject(-1) end)
 barBtn("FIGHTER ▶  E", Theme.GLASS2, 118, function() pickSubject(1) end)
 gap()
 local nextB = barBtn("N  NEXT MAP", Theme.BLUE, 124, function() remote:FireServer("NextMap") end)
-local mapsB = barBtn("MAPS ▾", Theme.BLUE, 96, function() end)
+local mapsB = barBtn("MAPS ▼", Theme.BLUE, 96, function() end)
 gap()
 barBtn("MENU", Theme.GLASS2, 86, function() openMenu() end)
 barBtn("■  STOP", Theme.RED, 100, function() remote:FireServer("Stop") end)

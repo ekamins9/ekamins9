@@ -66,7 +66,7 @@ local seen = {}   -- bots that were already a threat last frame (for the tick)
 local function what(m)
 	local id = m:GetAttribute("Casting")
 	local sp = id and Spells[id]
-	if sp then return sp.glyph or "✦" end
+	if sp then return sp.glyph or "✨" end
 	return "🏹"
 end
 

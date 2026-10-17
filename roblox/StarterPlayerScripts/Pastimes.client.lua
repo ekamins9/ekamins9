@@ -415,7 +415,7 @@ RunService.RenderStepped:Connect(function()
 	if not hidden then
 		local i, g, left, played = nextGift()
 		if not i then
-			chipTitle.Text = "ALL GIFTS TODAY ✔"
+			chipTitle.Text = "ALL GIFTS TODAY ✓"
 			bar.Size = UDim2.fromScale(1, 1)
 			bar.BackgroundColor3 = Theme.DIM
 			chipStroke.Color = Color3.new(1, 1, 1); chipStroke.Transparency = 0.8
