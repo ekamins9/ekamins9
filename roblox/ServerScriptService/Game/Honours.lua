@@ -13,7 +13,8 @@
      place; never a teammate. A new round starts everyone's count again. Looks only.
 
      HonoursEvent (ReplicatedStorage, made here): "Mine" {title, sub, big} to the one who earned it,
-     "All" {text, sub, who = userId} to everyone. ]]
+     "All" {text, sub, who = userId} to everyone. The round's longest run so far is on the Round node
+     (BestRun, BestRunBy, BestRunRound = the round's Number) for the result screen (RoundResult). ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -71,6 +72,11 @@ function Honours.kill(killer, victimPlr)
 	s.multi = (now - s.lastAt <= WINDOW) and s.multi + 1 or 1
 	s.lastAt = now
 	s.run += 1
+	if s.run >= 3 and (node:GetAttribute("BestRunRound") ~= round or s.run > (node:GetAttribute("BestRun") or 0)) then
+		node:SetAttribute("BestRun", s.run)
+		node:SetAttribute("BestRunBy", killer.DisplayName)
+		node:SetAttribute("BestRunRound", round)
+	end
 	local multi = s.multi >= 4 and "RAMPAGE" or MULTI[s.multi]
 	local run, loud = runName(s.run)
 	if multi or run then

@@ -2991,7 +2991,9 @@ gold a third of the way down, the count under a gilt rule, a horn for the big on
 on everyone sees a line under the top of the screen ("… IS A WARLORD · 8 IN A ROW"), and when a run
 of 5 or more ends, who ended it (they get STREAK BREAKER). Never in the Courtyard, a yard or a
 peaceful place, never for a teammate; a new round starts the counts again. Bots' kills count for
-the player who made them, and a bot can end a player's run.
+the player who made them, and a bot can end a player's run. The round's result screen
+(`RoundResult`) shows three plaques under its band: TOP BLADE (most kills, bots too), LONGEST RUN
+(the Round node's `BestRun` / `BestRunBy`, from Honours) and YOUR tally.
 
 ## Low stamina
 

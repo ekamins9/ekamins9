@@ -2,8 +2,9 @@
      VICTORY / DEFEAT / DRAW across the middle on a band in the winning side's
      colour, under it who won ("IRON WINS") and why ("FROSTGATE HAS FALLEN"),
      and when the match is over, the match. Behind the word, the winning side's arms rise in
-     gold (the house its banners flew on the map: ReplicatedStorage ▸ Houses). A few seconds, then it gives way to
-     the scoreboard and the vote (Scoreboard).
+     gold (the house its banners flew on the map: ReplicatedStorage ▸ Houses). Under the band, the
+     round's honours: its TOP BLADE (most kills, bots too), its LONGEST RUN (Game ▸ Honours) and YOUR
+     tally. A few seconds, then it gives way to the scoreboard and the vote (Scoreboard).
 
      Reads the Round node: State (Round → Intermission), Winner (a team's name
      or a player's), Objective (the result line), WinnerKills, MatchOver.
@@ -105,6 +106,74 @@ local why = text(18, Theme.FONT, 166, 22)             -- FROSTGATE HAS FALLEN ·
 local scale = Instance.new("UIScale")
 scale.Parent = big
 
+-- THE ROUND'S HONOURS: three plaques under the band (whichever have something to say)
+local heroes = Instance.new("CanvasGroup")
+heroes.BackgroundTransparency = 1
+heroes.AnchorPoint = Vector2.new(0.5, 0)
+heroes.Position = UDim2.new(0.5, 0, 0.42, 110)
+heroes.Size = UDim2.fromOffset(720, 74)
+heroes.ZIndex = 5
+heroes.GroupTransparency = 1
+heroes.Parent = gui
+local hl = Instance.new("UIListLayout")
+hl.FillDirection = Enum.FillDirection.Horizontal
+hl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+hl.Padding = UDim.new(0, 14)
+hl.SortOrder = Enum.SortOrder.LayoutOrder
+hl.Parent = heroes
+local HERO_GOLD = Color3.fromRGB(255, 208, 96)
+local plaques = {}
+for i, head in ipairs({"TOP BLADE", "LONGEST RUN", "YOU"}) do
+	local p = Instance.new("Frame")
+	p.Size = UDim2.fromOffset(220, 70)
+	p.BackgroundColor3 = Theme.GLASS
+	p.BackgroundTransparency = 0.15
+	p.LayoutOrder = i
+	p.Parent = heroes
+	Instance.new("UICorner", p).CornerRadius = UDim.new(0, 8)
+	local st = Instance.new("UIStroke"); st.Color = HERO_GOLD; st.Thickness = 1; st.Transparency = 0.45; st.Parent = p
+	local function line(y, h, size, font, col)
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Position = UDim2.fromOffset(10, y)
+		t.Size = UDim2.new(1, -20, 0, h)
+		t.Font, t.TextSize, t.TextColor3 = font, size, col
+		t.TextTruncate = Enum.TextTruncate.AtEnd
+		t.Parent = p
+		return t
+	end
+	local h = line(6, 14, 12, Theme.FONT, HERO_GOLD); h.Text = head
+	plaques[i] = {frame = p, name = line(21, 26, 22, Theme.FONT_TITLE, Color3.new(1, 1, 1)), value = line(48, 16, 14, Theme.FONT, Theme.DIM)}
+end
+local function fillHeroes()
+	local any = false
+	-- TOP BLADE: the most kills of the round, a player's or a bot's
+	local best, bestK = nil, 0
+	for _, p in ipairs(Players:GetPlayers()) do
+		local ls = p:FindFirstChild("leaderstats")
+		local k = ls and ls:FindFirstChild("Kills")
+		if k and k.Value > bestK then best, bestK = p.DisplayName, k.Value end
+	end
+	local seats = ReplicatedStorage:FindFirstChild("BotScores")
+	for _, s in ipairs(seats and seats:GetChildren() or {}) do
+		local k = s:GetAttribute("Kills") or 0
+		if k > bestK then best, bestK = s:GetAttribute("Name") or "Bot", k end
+	end
+	plaques[1].frame.Visible = best ~= nil
+	if best then any = true; plaques[1].name.Text = string.upper(best); plaques[1].value.Text = bestK .. (bestK == 1 and " KILL" or " KILLS") end
+	-- LONGEST RUN: this round's (Game ▸ Honours), from 3 up
+	local run = round:GetAttribute("BestRunRound") == round:GetAttribute("Number") and (round:GetAttribute("BestRun") or 0) or 0
+	plaques[2].frame.Visible = run >= 3
+	if run >= 3 then any = true; plaques[2].name.Text = string.upper(round:GetAttribute("BestRunBy") or ""); plaques[2].value.Text = run .. " IN A ROW" end
+	-- YOU: your own tally (not watching)
+	local ls = player:FindFirstChild("leaderstats")
+	local k, d = ls and ls:FindFirstChild("Kills"), ls and ls:FindFirstChild("Deaths")
+	local mine = k and d and (k.Value > 0 or d.Value > 0)
+	plaques[3].frame.Visible = mine == true
+	if mine then any = true; plaques[3].name.Text = string.upper(player.DisplayName); plaques[3].value.Text = string.format("%d KILLS  ·  %d DEATHS", k.Value, d.Value) end
+	return any
+end
+
 local function teamByName(name)
 	for key, def in pairs(GameConfig.TEAMS) do if def.name == name then return key, def end end
 	return nil
@@ -166,6 +235,10 @@ local function show()
 		if reason == "BACK TO THE GILDED RAT" then reason = "" end
 	end
 	if verdict == whoText then whoText = "" end
+	-- (the round's honours: battles only, not the dungeon game)
+	local honours = not (mdef and mdef.ownSpawn) and fillHeroes()
+	heroes.Visible = honours == true
+	heroes.GroupTransparency = 1
 
 	big.Text, big.TextColor3 = verdict, col
 	who.Text = whoText
@@ -222,6 +295,9 @@ local function show()
 	task.delay(0.55, function()
 		for _, t in ipairs({who, why}) do TweenService:Create(t, TweenInfo.new(0.4), {TextTransparency = 0, TextStrokeTransparency = 0.3}):Play() end
 	end)
+	task.delay(0.9, function()
+		if showing == me and heroes.Visible then TweenService:Create(heroes, TweenInfo.new(0.5), {GroupTransparency = 0}):Play() end
+	end)
 	-- out
 	task.delay(HOLD, function()
 		if showing ~= me then return end
@@ -230,6 +306,7 @@ local function show()
 		TweenService:Create(band, info, {BackgroundTransparency = 1}):Play()
 		for _, t in ipairs({big, who, why}) do TweenService:Create(t, info, {TextTransparency = 1, TextStrokeTransparency = 1}):Play() end
 		for _, il in ipairs(crestLayers) do TweenService:Create(il, info, {ImageTransparency = 1}):Play() end
+		TweenService:Create(heroes, info, {GroupTransparency = 1}):Play()
 		task.delay(0.65, function() if showing == me then gui.Enabled = false end end)
 	end)
 end

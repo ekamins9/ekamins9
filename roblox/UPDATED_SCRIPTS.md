@@ -1,4 +1,18 @@
-# Updated scripts: battle honours
+# Updated scripts: the round's honours on the result screen
+
+- **Under VICTORY / DEFEAT**, three plaques: the round's TOP BLADE (most kills, a player's or a
+  bot's), its LONGEST RUN (from the honours) and YOUR kills and deaths; whichever have something
+  to say.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [RoundResult.client.lua](StarterPlayerScripts/RoundResult.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the plaques (`fillHeroes`) |
+| [Honours.lua](ServerScriptService/Game/Honours.lua) | ServerScriptService ▸ Game | ModuleScript | the round's best run on the Round node |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: battle honours
 
 - **Multi-kills and runs called out**: DOUBLE KILL, TRIPLE KILL, RAMPAGE for kills close together;
   BATTLE-HARDENED, CHAMPION OF THE FIELD, WARLORD, BANE OF ARMIES, UNSTOPPABLE for kills without
