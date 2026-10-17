@@ -51,7 +51,7 @@ end
 task.delay(2, function()
 	local ok, err = pcall(function()
 		require(game:GetService("ServerScriptService"):WaitForChild("Combat"):WaitForChild("Monsters")).publishDisplays(
-			{"Skeleton", "SkeletonKnight", "Goblin", "GoblinBomber", "GoblinBrute", "Ghoul", "Wraith", "LichKing", "OrcGrunt", "OrcBerserker", "ElfArcher", "ElfBlademaster", "PlagueGhoul", "Thrall", "CaveSpider"})
+			{"Skeleton", "SkeletonKnight", "Goblin", "GoblinBomber", "GoblinBrute", "Ghoul", "Wraith", "LichKing", "OrcGrunt", "OrcBerserker", "ElfArcher", "ElfBlademaster", "PlagueGhoul", "Thrall", "CaveSpider", "HeadlessKnight"})
 	end)
 	if not ok then warn("[Game] monster displays:", err) end
 	-- (and the dragon's, Combat ▸ Dragon: a body of its own)

@@ -3916,6 +3916,7 @@ do
 		soldier(world, 6, {pos = Vector3.new(1.2, 0, 0), yaw = 160, team = "A", pose = POSE.guard})
 		chest(world, Vector3.new(4, -3, 3), -35, Color3.fromRGB(90, 170, 255))
 		monster(world, "Wraith", Vector3.new(4.6, 0, -1.5), -120)
+		monster(world, "HeadlessKnight", Vector3.new(-5.6, 0, 1.2), 70)
 		cam.FieldOfView = 42
 		cam.CFrame = CFrame.lookAt(Vector3.new(1.5, 3, -13), Vector3.new(0, 0, 2))
 	end
