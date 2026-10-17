@@ -2063,7 +2063,8 @@ come); one of a second wave climbs out of a pit cracked in the floor (The Depths
 it lies on its back among the bones like the dead it is (its body hidden, a laid-down copy in its
 place, its middle over where it really stands so a sneak attack still lands), and the moment it
 notices anything it gets up, tipping up off the floor from its feet in a puff of grave-dust with a
-groan. **Deadvault's last minute** comes down round you: deep rumbles coming closer together, the
+groan. **Getting out of Deadvault** floods the screen with warm daylight as the dread's drone falls
+away, then it eases back. **Deadvault's last minute** comes down round you: deep rumbles coming closer together, the
 ground shaking harder, grit pouring from the ceiling and stones dropping, your lantern stuttering;
 in the last seconds, without a break.
 Now and then, well ahead of you in the dark, a pale glowing see-through figure walks a few steps across your

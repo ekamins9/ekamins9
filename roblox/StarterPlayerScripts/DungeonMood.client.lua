@@ -23,6 +23,8 @@
                         the bones like the dead it is (its body hidden on your screen, a laid-down
                         copy in its place, no "z z" over it), and when it notices you it gets up
                         (the body tipping up off the floor from its feet, grave-dust, a groan)
+       out into the day Deadvault: getting out (your RaidFate "out") floods the screen with warm
+                        daylight as the dread's drone falls away, then it eases back
        the collapse     Deadvault's last minute: deep rumbles coming closer together, the ground
                         shaking harder, grit pouring from the ceiling round you and stones dropping,
                         your lantern stuttering; at the end, without a break
@@ -964,6 +966,21 @@ local function enter(theme)
 	task.spawn(lurk, token)
 	if not plague then watchMonsters() end
 end
+
+-- OUT INTO THE DAY: you got out of Deadvault
+player:GetAttributeChangedSignal("RaidFate"):Connect(function()
+	if player:GetAttribute("RaidFate") ~= "out" then return end
+	local cc = Instance.new("ColorCorrectionEffect")
+	cc.Name = "Daylight"
+	cc.Brightness, cc.Contrast, cc.TintColor = 0, 0, Color3.new(1, 1, 1)
+	cc.Parent = Lighting
+	TweenService:Create(cc, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Brightness = 0.75, Contrast = -0.3, TintColor = Color3.fromRGB(255, 244, 220)}):Play()
+	if mood.drone then WarFX.stopLoop(mood.drone, 1.5); mood.drone = nil end
+	task.delay(1.6, function()
+		TweenService:Create(cc, TweenInfo.new(2.8, Enum.EasingStyle.Quad), {Brightness = 0, Contrast = 0, TintColor = Color3.new(1, 1, 1)}):Play()
+		task.delay(2.9, function() cc:Destroy() end)
+	end)
+end)
 
 local want = 0
 local function refresh()

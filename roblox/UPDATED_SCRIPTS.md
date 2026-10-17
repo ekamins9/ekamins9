@@ -1,4 +1,15 @@
-# Updated scripts: crates and barrels break
+# Updated scripts: out into the day
+
+- **Deadvault**: getting out floods your screen with warm daylight as the dread's drone falls away, then it eases back under the YOU GOT OUT card.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the daylight |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: crates and barrels break
 
 - **Every map's crates and barrels** (war camps, the Courtyard, the dungeons' storerooms): strike one with a blade and it bursts. Planks or staves fly, wood crunches, dust puffs, and anything stacked on it comes down too. It's back 90 seconds later. Deadvault's searchable containers are untouched.
 
