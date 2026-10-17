@@ -1919,7 +1919,10 @@ An arrow caught on a raised shield stays standing in its board (`SHIELD_ARROWS`,
 `STICK_LIFE`), welded to it so it goes where the shield goes. It's placed in the board's own
 frame (its outer face, somewhere in its middle, square into it with a little tilt): only the
 clients raise the shield (Powers.client), so the server's board is still at ease. Never in a
-body: the game stays Mild (`GameConfig.GORE` off).
+body: the game stays Mild (`GameConfig.GORE` off). War's archer volleys do the same to a shield
+raised against them (an arrow or two each: `Engines` hurt `opts.arrows`, `RangedServer.shieldCatch`).
+The arrow is held by a Weld with its offset, not a WeldConstraint (a client works a constraint's
+offset out from where it sees the parts, and only the client has the shield raised).
 
 ## Shouts in the fight (`Shouts.client`)
 

@@ -144,7 +144,10 @@ local function stick(kind, cf, part, life, fx)
 		for _, p in ipairs(m:GetDescendants()) do
 			if p:IsA("BasePart") then p.Anchored, p.Massless, p.CanQuery, p.CanCollide, p.CanTouch = false, true, false, false, false end
 		end
-		local w = Instance.new("WeldConstraint"); w.Part0, w.Part1 = part, m.PrimaryPart; w.Parent = m.PrimaryPart
+		-- (a Weld with its offset, not a WeldConstraint: a client works a constraint's offset out
+		-- from where it sees the two parts, and a raised shield is where only the client sees it)
+		local w = Instance.new("Weld"); w.Part0, w.Part1 = part, m.PrimaryPart
+		w.C0 = part.CFrame:ToObjectSpace(m.PrimaryPart.CFrame); w.Parent = m.PrimaryPart
 		m.Parent = body
 	else
 		for _, p in ipairs(m:GetDescendants()) do if p:IsA("BasePart") then p.Anchored = true end end
@@ -191,6 +194,19 @@ local function onBoard(face, body)
 	local tilt = CFrame.Angles(r:NextNumber(-0.3, 0.3), r:NextNumber(-0.3, 0.3), 0)
 	local dir = (CFrame.lookAt(Vector3.zero, -n) * tilt).LookVector
 	return p, dir
+end
+
+-- (for other arrows: a war's volleys falling on a raised shield, Game ▸ Engines)
+function RangedServer.shieldCatch(target, kind, life)
+	local face = shieldFace(target)
+	if not face then return nil end
+	local n = 0
+	for _, d in ipairs(target:GetChildren()) do if d:GetAttribute("OnShield") then n += 1 end end
+	if n >= SHIELD_ARROWS then return nil end
+	local p, inward = onBoard(face, target)
+	local stuck = stick(kind or "Arrow", CFrame.lookAt(p - inward * 0.6, p + inward) * CFrame.new(0, 0, 0.5), face, life or 20)
+	if stuck then stuck:SetAttribute("OnShield", true) end
+	return stuck
 end
 
 -- which body part a part is, as a region
@@ -359,16 +375,7 @@ local function kindSound(fx, which, at)
 			target:SetAttribute("GuardText", parried and "ARROW PARRIED" or "ARROW BLOCKED")
 			target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
 			-- (on a shield, it stays standing in the board)
-			local face = shieldFace(target)
-			if face then
-				local n = 0
-				for _, d in ipairs(target:GetChildren()) do if d:GetAttribute("OnShield") then n += 1 end end
-				if n < SHIELD_ARROWS then
-					local p, inward = onBoard(face, target)
-					local stuck = stick(shotKind, CFrame.lookAt(p - inward * 0.6, p + inward) * CFrame.new(0, 0, 0.5), face, cfg.STICK_LIFE, fx)
-					if stuck then stuck:SetAttribute("OnShield", true) end
-				end
-			end
+			RangedServer.shieldCatch(target, shotKind, cfg.STICK_LIFE)
 			return
 		end
 		local region, limbName = regionOf(part, target)

@@ -1,10 +1,11 @@
 # Updated scripts: arrows in the shield
 
-- **Every fight with bows**: an arrow you catch on a raised shield stays standing in the board, five at most, each for 20 seconds. After a volley your shield bristles. Never in a body: the game stays Mild.
+- **Every fight with bows, and War's volleys**: an arrow you catch on a raised shield stays standing in the board, five at most, each for 20 seconds. After a volley your shield bristles. Never in a body: the game stays Mild.
 
 | File | Studio location | Type | Change |
 |---|---|---|---|
-| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `shieldFace`, `onBoard` (in the board's own frame: only clients raise the shield), `SHIELD_ARROWS`; arrows on a body weightless and not catchable |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | `shieldFace`, `onBoard` (in the board's own frame: only clients raise the shield), `SHIELD_ARROWS`, `RangedServer.shieldCatch`; arrows on a body weightless, not catchable, and held by a Weld with its offset (a WeldConstraint's offset is worked out on each client, against a shield only the client has raised) |
+| [Engines.lua](ServerScriptService/Game/Engines.lua) | ServerScriptService ▸ Game | ModuleScript | a War volley that falls on a raised shield leaves an arrow or two in it (`opts.arrows`) |
 | [README.md](README.md) | | doc | |
 
 ---

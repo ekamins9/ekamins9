@@ -29,6 +29,8 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Game = require(script.Parent:WaitForChild("Game"))
 local Moves = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("BossMoves"))
+local RangedServer
+local function Ranged() RangedServer = RangedServer or require(ServerScriptService:WaitForChild("Combat"):WaitForChild("RangedServer")); return RangedServer end
 local Teams = Game.Teams
 
 local Engines = {}
@@ -109,7 +111,12 @@ function Engines:hurt(side, at, r, dmg, opts)
 			local hum = humOf(model)
 			local safe = false
 			if opts.guard then
-				if model:GetAttribute("Blocking") == true then safe = true
+				if model:GetAttribute("Blocking") == true then
+					safe = true
+					-- (a shield raised against the volley comes out of it bristling)
+					if opts.arrows then
+						for _ = 1, math.random(1, 2) do pcall(Ranged().shieldCatch, model, "Arrow") end
+					end
 				else
 					roofRay.FilterDescendantsInstances = {model, workspace:FindFirstChild("NPCs")}
 					safe = workspace:Raycast(hrp.Position + Vector3.new(0, 2, 0), Vector3.new(0, 40, 0), roofRay) ~= nil
@@ -171,7 +178,7 @@ function Engines:fireVolley(side)
 	local V = Engines.VOLLEY
 	remote:FireAllClients("Volley", {side = side, from = from + Vector3.new(0, 6, 0), to = to, t = V.flight, r = V.radius, n = 120})
 	task.wait(V.flight)
-	if self.alive() then self:hurt(side, to, V.radius, V.damage, {guard = true, flat = true, by = Engines.name(side, "Archers"), with = "Volley"}) end
+	if self.alive() then self:hurt(side, to, V.radius, V.damage, {guard = true, arrows = true, flat = true, by = Engines.name(side, "Archers"), with = "Volley"}) end
 end
 
 function Engines:fireBarrage(side, frontZ)
