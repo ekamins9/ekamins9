@@ -1,4 +1,17 @@
-# Updated scripts: shell-shocked
+# Updated scripts: spiders
+
+- **The dungeons** (the Bone Crypt, the Goblin Warrens, the Crimson Manor, the Hollow Abbey): now and then a spider lets itself down on its thread from the ceiling ahead of you. It hangs at the height of your face, turning, legs working, red eyes catching your lantern, then whips back up into the dark with a skitter. It goes sooner if you walk up to it.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | spiders |
+| [README.md](README.md) | | doc | |
+
+Studio-only: ReplicatedStorage ▸ WarAudio ▸ Skitter (a Sound; save the place).
+
+---
+
+## Before that: shell-shocked
 
 - **A blast right by you** (a trebuchet stone, a battle-mage's fireball) leaves you half deaf for a few seconds: the battle goes muffled and far away, your ears ring, your eyes swim, and then it all comes back. Turning screen shake off turns this off too.
 

@@ -2111,7 +2111,10 @@ theme's colour), blinks, and is gone when you come within 22 studs. Now and then
 passing over, grit sifting down from the ceiling and your lantern trembling with each. Now and then, while nothing's coming for you, slow footsteps sound somewhere behind you on
 whatever's underfoot, a little closer each, and stop. Now and then a few rats squeak and scurry across the floor ahead of you, wall to wall,
 through your light (WarAudio ▸ Squeak), and water drips somewhere close (WarAudio ▸ Drip; not in
-the Ember Forge). **The score** (`Music.client`) is quiet down here: only the dungeon's dread (`Dread`:
+the Ember Forge). Now and then a spider lets itself down on its thread from the ceiling ahead of
+you to the height of your face, hangs there turning, legs working, eyes red in your light, and whips
+back up into the dark, sooner if you walk up to it (WarAudio ▸ Skitter; the crypt, the warrens,
+the manor, the abbey). **The score** (`Music.client`) is quiet down here: only the dungeon's dread (`Dread`:
 ReplicatedStorage ▸ WarAudio ▸ Dread, a Studio-only Sound; silence without it) until a fight is on
 (a Depths room's gates shut, a blow struck or taken in the last 8 s, something within 60 studs
 has seen you and is coming: Alert "!"), when the battle score swells in, easing back out 10 s

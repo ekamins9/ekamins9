@@ -45,6 +45,10 @@
        vermin           now and then a few rats squeak and scurry across the floor ahead of you,
                         wall to wall, through your light (WarAudio ▸ Squeak); somewhere close,
                         water drips (WarAudio ▸ Drip; not in the Ember Forge)
+       spiders          now and then one lets itself down on its thread from the ceiling ahead of
+                        you to the height of your face, hangs there turning, legs working, eyes
+                        red in your light, then whips back up (WarAudio ▸ Skitter); not in the ice,
+                        the forge or the drowned halls
        eyes             now and then a pair of eyes watches you out of the dark far ahead, low in a
                         doorway or a corner; they blink, and when you come closer they're gone
        overhead         now and then something heavy walks across the floor above you: slow deep
@@ -407,6 +411,127 @@ local function vermin(token)
 	while mood.on and mood.token == token do
 		pcall(rats)
 		task.wait(28 + math.random() * 40)
+	end
+end
+
+-- SPIDERS: one lets itself down on its thread from the ceiling ahead of you to the height of your
+-- face, hangs there turning slowly with its legs working and its eyes catching your light, then
+-- whips back up into the dark (sooner if you come right up to it). Only where there's a ceiling.
+local SPIDERS = {BoneCrypt = true, GoblinWarrens = true, CrimsonManor = true, HollowAbbey = true}
+local SPIDER = Color3.fromRGB(46, 38, 34)
+local SPIDER_MARK = Color3.fromRGB(196, 182, 150)   -- (a pale mark on its back, catching your light)
+local function spider()
+	local cam = workspace.CurrentCamera
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not (cam and root) then return end
+	ghostRay.FilterDescendantsInstances = {char, cam, workspace:FindFirstChild("NPCs")}
+	local look = cam.CFrame.LookVector
+	local fwd = V3(look.X, 0, look.Z)
+	if fwd.Magnitude < 0.2 then return end
+	fwd = fwd.Unit
+	local eye = root.Position + V3(0, 1.5, 0)
+	-- (ahead, short of the wall: 6 to 12 studs, a little to one side)
+	local hit = workspace:Raycast(eye, fwd * 16, ghostRay)
+	local d = math.min(hit and (hit.Position - eye).Magnitude - 2.5 or 12, 12)
+	if d < 6 then return end
+	local at = eye + fwd * d + V3(-fwd.Z, 0, fwd.X) * ((math.random() - 0.5) * 3)
+	local up = workspace:Raycast(at, V3(0, 40, 0), ghostRay)
+	if not up then return end
+	local top = up.Position - V3(0, 0.15, 0)
+	if top.Y - at.Y < 4 then return end
+	local k = 0.8 + math.random() * 0.9   -- (how big)
+	local hangY = at.Y + (math.random() - 0.3) * 1.2
+	local folder = workspace:FindFirstChild("DungeonVermin") or Instance.new("Folder")
+	folder.Name = "DungeonVermin"
+	folder.Parent = workspace
+	local parts = {}
+	local function bit(size, color, mat, ball, alpha)
+		local p = Instance.new("Part")
+		p.Size, p.Color, p.Material = size, color, mat or Enum.Material.SmoothPlastic
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.Transparency = alpha or 0
+		if ball then p.Shape = Enum.PartType.Ball end
+		p.CFrame = CFrame.new(top)
+		p.Parent = folder
+		table.insert(parts, p)
+		return p
+	end
+	local abdomen = bit(V3(1, 1, 1) * 0.95 * k, SPIDER, Enum.Material.Fabric, true)
+	local thorax = bit(V3(1, 1, 1) * 0.55 * k, SPIDER, Enum.Material.Fabric, true)
+	local eyes = {bit(V3(1, 1, 1) * 0.09 * k, Color3.fromRGB(255, 70, 40), Enum.Material.Neon, true), bit(V3(1, 1, 1) * 0.09 * k, Color3.fromRGB(255, 70, 40), Enum.Material.Neon, true)}
+	local thread = bit(V3(0.04, 0.04, 1), Color3.fromRGB(230, 230, 236), Enum.Material.Neon, false, 0.7)
+	local mark = bit(V3(0.3, 0.07, 0.42) * k, SPIDER_MARK, Enum.Material.SmoothPlastic)
+	do local m = Instance.new("SpecialMesh"); m.MeshType = Enum.MeshType.Sphere; m.Parent = mark end
+	local legs = {}
+	for _, sx in ipairs({-1, 1}) do
+		for i = 1, 4 do
+			table.insert(legs, {sx = sx, z = (-0.27 + (i - 1) * 0.18) * k, splay = (i - 2.5) * 0.45, ph = math.random() * 6,
+				a = bit(V3(0.07 * k, 0.07 * k, 0.75 * k), SPIDER), b = bit(V3(0.06 * k, 0.06 * k, 0.95 * k), SPIDER)})
+		end
+	end
+	local yaw = math.random() * math.pi * 2
+	local T1, hold = 1.8, 2.5 + math.random() * 2
+	local t0 = os.clock()
+	local leaving, leftAt = false, nil
+	local list, cfs = {}, {}
+	while abdomen.Parent and mood.on do
+		local t = os.clock() - t0
+		local y
+		if not leaving then
+			if t < T1 then
+				local u = t / T1
+				y = top.Y + (hangY - top.Y) * (1 - (1 - u) ^ 3)
+			else
+				y = hangY + math.sin((t - T1) * 2.2) * 0.12
+			end
+			local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if t > T1 + hold or (r and (r.Position + V3(0, 1.5, 0) - V3(at.X, hangY, at.Z)).Magnitude < 3.5) then
+				leaving, leftAt = true, os.clock()
+				WarFX.sound("Skitter", V3(at.X, hangY, at.Z), {volume = 0.6, speed = 1 + math.random() * 0.2, near = 6, range = 40})
+			end
+		end
+		if leaving then
+			local u = (os.clock() - leftAt) / 0.55
+			if u >= 1 then break end
+			y = hangY + (top.Y - hangY) * u * u
+		end
+		y = y or hangY
+		-- (turning slowly as it hangs; head dipped towards the floor, the thread from its back)
+		yaw += 0.006
+		local body = CFrame.new(at.X, y, at.Z) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(math.rad(-38), 0, 0)
+		local busy = leaving and 3 or (t < T1 and 1.4 or (math.sin(t * 1.7) > 0.6 and 1 or 0.25))
+		table.clear(list); table.clear(cfs)
+		local ab = body * CFrame.new(0, 0.18 * k, 0.45 * k)
+		table.insert(list, abdomen); table.insert(cfs, ab)
+		table.insert(list, thorax); table.insert(cfs, body * CFrame.new(0, 0, -0.2 * k))
+		table.insert(list, mark); table.insert(cfs, ab * CFrame.new(0, 0.37 * k, 0.2 * k) * CFrame.Angles(math.rad(-32), 0, 0))
+		for j, e in ipairs(eyes) do
+			table.insert(list, e); table.insert(cfs, body * CFrame.new((j == 1 and -0.1 or 0.1) * k, 0.1 * k, -0.45 * k))
+		end
+		local from = ab * Vector3.new(0, 0.4 * k, 0)
+		local len = math.max(top.Y - from.Y, 0.05)
+		thread.Size = V3(0.04, 0.04, len)
+		table.insert(list, thread); table.insert(cfs, CFrame.new(from.X, from.Y + len / 2, from.Z) * CFrame.Angles(math.pi / 2, 0, 0))
+		for _, l in ipairs(legs) do
+			local w = math.sin(t * 9 * busy + l.ph) * 0.3 * math.min(busy, 1.5)
+			local hip = body * CFrame.new(l.sx * 0.16 * k, 0, l.z)
+			local o = CFrame.Angles(0, -l.sx * l.splay, 0) * CFrame.Angles(0, 0, l.sx * w)
+			local knee = hip * o * Vector3.new(l.sx * 0.6 * k, 0.45 * k, 0)
+			local foot = knee + (hip.Rotation * o):VectorToWorldSpace(Vector3.new(l.sx * 0.3 * k, -0.9 * k, 0))
+			table.insert(list, l.a); table.insert(cfs, CFrame.lookAt((hip.Position + knee) / 2, knee))
+			table.insert(list, l.b); table.insert(cfs, CFrame.lookAt((knee + foot) / 2, foot))
+		end
+		workspace:BulkMoveTo(list, cfs, Enum.BulkMoveMode.FireCFrameChanged)
+		task.wait()
+	end
+	for _, p in ipairs(parts) do p:Destroy() end
+end
+local function spiders(token)
+	task.wait(25 + math.random() * 30)
+	while mood.on and mood.token == token do
+		if SPIDERS[mood.theme or ""] then pcall(spider) end
+		task.wait(40 + math.random() * 50)
 	end
 end
 
@@ -1044,6 +1169,7 @@ local function enter(theme)
 	task.spawn(dark, token)
 	task.spawn(haunt, token)
 	task.spawn(vermin, token)
+	task.spawn(spiders, token)
 	task.spawn(collapse, token)
 	task.spawn(drips, token)
 	task.spawn(bossWatch, token, theme)
