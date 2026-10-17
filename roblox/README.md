@@ -1769,7 +1769,7 @@ siege engines, archers and battle-mages, and the rest of both armies clashing ou
   **Redfield** (wheat fields, a farming village and windmill), **Ironridge** (a ruined fort on a
   rise, outcrops, rain), **Frostmere** (a frozen lake, snowy pines, snow), **Ashvale** (burning
   farmsteads, cracks of fire, embers at dusk), **Kingsbridge** (a river across the field, two
-  stone bridges and a ford, a chapel), **Nightfall** (a moonlit battle: torches lining the field,
+  stone bridges and a ford, a chapel, plots of ploughed earth out on the flanks), **Nightfall** (a moonlit battle: torches lining the field,
   a burning watchtower, standing stones), **Sunreach** (a desert valley: a ruined temple of
   sandstone columns, obelisks, dunes), **Stormvale** (a storm over a ruined abbey: broken nave
   walls and arch, pillars, a graveyard on both sides of the road), **Duskmoor** (purple heather at

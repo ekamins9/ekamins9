@@ -86,7 +86,7 @@ local THEMES = {
 	},
 	Kingsbridge = {
 		ground = M.Grass, field = M.Grass, path = M.Cobblestone, trees = "oak", weather = "",
-		colors = {Grass = Color3.fromRGB(90, 150, 70), Cobblestone = Color3.fromRGB(130, 126, 118), Mud = Color3.fromRGB(96, 80, 60)},
+		colors = {Grass = Color3.fromRGB(90, 150, 70), Cobblestone = Color3.fromRGB(130, 126, 118), Mud = Color3.fromRGB(84, 62, 42)},
 		slab = Color3.fromRGB(90, 150, 70), hill = Color3.fromRGB(80, 136, 62),
 		light = {ClockTime = 8.2, Brightness = 2.2, Ambient = Color3.fromRGB(116, 118, 124), OutdoorAmbient = Color3.fromRGB(150, 150, 150),
 			FogColor = Color3.fromRGB(200, 210, 220), FogEnd = 1300, FogStart = 150, ExposureCompensation = 0.05, EnvironmentDiffuseScale = 0.7},
@@ -701,7 +701,28 @@ function PAINT.Sunreach(T, th)
 	surface(-6, 44, 6, 400, th.ground, th.path)
 	rolling(T, th)
 end
+-- PLOUGHED FIELDS: a few plots of turned earth out on the flanks (painted as furrows; at the
+-- terrain's grain they read as plots of dark earth, a patchwork seen from the hills)
+local function ploughed(T, th, mat, plots)
+	for _, s in ipairs({-1, 1}) do
+		for _ = 1, plots or 3 do
+			-- (on the terrain's grid, so each furrow is one 4-stud row and the green rows between stay)
+			local function snap(v) return math.floor(v / 8 + 0.5) * 8 end
+			local cx, cz = snap(s * rnd:NextNumber(150, 270)), snap(rnd:NextNumber(-330, 330))
+			local w, d = snap(rnd:NextNumber(40, 70)), snap(rnd:NextNumber(50, 90))
+			local alongX = rnd:NextNumber() < 0.5
+			local n = math.floor((alongX and d or w) / 8)
+			for i = 0, n - 1 do
+				local o = -((alongX and d or w) / 2) + i * 8
+				-- (a hair inside the row, so growing it to the grid doesn't reach the next)
+				if alongX then surface(cx - w / 2, cz + o + 0.5, cx + w / 2, cz + o + 3.5, th.ground, mat)
+				else surface(cx + o + 0.5, cz - d / 2, cx + o + 3.5, cz + d / 2, th.ground, mat) end
+			end
+		end
+	end
+end
 function PAINT.Kingsbridge(T, th)
+	ploughed(T, th, M.Mud, 3)
 	rolling(T, th)
 	-- the river: a shallow channel right across the field (wade it, or take a bridge)
 	T:FillBlock(CF(0, 2, 0), V3(640, 8, 34), M.Air)

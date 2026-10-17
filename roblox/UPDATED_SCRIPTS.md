@@ -1,4 +1,15 @@
-# Updated scripts: the Abbey's procession
+# Updated scripts: Kingsbridge's fields
+
+- **War: Kingsbridge** has plots of dark ploughed earth on its flanks (farmland seen from the hills), and its mud is a darker, earthier brown.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | `ploughed`, Kingsbridge mud |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the Abbey's procession
 
 - **The Hollow Abbey**: sometimes the pale figure crossing the dark ahead of you is a whole procession of the abbey's dead brothers, five to seven of them filing slowly across in step, with a faint chant going with them.
 
