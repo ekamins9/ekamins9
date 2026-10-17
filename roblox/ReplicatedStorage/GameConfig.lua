@@ -40,11 +40,11 @@ GameConfig.DOORS = {
 		blurb = "Talk, show off, hit the dummies, duel in the ring."},
 	Tiltyard  = {name = "Tiltyard",  mode = "Tiltyard", access = "Friends", maxPlayers = 3,
 		blurb = "Your own yard, you and your party. Drills and dummies."},
-	-- WAR (Game ▸ Modes ▸ War): the big battle, armies of bots beside the players, siege engines
-	War       = {name = "War", mode = "War", access = "Public", maxPlayers = 24, matchmade = true,
-		blurb = "Two armies, five banners, trebuchets, volleys and battle-mages. Hold the line."},
-	Warfront  = {name = "Warfront",  modes = {"Siege", "TDM", "KOTH", "FFA", "LTS", "Standards"}, access = "Public", vote = true,
-		blurb = "The big fight. The mode changes between rounds by vote."},
+	-- WARFRONT: every battle mode on one kind of server, the next voted between rounds. The
+	-- massive battle (Game ▸ Modes ▸ War: armies of bots beside the players, siege engines) is one
+	-- of them, and a fresh server opens with it (HubServer: a door's first mode)
+	Warfront  = {name = "Warfront",  modes = {"War", "Siege", "TDM", "Standards", "KOTH", "FFA", "LTS"}, access = "Public", vote = true,
+		blurb = "Massive battles, sieges, the hill, the standard. The next battle is voted between rounds."},
 	Horde     = {name = "Horde",     mode = "Horde",    access = "Friends", maxPlayers = 6,
 		blurb = "You and your party defend the camp against waves of bots: keep the fire burning, the caravan whole, the villagers safe."},
 	Lists     = {name = "The Lists", mode = "Lists",    access = "Locked",  brackets = {"1v1", "2v2", "3v3"},
@@ -72,7 +72,7 @@ GameConfig.DOORS = {
 	Invasion  = {name = "Invasions", mode = "InvGoblin", modes = {"InvGoblin", "InvElf", "InvUndead", "InvOrc"}, access = "Friends", maxPlayers = 6, party = true, page = 2,
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
-GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "War", "Warfront", "Horde", "Lists"}
+GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
 GameConfig.ADVENTURE_ORDER = {"Depths", "Deadvault", "Crownfall", "Invasion", "Dragonfall", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
@@ -227,7 +227,7 @@ GameConfig.MODES = {
 	-- tickets: each side's reinforcements · botFill: fighters the bots make up (fillAnywhere: on
 	-- War's own servers too); War lowers it while the server struggles
 	War = {
-		name = "War", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 1,
+		name = "Massive Battle", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 1,
 		description = "Two armies meet: take the five banners one by one as a front, while trebuchets, archers and battle-mages pound the field and the rest of both armies clash on the flanks.",
 		maps = {"Redfield", "Ironridge", "Frostmere", "Ashvale", "Kingsbridge", "Nightfall", "Sunreach", "Stormvale", "Duskmoor", "Mistmarsh", "Amberwood"}, procedural = true,
 		roundLength = 15 * 60, intermission = 15, respawnDelay = 6, waveSpawn = 8, waveGrace = 20,
@@ -318,7 +318,7 @@ function GameConfig.mapFit(key, players, bots)
 end
 
 -- order on the Play tab
-GameConfig.MODE_ORDER = {"Siege", "FFA", "Duel", "TDM", "LTS", "KOTH", "Standards"}
+GameConfig.MODE_ORDER = {"War", "Siege", "FFA", "Duel", "TDM", "LTS", "KOTH", "Standards"}
 
 GameConfig.TEAMS = {
 	A = {name = "Crown", color = BrickColor.new("Bright blue"), rgb = Color3.fromRGB(70, 110, 220)},

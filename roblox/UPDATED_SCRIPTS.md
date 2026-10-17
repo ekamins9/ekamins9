@@ -1,4 +1,20 @@
-# Updated scripts: the fitting-room light
+# Updated scripts: War is part of Warfront
+
+- **The massive battle is now one of Warfront's modes** ("Massive Battle"): a fresh Warfront
+  server opens with it, and the vote between rounds brings it round with Siege, TDM, the
+  Standard, the hill, FFA and LTS. Its own door is gone; the PLAY screen has one big WARFRONT
+  tile (the armies' scene) where War and Warfront were.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | `DOORS.War` gone, "War" first in Warfront's modes, its name "Massive Battle" |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | one WARFRONT tile |
+| [Scoreboard.server.lua](ServerScriptService/Scoreboard.server.lua) | ServerScriptService | Script | a comment |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: the fitting-room light
 
 - **The preview stages** (LOADOUT, the Armory's armour, and the others that use a stage) stand
   your fighter in a dark armoury with warm light falling behind them and the floor going off into

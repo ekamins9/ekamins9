@@ -271,7 +271,7 @@ if Game then
 			elseif Profile then
 				Profile.addStat(p, "round", 1); if won then Profile.addStat(p, "win", 1) end
 			end
-			-- (the season's kill board: Warfront's battles and War's)
+			-- (the season's kill board: Warfront's battles, the massive one among them)
 			if kills and Profile and (Game.server.door == "Warfront" or Game.server.door == "War") and not Game.server.custom then
 				local pr = Profile.get(p)
 				local total = Leaderboards and Leaderboards.seasonKills(pr) or (pr.stats.kill or 0)

@@ -4136,12 +4136,10 @@ do
 		if size and partySize() > size then return string.format("PARTY TOO BIG\n(%d / %d)", partySize(), size) end
 		return nil
 	end
-	-- row 1: War · Warfront · Training · Courtyard (Horde is with the adventures, page 2)
-	tiles.War = tile({key = "War", title = "WAR", sub = "Two armies  ·  trebuchets, volleys, battle-mages", big = true, color = Color3.fromRGB(200, 60, 44),
-		pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.4, -8, 0.46, -6), scene = "War", tag = "NEW  ·  MASSIVE", tagColor = COL.RED,
-		onClick = function() if GameConfig.DOORS.War then goDoor("War") else goDoor("Warfront") end end})
-	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Siege, TDM, the hill  ·  vote the next", color = Color3.fromRGB(214, 110, 60),
-		pos = UDim2.new(0.4, 6, 0, 0), size = UDim2.new(0.2, -10, 0.46, -6), scene = "Warfront", tag = "POPULAR", tagColor = COL.GOLD,
+	-- row 1: Warfront (the massive battle is one of its modes) · Training · Courtyard (Horde is
+	-- with the adventures, page 2)
+	tiles.Warfront = tile({key = "Warfront", title = "WARFRONT", sub = "Massive battles  ·  sieges  ·  the hill  ·  the standard  ·  vote the next", big = true,
+		color = Color3.fromRGB(200, 70, 44), pos = UDim2.new(0, 0, 0, 0), size = UDim2.new(0.6, -10, 0.46, -6), scene = "War", tag = "MASSIVE BATTLES", tagColor = COL.RED,
 		onClick = function() goDoor("Warfront") end})
 	tiles.Training = tile({key = "Training", title = "TRAINING", sub = "Your own yard  ·  drills pay Marks", color = Color3.fromRGB(70, 150, 90),
 		pos = UDim2.new(0.6, 4, 0, 0), size = UDim2.new(0.2, -8, 0.46, -6), scene = "Training",
@@ -4314,8 +4312,7 @@ do
 		tiles.Warfront.count.Text = string.format("%d FIGHTING  ·  %d SERVER%s", counts.Warfront or 0, servers.Warfront or 0, (servers.Warfront or 0) == 1 and "" or "S")
 		tiles.Courtyard.count.Text = string.format("%d HERE", counts.Courtyard or #Players:GetPlayers())
 		tiles.Training.count.Text = "YOU + PARTY"
-		tiles.War.count.Text = string.format("%d FIGHTING  ·  ARMIES OF BOTS", counts.War or 0)
-		for _, key in ipairs({"War", "Warfront", "Training"}) do
+		for _, key in ipairs({"Warfront", "Training"}) do
 			local why = partyLock(nil)
 			tiles[key].lock.Visible = why ~= nil
 			tiles[key].lockText.Text = why or ""

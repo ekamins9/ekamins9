@@ -1776,7 +1776,8 @@ hit nothing yet. An attack whose `anim` is still `rbxassetid://0` can't be selec
 
 ## War: the massive battle (`Game ▸ Modes ▸ War`, `Game ▸ WarMap`, `War.client`, `ReplicatedStorage ▸ WarFX`)
 
-The Play screen's first tile (DOORS.War, matchmade public servers, 24 players). Two armies on a
+One of Warfront's modes, shown as "Massive Battle" (a fresh Warfront server opens with it; the
+vote brings it round again; it used to be its own door). Two armies on a
 battlefield built fresh each round, players and bots side by side (`botFill` 32, `fillAnywhere`),
 siege engines, archers and battle-mages, and the rest of both armies clashing out on the flanks.
 - **The line**: five banners between the two camps. A side takes a banner by standing at it with
