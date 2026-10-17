@@ -1,4 +1,24 @@
-# Updated scripts: the dungeon game feels part of the main game; one clear way back
+# Updated scripts: War's camps get made siege towers, ballistae, pavilions and barricades; two more battlefields
+
+- **Made props in every War battlefield** (generated models, Studio-only): a striped command pavilion in each camp, siege towers parked before the camps with their ramps towards the enemy, ballistae at the camps' corners, spiked barricades before the camps and as cover beside banners 2 and 4.
+- **Nightfall**: a moonlit battle, torches lining the field, a burning watchtower, standing stones. **Sunreach**: a desert valley with a ruined sandstone temple, obelisks and dunes. Both with vote pictures.
+- **Fixes**: the banner plinths and the battle-mages' sigils stood on edge (a cylinder turned twice); the match intro no longer repeats the FIGHT! banner's mode and map, and the HUD steps aside while it plays (Celebrate, MatchIntro: the last commit).
+- **Checked in Play**: Nightfall and Sunreach built and shot; each prop seen in place (top-down for which way it faces).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | made props, Nightfall, Sunreach, fixes |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | War's maps |
+| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the new banners' names |
+| [MatchIntro.client.lua](StarterPlayerScripts/MatchIntro.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | (last commit) |
+| [Celebrate.client.lua](StarterPlayerScripts/Celebrate.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | (last commit) `_G.FightBannerAt` |
+| [README.md](README.md) | | doc | |
+
+Studio-only (save the place): ServerStorage ▸ WarProps (Pavilion, SiegeTower, Ballista, Barricade); ReplicatedStorage ▸ MapShots ▸ Nightfall, Sunreach.
+
+---
+
+## Before that: the dungeon game feels part of the main game; one clear way back
 
 - **◀ MAIN MENU** top left of the dungeon lobby (and on the Gilded Rat's walking-about bar) replaces the red TO THE COURTYARD: one question (your stash, kit and gold stay safe), then you're home and the main menu opens by itself.
 - **The main game's numbers in the lobby**: your level, Marks and Crowns beside the vault's gold, so a run reads as part of your progress.
@@ -28,29 +48,3 @@
 | [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the armies' part only |
 | [Siege.lua](ServerScriptService/Game/Modes/Siege.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the war round it |
 | [README.md](README.md) | | doc | |
-
----
-
-## Before that: WAR, the massive battle
-
-- **A new mode on the Play screen's first tile: WAR.** Two armies, players and 36 bots side by side, on a battlefield built fresh each round: five banners to take one by one as a front, reinforcements that bleed away, trebuchets with red warning rings, archer volleys (raise your guard or get under a roof), battle-mages' meteor storms, chain lightning and frost, and cavalry charges.
-- **The rest of both armies clash on the flanks**: hundreds of soldiers in regiments (foot, pikes, archers, battle-mages) marching to the front and fighting there, drawn on your screen only, so the server never pays for them.
-- **Five battlefields**: Redfield, Ironridge, Frostmere, Ashvale, Kingsbridge, each with its own place in the middle (a village and windmill, a ruined fort, a frozen lake, burning farmsteads, a river with bridges and a ford), weather and light. Vote pictures for each.
-- **The HUD**: reinforcements, the clock, the banners as chips, what's happening at your banner, big calls and warnings; an opening flight over the field the first time you spawn in a round.
-- **Optimized**: the crowds live under the camera, outside the physics world, and only move when they must. Measured: from 13 fps to 53 fps in the heaviest view. The bot count follows the server's frame rate.
-- **Horde moved to the Adventures page** (WAR took its place); Powers.client: a swirling zone's inverted speed range fixed.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [War.lua](ServerScriptService/Game/Modes/War.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | new |
-| [WarMap.lua](ServerScriptService/Game/WarMap.lua) | ServerScriptService ▸ Game | ModuleScript | new |
-| [War.client.lua](StarterPlayerScripts/War.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [WarFX.lua](ReplicatedStorage/WarFX.lua) | ReplicatedStorage | ModuleScript | armies, strikes, frost, weather, the crowd folder |
-| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | DOORS / MODES War, maps, titles, fighters |
-| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | a mode's botTarget |
-| [MapKit.lua](ServerScriptService/Build/MapKit.lua) | ServerScriptService ▸ Build | ModuleScript | K.terrain `fast` |
-| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the WAR tile and scene; Horde to the adventures |
-| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | range fix |
-| [README.md](README.md) | | doc | War |
-
-Studio-only (save the place): ReplicatedStorage ▸ MapShots ▸ Redfield, Ironridge, Frostmere, Ashvale, Kingsbridge.

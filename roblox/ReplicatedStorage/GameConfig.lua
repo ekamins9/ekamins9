@@ -228,7 +228,7 @@ GameConfig.MODES = {
 	War = {
 		name = "War", category = "Battlefield", teams = 2, maxPlayers = 24, minPlayers = 1,
 		description = "Two armies meet: take the five banners one by one as a front, while trebuchets, archers and battle-mages pound the field and the rest of both armies clash on the flanks.",
-		maps = {"Redfield", "Ironridge", "Frostmere", "Ashvale", "Kingsbridge"}, procedural = true,
+		maps = {"Redfield", "Ironridge", "Frostmere", "Ashvale", "Kingsbridge", "Nightfall", "Sunreach"}, procedural = true,
 		roundLength = 15 * 60, intermission = 15, respawnDelay = 6, waveSpawn = 8, waveGrace = 20,
 		botFill = 36, fillAnywhere = true, tickets = 300,
 	},
@@ -253,6 +253,7 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Crownlands = "The Crownlands", Caldera = "The Ashen Caldera", Stormwatch = "Stormwatch",
 	-- War's battlefields (Game ▸ WarMap)
 	Redfield = "Redfield", Ironridge = "Ironridge", Frostmere = "Frostmere", Ashvale = "Ashvale", Kingsbridge = "Kingsbridge",
+	Nightfall = "Nightfall", Sunreach = "Sunreach",
 	BoneCrypt = "The Bone Crypt", GoblinWarrens = "Goblin Warrens", CrimsonManor = "Crimson Manor", FrozenDepths = "The Frozen Depths", EmberForge = "The Ember Forge"}
 function GameConfig.mapTitle(key) return GameConfig.MAP_TITLES[key] or key end
 
@@ -269,7 +270,7 @@ GameConfig.MAP_FIGHTERS = {
 	Cinderfall = {8, 32}, Duneshrine = {8, 32}, HollowGrove = {8, 32}, Pinewatch = {8, 32},
 	Frostgate = {8, 40}, Emberkeep = {8, 40}, Sunspire = {8, 40}, Thornwall = {8, 40}, Mistmoor = {8, 40},
 	Greenhollow = {8, 40}, Stormhold = {8, 40}, Ashenford = {8, 40}, Rimeholt = {8, 40}, Blossomgate = {8, 40},
-	Redfield = {8, 48}, Ironridge = {8, 48}, Frostmere = {8, 48}, Ashvale = {8, 48}, Kingsbridge = {8, 48},
+	Redfield = {8, 48}, Ironridge = {8, 48}, Frostmere = {8, 48}, Ashvale = {8, 48}, Kingsbridge = {8, 48}, Nightfall = {8, 48}, Sunreach = {8, 48},
 }
 function GameConfig.mapFighters(key)
 	local r = GameConfig.MAP_FIGHTERS[key]

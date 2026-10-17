@@ -17,7 +17,12 @@
        layout.mages       {A = Vector3, B = Vector3}
        layout.bounds      {x = 105, z = 372}: the playable corridor
      The client reads the same off the Map: W_Banner1…5, W_Radius, W_CampA/B, W_TrebA1/2, W_TrebB1/2,
-     W_ArchA1/2, W_ArchB1/2, W_MageA/B, W_Lane1/2 (the flank lanes' |x|), W_Weather, W_Theme. ]]
+     W_ArchA1/2, W_ArchB1/2, W_MageA/B, W_Lane1…3 (the flank lanes' |x|), W_Weather, W_Theme.
+
+     Made props (ServerStorage ▸ WarProps, Studio-only; each scaled to a height and set on the ground,
+     its own Yaw attribute turning it to face the right way; missing ones are simply left out):
+     Pavilion (each camp's command tent), SiegeTower (two parked before each camp), Ballista (two at
+     each camp's corners), Barricade (spiked logs before the camps, and cover beside banners 2 and 4). ]]
 
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -85,6 +90,22 @@ local THEMES = {
 			FogColor = Color3.fromRGB(200, 210, 220), FogEnd = 1300, FogStart = 150, ExposureCompensation = 0.05, EnvironmentDiffuseScale = 0.7},
 		atmo = {Density = 0.34, Offset = 0.2, Haze = 1.8, Glare = 0.3, Color = Color3.fromRGB(206, 214, 224), Decay = Color3.fromRGB(150, 160, 176)},
 	},
+	Nightfall = {
+		ground = M.Grass, field = M.Ground, path = M.Ground, trees = "pine", weather = "",
+		colors = {Grass = Color3.fromRGB(54, 74, 52), Ground = Color3.fromRGB(70, 62, 54)},
+		slab = Color3.fromRGB(46, 62, 44), hill = Color3.fromRGB(40, 50, 46),
+		light = {ClockTime = 23.6, Brightness = 0.9, Ambient = Color3.fromRGB(70, 80, 112), OutdoorAmbient = Color3.fromRGB(84, 96, 130),
+			FogColor = Color3.fromRGB(30, 36, 58), FogEnd = 800, FogStart = 120, ExposureCompensation = 0.35, EnvironmentDiffuseScale = 0.5},
+		atmo = {Density = 0.34, Offset = 0.1, Haze = 1.4, Glare = 0, Color = Color3.fromRGB(86, 98, 140), Decay = Color3.fromRGB(42, 48, 76)},
+	},
+	Sunreach = {
+		ground = M.Sand, field = M.Sandstone, path = M.Ground, trees = "dead", weather = "",
+		colors = {Sand = Color3.fromRGB(222, 192, 136), Sandstone = Color3.fromRGB(198, 160, 110), Ground = Color3.fromRGB(166, 128, 90)},
+		slab = Color3.fromRGB(216, 186, 132), hill = Color3.fromRGB(196, 150, 100), rocky = true,
+		light = {ClockTime = 12.8, Brightness = 3, Ambient = Color3.fromRGB(140, 122, 104), OutdoorAmbient = Color3.fromRGB(176, 154, 128),
+			FogColor = Color3.fromRGB(232, 210, 172), FogEnd = 1500, FogStart = 220, ExposureCompensation = 0, EnvironmentDiffuseScale = 0.7},
+		atmo = {Density = 0.28, Offset = 0.2, Haze = 1.2, Glare = 0.4, Color = Color3.fromRGB(236, 210, 166), Decay = Color3.fromRGB(196, 150, 104)},
+	},
 }
 WarMap.THEMES = THEMES
 
@@ -143,10 +164,32 @@ local function tree(ctx, kind, pos)
 	else K.deadTree(ctx, pos, 10 + rnd:NextNumber(0, 8)) end
 end
 
+-- a made prop (ServerStorage ▸ WarProps ▸ name): `height` tall, its base at `cf`, facing cf's
+-- look plus its own Yaw; nil when there's none
+local function prop(ctx, name, cf, height, collide)
+	local f = ServerStorage:FindFirstChild("WarProps")
+	local tpl = f and f:FindFirstChild(name)
+	if not tpl then return nil end
+	local m = tpl:Clone()
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then d.Anchored = true; d.CanCollide = collide ~= false end
+	end
+	local _, size = m:GetBoundingBox()
+	if size.Y > 0 and height then pcall(function() m:ScaleTo(m:GetScale() * height / size.Y) end) end
+	m.Parent = ctx.Props
+	local yaw = math.rad(tpl:GetAttribute("Yaw") or 0)
+	m:PivotTo(cf * CFrame.Angles(0, yaw, 0))
+	-- (its lowest point onto the ground)
+	local bcf, bsize = m:GetBoundingBox()
+	local bottom = bcf.Position.Y - bsize.Y / 2
+	m:PivotTo(m:GetPivot() + Vector3.new(0, cf.Position.Y - bottom, 0))
+	return m
+end
+
 -- A BANNER: a stone plinth, a tall pole, a flag the clients colour for its holder (WarFlag_n),
 -- a ring of stones marking how near you must stand
 local function banner(ctx, i, pos)
-	K.cyl(ctx, "Plinth", 7, 1.4, CF(pos + V3(0, 0.7, 0)) * CFrame.Angles(0, 0, DEG(90)), STONE, M.Slate, ctx.Props)
+	K.cyl(ctx, "Plinth", 7, 1.4, CF(pos + V3(0, 0.7, 0)), STONE, M.Slate, ctx.Props)
 	K.cyl(ctx, "BannerPole", 0.7, 26, pos + V3(0, 13, 0), DARK, M.Wood, ctx.Props)
 	K.ball(ctx, "BannerFinial", 1.4, pos + V3(0, 26.5, 0), Color3.fromRGB(222, 180, 70), M.Metal, ctx.Props)
 	local flag = K.box(ctx, "WarFlag_" .. i, V3(0.2, 7, 10), CF(pos + V3(0, 21.5, 5.4)), Color3.fromRGB(226, 222, 210), M.Fabric, ctx.Props)
@@ -174,8 +217,14 @@ local function camp(ctx, side)
 			end
 		end
 	end
-	-- the command tent
-	K.tent(ctx, CF(V3(0, 0, z0 + f * 30)), 14, 18, 10, col)
+	-- the command tent (the made pavilion, else a big tent in the side's colour)
+	if not prop(ctx, "Pavilion", CFrame.lookAt(V3(0, 0, z0 + f * 30), V3(0, 0, 0)), 18) then
+		K.tent(ctx, CF(V3(0, 0, z0 + f * 30)), 14, 18, 10, col)
+	end
+	-- siege towers parked before the camp, ballistae at its corners, a line of barricades
+	for _, x in ipairs({-46, 46}) do prop(ctx, "SiegeTower", CFrame.lookAt(V3(x, 0, z0 - f * 34), V3(x, 0, 0)), 32) end
+	for _, x in ipairs({-88, 88}) do prop(ctx, "Ballista", CFrame.lookAt(V3(x, 0, z0 - f * 12), V3(x * 0.5, 0, 0)), 7) end
+	for _, x in ipairs({-72, -24, 24, 72}) do prop(ctx, "Barricade", CFrame.lookAt(V3(x, 0, z0 - f * 52), V3(x, 0, z0 - f * 60)), 4.5) end
 	for _, x in ipairs({-30, 30}) do pcall(K.campfire, ctx, V3(x, 0, z0 + f * 8)) end
 	for _, x in ipairs({-48, 48}) do pcall(K.rack, ctx, CF(x, 0, z0 + f * 2) * CFrame.Angles(0, math.pi / 2, 0)) end
 	for _, x in ipairs({-64, -22, 22, 64}) do K.banner(ctx, V3(x, 0, z0 - f * 6), 16, col) end
@@ -198,7 +247,7 @@ local function mageCircle(ctx, pos, col)
 		local rune = nocol(K.box(ctx, "Rune", V3(0.2, 2.4, 0.8), CF(pos + V3(math.cos(a) * 13.1, 4, math.sin(a) * 13.1)) * CFrame.Angles(0, -a, 0), col:Lerp(Color3.new(1, 1, 1), 0.4), M.Neon, ctx.Props))
 		rune.Transparency = 0.2
 	end
-	local core = nocol(K.cyl(ctx, "Sigil", 18, 0.15, CF(pos + V3(0, 0.1, 0)) * CFrame.Angles(0, 0, DEG(90)), col:Lerp(Color3.new(1, 1, 1), 0.3), M.Neon, ctx.Props))
+	local core = nocol(K.cyl(ctx, "Sigil", 18, 0.15, CF(pos + V3(0, 0.1, 0)), col:Lerp(Color3.new(1, 1, 1), 0.3), M.Neon, ctx.Props))
 	core.Transparency = 0.6
 	local l = Instance.new("PointLight"); l.Color = col; l.Range = 30; l.Brightness = 2; l.Parent = core
 end
@@ -280,6 +329,42 @@ function FEATURE.Kingsbridge(ctx)
 	for _ = 1, 12 do K.bush(ctx, V3(rnd:NextNumber(-100, 100), 0, (rnd:NextNumber(0, 1) < 0.5 and -1 or 1) * rnd:NextNumber(24, 40)), 3 + rnd:NextNumber(0, 2)) end
 end
 
+-- NIGHTFALL: a watchtower burning in the middle, torches lining the field, standing stones
+function FEATURE.Nightfall(ctx)
+	K.tower(ctx, V3(-30, 0, 18), 6, 22, {crenels = true})
+	local blaze = nocol(K.box(ctx, "Blaze", V3(10, 2, 10), CF(-30, 23, 18), Color3.fromRGB(255, 120, 40), M.Neon, ctx.Props))
+	blaze.Transparency = 0.7
+	local fire = Instance.new("Fire"); fire.Size = 16; fire.Heat = 14; fire.Color = Color3.fromRGB(255, 130, 40); fire.SecondaryColor = Color3.fromRGB(190, 40, 10); fire.Parent = blaze
+	local l = Instance.new("PointLight"); l.Color = Color3.fromRGB(255, 130, 60); l.Range = 60; l.Brightness = 2.5; l.Parent = blaze
+	for z = -330, 330, 44 do
+		for _, x in ipairs({-98, 98}) do K.torchPost(ctx, V3(x, 0, z), 7) end
+	end
+	for _, z in ipairs({-125, 0, 125}) do pcall(K.campfire, ctx, V3(rnd:NextNumber(-20, 20), 0, z + (rnd:NextNumber(0, 1) < 0.5 and -26 or 26))) end
+	for k = 1, 9 do
+		local a = k / 9 * math.pi * 2
+		local h = 8 + rnd:NextNumber(0, 5)
+		K.box(ctx, "Stone", V3(2.4, h, 1.6), CF(60 + math.cos(a) * 14, h / 2 - 0.5, -60 + math.sin(a) * 14) * CFrame.Angles(0, -a, 0), Color3.fromRGB(96, 98, 104), M.Slate, ctx.Props)
+	end
+end
+-- SUNREACH: a ruined temple of sandstone in the middle, obelisks, rocks
+function FEATURE.Sunreach(ctx)
+	local SAND = Color3.fromRGB(214, 180, 128)
+	for k = 1, 12 do
+		local a = k / 12 * math.pi * 2
+		local h = (k % 3 == 0) and rnd:NextNumber(4, 7) or rnd:NextNumber(12, 18)
+		K.cyl(ctx, "Column", 3.2, h, V3(math.cos(a) * 34, h / 2, math.sin(a) * 34), SAND, M.Sandstone)
+		if h > 10 and k % 2 == 0 then
+			K.box(ctx, "Lintel", V3(4, 1.6, 16), CF(math.cos(a) * 34, h + 0.8, math.sin(a) * 34) * CFrame.Angles(0, -a, 0), SAND, M.Sandstone)
+		end
+	end
+	K.cyl(ctx, "TempleFloor", 74, 1, CF(0, 0.2, 0), Color3.fromRGB(200, 170, 124), M.Sandstone, ctx.Props)
+	for _, at in ipairs({V3(-70, 0, -60), V3(72, 0, 64), V3(-60, 0, 190), V3(66, 0, -200)}) do
+		K.box(ctx, "Obelisk", V3(5, 26, 5), CF(at + V3(0, 13, 0)), SAND, M.Sandstone, ctx.Props)
+		K.wedge(ctx, "ObeliskTip", V3(5, 4, 5), CF(at + V3(0, 28, 0)), Color3.fromRGB(226, 190, 90), M.Metal, ctx.Props)
+	end
+	for _ = 1, 22 do K.rock(ctx, V3(rnd:NextNumber(-95, 95), 0, rnd:NextNumber(-340, 340)), 3 + rnd:NextNumber(0, 5), Color3.fromRGB(186, 140, 96)) end
+end
+
 -- the terrain under each theme
 local PAINT = {}
 -- a new surface on the ground without lifting it: the top layer's material swapped in a box
@@ -341,6 +426,19 @@ function PAINT.Ashvale(T, th)
 	surface(-6, -400, 6, 400, th.ground, M.Basalt)
 	rolling(T, th)
 end
+function PAINT.Nightfall(T, th)
+	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
+	surface(-6, -400, 6, 400, th.ground, th.path)
+	rolling(T, th)
+end
+function PAINT.Sunreach(T, th)
+	-- dunes on the flanks, sandstone underfoot round the temple, a beaten track
+	for _, s in ipairs({-1, 1}) do surface(s * 126, -400, s * 300, 400, th.ground, th.field) end
+	disc(0, 0, 44, th.ground, M.Sandstone)
+	surface(-6, -400, 6, -44, th.ground, th.path)
+	surface(-6, 44, 6, 400, th.ground, th.path)
+	rolling(T, th)
+end
 function PAINT.Kingsbridge(T, th)
 	rolling(T, th)
 	-- the river: a shallow channel right across the field (wade it, or take a bridge)
@@ -388,6 +486,14 @@ function WarMap.build(themeName)
 		ctx.model:SetAttribute("W_Banner" .. i, pos)
 	end
 	ctx.model:SetAttribute("W_Radius", RADIUS)
+
+	-- cover beside the second and fourth banners: barricades to fight round
+	for _, i in ipairs({2, 4}) do
+		local z = BANNER_Z[i]
+		for _, x in ipairs({-46, 46}) do
+			prop(ctx, "Barricade", CFrame.lookAt(V3(x, 0, z + rnd:NextNumber(-12, 12)), V3(x + 1, 0, z + rnd:NextNumber(-12, 12))), 4.5)
+		end
+	end
 
 	-- THE CAMPS, THEIR ENGINES
 	for _, side in ipairs({"A", "B"}) do
