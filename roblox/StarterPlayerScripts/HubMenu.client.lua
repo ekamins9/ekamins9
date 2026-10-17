@@ -4462,6 +4462,9 @@ do
 			end
 			th.Position = UDim2.fromOffset(6, 6); th.BackgroundTransparency = 1
 			local n = title(b, string.upper(def.name), 22); n.Size = UDim2.new(1, -110, 0, 26); n.Position = UDim2.new(0, 100, 0, 8)
+			-- (a narrow card, a phone's: the name shrinks to fit rather than run into the next)
+			n.TextScaled = true
+			local nc = Instance.new("UITextSizeConstraint"); nc.MaxTextSize = 22; nc.MinTextSize = 10; nc.Parent = n
 			local w = title(b, string.upper(def.weight) .. (ui.dirty[id] and "  ·  UNSAVED" or ""), 13, TYPE_COL[def.weight] or COL.DIM); w.Size = UDim2.new(1, -110, 0, 16); w.Position = UDim2.new(0, 100, 0, 34)
 			local wt = Catalog.WEIGHTS[def.weight] or {}
 			local sta = (wt.stamina or 1) * (wt.regen or 1)
@@ -4855,7 +4858,7 @@ do
 		local sub = label(top, what, 12, FONT, COL.DIM); sub.Position = UDim2.fromOffset(162, 36); sub.Size = UDim2.new(1, -162, 0, 60)
 		if e then
 			local off = button(top, "TAKE THEM OFF", 12, COL.GLASS2); off.Position = UDim2.fromOffset(162, 114); off.Size = UDim2.new(1, -162, 0, 32)
-			off.Activated:Connect(function() LT.saveArms({armsEmblem = ""}) end)
+			off.Activated:Connect(function() LT.saveArms({armsEmblem = "", armsMetal = "", armsField = "", armsDivision = "", armsColor2 = ""}) end)
 		end
 		-- the emblems: the pictures in your metal on your field (some open with your level)
 		heading(p, "EMBLEM")

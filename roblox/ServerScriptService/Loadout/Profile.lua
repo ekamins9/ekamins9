@@ -575,13 +575,14 @@ function Profile.validateAppearance(plr, app)
 	if A then
 		if app.armsEmblem == "" then out.armsEmblem = nil
 		elseif type(app.armsEmblem) == "string" and A.open(app.armsEmblem, p) then out.armsEmblem = app.armsEmblem end
-		if type(app.armsMetal) == "string" and A.METAL[app.armsMetal] then out.armsMetal = app.armsMetal end
+		if app.armsMetal == "" then out.armsMetal = nil
+		elseif type(app.armsMetal) == "string" and A.METAL[app.armsMetal] then out.armsMetal = app.armsMetal end
 		local function colour(name)
 			local c = type(name) == "string" and Catalog.COLOR[name]
 			return c and (not c.crowns or Profile.has(plr, "colors", name)) and name or nil
 		end
-		out.armsField = colour(app.armsField) or out.armsField
-		out.armsColor2 = colour(app.armsColor2) or out.armsColor2
+		if app.armsField == "" then out.armsField = nil else out.armsField = colour(app.armsField) or out.armsField end
+		if app.armsColor2 == "" then out.armsColor2 = nil else out.armsColor2 = colour(app.armsColor2) or out.armsColor2 end
 		if app.armsDivision == "" then out.armsDivision = nil
 		elseif type(app.armsDivision) == "string" and A.DIVISION[app.armsDivision] then out.armsDivision = app.armsDivision end
 	end
