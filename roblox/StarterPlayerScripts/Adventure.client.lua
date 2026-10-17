@@ -388,44 +388,9 @@ bannerSub.Position = UDim2.fromOffset(0, 66); bannerSub.Size = UDim2.new(1, 0, 0
 local BANNER_COL = {boss = Color3.fromRGB(255, 80, 70), elite = Color3.fromRGB(200, 130, 255), fight = Color3.fromRGB(255, 170, 80),
 	clear = Color3.fromRGB(110, 240, 140), victory = Color3.fromRGB(255, 210, 80), floor = Color3.fromRGB(230, 236, 255), descend = Color3.fromRGB(150, 210, 255)}
 local bannerToken = 0
--- A BOSS'S ENTRANCE (the boss banner): bars, the camera on it, its name big, a boom
-local WarFX = require(ReplicatedStorage:WaitForChild("WarFX"))
-local intro = {on = false}
--- (its own screen, over every other: the rest of the HUD steps aside while it plays)
-local introGui = Instance.new("ScreenGui")
-introGui.Name = "BossIntro"
-introGui.ResetOnSpawn = false
-introGui.IgnoreGuiInset = true
-introGui.DisplayOrder = 60
-introGui.Parent = player:WaitForChild("PlayerGui")
-local introBars = {}
-for i = 1, 2 do
-	local f = frame(introGui, Color3.new(0, 0, 0), 0)
-	f.AnchorPoint = Vector2.new(0, i - 1)
-	f.Position = UDim2.fromScale(0, i - 1)
-	f.Size = UDim2.fromScale(1, 0)
-	f.ZIndex = 90
-	f.Visible = false
-	introBars[i] = f
-end
-local introTitle = text(introGui, "", 64, Color3.fromRGB(255, 96, 80), TITLE)
-introTitle.AnchorPoint = Vector2.new(0.5, 0.5)
-introTitle.Position = UDim2.fromScale(0.5, 0.885)
-introTitle.Size = UDim2.new(1, 0, 0, 72)
-introTitle.TextScaled = true
-introTitle.ZIndex = 91
-introTitle.TextTransparency = 1
-introTitle.TextStrokeTransparency = 1
-local introTitleMax = Instance.new("UITextSizeConstraint")
-introTitleMax.MaxTextSize = 64
-introTitleMax.Parent = introTitle
-local introSub = text(introGui, "", 20, Theme.DIM, FONT)
-introSub.AnchorPoint = Vector2.new(0.5, 0.5)
-introSub.Position = UDim2.fromScale(0.5, 0.955)
-introSub.Size = UDim2.new(1, 0, 0, 24)
-introSub.ZIndex = 91
-introSub.TextTransparency = 1
-
+-- A BOSS'S ENTRANCE (the boss banner): ReplicatedStorage ▸ BossIntro (bars, the camera on it,
+-- its name big, a boom)
+local BossIntro = require(ReplicatedStorage:WaitForChild("BossIntro"))
 local function findBoss()
 	local npcs = workspace:FindFirstChild("NPCs")
 	local best, bestD = nil, math.huge
@@ -440,62 +405,11 @@ local function findBoss()
 end
 
 local function bossIntro(b)
-	if intro.on then return end
-	intro.on = true
 	task.spawn(function()
 		-- (it rises a moment after the gates shut)
 		local boss
 		for _ = 1, 12 do boss = findBoss(); if boss then break end task.wait(0.1) end
-		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		local head = boss and boss:FindFirstChild("Head")
-		for _, f in ipairs(introBars) do
-			f.Visible = true
-			TweenService:Create(f, TweenInfo.new(0.45, Enum.EasingStyle.Quad), {Size = UDim2.fromScale(1, 0.16)}):Play()
-		end
-		local hidden = {}
-		for _, g in ipairs(player.PlayerGui:GetChildren()) do
-			if g:IsA("ScreenGui") and g ~= introGui and g.Enabled then g.Enabled = false; table.insert(hidden, g) end
-		end
-		introTitle.Text = b.text or ""
-		introSub.Text = b.sub or ""
-		task.delay(0.5, function()
-			TweenService:Create(introTitle, TweenInfo.new(0.6), {TextTransparency = 0, TextStrokeTransparency = 0.3}):Play()
-			TweenService:Create(introSub, TweenInfo.new(0.9), {TextTransparency = 0}):Play()
-			WarFX.sound("Impact", nil, {volume = 0.9, speed = 0.45})
-			WarFX.shake(1.1, 0.9)
-		end)
-		_G.CinematicUp = true
-		local DUR = 3
-		if head and me then
-			local scale = boss:GetAttribute("MonsterScale") or 1
-			local away = Vector3.new(me.Position.X - head.Position.X, 0, me.Position.Z - head.Position.Z)
-			away = away.Magnitude > 0.5 and away.Unit or Vector3.new(0, 0, 1)
-			local side = Vector3.new(-away.Z, 0, away.X)
-			local t0 = os.clock()
-			RunService:BindToRenderStep("BossIntro", Enum.RenderPriority.Last.Value + 100, function()
-				local cam = workspace.CurrentCamera
-				if not (cam and head.Parent) then return end
-				local u = math.clamp((os.clock() - t0) / DUR, 0, 1)
-				local e = 1 - (1 - u) ^ 2
-				local at = head.Position
-				local from = at + away * (22 - 9 * e) * scale + side * 5 * scale + Vector3.new(0, (3 - 2.5 * e) * scale, 0)
-				cam.CameraType = Enum.CameraType.Scriptable
-				cam.CFrame = CFrame.lookAt(from, at + Vector3.new(0, 0.6 * scale, 0))
-				cam.FieldOfView = 55 - 6 * e
-			end)
-		end
-		task.wait(DUR)
-		pcall(function() RunService:UnbindFromRenderStep("BossIntro") end)
-		for _, g in ipairs(hidden) do if g.Parent then g.Enabled = true end end
-		local cam = workspace.CurrentCamera
-		if cam then cam.CameraType = Enum.CameraType.Custom end
-		_G.CinematicUp = nil
-		TweenService:Create(introTitle, TweenInfo.new(0.5), {TextTransparency = 1, TextStrokeTransparency = 1}):Play()
-		TweenService:Create(introSub, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-		for _, f in ipairs(introBars) do TweenService:Create(f, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Size = UDim2.fromScale(1, 0)}):Play() end
-		task.wait(0.55)
-		for _, f in ipairs(introBars) do f.Visible = false end
-		intro.on = false
+		BossIntro.play(boss, b.text, b.sub)
 	end)
 end
 

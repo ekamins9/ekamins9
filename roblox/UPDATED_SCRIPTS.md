@@ -1,4 +1,18 @@
-# Updated scripts: bosses make an entrance; monsters come out of the dark
+# Updated scripts: Siege's champion and the Horde's Warlord make an entrance too
+
+- **The boss entrance is shared** now (a module): the Depths' lords, Siege's champion on his throne ("JARL HROLF · THE CHAMPION OF FROSTGATE · SLAY HIM"), and the Horde's Warlord.
+- **Checked in Play**: Siege on Frostgate, skipped to the last stage: the champion's shot and title.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BossIntro.lua](ReplicatedStorage/BossIntro.lua) | ReplicatedStorage | ModuleScript | new (the entrance) |
+| [BossEntrance.client.lua](StarterPlayerScripts/BossEntrance.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new (Siege, Horde) |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | uses the module |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: bosses make an entrance; monsters come out of the dark
 
 - **A boss's entrance** (The Depths' lords): black bars close in, the HUD steps aside, the camera finds the boss and creeps towards it while its name comes up big, a deep boom and a shake; about three seconds, then back to you.
 - **Monsters come out of the dark**: grave-dust bursts up where each one appears, and some of the dead whisper as they come.
@@ -23,20 +37,4 @@
 | [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | swing drag |
 | [CombatClient.lua](ReplicatedStorage/Combat/CombatClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | marks wind-up and release |
 | [BattleAmbience.client.lua](StarterPlayerScripts/BattleAmbience.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: the dungeons are dark now
-
-- **Dark floors** (The Depths, Deadvault): low ambient light and close fog; torches throw pools of light on the walls with darkness between, and in a raid some have guttered out.
-- **Your lantern**: every adventurer carries a warm light, so you see what's around you and not much more.
-- **The air**: dust drifting through the light, colder colours per theme, darker screen edges.
-- **The sounds of the dark**: a low drone; now and then a whisper, an iron clank or a deep thud somewhere behind or beside you.
-- **Checked in Play** in the Bone Crypt (Deadvault): about 40 fps in Studio play, the mood costing ~3.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | new |
-| [Dungeon.lua](ServerScriptService/Game/Dungeon.lua) | ServerScriptService ▸ Game | ModuleScript | dark lighting, pooled torches, guttered sconces |
 | [README.md](README.md) | | doc | |
