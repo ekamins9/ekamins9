@@ -1,4 +1,15 @@
-# Updated scripts: a war cry answered
+# Updated scripts: the undertow
+
+- **The Drowned Halls**: something lives in the water. Now and then a long dim shape glides beneath the standing water across a room's floor, ripples spreading off it; come near and it darts away with a splash. Once in a while, as it sinks, a pale hand breaks the surface.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Undertow.client.lua](StarterPlayerScripts/Undertow.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new** |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: a war cry answered
 
 - **A War Cry or Cheer in a fight**: your cry shows over your head, and your side's soldiers near you shout back ("AYE!", "WITH YOU!", "FOR THE CROWN!") as the armies round you roar.
 - **Settings ▸ Battle shouts** turns the shouts off for anyone who'd rather not see them.

@@ -123,6 +123,7 @@ Folder layout mirrors where each script lives in Studio.
 | `StarterPlayerScripts/Shade.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shade` | LocalScript |
 | `StarterPlayerScripts/Shouts.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Shouts` | LocalScript |
 | `StarterPlayerScripts/Portraits.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Portraits` | LocalScript |
+| `StarterPlayerScripts/Undertow.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Undertow` | LocalScript |
 | `StarterPlayerScripts/Scuffs.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Scuffs` | LocalScript |
 | `StarterPlayerScripts/Hearing.client.lua` | `StarterPlayer` → `StarterPlayerScripts` → `Hearing` | LocalScript |
 | `StarterCharacterScripts/CameraRig.client.lua` | `StarterPlayer` → `StarterCharacterScripts` → `CameraRig` | LocalScript |
@@ -1923,6 +1924,15 @@ body: the game stays Mild (`GameConfig.GORE` off). War's archer volleys do the s
 raised against them (an arrow or two each: `Engines` hurt `opts.arrows`, `RangedServer.shieldCatch`).
 The arrow is held by a Weld with its offset, not a WeldConstraint (a client works a constraint's
 offset out from where it sees the parts, and only the client has the shield raised).
+
+## The undertow (`Undertow.client`)
+
+Something lives in the Drowned Halls' water. Where the water has come in across a room's floor
+(Dungeon: StandingWater), now and then (every 18-40 s, water within 60 studs of you and not under
+you) a long dim shape glides just beneath the surface, its tail sweeping, ripples spreading off its
+head (WarAudio ▸ Splash as it starts); come within 7 studs and it darts on and is gone with a
+splash. One time in six or so, as it sinks, a pale hand breaks the surface, hangs a moment and
+slides back under. On your screen only.
 
 ## Shouts in the fight (`Shouts.client`)
 
