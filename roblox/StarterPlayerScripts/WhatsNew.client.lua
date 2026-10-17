@@ -24,7 +24,7 @@ local NEWS = {
 		{"💥", "Shell-shocked", "a trebuchet stone lands beside you: the world goes muffled and your ears ring"},
 		{"🕸", "The Silk Caverns", "a new dungeon of webs and nests, giant spiders, and their Queen"},
 		{"🗡", "Through your own eyes", "in Settings, Start in: begin every fight in first person"},
-		{"🌊", "Two new dungeons", "the flooded Drowned Halls and the desecrated Hollow Abbey, each with its lord"},
+		{"👻", "Banshees and gargoyles", "a scream that leaves you deaf; statues that wake as you pass"},
 		{"📦", "Mimics", "in Deadvault not every chest is a chest; skeletons now fall apart into bones"},
 	},
 }
