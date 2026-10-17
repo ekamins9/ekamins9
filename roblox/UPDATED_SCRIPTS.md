@@ -1,4 +1,20 @@
-# Updated scripts: your own coat of arms
+# Updated scripts: a shield takes the fight
+
+- **Every blow you catch on your shield chips its paint**: its scratches deepen through the life,
+  and a few splinters of the board fly off it (blocks, parries a little, caught arrows too). A plain
+  shield gets its painted light and a fresh face for the fight to scar.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | `Shields.batter`; a plain shield gets a fresh painted face |
+| [CombatServer.lua](ServerScriptService/Combat/CombatServer.lua) | ServerScriptService ▸ Combat | ModuleScript | blocks and parries batter a shield (`CombatServer.batterShield`) |
+| [RangedServer.lua](ServerScriptService/Combat/RangedServer.lua) | ServerScriptService ▸ Combat | ModuleScript | a caught arrow batters it |
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | the wear layer always laid on (Wear attribute) |
+| [README.md](README.md) | | doc | |
+
+---
+
+## Before that: your own coat of arms
 
 - **LOOK ▸ YOUR ARMS**: pick your own emblem (24: most free, the rest open at levels 5, 10 and
   15), its metal (or, argent, sable), a field colour and, if you like, a division with a second

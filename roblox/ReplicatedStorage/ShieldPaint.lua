@@ -128,7 +128,9 @@ function ShieldPaint.apply(container, skin)
 	local field = plate((x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, -0.012)
 	local n = 0
 	if skin.division and decal(field, art(shape .. "_" .. skin.division), skin.divisionColor or Color3.new(1, 1, 1), 0, 1) then n += 1 end
-	if wear > 0 and decal(field, art(shape .. "_wear"), SCRATCH, 1 - math.clamp(wear, 0, 1), 2) then n += 1 end
+	-- (the scratches are always laid on, clear when it's new: a fight deepens them, Shields.batter)
+	local wd = decal(field, art(shape .. "_wear"), SCRATCH, 1 - math.clamp(wear, 0, 1), 2)
+	if wd then wd:SetAttribute("Wear", math.clamp(wear, 0, 1)); if wear > 0 then n += 1 end end
 	if skin.shade ~= false and decal(field, art(shape .. "_shade"), Color3.new(1, 1, 1), 0, 3) then n += 1 end
 
 	-- THE EMBLEM: its shadow, its outline, itself (in front of any raised arms)

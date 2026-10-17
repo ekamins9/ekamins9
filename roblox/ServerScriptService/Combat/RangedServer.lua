@@ -374,8 +374,9 @@ local function kindSound(fx, which, at)
 			if ench and Powers then Powers.arrowHit(shooter, ench, res.Position, nil, dir) end
 			target:SetAttribute("GuardText", parried and "ARROW PARRIED" or "ARROW BLOCKED")
 			target:SetAttribute("GuardTick", (target:GetAttribute("GuardTick") or 0) + 1)
-			-- (on a shield, it stays standing in the board)
+			-- (on a shield, it stays standing in the board, and chips its paint)
 			RangedServer.shieldCatch(target, shotKind, cfg.STICK_LIFE)
+			CombatServer.batterShield(target, res.Position, 0.03)
 			return
 		end
 		local region, limbName = regionOf(part, target)

@@ -111,8 +111,13 @@ function Shields.wear(c, id, skinId, appearance)
 	-- fight; with none of your own, there, your side's house's: the arms its banners fly on this map
 	-- (ShieldPaint.plain, ReplicatedStorage ▸ Houses)
 	if not skinId or tostring(skinId):match(":Default$") then
-		pcall(function() require(ReplicatedStorage:WaitForChild("ShieldPaint")).plain(m, appearance, c:GetAttribute("Team")) end)
+		pcall(function()
+			local ShieldPaint = require(ReplicatedStorage:WaitForChild("ShieldPaint"))
+			-- (bare: its painted light and a fresh face for the fight to scar)
+			if not ShieldPaint.plain(m, appearance, c:GetAttribute("Team")) then ShieldPaint.apply(m, {name = "Plain", rarity = "Common", wear = 0}) end
+		end)
 	end
+	m:SetAttribute("Battered", 0)
 	-- the guard: in front of you, only there to blades while you block
 	local face
 	for _, p in ipairs(m:GetDescendants()) do if p:IsA("BasePart") and p:GetAttribute("ShieldFace") then face = p end end
@@ -189,6 +194,42 @@ function Shields.sling(c, on)
 end
 
 -- is `target` blocking with a shield that stops things, toward `from`?
+-- A BLOW CAUGHT ON THE SHIELD: its paint chips (the scratches deepen over a life, ShieldPaint's
+-- wear layer) and splinters of the board fly. k = how hard (a block 0.07, a parry half that, an
+-- arrow less); at = where it landed.
+local CHIP_WOOD = Color3.fromRGB(122, 88, 54)
+function Shields.batter(c, at, k)
+	local m = c and c:FindFirstChild("ShieldModel")
+	if not m or c:GetAttribute("ShieldSlung") then return end
+	local b = math.min(1, (m:GetAttribute("Battered") or 0) + (k or 0.07))
+	m:SetAttribute("Battered", b)
+	local board
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("Decal") and d:GetAttribute("Wear") then
+			d.Transparency = 1 - math.clamp(d:GetAttribute("Wear") + b * 0.8, 0, 0.92)
+		elseif not board and d:IsA("BasePart") and d:GetAttribute("ShieldFace") then
+			board = d
+		end
+	end
+	if typeof(at) ~= "Vector3" then return end
+	-- (a few real chips: its paint and the wood under it, off the face and down)
+	local out = board and board.CFrame.LookVector or Vector3.yAxis
+	local n = math.random(2, 4)
+	for i = 1, n do
+		local p = Instance.new("Part")
+		p.Name = "ShieldChip"
+		p.Size = Vector3.new(math.random(10, 26) / 100, 0.06, math.random(8, 18) / 100)
+		p.Color = (i % 2 == 0 or not board) and CHIP_WOOD or board.Color
+		p.Material = Enum.Material.Wood
+		p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = true, false, false, true
+		p.CFrame = CFrame.new(at + out * 0.15) * CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6)
+		p.AssemblyLinearVelocity = out * math.random(6, 12) + Vector3.new(math.random(-5, 5), math.random(4, 9), math.random(-5, 5))
+		p.AssemblyAngularVelocity = Vector3.new(math.random(-20, 20), math.random(-20, 20), math.random(-20, 20))
+		p.Parent = workspace
+		game:GetService("Debris"):AddItem(p, 2.5)
+	end
+end
+
 function Shields.stops(target, from)
 	if not (target and target:GetAttribute("ShieldArrows") and target:GetAttribute("Blocking")) then return false end
 	local r = target:FindFirstChild("HumanoidRootPart")

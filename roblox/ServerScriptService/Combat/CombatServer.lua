@@ -83,6 +83,18 @@ end
 
 local CombatServer = {}
 
+-- a blow caught on a shield chips its paint and throws splinters (Combat ▸ Shields.batter: loaded the
+-- first time, as it loads after this)
+local ShieldsMod
+function CombatServer.batterShield(target, at, k)
+	if not (target and target:FindFirstChild("ShieldModel")) or target:GetAttribute("ShieldSlung") then return end
+	if not ShieldsMod then
+		local ok, m = pcall(require, script.Parent:WaitForChild("Shields"))
+		ShieldsMod = ok and m or false
+	end
+	if ShieldsMod then pcall(ShieldsMod.batter, target, at, k) end
+end
+
 -- attach() registers a controller per Tool so server code (test dummies,
 -- future AI) can drive a weapon: CombatServer.get(tool).cycle() etc.
 CombatServer.controllers = {}
@@ -994,6 +1006,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				dprint(perfect and "PERFECT parry" or "parry", "streak", streak, "+" .. refund, "stamina to", target.Name)
 				guardText(string.format("%s%s  +%d", perfect and "PERFECT PARRY" or "PARRY", streak > 1 and ("  ×" .. streak) or "", refund))
 				Injury.sparks(hitPos, 2 + 0.5 * (streak - 1) + (perfect and 1.2 or 0))   -- big, white, bigger with every parry in a row
+				CombatServer.batterShield(target, hitPos, 0.035)
 				if perfect then target:SetAttribute("PerfectParryAt", now) end   -- (the parrier's camera punches)
 				cancelSwing("parried")
 				sfx("Parry", part)
@@ -1007,6 +1020,7 @@ function CombatServer.attach(Tool, weaponConfig)
 				local m = target:GetAttribute("BlockMeter") or 0
 				sfx("Block", part)
 				Injury.sparks(hitPos, 1)
+				CombatServer.batterShield(target, hitPos, 0.07)   -- (on a shield: its paint chips, splinters fly)
 				-- the blade stops dead on a guard, same as a parry — the parry's
 				-- extra reward is the defender's riposte and refund
 				cancelSwing("blocked")
