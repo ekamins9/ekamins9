@@ -184,6 +184,8 @@ F.MAPS = {
 	Ashenford   = {title = "Ashenford",    layout = "siege", theme = "ash",         seed = 107, champion = {name = "The Ashen Knight", weapon = "BattleAxe"}},
 	Rimeholt    = {title = "Rimeholt",     layout = "siege", theme = "winterNight", seed = 108, champion = {name = "Queen Ylva", weapon = "Spear"}},
 	Blossomgate = {title = "Blossomgate",  layout = "siege", theme = "spring",      seed = 109, champion = {name = "Prince Aurel", weapon = "Messer"}},
+	Duskwall    = {title = "Duskwall",     layout = "siege", theme = "desertDusk",  seed = 110, champion = {name = "The Dune Khan", weapon = "Falchion"}},
+	Mournhold   = {title = "Mournhold",    layout = "siege", theme = "dawnMist",    seed = 111, champion = {name = "Lady Morwen", weapon = "Zweihander"}},
 	-- ARENAS
 	Bloodpit    = {title = "The Bloodpit", layout = "arena", theme = "ember",       seed = 201},
 	Moonring    = {title = "Moonring",     layout = "arena", theme = "winterNight", seed = 202},
@@ -213,7 +215,7 @@ F.MAPS = {
 	Sunfall     = {title = "Sunfall",      layout = "warfield", theme = "desertDusk", seed = 804},
 	Ravenfield  = {title = "Ravenfield",   layout = "warfield", theme = "stormNight", seed = 805},
 }
-F.ORDER = {"Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate",
+F.ORDER = {"Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate", "Duskwall", "Mournhold",
 	"Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater", "Harvestvale", "Frosthollow", "Marshfen",
 	"Redgorge", "Mistbridge", "Cinderfall", "Duneshrine", "HollowGrove", "Pinewatch", "Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield"}
 

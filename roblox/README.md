@@ -1253,10 +1253,10 @@ A mode is a ModuleScript in `Game/Modes/<Id>` built on `Game.Mode` — override
 
 **Maps** are Models in `ServerStorage` → `Maps` (Folder) → `<Name>`; a mode's `maps` list
 names them. Every mode has 10 or more: the hand-built ones (`Build ▸ Maps`, `Build ▸ Map<Name>`)
-and 30 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
+and 32 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
 - **Siege:** Emberkeep (ember night), Sunspire (desert noon), Thornwall (autumn), Mistmoor
   (swamp mist), Greenhollow (summer), Stormhold (storm night), Ashenford (ash), Rimeholt (moonlit
-  snow), Blossomgate (spring). Each is a castle to take: the ram up the road, the bailey, the great
+  snow), Blossomgate (spring), Duskwall (desert dusk, a great moon), Mournhold (dawn mist). Each is a castle to take: the ram up the road, the bailey, the great
   hall, and its own champion on the throne.
 - **Arenas:** the Bloodpit, Moonring, the Dustbowl, Thornpit, Mirepit.
 - **Castle courtyards:** Abbeyfield, Blackwater.

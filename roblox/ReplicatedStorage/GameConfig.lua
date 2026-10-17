@@ -140,7 +140,7 @@ GameConfig.MODES = {
 	Siege = {
 		name = "Siege", category = "Objective", teams = 2, maxPlayers = 32, minPlayers = 2,
 		description = "Attackers push the ram, break the gate and take the castle stage by stage. Defenders hold until the clock runs out. Every stage taken adds time; sides swap each round.",
-		maps = {"Frostgate", "Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
+		maps = {"Frostgate", "Emberkeep", "Sunspire", "Thornwall", "Mistmoor", "Greenhollow", "Stormhold", "Ashenford", "Rimeholt", "Blossomgate", "Duskwall", "Mournhold"}, roundLength = 5 * 60, intermission = 15, respawnDelay = 3,
 		waveSpawn = 10,   -- reinforcements come in waves (after the first moments of a round)
 		botFill = 12,
 		-- the attackers' side of it, over the map's own stage numbers (Map ▸ Objectives):
@@ -246,7 +246,7 @@ GameConfig.MAP_TITLES = {TrainingYard = "The Training Yard", Courtyard = "The Co
 	Wildwood = "The Wildwood", Ravenhold = "Ravenhold", Stormbreak = "Stormbreak",
 	-- the themed maps (Build ▸ MapForge)
 	Emberkeep = "Emberkeep", Sunspire = "Sunspire", Thornwall = "Thornwall", Mistmoor = "Mistmoor", Greenhollow = "Greenhollow",
-	Stormhold = "Stormhold", Ashenford = "Ashenford", Rimeholt = "Rimeholt", Blossomgate = "Blossomgate",
+	Stormhold = "Stormhold", Ashenford = "Ashenford", Rimeholt = "Rimeholt", Blossomgate = "Blossomgate", Duskwall = "Duskwall", Mournhold = "Mournhold",
 	Bloodpit = "The Bloodpit", Moonring = "Moonring", Dustbowl = "The Dustbowl", Thornpit = "Thornpit", Mirepit = "Mirepit",
 	Abbeyfield = "Abbeyfield", Blackwater = "Blackwater", Harvestvale = "Harvestvale", Frosthollow = "Frosthollow", Marshfen = "Marshfen",
 	Redgorge = "Redgorge", Mistbridge = "Mistbridge", Cinderfall = "Cinderfall", Duneshrine = "Duneshrine", HollowGrove = "Hollow Grove", Pinewatch = "Pinewatch",
@@ -284,7 +284,7 @@ GameConfig.MAP_FIGHTERS = {
 	Millfield = {8, 32}, Harvestvale = {8, 32}, Frosthollow = {8, 32}, Marshfen = {8, 32},
 	Cinderfall = {8, 32}, Duneshrine = {8, 32}, HollowGrove = {8, 32}, Pinewatch = {8, 32},
 	Frostgate = {8, 40}, Emberkeep = {8, 40}, Sunspire = {8, 40}, Thornwall = {8, 40}, Mistmoor = {8, 40},
-	Greenhollow = {8, 40}, Stormhold = {8, 40}, Ashenford = {8, 40}, Rimeholt = {8, 40}, Blossomgate = {8, 40},
+	Greenhollow = {8, 40}, Stormhold = {8, 40}, Ashenford = {8, 40}, Rimeholt = {8, 40}, Blossomgate = {8, 40}, Duskwall = {8, 40}, Mournhold = {8, 40},
 	Redfield = {8, 48}, Ironridge = {8, 48}, Frostmere = {8, 48}, Ashvale = {8, 48}, Kingsbridge = {8, 48}, Nightfall = {8, 48}, Sunreach = {8, 48},
 	Stormvale = {8, 48}, Duskmoor = {8, 48},
 }

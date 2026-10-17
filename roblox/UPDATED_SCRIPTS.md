@@ -1,4 +1,18 @@
-# Updated scripts: two new War battlefields
+# Updated scripts: two new Siege castles
+
+- **Duskwall** (a desert castle at dusk under a great moon; champion: the Dune Khan) and **Mournhold** (a castle in the dawn mist; champion: Lady Morwen). 12 Siege castles now; both get the whole siege battle (archers on the walls, ladders, towers, flank battles, fires). Vote pictures shot with the battle running.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [MapForge.lua](ServerScriptService/Build/MapForge.lua) | ServerScriptService ▸ Build | ModuleScript | Duskwall, Mournhold |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Siege maps, titles, sizes |
+| [README.md](README.md) | | doc | |
+
+Studio-only (save the place): ServerStorage ▸ Maps ▸ Duskwall, Mournhold; ReplicatedStorage ▸ MapShots ▸ Duskwall, Mournhold.
+
+---
+
+## Before that: two new War battlefields
 
 - **Stormvale**: a storm over a ruined abbey (broken nave walls, a standing arch, pillars), a graveyard either side of the road, mud on the flanks.
 - **Duskmoor**: purple heather at golden hour, a ring of cairns, a beacon burning on the tallest.
@@ -23,16 +37,4 @@ Studio-only (save the place): ReplicatedStorage ▸ MapShots ▸ Stormvale, Dusk
 | File | Studio location | Type | Change |
 |---|---|---|---|
 | [SiegeEpic.client.lua](StarterPlayerScripts/SiegeEpic.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the bailey fight |
-| [README.md](README.md) | | doc | |
-
----
-
-## Before that: Plague Night gets the dungeon's dread
-
-- **Plague Night** now has the dungeons' atmosphere: a cold sickly grade and dark screen edges, the low drone, whispers and groans in the dark, bats, apparitions crossing ahead. (Its own lantern glow and grave-mist arrivals stay as they were.)
-- **Checked in Play** on Millfield: no errors.
-
-| File | Studio location | Type | Change |
-|---|---|---|---|
-| [DungeonMood.client.lua](StarterPlayerScripts/DungeonMood.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | Plague Night too |
 | [README.md](README.md) | | doc | |
