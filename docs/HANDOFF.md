@@ -213,7 +213,7 @@ step):
   `LocalReleaseAt` from `CombatClient`), on top of the existing hit-stop, flinch and FOV punch.
 - **Studio-only, needs a save:** the five warfield maps and the Duskwall and Mournhold castles,
   their MapShots (and Stormvale's and Duskmoor's, War's two new themes), WarAudio ▸ Drums, Roar,
-  Melee, Fire, Drone, Whisper, Groan, Growl, Bats.
+  Melee, Fire, Drone, Whisper, Groan, Growl, Bats, ArrowsOver.
 - **Testing notes** (also in the roblox-dev skill's gotchas): a sleeping display stops Studio
   rendering (hold it on with `SetThreadExecutionState`); script tabs in front of the viewport do
   too; a wedged `start_stop_play` can be bypassed with `StudioTestService:ExecutePlayModeAsync`;
