@@ -291,8 +291,23 @@ function StormwatchMap.build()
 	end
 	for _, pos in ipairs({V3(-26, 0, NZ + 14), V3(26, 0, NZ + 14), V3(-30, 0, 20), V3(30, 0, 20), V3(-12, 0, SZ - 44), V3(12, 0, SZ - 44)}) do brazier(ctx, pos) end
 	for _, x in ipairs({-60, -36, 36, 60}) do stormBanner(ctx, V3(x, 0, NZ + 7), BLUE) end
-	for _ = 1, 10 do K.barrel(ctx, V3(math.random(-66, 66), 0, math.random(NZ + 30, SZ - 40))) end
-	for _ = 1, 8 do K.crate(ctx, V3(math.random(-66, 66), 0, math.random(NZ + 30, SZ - 40)), 2.4 + math.random(), math.random(0, 90)) end
+	-- (barrels and crates about the yard, but never on the raider's way to you: the tutorial's duel
+	-- runs from P.raiders to P.duel, set below)
+	local lane0, lane1 = V3(-24, 0, 2), V3(-38, 0, 8)
+	local function inLane(p)
+		local d = lane1 - lane0
+		local t = math.clamp((p - lane0):Dot(d) / d:Dot(d), 0, 1)
+		return (p - (lane0 + d * t)).Magnitude < 16
+	end
+	local function yardSpot()
+		for _ = 1, 20 do
+			local p = V3(math.random(-66, 66), 0, math.random(NZ + 30, SZ - 40))
+			if not inLane(p) then return p end
+		end
+		return V3(50, 0, NZ + 40)
+	end
+	for _ = 1, 10 do K.barrel(ctx, yardSpot()) end
+	for _ = 1, 8 do K.crate(ctx, yardSpot(), 2.4 + math.random(), math.random(0, 90)) end
 	-- arrows stuck in the cobbles and the timbers
 	for _ = 1, 40 do
 		local at = V3(math.random(-68, 68), 0.8, math.random(NZ + 10, SZ - 34))

@@ -1,4 +1,27 @@
-# Updated scripts: everyone can duel
+# Updated scripts: the tutorial teaches the view, the mouse and a power
+
+- **Three new lessons in the Siege of Stormwatch**, each with your own key big on screen:
+  **YOUR EYES** (in the barracks: switch first and third person), **THE MOUSE** (free it for menus and
+  the map, then lock it to fight), and after the trebuchets **THE FLAMEBLADE** (Hale's oil: your Power
+  key sets your blade alight; burn a raider with it; it stays yours for the rest of the night). The
+  view and mouse lessons are read off what happens (the camera leaving your head, the mouse freed and
+  locked), so any key, pad button or touch button counts; a touch screen passes the mouse lesson.
+- **Fixed: the first raider got stuck on a barrel** running at you. The yard keeps its barrels and
+  crates off his way, and a scripted bot now steers round anything in its path.
+- **Third person squeezed against a wall** (the barracks) no longer fills the screen with your own
+  shoulder plates: with the camera right behind your head, the torso armour hides too.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Prologue.lua](ServerScriptService/Game/Modes/Prologue.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | steps view, cursor, power; `powerLesson`; "Did"; step prompts |
+| [Prologue.client.lua](StarterPlayerScripts/Prologue.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the view and mouse lessons read; lessons list |
+| [StormwatchMap.lua](ServerScriptService/Game/StormwatchMap.lua) | ServerScriptService ▸ Game | ModuleScript | the yard's barrels and crates off the raider's lane |
+| [Bots.lua](ServerScriptService/Combat/Bots.lua) | ServerScriptService ▸ Combat | ModuleScript | a scripted bot steers and unsticks |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | squeezed camera hides the torso |
+
+---
+
+## Before that: everyone can duel
 
 - What's New: "Honor duels" in place of the loadout's line.
 

@@ -852,7 +852,11 @@ function Bot:think()
 		local to = thrp.Position - hrp.Position
 		local flat = Vector3.new(to.X, 0, to.Z)
 		local want = self.scriptedRange or 5
-		if flat.Magnitude > want + 1 then hum.WalkSpeed = 9; hum:Move(flat.Unit)
+		if flat.Magnitude > want + 1 then
+			-- (round a barrel or a cart, not into it)
+			local t = os.clock()
+			hum.WalkSpeed = 9
+			hum:Move(self:unstick(self:steer(flat.Unit, t), t))
 		elseif flat.Magnitude < want - 1.6 then hum.WalkSpeed = 5; hum:Move(-flat.Unit)
 		else hum:Move(Vector3.zero) end
 		return

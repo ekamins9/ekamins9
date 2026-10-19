@@ -868,7 +868,9 @@ local function loopBody(dt)
 	if hideHead ~= lastInFP then setBodyForFP(hideHead); lastInFP = hideHead end
 	if squeezed then
 		Head.LocalTransparencyModifier = 1
-		setTorsoAlpha(0)
+		-- (pushed right up behind your head by a wall: the shoulders would fill the view, so the
+		-- torso and its armour go too until the camera has room)
+		setTorsoAlpha((Camera.CFrame.Position - Head.Position).Magnitude < 1.8 and 1 or 0)
 	elseif inFP then
 		Head.LocalTransparencyModifier     = 1
 		LeftArm.LocalTransparencyModifier  = 0

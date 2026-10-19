@@ -8,6 +8,8 @@
        opening   (cutscene) the storm, the Host, a tower hit, Hale wakes you: you open your
                  eyes in the barracks, in first person
        arm       take a sword from the rack by the door (its prompt); you have nothing till then
+       view      your eyes: the View key switches first and third person (press it)
+       cursor    the mouse: the Cursor key frees it for menus and maps, and again locks it to fight
        out       follow Hale out into the storm (the view pulls back to third person at the door)
        duel      YOUR FIRST FIGHT, IN SLOW TIME: a raider comes at you out of the dark and the
                  world slows (his Tempo); each beat stops the moment (his Hold) with the key to
@@ -17,6 +19,8 @@
                  blows can't hurt you (Harmless); every beat waits for you and comes again if it
                  went wrong. Then full speed.
        dodge     the trebuchets find the yard: when the ground glows red under you, dodge
+       power     Hale's oil: the Flameblade on your Power key (yours for the rest of the night);
+                 light it and strike a raider while it burns
        gatehouse the ram's at the gate: run for the gatehouse while arrows fall
        breach    (cutscene) the ram, the gate splinters, the Host pours in
        hold      fight beside the garrison: the Host's soldiers come through the gate
@@ -35,7 +39,8 @@
                         "PromptMiss", {text}
        Round ▸ PrologueSlow  true while the duel runs in slow time (the client's look of it)
        a character's ViewWant "First" / "Third" (CameraRig): first person in the barracks
-       client → server  "CineDone", name · "Skip" · "Finish" ]]
+       client → server  "CineDone", name · "Skip" · "Finish" · "Did", "view" | "cursor" (a key the
+                        lesson asked for: the server can't see your camera or your mouse) ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -84,12 +89,21 @@ local STEPS = {
 	{id = "opening", cine = "opening"},
 	{id = "arm", title = "TAKE UP A SWORD", text = "The rack by the door: take a sword.", setup = "rack", captainAt = "captain",
 		line = "Up, soldier! The Iron Host is at our gate and the walls are burning. Grab a blade from the rack!"},
+	{id = "view", title = "YOUR EYES", text = "{View} switches between first and third person. Try it.", goal = 1, event = "view",
+		prompt = {action = "View", verb = "SWITCH VIEW", sub = "first and third person"},
+		line = "Get your bearings, soldier. Look about you, both ways."},
+	{id = "cursor", title = "THE MOUSE", text = "{Cursor} frees your mouse for menus and the map. Press it again to fight.", goal = 2, event = "cursor",
+		prompt = {action = "Cursor", verb = "FREE THE MOUSE", sub = "then press it again to lock it"},
+		line = "Orders come on parchment too. Free your hand for them, then back to the blade."},
 	{id = "out", title = "INTO THE STORM", text = "Follow Captain Hale out into the yard. Hold {Sprint} to run.", target = "duel", radius = 9, captainAt = "duel",
 		line = "With me! Out, out!"},
 	{id = "duel", title = "YOUR FIRST FIGHT", text = "Watch his blade. Do what the moment asks.", goal = 8, setup = "duel",
 		line = "Raider! He's over the wall. Steady now, watch his blade..."},
 	{id = "dodge", title = "INCOMING!", text = "Trebuchet fire! When the ground glows red under you, {Dodge} out of it.", goal = 2, event = "dodge", setup = "bombard",
 		line = "TREBUCHETS! When the ground burns red under your feet, DODGE!"},
+	{id = "power", title = "THE FLAMEBLADE", text = "Your POWER: {Power} sets your blade alight. Burn a raider with it!", goal = 1, setup = "power",
+		prompt = {action = "Power", verb = "FLAMEBLADE", sub = "set your blade alight"},
+		line = "Here: oil from the gatehouse fires. Light your blade and burn him!"},
 	{id = "gatehouse", title = "TO THE GATE", text = "The ram is at the gate! Run for the gatehouse through the arrows.", target = "gate", radius = 16, setup = "volleys",
 		line = "Hear that? Their ram! Everyone to the gatehouse. MOVE!"},
 	{id = "breach", cine = "breach"},
@@ -192,6 +206,8 @@ function Prologue:note(event, data)
 		count = true
 	end
 	if not count then return end
+	-- (the cursor's lesson: first it frees, then it locks again)
+	if s.id == "cursor" and self.n == 0 then all("Prompt", {action = "Cursor", verb = "LOCK IT AGAIN", sub = "the mouse is yours: press it again to fight"}) end
 	self.n += 1
 	all("Progress", self.n, s.goal or 1)
 	if self.n >= (s.goal or 1) then self:finishStep() end
@@ -221,6 +237,7 @@ function Prologue:finishStep()
 		if r then all("Fx", "Dust", {pos = r.Position}) end
 	end
 	all("Fx", "Good", {text = s and s.title or ""})
+	if s and s.prompt and s.id ~= "power" then all("PromptDone", {text = "DONE"}) end
 	task.delay(1.2, function()
 		if Game.current ~= self then return end
 		local nextStep = STEPS[self.step + 1]
@@ -239,8 +256,10 @@ function Prologue:begin(i)
 	if s.line then all("Line", {who = HALE, text = s.line, dur = 5}) end
 	local target = s.target and self:point(s.target)
 	all("Step", {id = s.id, title = s.title, text = s.text, n = 0, goal = s.goal or 1, target = target})
+	if s.prompt then all("Prompt", s.prompt) end
 	local setup = s.setup
 	if setup == "rack" then self:rack()
+	elseif setup == "power" then self:powerLesson()
 	elseif setup == "duel" then self:duel()
 	elseif setup == "bombard" then self:startBombard()
 	elseif setup == "volleys" then self.volleys = true
@@ -286,6 +305,41 @@ function Prologue:takeSword(plr)
 		all("Line", {who = HALE, text = "Good. Now follow me, and keep that blade up!", dur = 3})
 		self:finishStep()
 	end
+end
+
+-- THE FLAMEBLADE: the power on your Power key, and a raider to burn with it (he doesn't hit back)
+function Prologue:powerLesson()
+	self.powerTaught = true
+	local _, c = self:hero()
+	local plr = c and Players:GetPlayerFromCharacter(c)
+	if c and plr then
+		local Powers = require(Combat:WaitForChild("Powers"))
+		Powers.equip(c, plr, {power = "Flameblade"})
+	end
+	local at = self:point("raiders")
+	local bot = Bots.spawn({at = CFrame.lookAt(at + Vector3.new(0, 3, 0), self:point("duel") + Vector3.new(0, 3, 0)),
+		skill = "Squire", weapon = "Shortsword", name = "Iron Host Raider", team = "B", scripted = true, scriptedRange = 4.3,
+		invulnerable = true, corpseTime = 3, spare = false, loadout = setPieces(SETS.host), weight = "Medium"})
+	if not bot then return end
+	bot.model:SetAttribute("Harmless", true)
+	table.insert(self.lessonBots, bot)
+	self.lessonTarget = bot.model
+	local m = bot.model
+	local last = m:GetAttribute("LastHitAt")
+	table.insert(self.conns, m:GetAttributeChangedSignal("LastHitAt"):Connect(function()
+		local s = STEPS[self.step]
+		if not (s and s.id == "power") or self.stepDone or m:GetAttribute("LastHitAt") == last then return end
+		last = m:GetAttribute("LastHitAt")
+		local _, hc = self:hero()
+		if hc and (hc:GetAttribute("ImbueUntil") or 0) > workspace:GetServerTimeNow() then
+			bot.invulnerable = false
+			bot.hum.Health = 0
+			all("PromptDone", {text = "BURNED!"})
+			self:finishStep()
+		else
+			all("PromptMiss", {text = "Light your blade first: {Power}"})
+		end
+	end))
 end
 
 --------------------------------------------------------------------
@@ -659,7 +713,8 @@ function Prologue:start(map)
 		if Game.current ~= self then return end
 		if what == "CineDone" and a == self.cineWait then self.cineWait = nil
 		elseif what == "Skip" then self:finish(false, plr)
-		elseif what == "Finish" and self.over then self:sendHome(plr) end
+		elseif what == "Finish" and self.over then self:sendHome(plr)
+		elseif what == "Did" and (a == "view" or a == "cursor") then self:note(a) end
 	end))
 	-- everyone in, then the story
 	for _, p in ipairs(Players:GetPlayers()) do if _G.AutoSpawn then _G.AutoSpawn(p) end end
@@ -689,7 +744,7 @@ end
 -- throwable; and until you take a sword from the rack, nothing in your hands (kept for the rack)
 function Prologue:adjustLoadout(plr, lo, classId)
 	Teams.set(plr, "A")
-	lo.power, lo.thirdKind, lo.thirdId = nil, "none", nil
+	lo.power, lo.thirdKind, lo.thirdId = self.powerTaught and "Flameblade" or nil, "none", nil
 	lo.throwable = nil
 	lo.shield, lo.shieldSkin = nil, nil
 	-- (the siege is learned with steel: a bow or a staff in your loadout is a longsword here, and a

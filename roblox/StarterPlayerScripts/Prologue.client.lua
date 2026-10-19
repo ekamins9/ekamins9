@@ -49,7 +49,7 @@ local EASE = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out
 local function inPrologue() return round:GetAttribute("Mode") == "Prologue" end
 
 -- the lessons, in order (for "3 / 13"), and what a beacon over each place is called
-local LESSONS = {"arm", "out", "duel", "dodge", "gatehouse", "hold", "champion"}
+local LESSONS = {"arm", "view", "cursor", "out", "duel", "dodge", "power", "gatehouse", "hold", "champion"}
 local PLACE = {out = "THE YARD", gatehouse = "THE GATEHOUSE"}
 
 -- where things are (the map carries its story points as attributes: StormwatchMap)
@@ -427,6 +427,34 @@ RunService.RenderStepped:Connect(function()
 	p.keyScale.Scale = 1 + 0.06 * math.sin(os.clock() * 6)
 end)
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+-- (the view and the cursor lessons: only this screen knows. Read off what they do, so any key,
+-- pad button or touch button counts: the camera going in or out of your head; the mouse freed, then
+-- locked. A touch screen has no mouse to free: that lesson passes by itself)
+do
+	local was = {}
+	RunService.RenderStepped:Connect(function()
+		local id = inPrologue() and step and step.id
+		if id == "view" then
+			local cam = workspace.CurrentCamera
+			local head = player.Character and player.Character:FindFirstChild("Head")
+			if cam and head then
+				local fp = (cam.CFrame.Position - head.Position).Magnitude < 1.5
+				if was.fp ~= nil and fp ~= was.fp then remote:FireServer("Did", "view") end
+				was.fp = fp
+			end
+		elseif id == "cursor" then
+			if InputHints.mode() == "Touch" then
+				if not was.touch then was.touch = true; remote:FireServer("Did", "cursor"); remote:FireServer("Did", "cursor") end
+				return
+			end
+			local free = UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter
+			if was.free ~= nil and free ~= was.free then remote:FireServer("Did", "cursor") end
+			was.free = free
+		else
+			was = {}
+		end
+	end)
+end
 UserInputService.InputBegan:Connect(function(input, gp)
 	local p = ui.prompt
 	if gp or not p.up or not p.action then return end
