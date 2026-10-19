@@ -397,6 +397,34 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   longsword so its duel can be fought.
 - Rojo is live again (the plugin reconnected); edits sync on save.
 
+## 4j. The dragon pass (2026-10-19, autonomous, the user's list)
+
+- **The tutorial** (Prologue) teaches the view (YOUR EYES), the free mouse (THE MOUSE) and a power
+  (THE FLAMEBLADE), each read off what happens so any key, pad button or touch counts; the yard's
+  raider no longer snags on a barrel.
+- **Crownfall** rebuilt: a height-mapped island twice the size (`Game ▸ Realm`), no classes
+  (`forceClass`), plain clothes and an old dagger, everything else found: armour is a real set
+  dressed on you (`Crownfall:wear`), an inventory (RaidInventory `royale`), potions on a belt. In on
+  a **battle-bus dragon** (`workspace ▸ Steeds`, seats on its back; the Jump key leaps off over land),
+  a steered dive and a **hero's landing** (`Skyfall.client`: CfDive / CfLand emotes; Riding / Diving
+  / HeroLand attributes; "Leap" / "Landed"). Weapons ride in the backpack (a grip doesn't hold on
+  the server-owned dragon). **Unverified with 2+ players**: several riders on one dragon (network
+  ownership of the seated assembly), and how two dives look from each other's screens.
+- **Shields go with a one-handed primary**; the secondary stays a weapon; no third-slot sidearm.
+- **Key hints follow the player** everywhere a key is named (InputHints Bag / TakeAll / Belt /
+  Interact, `InputHints.keyed`, `{Key}` in server text via fill).
+- **Dragonfall**: COMBOS (learnable patterns) with callouts over its head, OPENINGS after each,
+  ballistae the whole fight (two bolts PIN it on the ground), three ROCKFALL traps (lure and cut).
+- **Heraldry on armour**: cloth-fronted sets wear the player's arms (`Dresser.surcoat`), plate sets
+  an engraved medallion (`Dresser.engrave`); **etched blades** on weapon skins (`BladeArt`). All the
+  art is ForgeGUI's, cut by Pillow and uploaded: Studio-only **ReplicatedStorage ▸ SkinArt** (ids in
+  gitignored `blender/out/forge/blade_art.txt`). Armour and blade meshes have **no UVs** (checked
+  with EditableMesh): textures/MaterialVariants won't map; decals (projected) do.
+- What's New for 2026-10-19; the HUD weapon chip's skin line; Crownfall's map (the dragon's way,
+  fewer names).
+- **Save the place**: ReplicatedStorage ▸ SkinArt is new Studio-only content. Test scaffolding
+  added: ServerScriptService ▸ TMP_CfWatch, TMP_DfWatch (both disabled).
+
 ## 5. Suggested order of work
 
 1. `~/.local/bin/rojo.exe serve default.project.json`, connect the plugin, press Play, read the Output.
