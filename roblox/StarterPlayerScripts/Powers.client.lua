@@ -311,8 +311,8 @@ end
 
 -- YOUR OWN STEEL (Combat ▸ Hurl): held the same way, on the same arc; what goes is the shield
 -- on your arm first, then the one-hander in your hand (not in the Courtyard, the tavern or the
--- loot games, where the gear lives in the bag)
-local NO_HURL = {Hub = true, Tavern = true, Crownfall = true, Deadvault = true}
+-- loot games, where the gear lives in the bag, nor the Lists: pure swordsmanship)
+local NO_HURL = {Hub = true, Tavern = true, Crownfall = true, Deadvault = true, Lists = true}
 local function hurlable(c)
 	if not c or NO_HURL[round:GetAttribute("Mode") or ""] then return nil end
 	local sid = c:GetAttribute("ShieldId")

@@ -358,7 +358,8 @@ spawnAs = function(plr, classId, opts)
 	if type(opts.spells) == "table" and #opts.spells > 0 then lo.spells = table.clone(opts.spells) end
 	-- ARMORY ROULETTE (a weekend's rule, Catalog ▸ Calendar weekends): in battle, every
 	-- spawn hands you a random pair your class can carry (your own skin for it if you have one)
-	if not opts.weapon and not lo.lootOnly and Drops.rule("roulette") and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" and not Game.server.ranked then
+	if not opts.weapon and not lo.lootOnly and Drops.rule("roulette") and Game.modeId ~= "Hub" and Game.modeId ~= "Tiltyard" and not Game.server.ranked
+		and not (Game.current and Game.current.def.meleeOnly) then
 		local cls = GameConfig.CLASSES[classId]
 		local prim, sec = {}, {}
 		for _, w in ipairs(Catalog.WEAPONS) do

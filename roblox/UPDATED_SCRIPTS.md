@@ -1,4 +1,22 @@
-# Updated scripts: casual Lists fill with bots in 8 seconds
+# Updated scripts: the Lists are pure swordsmanship
+
+- **1v1 / 2v2 / 3v3 (casual and ranked) are melee only**: no powers, no throwables, no spells, no
+  throwing your shield or weapon. A bow, crossbow, staff, wand or tome in your loadout gives way to
+  your melee secondary, else a melee weapon your class carries (a Shortsword at worst). The bots
+  in a casual match come as melee fighters too (no Archers or Mages, no powers). The weekend's
+  Armory Roulette leaves the Lists alone.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Lists.lua](ServerScriptService/Game/Modes/Lists.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `adjustLoadout`, `botOpts`: melee only |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Lists `meleeOnly`, its description |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | no roulette in a meleeOnly mode |
+| [Hurl.lua](ServerScriptService/Combat/Hurl.lua) | ServerScriptService ▸ Combat | ModuleScript | no throwing in the Lists |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no throw orb in the Lists |
+
+---
+
+## Before that: casual Lists fill with bots in 8 seconds
 
 - **Casual 1v1 / 2v2 / 3v3 don't keep you waiting**: a casual ticket nobody's found for in 8
   seconds (was 25) is matched against bots, both sides filled to the bracket. Ranked still waits

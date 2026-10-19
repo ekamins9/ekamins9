@@ -11,7 +11,7 @@
      comes to hand when the first one's thrown.
 
      Not in the Courtyard, the tavern or the loot games (Crownfall, Deadvault: gear lives in
-     the bag there).
+     the bag there), nor the Lists (pure swordsmanship).
 
        Hurl.what(c) -> "shield" | "weapon" | nil, thing, def, how
        Hurl.aim(c) -> ok, why    Hurl.release(c, aim)    Hurl.cancel(c)
@@ -42,7 +42,7 @@ local LIE = 60            -- seconds a thrown thing lies where it fell
 local AIM_SLOW = 0.8      -- walking while you aim
 local AIM_MAX = 10        -- held longer than this: put away
 local GAP = 0.6           -- between one throw and the next
-local NO_HURL = {Hub = true, Tavern = true, Crownfall = true, Deadvault = true}
+local NO_HURL = {Hub = true, Tavern = true, Crownfall = true, Deadvault = true, Lists = true}
 local WHOOSH = "rbxassetid://9120709477"
 
 local state = setmetatable({}, {__mode = "k"})
@@ -102,7 +102,8 @@ local function allowed(c)
 	local round = ReplicatedStorage:FindFirstChild("Round")
 	local mode = round and round:GetAttribute("Mode")
 	if NO_HURL[mode or ""] then
-		return false, (mode == "Crownfall" or mode == "Deadvault") and "not here: your gear lives in your bag" or ""
+		return false, (mode == "Crownfall" or mode == "Deadvault") and "not here: your gear lives in your bag"
+			or (mode == "Lists" and "the Lists are pure swordsmanship" or "")
 	end
 	local hum = humOf(c)
 	if not (hum and hum.Health > 0) or c:GetAttribute("Ragdolled") then return false, "" end

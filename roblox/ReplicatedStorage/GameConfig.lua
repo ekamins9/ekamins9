@@ -89,7 +89,8 @@ GameConfig.MODES = {
 	},
 	Lists = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
-		description = "Best of 5 rounds, no respawns, one on one means one on one.",
+		description = "Best of 5 rounds, no respawns, one on one means one on one. Pure swordsmanship: no powers, no throwables, no bows, no magic.",
+		meleeOnly = true,   -- (Game ▸ Modes ▸ Lists: steel in the hand and nothing else)
 		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater",
 			"Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield", "Snowcrest", "Sunhold", "Greenring", "Blossomfield"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
 	},

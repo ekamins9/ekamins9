@@ -3,7 +3,13 @@
 -- rules: a hit on someone already engaged by your teammate is a warning the
 -- first time and loses the round the second (CombatServer reports through
 -- _G.HonorHook). Ranked results are written by Scoreboard (ratings + boards).
+-- PURE SWORDSMANSHIP (the mode's meleeOnly): no powers, no throwables, no spells, no bows or
+-- magic, no thrown steel (Combat ▸ Hurl); a bow or a staff in your loadout gives way to your
+-- melee secondary, else a melee weapon your class carries. The bots fight the same way.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Game  = require(script.Parent.Parent:WaitForChild("Game"))
 local Teams = Game.Teams
 local LTS = require(script.Parent:WaitForChild("LTS"))
@@ -61,6 +67,37 @@ function Lists:result()
 	end
 	return text
 end
+-- PURE SWORDSMANSHIP: steel in the hand and nothing else
+local MELEE = {OneHanded = true, TwoHanded = true, Polearm = true}
+local BOT_MELEE = {"Longsword", "ArmingSword", "Mace", "Falchion", "Spear", "BattleAxe", "Shortsword", "Greatsword"}
+local function melee(id)
+	local w = id and Catalog.WEAPON[id]
+	return w ~= nil and MELEE[w.family] == true
+end
+function Lists:adjustLoadout(plr, lo, classId)
+	lo.power, lo.throwable, lo.throwableSkin = "none", "none", nil
+	lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil
+	lo.spells, lo.wandSpells = {}, {}
+	if not melee(lo.secondary) then lo.secondary, lo.secondarySkin = nil, nil end
+	if not melee(lo.weapon) then
+		if lo.secondary then
+			lo.weapon, lo.weaponSkin, lo.secondary, lo.secondarySkin = lo.secondary, lo.secondarySkin, nil, nil
+		else
+			local cls, pick = GameConfig.CLASSES[classId], nil
+			for _, w in ipairs(Catalog.WEAPONS) do
+				if MELEE[w.family] and cls and Catalog.weaponFits(cls, w, "primary") then pick = w.id; break end
+			end
+			lo.weapon = pick or "Shortsword"
+			lo.weaponSkin = lo.weapon .. ":Default"
+		end
+	end
+end
+function Lists:botOpts(opts)
+	opts.power, opts.powerSkin = nil, nil
+	opts.class = nil
+	if not melee(opts.weapon) then opts.weapon = BOT_MELEE[math.random(#BOT_MELEE)] end
+end
+
 -- after the match the server is done: everyone is sent home by HubServer (MatchOver attribute)
 function Lists:stop()
 	if self.matchDone then Game.node:SetAttribute("MatchOver", true) end
