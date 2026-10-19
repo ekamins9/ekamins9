@@ -871,14 +871,18 @@ and a UIScale fits it to any screen.
   polearms…; its skins as pictures, yours first, then the rarest; spells; the secondary),
   **ARMOR** (one slot at a time: a HELMET / TOP / LEGS switch with what you wear in each; every
   piece as a picture in your colours, yours first; the class's level), **GEAR** (shields face-on as pictures in their skins, the mannequin turning its
-  shield arm to you; the power, the throwable, a sidearm) and **LOOK** (YOUR ARMS, the finish:
+  shield arm to you; the power, the throwable) and **LOOK** (YOUR ARMS, the finish:
   each shown on the breastplate you wear, the colours).
 - **YOUR ARMS** (LOOK; `Catalog ▸ Arms`): your own coat of arms: one of 36 emblems (most free,
   others open with your level, up to the salamander and the unicorn at 20: earned, never bought:
   `Catalog ▸ Arms` EMBLEMS), its metal (or, argent, sable), a
   field colour off the palette, and if you like a division with a second colour. Any shield you
   carry without a skin wears it (`Combat ▸ Shields` → `ShieldPaint.plain`), and your mannequin's
-  does; in a team fight on your side's colour. Kept in your appearance (`armsEmblem`, `armsMetal`,
+  does; in a team fight on your side's colour. **So does a surcoat**: a top that's cloth across the
+  chest (the sets in `Catalog ▸ Arms` SURCOATS: their panel size and height) wears your arms there,
+  field, division and emblem (`Dresser.surcoat`: ArmsTabard, on every body the Dresser dresses,
+  previews too; in a team fight on your side's colour, a bot's or an armsless player's with the
+  side's house; the team plate and the chest badge stand aside for it). Kept in your appearance (`armsEmblem`, `armsMetal`,
   `armsField`, `armsDivision`, `armsColor2`; `Profile.validateAppearance` checks the level and the
   colours).
   `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab (`"ARMOR:top"`: on a slot).

@@ -1,4 +1,24 @@
-# Updated scripts: Dragonfall, a dragon you can learn and bring down
+# Updated scripts: your coat of arms on your surcoat
+
+- **Armour wears your arms too.** A top that's cloth across the chest (the Gambeson, Tourney
+  Knight, Lionheart, Sellsword, River Guard, Road Levy, Wolf Company and Gilded Court sets) carries
+  your coat of arms there, like a plain shield does: your field, its division in your second
+  colour, your emblem in its metal, outlined and shadowed. In a team fight it's on your side's
+  colour (and a bot's, or a player's with no arms, shows their side's house). It shows in the
+  loadout's mannequin too. The team's chest plate and badge stand aside for it.
+- LOOK ▸ YOUR ARMS says so: YOUR SHIELD AND YOUR SURCOAT.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | `Dresser.surcoat` (ArmsTabard), from `dress` |
+| [Catalog/Arms.lua](ReplicatedStorage/Catalog/Arms.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | SURCOATS: which sets, the panel's size and height |
+| [Teams.lua](ServerScriptService/Game/Teams.lua) | ServerScriptService ▸ Game | ModuleScript | no plate or badge over a surcoat |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | YOUR ARMS panel's words |
+| [README.md](README.md) | — | doc | YOUR ARMS: the surcoat |
+
+---
+
+## Before that: Dragonfall, a dragon you can learn and bring down
 
 - **Learnable attack patterns.** Cindermaw fights in fixed patterns picked by where you all
   stand: CLAW → BITE at its front, TAIL SWEEP → STOMP behind it, WING BUFFET → FIRE BREATH when

@@ -175,6 +175,12 @@ local tabard
 function Teams.mark(char, key)
 	tabard(char, key)
 	local torso = char:FindFirstChild("Torso")
+	-- (a surcoat already wears the arms across the chest: Dresser.surcoat)
+	if char:FindFirstChild("ArmsTabard") then
+		local old = char:FindFirstChild("HouseBadge")
+		if old then old:Destroy() end
+		return
+	end
 	if torso then pcall(houseBadge, char, key, torso) end
 end
 tabard = function(char, key)
@@ -183,8 +189,8 @@ tabard = function(char, key)
 	if old then old:Destroy() end
 	local torso = char:FindFirstChild("Torso")
 	if not (key and torso) then return end
-	-- armor with color blocks already wears the team color (Dresser): no plate
-	if char:GetAttribute("TeamPainted") == true then return end
+	-- armor with color blocks already wears the team color (Dresser): no plate; nor a surcoat
+	if char:GetAttribute("TeamPainted") == true or char:FindFirstChild("ArmsTabard") then return end
 	local def = GameConfig.TEAMS[key]
 	local plate = Instance.new("Part")
 	plate.Name = "Tabard"

@@ -4944,8 +4944,8 @@ do
 		if not A then return end
 		local app = (state.profile or {}).appearance or {}
 		local lvl = (state.profile and state.profile.level) or 1
-		local p = panel(page, "YOUR ARMS  ·  ON A PLAIN SHIELD")
-		dim(p, "Your own coat of arms, on any shield you carry without a skin; in a team fight on your side's colour. (No arms of your own: there you carry your side's house's.)", 12)
+		local p = panel(page, "YOUR ARMS  ·  YOUR SHIELD AND YOUR SURCOAT")
+		dim(p, "Your own coat of arms, on any shield you carry without a skin, and across the chest of a surcoat, a tabard or a gambeson (the Gambeson, Tourney Knight, Lionheart, Sellsword, River Guard, Road Levy, Wolf Company and Gilded Court sets); in a team fight on your side's colour. (No arms of your own: there you carry your side's house's.)", 12)
 		local e = A.EMBLEM[app.armsEmblem or ""]
 		local metal = A.METAL[app.armsMetal or ""] or A.METALS[1]
 		local field = Catalog.COLOR[app.armsField or ""]
