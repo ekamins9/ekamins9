@@ -127,10 +127,12 @@ local function refreshChip()
 		chipName.Text = found or (ok and cfg and cfg.Name or tool.Name)
 		if found then
 			line, color = string.upper(tool:GetAttribute("LootRarity") or "Common") .. "  ·  " .. (ok and cfg and cfg.Name or tool.Name), RARITY_COL[tool:GetAttribute("LootRarity") or "Common"]
-		elseif skin and skin ~= "" and skin ~= "Default" then
+		elseif skin and skin ~= "" and skin ~= "Default" and not tostring(skin):find(":Default$") then
 			local okC, Catalog = pcall(require, game:GetService("ReplicatedStorage"):WaitForChild("Catalog"))
 			local def = okC and Catalog.SKIN and Catalog.SKIN[tool:GetAttribute("SkinId") or ""]
-			line, color = skin, RARITY_COL[def and def.rarity or "Common"]
+			-- (the skin's own name: never its id)
+			local nm = def and def.name or (tostring(skin):match(":(.+)$") or skin)
+			if nm ~= "Default" then line, color = nm, RARITY_COL[def and def.rarity or "Common"] end
 		end
 	end
 	chipSkin.Visible = line ~= nil
