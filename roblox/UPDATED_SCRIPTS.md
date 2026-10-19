@@ -1,4 +1,23 @@
-# Updated scripts: your coat of arms on your surcoat
+# Updated scripts: etched blades, Forge art down every skin's blade
+
+- **Weapon skins are etched.** New art from ForgeGUI, eight engravings: Norse runes and knotwork,
+  flames, frost, gothic filigree with a crown and fleurs-de-lis, a winding dragon, a laurel vine,
+  waves, thunder. Each skin wears the one its trim calls for (a frost skin frost, a royal one
+  filigree, a serpent one the dragon…), on both flats of the blade: magic ones glow in the skin's
+  glow colour, the rest are inlaid in its accent (gold from Epic) or etched dark into the steel.
+  Plain-trimmed skins get a maker's runes at Rare and gold filigree from Epic; Common stays plain.
+  Every place a skin is shown wears it: in your hand, on the ground, in the loadout and Armory.
+- Studio-only, to save with the place: **ReplicatedStorage ▸ SkinArt** (the eight pictures).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [BladeArt.lua](ReplicatedStorage/BladeArt.lua) | ReplicatedStorage | ModuleScript | **new**: the etching, chosen by trim, down the blade |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | `applySkin` lays it on (and clears it) |
+| [README.md](README.md) | — | doc | Blade etchings |
+
+---
+
+## Before that: your coat of arms on your surcoat
 
 - **Armour wears your arms too.** A top that's cloth across the chest (the Gambeson, Tourney
   Knight, Lionheart, Sellsword, River Guard, Road Levy, Wolf Company and Gilded Court sets) carries

@@ -91,7 +91,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts`, `Store`, `Pass`, `Login`, `KillFX`, `Emotes` (children of the Catalog ModuleScript) | ModuleScript each |
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
 | `ReplicatedStorage/PreviewRig.lua` | `ReplicatedStorage` → `PreviewRig` (a dressed mannequin for menus) | ModuleScript |
-| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads` (a skin's trim parts; its trail and aura; a staff skin's head) | ModuleScript each |
+| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua`, `BladeArt.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads`, `BladeArt` (a skin's trim parts; its trail and aura; a staff skin's head; its blade etching) | ModuleScript each |
 | `ReplicatedStorage/KillFX.lua`, `Emotes.lua`, `PowerPoses.lua`, `PowerAuras.lua` | `ReplicatedStorage` → `KillFX`, `Emotes`, `PowerPoses`, `PowerAuras` (the effects and motions; a power's gesture; a lasting power's look on you) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
 | `ServerScriptService/Hub/Duels.server.lua` | `ServerScriptService` → `Hub` → `Duels` | Script |
@@ -1127,6 +1127,15 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   all an aura **hums** (`SkinFX.HUM`, Pro Sound Effects loops): a crackle of fire, an electric hum, a
   shimmer, a low pulse, only heard up close and swelling a little as it swings (a windup turning into its release is one swing), and a
   sound with a `cut` fades out over 0.18 s instead of snapping off.
+- **Blade etchings** (`BladeArt`, applied by the `Dresser` after the trim and the effects): a
+  picture down the flat of the blade on both sides, from ForgeGUI art (Studio-only
+  `ReplicatedStorage ▸ SkinArt`, `etch_<name>` = image; ids also in gitignored
+  `blender/out/forge/blade_art.txt`): runes, flames, frost, filigree, a winding dragon, a laurel
+  vine, waves, thunder, chosen by the skin's trim (`BladeArt.ETCH`) or its own `etch`; a plain trim
+  gets a maker's runes at Rare and gold filigree from Epic, Common blades stay plain. Magic
+  pictures glow in the skin's glow; the rest are inlaid in its accent (gold from Epic) or etched
+  dark below that. Long blades only (never a bow, a hammer or a mace head); a skin model made
+  all in one mesh gets a clear plate where the weapon's own blade is.
 - **Staff heads** (`StaffHeads`): a Mage's staff skin is a whole new head, never a recolour. Each
   staff skin names a design (`Catalog ▸ Skins head = "…"`); `SkinTrims` hides the plain claws and
   orb (`SkinHidden`, shown again on the next skin) and builds the head, `SkinFX` adds its lights,

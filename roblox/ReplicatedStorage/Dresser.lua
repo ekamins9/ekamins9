@@ -10,7 +10,8 @@
                                           top (Catalog ▸ Arms SURCOATS): ArmsTabard, done by dress
        Dresser.applySkin(tool, skinId, variant)   puts the skin on a weapon Tool: its Forge model
                                           (Cosmetics ▸ Skins) or, without one, tints + trim (SkinTrims);
-                                          then its trail / aura and its finish (SkinFX: Masterwork, Radiant)
+                                          then its trail / aura and its finish (SkinFX: Masterwork, Radiant),
+                                          and its etching down the blade (BladeArt)
        Dresser.attachWeapon(rig, weaponId, skinId)   preview only: welds Cosmetics ▸ Weapons ▸ <id> to the right hand
        Dresser.attachShield(rig, shieldId, skinId)   preview only: a shield on the left arm
 
@@ -619,6 +620,8 @@ function Dresser.applySkin(tool, skinId, variant)
 	ShieldDress.clear(tool)   -- (and its dress: materials put back, ornaments gone)
 	ShieldPaint = ShieldPaint or require(script.Parent:WaitForChild("ShieldPaint"))
 	ShieldPaint.clear(tool)   -- (and its paint: the emblem, the division, the scratches)
+	local BladeArt = require(script.Parent:WaitForChild("BladeArt"))
+	BladeArt.clear(tool)   -- (and its etching down the blade)
 	-- (whatever the last skin hid, a staff's plain claws and orb, comes back first)
 	for _, p in ipairs(tool:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
@@ -648,6 +651,7 @@ function Dresser.applySkin(tool, skinId, variant)
 			clone.Name = "Skin"
 			clone.Parent = tool
 			SkinFX.apply(tool, skin, variant)   -- the trail, the aura and the finish ride on the model
+			BladeArt.apply(tool, skin)   -- (its etching, down the model's blade)
 			return true
 		end
 	end
@@ -667,6 +671,8 @@ function Dresser.applySkin(tool, skinId, variant)
 	end
 	if SkinTrims.apply(tool, skin) then n += 1 end
 	if SkinFX.apply(tool, skin, variant) then n += 1 end
+	-- its etching down the flat of the blade, in Forge art (ReplicatedStorage ▸ BladeArt)
+	if BladeArt.apply(tool, skin) then n += 1 end
 	if skin.heraldry and Heraldry.apply(tool, skin) then n += 1 end
 	-- a shield skin's materials and ornaments (wings, a crown, a sunburst…: ReplicatedStorage ▸ ShieldDress)
 	if (skin.adorn or skin.field or skin.rim) and ShieldDress.apply(tool, skin) then n += 1 end
