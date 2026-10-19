@@ -1,4 +1,26 @@
-# Updated scripts: the Mythics and Uniques reforged; no twins; glows that don't wash the blade out
+# Updated scripts: every skin in its true colours; rust that looks like rust
+
+- **True colours on every Forge skin**: the meshes' vertex colours were written as linear, so the
+  game showed each palette darker and redder than designed: gold came out orange, wood maroon or
+  black, leather black. They're written as sRGB now (a touch deeper, `TONE`), so gold guards are
+  gold, shafts are wood, grips are leather. All 384 skin meshes rebuilt, re-uploaded, and their
+  models rebuilt in Studio.
+- **Rust that looks like rust**: the rust finish (Pitted, Veteran, Bloodrust, Grey Iron, Notched,
+  Gravedigger…) was a fine noise that aliased into hard blotches on the vertices; it's soft
+  stains now that gather and fade over mostly bare steel. Bloodrust's bone-saw spear head is
+  blood-red, not pale steel.
+- **Save the place**: the rebuilt models are in ReplicatedStorage ▸ Cosmetics ▸ Skins.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [weapons.py](../blender/weapons.py) | — | Blender script | export vertex colours as sRGB, `TONE` |
+| [forge.py](../blender/forge.py) | — | Blender script | the rust pattern; the header |
+| [themes.py](../blender/themes.py) | — | Blender script | Bloodrust's `bright` |
+| [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | colours are what you see |
+
+---
+
+## Before that: the Mythics and Uniques reforged; no twins; glows that don't wash the blade out
 
 - **The top skins are Forge meshes now**: the three melee Mythics and five Uniques still wore the
   old part trims (a floating ring on the blade). Each has its own theme and shape: Starforged

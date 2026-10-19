@@ -31,7 +31,8 @@ A theme is a set of changes, not a recolour:
              de corbin), flanged
   haft       the shaft itself: banded spiral twisted bone vine gilded crystal runic
              bamboo rope scaled chain ash
-Each skin exports <Weapon>__<Skin>_Body.fbx (vertex colours) and, when it glows,
+Each skin exports <Weapon>__<Skin>_Body.fbx (vertex colours, written as sRGB: the palettes'
+colours are what Roblox shows, a little deeper by weapons.TONE) and, when it glows,
 <Weapon>__<Skin>_Glow.fbx (white; Studio makes it Neon in the glow colour), with
 a json of region centres in the Tool frame (MeshTool-style weld offsets).
 """
@@ -552,8 +553,11 @@ def pat(kind, p, a, b, f, theme):
         t = 0.5 + 0.5 * math.sin(y * 26 + 3.2 * math.sin(x * 15 + y * 3) + 1.6 * math.sin(y * 7.0 + z * 9))
         return lerp(a, b, t ** 1.6)
     if kind == "rust":
-        n = noise.noise(Vector((x * 6, y * 6, z * 6))) + 0.5 * noise.noise(Vector((x * 17, y * 17, z * 17)))
-        return lerp(a, b, (n + 0.2) * 1.6)
+        # soft stains that gather and fade, mostly bare steel (low frequencies only: the colour lives on
+        # the vertices, and finer noise aliases into hard blotches)
+        n = noise.noise(Vector((x * 4, y * 3, z * 4))) + 0.35 * noise.noise(Vector((x * 9, y * 8, z * 9)))
+        t = max(0.0, min(1.0, (n - 0.02) / 0.5))
+        return lerp(a, b, t * t * (3 - 2 * t) * 0.85)
     if kind == "blued":
         return lerp(a, b, f)
     if kind == "frost":

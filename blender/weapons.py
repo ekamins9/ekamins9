@@ -995,17 +995,26 @@ def to_object(name, bms):
     return ob
 
 
+TONE = 1.25   # the vertex colours' tone curve on export (a touch deeper than the palette)
+
+
 def export(ob, path):
     for o in bpy.context.scene.objects:
         o.select_set(o == ob)
     bpy.context.view_layer.objects.active = ob
+    # the palettes are sRGB colours and Roblox reads vertex colours as sRGB: write them so (a linear
+    # export turned gold orange and wood maroon), a little deeper by TONE
+    for ca in ob.data.color_attributes:
+        for d in ca.data:
+            c = d.color_srgb
+            d.color_srgb = (c[0] ** TONE, c[1] ** TONE, c[2] ** TONE, c[3])
     # Roblox takes the FBX's Z as its Y (and keeps X): spin the mesh so the
     # Tool's +Y (the blade) is on Blender +Z for the file, then spin it back
     ob.rotation_euler = (math.radians(90), 0, 0)
     # Roblox reads FBX centimetres (100 units = 1 stud) and takes the axes as
     # they come, so pass coordinates through unchanged at 1/100
     bpy.ops.export_scene.fbx(filepath=path, use_selection=True, apply_unit_scale=True, global_scale=0.01,
-                             axis_forward="Y", axis_up="Z", mesh_smooth_type="FACE", colors_type="LINEAR",
+                             axis_forward="Y", axis_up="Z", mesh_smooth_type="FACE", colors_type="SRGB",
                              add_leaf_bones=False, bake_anim=False, use_mesh_modifiers=True, path_mode="STRIP")
     ob.rotation_euler = (0, 0, 0)
 

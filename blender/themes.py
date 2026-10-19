@@ -123,7 +123,7 @@ L += [
       pattern="filigree", guard="crown", guard_color="gold", pommel="jewel", glow=((80, 140, 255), ["runes"])),
     T("veteran", palette=dict(steel=(184, 192, 200), face=(184, 192, 200), edge=(230, 234, 240), pattern_b=(140, 130, 120)), pattern="rust",
       edge="nicks", guard="laurel", guard_color="gold", wrap="red", ornaments=["ribbon"]),
-    T("bloodrust", palette=dict(steel=(120, 48, 40), face=(120, 48, 40), fuller=(70, 30, 26), edge=(200, 120, 100), pattern_b=(64, 26, 22)),
+    T("bloodrust", palette=dict(steel=(120, 48, 40), face=(120, 48, 40), bright=(150, 66, 54), fuller=(70, 30, 26), edge=(200, 120, 100), pattern_b=(64, 26, 22)),
       pattern="rust", edge="serrate", guard="spikes", pommel="spike"),
     T("thornguard", palette=dict(steel=(46, 40, 36), face=(46, 40, 36), edge=(190, 150, 110), leather=(120, 80, 40), pattern_b=(92, 66, 44)),
       pattern="bark", edge="barb", guard="thorns", ornaments=["thornwrap"]),
