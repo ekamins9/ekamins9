@@ -1,4 +1,22 @@
-# Updated scripts: the tutorial teaches the view, the mouse and a power
+# Updated scripts: Crownfall's island is a real land
+
+- **The Crownfall island is rebuilt** (Realm v2), about twice as wide and every bit of it sitting on
+  the ground: a height-mapped island written straight into Terrain (rolling meadows, highlands with
+  snow, a lake, a river to the sea, beaches), and on it a walled keep on its hill, four villages
+  round their greens, a harbour with a pier and a longship, farms with fenced fields, a mill, watch
+  towers, a mine in the rock, a hunting lodge on the lake, a fort on the river crossing, a chapel and
+  graveyard, ruins, standing stones, camps; roads between them, bridges over the river, forests of
+  pine and oak. Chests stand on the ground at each place.
+- **The ring wall** is a faint ember haze, and only shows once it's on the island.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Realm.lua](ServerScriptService/Game/Realm.lua) | ServerScriptService ▸ Game | ModuleScript | rewritten: height map, voxel terrain, places, roads, river, forests |
+| [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the island's size; the ring wall's look |
+
+---
+
+## Before that: the tutorial teaches the view, the mouse and a power
 
 - **Three new lessons in the Siege of Stormwatch**, each with your own key big on screen:
   **YOUR EYES** (in the barracks: switch first and third person), **THE MOUSE** (free it for menus and

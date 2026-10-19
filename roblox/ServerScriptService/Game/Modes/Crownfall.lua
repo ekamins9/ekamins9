@@ -33,7 +33,7 @@ local Profile = require(ServerScriptService:WaitForChild("Loadout"):WaitForChild
 local MapLoader = Game.MapLoader
 local node = Game.node
 
-local ISLAND = 300
+local ISLAND = 520
 local DROP_AT = 7          -- seconds into the round
 local DROP_HEIGHT = 110
 local GLIDE = -24          -- how fast you come down under the canopy
@@ -263,8 +263,8 @@ function Crownfall:ringParts()
 		local p = Instance.new("Part")
 		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
 		p.Material = Enum.Material.Neon
-		p.Color = Color3.fromRGB(255, 110, 30)
-		p.Transparency = 0.55
+		p.Color = Color3.fromRGB(255, 120, 50)
+		p.Transparency = 0.78
 		p.Parent = f
 		self.wall[i] = p
 	end
@@ -273,6 +273,9 @@ end
 function Crownfall:drawRing()
 	local c, r = self.ringC, math.max(self.ringR, 0.5)
 	local seg = 2 * math.pi * r / SEGMENTS + 0.4
+	-- (out past the shore the ring is nothing to see: the wall shows once it's on the island)
+	local show = r < ISLAND * 0.97
+	if self.wallFolder then self.wallFolder.Parent = show and (MapLoader.current or workspace) or nil end
 	for i, p in ipairs(self.wall) do
 		local a = (i / SEGMENTS) * math.pi * 2
 		local pos = c + Vector3.new(math.cos(a) * r, 14, math.sin(a) * r)
