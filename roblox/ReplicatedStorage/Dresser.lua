@@ -541,7 +541,17 @@ function Dresser.applySkin(tool, skinId, variant)
 				clone.PrimaryPart = ch
 				pcall(function() clone:ScaleTo(clone:GetScale() * f) end)
 			end
+			-- (a glowing inlay on a pale blade glows deeper, or the bloom swallows the whole blade white)
+			local pale = false
+			if typeof(skin.blade) == "Color3" then
+				local _, bs, bv = skin.blade:ToHSV()
+				pale = bv > 0.8 and bs < 0.4
+			end
 			for _, p in ipairs(clone:GetDescendants()) do
+				if pale and p:IsA("BasePart") and p.Material == Enum.Material.Neon then
+					local gh, gs, gv = p.Color:ToHSV()
+					p.Color = Color3.fromHSV(gh, math.min(1, gs + 0.4), gv * 0.8)
+				end
 				if p:IsA("BasePart") then
 					p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
 					local w = Instance.new("Weld"); w.Part0, w.Part1, w.C0 = handle, p, mh.CFrame:ToObjectSpace(p.CFrame); w.Parent = p

@@ -67,7 +67,7 @@ L += [
     T("duelist", palette=dict(steel=(226, 228, 232), face=(226, 228, 232), edge=(255, 255, 255), brass=(232, 184, 74), pattern_b=(255, 255, 255)),
       pattern="sheen", wrap="red", pommel="ring", guard_color="gold"),
     T("heraldic", palette=dict(steel=(200, 206, 220), face=(200, 206, 220), fuller=(60, 100, 200), leather=(74, 98, 168), darkleather=(50, 66, 120),
-                               brass=(232, 184, 74), pattern_b=(64, 104, 204)), pattern="stripes", twist=0.0, freq=7, tassel_color=(60, 100, 200),
+                               brass=(232, 184, 74), pattern_b=(232, 184, 74)), pattern="filigree", tassel_color=(60, 100, 200),
       ornaments=["tassel"]),
     T("damascus", palette=dict(steel=(120, 124, 132), face=(120, 124, 132), edge=(230, 232, 236), pattern_b=(214, 218, 224)), pattern="damascus"),
     T("wyrmscale", palette=dict(steel=(70, 110, 80), face=(70, 110, 80), fuller=(50, 80, 56), edge=(232, 210, 120), leather=(40, 60, 40),
@@ -169,7 +169,8 @@ L += [
       guard="thorns", ornaments=["web"]),
     T("candlewax", palette=dict(steel=(236, 228, 206), face=(236, 228, 206), fuller=(200, 190, 160), edge=(255, 250, 240), leather=(60, 30, 50),
                                 pattern_b=(210, 196, 160)), pattern="rust", ornaments=["candles"], glow=((255, 180, 80), [])),
-    T("ironclad2", palette=dict(steel=(70, 72, 78), face=(70, 72, 78), edge=(200, 204, 210), pattern_b=(110, 112, 120)), pattern="rust",
+    T("ironclad2", palette=dict(steel=(70, 72, 78), face=(70, 72, 78), edge=(200, 204, 210), gold=(96, 98, 106), red=(180, 184, 190),
+                               pattern_b=(110, 112, 120)), pattern="rust",
       guard="spikes", pommel="spike", ornaments=["chains"]),
     T("stagheart", palette=dict(steel=(150, 140, 120), face=(150, 140, 120), edge=(220, 214, 200), pattern_b=(100, 120, 80)), pattern="camo",
       guard="antlers", wrap="fur", pommel="acorn"),
@@ -264,7 +265,7 @@ L += [
     T("jarlsbane", palette=dict(steel=(170, 180, 190), face=(170, 180, 190), edge=(240, 250, 255), pattern_b=(232, 190, 90)), pattern="knotwork",
       guard="knot", guard_color="gold", pommel="dragon", wrap="fur", fur_color=(120, 110, 100), glow=((120, 200, 255), ["runes", "veins"])),
     T("rimeheart", palette=dict(steel=(180, 220, 250), face=(180, 220, 250), edge=(255, 255, 255), leather=(40, 60, 110), pattern_b=(80, 130, 210)),
-      pattern="frost", edge="jag", guard="crescent", guard_color="bright", pommel="jewel", glow=((150, 230, 255), ["crystals", "veins", "halo"])),
+      pattern="frost", edge="jag", guard="wings", guard_color="bright", pommel="jewel", glow=((150, 230, 255), ["crystals", "veins", "halo"])),
     T("krampus", palette=dict(steel=(30, 28, 28), face=(30, 28, 28), edge=(220, 60, 60), pattern_b=(90, 20, 20)), pattern="embers", edge="barb",
       guard="horns", horn_color=(60, 40, 30), wrap="fur", fur_color=(50, 40, 36), ornaments=["chains"], glow=((255, 40, 40), ["cracks"])),
     T("forgefather", palette=dict(steel=(36, 34, 34), face=(36, 34, 34), edge=(255, 170, 80), leather=(60, 30, 20), pattern_b=(160, 60, 16)),
@@ -285,8 +286,8 @@ L += [
                                   darkleather=(140, 30, 70), brass=(232, 184, 74), pattern_b=(255, 176, 210)), pattern="sheen", wrap="gilt", pommel="ring",
       guard_color="gold"),
     T("voidrender", palette=dict(steel=(22, 20, 32), face=(22, 20, 32), fuller=(10, 8, 16), edge=(196, 156, 255), leather=(32, 22, 52),
-                                 darkleather=(18, 12, 30), pattern_b=(124, 84, 210)), pattern="stars", guard="crescent", guard_color="blackiron",
-      pommel="claw", glow=((180, 110, 255), ["core", "stars"])),
+                                 darkleather=(18, 12, 30), pattern_b=(124, 84, 210)), pattern="stars", guard="spikes", guard_color="blackiron",
+      pommel="claw", glow=((255, 70, 190), ["cracks", "core"])),
     T("emberwyrm", palette=dict(steel=(38, 30, 28), face=(38, 30, 28), fuller=(22, 16, 14), edge=(255, 156, 64), wood=(40, 24, 18),
                                 darksteel=(30, 24, 22), pattern_b=(190, 64, 20)), pattern="embers", guard="horns", horn_color=(30, 24, 22),
       pommel="dragon", guard_color="blackiron", glow=((255, 120, 30), ["cracks"])),
@@ -310,9 +311,39 @@ L += [
     T("ashbringer", palette=dict(steel=(56, 52, 50), face=(56, 52, 50), fuller=(34, 30, 28), edge=(255, 192, 122), leather=(42, 32, 28),
                                  darkleather=(26, 20, 18), pattern_b=(152, 72, 30)), pattern="embers", guard="spikes", guard_color="blackiron",
       pommel="spike", glow=((255, 140, 60), ["cracks"])),
-    T("featherfall", palette=dict(steel=(36, 36, 42), face=(36, 36, 42), fuller=(22, 22, 26), edge=(192, 192, 212), leather=(28, 28, 32),
-                                  pattern_b=(92, 92, 112)), pattern="sheen", guard="wings", guard_color="blackiron", ornaments=["feathers"],
-      feather_color=(26, 26, 32), pommel="claw"),
+    T("featherfall", palette=dict(steel=(212, 216, 226), face=(212, 216, 226), fuller=(150, 156, 174), edge=(255, 255, 255), leather=(60, 62, 74),
+                                  darkleather=(40, 42, 52), pattern_b=(236, 238, 246)), pattern="sheen", guard="wings", guard_color="bright",
+      ornaments=["feathers"], feather_color=(240, 240, 244), pommel="claw"),
+]
+
+# ---------------------------------------------------------------- THE MYTHICS AND THE UNIQUES (2026-10-19): the top of the forge
+L += [
+    T("starforged", palette=dict(steel=(28, 34, 78), face=(28, 34, 78), fuller=(14, 18, 46), edge=(226, 234, 255), leather=(20, 20, 34),
+                                 darkleather=(12, 12, 22), brass=(200, 210, 240), pattern_b=(236, 240, 255)), pattern="stars",
+      guard="sunburst", guard_color="bright", pommel="star", wrap="gilt", glow=((150, 180, 255), ["stars", "core", "crystals"])),
+    T("worldbreaker", palette=dict(steel=(36, 30, 30), face=(36, 30, 30), fuller=(20, 16, 16), edge=(255, 150, 60), wood=(30, 24, 22),
+                                   iron=(40, 34, 32), darksteel=(30, 26, 26), pattern_b=(190, 70, 20)), pattern="embers", edge="jag",
+      guard="spikes", guard_color="blackiron", pommel="spike", ornaments=["chains"], glow=((255, 110, 30), ["cracks", "veins", "core"])),
+    T("sovereign", palette=dict(steel=(250, 244, 226), face=(250, 244, 226), bright=(255, 252, 240), fuller=(220, 180, 80), edge=(255, 255, 255),
+                                leather=(120, 24, 40), darkleather=(80, 14, 26), brass=(232, 184, 74), pattern_b=(255, 248, 230)),
+      pattern="sheen", guard="crown", guard_color="gold", pommel="jewel", wrap="gilt", ornaments=["ribbon"], ribbon_color=(150, 20, 40),
+      glow=((255, 230, 150), ["runes"])),
+    T("firstseason", palette=dict(steel=(255, 226, 150), face=(255, 226, 150), fuller=(190, 130, 50), edge=(255, 250, 230), leather=(150, 20, 34),
+                                  darkleather=(100, 12, 22), brass=(232, 184, 74), pattern_b=(255, 246, 210)), pattern="sheen",
+      guard="laurel", guard_color="gold", pommel="star", wrap="gilt", ornaments=["tassel"], tassel_color=(150, 20, 34),
+      glow=((255, 214, 110), ["core", "halo"])),
+    T("undefeated", palette=dict(steel=(236, 240, 255), face=(236, 240, 255), fuller=(150, 170, 220), edge=(255, 255, 255), leather=(30, 34, 60),
+                                 darkleather=(18, 20, 40), brass=(200, 210, 240), pattern_b=(170, 200, 255)), pattern="damascus",
+      guard="laurel", guard_color="bright", pommel="jewel", wrap="gilt", glow=((170, 200, 255), ["runes", "veins"])),
+    T("bloodmoon", palette=dict(steel=(120, 14, 26), face=(120, 14, 26), fuller=(60, 6, 12), edge=(255, 120, 120), leather=(24, 10, 12),
+                                darkleather=(14, 6, 8), pattern_b=(200, 30, 50)), pattern="scales", guard="crescent", guard_color="blackiron",
+      pommel="claw", ornaments=["serpent"], serpent_color=(30, 10, 14), glow=((255, 40, 60), ["core", "cracks"])),
+    T("stormbringer", palette=dict(steel=(60, 80, 120), face=(60, 80, 120), fuller=(34, 46, 74), edge=(220, 236, 255), wood=(24, 28, 40),
+                                   leather=(20, 24, 34), darksteel=(44, 56, 84), pattern_b=(150, 200, 255)), pattern="waves", edge="jag",
+      guard="wings", guard_color="bright", ornaments=["tassel"], tassel_color=(40, 60, 120), glow=((150, 210, 255), ["veins", "runes"])),
+    T("kingslayer", palette=dict(steel=(24, 22, 26), face=(24, 22, 26), fuller=(12, 10, 14), edge=(255, 170, 80), leather=(40, 26, 14),
+                                 darkleather=(26, 16, 8), brass=(200, 150, 50), pattern_b=(150, 60, 16)), pattern="embers", guard="crown",
+      guard_color="gold", pommel="skull", bone_color=(200, 150, 50), wrap="gilt", glow=((255, 120, 30), ["cracks", "runes"])),
 ]
 
 # ---------------------------------------------------------------- SILHOUETTES (forge.py BLADES / heads / HAFTS)
@@ -332,7 +363,7 @@ SHAPES = {
     "damascus": ("leaf", "broad", "bearded", None, "spiral"), "wyrmscale": ("serpent", "serpent", "crescent", "spiked", "scaled"),
     "marshreed": ("leaf", "broad", None, None, "bamboo"), "riverstone": ("obsidian", "broad", None, None, "spiral"),
     "sellsword": ("broad", None, "bearded", None, "banded"), "crowblack": ("fang", "winged", "bearded", "spiked", "banded"),
-    "tourneygilt": ("tiered", "winged", None, "crown", "gilded"), "ironclad": ("broad", "trident", "double", "spiked", "banded"),
+    "tourneygilt": ("tiered", "winged", None, "star", "gilded"), "ironclad": ("broad", "trident", "double", "spiked", "banded"),
     "crownspike": ("tiered", "trident", "double", "crown", "gilded"), "ironoath": ("broad", None, None, None, "banded"),
     "squiresoath": ("leaf", "winged", None, None, "gilded"), "wayfarer": ("leaf", "broad", None, None, "rope"),
     "bone": ("bone", "bone", "bearded", "skull", "bone"), "gravedigger": ("tiered", None, "bearded", None, "rope"),
@@ -355,9 +386,9 @@ SHAPES = {
     "oathbound": ("twin", "winged", "crescent", "orb", "runic"), "ironvow": ("leaf", "broad", "bearded", "star", "rope"),
     "lionheart": ("sun", "sun", "crescent", "crown", "gilded"), "ossuary": ("bone", "bone", "bearded", "skull", "bone"),
     "gravewood": ("obsidian", "serpent", "bearded", "skull", "vine"), "candlewax": ("leaf", "flame", None, "orb", "spiral"),
-    "ironclad2": ("broad", "trident", "double", "spiked", "chain"), "stagheart": ("leaf", "winged", "bearded", None, "vine"),
-    "longship": ("broad", "winged", "bearded", None, "rope"), "seawolf": ("fang", "trident", "bearded", None, "rope"),
-    "glacier": ("crystal", "crystal", "crescent", "crystal", "crystal"), "evergreen": ("leaf", "broad", "crescent", "spiked", "vine"),
+    "ironclad2": ("broad", "trident", "double", "orb", "chain"), "stagheart": ("leaf", "winged", "bearded", None, "vine"),
+    "longship": ("broad", "winged", "bearded", None, "rope"), "seawolf": ("fang", "trident", "bearded", "crystal", "rope"),
+    "glacier": ("crystal", "winged", "bearded", "crystal", "crystal"), "evergreen": ("leaf", "broad", "crescent", "spiked", "vine"),
     "kraken": ("serpent", "trident", "crescent", "orb", "scaled"), "jackgrin": ("flame", "flame", "crescent", "spiked", "vine"),
     # legendary
     "gilded": ("sun", "sun", "double", "crown", "gilded"), "frostbite": ("crystal", "crystal", "crescent", "crystal", "crystal"),
@@ -368,25 +399,30 @@ SHAPES = {
     "thunderhead": ("lightning", "serpent", "dragon", "orb", "twisted"), "sunsteel": ("sun", "sun", "crescent", "crown", "gilded"),
     "hellforged": ("flame", "flame", "dragon", "skull", "chain"), "lastlight": ("twin", "sun", "crescent", "orb", "runic"),
     "anvilofkings": ("broad", "broad", "broad", "crown", "banded"), "ironcrown": ("tiered", "trident", "double", "crown", "twisted"),
-    "wardensvow": ("twin", "winged", "crescent", "orb", "runic"), "dawnbringer": ("sun", "sun", "crescent", "orb", "gilded"),
+    "wardensvow": ("twin", "winged", "crescent", "orb", "runic"), "dawnbringer": ("flame", "sun", "crescent", "orb", "gilded"),
     "lastbastion": ("broad", "winged", "double", "star", "runic"), "cryptlight": ("bone", "bone", "dragon", "skull", "bone"),
-    "witchlight": ("forked", "crescent", "crescent", "orb", "runic"), "slagheart": ("obsidian", "flame", "dragon", "spiked", "chain"),
+    "witchlight": ("forked", "crescent", "crescent", "orb", "runic"), "slagheart": ("obsidian", "flame", "broad", "spiked", "chain"),
     "thornwild": ("serpent", "serpent", "crescent", "spiked", "vine"), "skald": ("tiered", "winged", "bearded", "star", "runic"),
     "starlight": ("twin", "crescent", "crescent", "orb", "runic"), "frostgift": ("crystal", "crystal", "crescent", "crystal", "spiral"),
     "blackflag": ("fang", "trident", "bearded", "skull", "rope"),
     # mythic
     "founders": ("twin", "winged", "dragon", "crown", "gilded"), "marrowking": ("bone", "bone", "dragon", "skull", "bone"),
     "hollowheadsman": ("flame", "flame", "dragon", "skull", "chain"), "hornedking": ("serpent", "winged", "crescent", "spiked", "vine"),
-    "jarlsbane": ("lightning", "winged", "dragon", "star", "runic"), "rimeheart": ("crystal", "crystal", "crescent", "crystal", "crystal"),
-    "krampus": ("forked", "trident", "dragon", "skull", "chain"), "forgefather": ("flame", "flame", "dragon", "crown", "chain"),
+    "jarlsbane": ("lightning", "winged", "dragon", "star", "runic"), "rimeheart": ("sun", "crystal", "crescent", "crystal", "crystal"),
+    "krampus": ("forked", "trident", "dragon", "star", "chain"), "forgefather": ("flame", "flame", "dragon", "crown", "chain"),
     "firstlight": ("sun", "sun", "crescent", "orb", "gilded"), "davyjones": ("serpent", "trident", "crescent", "skull", "scaled"),
     # the reforged
     "tidebreaker": ("serpent", "trident", "crescent", "orb", "scaled"), "sakuraronin": ("fang", "winged", None, None, "bamboo"),
-    "voidrender": ("twin", "crescent", "dragon", "orb", "runic"), "emberwyrm": ("flame", "flame", "dragon", "spiked", "chain"),
-    "glacialwarden": ("crystal", "crystal", "crescent", "crystal", "crystal"), "verdantoath": ("leaf", "winged", "bearded", None, "vine"),
+    "voidrender": ("obsidian", "crescent", "dragon", "orb", "runic"), "emberwyrm": ("flame", "flame", "dragon", "spiked", "chain"),
+    "glacialwarden": ("tiered", "broad", "double", "crystal", "banded"), "verdantoath": ("leaf", "winged", "bearded", None, "vine"),
     "gravecaller": ("bone", "bone", "bearded", "skull", "bone"), "starfall": ("crystal", "crystal", "crescent", "star", "runic"),
     "sunderer": ("tiered", "broad", "broad", "crystal", "runic"), "krakencoil": ("serpent", "trident", "crescent", "orb", "scaled"),
-    "ashbringer": ("flame", "flame", "dragon", "spiked", "chain"), "featherfall": ("fang", "winged", "bearded", None, "scaled"),
+    "ashbringer": ("flame", "flame", "dragon", "spiked", "chain"), "featherfall": ("leaf", "winged", "bearded", None, "scaled"),
+    # the Mythics and the Uniques
+    "starforged": ("serpent", "crystal", "crescent", "star", "runic"), "worldbreaker": ("obsidian", "flame", "dragon", "orb", "twisted"),
+    "sovereign": ("broad", "sun", "double", "crown", "gilded"), "firstseason": ("tiered", "sun", "crescent", "crown", "gilded"),
+    "undefeated": ("flame", "winged", "double", "star", "runic"), "bloodmoon": ("twin", "crescent", "crescent", "orb", "scaled"),
+    "stormbringer": ("lightning", "crescent", "dragon", "orb", "spiral"), "kingslayer": ("bone", "flame", "dragon", "skull", "chain"),
 }
 for _t in L:
     _sh = SHAPES.get(_t["id"])
@@ -400,5 +436,13 @@ for _t in L:
         _t["head"] = _hd
     if _hf:
         _t["haft"] = _hf
+
+# a war hammer's and a maul's own head (forge.py hd_hammer: drum anvil beak flanged, or a blunt style),
+# where the blunt style would make it another's twin
+HAMMERS = {"bronzeking": "drum", "heraldic": "beak", "riverstone": "flanged", "runecarved": "anvil", "blackguard": "beak",
+           "anvilofkings": "anvil", "lastbastion": "flanged", "skald": "drum", "slagheart": "beak"}
+for _t in L:
+    if _t["id"] in HAMMERS:
+        _t["hammer"] = HAMMERS[_t["id"]]
 
 THEMES = {t["id"]: t for t in L}

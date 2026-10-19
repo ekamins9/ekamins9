@@ -1255,7 +1255,12 @@ silhouette**: a sword's blade — flame, leaf, broad, crystal, bone, fang, twin 
 serpent, sun, tiered, forked, obsidian —, a spear's / an axe's / a mace's head, a polearm's point
 and blade, a hammer's face, and the haft itself — banded, spiral, twisted, bone, vine, gilded,
 crystal, runic, bamboo, rope, scaled, chain, ash; `SHAPES` in themes.py gives every theme its
-own), welded on from
+own; a war hammer and a maul also a drum, an anvil, a bec de corbin or a flanged head, `HAMMERS`),
+and no two skins of a weapon are twins (`scripts/skin_twins.py` lists any that are). The Mythics
+and the Uniques are Forge meshes too (Starforged, Worldbreaker, The Sovereign, Crown of the First
+Season, The Undefeated, Bloodmoon, Stormbringer, Kingslayer). The light a glowing skin carries is
+low by day and full at night or underground (`SkinFX.client`), and on a pale blade its Neon inlay
+glows a deeper colour (`Dresser.applySkin`), so the bloom never swallows the blade white. Welded on from
 `Cosmetics ▸ Skins ▸ <weapon> ▸ <skin>` by `Dresser.applySkin`. Built, uploaded and assembled by
 `blender/forge.py → scripts/upload_skins.py → scripts/skin_entries.py → Build ▸ SkinModels`
 (see CONTENT_GUIDE §5). Without the model a skin falls back to its tints + trim.

@@ -1,4 +1,40 @@
-# Updated scripts: shield divisions in relief; emblems bring their auras
+# Updated scripts: the Mythics and Uniques reforged; no twins; glows that don't wash the blade out
+
+- **The top skins are Forge meshes now**: the three melee Mythics and five Uniques still wore the
+  old part trims (a floating ring on the blade). Each has its own theme and shape: Starforged
+  (a starlit serpent blade, sunburst guard), Worldbreaker (a black maul caging a molten core),
+  The Sovereign (a wavy ivory blade, a gold crown guard, a ribbon), Crown of the First Season (a
+  stepped gold blade, a laurel guard, red tassels), The Undefeated (a silver flamberge with blue
+  runes), Bloodmoon (twin crimson rails round a red core, a serpent round the grip), Stormbringer
+  (a storm-blue dragon-winged halberd), Kingslayer (a black saw-backed blade, a gold crown, a skull).
+- **No two skins of a weapon look alike** (`scripts/skin_twins.py` finds them): Featherfall is a
+  pale owl's leaf blade (it was Crowfeather's twin), Voidrender a black glass shard cracked magenta
+  (Nightfall's), Rimeheart a frozen sunburst with ice wings (Glacier's), Glacial Warden and Glacier
+  halberds their own heads (Frostbite's), Dawnbringer a flame blade (Sunsteel's), Slagheart's axe a
+  slab (Emberwyrm's), Krampus' Chain a star head (Hellforged's), Ironclad Plate a caged orb, Tourney
+  Gilt a star; Heraldic gold filigree instead of candy stripes; the Sea-Wolf mace a sea-ice head.
+- **New hammer heads** (`hammer` in themes.py, war hammers and mauls): a banded drum (Bronze,
+  Skald), an anvil with its horn (Runecarved, Anvil of Kings), a bec de corbin (Heraldic,
+  Blackguard's Maul; Slagheart's maul a double pick), flanged plates (Riverstone, Last Bastion).
+- **Glows that don't wash the blade out**: a glowing skin's light sat inside the blade and turned
+  pale steel white in the sun; now it's low by day, full at night and underground. And a pale
+  blade's Neon inlay glows a deeper colour, so the bloom shows the runes, not a white blur.
+- 35 skin models rebuilt in Studio (ReplicatedStorage ▸ Cosmetics ▸ Skins): **save the place**.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `look` on the Mythics and Uniques; Featherfall, Voidrender colours |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | a pale blade's inlay glows deeper |
+| [SkinFX.client.lua](StarterPlayerScripts/SkinFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the blade's light by daylight (`DAY_LIGHT`) |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a line for the top skins |
+| [themes.py](../blender/themes.py) | — | Blender script | eight new themes; the twins' new shapes; `HAMMERS` |
+| [forge.py](../blender/forge.py) | — | Blender script | hammer heads drum / anvil / beak / flanged; the `hammer` key |
+| [skin_twins.py](../scripts/skin_twins.py) | — | script | **new**: lists look-alike skins |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | the hammer heads, no twins, the glow |
+
+---
+
+## Before that: shield divisions in relief; emblems bring their auras
 
 - **A shield's division is geometry now, not a picture**: per pale, per fess, quarterly, bend,
   saltire, chevron, gyronny, paly, barry, checky, chief, bordure, pile, cross — each a thin raised

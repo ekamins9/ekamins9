@@ -19,7 +19,7 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local NEWS = {
-	version = "2026-10-19c",
+	version = "2026-10-19d",
 	title = "REFORGED: EVERY SKIN, EVERY SHIELD",
 	lines = {
 		{"⚒", "Every skin reforged", "its own blade: flame, crystal, bone, fang, lightning, twin rails, forked, a sun"},
@@ -27,6 +27,7 @@ local NEWS = {
 		{"✨", "Effects on every Epic", "spirit wisps, falling leaves, sea spray, runes, feathers; Rares glint"},
 		{"🦁", "Emblems in raised metal", "your arms and every shield's emblem stand off the board, carved, catching the light"},
 		{"🆕", "Twelve new skins", "Tidebreaker, Emberwyrm, Voidrender, Starfall, Ashbringer, Kraken's Coil and more"},
+		{"👑", "The Mythics and Uniques reforged", "Starforged, Worldbreaker, The Sovereign, Kingslayer: each its own shape"},
 		{"🛡", "Throw your shield, then your sword", "hold {Hurl}: they fly, hit hard, and stick where they land; pick them up again"},
 		{"🪓", "Bigger one-handers", "war axes, maces, hammers, cleavers and shortswords sized up to the hand"},
 	},

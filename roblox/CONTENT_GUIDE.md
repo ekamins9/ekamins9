@@ -330,6 +330,11 @@ line, stars, a halo, crystals). One theme fits all 26 weapons.
 - `haft` — the shaft itself (spears, polearms, axes, maces, staffs): `banded spiral twisted
   bone vine gilded crystal runic bamboo rope scaled chain ash`.
 In `themes.py` they're one line per theme in `SHAPES` (`id: (blade, spear, axe, blunt, haft)`).
+- `hammer` — a war hammer's and a maul's head only (`HAMMERS` in themes.py): the blunt styles or
+  `drum` (round, banded), `anvil` (a horn behind), `beak` (a bec de corbin), `flanged`.
+**No twins:** `python scripts/skin_twins.py` lists skins of one weapon with the same silhouette,
+guard and pommel and close colours. Commons may twin; an Epic and up should not. Give the new one
+another blade or head, rebuild only the skins whose look changed (`forge.py -- "<Weapon>:<Skin>:<look>"`).
 
 To make or change skins:
 1. Add / edit a theme in `blender/themes.py` (see the header for every option). Preview it:

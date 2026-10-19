@@ -26,6 +26,9 @@ A theme is a set of changes, not a recolour:
   head       on a haft, by family: {spear = broad flame winged trident crescent crystal
              bone serpent sun, axe = double crescent bearded broad dragon,
              blunt = spiked skull crystal orb star crown}
+  hammer     a war hammer's and a maul's head only (else the blunt one): the blunt
+             styles, or drum (round, banded), anvil (a horn behind), beak (a bec
+             de corbin), flanged
   haft       the shaft itself: banded spiral twisted bone vine gilded crystal runic
              bamboo rope scaled chain ash
 Each skin exports <Weapon>__<Skin>_Body.fbx (vertex colours) and, when it glows,
@@ -1306,6 +1309,46 @@ def hd_hammer(style, th, head, weapon, r):
             out.append(W._pyr((-0.1 * s, y + math.cos(a) * 0.1 * s, math.sin(a) * 0.1 * s),
                               (-(0.45 + 0.15 * (k % 2)) * s, y + math.cos(a) * 0.32 * s, math.sin(a) * 0.32 * s), 0.06 * s, c, k))
         return out
+    if style == "drum":
+        # a round head across the haft, banded (a bell-founder's, a mason's)
+        out.append(W.lathe([(0.0, -0.46 * s), (face * 0.62, -0.46 * s), (face * 0.68, -0.38 * s), (face * 0.6, 0.0),
+                            (face * 0.68, 0.38 * s), (face * 0.62, 0.46 * s), (0.0, 0.46 * s)], W.STEEL, n=16))
+        for v in out[-1].verts:   # (laid along +X)
+            x0, y0, z0 = v.co
+            v.co = (y0, y + x0, z0)
+        for bx in (-0.38, -0.13, 0.13, 0.38):
+            out.append(torus((bx * s, y, 0), face * 0.68, 0.028 * s, W.GLOW if th.get("glow") else W.DARKSTEEL, axis="x", n=16))
+        out.append(W._pyr((0, y + face * 0.6, 0), (0, y + face * 0.6 + 0.42 * s, 0), 0.07 * s, c if th.get("glow") else W.STEEL, 0))
+        return out
+    if style == "anvil":
+        # an anvil: a broad struck face, a waist, a long horn behind
+        out.append(W.box(0.12 * s, y + face * 0.12, 0, 0.62 * s, face * 0.6, face * 1.1, W.STEEL))
+        out.append(W.box(0.12 * s, y - face * 0.36, 0, 0.36 * s, face * 0.42, face * 0.72, W.DARKSTEEL))
+        out.append(W.box(0.45 * s, y + face * 0.12, 0, 0.04 * s, face * 0.66, face * 1.16, W.BRIGHT))
+        pts, rs = [], []
+        for k in range(9):
+            f = k / 8
+            pts.append((-0.19 * s - 0.62 * s * f, y + face * 0.2 + 0.1 * s * f * f, 0)); rs.append(face * 0.3 * (1 - f) + 0.006)
+        out.append(W.tube(pts, rs, W.STEEL, n=8))
+        if th.get("glow"):
+            out.append(W.box(0.12 * s, y + face * 0.43, 0, 0.5 * s, 0.02 * s, face * 0.5, W.GLOW))
+        return out
+    if style == "beak":
+        # a bec de corbin: a small toothed face, a long curved beak, a tall spike
+        first = len(out)
+        out.append(W.box(0.15 * s, y, 0, 0.22 * s, face * 0.7, face * 0.7, W.STEEL))
+        for dy in (-1, 1):
+            for dz in (-1, 1):
+                out.append(W._pyr((0.26 * s, y + dy * face * 0.17, dz * face * 0.17), (0.36 * s, y + dy * face * 0.17, dz * face * 0.17), 0.05 * s, W.STEEL, 0))
+        pts, rs = [], []
+        for k in range(11):
+            f = k / 10
+            pts.append((-0.05 * s - 1.1 * s * f, y + 0.12 * s * f - 0.5 * s * f ** 2.2, 0)); rs.append(0.08 * s * (1 - f) + 0.005)
+        out.append(W.tube(pts, rs, W.STEEL, n=6))
+        if weapon == "Maul":
+            out += [W.turn(p.copy(), angle_y=math.pi) for p in out[first:]]
+        out.append(W._pyr((0, y + 0.3 * s, 0), (0, y + 1.15 * s, 0), 0.075 * s, c if th.get("glow") else W.STEEL, 0))
+        return out
     first = len(out)
     out.append(W.box(0.24 * s, y, 0, 0.34 * s, face, face, W.STEEL))
     out.append(W.box(0.43 * s, y, 0, 0.06 * s, face + 0.04 * s, face + 0.04 * s, W.STEEL))
@@ -1326,6 +1369,12 @@ def hd_hammer(style, th, head, weapon, r):
             a = 2 * math.pi * k / 8
             out.append(W._pyr((0.24 * s, y + math.cos(a) * face * 0.45, math.sin(a) * face * 0.45),
                               (0.24 * s, y + math.cos(a) * face * 1.05, math.sin(a) * face * 1.05), 0.05 * s, W.STEEL, a))
+    elif style == "flanged":
+        # four plate flanges standing off the head in a cross, each tipped with a stud
+        for dy, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            out.append(W.box(0.22 * s, y + dy * face * 0.78, dz * face * 0.78, 0.4 * s,
+                             face * (0.62 if dy else 0.08), face * (0.62 if dz else 0.08), W.STEEL))
+            out.append(W.sphere((0.22 * s, y + dy * face * 1.1, dz * face * 1.1), face * 0.11, W.GLOW if th.get("glow") else W.BRIGHT, u=8, v=6))
     elif style == "crown":
         for k in range(6):
             a = 2 * math.pi * k / 6
@@ -1351,7 +1400,7 @@ def hd_hammer(style, th, head, weapon, r):
 
 def head_hook(th):
     hs = th.get("head") or {}
-    if not hs and not th.get("blade"):
+    if not hs and not th.get("blade") and not th.get("hammer"):
         return None
 
     def fn(head, y_top, r):
@@ -1362,8 +1411,8 @@ def head_hook(th):
                 return hd_spear(hs["spear"], th, head)
             if name in AXES and hs.get("axe"):
                 return hd_axe(hs["axe"], th, head, name)
-            if name in ("Hammer", "Maul") and hs.get("blunt"):
-                return hd_hammer(hs["blunt"], th, head, name, r)
+            if name in ("Hammer", "Maul") and (th.get("hammer") or hs.get("blunt")):
+                return hd_hammer(th.get("hammer") or hs["blunt"], th, head, name, r)
             if name in BLUNTS and hs.get("blunt"):
                 return hd_blunt(hs["blunt"], th, head, name, r)
             if name == "Halberd" and (hs.get("axe") or hs.get("spear")):

@@ -5,6 +5,8 @@
        • the aura flares (its emitters run up to four times their rate),
        • sparks fly off the tip (the skin's SkinBurst),
        • the blade's light swells (and a storm flickers),
+     The blade's light is low by day (a light sits inside the blade and would wash
+     its own steel out in the sun) and full at night and underground.
        • the swing makes its sound (SkinFX.SWING: a whoosh of fire, a crackle
          of frost, a hum of shadow… from Roblox's licensed sound library), only
          for a real attack: the one holding it is mid-swing (Acting), and the
@@ -33,6 +35,8 @@ local FLARE_FULL = 40      -- …and is at its fullest here
 local NEAR = 150           -- studs: farther weapons are left alone
 local MINE_NEAR = 18       -- your own weapon is at full volume this far out (the third-person camera sits ~9 away)
 local ACT_GRACE = 0.35     -- a swing's follow-through still counts this long after Acting clears
+local DAY_LIGHT = 0.22     -- × the blade's light at noon in the open (1 at night)
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local me = Players.LocalPlayer
 local rng = Random.new()
@@ -103,6 +107,9 @@ RunService.Heartbeat:Connect(function(dt)
 	if not cam then return end
 	local eye = cam.CFrame.Position
 	local now = os.clock()
+	-- (how much daylight: the sun's height, and the place's brightness: a dungeon sets it to 0)
+	local day = math.clamp(math.cos((Lighting.ClockTime - 12) / 12 * math.pi) * 1.6, 0, 1) * math.clamp(Lighting.Brightness / 2, 0, 1)
+	local lightK = 1 + (DAY_LIGHT - 1) * day
 	for h, st in pairs(tracked) do
 		-- a Radiant finish: every glowing bit walks through the colours
 		if #st.radiant > 0 and h.Parent then
@@ -148,6 +155,7 @@ RunService.Heartbeat:Connect(function(dt)
 			if not held then
 				-- worn or dropped: no flare, no sound (and a swing in progress ends)
 				st.swinging, st.boost = false, 0
+				if st.light then st.light.Brightness = st.lightBase * lightK end
 				if st.sound and st.sound.IsPlaying and not st.cut then st.sound:Stop() end
 			elseif (pos - eye).Magnitude <= NEAR and speed < 400 then   -- (a teleport is not a swing)
 				local flare = math.clamp((speed - FLARE_FROM) / (FLARE_FULL - FLARE_FROM), 0, 1)
@@ -161,7 +169,7 @@ RunService.Heartbeat:Connect(function(dt)
 				end
 				if st.light then
 					local wave = st.flicker and (rng:NextNumber() < 0.15 and rng:NextNumber(0.2, 1.6) or 1) or (1 + 0.2 * math.sin(now * 3 + st.seed))
-					st.light.Brightness = st.lightBase * wave * (1 + 1.6 * st.boost)
+					st.light.Brightness = st.lightBase * lightK * wave * (1 + 1.6 * st.boost)
 				end
 				-- one sound per swing: it starts as the tip gets going and isn't
 				-- started again until the tip has come to rest, so a long swing
