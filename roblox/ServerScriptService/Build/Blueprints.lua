@@ -9,6 +9,10 @@
          models, and a display copy of every weapon for the menu mannequin
      Hand-made models always win: the builder only fills gaps.
 
+     SIZED UP: a weapon whose Catalog ▸ Weapons entry names a `scale` is scaled about its grip
+     here, once, before its menu display is copied (Blueprints.sizeUp: attribute Scaled on the
+     Tool and the display); Dresser.applySkin scales a skin's model by the same.
+
      Studio edit mode, command bar — materialize editable copies of all of it:
        require(game.ServerScriptService.Build.Blueprints).ensureAll()
      (then delete what you replace by hand; the builder never overwrites). ]]
@@ -19,6 +23,7 @@ local B = require(script.Parent:WaitForChild("Builder"))
 local WeaponBP = require(script.Parent:WaitForChild("Weapons"))
 local ArmorBP = require(script.Parent:WaitForChild("Armor"))
 local BodyBP = require(script.Parent:WaitForChild("Body"))
+local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 
 local Blueprints = {}
 local function log(...) print("[Blueprints]", ...) end
@@ -57,10 +62,33 @@ function Blueprints.completeTool(tool)
 	return true
 end
 
+-- a weapon its catalog sizes up (`scale`): every part about the Handle, with its joints,
+-- attachments and meshes (Model:ScaleTo, the parts lent to a model for it); once
+function Blueprints.sizeUp(tool)
+	local def = Catalog.WEAPON[tool.Name]
+	local f = def and def.scale
+	if not (tool:IsA("Tool") and f and f ~= 1) or tool:GetAttribute("Scaled") then return false end
+	local handle = tool:FindFirstChild("Handle")
+	if not handle then return false end
+	local m = Instance.new("Model")
+	local lent = {}
+	for _, c in ipairs(tool:GetChildren()) do
+		if c:IsA("BasePart") then c.Parent = m; table.insert(lent, c) end
+	end
+	m.PrimaryPart = handle
+	local ok, err = pcall(function() m:ScaleTo(m:GetScale() * f) end)
+	for _, c in ipairs(lent) do c.Parent = tool end
+	m:Destroy()
+	if not ok then warn("[Blueprints] couldn't size up", tool.Name, err); return false end
+	tool:SetAttribute("Scaled", f)
+	return true
+end
+
 -- a display Model of a Tool for the menu mannequin (no scripts, no hitbox)
 function Blueprints.displayFor(tool)
 	local m = Instance.new("Model")
 	m.Name = tool.Name
+	m:SetAttribute("Scaled", tool:GetAttribute("Scaled"))
 	local handle
 	for _, d in ipairs(tool:GetDescendants()) do
 		-- the Handle always comes along (mesh weapons hide it inside the grip mesh)
@@ -141,10 +169,11 @@ end
 --  ALL
 --------------------------------------------------------------------
 function Blueprints.ensureAll()
-	local built = {tools = 0, sets = 0, body = 0, displays = 0, pieces = 0}
+	local built = {tools = 0, sets = 0, body = 0, displays = 0, pieces = 0, sized = 0}
 	local weapons = ServerStorage:FindFirstChild("Weapons")
 	if weapons then
 		for _, t in ipairs(weapons:GetChildren()) do if Blueprints.completeTool(t) then built.tools += 1 end end
+		for _, t in ipairs(weapons:GetChildren()) do if Blueprints.sizeUp(t) then built.sized += 1 end end
 	end
 	local armor = ServerStorage:FindFirstChild("Armor")
 	if armor then
@@ -163,7 +192,7 @@ function Blueprints.ensureAll()
 			end
 		end
 	end
-	log(string.format("built %d weapon bodies, %d armor sets, %d earned pieces, %d body models, %d weapon displays", built.tools, built.sets, built.pieces, built.body, built.displays))
+	log(string.format("built %d weapon bodies (%d sized up), %d armor sets, %d earned pieces, %d body models, %d weapon displays", built.tools, built.sized, built.sets, built.pieces, built.body, built.displays))
 	return built
 end
 

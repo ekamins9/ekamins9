@@ -256,7 +256,10 @@ default entry, so you can skip this step for free sets.
    ```
    `unlock` is `{free = true}`, `{level = n}` or `{kills = n, family = "OneHanded"}`;
    `marks` lets it be bought outright (0 = cannot). `weights = {"Heavy", "Medium"}` limits
-   who may carry it.
+   who may carry it. `scale = 1.15` sizes its whole body up about the grip (every part, the
+   Hitbox and its skins' models with it: `Blueprints.sizeUp`); raise its Config `REACH` to match.
+   A `OneHanded` weapon can be thrown by itself (the Hurl key: `Catalog.hurlOf`); an axe-like one
+   sticks and tumbles like an axe if its id is in `HURL_LOOK` there (`"axe"`, `"blunt"`).
 3. For the menu mannequin put a **display copy** in `Cosmetics ▸ Weapons ▸ Falchion`: a
    Model with a part named `Handle` (the Tool's visible parts, copied, work).
 4. **Its sounds** come from `ReplicatedStorage ▸ SoundBank` by itself: a heavy whoosh if its

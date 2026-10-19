@@ -1,4 +1,44 @@
-# Updated scripts: bots wear real Roblox hair and faces
+# Updated scripts: throw your shield and your weapon; bigger one-handers
+
+- **Throw your own steel** (new key **Hurl = Y**, rebindable in SETTINGS; a controller: hold D-pad →,
+  a tap still switches weapons; a phone: hold the new 🛡 orb). Hold to aim (the same arc as a
+  throwable), let go: your **shield** flies off your arm flat and spinning; once it's gone, the
+  **one-handed weapon** in your hand goes end over end. Every screen flies a copy of the very
+  thing (its skin, paint and glow). A shield hit staggers, dazes and shoves them back; a weapon
+  lands its best blow ×1.35 (more in the face); a raised shield turns either. It lies where it
+  fell for 60 s: blades and axes stuck point-first in turf or wood, everything else flat (sparks
+  off stone and metal). Pick it up with the usual prompt (a shield goes back on your arm; anyone
+  who can carry it may take it). Your other weapon comes to hand when you throw the first. A third
+  orb by the power and the throwable shows THROW SHIELD / THROW WEAPON. Not in the Courtyard, the
+  tavern, Crownfall or Deadvault.
+- **Bigger one-handers**: War Axe ×1.28, Mace and Cleaver ×1.2, War Hammer ×1.18, Rondel Dagger
+  ×1.15, Shortsword and Morning Star ×1.12, Falchion ×1.1, Arming Sword ×1.08 (body, hitbox and
+  every skin scaled together; REACH raised to match).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Hurl.lua](ServerScriptService/Combat/Hurl.lua) | ServerScriptService ▸ Combat | ModuleScript | **new**: aim, flight, hit, where it ends, the shield on the ground |
+| [Pickup.lua](ServerScriptService/Combat/Pickup.lua) | ServerScriptService ▸ Combat | ModuleScript | `Pickup.offer`, `Pickup.lay`, `Pickup.remember`; laid weapons freed when taken |
+| [Janitor.lua](ServerScriptService/Combat/Janitor.lua) | ServerScriptService ▸ Combat | ModuleScript | kind "Thrown" (60 s, its own cap) |
+| [Powers.lua](ServerScriptService/Combat/Powers.lua) | ServerScriptService ▸ Combat | ModuleScript | "HurlAim" / "Hurl" / "HurlCancel" |
+| [Powers.client.lua](StarterPlayerScripts/Powers.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the Hurl key, the third orb, the flying copy, a shield's flat spin |
+| [init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `Catalog.hurlOf`, `WEAPON_HURL` |
+| [Weapons.lua](ReplicatedStorage/Catalog/Weapons.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | `scale` on nine one-handers |
+| [Blueprints.lua](ServerScriptService/Build/Blueprints.lua) | ServerScriptService ▸ Build | ModuleScript | `Blueprints.sizeUp` |
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | a skin's model scaled with its weapon |
+| Tools/{Shortsword, Hammer, ArmingSword, Dagger, Mace, Cleaver, Falchion, MorningStar, WarAxe}/Config.lua | ServerStorage ▸ Weapons ▸ <id> | ModuleScript | REACH to match the size |
+| [ClientSettings.lua](ReplicatedStorage/ClientSettings.lua) | ReplicatedStorage | ModuleScript | the Hurl bind (Y) |
+| [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage | ModuleScript | Hurl: D-pad → held, the 🛡 orb |
+| [GamepadControls.client.lua](StarterPlayerScripts/GamepadControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | D-pad → held: Hurl |
+| [Hotbar.client.lua](StarterPlayerScripts/Hotbar.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | D-pad → switches on a tap |
+| [TouchControls.client.lua](StarterPlayerScripts/TouchControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | HurlSlot |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the throwable panel tells of the Hurl key |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | THROW YOUR STEEL card; `{Action}` keys in lines |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | throwing your steel; `scale` |
+
+---
+
+## Before that: bots wear real Roblox hair and faces
 
 - **Fill bots look like Roblox players**: a real Roblox hair (40 Roblox-made hairs: Pal Hair,
   Brown Charmer, True Blue, Lavender Updo, braids, Beautiful Hair…) and a classic Roblox face

@@ -500,7 +500,9 @@ function Powers.use(c, aim)
 end
 
 -- "Use", aim: the power · the throwable, held to aim and let go to throw (Combat ▸ Throwing):
--- "ThrowAim" (the wind-up starts) · "Throw", aim · "ThrowCancel"
+-- "ThrowAim" (the wind-up starts) · "Throw", aim · "ThrowCancel"; your own shield or one-hander
+-- thrown (Combat ▸ Hurl): "HurlAim" · "Hurl", aim · "HurlCancel"
+local Hurl
 remote.OnServerEvent:Connect(function(plr, what, aim)
 	local c = plr.Character
 	if not c then return end
@@ -519,6 +521,14 @@ remote.OnServerEvent:Connect(function(plr, what, aim)
 		elseif what == "Throw" then ok, why = throwing().release(c, aim)
 		else throwing().cancel(c); ok = true end
 		if not ok and why and why ~= "" then remote:FireClient(plr, "Denied", why, "throw") end
+	elseif what == "HurlAim" or what == "Hurl" or what == "HurlCancel" then
+		if not alive(c) or c:GetAttribute("Ragdolled") then return end
+		Hurl = Hurl or require(script.Parent:WaitForChild("Hurl"))
+		local ok, why
+		if what == "HurlAim" then ok, why = Hurl.aim(c)
+		elseif what == "Hurl" then ok, why = Hurl.release(c, aim)
+		else Hurl.cancel(c); ok = true end
+		if not ok and why and why ~= "" then remote:FireClient(plr, "Denied", why, "hurl") end
 	end
 end)
 

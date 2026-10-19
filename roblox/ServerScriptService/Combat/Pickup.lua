@@ -12,7 +12,11 @@
 
      Dropped tools keep their Server script running (workspace is a valid
      run context) so the CombatServer controller survives the trip; their
-     LocalScript restarts on the way back into a Backpack. ]]
+     LocalScript restarts on the way back into a Backpack.
+
+     LAID: a weapon that's been thrown (Combat ▸ Hurl) comes to rest exactly where it
+     ended (stuck in the turf, lying flat), held still there (Pickup.lay: anchored, freed
+     again when it's taken), with the same prompt. ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -146,20 +150,28 @@ function Pickup.drop(tool, char, dir, speed)
 		end
 	end
 
+	if handle and hrp then
+		handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
+		local fling = (dir or hrp.CFrame.LookVector) + Vector3.new(0, 0.6, 0)
+		handle.AssemblyLinearVelocity  = fling.Unit * (speed or C.DROP_SPEED)
+		handle.AssemblyAngularVelocity = Vector3.new(math.random() * 8, math.random() * 8, math.random() * 8)
+	end
+	Pickup.offer(tool, C.DESPAWN)
+	log("dropped", tool.Name, char and ("by " .. char.Name) or "")
+	return true
+end
+
+-- the prompt on a weapon lying about, and the janitor's watch (life: how long it lies there;
+-- kind: the janitor's, "Weapon" or a throw's "Thrown")
+function Pickup.offer(tool, life, kind)
+	local handle = handleOf(tool)
 	-- a custom server with "weapons on the ground" off (Round GroundWeapons = false):
 	-- it still falls, but nobody can pick it up and it's gone in a moment
 	local round = ReplicatedStorage:FindFirstChild("Round")
 	local noPickup = round ~= nil and round:GetAttribute("GroundWeapons") == false
-	if handle then
-		if hrp then
-			handle.CFrame = hrp.CFrame * CFrame.new(1.5, 1.5, -1)
-			local fling = (dir or hrp.CFrame.LookVector) + Vector3.new(0, 0.6, 0)
-			handle.AssemblyLinearVelocity  = fling.Unit * (speed or C.DROP_SPEED)
-			handle.AssemblyAngularVelocity = Vector3.new(math.random() * 8, math.random() * 8, math.random() * 8)
-		end
+	if handle and not noPickup and not handle:FindFirstChild("PickupPrompt") then
 		local cfg = Pickup.config(tool)
-		local prompt = not noPickup and Instance.new("ProximityPrompt") or nil
-		if prompt then
+		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "PickupPrompt"
 		prompt.ActionText = "Pick up"
 		prompt.ObjectText = (cfg.Name or tool.Name) .. (cfg.SECONDARY and "  (secondary)" or "")
@@ -170,16 +182,43 @@ function Pickup.drop(tool, char, dir, speed)
 		prompt:SetAttribute("TwoHanded", cfg.TWO_HANDED == true)   -- (one-armed, you're not offered it)
 		prompt.Parent = handle
 		prompt.Triggered:Connect(function(plr) Pickup.take(plr, tool) end)
-		end
 	end
-
-	-- the janitor fades it out after DESPAWN (or sooner, when too many lie around),
+	-- the janitor fades it out after its life (or sooner, when too many lie around),
 	-- but only if it's STILL lying here: one someone picked up is theirs
 	local stamp = os.clock()
 	tool:SetAttribute("DropStamp", stamp)
-	Janitor.add(tool, "Weapon", {life = noPickup and 4 or C.DESPAWN,
+	Janitor.add(tool, kind or "Weapon", {life = noPickup and 4 or life or C.DESPAWN,
 		still = function() return tool.Parent ~= nil and Pickup.isDropped(tool) and tool:GetAttribute("DropStamp") == stamp end})
-	log("dropped", tool.Name, char and ("by " .. char.Name) or "")
+end
+
+-- a part's own collision settings, kept to be put back when the weapon's taken (once: the first
+-- to change them remembers)
+function Pickup.remember(d)
+	if d:GetAttribute("PU_Collide") ~= nil then return end
+	d:SetAttribute("PU_Collide", d.CanCollide)
+	d:SetAttribute("PU_Massless", d.Massless)
+	d:SetAttribute("PU_Touch", d.CanTouch)
+	d:SetAttribute("PU_Query", d.CanQuery)
+end
+
+-- a thrown weapon at rest where it ended (Combat ▸ Hurl has put every part in place): held
+-- still there, offered to whoever comes for it
+function Pickup.lay(tool, life)
+	if not (tool and tool:IsA("Tool")) then return false end
+	tool:SetAttribute("Dropped", true)
+	tool:SetAttribute("Laid", true)
+	if tool.Parent ~= folder() then tool.Parent = folder() end
+	for _, d in ipairs(tool:GetDescendants()) do
+		if d:IsA("BasePart") then
+			Pickup.remember(d)
+			d.Anchored = true
+			d.CanTouch = false
+			d.CanQuery = false
+			d.CanCollide = false
+		end
+	end
+	Pickup.offer(tool, life, "Thrown")
+	log("laid", tool.Name)
 	return true
 end
 
@@ -197,6 +236,16 @@ end
 --  TAKE
 --------------------------------------------------------------------
 local function restore(tool)
+	-- (laid by a throw: free again, every part, and as queryable as it was)
+	if tool:GetAttribute("Laid") then
+		for _, d in ipairs(tool:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.Anchored = false
+				if d:GetAttribute("PU_Query") ~= nil then d.CanQuery = d:GetAttribute("PU_Query"); d:SetAttribute("PU_Query", nil) end
+			end
+		end
+		tool:SetAttribute("Laid", nil)
+	end
 	for _, d in ipairs(tool:GetDescendants()) do
 		if d:IsA("BasePart") and d:GetAttribute("PU_Collide") ~= nil then
 			d.CanCollide = d:GetAttribute("PU_Collide")

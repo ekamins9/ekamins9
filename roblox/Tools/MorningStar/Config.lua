@@ -16,7 +16,7 @@ return {
 	TYPE_SPEED = {Swing = 1.0, Stab = 0.9, Overhead = 1.0, Underhand = 1.0},
 	WINDUP     = 0.15,
 	RECOVERY   = 0.15,
-	REACH      = 5.0,
+	REACH      = 5.3,   -- (sized up: Catalog ▸ Weapons scale)
 	TWO_HANDED = false,
 	SECONDARY  = false,
 

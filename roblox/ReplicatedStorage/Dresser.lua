@@ -534,6 +534,13 @@ function Dresser.applySkin(tool, skinId, variant)
 			end
 			local clone = model:Clone()
 			strip(clone)
+			-- (a weapon sized up at the server's start, Blueprints.sizeUp: its skin's model to match)
+			local f = tool:GetAttribute("Scaled")
+			local ch = clone:FindFirstChild("Handle")
+			if type(f) == "number" and f ~= 1 and ch then
+				clone.PrimaryPart = ch
+				pcall(function() clone:ScaleTo(clone:GetScale() * f) end)
+			end
 			for _, p in ipairs(clone:GetDescendants()) do
 				if p:IsA("BasePart") then
 					p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true

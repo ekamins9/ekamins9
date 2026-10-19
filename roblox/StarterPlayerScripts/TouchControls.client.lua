@@ -248,6 +248,7 @@ local function slot(name, x, y, d)
 end
 slot("PowerSlot", 254, 56, 50)
 slot("ThrowSlot", 254, 126, 50)
+slot("HurlSlot", 254, 196, 50)   -- (your shield or weapon, thrown: Powers.client's third orb)
 
 --------------------------------------------------------------------
 --  THE LEFT THUMB: SPRINT and JUMP, above the stick

@@ -204,6 +204,23 @@ Catalog.WEAPON = {} for _, w in ipairs(Catalog.WEAPONS) do Catalog.WEAPON[w.id] 
 -- by how it's thrown, or its own `windup`. Knives are quick, a javelin slow.
 local THROW_WINDUP = {blade = 0.3, axe = 0.4, dart = 0.4, spear = 0.6, flask = 0.45, bomb = 0.45, bolas = 0.4}
 function Catalog.throwWindup(def) return (def and (def.windup or THROW_WINDUP[def.look or ""])) or 0.4 end
+-- THROWING YOUR OWN STEEL (Combat ▸ Hurl, the Hurl key): your shield off the arm, or the
+-- one-hander in your hand, hurled -> how it flies and hits, or nil (it can't be thrown):
+-- {name, speed, gravity, windup, look ("shield" | "blade" | "axe" | "blunt"), damage, headMult,
+-- stun, push}. A weapon's damage is its own best blow × WEAPON_HURL (Hurl reads the Tool).
+local HURL_LOOK = {WarAxe = "axe", Cleaver = "axe", Mace = "blunt", Hammer = "blunt", MorningStar = "blunt"}
+Catalog.WEAPON_HURL = 1.35
+function Catalog.hurlOf(def)
+	if not def then return nil end
+	if def.shield then
+		local bash = def.bash or 0
+		return {name = def.name, speed = 70, gravity = 20, windup = 0.42, look = "shield",
+			damage = 14 + bash * 1.5, headMult = 1.25, stun = 0.8 + bash * 0.05, push = 24 + bash}
+	end
+	if def.family ~= "OneHanded" or def.ranged or def.magic or def.throwable then return nil end
+	return {name = def.name, speed = 82, gravity = 34, windup = 0.38, look = HURL_LOOK[def.id] or "blade",
+		headMult = 1.5, stun = 0.35, push = 9}
+end
 -- the throwable everyone carries to begin with (the first free one: the knives)
 for _, w in ipairs(Catalog.WEAPONS) do if w.throwable and w.unlock and w.unlock.free then Catalog.FREE_THROWABLE = w.id; break end end
 -- a Mage's spells (ReplicatedStorage ▸ MagicSpells: the numbers, the unlocks) and their skins

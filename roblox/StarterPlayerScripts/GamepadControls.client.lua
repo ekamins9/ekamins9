@@ -101,6 +101,7 @@ local flickArmed = true            -- (locked: a flick of the right stick moves 
 local selectAt = nil
 local boardUp = false
 local bagHeld = false
+local hurlDownAt, hurlHeld = nil, false   -- (D-pad → held: your shield or weapon thrown; a tap switches weapons, Hotbar)
 
 local BY_CODE = {}
 for action, code in pairs(PAD) do BY_CODE[code] = BY_CODE[code] or {}; table.insert(BY_CODE[code], action) end
@@ -133,6 +134,15 @@ UserInputService.InputBegan:Connect(function(input, gp)
 			-- (a loot game's bag, where there's no throwable to aim)
 			if _G.PadBag and _G.PadBag() then bagHeld = true; return end
 			TouchInput.press("Throw", true)
+		end)
+	elseif code == PAD.Hurl then
+		local mine = os.clock()
+		hurlDownAt, hurlHeld = mine, false
+		task.delay(0.28, function()
+			if hurlDownAt ~= mine then return end
+			hurlHeld = true
+			_G.PadHurlHeld = true
+			TouchInput.press("Hurl", true)
 		end)
 	elseif code == K.ButtonR3 then
 		local mine = os.clock()
@@ -169,6 +179,10 @@ UserInputService.InputEnded:Connect(function(input)
 	elseif code == PAD.Emote then
 		if emoteOpened then TouchInput.press("Emote", false) else TouchInput.press("Power", true) end
 		emoteDownAt, emoteOpened = nil, false
+	elseif code == PAD.Hurl then
+		if hurlHeld then TouchInput.press("Hurl", false) end
+		hurlDownAt, hurlHeld = nil, false
+		task.defer(function() _G.PadHurlHeld = nil end)
 	elseif code == K.ButtonR3 then
 		if r3At and not r3Held then TouchInput.press("Lock", true) end
 		r3At, r3Held = nil, false

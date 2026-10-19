@@ -8,21 +8,24 @@
        unlock    {free = true} | {level = 5} | {kills = 40, family = "OneHanded"}
        marks     price to buy it outright instead of unlocking (0 = cannot be bought)
        weights   optional list of weights that may carry it; nil = any
+       scale     optional: the whole body scaled about the grip at server start (Build ▸
+                 Blueprints.sizeUp: every part, joint and the Hitbox; its skins' models to match,
+                 Dresser.applySkin), for the one-handers that read small in the hand
      The Tool's body and its menu display copy are built from Build ▸ Weapons
      when no hand-made model exists. ]]
 return {
-	{id = "Shortsword", name = "Shortsword", family = "OneHanded", secondary = true, unlock = {free = true}},
+	{id = "Shortsword", name = "Shortsword", family = "OneHanded", scale = 1.12, secondary = true, unlock = {free = true}},
 	{id = "Pitchfork", name = "Pitchfork", family = "Polearm", secondary = false, unlock = {level = 2}, marks = 300},
 	{id = "Greatsword", name = "Greatsword", family = "TwoHanded", secondary = false, unlock = {free = true}},
-	{id = "Hammer", name = "War Hammer", family = "OneHanded", secondary = true, unlock = {free = true}},
-	{id = "ArmingSword", name = "Arming Sword", family = "OneHanded", secondary = true, unlock = {free = true}},
-	{id = "Dagger", name = "Rondel Dagger", family = "OneHanded", secondary = true, unlock = {level = 2}, marks = 500},
+	{id = "Hammer", name = "War Hammer", family = "OneHanded", scale = 1.18, secondary = true, unlock = {free = true}},
+	{id = "ArmingSword", name = "Arming Sword", family = "OneHanded", scale = 1.08, secondary = true, unlock = {free = true}},
+	{id = "Dagger", name = "Rondel Dagger", family = "OneHanded", scale = 1.15, secondary = true, unlock = {level = 2}, marks = 500},
 	{id = "Longsword", name = "Longsword", family = "TwoHanded", secondary = false, unlock = {level = 3}, marks = 900},
-	{id = "Mace", name = "Flanged Mace", family = "OneHanded", secondary = true, unlock = {level = 4}, marks = 900},
-	{id = "Cleaver", name = "Cleaver", family = "OneHanded", secondary = true, unlock = {level = 4}, marks = 600},
-	{id = "Falchion", name = "Falchion", family = "OneHanded", secondary = true, unlock = {level = 6}, marks = 1000},
+	{id = "Mace", name = "Flanged Mace", family = "OneHanded", scale = 1.2, secondary = true, unlock = {level = 4}, marks = 900},
+	{id = "Cleaver", name = "Cleaver", family = "OneHanded", scale = 1.2, secondary = true, unlock = {level = 4}, marks = 600},
+	{id = "Falchion", name = "Falchion", family = "OneHanded", scale = 1.1, secondary = true, unlock = {level = 6}, marks = 1000},
 	{id = "BattleAxe", name = "Battle Axe", family = "TwoHanded", secondary = false, unlock = {level = 7}, marks = 1300},
-	{id = "MorningStar", name = "Morning Star", family = "OneHanded", secondary = false, unlock = {level = 8}, marks = 1200},
+	{id = "MorningStar", name = "Morning Star", family = "OneHanded", scale = 1.12, secondary = false, unlock = {level = 8}, marks = 1200},
 	{id = "Halberd", name = "Halberd", family = "Polearm", secondary = false, unlock = {level = 8}, marks = 1600},
 	{id = "Messer", name = "Kriegsmesser", family = "OneHanded", secondary = false, unlock = {level = 9}, marks = 1300},
 	{id = "Maul", name = "Maul", family = "TwoHanded", secondary = false, unlock = {level = 10}, marks = 1800},
@@ -34,7 +37,7 @@ return {
 	{id = "Bardiche", name = "Bardiche", family = "TwoHanded", secondary = false, unlock = {level = 15}, marks = 1800},
 	{id = "Zweihander", name = "Zweihander", family = "TwoHanded", secondary = false, unlock = {level = 16}, marks = 2200},
 	{id = "Executioner", name = "Executioner's Sword", family = "TwoHanded", secondary = false, unlock = {level = 18}, marks = 2400},
-	{id = "WarAxe", name = "War Axe", family = "OneHanded", secondary = true, unlock = {level = 3}, marks = 500},
+	{id = "WarAxe", name = "War Axe", family = "OneHanded", scale = 1.28, secondary = true, unlock = {level = 3}, marks = 500},
 	{id = "Spear", name = "Spear", family = "Polearm", secondary = false, unlock = {free = true}},
 	{id = "Quarterstaff", name = "Quarterstaff", family = "Polearm", secondary = false, unlock = {level = 3}, marks = 400},
 	{id = "Bow", name = "Longbow", family = "Ranged", secondary = false, ranged = true, unlock = {free = true}},

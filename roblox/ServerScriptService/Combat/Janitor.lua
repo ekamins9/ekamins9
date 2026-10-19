@@ -4,7 +4,9 @@
      fades out instead of popping: when its time is up, when there are more of
      its kind than LIMIT (the oldest goes first), and all of it between rounds.
 
-       Janitor.add(inst, kind, opts)   kind: "Corpse" | "Limb" | "Head" | "Weapon" | "Gore"
+       Janitor.add(inst, kind, opts)   kind: "Corpse" | "Limb" | "Head" | "Weapon" | "Thrown" | "Gore"
+                                       ("Thrown": a shield or weapon someone threw, Combat ▸ Hurl:
+                                       longer, and never pushed out by the dead's dropped weapons)
            opts.life      seconds (default LIFE[kind])
            opts.still     fn() -> bool: is it still lying here? (a weapon someone
                           picked up is not: the janitor leaves it alone)
@@ -18,8 +20,8 @@ local TweenService = game:GetService("TweenService")
 
 local Janitor = {}
 Janitor.CONFIG = {
-	LIFE  = {Corpse = 30, Limb = 15, Head = 18, Weapon = 25, Gore = 12},   -- seconds before it fades
-	LIMIT = {Corpse = 8, Limb = 10, Head = 6, Weapon = 8, Gore = 20},       -- at most this many lying around
+	LIFE  = {Corpse = 30, Limb = 15, Head = 18, Weapon = 25, Thrown = 60, Gore = 12},   -- seconds before it fades
+	LIMIT = {Corpse = 8, Limb = 10, Head = 6, Weapon = 8, Thrown = 16, Gore = 20},       -- at most this many lying around
 	FADE  = 0.8,                                              -- seconds to fade out
 }
 local C = Janitor.CONFIG
@@ -80,7 +82,7 @@ function Janitor.add(inst, kind, opts)
 	opts = opts or {}
 	kind = C.LIFE[kind] and kind or "Gore"
 	unlist(inst)
-	if opts.parent ~= false and kind ~= "Weapon" then inst.Parent = Janitor.folder() end
+	if opts.parent ~= false and kind ~= "Weapon" and kind ~= "Thrown" then inst.Parent = Janitor.folder() end
 	local entry = {kind = kind, born = os.clock(), still = opts.still}
 	tracked[inst] = entry
 	order[kind] = order[kind] or {}

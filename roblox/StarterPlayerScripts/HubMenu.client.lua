@@ -6662,7 +6662,7 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 	end
 	-- THE THROWABLE (C)
 	local tp = panel(list, "THROWABLE  ·  HOLD " .. tostring(keyOf("Throw", "D-PAD ↓")))
-	dim(tp, "Every class carries one. Hold " .. tostring(keyOf("Throw", "D-PAD ↓")) .. " to draw back and aim (the arc shows where it lands), let go to throw; block to put it away. Charges come back one at a time.", 12)
+	dim(tp, "Every class carries one. Hold " .. tostring(keyOf("Throw", "D-PAD ↓")) .. " to draw back and aim (the arc shows where it lands), let go to throw; block to put it away. Charges come back one at a time. Your own steel flies too: hold " .. tostring(keyOf("Hurl", "D-PAD →")) .. " and your shield goes, then the one-handed weapon in your hand. Pick them up where they land.", 12)
 	do
 		local cur = lo.throwable or Catalog.FREE_THROWABLE
 		local function pickT(t, have)

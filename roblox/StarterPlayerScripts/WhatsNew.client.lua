@@ -5,7 +5,8 @@
      settings (ClientSettings ▸ SeenNews), so it never comes back for the same update.
 
      A new update: change NEWS.version and its lines. Nothing else. (Seven lines at most, each
-     short enough for one line, about 85 letters: the card has room for no more.) ]]
+     short enough for one line, about 85 letters: the card has room for no more.) A key in braces,
+     {Hurl}, is shown as the player's own (InputHints.fill). ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,18 +16,19 @@ local UIS = game:GetService("UserInputService")
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local NEWS = {
-	version = "2026-10-19",
-	title = "DRAGONS, CROWNS AND ETCHED STEEL",
+	version = "2026-10-19b",
+	title = "THROW YOUR STEEL",
 	lines = {
+		{"🛡", "Throw your shield", "hold {Hurl}: it flies flat and spinning and knocks them flat; go and pick it up"},
+		{"⚔", "Then throw your sword", "a one-hander hurled lands its best blow, and sticks in the turf or a beam"},
+		{"🪓", "Bigger one-handers", "war axes, maces, hammers, cleavers and shortswords sized up to the hand"},
 		{"🐉", "Crownfall: ride the dragon in", "leap off where you like, dive, land like a hero; start with a dagger, loot the rest"},
 		{"🎒", "Crownfall: find, wear, carry", "real armour sets you put on, an inventory, a belt of potions to drink"},
 		{"🔥", "Dragonfall: learn the dragon", "its blows are called out, punish its openings, pin it with ballistae, drop rocks"},
 		{"🛡", "Your shield goes with your sword", "a shield rides with a one-handed weapon, and your secondary stays a weapon"},
-		{"🏝", "A whole new island", "Crownfall's land is twice the size: a keep, villages, a harbour, a river, forests"},
-		{"🎮", "Your keys, everywhere", "every hint shows your own binds, your pad's buttons or your touch buttons"},
-		{"🎓", "A longer first battle", "the tutorial now teaches the view, the free mouse and the Flameblade"},
 	},
 }
 
@@ -115,7 +117,8 @@ local function show()
 		local head = label(row, ln[2], 17, Theme.FONT, Theme.ACCENT)
 		head.Position = UDim2.fromOffset(50, 5)
 		head.Size = UDim2.new(1, -58, 0, 20)
-		local sub = label(row, ln[3], 14, Theme.FONT_BODY, Theme.DIM)
+		-- ({Action} in a line: your own key for it, InputHints)
+		local sub = label(row, InputHints.fill(ln[3]), 14, Theme.FONT_BODY, Theme.DIM)
 		sub.Position = UDim2.fromOffset(50, 25)
 		sub.Size = UDim2.new(1, -58, 0, 20)
 		sub.TextTruncate = Enum.TextTruncate.AtEnd

@@ -65,6 +65,7 @@ ClientSettings.KEYS = {
 	{key = "Stance",     label = "Staff: magic / melee", default = "H"},
 	{key = "Power",      label = "Power (your class's magic)", default = "E"},
 	{key = "Throw",      label = "Throw (hold to aim, let go to throw)", default = "C"},
+	{key = "Hurl",       label = "Throw your shield, then your weapon (hold to aim)", default = "Y"},
 	{key = "Lock",       label = "Lock on (to the foe in front of you)", default = "MouseButton3"},
 }
 ClientSettings.MOUSE_NAMES = {MouseButton1 = true, MouseButton3 = true, MouseWheelUp = true, MouseWheelDown = true}

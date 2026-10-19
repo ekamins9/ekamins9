@@ -4,6 +4,9 @@
      on a phone) asks Combat ▸ Powers to use what's in your third slot, aimed where your
      crosshair is. The orb right of your energy bar shows it: its symbol, its cooldown
      wiping down, the seconds left, a throwable's charges. A class level-up gets a banner.
+     THROW YOUR OWN STEEL (Key_Hurl, Y; a controller's D-pad → held; on a phone its orb, held):
+     the same aim as a throwable, and away goes your shield off your arm, or once that's gone
+     the one-hander in your hand (Combat ▸ Hurl); a third orb shows what would go.
 
      EVERYONE (from the character attributes Combat ▸ Powers / Shields / Throwing publish):
        the gesture as a power winds up or goes off, and a throw's fling (ReplicatedStorage ▸
@@ -156,7 +159,7 @@ local function makeOrb()
 	o.tap.Parent = orb
 	return o
 end
-local powerOrb, throwOrb = makeOrb(), makeOrb()
+local powerOrb, throwOrb, hurlOrb = makeOrb(), makeOrb(), makeOrb()
 local function setPips(o, n, col)
 	if #o.pipList ~= n then
 		for _, p in ipairs(o.pipList) do p:Destroy() end
@@ -183,7 +186,7 @@ end
 
 local function keyName(action)
 	local k = ClientSettings.get and ClientSettings.get("Key_" .. action)
-	return tostring(k or (action == "Throw" and "C" or "E"))
+	return tostring(k or ({Throw = "C", Hurl = "Y"})[action] or "E")
 end
 local function keyCode(action)
 	local ok, code = pcall(function() return Enum.KeyCode[keyName(action)] end)
@@ -291,17 +294,49 @@ local function startAim(how)
 end
 local function release()
 	if not aiming then return end
+	local hurl = aiming.hurl
 	aiming = nil
 	clearArc()
-	if remote then remote:FireServer("Throw", aimPoint()) end
-	punch(throwOrb)
+	if remote then remote:FireServer(hurl and "Hurl" or "Throw", aimPoint()) end
+	punch(hurl and hurlOrb or throwOrb)
 end
 local function cancelAim()
 	if not aiming then return end
+	local hurl = aiming.hurl
 	aiming = nil
 	clearArc()
-	if remote then remote:FireServer("ThrowCancel") end
+	if remote then remote:FireServer(hurl and "HurlCancel" or "ThrowCancel") end
 	PowerPoses.stop(player.Character, PowerPoses.AIM)
+end
+
+-- YOUR OWN STEEL (Combat ▸ Hurl): held the same way, on the same arc; what goes is the shield
+-- on your arm first, then the one-hander in your hand (not in the Courtyard, the tavern or the
+-- loot games, where the gear lives in the bag)
+local NO_HURL = {Hub = true, Tavern = true, Crownfall = true, Deadvault = true}
+local function hurlable(c)
+	if not c or NO_HURL[round:GetAttribute("Mode") or ""] then return nil end
+	local sid = c:GetAttribute("ShieldId")
+	if sid and not c:GetAttribute("ShieldSlung") and c:FindFirstChild("ShieldModel") then
+		local def = Catalog.WEAPON[sid]
+		local h = def and Catalog.hurlOf(def)
+		if h then return "shield", h end
+	end
+	local t = c:FindFirstChildOfClass("Tool")
+	local def = t and not t:GetAttribute("TwinHidden") and Catalog.WEAPON[t.Name]
+	local h = def and Catalog.hurlOf(def)
+	if h then return "weapon", h end
+	return nil
+end
+local function startHurl(how)
+	local c = player.Character
+	if aiming or not c or menuUp() then return end
+	local hum = c:FindFirstChildOfClass("Humanoid")
+	if not (hum and hum.Health > 0) then return end
+	local kind, h = hurlable(c)
+	if not kind then return end
+	aiming = {t0 = os.clock(), def = h, windup = h.windup or 0.4, how = how, hurl = kind}
+	if remote then remote:FireServer("HurlAim") end
+	PowerPoses.play(c, PowerPoses.AIM)
 end
 
 -- the flight it would take: the server's own launch (Ballistics), stepped until it hits
@@ -417,16 +452,21 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if input.UserInputType == Enum.UserInputType.MouseButton2 and aiming then cancelAim(); return end
 	if processed or menuUp() then return end
 	if input.KeyCode == keyCode("Power") then usePower()
-	elseif input.KeyCode == keyCode("Throw") then startAim("key") end
+	elseif input.KeyCode == keyCode("Throw") then startAim("key")
+	elseif input.KeyCode == keyCode("Hurl") then startHurl("key") end
 end)
 UserInputService.InputEnded:Connect(function(input)
-	if input.KeyCode == keyCode("Throw") and aiming and aiming.how == "key" then release() end
+	if not (aiming and aiming.how == "key") then return end
+	if input.KeyCode == keyCode(aiming.hurl and "Hurl" or "Throw") then release() end
 end)
 -- a controller's (GamepadControls: D-pad ↑ tap the power, D-pad ↓ held the throw) and the bus
 TouchInput.changed:Connect(function(action, down)
 	if action == "Power" and down then usePower()
-	elseif action == "Throw" then if down then startAim("pad") elseif aiming then release() end end
+	elseif action == "Throw" then if down then startAim("pad") elseif aiming and not aiming.hurl then release() end
+	elseif action == "Hurl" then if down then startHurl("pad") elseif aiming and aiming.hurl then release() end end
 end)
+hurlOrb.tap.MouseButton1Down:Connect(function() startHurl("touch") end)
+hurlOrb.tap.MouseButton1Up:Connect(function() if aiming and aiming.how == "touch" then release() end end)
 -- a phone: hold the throw orb, let go to throw
 throwOrb.tap.MouseButton1Down:Connect(function() startAim("touch") end)
 throwOrb.tap.MouseButton1Up:Connect(function() if aiming and aiming.how == "touch" then release() end end)
@@ -436,8 +476,8 @@ player.CharacterAdded:Connect(function() aiming = nil; clearArc() end)
 if remote then
 	remote.OnClientEvent:Connect(function(what, why, which)
 		if what == "Denied" then
-			deny(which == "throw" and throwOrb or powerOrb, why)
-			if which == "throw" then aiming = nil; clearArc() end
+			deny((which == "throw" and throwOrb) or (which == "hurl" and hurlOrb) or powerOrb, why)
+			if which == "throw" or which == "hurl" then aiming = nil; clearArc() end
 		end
 	end)
 end
@@ -450,6 +490,8 @@ RunService.RenderStepped:Connect(function()
 	local hub = inHub()
 	powerOrb.frame.Visible = power ~= nil and not hub
 	throwOrb.frame.Visible = thr ~= nil and not hub
+	local hk = (c and not hub) and hurlable(c) or nil
+	hurlOrb.frame.Visible = hk ~= nil
 	-- (on a touch screen the orbs sit in the right thumb's arc: TouchControls' PowerSlot and
 	-- ThrowSlot; else side by side right of the energy bar, one alone where the first would be)
 	local tc = TouchInput.active() and player.PlayerGui:FindFirstChild("TouchControls")
@@ -473,6 +515,7 @@ RunService.RenderStepped:Connect(function()
 	end
 	place(powerOrb, "PowerSlot", 352)
 	place(throwOrb, "ThrowSlot", power and 428 or 352)
+	place(hurlOrb, "HurlSlot", 352 + 76 * ((power and 1 or 0) + (thr and 1 or 0)))
 	local pad = UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled
 	local touch = TouchInput.active()
 	local t = snow()
@@ -507,6 +550,17 @@ RunService.RenderStepped:Connect(function()
 		if os.clock() > o.deniedUntil then o.nameTag.Text = def and string.upper(def.name) or ""; o.nameTag.TextColor3 = Color3.fromRGB(220, 220, 230) end
 		setPips(o, max)
 		for i, p in ipairs(o.pipList) do p.BackgroundColor3 = i <= n and Theme.ACCENT or Color3.fromRGB(60, 60, 70) end
+	end
+	if hurlOrb.frame.Visible then
+		local o = hurlOrb
+		o.keyTag.Text = pad and "→" or keyName("Hurl")
+		o.keyTag.Visible = not touch
+		o.glyph.Text = hk == "shield" and "🛡" or "⚔"
+		o.ring.Color = (aiming and aiming.hurl) and READY or Color3.fromRGB(200, 205, 220)
+		o.wipe.Size = UDim2.fromScale(1, 0)
+		o.secs.Text = ""
+		if os.clock() > o.deniedUntil then o.nameTag.Text = hk == "shield" and "THROW SHIELD" or "THROW WEAPON"; o.nameTag.TextColor3 = Color3.fromRGB(220, 220, 230) end
+		setPips(o, 0)
 	end
 end)
 
@@ -1010,7 +1064,35 @@ end)
 --  THROWFX: a thrown thing in flight, the same arc the server flies
 --------------------------------------------------------------------
 local flying = {}
-local SPIN = {blade = 22, axe = 14, flask = 8, bomb = 6, bolas = 18}
+local SPIN = {blade = 22, axe = 14, flask = 8, bomb = 6, bolas = 18, blunt = 15, shield = 17}
+-- (a shield flies flat, face to the sky, spinning: its Handle's -Z up)
+local FLAT = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, Vector3.zAxis) * CFrame.Angles(math.rad(10), 0, 0)
+-- a copy of the very thing thrown (a shield off an arm, a sword out of a hand: Combat ▸ Hurl),
+-- skin, paint and glow and all, to fly: its visible parts, nothing that ties it to anyone
+local function copyOf(src)
+	if typeof(src) ~= "Instance" or not src.Parent then return nil end
+	local handle = src:FindFirstChild("Handle")
+	if not (handle and handle:IsA("BasePart")) then return nil end
+	local m = Instance.new("Model")
+	m.Name = "Thrown"
+	local hc
+	for _, d in ipairs(src:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name ~= "Hitbox" and d.Name ~= "GuardHull" and (d.Transparency < 1 or d == handle) then
+			local p = d:Clone()
+			for _, x in ipairs(p:GetDescendants()) do
+				if x:IsA("JointInstance") or x:IsA("Constraint") or x:IsA("WeldConstraint") or x:IsA("LuaSourceContainer")
+					or x:IsA("ProximityPrompt") or x:IsA("Sound") or x:IsA("BasePart") then x:Destroy() end
+			end
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+			p.Parent = m
+			if d == handle then hc = p end
+		end
+	end
+	if not hc then m:Destroy(); return nil end
+	m.PrimaryPart = hc
+	m.Parent = fxFolder
+	return m
+end
 local function displayOf(weaponId, skin)
 	local src = Catalog.weaponModel(weaponId)
 	if not src then return nil end
@@ -1024,11 +1106,12 @@ local function displayOf(weaponId, skin)
 end
 task.spawn(function()
 	local tfx = ReplicatedStorage:WaitForChild("ThrowFX", math.huge)
-	tfx.OnClientEvent:Connect(function(what, id, a, b, c, d, e)
+	tfx.OnClientEvent:Connect(function(what, id, a, b, c, d, e, _thrower, source, lookAs)
 		if what == "Throw" then
-			-- (id, origin, velocity, gravity, weaponId, skin)
+			-- (id, origin, velocity, gravity, weaponId, skin; a thrown shield or weapon: the thing
+			-- itself, to copy, and how it flies)
 			local def = Catalog.WEAPON[d]
-			local m = displayOf(d, e)
+			local m = copyOf(source) or displayOf(d, e)
 			if not m then return end
 			local trail
 			local h = m.PrimaryPart or m:FindFirstChild("Handle")
@@ -1040,7 +1123,7 @@ task.spawn(function()
 				trail.Lifetime = 0.25; trail.Transparency = NumberSequence.new(0.4, 1); trail.Color = ColorSequence.new(WHITE)
 				trail.Parent = h
 			end
-			flying[id] = {m = m, pos = a, vel = b, g = c, look = def and def.look or "blade", t0 = os.clock(), spin = 0}
+			flying[id] = {m = m, pos = a, vel = b, g = c, look = lookAs or (def and def.look) or "blade", t0 = os.clock(), spin = 0}
 		elseif what == "Land" then
 			local f = flying[id]
 			if not f then return end
@@ -1070,7 +1153,8 @@ RunService.RenderStepped:Connect(function(dt)
 		f.spin += dt * (SPIN[f.look] or 0)
 		local dir = f.vel.Magnitude > 0.1 and f.vel.Unit or Vector3.yAxis
 		local cf = CFrame.lookAt(f.pos, f.pos + dir) * CFrame.Angles(math.rad(-90), 0, 0)
-		if SPIN[f.look] then cf = CFrame.new(f.pos) * CFrame.lookAt(Vector3.zero, dir).Rotation * CFrame.Angles(-f.spin, 0, 0) * CFrame.Angles(math.rad(-90), 0, 0) end
+		if f.look == "shield" then cf = CFrame.new(f.pos) * CFrame.Angles(0, f.spin, 0) * FLAT
+		elseif SPIN[f.look] then cf = CFrame.new(f.pos) * CFrame.lookAt(Vector3.zero, dir).Rotation * CFrame.Angles(-f.spin, 0, 0) * CFrame.Angles(math.rad(-90), 0, 0) end
 		if f.m.Parent then f.m:PivotTo(cf) end
 		if os.clock() - f.t0 > 7 then f.m:Destroy(); flying[id] = nil end
 	end

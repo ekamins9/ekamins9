@@ -34,6 +34,8 @@ InputHints.PAD = {
 	Sprint = K.ButtonL3, View = K.ButtonR3, Emote = K.DPadUp, Crouch = K.DPadDown,
 	Menu = K.ButtonSelect, Board = K.ButtonSelect, Pickup = K.ButtonX, Reload = K.ButtonR2, Stance = K.DPadLeft,
 	Power = K.DPadUp, Throw = K.DPadDown, Lock = K.ButtonR3,
+	-- (held: a tap still switches weapons, Hotbar; GamepadControls)
+	Hurl = K.DPadRight,
 	-- (the loot games carry no throwable: holding D-pad ↓ opens the bag there, GamepadControls)
 	Bag = K.DPadDown,
 }
@@ -43,7 +45,7 @@ local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", Button
 local PS = {ButtonA = "×", ButtonB = "○", ButtonX = "□", ButtonY = "△", ButtonL1 = "L1", ButtonR1 = "R1", ButtonL2 = "L2", ButtonR2 = "R2",
 	ButtonL3 = "L3", ButtonR3 = "R3", DPadUp = "D-PAD ↑", DPadDown = "D-PAD ↓", DPadLeft = "D-PAD ←", DPadRight = "D-PAD →", ButtonSelect = "TOUCHPAD"}
 -- (special cases said in words)
-local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s",
+local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s", Hurl = "HOLD %s",
 	Bag = "HOLD %s", TakeAll = "TAKE ALL", Belt = "THE BAG"}
 -- (a prompt's pad button: Roblox's own, X; not a fight action, so not in PAD)
 local PROMPT_PAD = {Interact = K.ButtonX}
@@ -51,6 +53,7 @@ local PROMPT_PAD = {Interact = K.ButtonX}
 local TOUCH = {Swing = "SWING", Stab = "STAB", Overhead = "OVERHEAD", Underhand = "SWING", Block = "BLOCK", Feint = "FEINT", Kick = "KICK",
 	Dodge = "DODGE", Jump = "JUMP", Sprint = "SPRINT", Crouch = "CROUCH", View = "VIEW", Emote = "EMOTE", Menu = "MENU", Board = "SCORES",
 	Pickup = "PICK UP", Weapons = "weapon", Cursor = "MENU", Reload = "SWING", Power = "the orb", Throw = "hold the throw orb", Lock = "LOCK",
+	Hurl = "hold the 🛡 orb",
 	Bag = "BAG", TakeAll = "TAKE ALL", Belt = "TAP", Interact = "TAP"}
 -- keyboard binds, the way a player says them
 local NICE = {MouseButton1 = "LEFT MOUSE", MouseButton3 = "MIDDLE MOUSE", MouseWheelUp = "SCROLL UP", MouseWheelDown = "SCROLL DOWN",

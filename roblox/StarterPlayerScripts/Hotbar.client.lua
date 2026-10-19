@@ -283,6 +283,17 @@ player.CharacterAdded:Connect(onCharacter)
 --------------------------------------------------------------------
 --  KEYS: 1–9 take one out (the same again puts it away); the D-pad steps through
 --------------------------------------------------------------------
+-- the next / the last weapon along the bar (the D-pad)
+local dpadRightAt = nil
+local function cycle(step)
+	if #order == 0 then return end
+	local c = character()
+	local at = 0
+	for i, t in ipairs(order) do if c and t.Parent == c then at = i end end
+	local nextI = ((at - 1 + step) % #order) + 1
+	if at == 0 then nextI = step == 1 and 1 or #order end
+	toggle(order[nextI])
+end
 UserInputService.InputBegan:Connect(function(input, gp)
 	if UserInputService:GetFocusedTextBox() then return end
 	for i, k in ipairs(KEYS) do
@@ -294,16 +305,15 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	-- (with a staff in hand, D-pad ← is its stance: StanceSwap)
 	local inHand = character() and character():FindFirstChildOfClass("Tool")
 	if input.KeyCode == Enum.KeyCode.DPadLeft and inHand and inHand:GetAttribute("Twin") then return end
-	if input.KeyCode == Enum.KeyCode.DPadRight or input.KeyCode == Enum.KeyCode.DPadLeft then
-		if #order == 0 then return end
-		local c = character()
-		local at = 0
-		for i, t in ipairs(order) do if c and t.Parent == c then at = i end end
-		local step = input.KeyCode == Enum.KeyCode.DPadRight and 1 or -1
-		local nextI = ((at - 1 + step) % #order) + 1
-		if at == 0 then nextI = step == 1 and 1 or #order end
-		toggle(order[nextI])
-	end
+	-- (D-pad →: a tap, switched as it's let go; held, it throws your shield or weapon: GamepadControls)
+	if input.KeyCode == Enum.KeyCode.DPadRight then dpadRightAt = os.clock(); return end
+	if input.KeyCode == Enum.KeyCode.DPadLeft then cycle(-1) end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if input.KeyCode ~= Enum.KeyCode.DPadRight or not dpadRightAt then return end
+	local tapped = os.clock() - dpadRightAt < 0.28 and not _G.PadHurlHeld
+	dpadRightAt = nil
+	if tapped then cycle(1) end
 end)
 
 --------------------------------------------------------------------

@@ -454,7 +454,7 @@ so the fight code needs nothing of its own. The layout lives in `InputHints.PAD`
 | RS click | tap: **lock on** (flick the right stick to move to the next foe) · hold: first / third person |
 | D-pad ↑ | tap: your power · hold: the emote wheel (aim with the right stick, let go) |
 | D-pad ↓ | tap: crouch (toggle) · hold: aim your throwable, let go to throw |
-| D-pad ← → | weapons |
+| D-pad ← → | weapons (→ held: throw your shield, then your one-hander: Combat ▸ Hurl) |
 | VIEW / TOUCHPAD | tap: the menu · hold: the scoreboard |
 | right stick | look (SETTINGS ▸ Controller look speed) |
 
@@ -764,6 +764,29 @@ life; a plain shield gets a fresh painted face to scar) and throws a few splinte
 the floor, a looted polearm, a bow): it hangs there face out and does nothing (no shield block,
 cone, bash or arrows: ShieldSlung) until a one-handed weapon is back in your hand, when it's back on
 the arm.
+
+**Throw your own steel** (`Combat ▸ Hurl`; the **Hurl** key, **Y**: a controller's D-pad → held,
+a phone's 🛡 orb held; a third orb beside the power and the throwable shows what would go:
+THROW SHIELD / THROW WEAPON). Held, it aims like a throwable (the same arc, `PowerPoses` AIM, you
+walk slower: SpeedMult_Hurl); let go and your **shield** leaves your arm first (`Shields.unwear`
+spares the board: it flies flat and spinning), and once that's gone the **one-handed weapon** in
+your hand (end over end; a two-hander, a bow or a staff stays put). Its flight is the server's
+(`Catalog.hurlOf`: speed, drop, wind-up; `Ballistics.launch`), drawn on every screen as a copy of
+the very thing thrown, skin, paint and glow and all (ThrowFX "Throw" carries it). It hits like a
+heavy blow: a shield 14 + 1.5 × its bash, a stagger, stars and a shove back; a weapon its own best
+blow × `Catalog.WEAPON_HURL` (1.35), more in the face; a shield raised toward it turns it with a
+clang. Then it **lies where it fell for 60 s** (Janitor kind "Thrown", never pushed out by the
+dead's dropped weapons): a blade or an axe stuck point-first in turf or wood (steeper into the
+ground), anything else (or off stone and metal, with sparks) flat on the ground; a weapon gets
+`Pickup.lay` (held still there, freed when taken) and the usual pick-up prompt, a shield its own
+(back onto the arm of whoever can carry one: `Shields.wear`). Your other weapon comes to hand
+when the first is thrown. Not in the Courtyard, the tavern or the loot games.
+
+**Bigger one-handers**: `scale` in `Catalog ▸ Weapons` sizes a weapon's whole body up about the
+grip at the server's start (`Blueprints.sizeUp`, attribute `Scaled`; its skins' models match in
+`Dresser.applySkin`): War Axe ×1.28, Mace and Cleaver ×1.2, War Hammer ×1.18, Rondel Dagger
+×1.15, Shortsword and Morning Star ×1.12, Falchion ×1.1, Arming Sword ×1.08 (their Configs' REACH
+up to match).
 
 **Throwables** (`Catalog ▸ Arsenal` throwables; `Combat ▸ Throwing`): Throwing Knives (free),
 Throwing Axe, War Darts, Javelin (pierces armour), Firebomb, Frost Flask, Smoke Bomb,
