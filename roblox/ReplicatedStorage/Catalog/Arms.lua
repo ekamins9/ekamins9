@@ -12,7 +12,10 @@
                   they wear your arms there too, a panel of your field with its division and your
                   emblem (Dresser: ArmsTabard; in a team fight on your side's colour, and a bot's
                   or an armsless player's with their side's house). Per set: w, h (studs), y (up
-                  from the torso's middle), emblem (× the panel's width) ]]
+                  from the torso's middle), emblem (× the panel's width)
+       ENGRAVINGS plate sets with a medallion engraved on the breastplate (ForgeGUI art: Studio-only
+                  ReplicatedStorage ▸ SkinArt engrave_<art>), inlaid in the wearer's Accent colour
+                  (Dresser: ArmsEngraving). Per set: art, size (studs), y ]]
 
 local Arms = {}
 Arms.EMBLEMS = {
@@ -55,6 +58,20 @@ Arms.SURCOATS = {
 	RoadLevy = {w = 1.35, h = 1.45, y = 0.0, emblem = 0.75},
 	WolfCompany = {w = 1.3, h = 1.35, y = 0.05, emblem = 0.75},
 	GildedCourt = {w = 1.3, h = 1.35, y = 0.05, emblem = 0.75},
+}
+
+Arms.ENGRAVINGS = {
+	KnightSkin = {art = "sunburst", size = 1.05, y = 0.15},
+	SunKnights = {art = "sunburst", size = 1.1, y = 0.15},
+	Seraph = {art = "sunburst", size = 1.05, y = 0.15},
+	Phoenix = {art = "sunburst", size = 1.0, y = 0.15},
+	Dragonscale = {art = "dragon", size = 1.1, y = 0.1},
+	Obsidian = {art = "dragon", size = 1.05, y = 0.1},
+	Blackguard = {art = "dragon", size = 1.0, y = 0.15},
+	IronCrow = {art = "tracery", size = 1.0, y = 0.1},
+	Frostwarden = {art = "tracery", size = 1.05, y = 0.1},
+	Moonshadow = {art = "tracery", size = 1.0, y = 0.1},
+	Battlemage = {art = "tracery", size = 0.95, y = 0.1},
 }
 
 -- may this player bear it (their level)

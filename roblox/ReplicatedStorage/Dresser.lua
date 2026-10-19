@@ -500,11 +500,48 @@ function Dresser.surcoat(char, lo, app, team)
 	return true
 end
 
+-- THE ENGRAVING: a medallion on a plate breastplate (Catalog ▸ Arms ENGRAVINGS), inlaid in your
+-- Accent colour (gold without one)
+function Dresser.engrave(char, lo)
+	local old = char:FindFirstChild("ArmsEngraving")
+	if old then old:Destroy() end
+	local pc = lo and Catalog.PIECE[lo.top or ""]
+	local A = Catalog.ARMS
+	local cfg = pc and A and A.ENGRAVINGS and A.ENGRAVINGS[pc.set or ""]
+	local torso = char:FindFirstChild("Torso")
+	if not (cfg and torso) then return false end
+	local art = ReplicatedStorage:FindFirstChild("SkinArt")
+	local v = art and art:FindFirstChild("engrave_" .. cfg.art)
+	if not (v and v.Value ~= "") then return false end
+	local accent = lo.colors and Catalog.COLOR[lo.colors.Accent or ""]
+	local color = accent and accent.color or Color3.fromRGB(232, 184, 74)
+	local at, look, up = chestFront(char, torso, cfg.y or 0)
+	local p = Instance.new("Part")
+	p.Name = "ArmsEngraving"
+	p.Size = Vector3.new(cfg.size, cfg.size, 0.01)
+	p.Transparency = 1
+	p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
+	p.CFrame = CFrame.lookAt(at + look * 0.025, at + look * 2, up)
+	local d = Instance.new("Decal")
+	d.Face = Enum.NormalId.Front
+	d.Texture = v.Value
+	-- (a little brighter than the paint: inlaid metal catches the light)
+	d.Color3 = Color3.new(math.min(color.R * 1.15, 1.4), math.min(color.G * 1.15, 1.4), math.min(color.B * 1.15, 1.4))
+	d.Parent = p
+	local w = Instance.new("Weld")
+	w.Part0, w.Part1 = torso, p
+	w.C0 = torso.CFrame:ToObjectSpace(p.CFrame)
+	w.Parent = p
+	p.Anchored = false
+	p.Parent = char
+	return true
+end
+
 --------------------------------------------------------------------
 --  DRESS / UNDRESS
 --------------------------------------------------------------------
 function Dresser.undress(char)
-	for _, n in ipairs({"Armor", "Body", "ArmsTabard"}) do local c = char:FindFirstChild(n); if c then c:Destroy() end end
+	for _, n in ipairs({"Armor", "Body", "ArmsTabard", "ArmsEngraving"}) do local c = char:FindFirstChild(n); if c then c:Destroy() end end
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	local base = char:GetAttribute("BaseMaxHealth")
 	if hum and base then local frac = hum.MaxHealth > 0 and hum.Health / hum.MaxHealth or 1; hum.MaxHealth = base; hum.Health = base * frac end
@@ -574,8 +611,9 @@ function Dresser.dress(char, opts)
 		if limb and limb:IsA("BasePart") then under[limbName] = underOf(m, limb) end
 	end
 	applyBody(char, opts.appearance, coversHair, coversFace, coversBeard, under)
-	-- your arms across a cloth chest (Catalog ▸ Arms SURCOATS)
-	pcall(Dresser.surcoat, char, lo, opts.appearance, opts.team)
+	-- your arms across a cloth chest (Catalog ▸ Arms SURCOATS), or a plate's engraving (ENGRAVINGS)
+	local okS, surcoat = pcall(Dresser.surcoat, char, lo, opts.appearance, opts.team)
+	if not (okS and surcoat) then pcall(Dresser.engrave, char, lo) end
 
 	-- stats (real characters; harmless on a preview rig)
 	local hum = char:FindFirstChildOfClass("Humanoid")

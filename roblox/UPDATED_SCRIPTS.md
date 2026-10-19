@@ -1,4 +1,22 @@
-# Updated scripts: Crownfall's map and ride, the weapon chip
+# Updated scripts: engraved breastplates
+
+- **Plate armour is engraved** with Forge art too: a medallion on the breastplate, inlaid in your
+  own Accent colour (gold if you have none): a sunburst in filigree for the Knight, Sun Knight,
+  Seraph and Phoenix sets, a coiled dragon for Dragonscale, Obsidian and Blackguard, gothic
+  tracery with a fleur-de-lis for Iron Crow, Frostwarden, Moonshadow and the Battlemage's robes.
+  Cloth-fronted sets wear your coat of arms instead (the surcoat), so every set with a chest to
+  show now shows something of yours.
+- Studio-only, to save with the place: ReplicatedStorage ▸ SkinArt ▸ engrave_sunburst / dragon /
+  tracery.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | `Dresser.engrave` (ArmsEngraving), when there's no surcoat |
+| [Catalog/Arms.lua](ReplicatedStorage/Catalog/Arms.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | ENGRAVINGS: which sets, which art, its size and height |
+
+---
+
+## Before that: Crownfall's map and ride, the weapon chip
 
 - **Crownfall's map** names only the big places (the keep, the villages, the harbour, the fort, the
   mine) and the small ones when you're near them, so the names don't pile up; while the dragon

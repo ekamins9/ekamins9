@@ -882,7 +882,10 @@ and a UIScale fits it to any screen.
   chest (the sets in `Catalog ▸ Arms` SURCOATS: their panel size and height) wears your arms there,
   field, division and emblem (`Dresser.surcoat`: ArmsTabard, on every body the Dresser dresses,
   previews too; in a team fight on your side's colour, a bot's or an armsless player's with the
-  side's house; the team plate and the chest badge stand aside for it). Kept in your appearance (`armsEmblem`, `armsMetal`,
+  side's house; the team plate and the chest badge stand aside for it). **Plate sets are engraved**
+  instead (`Catalog ▸ Arms` ENGRAVINGS, `Dresser.engrave`: ArmsEngraving): a ForgeGUI medallion
+  (Studio-only `SkinArt ▸ engrave_<art>`: sunburst, dragon, tracery) on the breastplate, inlaid in
+  the wearer's Accent colour. Kept in your appearance (`armsEmblem`, `armsMetal`,
   `armsField`, `armsDivision`, `armsColor2`; `Profile.validateAppearance` checks the level and the
   colours).
   `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab (`"ARMOR:top"`: on a slot).
