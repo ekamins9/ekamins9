@@ -7,15 +7,7 @@
        EMBLEMS    {id, name, level}: the pictures (ReplicatedStorage ▸ ShieldArt); level = the player
                   level that opens it (earned, never bought)
        METALS     the emblem's metal (heraldry's tinctures: or, argent, sable)
-       DIVISIONS  how the field may be split (ShieldPaint's pictures)
-       SURCOATS   armour sets whose top is cloth across the chest (a gambeson, a surcoat, a tabard):
-                  they wear your arms there too, a panel of your field with its division and your
-                  emblem (Dresser: ArmsTabard; in a team fight on your side's colour, and a bot's
-                  or an armsless player's with their side's house). Per set: w, h (studs), y (up
-                  from the torso's middle), emblem (× the panel's width)
-       ENGRAVINGS plate sets with a medallion engraved on the breastplate (ForgeGUI art: Studio-only
-                  ReplicatedStorage ▸ SkinArt engrave_<art>), inlaid in the wearer's Accent colour
-                  (Dresser: ArmsEngraving). Per set: art, size (studs), y ]]
+       DIVISIONS  how the field may be split (ShieldPaint's pictures) ]]
 
 local Arms = {}
 Arms.EMBLEMS = {
@@ -48,31 +40,6 @@ for _, m in ipairs(Arms.METALS) do Arms.METAL[m.id] = m end
 Arms.DIVISIONS = {"pale", "fess", "quarterly", "bend", "saltire", "chevron", "gyronny", "paly", "barry", "checky", "chief", "bordure", "pile", "cross"}
 Arms.DIVISION = {}
 for _, d in ipairs(Arms.DIVISIONS) do Arms.DIVISION[d] = true end
-
-Arms.SURCOATS = {
-	GambesonSkin = {w = 1.45, h = 1.55, y = 0.05, emblem = 0.78},
-	TourneyKnight = {w = 1.4, h = 1.5, y = 0.05, emblem = 0.78},
-	Lionheart = {w = 1.4, h = 1.5, y = 0.05, emblem = 0.78},
-	Sellswords = {w = 1.35, h = 1.4, y = 0.0, emblem = 0.75},
-	RiverGuard = {w = 1.35, h = 1.4, y = 0.0, emblem = 0.75},
-	RoadLevy = {w = 1.35, h = 1.45, y = 0.0, emblem = 0.75},
-	WolfCompany = {w = 1.3, h = 1.35, y = 0.05, emblem = 0.75},
-	GildedCourt = {w = 1.3, h = 1.35, y = 0.05, emblem = 0.75},
-}
-
-Arms.ENGRAVINGS = {
-	KnightSkin = {art = "sunburst", size = 1.05, y = 0.15},
-	SunKnights = {art = "sunburst", size = 1.1, y = 0.15},
-	Seraph = {art = "sunburst", size = 1.05, y = 0.15},
-	Phoenix = {art = "sunburst", size = 1.0, y = 0.15},
-	Dragonscale = {art = "dragon", size = 1.1, y = 0.1},
-	Obsidian = {art = "dragon", size = 1.05, y = 0.1},
-	Blackguard = {art = "dragon", size = 1.0, y = 0.15},
-	IronCrow = {art = "tracery", size = 1.0, y = 0.1},
-	Frostwarden = {art = "tracery", size = 1.05, y = 0.1},
-	Moonshadow = {art = "tracery", size = 1.0, y = 0.1},
-	Battlemage = {art = "tracery", size = 0.95, y = 0.1},
-}
 
 -- may this player bear it (their level)
 function Arms.open(id, profile)

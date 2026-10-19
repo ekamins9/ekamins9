@@ -6,12 +6,9 @@
                             appearance = {skin, hair, hairColor, beard, face},
                             weight = "Heavy", team = "A"|"B"|nil, preview = bool})
        Dresser.undress(char)              removes armor + body, resets stats
-       Dresser.surcoat(char, loadout, appearance, team)   your coat of arms on a cloth-fronted
-                                          top (Catalog ▸ Arms SURCOATS): ArmsTabard, done by dress
        Dresser.applySkin(tool, skinId, variant)   puts the skin on a weapon Tool: its Forge model
                                           (Cosmetics ▸ Skins) or, without one, tints + trim (SkinTrims);
-                                          then its trail / aura and its finish (SkinFX: Masterwork, Radiant),
-                                          and its etching down the blade (BladeArt)
+                                          then its trail / aura and its finish (SkinFX: Masterwork, Radiant)
        Dresser.attachWeapon(rig, weaponId, skinId)   preview only: welds Cosmetics ▸ Weapons ▸ <id> to the right hand
        Dresser.attachShield(rig, shieldId, skinId)   preview only: a shield on the left arm
 
@@ -400,148 +397,10 @@ function Dresser.wearHelmet(char, template, covers)
 end
 
 --------------------------------------------------------------------
---  THE SURCOAT: your arms across a cloth chest
---------------------------------------------------------------------
--- the front of what's worn on the chest: the first part a line into the chest from in front meets
--- (armour isn't queryable: each part's box tested by hand)
-local function chestFront(char, torso, upBy)
-	local look, up = torso.CFrame.LookVector, torso.CFrame.UpVector
-	local from, dir = torso.Position + up * upBy + look * 3, -look
-	local best = 3 - 0.5
-	local armor = char:FindFirstChild("Armor")
-	for _, part in ipairs(armor and armor:GetDescendants() or {}) do
-		if part:IsA("BasePart") and part.Transparency < 0.9 then
-			local o = part.CFrame:PointToObjectSpace(from)
-			local d = part.CFrame:VectorToObjectSpace(dir)
-			local h = part.Size / 2
-			local t0, t1 = -math.huge, math.huge
-			for _, ax in ipairs({"X", "Y", "Z"}) do
-				local oa, da, ha = o[ax], d[ax], h[ax]
-				if math.abs(da) < 1e-6 then
-					if oa < -ha or oa > ha then t0 = math.huge; break end
-				else
-					local ta, tb = (-ha - oa) / da, (ha - oa) / da
-					if ta > tb then ta, tb = tb, ta end
-					t0, t1 = math.max(t0, ta), math.min(t1, tb)
-				end
-			end
-			if t0 <= t1 and t0 >= 0 and t0 < best then best = t0 end
-		end
-	end
-	return from + dir * best, look, up
-end
-function Dresser.surcoat(char, lo, app, team)
-	local old = char:FindFirstChild("ArmsTabard")
-	if old then old:Destroy() end
-	local pc = lo and Catalog.PIECE[lo.top or ""]
-	local A = Catalog.ARMS
-	local cfg = pc and A and A.SURCOATS and A.SURCOATS[pc.set or ""]
-	local torso = char:FindFirstChild("Torso")
-	if not (cfg and torso) then return false end
-	local ShieldPaint = require(script.Parent:WaitForChild("ShieldPaint"))
-	local art = ReplicatedStorage:FindFirstChild("ShieldArt")
-	local function pic(name) local v = art and art:FindFirstChild(name); return v and v.Value ~= "" and v.Value or nil end
-	-- whose arms: yours; in a team fight on your side's colour; else (a bot, no arms of your own)
-	-- your side's house's
-	local a = ShieldPaint.armsOf(app)
-	local teamColor
-	if team == "A" or team == "B" then
-		local okG, GameConfig = pcall(require, ReplicatedStorage:WaitForChild("GameConfig"))
-		teamColor = okG and GameConfig.TEAMS[team] and GameConfig.TEAMS[team].rgb or nil
-	end
-	local emblem, metal, edge, field, division, color2
-	if a then
-		emblem, metal, edge = a.emblem, a.metal, a.edge
-		field = teamColor or a.field or Color3.fromRGB(40, 44, 62)
-		division, color2 = (not teamColor) and a.division or nil, a.color2
-	elseif teamColor then
-		local map = workspace:FindFirstChild("Map")
-		local okH, e = pcall(function() return require(ReplicatedStorage:WaitForChild("Houses")).forTeam(team, map and map:GetAttribute("HouseSeed")) end)
-		emblem = okH and e or nil
-		metal, edge, field = Color3.new(1.06, 0.84, 0.4), Color3.fromRGB(26, 20, 18), teamColor
-	end
-	if not (emblem and pic(emblem)) then return false end
-	local at, look, up = chestFront(char, torso, cfg.y or 0)
-	local panel = Instance.new("Part")
-	panel.Name = "ArmsTabard"
-	panel.Size = Vector3.new(cfg.w, cfg.h, 0.04)
-	panel.Color = field
-	panel.Material = Enum.Material.Fabric
-	panel.CanCollide, panel.CanQuery, panel.CanTouch, panel.CastShadow, panel.Massless = false, false, false, false, true
-	panel.CFrame = CFrame.lookAt(at + look * 0.03, at + look * 2, up)
-	local function decal(p, tex, color, z, tr)
-		if not tex then return end
-		local d = Instance.new("Decal")
-		d.Face = Enum.NormalId.Front
-		d.Texture, d.Color3, d.ZIndex, d.Transparency = tex, color, z, tr or 0
-		d.Parent = p
-	end
-	if division then decal(panel, pic("rect_" .. division), color2 or Color3.fromRGB(240, 240, 236), 1) end
-	decal(panel, pic("rect_shade"), Color3.new(1, 1, 1), 2, 0.35)
-	local e = cfg.w * (cfg.emblem or 0.75)
-	local ep = Instance.new("Part")
-	ep.Name = "ArmsEmblem"
-	ep.Size = Vector3.new(e, e, 0.01)
-	ep.Transparency = 1
-	ep.CanCollide, ep.CanQuery, ep.CanTouch, ep.CastShadow, ep.Massless = false, false, false, false, true
-	ep.CFrame = panel.CFrame * CFrame.new(0, 0.04, -0.03)
-	decal(ep, pic(emblem .. "_s"), Color3.new(0, 0, 0), 1, 0.15)
-	decal(ep, pic(emblem .. "_o"), edge or Color3.fromRGB(26, 20, 18), 2)
-	decal(ep, pic(emblem), metal or Color3.new(1.06, 0.84, 0.4), 3)
-	for _, p in ipairs({panel, ep}) do
-		local w = Instance.new("Weld")
-		w.Part0, w.Part1 = torso, p
-		w.C0 = torso.CFrame:ToObjectSpace(p.CFrame)
-		w.Parent = p
-		p.Anchored = false
-	end
-	ep.Parent = panel
-	panel.Parent = char
-	return true
-end
-
--- THE ENGRAVING: a medallion on a plate breastplate (Catalog ▸ Arms ENGRAVINGS), inlaid in your
--- Accent colour (gold without one)
-function Dresser.engrave(char, lo)
-	local old = char:FindFirstChild("ArmsEngraving")
-	if old then old:Destroy() end
-	local pc = lo and Catalog.PIECE[lo.top or ""]
-	local A = Catalog.ARMS
-	local cfg = pc and A and A.ENGRAVINGS and A.ENGRAVINGS[pc.set or ""]
-	local torso = char:FindFirstChild("Torso")
-	if not (cfg and torso) then return false end
-	local art = ReplicatedStorage:FindFirstChild("SkinArt")
-	local v = art and art:FindFirstChild("engrave_" .. cfg.art)
-	if not (v and v.Value ~= "") then return false end
-	local accent = lo.colors and Catalog.COLOR[lo.colors.Accent or ""]
-	local color = accent and accent.color or Color3.fromRGB(232, 184, 74)
-	local at, look, up = chestFront(char, torso, cfg.y or 0)
-	local p = Instance.new("Part")
-	p.Name = "ArmsEngraving"
-	p.Size = Vector3.new(cfg.size, cfg.size, 0.01)
-	p.Transparency = 1
-	p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
-	p.CFrame = CFrame.lookAt(at + look * 0.025, at + look * 2, up)
-	local d = Instance.new("Decal")
-	d.Face = Enum.NormalId.Front
-	d.Texture = v.Value
-	-- (a little brighter than the paint: inlaid metal catches the light)
-	d.Color3 = Color3.new(math.min(color.R * 1.15, 1.4), math.min(color.G * 1.15, 1.4), math.min(color.B * 1.15, 1.4))
-	d.Parent = p
-	local w = Instance.new("Weld")
-	w.Part0, w.Part1 = torso, p
-	w.C0 = torso.CFrame:ToObjectSpace(p.CFrame)
-	w.Parent = p
-	p.Anchored = false
-	p.Parent = char
-	return true
-end
-
---------------------------------------------------------------------
 --  DRESS / UNDRESS
 --------------------------------------------------------------------
 function Dresser.undress(char)
-	for _, n in ipairs({"Armor", "Body", "ArmsTabard", "ArmsEngraving"}) do local c = char:FindFirstChild(n); if c then c:Destroy() end end
+	for _, n in ipairs({"Armor", "Body"}) do local c = char:FindFirstChild(n); if c then c:Destroy() end end
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	local base = char:GetAttribute("BaseMaxHealth")
 	if hum and base then local frac = hum.MaxHealth > 0 and hum.Health / hum.MaxHealth or 1; hum.MaxHealth = base; hum.Health = base * frac end
@@ -611,9 +470,6 @@ function Dresser.dress(char, opts)
 		if limb and limb:IsA("BasePart") then under[limbName] = underOf(m, limb) end
 	end
 	applyBody(char, opts.appearance, coversHair, coversFace, coversBeard, under)
-	-- your arms across a cloth chest (Catalog ▸ Arms SURCOATS), or a plate's engraving (ENGRAVINGS)
-	local okS, surcoat = pcall(Dresser.surcoat, char, lo, opts.appearance, opts.team)
-	if not (okS and surcoat) then pcall(Dresser.engrave, char, lo) end
 
 	-- stats (real characters; harmless on a preview rig)
 	local hum = char:FindFirstChildOfClass("Humanoid")
@@ -658,8 +514,6 @@ function Dresser.applySkin(tool, skinId, variant)
 	ShieldDress.clear(tool)   -- (and its dress: materials put back, ornaments gone)
 	ShieldPaint = ShieldPaint or require(script.Parent:WaitForChild("ShieldPaint"))
 	ShieldPaint.clear(tool)   -- (and its paint: the emblem, the division, the scratches)
-	local BladeArt = require(script.Parent:WaitForChild("BladeArt"))
-	BladeArt.clear(tool)   -- (and its etching down the blade)
 	-- (whatever the last skin hid, a staff's plain claws and orb, comes back first)
 	for _, p in ipairs(tool:GetDescendants()) do
 		if p:IsA("BasePart") and p:GetAttribute("SkinHidden") then p.Transparency = 0; p:SetAttribute("SkinHidden", nil) end
@@ -689,7 +543,6 @@ function Dresser.applySkin(tool, skinId, variant)
 			clone.Name = "Skin"
 			clone.Parent = tool
 			SkinFX.apply(tool, skin, variant)   -- the trail, the aura and the finish ride on the model
-			BladeArt.apply(tool, skin)   -- (its etching, down the model's blade)
 			return true
 		end
 	end
@@ -709,8 +562,6 @@ function Dresser.applySkin(tool, skinId, variant)
 	end
 	if SkinTrims.apply(tool, skin) then n += 1 end
 	if SkinFX.apply(tool, skin, variant) then n += 1 end
-	-- its etching down the flat of the blade, in Forge art (ReplicatedStorage ▸ BladeArt)
-	if BladeArt.apply(tool, skin) then n += 1 end
 	if skin.heraldry and Heraldry.apply(tool, skin) then n += 1 end
 	-- a shield skin's materials and ornaments (wings, a crown, a sunburst…: ReplicatedStorage ▸ ShieldDress)
 	if (skin.adorn or skin.field or skin.rim) and ShieldDress.apply(tool, skin) then n += 1 end

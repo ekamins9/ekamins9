@@ -111,51 +111,6 @@ local T, H, LA, RA, LL, RL = 1, 2, 3, 4, 5, 6
 local templates = {}   -- key -> {full = {[limb] = {{proto, off}}}, lite = …, mass = …}
 local function volume(p) return p.Size.X * p.Size.Y * p.Size.Z end
 
--- his house's badge on his chest (as Game ▸ Teams marks a real fighter): the front of whatever he
--- wears, found by testing his parts' boxes along a line into his chest
-local function chestBadge(m, side, torso)
-	local art = ReplicatedStorage:FindFirstChild("ShieldArt")
-	local map = workspace:FindFirstChild("Map")
-	local okH, emblem = pcall(function() return require(ReplicatedStorage:WaitForChild("Houses")).forTeam(side, map and map:GetAttribute("HouseSeed")) end)
-	if not (okH and emblem and art and art:FindFirstChild(emblem)) then return nil end
-	local look, up = torso.CFrame.LookVector, torso.CFrame.UpVector
-	local from, dir = torso.Position + up * 0.25 + look * 3, -look
-	local best = 2.5
-	for _, part in ipairs(m:GetDescendants()) do
-		if part:IsA("BasePart") and part.Transparency < 0.9 and part.Name ~= "HumanoidRootPart" then
-			local o, d, h = part.CFrame:PointToObjectSpace(from), part.CFrame:VectorToObjectSpace(dir), part.Size / 2
-			local t0, t1 = -math.huge, math.huge
-			for _, ax in ipairs({"X", "Y", "Z"}) do
-				if math.abs(d[ax]) < 1e-6 then
-					if o[ax] < -h[ax] or o[ax] > h[ax] then t0 = math.huge; break end
-				else
-					local ta, tb = (-h[ax] - o[ax]) / d[ax], (h[ax] - o[ax]) / d[ax]
-					if ta > tb then ta, tb = tb, ta end
-					t0, t1 = math.max(t0, ta), math.min(t1, tb)
-				end
-			end
-			if t0 <= t1 and t0 >= 0 and t0 < best then best = t0 end
-		end
-	end
-	local at = from + dir * best
-	local p = Instance.new("Part")
-	p.Name = "HouseBadge"
-	p.Size = V3(1.05, 1.05, 0.01)
-	p.Transparency = 1
-	p.CFrame = CFrame.lookAt(at + look * 0.03, at + look * 2, up)
-	for z, layer in ipairs({{emblem .. "_o", Color3.fromRGB(26, 20, 18)}, {emblem, Color3.new(1.06, 0.84, 0.4)}}) do
-		local v = art:FindFirstChild(layer[1])
-		if v then
-			local dc = Instance.new("Decal")
-			dc.Face = Enum.NormalId.Front
-			dc.Texture, dc.Color3, dc.ZIndex = v.Value, layer[2], z
-			dc.Parent = p
-		end
-	end
-	p.Parent = m
-	return p
-end
-
 local function build(side, look)
 	local lo = {}
 	for _, pc in ipairs(Catalog.setPieces(look.set) or {}) do lo[pc.slot] = pc.id end
@@ -185,11 +140,6 @@ local function build(side, look)
 	for _, d in ipairs(body and body:GetDescendants() or {}) do take(d, H, "body") end
 	for _, d in ipairs((m:FindFirstChild("WeaponPreview") or Instance.new("Folder")):GetDescendants()) do take(d, RA, "weapon") end
 	for _, d in ipairs((m:FindFirstChild("ShieldPreview") or Instance.new("Folder")):GetDescendants()) do take(d, LA, "shield") end
-	-- his house on his chest
-	do
-		local okB, badge = pcall(chestBadge, m, side, limbPart[T])
-		if okB and badge then table.insert(groups[T], {proto = badge, off = limbPart[T].CFrame:ToObjectSpace(badge.CFrame), vol = 0, role = "badge"}) end
-	end
 	-- the bare limbs themselves (seen between the plates)
 	for i = 1, 6 do
 		local p = limbPart[i]

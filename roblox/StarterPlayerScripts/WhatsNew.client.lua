@@ -24,8 +24,8 @@ local NEWS = {
 		{"🎒", "Crownfall: find, wear, carry", "real armour sets you put on, an inventory, a belt of potions to drink"},
 		{"🔥", "Dragonfall: learn the dragon", "its blows are called out, punish its openings, pin it with ballistae, drop rocks"},
 		{"🛡", "Your shield goes with your sword", "a shield rides with a one-handed weapon, and your secondary stays a weapon"},
-		{"⚜", "Your arms on your surcoat", "tabards and gambesons now wear your coat of arms, or your side's colours"},
-		{"⚔", "Etched blades", "runes, flames, frost, filigree, dragons down the blades of your weapon skins"},
+		{"🏝", "A whole new island", "Crownfall's land is twice the size: a keep, villages, a harbour, a river, forests"},
+		{"🎮", "Your keys, everywhere", "every hint shows your own binds, your pad's buttons or your touch buttons"},
 		{"🎓", "A longer first battle", "the tutorial now teaches the view, the free mouse and the Flameblade"},
 	},
 }

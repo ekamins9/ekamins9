@@ -2165,21 +2165,6 @@ local function priceText(m, c)
 	if (c or 0) > 0 then table.insert(bits, fmt(c) .. " Crowns") end
 	return #bits > 0 and table.concat(bits, "  or  ") or "free"
 end
--- the next UTC day (within a month) a pack is in the store, as "Oct 9", or nil
-function Packs.nextOnSale(packKey)
-	local today = storeDay() or os.date("!%Y-%m-%d")
-	local y, mo, d = today:match("^(%d+)%-(%d+)%-(%d+)$")
-	if not y then return nil end
-	local base = os.time({year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = 12})
-	for i = 1, 30 do
-		local key = os.date("!%Y-%m-%d", base + i * 86400)
-		for _, k in ipairs((Catalog.storeFor(key))) do
-			if k == packKey then return os.date("!%b %d", base + i * 86400):gsub(" 0", " "), i end
-		end
-	end
-	return nil
-end
-
 -- where a skin comes from, for a label: text, and the kind ("owned", "buy",
 -- "crate", "earned", "pack", "shelf")
 local function skinWhere(s)
@@ -2206,17 +2191,15 @@ local function skinWhere(s)
 	elseif src == "earned" then
 		return "earn it: " .. Catalog.unlockText(s.unlock) .. "  ·  " .. progressText(s.unlock), "earned"
 	elseif src == "crate" then
-		-- (and whether its crate is in today, or when it's back)
+		-- (and whether its crate is in today; when it's back is nobody's business)
 		local cn = Catalog.CRATES[s.crate] and Catalog.CRATES[s.crate].name or s.crate
 		local short = HX.rotationText("crate", s.crate)
 		if short ~= "" then return "drops from the " .. cn .. "  ·  " .. short, "crate" end
-		local nx = HX.Drops.crateNext(s.crate)
-		return "drops from the " .. cn .. (nx and ("  ·  back in the Armoury in " .. HX.span(nx - HX.Drops.now())) or ""), "crate"
+		return "drops from the " .. cn .. "  ·  not in the Armoury today", "crate"
 	elseif src == "pack" then
 		local pk = Catalog.PACKS[s.pack]
 		if skinOnSale(s.id) then return "in today's shop  ·  " .. (pk and pk.name or s.pack) .. " pack", "buy" end
-		local when = Packs.nextOnSale(s.pack)
-		return "comes with the " .. (pk and pk.name or s.pack) .. " pack" .. (when and ("  ·  back " .. when) or ""), "pack"
+		return "comes with the " .. (pk and pk.name or s.pack) .. " pack  ·  not in the shop today", "pack"
 	elseif src == "shop" then
 		if skinOnSale(s.id) then return "on today's WEAPONS shelf", "buy" end
 		return "sold on the shop's WEAPONS shelf some days, not today", "shelf"
@@ -2241,9 +2224,8 @@ function Preview.where(it, ownKind)
 	end
 	if src == "crate" then
 		local short = HX.rotationText("crate", it.crate)
-		local nx = short == "" and HX.Drops.crateNext(it.crate)
 		return "drops from the " .. (Catalog.CRATES[it.crate] and Catalog.CRATES[it.crate].name or it.crate)
-			.. (short ~= "" and ("  ·  " .. short) or (nx and ("  ·  back in " .. HX.span(nx - HX.Drops.now())) or "")), "crate"
+			.. (short ~= "" and ("  ·  " .. short) or "  ·  not in the Armoury today"), "crate"
 	end
 	return "", "owned"
 end
@@ -2611,6 +2593,8 @@ end
 -- HOW LONG IT'S AROUND. Nothing in the shop is there for good: a crate or an egg is in on
 -- its days of the daily rotation, for its drop's weeks, for an event, or back from the vault
 -- for a weekend. -> the short tag for its card, its colour, the long line for its page.
+-- When it leaves is told; when it comes back never is (a mystery), only that it never will
+-- when that's so (an event's, a drop's last).
 function HX.rotationText(kind, id)
 	local D = HX.Drops
 	local live, leaves, rule, how = (kind == "egg" and D.eggLive or D.crateLive)(id)
@@ -2618,40 +2602,27 @@ function HX.rotationText(kind, id)
 	local now = D.now()
 	local left = leaves and HX.span(leaves - now)
 	local where = kind == "egg" and "THE SHOP" or "THE ARMOURY"
-	local nxt = leaves and (kind == "egg" and D.eggNext or D.crateNext)(id, leaves + 1)
-	local back = nxt and ("  ·  BACK IN " .. HX.span(nxt - now)) or ""
 	if how == "daily" then
 		local today = leaves and leaves - now <= 86400
 		return (today and "TODAY ONLY" or "IN ROTATION") .. (left and ("  ·  " .. left .. " LEFT") or ""), COL.ACCENT,
-			(today and ("IN " .. where .. " TODAY ONLY") or ("IN " .. where)) .. (left and ("  ·  LEAVES IN " .. left) or "") .. back
+			(today and ("IN " .. where .. " TODAY ONLY") or ("IN " .. where)) .. (left and ("  ·  LEAVES IN " .. left) or "")
 	elseif how == "event" then
 		local gone = not (kind == "egg" and D.eggReturns or D.crateReturns)(id, math.huge)
 		return "EVENT" .. (left and ("  ·  " .. left .. " LEFT") or ""), RARITY_COL.Mythic,
-			"EVENT " .. string.upper(kind) .. (left and ("  ·  LEAVES IN " .. left) or "") .. (gone and "  ·  NEVER COMES BACK" or back)
+			"EVENT " .. string.upper(kind) .. (left and ("  ·  LEAVES IN " .. left) or "") .. (gone and "  ·  NEVER COMES BACK" or "")
 	elseif how == "vault" then
 		return "BACK FROM THE VAULT" .. (left and ("  ·  " .. left .. " LEFT") or ""), HX.VAULT_COL,
 			"BACK FROM THE VAULT FOR THE WEEKEND" .. (left and ("  ·  LEAVES IN " .. left) or "") .. "  ·  THEN BACK IN THE VAULT"
 	elseif how == "featured" then
 		local gone = not (kind == "egg" and D.eggReturns or D.crateReturns)(id, math.huge)
 		local last = leaves and leaves - now < 2 * 86400
-		local tail = gone and "  ·  THEN GONE FOR GOOD: EVERYTHING IN IT BECOMES A RELIC" or (nxt and back or "  ·  THEN INTO THE VAULT")
+		local tail = gone and "  ·  THEN GONE FOR GOOD: EVERYTHING IN IT BECOMES A RELIC" or ("  ·  THEN IT LEAVES " .. where)
 		return (last and "LAST CHANCE" or "FEATURED") .. (left and ("  ·  " .. left .. " LEFT") or "  ·  UNTIL THE NEXT DROP"), last and RARITY_COL.Mythic or COL.ACCENT,
 			"THIS DROP'S " .. string.upper(kind) .. (left and ("  ·  LEAVES IN " .. left) or "  ·  HERE UNTIL THE NEXT DROP LANDS") .. tail
 	end
 	return "IN ROTATION", COL.DIM, "IN ROTATION"
 end
 HX.VAULT_COL = Color3.fromRGB(255, 120, 200)
--- what's in tomorrow (crates or eggs, by name) and when tomorrow starts
-function HX.tomorrow(kind)
-	local D = HX.Drops
-	local t = (math.floor(D.now() / 86400) + 1) * 86400
-	local out = {}
-	for id, def in pairs(kind == "egg" and Catalog.EGG or Catalog.CRATES) do
-		if (kind == "egg" and D.eggLive or D.crateLive)(id, t + 60) and (kind ~= "egg" or Catalog.released(def)) then table.insert(out, string.upper(def.name)) end
-	end
-	table.sort(out)
-	return out, t
-end
 
 -- a call for something on the side (a feed, a count): it never holds the menu's own calls
 -- up, and gives up after 6 seconds -> the answer, or {ok = false}
@@ -2764,9 +2735,7 @@ function HX.crateGallery(host, liveCrates)
 	kt.AnchorPoint = Vector2.new(1, 0); kt.Position = UDim2.new(1, 0, 0, 0); kt.Size = UDim2.fromOffset(300, 40); kt.TextXAlignment = Enum.TextXAlignment.Right
 	local nd, nt = HX.Drops.nextWith("crate")
 	local nc = nd and Catalog.CRATES[nd.crate]
-	local tm, tAt = HX.tomorrow("crate")
-	local sub = dim(host, "THE ARMOURY CHANGES EVERY DAY."
-		.. (#tm > 0 and string.format("  TOMORROW (IN %s): %s", HX.span(tAt - HX.Drops.now()), table.concat(tm, " · ")) or "")
+	local sub = dim(host, "THE ARMOURY CHANGES EVERY DAY: WHAT COMES BACK, AND WHEN, NOBODY SAYS."
 		.. ((nc and nt) and string.format("  ·  NEW CRATE IN %s: %s", HX.span(nt - HX.Drops.now()), string.upper(nc.name)) or ""), 14)
 	sub.Position = UDim2.fromOffset(0, 42); sub.Size = UDim2.new(1, 0, 0, 20); sub.AutomaticSize = Enum.AutomaticSize.None; sub.TextTruncate = Enum.TextTruncate.AtEnd
 	-- THE BIG PULLS, game-wide: who got what, a moment ago
@@ -4435,7 +4404,7 @@ do
 			elseif pc then
 				local pk = Catalog.PACKS[pc.pack]
 				local on = Catalog.onSale(pc.pack, storeDay())
-				how = (pk and pk.name or pc.pack) .. " pack  ·  " .. (on and ("in today's shop  ·  " .. priceText(pc.marks, pc.crowns)) or ("not in the shop today" .. (Packs.nextOnSale(pc.pack) and ("  ·  back " .. Packs.nextOnSale(pc.pack)) or "")))
+				how = (pk and pk.name or pc.pack) .. " pack  ·  " .. (on and ("in today's shop  ·  " .. priceText(pc.marks, pc.crowns)) or "not in the shop today")
 				if on then
 					if (pc.marks or 0) > 0 then table.insert(buys, {"BUY  ·  " .. fmt(pc.marks) .. " MARKS", COL.BLUE, function() afterBuy(call("Buy", "piece", pc.id, "marks"), render.CLASSES) end}) end
 					if (pc.crowns or 0) > 0 then table.insert(buys, {"BUY  ·  " .. fmt(pc.crowns) .. " CROWNS", COL.GOLD, function() afterBuy(call("Buy", "piece", pc.id, "crowns"), render.CLASSES) end}) end
@@ -4944,8 +4913,8 @@ do
 		if not A then return end
 		local app = (state.profile or {}).appearance or {}
 		local lvl = (state.profile and state.profile.level) or 1
-		local p = panel(page, "YOUR ARMS  ·  YOUR SHIELD AND YOUR SURCOAT")
-		dim(p, "Your own coat of arms, on any shield you carry without a skin, and across the chest of a surcoat, a tabard or a gambeson (the Gambeson, Tourney Knight, Lionheart, Sellsword, River Guard, Road Levy, Wolf Company and Gilded Court sets); in a team fight on your side's colour. (No arms of your own: there you carry your side's house's.)", 12)
+		local p = panel(page, "YOUR ARMS  ·  ON A PLAIN SHIELD")
+		dim(p, "Your own coat of arms, on any shield you carry without a skin; in a team fight on your side's colour. (No arms of your own: there you carry your side's house's.)", 12)
 		local e = A.EMBLEM[app.armsEmblem or ""]
 		local metal = A.METAL[app.armsMetal or ""] or A.METALS[1]
 		local field = Catalog.COLOR[app.armsField or ""]
@@ -5675,9 +5644,8 @@ do
 			end
 			dim(acts, string.format("The whole %s pack%s, %d%% off.", pk.name, #Packs.skins(set.pack) > 0 and " (with its weapon skins)" or "", math.floor((pk.bundle or 0) * 100 + 0.5)), 12)
 		else
-			local when = Packs.nextOnSale(set.pack)
 			title(acts, "NOT IN THE SHOP TODAY", 16, COL.DIM).Size = UDim2.new(1, 0, 0, 20)
-			dim(acts, when and ("The " .. (pk and pk.name or set.pack) .. " pack is back in the shop on " .. when .. ".") or "This pack is resting: check the shop each day.", 13)
+			dim(acts, "This pack is resting. When it's back nobody says: check the shop each day.", 13)
 		end
 	end
 
@@ -7406,12 +7374,10 @@ do
 		local note = dim(steps, P.restricted and "In your region eggs aren't sold: they come as gifts." or "Pets are looks only, never stats.", 13)
 		note.AutomaticSize = Enum.AutomaticSize.None; note.Size = UDim2.fromOffset(300, 46); note.LayoutOrder = 9; note.TextYAlignment = Enum.TextYAlignment.Center
 		note.Visible = not LAYOUT.compact or P.restricted == true
-		do   -- what's coming: tomorrow's eggs, the next drop that brings one
+		do   -- what's coming: the next drop that brings a new egg (what returns, and when, is a mystery)
 			local nd, nt = HX.Drops.nextWith("egg")
 			local ne = nd and Catalog.EGG[nd.egg]
-			local tm = HX.tomorrow("egg")
 			local bits = {}
-			if #tm > 0 then table.insert(bits, "TOMORROW: " .. table.concat(tm, " · ")) end
 			if ne and nt then table.insert(bits, string.format("NEW EGG IN %s: %s", HX.span(nt - HX.Drops.now()), string.upper(ne.name))) end
 			if #bits > 0 then
 				local up = title(body, table.concat(bits, "  ·  "), 14, COL.ACCENT)

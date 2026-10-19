@@ -341,8 +341,7 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   arrows standing in the turf, dropped shields with the houses' arms, snapped spears, fallen
   banners, helmets, the grass trodden to earth under them.
 - **Your arms**: the **Raise the Standard** kill effect (Relic, Legendary) plants your banner
-  with your coat of arms beside whoever you finish; with no side (FFA, duels, the Courtyard) your
-  own arms ride on your chest on a roundel of your colour.
+  with your coat of arms beside whoever you finish.
 - **Battle honours** (`Game ▸ Honours`, `Honours.client`): DOUBLE / TRIPLE KILL, RAMPAGE;
   runs BATTLE-HARDENED → CHAMPION OF THE FIELD → WARLORD → BANE OF ARMIES → UNSTOPPABLE, the big
   ones and STREAK BREAKER announced to everyone; daily tasks for a capture and for a champion run.
@@ -415,14 +414,16 @@ more content; a real medieval battle. What came of it (each in `roblox/README.md
   Interact, `InputHints.keyed`, `{Key}` in server text via fill).
 - **Dragonfall**: COMBOS (learnable patterns) with callouts over its head, OPENINGS after each,
   ballistae the whole fight (two bolts PIN it on the ground), three ROCKFALL traps (lure and cut).
-- **Heraldry on armour**: cloth-fronted sets wear the player's arms (`Dresser.surcoat`), plate sets
-  an engraved medallion (`Dresser.engrave`); **etched blades** on weapon skins (`BladeArt`). All the
-  art is ForgeGUI's, cut by Pillow and uploaded: Studio-only **ReplicatedStorage ▸ SkinArt** (ids in
-  gitignored `blender/out/forge/blade_art.txt`). Armour and blade meshes have **no UVs** (checked
-  with EditableMesh): textures/MaterialVariants won't map; decals (projected) do.
+- **No pictures pasted on skins** (the user's call: "looks better when it's actual meshes/parts"):
+  the surcoat arms, plate engravings, blade etchings and team chest badges were all taken out again.
+  Armour and blade meshes have **no UVs** (checked with EditableMesh), so any new look on a set or a
+  skin has to be built (parts, meshes), never a decal. Studio-only ReplicatedStorage ▸ SkinArt is
+  now unused (safe to delete).
+- **Return dates are a mystery**: nothing in the menus says when a crate, egg, pack or skin comes
+  back (or what's in tomorrow); "leaves in", "never comes back" and new-drop teasers stay.
 - What's New for 2026-10-19; the HUD weapon chip's skin line; Crownfall's map (the dragon's way,
   fewer names).
-- **Save the place**: ReplicatedStorage ▸ SkinArt is new Studio-only content. Test scaffolding
+- **Save the place** (ReplicatedStorage ▸ SkinArt can go). Test scaffolding
   added: ServerScriptService ▸ TMP_CfWatch, TMP_DfWatch (both disabled).
 
 ## 5. Suggested order of work

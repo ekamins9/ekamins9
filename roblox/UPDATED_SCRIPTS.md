@@ -1,4 +1,33 @@
-# Updated scripts: bots that pass for players; bots in casual Lists
+# Updated scripts: no pictures pasted on skins; return dates are a mystery
+
+- **Undone: the images over armour and blades.** Cloth sets no longer wear a coat-of-arms panel
+  across the chest, plate sets no longer get an engraved medallion (the sunburst set shows its own
+  built sunburst again), weapon skins no longer get etchings down the blade, and nobody wears a
+  house badge or a roundel on the chest in a team fight (the War armies' chest badges too). Looks
+  are the sets' and skins' own meshes and parts. Your arms stay on plain shields.
+- **When something comes back is a mystery**: inspecting a skin, a kill effect, an emote, an armour
+  piece or a pack no longer says "back Oct 20" / "back in 2d 4h"; crate and egg cards no longer
+  say when they return, and the Armoury and the Hatchery no longer list tomorrow's line-up. What
+  stays: how long something is still here ("leaves in"), "never comes back" when that's true, and
+  the NEW crate / egg teaser for a drop no one has seen yet.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dresser.lua](ReplicatedStorage/Dresser.lua) | ReplicatedStorage | ModuleScript | surcoat arms, engravings and blade etchings removed |
+| BladeArt.lua | ReplicatedStorage | ModuleScript | **deleted** |
+| [Arms.lua](ReplicatedStorage/Catalog/Arms.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | SURCOATS / ENGRAVINGS removed |
+| [Teams.lua](ServerScriptService/Game/Teams.lua) | ServerScriptService ▸ Game | ModuleScript | no house badge / roundel on the chest; only the tabard |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | no chest badge on the armies |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no return dates or tomorrow's line-up anywhere; YOUR ARMS text |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the two lines about the overlays replaced |
+| [README.md](README.md) | — | doc | YOUR ARMS, blade etchings, team badge, rotation text |
+| [HANDOFF.md](../docs/HANDOFF.md) | — | doc | the overlays are gone; return dates are a mystery |
+
+Studio-only ReplicatedStorage ▸ SkinArt is now unused (safe to delete).
+
+---
+
+## Before that: bots that pass for players; bots in casual Lists
 
 - **Fill bots pass for players** (GameConfig.BOT_GUISE, on): player-style invented names
   (ShadowFang27, Lukas2011, mira_frost), their own faces, hair and skin, levels, sometimes a title

@@ -91,7 +91,7 @@ Folder layout mirrors where each script lives in Studio.
 | `ReplicatedStorage/Catalog/<Name>.lua` | `ReplicatedStorage` → `Catalog` → `Weights`, `Packs`, `Pieces`, `Weapons`, `Skins`, `Body`, `Palette`, `Crates`, `Economy`, `Contracts`, `Store`, `Pass`, `Login`, `KillFX`, `Emotes` (children of the Catalog ModuleScript) | ModuleScript each |
 | `ReplicatedStorage/Dresser.lua` | `ReplicatedStorage` → `Dresser` | ModuleScript |
 | `ReplicatedStorage/PreviewRig.lua` | `ReplicatedStorage` → `PreviewRig` (a dressed mannequin for menus) | ModuleScript |
-| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua`, `BladeArt.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads`, `BladeArt` (a skin's trim parts; its trail and aura; a staff skin's head; its blade etching) | ModuleScript each |
+| `ReplicatedStorage/SkinTrims.lua`, `SkinFX.lua`, `StaffHeads.lua` | `ReplicatedStorage` → `SkinTrims`, `SkinFX`, `StaffHeads` (a skin's trim parts; its trail and aura; a staff skin's head) | ModuleScript each |
 | `ReplicatedStorage/KillFX.lua`, `Emotes.lua`, `PowerPoses.lua`, `PowerAuras.lua` | `ReplicatedStorage` → `KillFX`, `Emotes`, `PowerPoses`, `PowerAuras` (the effects and motions; a power's gesture; a lasting power's look on you) | ModuleScript each |
 | `ServerScriptService/Hub/Cosmetics.server.lua` | `ServerScriptService` → `Hub` → `Cosmetics` | Script |
 | `ServerScriptService/Hub/Duels.server.lua` | `ServerScriptService` → `Hub` → `Duels` | Script |
@@ -366,7 +366,7 @@ so all its maps take turns. Each vote offers three maps the last one didn't.)
 - **In guise** (`GameConfig.BOT_GUISE`, `Game ▸ Guise`): a fill bot passes for a player: an invented
   player-style name (ShadowFang27, Lukas2011, mira_frost: never a real account's), a body of its own
   (skin, hair, beard, face, eyes off `Catalog ▸ Body`), a level (most low, a few high), now and then
-  a title it could have earned and a coat of arms (its shield and surcoat wear it), pieces of its
+  a title it could have earned and a coat of arms (its plain shield wears it), pieces of its
   weight in palette colours, often a weapon skin (Common to Legendary only: never a numbered Mythic
   or a one-of-one). The board shows it with its title and no BOT, the name tag with its level and
   arms and no rank (Scoreboard, NameTags: `Guise`, `Level`, `Title`, `Arms`). A seat keeps its bot's
@@ -891,14 +891,8 @@ and a UIScale fits it to any screen.
   `Catalog ▸ Arms` EMBLEMS), its metal (or, argent, sable), a
   field colour off the palette, and if you like a division with a second colour. Any shield you
   carry without a skin wears it (`Combat ▸ Shields` → `ShieldPaint.plain`), and your mannequin's
-  does; in a team fight on your side's colour. **So does a surcoat**: a top that's cloth across the
-  chest (the sets in `Catalog ▸ Arms` SURCOATS: their panel size and height) wears your arms there,
-  field, division and emblem (`Dresser.surcoat`: ArmsTabard, on every body the Dresser dresses,
-  previews too; in a team fight on your side's colour, a bot's or an armsless player's with the
-  side's house; the team plate and the chest badge stand aside for it). **Plate sets are engraved**
-  instead (`Catalog ▸ Arms` ENGRAVINGS, `Dresser.engrave`: ArmsEngraving): a ForgeGUI medallion
-  (Studio-only `SkinArt ▸ engrave_<art>`: sunburst, dragon, tracery) on the breastplate, inlaid in
-  the wearer's Accent colour. Kept in your appearance (`armsEmblem`, `armsMetal`,
+  does; in a team fight on your side's colour. Nothing is pasted on armour or blades: a set's
+  and a skin's looks are their own meshes and parts. Kept in your appearance (`armsEmblem`, `armsMetal`,
   `armsField`, `armsDivision`, `armsColor2`; `Profile.validateAppearance` checks the level and the
   colours).
   `_G.MenuBus:Fire("LoadoutTab", "GEAR")` opens it on a tab (`"ARMOR:top"`: on a slot).
@@ -1143,15 +1137,6 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
   all an aura **hums** (`SkinFX.HUM`, Pro Sound Effects loops): a crackle of fire, an electric hum, a
   shimmer, a low pulse, only heard up close and swelling a little as it swings (a windup turning into its release is one swing), and a
   sound with a `cut` fades out over 0.18 s instead of snapping off.
-- **Blade etchings** (`BladeArt`, applied by the `Dresser` after the trim and the effects): a
-  picture down the flat of the blade on both sides, from ForgeGUI art (Studio-only
-  `ReplicatedStorage ▸ SkinArt`, `etch_<name>` = image; ids also in gitignored
-  `blender/out/forge/blade_art.txt`): runes, flames, frost, filigree, a winding dragon, a laurel
-  vine, waves, thunder, chosen by the skin's trim (`BladeArt.ETCH`) or its own `etch`; a plain trim
-  gets a maker's runes at Rare and gold filigree from Epic, Common blades stay plain. Magic
-  pictures glow in the skin's glow; the rest are inlaid in its accent (gold from Epic) or etched
-  dark below that. Long blades only (never a bow, a hammer or a mace head); a skin model made
-  all in one mesh gets a clear plate where the weapon's own blade is.
 - **Staff heads** (`StaffHeads`): a Mage's staff skin is a whole new head, never a recolour. Each
   staff skin names a design (`Catalog ▸ Skins head = "…"`); `SkinTrims` hides the plain claws and
   orb (`SkinHidden`, shown again on the next skin) and builds the head, `SkinFX` adds its lights,
@@ -1276,10 +1261,11 @@ a **daily rotation**: 3 a day (each is in 3 days in 8), the window sliding throu
 **featured** for its weeks, then **vaulted**; a **From the Vault** weekend (`weekends.rotation`,
 `vault = true`) brings one vaulted crate back until Monday, each in turn (none vaulted yet: that
 weekend is skipped). Event crates (`retire = true`) never return: their items become RELICS.
-Every card says how long it has and when it's back ("TODAY ONLY · 6h LEFT", "LAST CHANCE",
-"BACK IN 2d 4h", "BACK FROM THE VAULT"), the crates page and the Hatchery say what's in tomorrow,
-and an item's "drops from the …" line says whether its crate is in today (`HX.rotationText`,
-`HX.tomorrow`). Packs and shelf skins already rotate daily (`Catalog ▸ Store`); the season pass
+Every card says how long it has ("TODAY ONLY · 6h LEFT", "LAST CHANCE", "BACK FROM THE VAULT"),
+and an item's "drops from the …" line says whether its crate is in today (`HX.rotationText`).
+**When anything comes back is a mystery**: no card, inspect page or pack page names a return date
+or tomorrow's line-up (only "never comes back" when that's so, and a NEW crate/egg teaser for a
+drop that's never been seen). Packs and shelf skins already rotate daily (`Catalog ▸ Store`); the season pass
 lasts its season. Only weapons (Marks, gameplay) and Crowns are always there.
 
 **Big pulls** (`Economy ▸ Pulls`). A Legendary or better out of a crate, a top finish (Radiant; a
@@ -1461,9 +1447,8 @@ the map's name, so a map always flies the same. The plates (BannerArt) swing wit
 (`BannerWind`). **The sides carry them too**: in a team fight a plain (Default) shield is painted
 in its side's colour with its house's arms (`Combat ▸ Shields` → `ShieldPaint.house`), and so are
 the War armies' shields (`WarCrowd`: the front rank's whole painted face, the ranks behind the
-emblem), and every regiment's standard flies its house's arms on both faces; every fighter in a
-team fight, player or bot, wears a gold badge of their house on the front of whatever they wear
-(`Teams.mark`: the chest found by testing their parts' boxes, armor not being queryable). War's five banners
+emblem), and every regiment's standard flies its house's arms on both faces (no badge on anyone's
+armour: `Teams.mark` only colours the tabard). War's five banners
 raise the arms of the side that holds them (`War.client`), bare while no one does. Which house is which is `ReplicatedStorage ▸ Houses`, from the Map's `HouseSeed` (its
 name without a built map's round number), the same on the server and every screen.
 

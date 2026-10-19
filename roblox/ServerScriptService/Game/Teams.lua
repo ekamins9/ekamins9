@@ -1,9 +1,8 @@
 --[[ TEAMS — two sides, "A" and "B" (names/colors in GameConfig.TEAMS), on top
      of Roblox's Teams service so overhead names take the team color. A
      character carries a Team attribute ("A"/"B") that combat reads for
-     friendly fire, and a coloured tabard so you can tell at a glance, its house's
-     badge on the chest; with no side (a free-for-all, a duel, the Courtyard) a player
-     wears their own coat of arms there instead, on a roundel of their colour.
+     friendly fire, and a coloured tabard so you can tell at a glance (armour with
+     colour blocks wears the team colour itself: no tabard).
      Parties (HubServer sets a Party attribute on players) stay together. ]]
 
 local Players = game:GetService("Players")
@@ -76,112 +75,13 @@ function Teams.clearAll()
 	for _, p in ipairs(Players:GetPlayers()) do Teams.set(p, nil) end
 end
 
--- HIS HOUSE ON HIS CHEST: the arms his side's banners fly on this map (ReplicatedStorage ▸ Houses),
--- a gold badge on the front of whatever he wears, found by looking at his chest from in front
-local function houseBadge(char, key, torso)
-	local old = char:FindFirstChild("HouseBadge")
-	if old then old:Destroy() end
-	local RS = game:GetService("ReplicatedStorage")
-	local art = RS:FindFirstChild("ShieldArt")
-	local emblem, metal, edge, field
-	if key == "A" or key == "B" then
-		local map = workspace:FindFirstChild("Map")
-		local okH, e = pcall(function() return require(RS:WaitForChild("Houses")).forTeam(key, map and map:GetAttribute("HouseSeed")) end)
-		emblem = okH and e or nil
-	else
-		-- no side: their own arms (Profile.publishArms: "emblem|metal|field"), on a roundel
-		local plr = Players:GetPlayerFromCharacter(char)
-		local arms = plr and plr:GetAttribute("Arms")
-		if type(arms) ~= "string" then return end
-		local e, m, f = string.match(arms, "^([^|]+)|([^|]*)|(.*)$")
-		local okC, Catalog = pcall(require, RS:WaitForChild("Catalog"))
-		local A = okC and Catalog.ARMS
-		if not (e and A and A.EMBLEM[e]) then return end
-		local mt = A.METAL[m] or A.METALS[1]
-		local fc = Catalog.COLOR[f or ""]
-		emblem, metal, edge, field = e, mt.color, mt.edge, fc and fc.color or Color3.fromRGB(40, 44, 62)
-	end
-	if not (emblem and art and art:FindFirstChild(emblem)) then return end
-	local look, up = torso.CFrame.LookVector, torso.CFrame.UpVector
-	local chest = torso.Position + up * 0.25
-	-- (the first of his visible parts a line into his chest from in front meets: armor isn't
-	--  queryable, so each part's box is tested by hand)
-	local from, dir = chest + look * 3, -look
-	local best = 3 - 0.5
-	for _, part in ipairs(char:GetDescendants()) do
-		if part:IsA("BasePart") and part.Transparency < 0.9 and part.Name ~= "HumanoidRootPart" and part.Name ~= "HouseBadge" then
-			local o = part.CFrame:PointToObjectSpace(from)
-			local d = part.CFrame:VectorToObjectSpace(dir)
-			local h = part.Size / 2
-			local t0, t1 = -math.huge, math.huge
-			for _, ax in ipairs({"X", "Y", "Z"}) do
-				local oa, da, ha = o[ax], d[ax], h[ax]
-				if math.abs(da) < 1e-6 then
-					if oa < -ha or oa > ha then t0 = math.huge; break end
-				else
-					local ta, tb = (-ha - oa) / da, (ha - oa) / da
-					if ta > tb then ta, tb = tb, ta end
-					t0, t1 = math.max(t0, ta), math.min(t1, tb)
-				end
-			end
-			if t0 <= t1 and t0 >= 0 and t0 < best then best = t0 end
-		end
-	end
-	local at = from + dir * best
-	local p = Instance.new("Part")
-	p.Name = "HouseBadge"
-	p.Size = Vector3.new(1.05, 1.05, 0.01)
-	p.Transparency = 1
-	p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow, p.Massless = false, false, false, false, true
-	p.CFrame = CFrame.lookAt(at + look * 0.03, at + look * 2, up)
-	for z, layer in ipairs({{emblem .. "_o", edge or Color3.fromRGB(26, 20, 18)}, {emblem, metal or Color3.new(1.06, 0.84, 0.4)}}) do
-		local v = art:FindFirstChild(layer[1])
-		if v then
-			-- (the decal on the plate's back face: CFrame.lookAt points its -Z, the Front, outward)
-			local d = Instance.new("Decal")
-			d.Face = Enum.NormalId.Front
-			d.Texture, d.Color3, d.ZIndex = v.Value, layer[2], z
-			d.Parent = p
-		end
-	end
-	-- (their own arms stand a little proud, on a roundel of their colour rimmed in their metal's edge)
-	if field then p.CFrame = p.CFrame * CFrame.new(0, 0, -0.07) end
-	local w = Instance.new("Weld"); w.Part0, w.Part1 = torso, p; w.C0 = torso.CFrame:ToObjectSpace(p.CFrame); w.Parent = p
-	if field then
-		local disc = Instance.new("Part")
-		disc.Name = "Roundel"
-		disc.Shape = Enum.PartType.Cylinder
-		disc.Size = Vector3.new(0.03, 1.3, 1.3)
-		disc.Color = field
-		disc.Material = Enum.Material.Fabric
-		disc.CanCollide, disc.CanQuery, disc.CanTouch, disc.CastShadow, disc.Massless = false, false, false, false, true
-		disc.CFrame = p.CFrame * CFrame.new(0, 0, 0.03) * CFrame.Angles(0, math.pi / 2, 0)
-		disc.Parent = p
-		local rim = disc:Clone()
-		rim.Name = "RoundelRim"
-		rim.Size = Vector3.new(0.03, 1.42, 1.42)
-		rim.Color = edge
-		rim.CFrame = p.CFrame * CFrame.new(0, 0, 0.06) * CFrame.Angles(0, math.pi / 2, 0)
-		rim.Parent = p
-		for _, d in ipairs({disc, rim}) do
-			local dw = Instance.new("WeldConstraint"); dw.Part0, dw.Part1 = p, d; dw.Parent = d
-		end
-	end
-	p.Parent = char
-end
-
--- the tabard: a thin plate on the chest in the team colour (or none), and his house's badge over it
+-- the tabard: a thin plate on the chest in the team colour (or none)
 local tabard
 function Teams.mark(char, key)
 	tabard(char, key)
-	local torso = char:FindFirstChild("Torso")
-	-- (a surcoat already wears the arms across the chest: Dresser.surcoat)
-	if char:FindFirstChild("ArmsTabard") then
-		local old = char:FindFirstChild("HouseBadge")
-		if old then old:Destroy() end
-		return
-	end
-	if torso then pcall(houseBadge, char, key, torso) end
+	-- (a badge from before is taken off: nothing is pasted on armour)
+	local old = char:FindFirstChild("HouseBadge")
+	if old then old:Destroy() end
 end
 tabard = function(char, key)
 	char:SetAttribute("Team", key)
@@ -190,7 +90,7 @@ tabard = function(char, key)
 	local torso = char:FindFirstChild("Torso")
 	if not (key and torso) then return end
 	-- armor with color blocks already wears the team color (Dresser): no plate; nor a surcoat
-	if char:GetAttribute("TeamPainted") == true or char:FindFirstChild("ArmsTabard") then return end
+	if char:GetAttribute("TeamPainted") == true then return end
 	local def = GameConfig.TEAMS[key]
 	local plate = Instance.new("Part")
 	plate.Name = "Tabard"
