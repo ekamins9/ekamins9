@@ -21,6 +21,13 @@ A theme is a set of changes, not a recolour:
   glow       {color, kinds}: Neon inlays raycast onto the flats — runes, cracks,
              veins, core, stars, halo — plus every GLOW-painted bit (jewels, eyes,
              pumpkin faces, crystals) on its own region
+  blade      a sword's own silhouette (BLADES): flame leaf broad crystal bone fang
+             twin lightning serpent sun tiered forked obsidian
+  head       on a haft, by family: {spear = broad flame winged trident crescent crystal
+             bone serpent sun, axe = double crescent bearded broad dragon,
+             blunt = spiked skull crystal orb star crown}
+  haft       the shaft itself: banded spiral twisted bone vine gilded crystal runic
+             bamboo rope scaled chain ash
 Each skin exports <Weapon>__<Skin>_Body.fbx (vertex colours) and, when it glows,
 <Weapon>__<Skin>_Glow.fbx (white; Studio makes it Neon in the glow colour), with
 a json of region centres in the Tool frame (MeshTool-style weld offsets).
@@ -715,6 +722,792 @@ def inlays(th, blade_bm, A):
 
 
 # --------------------------------------------------------------------------
+#  SILHOUETTES: a theme's own blade (swords), head (on a haft) and haft, so a
+#  skin is a different weapon to look at, not the same one painted
+# --------------------------------------------------------------------------
+import random as _random
+
+
+def _accent(th):
+    """shards, rays and cores: the theme's glow if it has one, else bright steel"""
+    return W.GLOW if th.get("glow") else W.EDGE
+
+
+def _plain(fn):
+    """build with W.blade's own path (no theme silhouette inside a silhouette)"""
+    was = W._HOOKING[0]
+    W._HOOKING[0] = True
+    try:
+        return fn()
+    finally:
+        W._HOOKING[0] = was
+
+
+def _body(a):
+    return a["length"] * (1 - a["tip"])
+
+
+def _width(a, f):
+    return a["w0"] + (a["w1"] - a["w0"]) * f
+
+
+# ---- BLADES: (theme, args) -> bmesh. args are W.blade's own (y0, length, w0, w1, t0, t1, tip, kind...)
+def bs_flame(th, a):
+    k = dict(a)
+    k["waves"] = 4 if a["length"] < 1.6 else (6 if a["length"] < 3 else 8)
+    k["wave_amp"] = 0.26 if a["kind"] == "double" else 0.17
+    k["profile"] = lambda f: 1.0 + 0.14 * math.sin(math.pi * min(1.0, f))
+    parts = [W.blade(**k)]
+    c = _accent(th)
+    s = min(1.0, a["length"] / 3.0)
+    sides = (-1, 1) if a["kind"] == "double" else (1,)
+    for side in sides:
+        for i in range(3):
+            L = (0.36 - 0.08 * i) * s + 0.1
+            ang = math.radians(90 - side * (24 + 14 * i))
+            parts.append(leaf(side * a["w0"] * 0.42, a["y0"] + 0.03 + i * 0.1 * s, L, 0.1, ang, c, t=0.03))
+    return W.merge(*parts)
+
+
+def bs_leaf(th, a):
+    k = dict(a)
+    k["profile"] = lambda f: 1.0 + 0.55 * math.sin(math.pi * min(1.0, f * 0.95)) ** 1.6
+    k["tip"] = min(a["tip"], 0.25)
+    k["fuller"] = a["fuller"] * 0.6
+    return W.blade(**k)
+
+
+def bs_broad(th, a):
+    k = dict(a)
+    k["w0"] = a["w0"] * 1.28
+    k["w1"] = max(a["w1"] * 1.7, a["w0"] * 1.12)
+    k["tip"] = 0.13
+    k["t0"] = a["t0"] * 1.05
+    return W.blade(**k)
+
+
+def bs_crystal(th, a):
+    k = dict(a)
+    k["w0"], k["w1"] = a["w0"] * 0.82, a["w1"] * 0.75
+    k["fuller"] = 0.0
+    k["tip"] = max(a["tip"], 0.32)
+    k["profile"] = lambda f: 1.0 + 0.2 * (0.5 - abs(((f * 6) % 1.0) - 0.5))
+    parts = [W.blade(**k)]
+    c = _accent(th)
+    rnd = _random.Random(hash(th["id"]) & 0xfff)
+    body = _body(k)
+    n = max(3, int(a["length"] / 0.4))
+    for i in range(n):
+        f = (i + 0.7) / (n + 0.7)
+        if f > 0.85:
+            break
+        y = a["y0"] + body * f
+        w = _width(k, f)
+        side = (1 if i % 2 == 0 else -1) if a["kind"] == "double" else 1
+        base = (side * w * 0.4, y, 0.0)
+        size = (0.18 + 0.16 * rnd.random()) * min(1.2, 0.5 + a["length"] / 4)
+        tip = (side * (w * 0.4 + size * 0.85), y + size * 0.85, 0.0)
+        parts.append(W._pyr(base, tip, 0.05 + 0.03 * rnd.random(), c, rnd.random()))
+    for j in range(5):
+        ang = 2 * math.pi * j / 5 + 0.4
+        b0 = (math.cos(ang) * a["w0"] * 0.22, a["y0"] + 0.02, math.sin(ang) * 0.05)
+        t0 = (math.cos(ang) * a["w0"] * 0.8, a["y0"] + 0.26 + 0.07 * (j % 2), math.sin(ang) * 0.13)
+        parts.append(W._pyr(b0, t0, 0.05, c, j))
+    return W.merge(*parts)
+
+
+def bs_bone(th, a):
+    k = dict(a)
+    k["fuller"] = 0.0
+    k["w0"], k["w1"] = a["w0"] * 1.18, a["w1"] * 1.25
+    teeth = max(5, int(a["length"] / 0.36))
+    k["profile"] = lambda f: (1.0 - 0.32 * ((f * teeth) % 1.0)) if f < 0.92 else 0.72
+    parts = [W.blade(**k)]
+    body = _body(a)
+    n = max(4, int(body / 0.28))
+    for i in range(n):
+        f = (i + 0.5) / n * 0.95
+        y = a["y0"] + body * f
+        t = a["t0"] + (a["t1"] - a["t0"]) * f
+        xc = 0.0 if a["kind"] == "double" else (a["w0"] - _width(a, f)) / 2 - a["curve"] * f * f
+        for z in (1, -1):
+            parts.append(W.sphere((xc, y, z * t * 0.42), t * 0.62 + 0.02, W.BRIGHT, u=8, v=5, scale=(1.6, 0.8, 0.75)))
+    return W.merge(*parts)
+
+
+def bs_fang(th, a):
+    k = dict(a)
+    k["kind"] = "single"
+    k["curve"] = a["curve"] + a["length"] * 0.07
+    k["belly"] = a["w0"] * 0.25
+    k["tip"] = 0.34
+    k["fuller"] = 0.0
+    parts = [W.blade(**k)]
+    body = a["length"] * (1 - 0.34)
+    for i in range(1, 6):
+        f = i / 7
+        y = a["y0"] + body * f
+        x = a["w0"] / 2 - k["curve"] * f * f
+        parts.append(W._pyr((x - 0.02, y, 0.0), (x + 0.12, y + 0.1, 0.0), 0.03, W.EDGE))
+    return W.merge(*parts)
+
+
+def bs_twin(th, a):
+    if a["kind"] != "double":
+        return bs_tiered(th, a)
+    L, w0 = a["length"], a["w0"]
+    parts = []
+    for side in (-1, 1):
+        k = dict(a)
+        k.update(w0=w0 * 0.34, w1=a["w1"] * 0.34, length=L * 0.9, tip=0.22, fuller=0.0, t0=a["t0"] * 0.85, t1=a["t1"] * 0.85)
+        k["xoff"] = (lambda s: (lambda f: s * w0 * 0.44 * (1 - 0.62 * min(1.0, f) ** 1.3)))(side)
+        parts.append(W.blade(**k))
+    pk = dict(a)
+    pk.update(y0=a["y0"] + L * 0.72, length=L * 0.28, w0=w0 * 0.55, w1=w0 * 0.5, tip=0.7, fuller=0.0)
+    parts.append(W.blade(**pk))
+    core = W.GLOW if th.get("glow") else W.FULLER
+    parts.append(W.box(0, a["y0"] + L * 0.38, 0, w0 * 0.16, L * 0.66, a["t0"] * 0.35, core))
+    parts.append(W.box(0, a["y0"] + 0.05, 0, w0 * 1.05, 0.12, a["t0"] * 1.1, W.STEEL))
+    return W.merge(*parts)
+
+
+def bs_lightning(th, a):
+    amp = a["w0"] * 0.34
+    k = dict(a)
+    k["fuller"] = 0.0
+    k["xoff"] = lambda f: amp * (2 * abs(2 * ((min(f, 1.0) * 3.5) % 1.0) - 1) - 1) * (0.35 + 0.65 * min(1.0, f))
+    k["profile"] = lambda f: 0.92
+    return W.blade(**k)
+
+
+def bs_serpent(th, a):
+    amp = a["w0"] * 0.45
+    k = dict(a)
+    k["xoff"] = lambda f: amp * math.sin(2 * math.pi * 1.25 * min(f, 1.15)) * min(1.0, f * 1.6)
+    k["profile"] = lambda f: 0.92
+    return W.blade(**k)
+
+
+def bs_sun(th, a):
+    parts = [bs_broad(th, a)]
+    y = a["y0"] + 0.12
+    for side in (-1, 1):
+        for i in range(5):
+            ang = math.radians(12 + i * 30)
+            L = 0.44 - 0.05 * abs(i - 2)
+            b = (side * a["w0"] * 0.5, y, 0.0)
+            parts.append(W._pyr(b, (b[0] + side * math.cos(ang) * L, y + math.sin(ang) * L, 0.0), 0.05, W.GOLD))
+    parts.append(W.disc((0, y, 0), a["w0"] * 0.62, a["t0"] * 1.6, W.GOLD, axis="z"))
+    if th.get("glow"):
+        parts.append(W.disc((0, y, 0), a["w0"] * 0.32, a["t0"] * 2.0, W.GLOW, axis="z"))
+    return W.merge(*parts)
+
+
+def bs_tiered(th, a):
+    k = dict(a)
+    k["profile"] = lambda f: 1.0 if f < 0.34 else (0.84 if f < 0.67 else 0.7)
+    parts = [W.blade(**k)]
+    body = _body(a)
+    for fs in (0.34, 0.67):
+        y = a["y0"] + body * fs
+        w = _width(a, fs)
+        if a["kind"] == "double":
+            for side in (-1, 1):
+                parts.append(W._pyr((side * w * 0.4, y - 0.02, 0.0), (side * (w * 0.5 + 0.15), y - 0.13, 0.0), 0.04, W.EDGE))
+        else:
+            x = a["w0"] / 2 - a["curve"] * fs * fs
+            parts.append(W._pyr((x - 0.03, y - 0.02, 0.0), (x + 0.15, y - 0.13, 0.0), 0.04, W.EDGE))
+    return W.merge(*parts)
+
+
+def bs_forked(th, a):
+    if a["kind"] != "double":
+        return bs_fang(th, a)
+    L = a["length"]
+    k = dict(a)
+    k.update(length=L * 0.76, tip=0.03)
+    parts = [W.blade(**k)]
+    off = a["w1"] * 0.27
+    for side in (-1, 1):
+        pk = dict(a)
+        pk.update(y0=a["y0"] + L * 0.72, length=L * 0.3, w0=a["w1"] * 0.46, w1=a["w1"] * 0.36, tip=0.5, fuller=0.0, t0=a["t1"] * 1.1, t1=a["t1"])
+        pk["xoff"] = (lambda s: (lambda f: s * (off + 0.09 * f * f)))(side)
+        parts.append(W.blade(**pk))
+    return W.merge(*parts)
+
+
+def bs_obsidian(th, a):
+    k = dict(a)
+    k["fuller"] = 0.0
+    k["profile"] = lambda f: 1.0 - 0.2 * abs(math.sin(min(f, 1.0) * math.pi * 7)) ** 0.7
+    k["t0"] = a["t0"] * 1.15
+    return W.blade(**k)
+
+
+BLADES = {"flame": bs_flame, "leaf": bs_leaf, "broad": bs_broad, "crystal": bs_crystal, "bone": bs_bone, "fang": bs_fang,
+          "twin": bs_twin, "lightning": bs_lightning, "serpent": bs_serpent, "sun": bs_sun, "tiered": bs_tiered,
+          "forked": bs_forked, "obsidian": bs_obsidian}
+
+
+def blade_hook(th):
+    fn = BLADES.get(th.get("blade"))
+    return (lambda a: fn(th, a)) if fn else None
+
+
+# ---- HEADS on a haft: the spear's point, the axe's bit, the mace's head
+def _spear_socket(y):
+    return [W.cylinder(y - 0.55, y + 0.04, 0.13, 0.1, W.DARKSTEEL, n=12), W.cylinder(y - 0.58, y - 0.48, 0.15, 0.15, W.DARKSTEEL, n=12),
+            W.cylinder(y - 0.2, y - 0.14, 0.13, 0.13, W.DARKSTEEL, n=12)]
+
+
+def hd_spear(style, th, head):
+    y = 3.45
+    out = _spear_socket(y)
+    c = _accent(th)
+    if style == "broad":
+        out.append(W.blade(y, 1.7, 0.6, 0.5, 0.11, 0.05, tip=0.5, fuller=0.25, fuller_end=0.5,
+                           profile=lambda f: 1 + 0.35 * math.sin(math.pi * min(1.0, f)) ** 1.4))
+    elif style == "flame":
+        out.append(W.blade(y, 1.8, 0.46, 0.34, 0.1, 0.05, tip=0.42, waves=3, wave_amp=0.36))
+        for side in (-1, 1):
+            for i in range(2):
+                out.append(leaf(side * 0.14, y + 0.02 + i * 0.12, 0.34 - 0.08 * i, 0.09, math.radians(90 - side * (30 + 16 * i)), c, t=0.03))
+    elif style == "winged":
+        out.append(W.blade(y, 1.45, 0.4, 0.3, 0.1, 0.05, tip=0.5, fuller=0.3, fuller_end=0.5))
+        for side in (-1, 1):
+            out.append(leaf(side * 0.1, y - 0.02, 0.72, 0.2, math.radians(90 - side * 72), W.STEEL, t=0.05))
+            out.append(leaf(side * 0.1, y - 0.12, 0.42, 0.13, math.radians(90 - side * 112), W.STEEL, t=0.045))
+    elif style == "trident":
+        out.append(W.blade(y + 0.2, 1.3, 0.22, 0.15, 0.08, 0.05, tip=0.45))
+        out.append(W.box(0, y + 0.16, 0, 0.98, 0.11, 0.11, W.DARKSTEEL))
+        for side in (-1, 1):
+            pts = [(side * 0.46, y + 0.16, 0), (side * 0.52, y + 0.55, 0), (side * 0.48, y + 0.95, 0), (side * 0.4, y + 1.2, 0)]
+            out.append(W.tube(pts, [0.055, 0.05, 0.04, 0.008], W.STEEL, n=6))
+            out.append(W._pyr((side * 0.45, y + 1.0, 0), (side * 0.6, y + 0.82, 0), 0.035, W.STEEL))
+    elif style == "crescent":
+        out.append(W.blade(y + 0.4, 1.2, 0.28, 0.2, 0.09, 0.05, tip=0.6))
+        pts, rs = [], []
+        for k in range(15):
+            f = k / 14
+            ang = math.pi * f
+            pts.append((-math.cos(ang) * 0.66, y + 0.55 - math.sin(ang) * 0.46, 0))
+            rs.append(0.012 + 0.075 * math.sin(ang) ** 0.8)
+        out.append(W.tube(pts, rs, W.STEEL, n=8))
+    elif style == "crystal":
+        rnd = _random.Random(hash(th["id"]) & 0xff)
+        out.append(W._pyr((0, y, 0), (0, y + 1.75, 0), 0.17, c, 0.3))
+        for k in range(6):
+            ang = 2 * math.pi * k / 6 + rnd.random() * 0.4
+            r0 = 0.06
+            b = (math.cos(ang) * r0, y + 0.05, math.sin(ang) * r0)
+            L = 0.6 + 0.4 * rnd.random()
+            t = (math.cos(ang) * 0.32, y + L, math.sin(ang) * 0.22)
+            out.append(W._pyr(b, t, 0.07, c, k))
+    elif style == "bone":
+        teeth = 6
+        out.append(W.blade(y, 1.55, 0.42, 0.3, 0.12, 0.06, tip=0.38, profile=lambda f: (1.0 - 0.24 * ((f * teeth) % 1.0)) if f < 0.92 else 0.8,
+                           color=W.BRIGHT))
+        for i in range(4):
+            out.append(W.sphere((0, y + 0.15 + i * 0.22, 0.06), 0.07, W.BRIGHT, u=8, v=5, scale=(1.4, 0.8, 0.7)))
+            out.append(W.sphere((0, y + 0.15 + i * 0.22, -0.06), 0.07, W.BRIGHT, u=8, v=5, scale=(1.4, 0.8, 0.7)))
+    elif style == "serpent":
+        out.append(W.blade(y, 1.85, 0.32, 0.22, 0.09, 0.05, tip=0.35, xoff=lambda f: 0.13 * math.sin(2 * math.pi * 1.5 * min(f, 1.1)) * min(1.0, f * 2)))
+    elif style == "sun":
+        out.append(W.blade(y + 0.15, 1.5, 0.34, 0.26, 0.1, 0.05, tip=0.5))
+        yy = y + 0.12
+        out.append(W.disc((0, yy, 0), 0.26, 0.12, W.GOLD, axis="z"))
+        if th.get("glow"):
+            out.append(W.disc((0, yy, 0), 0.14, 0.16, W.GLOW, axis="z"))
+        for k in range(10):
+            ang = 2 * math.pi * k / 10
+            L = 0.5 if k % 2 == 0 else 0.36
+            out.append(W._pyr((math.cos(ang) * 0.22, yy + math.sin(ang) * 0.22, 0), (math.cos(ang) * L, yy + math.sin(ang) * L, 0), 0.05, W.GOLD))
+    else:
+        return head
+    return out
+
+
+AXES = {"WarAxe": dict(y=1.35, x0=0.1, top=0.36, reach=0.84, beard_tip=0.74, beard_x=0.5, t=0.15, belly=0.12, neck=0.32, horn=0.08, sr=0.13, sh=0.24),
+        "BattleAxe": dict(y=2.2, x0=0.12, top=0.72, reach=1.12, beard_tip=0.66, beard_x=1.0, t=0.17, belly=0.2, neck=0.42, horn=0.1, sr=0.15, sh=0.3)}
+
+
+def hd_axe(style, th, head, weapon):
+    A = dict(AXES[weapon])
+    y, sr, sh = A.pop("y"), A.pop("sr"), A.pop("sh")
+    s = 1.0 if weapon == "WarAxe" else 1.3
+
+    def bit(**over):
+        k = dict(A)
+        k.update(over)
+        return W.axe(y, k["x0"], k["top"], k["reach"], k["beard_tip"], k["beard_x"], t=k["t"], belly=k["belly"], neck=k["neck"], horn=k["horn"])
+    out = W.socket(y - sh, y + sh, sr)
+    if style == "double":
+        out.append(bit())
+        out.append(W.turn(bit(), angle_y=math.pi))
+        out.append(W._pyr((0, y + sh, 0), (0, y + sh + 0.4 * s, 0), 0.07, W.STEEL))
+    elif style == "crescent":
+        out.append(bit(top=A["top"] * 1.45, beard_tip=A["beard_tip"] * 1.3, belly=A["belly"] * 2.6 + 0.1, horn=0.15, reach=A["reach"] * 1.06))
+        out.append(W.box(-0.17 * s, y, 0, 0.12 * s, 0.3 * s, 0.26 * s, W.DARKSTEEL))
+    elif style == "bearded":
+        out.append(bit(top=A["top"] * 0.7, beard_tip=A["beard_tip"] * 1.55, beard_x=A["beard_x"] * 0.55, belly=A["belly"] * 0.6))
+        out.append(W.box(-0.17 * s, y, 0, 0.12 * s, 0.3 * s, 0.26 * s, W.DARKSTEEL))
+    elif style == "broad":
+        out.append(bit(top=A["top"] * 1.3, beard_tip=A["beard_tip"] * 1.3, reach=A["reach"] * 1.25, belly=A["belly"] * 0.5))
+        out.append(W.box(-0.2 * s, y, 0, 0.16 * s, 0.34 * s, 0.28 * s, W.DARKSTEEL))
+    elif style == "dragon":
+        big = dict(top=A["top"] * 1.35, beard_tip=A["beard_tip"] * 1.25, belly=A["belly"] * 2.2 + 0.08, horn=0.16)
+        out.append(bit(**big))
+        out.append(W.turn(bit(**big), angle_y=math.pi))
+        c = _accent(th)
+        for k in range(4):
+            out.append(W._pyr((0, y + sh - 0.05, 0), (math.cos(k * math.pi / 2) * 0.16 * s, y + sh + (0.3 + 0.12 * (k % 2)) * s, math.sin(k * math.pi / 2) * 0.16 * s), 0.05, W.STEEL, k))
+        out.append(W._pyr((0, y + sh, 0), (0, y + sh + 0.6 * s, 0), 0.08, c))
+    else:
+        return head
+    return out
+
+
+BLUNTS = {"Mace": (1.62, 0.4), "MorningStar": (1.78, 0.38), "Maul": (2.55, 0.48), "Hammer": (1.55, 0.34)}
+
+
+def hd_blunt(style, th, head, weapon, r):
+    cy, s = BLUNTS[weapon]
+    c = _accent(th)
+    out = [W.cylinder(cy - s * 1.15, cy - s * 0.55, r + 0.05, r + 0.04, W.DARKSTEEL, n=12)]
+    if style == "spiked":
+        out.append(W.sphere((0, cy, 0), s * 0.8, W.DARKSTEEL, u=16, v=10))
+        for ring_y, n, lift in ((0.0, 9, 0.0), (0.45, 7, 0.65), (-0.45, 7, -0.65)):
+            for k in range(n):
+                ang = 2 * math.pi * k / n + (0.35 if lift else 0)
+                d = Vector((math.cos(ang), lift, math.sin(ang))).normalized()
+                base = Vector((0, cy, 0)) + d * s * 0.72
+                out.append(W.cone(tuple(base), tuple(base + d * s * 0.62), s * 0.15, W.STEEL, n=6))
+        out.append(W.cone((0, cy + s * 0.72, 0), (0, cy + s * 1.5, 0), s * 0.17, W.STEEL, n=6))
+    elif style == "skull":
+        out += skull((0, cy, 0), s * 1.7, W.BRIGHT, eyes=W.GLOW if th.get("glow") else None)
+        for sx in (-1, 1):
+            out.append(W.tube([(sx * s * 0.6, cy + s * 0.5, 0), (sx * s * 1.0, cy + s * 0.75, -s * 0.1), (sx * s * 1.05, cy + s * 1.2, -s * 0.2)],
+                              [s * 0.16, s * 0.1, 0.008], W.DARKSTEEL, n=6))
+    elif style == "crystal":
+        rnd = _random.Random(hash(th["id"]) & 0xfff)
+        out.append(W._pyr((0, cy - s * 0.4, 0), (0, cy + s * 1.5, 0), s * 0.32, c, 0.2))
+        for k in range(8):
+            ang = 2 * math.pi * k / 8 + rnd.random() * 0.3
+            lift = 0.2 + 0.6 * rnd.random()
+            d = Vector((math.cos(ang), lift, math.sin(ang))).normalized()
+            base = Vector((0, cy, 0))
+            out.append(W._pyr(tuple(base), tuple(base + d * s * (0.9 + 0.5 * rnd.random())), s * 0.2, c, k))
+    elif style == "orb":
+        core = W.GLOW if th.get("glow") else W.BRIGHT
+        out.append(W.sphere((0, cy, 0), s * 0.55, core, u=16, v=12))
+        for k in range(6):
+            ang = 2 * math.pi * k / 6
+            pts = []
+            for j in range(9):
+                g = j / 8
+                a2 = math.pi * g
+                pts.append((math.cos(ang) * math.sin(a2) * s * 0.78, cy - math.cos(a2) * s * 0.82, math.sin(ang) * math.sin(a2) * s * 0.78))
+            out.append(W.tube(pts, s * 0.07, W.DARKSTEEL, n=5))
+        out.append(W.cone((0, cy + s * 0.8, 0), (0, cy + s * 1.35, 0), s * 0.12, W.DARKSTEEL, n=6))
+        out.append(W.cylinder(cy - s * 0.92, cy - s * 0.75, s * 0.3, s * 0.3, W.DARKSTEEL, n=12))
+    elif style == "star":
+        out.append(W.lathe([(0.0, cy - s * 0.85), (s * 0.3, cy - s * 0.78), (s * 0.4, cy - s * 0.3), (s * 0.4, cy + s * 0.3), (s * 0.3, cy + s * 0.8), (0.0, cy + s * 0.9)],
+                           W.STEEL, n=12))
+        for k in range(10):
+            ang = 2 * math.pi * k / 10
+            for dy in (-0.25, 0.3):
+                b = (math.cos(ang) * s * 0.35, cy + dy * s, math.sin(ang) * s * 0.35)
+                out.append(W._pyr(b, (math.cos(ang) * s * 1.05, cy + dy * s + 0.12 * s, math.sin(ang) * s * 1.05), s * 0.14, W.STEEL, ang))
+        out.append(W._pyr((0, cy + s * 0.85, 0), (0, cy + s * 1.55, 0), s * 0.16, W.STEEL))
+    elif style == "crown":
+        out.append(W.lathe([(0.0, cy - s * 0.8), (s * 0.45, cy - s * 0.72), (s * 0.55, cy - s * 0.2), (s * 0.5, cy + s * 0.3), (0.0, cy + s * 0.35)], W.GOLD, n=16))
+        for k in range(8):
+            ang = 2 * math.pi * k / 8
+            b = (math.cos(ang) * s * 0.48, cy + s * 0.25, math.sin(ang) * s * 0.48)
+            t = (math.cos(ang) * s * 0.62, cy + s * 1.05, math.sin(ang) * s * 0.62)
+            out.append(W._pyr(b, t, s * 0.13, W.GOLD, ang))
+            out.append(W.sphere(t, s * 0.09, W.GLOW if th.get("glow") else W.RED, u=6, v=4))
+        out.append(W.sphere((0, cy + s * 0.5, 0), s * 0.26, W.GLOW if th.get("glow") else W.RED, u=12, v=8))
+    else:
+        return head
+    return out
+
+
+
+# ---- POLEARMS: their own blades and points, in the theme's styles
+def spear_top(style, th, y, L):
+    """a point standing on y, L long, in a spear style (no socket): a polearm's top spike"""
+    c = _accent(th)
+    if style == "broad":
+        return [W.blade(y, L * 1.05, 0.36, 0.3, 0.1, 0.05, tip=0.5, profile=lambda f: 1 + 0.35 * math.sin(math.pi * min(1.0, f)) ** 1.4)]
+    if style == "flame":
+        return [W.blade(y, L * 1.1, 0.3, 0.22, 0.09, 0.05, tip=0.42, waves=2, wave_amp=0.38)]
+    if style == "winged":
+        out = [W.blade(y, L, 0.26, 0.2, 0.09, 0.05, tip=0.5)]
+        for side in (-1, 1):
+            out.append(leaf(side * 0.06, y + 0.05, L * 0.4, 0.12, math.radians(90 - side * 70), W.STEEL, t=0.04))
+        return out
+    if style == "trident":
+        out = [W.blade(y + 0.1, L * 0.9, 0.16, 0.12, 0.07, 0.05, tip=0.45), W.box(0, y + 0.08, 0, 0.56, 0.08, 0.08, W.DARKSTEEL)]
+        for side in (-1, 1):
+            out.append(W.tube([(side * 0.26, y + 0.08, 0), (side * 0.3, y + L * 0.45, 0), (side * 0.24, y + L * 0.75, 0)], [0.04, 0.03, 0.006], W.STEEL, n=6))
+        return out
+    if style == "crescent":
+        out = [W.blade(y + 0.25, L * 0.8, 0.2, 0.15, 0.08, 0.05, tip=0.6)]
+        pts, rs = [], []
+        for k in range(13):
+            f = k / 12
+            a = math.pi * f
+            pts.append((-math.cos(a) * 0.4, y + 0.36 - math.sin(a) * 0.28, 0))
+            rs.append(0.01 + 0.05 * math.sin(a) ** 0.8)
+        out.append(W.tube(pts, rs, W.STEEL, n=8))
+        return out
+    if style == "crystal":
+        out = [W._pyr((0, y, 0), (0, y + L * 1.2, 0), 0.13, c, 0.3)]
+        for k in range(4):
+            a = 2 * math.pi * k / 4 + 0.5
+            out.append(W._pyr((math.cos(a) * 0.04, y + 0.04, math.sin(a) * 0.04), (math.cos(a) * 0.22, y + L * 0.55, math.sin(a) * 0.16), 0.06, c, k))
+        return out
+    if style == "bone":
+        teeth = 5
+        return [W.blade(y, L, 0.3, 0.22, 0.11, 0.06, tip=0.38, profile=lambda f: (1.0 - 0.26 * ((f * teeth) % 1.0)) if f < 0.92 else 0.8, color=W.BRIGHT)]
+    if style == "serpent":
+        return [W.blade(y, L * 1.15, 0.22, 0.16, 0.08, 0.05, tip=0.35, xoff=lambda f: 0.09 * math.sin(2 * math.pi * 1.5 * min(f, 1.1)) * min(1.0, f * 2))]
+    if style == "sun":
+        out = [W.blade(y + 0.12, L * 0.9, 0.24, 0.18, 0.08, 0.05, tip=0.5), W.disc((0, y + 0.1, 0), 0.18, 0.1, W.GOLD, axis="z")]
+        for k in range(8):
+            a = 2 * math.pi * k / 8
+            r1 = 0.36 if k % 2 == 0 else 0.26
+            out.append(W._pyr((math.cos(a) * 0.15, y + 0.1 + math.sin(a) * 0.15, 0), (math.cos(a) * r1, y + 0.1 + math.sin(a) * r1, 0), 0.04, W.GOLD))
+        return out
+    return [W._pyr((0, y, 0), (0, y + L, 0), 0.09, W.STEEL, math.pi / 4)]
+
+
+def _axe_over(style, A):
+    """an axe style's changes to an axe bit's numbers"""
+    if style == "crescent":
+        return dict(top=A["top"] * 1.45, beard_tip=A["beard_tip"] * 1.3, belly=abs(A["belly"]) * 2.6 + 0.12, horn=0.15, reach=A["reach"] * 1.06)
+    if style == "bearded":
+        return dict(top=A["top"] * 0.7, beard_tip=A["beard_tip"] * 1.6, beard_x=A["beard_x"] * 0.55, belly=A["belly"] * 0.6)
+    if style == "broad":
+        return dict(top=A["top"] * 1.3, beard_tip=A["beard_tip"] * 1.3, reach=A["reach"] * 1.25, belly=A["belly"] * 0.5)
+    if style in ("dragon", "double"):
+        return dict(top=A["top"] * 1.3, beard_tip=A["beard_tip"] * 1.2, belly=abs(A["belly"]) * 2.0 + 0.08, horn=0.14) if style == "dragon" else {}
+    return {}
+
+
+def hd_halberd(hs, th, head):
+    y = 3.0
+    A = dict(x0=0.12, top=0.5, reach=0.92, beard_tip=0.5, beard_x=0.92, t=0.12, belly=-0.08, neck=0.5, horn=0.0)
+    st = hs.get("axe")
+    k = dict(A)
+    k.update(_axe_over(st, A))
+    out = W.socket(y - 0.45, y + 0.4, 0.13)
+    bit = lambda: W.axe(y, k["x0"], k["top"], k["reach"], k["beard_tip"], k["beard_x"], t=k["t"], belly=k["belly"], neck=k["neck"], horn=k["horn"])
+    out.append(bit())
+    if st in ("double", "dragon"):
+        out.append(W.turn(bit(), angle_y=math.pi))
+    else:
+        pts, rs = [], []
+        for i in range(9):   # the back fluke
+            f = i / 8
+            pts.append((-0.14 - 0.62 * f, y + 0.05 - 0.3 * f * f, 0)); rs.append(0.08 * (1 - f) + 0.006)
+        out.append(W.tube(pts, rs, W.STEEL, n=4))
+    out += spear_top(hs.get("spear"), th, y + 0.4, 1.05)
+    if st == "dragon":
+        for j in range(3):
+            out.append(W._pyr((0.12, y + 0.3 - j * 0.25, 0), (0.12 + 0.22, y + 0.42 - j * 0.25, 0), 0.04, W.STEEL))
+    return out
+
+
+def hd_poleaxe(hs, th, head):
+    y = 2.9
+    out = W.war_hammer(y, 0.1, beak=0.7, top=0.0, face=0.4)
+    out += spear_top(hs.get("spear"), th, y + 0.3, 0.9)
+    return out
+
+
+def hd_billhook(hs, th, head):
+    if not hs.get("spear"):
+        return head
+    y = 3.1
+    out = [p for p in head]
+    # (its top spike in the theme's spear style: the original stays, a new point rides on it)
+    out += [moved(p, 0.08, 0, 0) for p in spear_top(hs["spear"], th, y + 1.5, 0.62)]
+    return out
+
+
+def hd_bardiche(hs, th, head):
+    if hs.get("axe") not in ("double", "dragon"):
+        return head
+    y0, y1 = 1.45, 3.4
+    out = list(head)
+    o = [(0.12, y1 - 0.25), (0.34, y1 + 0.08), (0.62, y1 + 0.3)]
+    o += W.bez((0.62, y1 + 0.3), (1.25, (y0 + y1) / 2 + 0.2), (0.4, y0 + 0.02), 10)[1:]
+    o += [(0.24, y0 + 0.14), (0.12, y0 + 0.3), (0.12, y1 - 0.6)]
+    ground = set(range(2, 13))
+    back = W.plate(list(reversed(o)), W.FACE, t=0.1, ground=set(len(o) - 1 - i for i in ground), bevel=0.18)
+    out.append(W.turn(back, angle_y=math.pi))
+    return out
+
+
+def hd_glaive(th, head):
+    style = th.get("blade")
+    fn = BLADES.get(style)
+    if not fn:
+        return head
+    y = 3.3
+    a = dict(y0=y, length=2.3, w0=0.46, w1=0.4, t0=0.1, t1=0.05, tip=0.3, kind="single", fuller=0.0, fuller_end=0.6,
+             curve=0.32, waves=0, wave_amp=0.0, belly=0.12, steps=10, color=W.FACE)
+    out = [fn(th, a), W._pyr((0.28, y + 0.45, 0), (0.56, y + 0.56, 0), 0.06, W.STEEL, 0)]
+    out += W.socket(y - 0.4, y + 0.02, 0.13)
+    return out
+
+
+def hd_pitchfork(hs, th, head):
+    st = hs.get("spear")
+    if st not in ("trident", "flame", "crystal", "bone"):
+        return head
+    y = 3.3
+    out = [W.box(0, y, 0, 0.92, 0.1, 0.1, W.IRON), W.cylinder(y - 0.35, y + 0.02, 0.11, 0.1, W.IRON, n=10)]
+    c = _accent(th)
+    for x in (-0.38, 0.0, 0.38):
+        if st == "crystal":
+            out.append(W._pyr((x, y, 0), (x * 1.1, y + 1.35, 0), 0.07, c, x))
+            continue
+        if st == "flame":
+            pts = [(x + 0.07 * math.sin(f * 9), y + 1.3 * f, 0.0) for f in [k / 12 for k in range(13)]]
+            out.append(W.tube(pts, [0.05 - 0.04 * (k / 12) for k in range(13)], W.IRON, n=6))
+            continue
+        pts = [(x, y, 0), (x * 1.06, y + 0.5, 0.0), (x * 1.04, y + 1.0, 0.06), (x, y + 1.3, 0.16)]
+        out.append(W.tube(pts, [0.05, 0.045, 0.035, 0.008], W.BRIGHT if st == "bone" else W.IRON, n=6))
+        if st == "trident":
+            for side in (-1, 1):
+                out.append(W._pyr((x, y + 1.08, 0.08), (x + side * 0.1, y + 0.92, 0.08), 0.03, W.STEEL))
+        elif st == "bone":
+            for k in range(3):
+                out.append(W.sphere((x, y + 0.3 + k * 0.3, 0.02 * k), 0.07, W.BRIGHT, u=8, v=5, scale=(1, 0.6, 1)))
+    return out
+
+
+# ---- HAMMERS keep a hammer's head: a block across the haft, a face and a back, in the style
+def hd_hammer(style, th, head, weapon, r):
+    y, s = (1.55, 1.0) if weapon == "Hammer" else (2.55, 1.6)
+    c = _accent(th)
+    out = W.socket(y - 0.3 * s, y + 0.3 * s, (r + 0.04))
+    face = 0.36 * s
+    if style == "crystal":
+        out.append(W.lathe([(0.0, -0.05), (face * 0.55, 0.0), (face * 0.62, 0.5 * s), (face * 0.5, 0.62 * s), (0.0, 0.66 * s)], c, n=6))
+        for v in out[-1].verts:   # (laid along +X)
+            x0, y0, z0 = v.co
+            v.co = (y0, y + x0, z0)
+        for k in range(5):
+            a = 2 * math.pi * k / 5
+            out.append(W._pyr((-0.1 * s, y + math.cos(a) * 0.1 * s, math.sin(a) * 0.1 * s),
+                              (-(0.45 + 0.15 * (k % 2)) * s, y + math.cos(a) * 0.32 * s, math.sin(a) * 0.32 * s), 0.06 * s, c, k))
+        return out
+    first = len(out)
+    out.append(W.box(0.24 * s, y, 0, 0.34 * s, face, face, W.STEEL))
+    out.append(W.box(0.43 * s, y, 0, 0.06 * s, face + 0.04 * s, face + 0.04 * s, W.STEEL))
+    if style == "skull":
+        out += skull((0.62 * s, y, 0), 0.42 * s, W.BRIGHT, eyes=W.GLOW if th.get("glow") else None)
+        for sx in (-1, 1):
+            out.append(W.tube([(0.5 * s, y + 0.15 * s, sx * 0.18 * s), (0.62 * s, y + 0.38 * s, sx * 0.34 * s), (0.5 * s, y + 0.55 * s, sx * 0.4 * s)],
+                              [0.06 * s, 0.04 * s, 0.006], W.DARKSTEEL, n=6))
+    elif style == "spiked":
+        for dy in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                out.append(W._pyr((0.46 * s, y + dy * face * 0.3, dz * face * 0.3), (0.7 * s, y + dy * face * 0.34, dz * face * 0.34), 0.06 * s, W.STEEL, 0))
+    elif style == "orb":
+        out.append(W.sphere((0.24 * s, y, 0), face * 0.5, W.GLOW if th.get("glow") else W.BRIGHT, u=12, v=8))
+        out.append(torus((0.24 * s, y, 0), face * 0.62, 0.03 * s, W.DARKSTEEL, axis="x", n=16))
+    elif style == "star":
+        for k in range(8):
+            a = 2 * math.pi * k / 8
+            out.append(W._pyr((0.24 * s, y + math.cos(a) * face * 0.45, math.sin(a) * face * 0.45),
+                              (0.24 * s, y + math.cos(a) * face * 1.05, math.sin(a) * face * 1.05), 0.05 * s, W.STEEL, a))
+    elif style == "crown":
+        for k in range(6):
+            a = 2 * math.pi * k / 6
+            out.append(W._pyr((0.46 * s, y + math.cos(a) * face * 0.42, math.sin(a) * face * 0.42), (0.62 * s, y + math.cos(a) * face * 0.5, math.sin(a) * face * 0.5),
+                              0.05 * s, W.GOLD, 0))
+        out.append(W.box(0.24 * s, y, 0, 0.36 * s, face * 1.08, face * 1.08, W.GOLD))
+        out.append(W.sphere((0.5 * s, y, 0), face * 0.2, W.GLOW if th.get("glow") else W.RED, u=8, v=6))
+    if weapon == "Maul":
+        # (a maul's head is two-faced: the face again behind)
+        out += [W.turn(p.copy(), angle_y=math.pi) for p in out[first:]]
+        out.append(W._pyr((0, y + 0.3 * s, 0), (0, y + 0.65 * s, 0), 0.1 * s, c if th.get("glow") else W.STEEL, 0))
+        return out
+    # the back: a beak (the spiked and skull ones longer and hooked), a top spike
+    pts, rs = [], []
+    beak = (0.85 if style in ("spiked", "skull") else 0.65) * s
+    for k in range(9):
+        f = k / 8
+        pts.append((-0.12 * s - beak * f, y - 0.26 * f ** 2 * beak, 0)); rs.append(0.1 * s * (1 - f) + 0.006)
+    out.append(W.tube(pts, rs, W.STEEL, n=6))
+    out.append(W._pyr((0, y + 0.3 * s, 0), (0, y + (0.3 + 0.5) * s, 0), 0.08 * s, c if th.get("glow") else W.STEEL, 0))
+    return out
+
+
+def head_hook(th):
+    hs = th.get("head") or {}
+    if not hs and not th.get("blade"):
+        return None
+
+    def fn(head, y_top, r):
+        name = W.WEAPON_NAME
+
+        def go():
+            if name == "Spear" and hs.get("spear"):
+                return hd_spear(hs["spear"], th, head)
+            if name in AXES and hs.get("axe"):
+                return hd_axe(hs["axe"], th, head, name)
+            if name in ("Hammer", "Maul") and hs.get("blunt"):
+                return hd_hammer(hs["blunt"], th, head, name, r)
+            if name in BLUNTS and hs.get("blunt"):
+                return hd_blunt(hs["blunt"], th, head, name, r)
+            if name == "Halberd" and (hs.get("axe") or hs.get("spear")):
+                return hd_halberd(hs, th, head)
+            if name == "Poleaxe" and hs.get("spear"):
+                return hd_poleaxe(hs, th, head)
+            if name == "Billhook":
+                return hd_billhook(hs, th, head)
+            if name == "Bardiche":
+                return hd_bardiche(hs, th, head)
+            if name == "Pitchfork":
+                return hd_pitchfork(hs, th, head)
+            if name == "Glaive":
+                return hd_glaive(th, head)
+            return head
+        return _plain(go)
+    return fn
+
+
+# ---- HAFTS: the shaft of anything on a haft (a spear's, an axe's, a staff's), so it changes too
+BONE_C = C(222, 210, 182)
+
+
+def _spiral(y0, y1, r, turns, rad, color, phase=0.0, n=5):
+    pts = []
+    steps = max(12, int(turns * 10))
+    for k in range(steps + 1):
+        f = k / steps
+        a = 2 * math.pi * turns * f + phase
+        pts.append((r * math.cos(a), y0 + (y1 - y0) * f, r * math.sin(a)))
+    return W.tube(pts, rad, color, n=n)
+
+
+def hf_build(style, th, y0, y1, r, color, n):
+    L = y1 - y0
+    if style == "banded":
+        parts = [W.cylinder(y0, y1, r, r * 0.96, color, n=n)]
+        k = max(2, int(L / 0.42))
+        for i in range(1, k):
+            y = y0 + L * i / k
+            parts.append(W.cylinder(y - 0.035, y + 0.035, r + 0.022, r + 0.022, W.IRON, n=n))
+            for sx in (-1, 1):
+                parts.append(W.sphere((sx * (r + 0.03), y, 0), 0.022, W.BRASS, u=6, v=4))
+        return parts
+    if style == "spiral":
+        return [W.cylinder(y0, y1, r * 0.97, r * 0.93, color, n=n), _spiral(y0 + 0.05, y1 - 0.05, r * 0.98, max(3, L / 0.32), 0.022, W.DARKWOOD)]
+    if style == "twisted":
+        parts = [W.cylinder(y0, y1, r * 0.62, r * 0.6, W.DARKSTEEL, n=8)]
+        for ph in (0.0, math.pi):
+            parts.append(_spiral(y0, y1, r * 0.5, max(3, L / 0.55), r * 0.5, W.STEEL, phase=ph, n=6))
+        return parts
+    if style == "bone":
+        bone = col(th, "bone_color", BONE_C)
+        parts = [W.cylinder(y0, y1, r * 0.62, r * 0.6, C(120, 100, 80), n=8)]
+        k = max(4, int(L / 0.17))
+        for i in range(k):
+            y = y0 + L * (i + 0.5) / k
+            parts.append(W.sphere((0, y, 0), r * 1.12, bone, u=8, v=5, scale=(1, 0.52, 1)))
+        return parts
+    if style == "vine":
+        green = C(46, 112, 52)
+        parts = [W.cylinder(y0, y1, r, r * 0.96, color, n=n), _spiral(y0, y1, r + 0.012, max(2, L / 0.6), 0.03, green)]
+        turns = max(2, L / 0.6)
+        for i in range(1, int(turns * 3)):
+            f = i / (turns * 3)
+            a = 2 * math.pi * turns * f
+            y = y0 + L * f
+            px, pz = (r + 0.03) * math.cos(a), (r + 0.03) * math.sin(a)
+            parts.append(leaf(px, y, 0.17, 0.08, math.radians(60 if i % 2 else 120), green, t=0.02, cz=pz))
+        return parts
+    if style == "gilded":
+        parts = [W.cylinder(y0, y1, r, r * 0.96, W.DARKWOOD, n=n), _spiral(y0 + 0.05, y1 - 0.05, r + 0.006, max(3, L / 0.4), 0.012, W.GOLD, n=4)]
+        k = max(2, int(L / 0.6))
+        for i in range(k + 1):
+            y = y0 + L * i / k
+            parts.append(W.cylinder(y - 0.04, y + 0.04, r + 0.025, r + 0.025, W.GOLD, n=n))
+        return parts
+    if style == "crystal":
+        ice = C(176, 222, 250)
+        parts = []
+        k = max(2, int(L / 0.5))
+        for i in range(k):
+            a, b = y0 + L * i / k, y0 + L * (i + 1) / k
+            parts.append(W.lathe([(0.0, a), (r * 0.9, a + 0.03), (r * 1.08, (a + b) / 2), (r * 0.9, b - 0.03), (0.0, b)], ice, n=6, rot=i * 0.5))
+            parts.append(W.cylinder(b - 0.025, b + 0.025, r * 0.95, r * 0.95, W.GLOW if th.get("glow") else W.BRIGHT, n=8))
+        return parts
+    if style == "runic":
+        band = W.GLOW if th.get("glow") else W.BRASS
+        parts = [W.cylinder(y0, y1, r, r * 0.96, W.DARKWOOD, n=n)]
+        k = max(2, int(L / 0.6))
+        for i in range(1, k):
+            y = y0 + L * i / k
+            parts.append(W.cylinder(y - 0.03, y + 0.03, r + 0.014, r + 0.014, band, n=n))
+            for j in range(4):
+                a = j * math.pi / 2 + i
+                parts.append(W.box(math.cos(a) * (r + 0.004), y + 0.14, math.sin(a) * (r + 0.004), 0.02, 0.14, 0.02, band))
+        return parts
+    if style == "bamboo":
+        cane, node = C(178, 162, 96), C(136, 120, 66)
+        parts = [W.cylinder(y0, y1, r, r * 0.97, cane, n=n)]
+        k = max(3, int(L / 0.4))
+        for i in range(1, k):
+            y = y0 + L * i / k
+            parts.append(W.cylinder(y - 0.02, y + 0.02, r + 0.018, r + 0.018, node, n=n))
+        return parts
+    if style == "rope":
+        parts = [W.cylinder(y0, y1, r, r * 0.96, color, n=n)]
+        k = max(2, int(L / 0.75))
+        for i in range(k):
+            y = y0 + L * (i + 0.5) / k
+            parts.append(_spiral(y - 0.09, y + 0.09, r + 0.012, 4, 0.02, W.ROPE, n=4))
+        return parts
+    if style == "scaled":
+        parts = [W.cylinder(y0, y1, r * 0.9, r * 0.88, W.DARKSTEEL, n=8)]
+        k = max(4, int(L / 0.15))
+        for i in range(k):
+            y = y0 + L * i / k
+            parts.append(W.cylinder(y, y + L / k * 1.05, r + 0.03, r * 0.92, W.DARKSTEEL if i % 2 else W.IRON, n=8))
+        return parts
+    if style == "chain":
+        parts = [W.cylinder(y0, y1, r, r * 0.96, color, n=n), _spiral(y0 + 0.04, y1 - 0.04, r + 0.01, max(3, L / 0.45), 0.02, W.IRON, n=4)]
+        turns = max(3, L / 0.45)
+        for i in range(int(turns * 4)):
+            f = (i + 0.5) / (turns * 4)
+            a = 2 * math.pi * turns * f
+            parts.append(W.sphere(((r + 0.025) * math.cos(a), y0 + L * f, (r + 0.025) * math.sin(a)), 0.026, W.IRON, u=6, v=4))
+        return parts
+    if style == "ash":
+        pale, grain = C(198, 172, 132), C(150, 120, 84)
+        parts = [W.cylinder(y0, y1, r, r * 0.96, pale, n=n)]
+        k = max(3, int(L / 0.3))
+        for i in range(1, k):
+            y = y0 + L * i / k
+            parts.append(W.cylinder(y - 0.006, y + 0.006, r + 0.004, r + 0.004, grain, n=n))
+        return parts
+    return [W.cylinder(y0, y1, r, r * 0.96, color, n=n)]
+
+
+def haft_hook(th):
+    style = th.get("haft")
+    return (lambda y0, y1, r, color, n: hf_build(style, th, y0, y1, r, color, n)) if style else None
+
+
+# --------------------------------------------------------------------------
 #  BUILD
 # --------------------------------------------------------------------------
 def nearest_role(c):
@@ -796,15 +1589,21 @@ def set_hooks(th):
     W.POMMEL_FN = (lambda y, size: POMMELS[th["pommel"]](th, y, size)) if th.get("pommel") in POMMELS else None
     W.BUTT_FN = (lambda y, r: POMMELS[th["pommel"]](th, y + 0.05, 0.34)) if th.get("pommel") in POMMELS else None
     W.GRIP_FN = (lambda length, r, y: wrap_grip(th, length, r, y)) if th.get("wrap") else None
+    W.BLADE_FN = blade_hook(th)
+    W.HEAD_FN = head_hook(th)
+    W.HAFT_FN = haft_hook(th)
 
 
 def clear_hooks():
     W.THEME = W.GUARD_FN = W.POMMEL_FN = W.BUTT_FN = W.GRIP_FN = None
+    W.BLADE_FN = W.HEAD_FN = W.HAFT_FN = W.WEAPON_NAME = None
+    W._HOOKING[0] = False
 
 
 def build_parts(weapon, th):
     """-> (body bmesh, glow bmesh or None)"""
     set_hooks(th)
+    W.WEAPON_NAME = weapon
     try:
         spec = W.WEAPONS[weapon]()
         A = anchors(weapon)

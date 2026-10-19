@@ -115,7 +115,11 @@ local function build(side, look)
 	local lo = {}
 	for _, pc in ipairs(Catalog.setPieces(look.set) or {}) do lo[pc.slot] = pc.id end
 	lo.weapon, lo.shield = look.weapon, look.shield
+	-- (an army's shields wear their arms painted, not in relief: hundreds of them, ShieldPaint.LITE)
+	local SP = require(ReplicatedStorage:WaitForChild("ShieldPaint"))
+	SP.LITE = true
 	local ok, m = pcall(PreviewRig.dressedRig, {loadout = lo, weight = "Medium", team = side})
+	SP.LITE = false
 	if not ok or not m then return nil end
 	-- (its plain shield already carries its side, the house its banners fly on this map: Dresser.
 	-- attachShield → ShieldPaint.plain; built once here, so every man has it for nothing)

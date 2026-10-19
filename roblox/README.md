@@ -788,6 +788,16 @@ grip at the server's start (`Blueprints.sizeUp`, attribute `Scaled`; its skins' 
 ×1.15, Shortsword and Morning Star ×1.12, Falchion ×1.1, Arming Sword ×1.08 (their Configs' REACH
 up to match).
 
+**Shield emblems in relief** (`ShieldPaint`): a shield's emblem — a skin's, your own arms, your
+side's house — is raised metal standing off the board, not a picture: Studio-only
+`ReplicatedStorage ▸ ShieldRelief ▸ <emblem>`, two MeshParts traced from the emblem's art
+(`blender/emblems.py`): Lo, the silhouette a shade darker, and Hi, the bright parts raised above
+it, so its lines are cut in; on a dark backing a little larger (its outline), or a glowing one
+for an emblem that shines; gold, silver and black in Metal, colours in enamel. The painted light
+is gone (the relief catches the real light); the field's division and its scratches are still
+paint. A war's crowds keep the painted emblem (`ShieldPaint.LITE` while WarCrowd builds its
+men: hundreds of shields).
+
 **Throwables** (`Catalog ▸ Arsenal` throwables; `Combat ▸ Throwing`): Throwing Knives (free),
 Throwing Axe, War Darts, Javelin (pierces armour), Firebomb, Frost Flask, Smoke Bomb,
 Caltrops, Bolas (roots), Holy Water (heals your side). Charges come back one at a time;
@@ -1236,7 +1246,12 @@ Things to do between fights, so the Courtyard is a place to hang out. None of th
 ## Drops, rarity, collections, trading, gifts (`Catalog ▸ Calendar`, `Drops`, `Economy ▸ Collection`, `Economy ▸ Pulls`, `Economy ▸ Trading`, `Economy ▸ Gifting`)
 
 **The Forge.** Every weapon skin is its own mesh (`blender/forge.py` + `blender/themes.py`: new
-edges, guards, pommels, grips, ornaments, painted patterns, Neon inlays), welded on from
+edges, guards, pommels, grips, ornaments, painted patterns, Neon inlays, and **its own
+silhouette**: a sword's blade — flame, leaf, broad, crystal, bone, fang, twin rails, lightning,
+serpent, sun, tiered, forked, obsidian —, a spear's / an axe's / a mace's head, a polearm's point
+and blade, a hammer's face, and the haft itself — banded, spiral, twisted, bone, vine, gilded,
+crystal, runic, bamboo, rope, scaled, chain, ash; `SHAPES` in themes.py gives every theme its
+own), welded on from
 `Cosmetics ▸ Skins ▸ <weapon> ▸ <skin>` by `Dresser.applySkin`. Built, uploaded and assembled by
 `blender/forge.py → scripts/upload_skins.py → scripts/skin_entries.py → Build ▸ SkinModels`
 (see CONTENT_GUIDE §5). Without the model a skin falls back to its tints + trim.

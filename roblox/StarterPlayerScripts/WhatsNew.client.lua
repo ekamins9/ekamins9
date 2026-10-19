@@ -19,16 +19,16 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local NEWS = {
-	version = "2026-10-19b",
-	title = "THROW YOUR STEEL",
+	version = "2026-10-19c",
+	title = "REFORGED: EVERY SKIN, EVERY SHIELD",
 	lines = {
+		{"⚒", "Every skin reforged", "its own blade: flame, crystal, bone, fang, lightning, twin rails, forked, a sun"},
+		{"🔱", "Heads and hafts too", "spears winged, trident, crescent; axes double-bit; maces skull, orb, crown; new shafts"},
+		{"✨", "Effects on every Epic", "spirit wisps, falling leaves, sea spray, runes, feathers; Rares glint"},
+		{"🦁", "Emblems in raised metal", "your arms and every shield's emblem stand off the board, carved, catching the light"},
 		{"🛡", "Throw your shield", "hold {Hurl}: it flies flat and spinning and knocks them flat; go and pick it up"},
 		{"⚔", "Then throw your sword", "a one-hander hurled lands its best blow, and sticks in the turf or a beam"},
 		{"🪓", "Bigger one-handers", "war axes, maces, hammers, cleavers and shortswords sized up to the hand"},
-		{"🐉", "Crownfall: ride the dragon in", "leap off where you like, dive, land like a hero; start with a dagger, loot the rest"},
-		{"🎒", "Crownfall: find, wear, carry", "real armour sets you put on, an inventory, a belt of potions to drink"},
-		{"🔥", "Dragonfall: learn the dragon", "its blows are called out, punish its openings, pin it with ballistae, drop rocks"},
-		{"🛡", "Your shield goes with your sword", "a shield rides with a one-handed weapon, and your secondary stays a weapon"},
 	},
 }
 

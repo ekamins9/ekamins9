@@ -312,6 +312,21 @@ ornaments (a serpent, chains, candles, feathers, a web, thorns, a tassel), a pat
 the steel (damascus, rust, blued, frost, scales, stripes, stars, filigree, embers, bark, knotwork,
 waves, camo) and Neon inlays raycast onto the flats (runes, cracks, lightning veins, a core
 line, stars, a halo, crystals). One theme fits all 26 weapons.
+**Its own silhouette** (so no two skins of a weapon are the same shape painted differently):
+- `blade` — a sword's blade: `flame` (a flamberge, tongues of flame rising off the guard),
+  `leaf`, `broad`, `crystal` (shards jutting off the edges, a cluster at the guard), `bone`
+  (saw-stepped, a vertebral ridge), `fang` (curved, single-edged, teeth up the spine), `twin`
+  (two rails round a glowing core), `lightning` (zig-zag), `serpent` (an S-curve), `sun`
+  (broad, rays fanning from a sun disc), `tiered` (stepped, spurs at each step), `forked`
+  (two prongs), `obsidian` (knapped scallops). A glaive's blade takes it too.
+- `head` — on a haft, by family: `spear` = `broad flame winged trident crescent crystal bone
+  serpent sun` (also a halberd's, a poleaxe's and a billhook's top point, a pitchfork's tines);
+  `axe` = `double crescent bearded broad dragon` (also a halberd's blade, a bardiche doubled);
+  `blunt` = `spiked skull crystal orb star crown` (a hammer and a maul keep a hammer's head in
+  that style: a skull face, an orb core, a crystal block…).
+- `haft` — the shaft itself (spears, polearms, axes, maces, staffs): `banded spiral twisted
+  bone vine gilded crystal runic bamboo rope scaled chain ash`.
+In `themes.py` they're one line per theme in `SHAPES` (`id: (blade, spear, axe, blunt, haft)`).
 
 To make or change skins:
 1. Add / edit a theme in `blender/themes.py` (see the header for every option). Preview it:
@@ -329,7 +344,12 @@ To make or change skins:
 
 Without its model in Studio a skin falls back to the old tints (`blade` / `grip`) and trim.
 **Effects (`SkinFX`):** Epic and up leave a swing trail; `fx` adds an aura
-(`embers frost holy shadow storm toxic petals gold blood`).
+(`embers frost holy shadow storm toxic petals gold blood spirit leaves sea void arcane ash
+feathers glint`; the Mythics' `celestial inferno sovereign phoenix`). A skin with no `fx` wears
+what its look calls for (`SkinFX` `LOOK_AURA`, look → aura: every Epic has one, at 60% of a
+Legendary's rate) and a Rare a glint along the blade. The particle pictures (a leaf, a bubble, a
+rune, a wisp, a snowflake, a feather) are ForgeGUI's, Studio-only `ReplicatedStorage ▸ SkinArt ▸
+fx_<name>`; a new one is a white-on-clear PNG uploaded as a Decal, its image there.
 **Arrows (`ArrowFX`):** on a Bow or Crossbow skin, `arrow = "<kind>"` dresses its arrows: a
 coloured trail, a glowing head, particles and a light in flight, a burst where they land, and a
 stuck arrow that smoulders for 3 s (`fire frost shadow holy storm toxic gold blood void spirit`), each with
@@ -425,7 +445,12 @@ shop is there every day, and every card says how long it has left.
 - **A throwable**: the same three: `Catalog ▸ Arsenal` throwables (charges, recharge, speed,
   gravity, damage, snare, burst, look), a blueprint, a Tools folder.
 - **Their skins**: `Catalog ▸ ArsenalSkins` (`sh(...)` for shields, `th(...)` for throwables). A
-  shield skin is three layers, all config:
+  shield's emblem is **raised metal**, not paint: Studio-only `ReplicatedStorage ▸ ShieldRelief ▸
+  <emblem>` (Lo + Hi MeshParts, made by `blender/emblems.py` from the emblem's picture: its
+  silhouette, its bright parts raised, its lines cut in; the masks are read out of Studio with
+  EditableImage). A new emblem: its picture in ShieldArt as before, then the relief (see the
+  header of `blender/emblems.py`; upload, assemble the Model with Lo / Hi and their `Art`
+  attribute). A shield skin is three layers, all config:
   - **its paint** (`ReplicatedStorage ▸ ShieldPaint`): `emblem = "lion"` (any picture in
     `ReplicatedStorage ▸ ShieldArt`), `emblemColor` (gold leaf: `GILT`), `emblemEdge` (the outline's
     colour, `false` for none), `emblemGlow` (1.1–1.3; more blooms the emblem away), `emblemSize`,

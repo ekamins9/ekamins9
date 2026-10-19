@@ -276,4 +276,83 @@ L += [
       glow=((90, 255, 210), ["cracks", "runes"])),
 ]
 
+# ---------------------------------------------------------------- SILHOUETTES (forge.py BLADES / heads / HAFTS)
+# id: (sword blade, spear head, axe head, blunt head, haft); None keeps the weapon's own
+SHAPES = {
+    # common: a little of their own shape
+    "pitted": ("broad", None, None, None, "banded"), "notched": ("tiered", None, "bearded", None, "rope"),
+    "whetted": ("leaf", "broad", None, None, "ash"), "oiled": ("obsidian", None, None, None, "spiral"),
+    "bronzed": ("leaf", "broad", "crescent", None, "banded"), "greyiron": ("broad", None, None, None, "banded"),
+    "tarred": ("obsidian", None, None, None, "rope"), "dented": ("tiered", None, None, None, "banded"),
+    "hunter": ("fang", "winged", "bearded", None, "rope"), "ashen": ("leaf", None, None, None, "ash"),
+    "hayfork": (None, None, None, None, "rope"),
+    # rare
+    "blackened": ("obsidian", "winged", "double", "spiked", "banded"), "bluesteel": ("leaf", "broad", "crescent", None, "spiral"),
+    "verdigris": ("broad", "broad", None, None, "rope"), "ember": ("flame", "flame", "crescent", "spiked", "runic"),
+    "duelist": ("tiered", "winged", None, None, "gilded"), "heraldic": ("broad", "winged", "double", "crown", "gilded"),
+    "damascus": ("leaf", "broad", "bearded", None, "spiral"), "wyrmscale": ("serpent", "serpent", "crescent", "spiked", "scaled"),
+    "marshreed": ("leaf", "broad", None, None, "bamboo"), "riverstone": ("obsidian", "broad", None, None, "spiral"),
+    "sellsword": ("broad", None, "bearded", None, "banded"), "crowblack": ("fang", "winged", "bearded", "spiked", "banded"),
+    "tourneygilt": ("tiered", "winged", None, "crown", "gilded"), "ironclad": ("broad", "trident", "double", "spiked", "banded"),
+    "crownspike": ("tiered", "trident", "double", "crown", "gilded"), "ironoath": ("broad", None, None, None, "banded"),
+    "squiresoath": ("leaf", "winged", None, None, "gilded"), "wayfarer": ("leaf", "broad", None, None, "rope"),
+    "bone": ("bone", "bone", "bearded", "skull", "bone"), "gravedigger": ("tiered", None, "bearded", None, "rope"),
+    "pumpkin": ("fang", "flame", "crescent", "spiked", "vine"), "foundry": ("broad", "flame", "double", "spiked", "banded"),
+    "huntsman": ("fang", "winged", "bearded", None, "vine"), "runecarved": ("tiered", "broad", "double", None, "runic"),
+    "rime": ("crystal", "crystal", "crescent", "crystal", "crystal"), "candycane": ("serpent", "serpent", None, None, "spiral"),
+    "gingerbread": ("broad", None, None, None, "spiral"), "cutthroat": ("fang", "winged", "bearded", None, "rope"),
+    "saltworn": ("fang", "trident", "bearded", None, "rope"),
+    # epic
+    "crowfeather": ("fang", "winged", "crescent", "spiked", "scaled"), "royal": ("twin", "winged", "double", "crown", "gilded"),
+    "veteran": ("broad", "broad", "bearded", "star", "banded"), "bloodrust": ("tiered", "bone", "dragon", "spiked", "chain"),
+    "thornguard": ("serpent", "serpent", "crescent", "spiked", "vine"), "nightfall": ("twin", "crescent", "crescent", "orb", "runic"),
+    "executioner": ("broad", "broad", "broad", "spiked", "chain"), "bloodletter": ("fang", "flame", "dragon", "spiked", "chain"),
+    "reaper": ("fang", "crescent", "crescent", "skull", "bone"), "skullsplitter": ("broad", "broad", "double", "skull", "banded"),
+    "bronzeking": ("sun", "sun", "crescent", "crown", "gilded"), "gilthilt": ("leaf", "winged", "double", "crown", "gilded"),
+    "boarspear": ("leaf", "winged", "bearded", "spiked", "rope"), "blackguard": ("tiered", "bone", "dragon", "skull", "bone"),
+    "ironbark": ("obsidian", "broad", "bearded", None, "vine"), "crownguard": ("tiered", "winged", "double", "crown", "gilded"),
+    "ironlion": ("broad", "winged", "double", "star", "gilded"), "irontines": ("tiered", "trident", "dragon", "spiked", "twisted"),
+    "kingsguard": ("twin", "winged", "double", "crown", "gilded"), "crownsfang": ("serpent", "serpent", "crescent", "spiked", "twisted"),
+    "oathbound": ("twin", "winged", "crescent", "orb", "runic"), "ironvow": ("leaf", "broad", "bearded", "star", "rope"),
+    "lionheart": ("sun", "sun", "crescent", "crown", "gilded"), "ossuary": ("bone", "bone", "bearded", "skull", "bone"),
+    "gravewood": ("obsidian", "serpent", "bearded", "skull", "vine"), "candlewax": ("leaf", "flame", None, "orb", "spiral"),
+    "ironclad2": ("broad", "trident", "double", "spiked", "chain"), "stagheart": ("leaf", "winged", "bearded", None, "vine"),
+    "longship": ("broad", "winged", "bearded", None, "rope"), "seawolf": ("fang", "trident", "bearded", None, "rope"),
+    "glacier": ("crystal", "crystal", "crescent", "crystal", "crystal"), "evergreen": ("leaf", "broad", "crescent", "spiked", "vine"),
+    "kraken": ("serpent", "trident", "crescent", "orb", "scaled"), "jackgrin": ("flame", "flame", "crescent", "spiked", "vine"),
+    # legendary
+    "gilded": ("sun", "sun", "double", "crown", "gilded"), "frostbite": ("crystal", "crystal", "crescent", "crystal", "crystal"),
+    "saintsmercy": ("twin", "sun", "crescent", "orb", "gilded"), "hundredfold": ("lightning", "serpent", "dragon", "spiked", "twisted"),
+    "sunforged": ("sun", "sun", "crescent", "crown", "gilded"), "flamberge": ("flame", "flame", "crescent", "star", "spiral"),
+    "oathkeeper": ("twin", "winged", "double", "orb", "runic"), "serpenttine": ("serpent", "serpent", "crescent", "spiked", "scaled"),
+    "peasantspride": ("broad", "trident", "bearded", "crown", "gilded"), "kingsbane": ("forked", "trident", "dragon", "crown", "gilded"),
+    "thunderhead": ("lightning", "serpent", "dragon", "orb", "twisted"), "sunsteel": ("sun", "sun", "crescent", "crown", "gilded"),
+    "hellforged": ("flame", "flame", "dragon", "skull", "chain"), "lastlight": ("twin", "sun", "crescent", "orb", "runic"),
+    "anvilofkings": ("broad", "broad", "broad", "crown", "banded"), "ironcrown": ("tiered", "trident", "double", "crown", "twisted"),
+    "wardensvow": ("twin", "winged", "crescent", "orb", "runic"), "dawnbringer": ("sun", "sun", "crescent", "orb", "gilded"),
+    "lastbastion": ("broad", "winged", "double", "star", "runic"), "cryptlight": ("bone", "bone", "dragon", "skull", "bone"),
+    "witchlight": ("forked", "crescent", "crescent", "orb", "runic"), "slagheart": ("obsidian", "flame", "dragon", "spiked", "chain"),
+    "thornwild": ("serpent", "serpent", "crescent", "spiked", "vine"), "skald": ("tiered", "winged", "bearded", "star", "runic"),
+    "starlight": ("twin", "crescent", "crescent", "orb", "runic"), "frostgift": ("crystal", "crystal", "crescent", "crystal", "spiral"),
+    "blackflag": ("fang", "trident", "bearded", "skull", "rope"),
+    # mythic
+    "founders": ("twin", "winged", "dragon", "crown", "gilded"), "marrowking": ("bone", "bone", "dragon", "skull", "bone"),
+    "hollowheadsman": ("flame", "flame", "dragon", "skull", "chain"), "hornedking": ("serpent", "winged", "crescent", "spiked", "vine"),
+    "jarlsbane": ("lightning", "winged", "dragon", "star", "runic"), "rimeheart": ("crystal", "crystal", "crescent", "crystal", "crystal"),
+    "krampus": ("forked", "trident", "dragon", "skull", "chain"), "forgefather": ("flame", "flame", "dragon", "crown", "chain"),
+    "firstlight": ("sun", "sun", "crescent", "orb", "gilded"), "davyjones": ("serpent", "trident", "crescent", "skull", "scaled"),
+}
+for _t in L:
+    _sh = SHAPES.get(_t["id"])
+    if not _sh:
+        continue
+    _b, _sp, _ax, _bl, _hf = _sh
+    if _b:
+        _t["blade"] = _b
+    _hd = {k: v for k, v in (("spear", _sp), ("axe", _ax), ("blunt", _bl)) if v}
+    if _hd:
+        _t["head"] = _hd
+    if _hf:
+        _t["haft"] = _hf
+
 THEMES = {t["id"]: t for t in L}

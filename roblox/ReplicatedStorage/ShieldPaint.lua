@@ -4,11 +4,19 @@
      board. Each layer is a picture (a Decal) on a clear plate just in front of the board, so it
      shows the same in the world and in a menu's ViewportFrame.
 
+     THE EMBLEM IS METAL, NOT PAINT: Studio-only ReplicatedStorage ▸ ShieldRelief ▸ <emblem> is
+     its relief, traced from the picture and raised off the board (blender/emblems.py): a Model
+     of two MeshParts, Lo (the silhouette, worn a shade darker) and Hi (the bright parts standing
+     higher, so its lines are cut in between), each with attribute Art = where its middle sits in
+     the picture's square and how deep; in its metal, on a dark backing a little larger that is
+     its outline (or, for an emblem that shines, a glowing one).
+     Without a relief (or for a war's crowds, ShieldPaint.LITE) the picture stands in.
      The pictures live only in Studio: ReplicatedStorage ▸ ShieldArt holds a StringValue per
      picture (its image), named
        <emblem>  <emblem>_o (its outline)  <emblem>_s (its shadow)
-       <shape>_<division>  <shape>_shade  <shape>_wear     (shape: round heater kite scutum rect)
-     A picture that isn't there is just left off.
+       <shape>_<division>  <shape>_wear     (shape: round heater kite scutum rect)
+     A picture that isn't there is just left off. (No painted light any more: the relief catches
+     the real light.)
 
        ShieldPaint.apply(container, skin) -> bool     ShieldPaint.clear(container)
        ShieldPaint.house(container, emblem, color)    a plain shield in a team fight: its side's
@@ -34,6 +42,7 @@
        wear          0–1, how battered (else by rarity)    shade = false: no painted light ]]
 
 local ShieldPaint = {}
+ShieldPaint.LITE = false   -- (true: pictures only, no reliefs: a war's crowds, WarCrowd)
 local RS = game:GetService("ReplicatedStorage")
 local ShieldDress = require(script.Parent:WaitForChild("ShieldDress"))
 local TAG = "ShieldPaintPart"
@@ -49,6 +58,19 @@ local function art(name)
 	local f = RS:FindFirstChild("ShieldArt")
 	local v = f and f:FindFirstChild(name)
 	return v and v.Value ~= "" and v.Value or nil
+end
+
+local function relief(name)
+	if ShieldPaint.LITE then return nil end
+	local f = RS:FindFirstChild("ShieldRelief")
+	local m = f and f:FindFirstChild(name)
+	return (m and m:FindFirstChild("Lo")) and m or nil
+end
+-- (gold and silver and black are metal; a coloured emblem is enamel)
+local function metalLook(c)
+	local h, s, v = c:ToHSV()
+	if s < 0.25 or (h > 0.08 and h < 0.17 and s < 0.75) or v < 0.2 then return Enum.Material.Metal end
+	return Enum.Material.SmoothPlastic
 end
 
 local function faceOf(container)
@@ -132,7 +154,6 @@ function ShieldPaint.apply(container, skin)
 	-- (the scratches are always laid on, clear when it's new: a fight deepens them, Shields.batter)
 	local wd = decal(field, art(shape .. "_wear"), SCRATCH, 1 - math.clamp(wear, 0, 1), 2)
 	if wd then wd:SetAttribute("Wear", math.clamp(wear, 0, 1)); if wear > 0 then n += 1 end end
-	if skin.shade ~= false and decal(field, art(shape .. "_shade"), Color3.new(1, 1, 1), 0, 3) then n += 1 end
 
 	-- THE EMBLEM: its shadow, its outline, itself (in front of any raised arms)
 	local em = skin.emblem
@@ -144,14 +165,48 @@ function ShieldPaint.apply(container, skin)
 		local glow = skin.emblemGlow
 		local count = math.clamp(skin.emblemCount or 1, 1, 3)
 		local each = count == 1 and size or size * (count == 2 and 0.6 or 0.44)
+		local src = relief(em)
+		local lift = skin.heraldry and -0.09 or -0.012
 		for i = 1, count do
 			local y = spot[1] + (skin.emblemY or 0) + ((count + 1) / 2 - i) * each * 1.02
 			local ep = plate(0, y, each, each, skin.heraldry and -0.09 or -0.03, "Emblem")
-			decal(ep, art(em .. "_s"), Color3.new(0, 0, 0), glow and 0.5 or 0.1, 1)
-			if skin.emblemEdge ~= false then
-				decal(ep, art(em .. "_o"), skin.emblemEdge or color:Lerp(Color3.new(0, 0, 0), 0.85), 0, 2)
+			if src then
+				-- the relief: raised metal (each layer's middle where the picture's is, its back on the board)
+				local base = F * CFrame.new(0, y, lift)
+				local function piece(name, layer, grow, depth, c, mat)
+					local mp = src:FindFirstChild(layer)
+					if not mp then return nil end
+					local a = mp:GetAttribute("Art") or Vector3.new(0, 0, 0.02)
+					local r = mp:Clone()
+					r.Name = name
+					r.Size = Vector3.new(mp.MeshSize.X * each * grow, mp.MeshSize.Y * each * grow, mp.MeshSize.Z * each * depth)
+					r.CFrame = base * CFrame.new(-a.X * each * grow, a.Y * each * grow, -a.Z * each * depth)
+					r.Color = c
+					r.Material = mat
+					r.Anchored = true
+					r.CanCollide, r.CanQuery, r.CanTouch = false, false, false
+					r.CastShadow = name == "EmblemRelief"
+					r:SetAttribute(TAG, true)
+					table.insert(made, r)
+					return r
+				end
+				local metal = Color3.new(math.min(1, color.R), math.min(1, color.G), math.min(1, color.B))
+				local look = metalLook(metal)
+				piece("EmblemRelief", "Hi", 1, 1, metal, look)
+				piece("EmblemRelief", "Lo", 1, 1, metal:Lerp(Color3.new(0, 0, 0), 0.42), look)
+				if glow then
+					local halo = piece("EmblemEdge", "Lo", 1.08, 0.5, metal, Enum.Material.Neon)
+					if halo then halo.Transparency = 0.35 end
+				elseif skin.emblemEdge ~= false then
+					piece("EmblemEdge", "Lo", 1.07, 0.55, skin.emblemEdge or color:Lerp(Color3.new(0, 0, 0), 0.85), Enum.Material.SmoothPlastic)
+				end
+			else
+				decal(ep, art(em .. "_s"), Color3.new(0, 0, 0), glow and 0.5 or 0.1, 1)
+				if skin.emblemEdge ~= false then
+					decal(ep, art(em .. "_o"), skin.emblemEdge or color:Lerp(Color3.new(0, 0, 0), 0.85), 0, 2)
+				end
+				decal(ep, art(em), glow and scale(color, glow) or color, 0, 3)
 			end
-			decal(ep, art(em), glow and scale(color, glow) or color, 0, 3)
 			if glow and i == math.ceil(count / 2) then
 				local l = Instance.new("PointLight")
 				l.Color, l.Range, l.Brightness, l.Shadows = color, 4, 0.35, false

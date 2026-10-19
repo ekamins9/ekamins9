@@ -5,8 +5,14 @@
          its accent, else the rarity colour); Legendary trails shimmer. A skin can
          opt out with trail = false or in with trail = true.
        • A skin with fx = "<aura>" wears that aura: embers frost holy shadow
-         storm toxic petals gold blood (crimson glow) (Legendary skins have one each), and the
-         Mythics' own: celestial inferno sovereign phoenix. An aura is a few
+         storm toxic petals gold blood (crimson glow) spirit leaves sea void arcane ash
+         feathers glint (Legendary skins have one each), and the Mythics' own: celestial
+         inferno sovereign phoenix. A skin with none of its own wears what its Forge look
+         calls for (LOOK_AURA: every Epic has one, at a calmer pitch), and a Rare a glint
+         of light running along the blade (SkinFX.auraOf).
+         Particle pictures (a leaf, a bubble, a rune, a wisp, a snowflake, a feather) are
+         ForgeGUI's, Studio-only ReplicatedStorage ▸ SkinArt ▸ fx_<name> (StringValues);
+         without them the stock sparkle stands in. An aura is a few
          layers of particles off the blade, a light on it, sparks that fly off the
          tip when it swings, and the sound of the swing.
        • MYTHIC: the longest, brightest trail, the strongest light, and stars
@@ -38,6 +44,12 @@ local TEX = {
 	fire = "rbxasset://textures/particles/fire_main.dds",
 	smoke = "rbxasset://textures/particles/smoke_main.dds",
 }
+-- (the Forge's particle pictures: Studio-only ReplicatedStorage ▸ SkinArt ▸ fx_<name>)
+local ART = script.Parent:FindFirstChild("SkinArt")
+local function art(name, fallback)
+	local v = ART and ART:FindFirstChild("fx_" .. name)
+	return (v and v:IsA("StringValue") and v.Value ~= "") and v.Value or fallback
+end
 local RARITY = {Common = Color3.fromRGB(150, 160, 175), Rare = Color3.fromRGB(70, 150, 255), Epic = Color3.fromRGB(180, 90, 255), Legendary = Color3.fromRGB(255, 186, 60),
 	Mythic = Color3.fromRGB(255, 60, 90), Unique = Color3.fromRGB(255, 244, 214)}
 local C = Color3.fromRGB
@@ -65,7 +77,7 @@ local AURAS = {
 	},
 	frost = {
 		emit = {
-			{tex = TEX.spark, c0 = C(235, 250, 255), c1 = C(150, 214, 255), size = {{0, 0.2}, {1, 0.02}}, rate = 26, life = {0.8, 1.6}, speed = {0.1, 0.6}, accel = Vector3.new(0, -1.4, 0), spread = 180, light = 0.9, rot = 80},
+			{tex = art("snow", TEX.spark), c0 = C(235, 250, 255), c1 = C(150, 214, 255), size = {{0, 0.2}, {1, 0.04}}, rate = 22, life = {0.8, 1.6}, speed = {0.1, 0.6}, accel = Vector3.new(0, -1.4, 0), spread = 180, light = 0.9, rot = 80},
 			{tex = TEX.smoke, c0 = C(205, 238, 255), size = {{0, 0.35}, {1, 1}}, rate = 8, life = {0.8, 1.3}, speed = {0.05, 0.25}, accel = Vector3.new(0, -0.6, 0), spread = 180, light = 0.25, transp = {{0, 0.65}, {1, 1}}},
 			{tex = TEX.spark, c0 = C(255, 255, 255), size = {{0, 0.08}, {0.5, 0.14}, {1, 0}}, rate = 30, life = {0.2, 0.45}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
 		},
@@ -174,6 +186,78 @@ local AURAS = {
 		swing = {sound = 9125386714, pitch = 1.4, volume = 0.2, cut = 0.6,
 			burst = {tex = TEX.spark, c0 = C(255, 220, 110), c1 = C(230, 50, 20), size = {{0, 0.36}, {1, 0.1}}, count = 8, life = {0.5, 1}, speed = {4, 9}, accel = Vector3.new(0, -6, 0), spread = 70, light = 1, rot = 180}},
 	},
+	-- THE FORGE'S OWN: what an Epic's look calls for (LOOK_AURA), and a Rare's glint
+	spirit = {
+		emit = {
+			{tex = art("wisp", TEX.smoke), c0 = C(170, 255, 200), c1 = C(60, 160, 110), size = {{0, 0.3}, {1, 0.75}}, rate = 10, life = {0.8, 1.4}, speed = {0.2, 0.6}, accel = Vector3.new(0, 1.6, 0), spread = 180, light = 0.8, transp = {{0, 0.3}, {1, 1}}, rot = 40},
+			{tex = TEX.spark, c0 = C(200, 255, 220), size = {{0, 0.08}, {0.5, 0.16}, {1, 0}}, rate = 16, life = {0.3, 0.6}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
+		},
+		light = C(110, 255, 170),
+		swing = {sound = 9119805147, pitch = 1.2, volume = 0.16, cut = 0.6,
+			burst = {tex = art("wisp", TEX.smoke), c0 = C(190, 255, 210), c1 = C(60, 160, 110), size = {{0, 0.45}, {1, 1}}, count = 4, life = {0.4, 0.8}, speed = {2, 5}, spread = 70, light = 0.8, transp = {{0, 0.3}, {1, 1}}}},
+	},
+	leaves = {
+		emit = {
+			{tex = art("leaf", TEX.spark), c0 = C(130, 205, 90), c1 = C(70, 140, 50), size = {{0, 0.22}, {1, 0.18}}, rate = 7, life = {1.4, 2.4}, speed = {0.2, 0.6}, accel = Vector3.new(0, -1.2, 0), spread = 180, light = 0.1, rot = 120, transp = {{0, 0}, {0.8, 0.1}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(220, 255, 180), size = {{0, 0.06}, {0.5, 0.12}, {1, 0}}, rate = 10, life = {0.3, 0.6}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
+		},
+		light = C(150, 230, 110),
+		swing = {sound = 9120726501, pitch = 1.1, volume = 0.16, cut = 0.6,
+			burst = {tex = art("leaf", TEX.spark), c0 = C(140, 210, 100), c1 = C(70, 140, 50), size = {{0, 0.26}, {1, 0.2}}, count = 6, life = {0.8, 1.4}, speed = {3, 6}, accel = Vector3.new(0, -3, 0), spread = 90, light = 0.1, rot = 200}},
+	},
+	sea = {
+		emit = {
+			{tex = art("bubble", TEX.spark), c0 = C(225, 250, 255), c1 = C(140, 220, 240), size = {{0, 0.1}, {1, 0.22}}, rate = 12, life = {0.8, 1.5}, speed = {0.2, 0.6}, accel = Vector3.new(0, 1.8, 0), spread = 180, light = 0.6, transp = {{0, 0.1}, {1, 1}}},
+			{tex = TEX.smoke, c0 = C(170, 230, 240), size = {{0, 0.3}, {1, 0.9}}, rate = 5, life = {0.6, 1.1}, speed = {0.1, 0.3}, spread = 180, light = 0.3, transp = {{0, 0.7}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(255, 255, 255), size = {{0, 0.08}, {0.5, 0.14}, {1, 0}}, rate = 12, life = {0.2, 0.5}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
+		},
+		light = C(110, 230, 220),
+		swing = {sound = 9118762653, pitch = 0.8, volume = 0.18, cut = 0.5,
+			burst = {tex = art("bubble", TEX.spark), c0 = C(235, 252, 255), c1 = C(140, 220, 240), size = {{0, 0.14}, {1, 0.26}}, count = 8, life = {0.4, 0.9}, speed = {3, 7}, accel = Vector3.new(0, -6, 0), spread = 70, light = 0.6}},
+	},
+	void = {
+		emit = {
+			{tex = TEX.smoke, c0 = C(40, 14, 70), c1 = C(0, 0, 0), size = {{0, 0.7}, {1, 0.05}}, rate = 12, life = {0.5, 0.9}, speed = {-1.1, -0.5}, spread = 180, light = 0, transp = {{0, 0.4}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(200, 120, 255), c1 = C(90, 30, 180), size = {{0, 0.16}, {1, 0}}, rate = 14, life = {0.5, 1}, speed = {-0.8, -0.2}, spread = 180, light = 1},
+			{tex = TEX.spark, c0 = C(0, 0, 0), size = {{0, 0.1}, {0.5, 0.2}, {1, 0}}, rate = 10, life = {0.3, 0.6}, speed = {0, 0.05}, spread = 180, light = 0, locked = true},
+		},
+		light = C(140, 60, 255),
+		swing = {sound = 9119805147, pitch = 0.6, volume = 0.2, cut = 0.7,
+			burst = {tex = TEX.smoke, c0 = C(70, 20, 120), c1 = C(0, 0, 0), size = {{0, 0.5}, {1, 0.1}}, count = 5, life = {0.3, 0.6}, speed = {3, 6}, spread = 70, light = 0, transp = {{0, 0.3}, {1, 1}}}},
+	},
+	arcane = {
+		emit = {
+			{tex = art("rune", TEX.spark), c0 = C(160, 200, 255), c1 = C(110, 120, 255), size = {{0, 0}, {0.3, 0.26}, {1, 0}}, rate = 6, life = {0.7, 1.2}, speed = {0.1, 0.3}, accel = Vector3.new(0, 0.8, 0), spread = 180, light = 1, rot = 30},
+			{tex = TEX.spark, c0 = C(200, 220, 255), size = {{0, 0.08}, {0.5, 0.16}, {1, 0}}, rate = 14, life = {0.3, 0.6}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
+		},
+		light = C(120, 150, 255),
+		swing = {sound = 1846902441, pitch = 1.5, volume = 0.12, cut = 0.6,
+			burst = {tex = art("rune", TEX.spark), c0 = C(200, 220, 255), c1 = C(110, 120, 255), size = {{0, 0.3}, {1, 0}}, count = 5, life = {0.4, 0.8}, speed = {2, 5}, spread = 70, light = 1, rot = 60}},
+	},
+	ash = {
+		emit = {
+			{tex = TEX.smoke, c0 = C(74, 70, 68), size = {{0, 0.25}, {1, 0.8}}, rate = 6, life = {0.8, 1.4}, speed = {0.1, 0.4}, accel = Vector3.new(0, 1.4, 0), spread = 180, light = 0, transp = {{0, 0.55}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(255, 150, 70), c1 = C(140, 40, 10), size = {{0, 0.09}, {1, 0}}, rate = 7, life = {0.5, 1}, speed = {0.2, 0.6}, accel = Vector3.new(0, 2, 0), spread = 180, light = 1},
+		},
+		light = C(210, 120, 60),
+		swing = {sound = 9120696702, pitch = 1.1, volume = 0.16, cut = 0.5,
+			burst = {tex = TEX.spark, c0 = C(255, 190, 110), c1 = C(150, 50, 10), size = {{0, 0.24}, {1, 0}}, count = 5, life = {0.25, 0.5}, speed = {5, 10}, accel = Vector3.new(0, -12, 0), spread = 45, light = 1}},
+	},
+	feathers = {
+		emit = {
+			{tex = art("feather", TEX.spark), c0 = C(44, 44, 52), c1 = C(20, 20, 26), size = {{0, 0.26}, {1, 0.22}}, rate = 5, life = {1.4, 2.2}, speed = {0.2, 0.5}, accel = Vector3.new(0, -1, 0), spread = 180, light = 0, rot = 90, transp = {{0, 0}, {0.85, 0.1}, {1, 1}}},
+			{tex = TEX.spark, c0 = C(190, 160, 255), size = {{0, 0.06}, {0.5, 0.12}, {1, 0}}, rate = 8, life = {0.3, 0.6}, speed = {0, 0.1}, spread = 180, light = 1, locked = true},
+		},
+		light = C(150, 120, 220),
+		swing = {sound = 9120709477, pitch = 1.3, volume = 0.18, cut = 0.5,
+			burst = {tex = art("feather", TEX.spark), c0 = C(50, 50, 60), c1 = C(20, 20, 26), size = {{0, 0.3}, {1, 0.24}}, count = 5, life = {0.8, 1.4}, speed = {2, 5}, accel = Vector3.new(0, -2, 0), spread = 90, light = 0, rot = 160}},
+	},
+	glint = {
+		emit = {
+			{tex = TEX.spark, c0 = C(255, 255, 255), size = {{0, 0}, {0.5, 0.24}, {1, 0}}, rate = 3, life = {0.25, 0.45}, speed = {0, 0.02}, spread = 180, light = 1, locked = true},
+		},
+		nolight = true,
+	},
 	-- (the key is still "blood" for the skins that wear it; it's a crimson glow that rises, never
 	-- drips: the game is rated Mild)
 	blood = {
@@ -197,6 +281,9 @@ SkinFX.HUM = {
 	celestial = {sound = SWIRL, pitch = 1.2, volume = 0.06}, gold = {sound = SWIRL, pitch = 1.8, volume = 0.03},
 	frost = {sound = SWIRL, pitch = 2.2, volume = 0.03}, shadow = {sound = LOW_PULSE, pitch = 1, volume = 0.05},
 	blood = {sound = LOW_PULSE, pitch = 1.2, volume = 0.04},
+	spirit = {sound = LOW_PULSE, pitch = 1.4, volume = 0.04}, sea = {sound = SWIRL, pitch = 0.7, volume = 0.04},
+	void = {sound = LOW_PULSE, pitch = 0.8, volume = 0.05}, arcane = {sound = SWIRL, pitch = 1.0, volume = 0.04},
+	ash = {sound = FIRE_LOOP, pitch = 0.6, volume = 0.03},
 }
 SkinFX.AURAS = {}
 SkinFX.SWING = {}
@@ -204,7 +291,46 @@ for k, a in pairs(AURAS) do table.insert(SkinFX.AURAS, k); SkinFX.SWING[k] = a.s
 table.sort(SkinFX.AURAS)
 
 local NAME = {embers = "Embers", frost = "Frost", holy = "Holy light", shadow = "Shadow", storm = "Storm", toxic = "Venom", petals = "Petals", gold = "Gold dust", blood = "Crimson glow",
-	celestial = "Starlight", inferno = "Inferno", sovereign = "Sovereign light", phoenix = "Phoenix fire"}
+	celestial = "Starlight", inferno = "Inferno", sovereign = "Sovereign light", phoenix = "Phoenix fire",
+	spirit = "Spirit wisps", leaves = "Falling leaves", sea = "Sea spray", void = "Void", arcane = "Arcane runes", ash = "Ash and cinders",
+	feathers = "Black feathers", glint = "Glint"}
+
+-- WHAT A SKIN WEARS when it names no aura of its own: what its Forge look calls for (every
+-- Epic has one, at a calmer pitch than a Legendary's), else a glint of light along the blade
+-- (a Rare's; an Epic with no look's). -> aura name, rate multiplier
+local LOOK_AURA = {
+	ember = "embers", foundry = "embers", pumpkin = "embers", jackgrin = "embers", hellforged = "embers", slagheart = "embers",
+	forgefather = "inferno", hollowheadsman = "inferno", candlewax = "embers",
+	rime = "frost", glacier = "frost", frostbite = "frost", frostgift = "frost", rimeheart = "frost",
+	saintsmercy = "holy", oathbound = "holy", oathkeeper = "holy", wardensvow = "holy", lastlight = "holy", dawnbringer = "holy",
+	firstlight = "sovereign", sunforged = "holy", sunsteel = "holy", lionheart = "gold", bronzeking = "gold",
+	gilded = "gold", royal = "gold", gilthilt = "gold", kingsguard = "gold", crownguard = "gold", crownspike = "gold",
+	tourneygilt = "gold", heraldic = "gold", peasantspride = "gold", anvilofkings = "gold", ironcrown = "gold", lastbastion = "arcane",
+	founders = "sovereign", nightfall = "shadow", crowfeather = "feathers", crowblack = "feathers", blackguard = "shadow",
+	witchlight = "void", executioner = "ash", reaper = "spirit", kingsbane = "void", starlight = "celestial",
+	hundredfold = "storm", thunderhead = "storm", jarlsbane = "storm", serpenttine = "toxic", crownsfang = "toxic",
+	wyrmscale = "toxic", bone = "spirit", ossuary = "spirit", cryptlight = "spirit", marrowking = "spirit", gravedigger = "spirit",
+	gravewood = "spirit", skullsplitter = "ash", evergreen = "leaves", stagheart = "leaves", thornguard = "leaves",
+	thornwild = "leaves", ironbark = "leaves", huntsman = "leaves", hornedking = "leaves", marshreed = "leaves",
+	saltworn = "sea", seawolf = "sea", kraken = "sea", davyjones = "sea", longship = "sea", riverstone = "sea",
+	cutthroat = "sea", blackflag = "sea", blackened = "ash", bloodrust = "ash", ironclad2 = "ash", irontines = "ash",
+	bloodletter = "blood", skald = "arcane", runecarved = "arcane", flamberge = "arcane", ironvow = "arcane",
+	veteran = "glint", ironlion = "gold", boarspear = "leaves", krampus = "embers",
+}
+function SkinFX.auraOf(skin)
+	if not skin or skin.name == "Default" then return nil, 1 end
+	if skin.fx then return skin.fx, 1 end
+	-- (a staff's head brings its own lights; a shield and a bow only glint)
+	if StaffHeads.has(skin) then return nil, 1 end
+	local r = skin.rarity
+	local look = skin.look and LOOK_AURA[skin.look]
+	if look and (r == "Epic" or r == "Legendary" or r == "Mythic" or r == "Unique") then
+		return look, r == "Epic" and 0.6 or 1
+	end
+	if r == "Epic" then return "glint", 1.8 end
+	if r == "Rare" then return "glint", 1 end
+	return nil, 1
+end
 
 local function wantsTrail(skin, variant)
 	if variant then return true end
@@ -216,7 +342,8 @@ function SkinFX.describe(skin)
 	if not skin then return nil end
 	local bits = {}
 	if wantsTrail(skin, variant) then table.insert(bits, "Trail") end
-	if skin.fx and NAME[skin.fx] then table.insert(bits, NAME[skin.fx]) end
+	local aura = SkinFX.auraOf(skin)
+	if aura and NAME[aura] then table.insert(bits, NAME[aura]) end
 	if skin.rarity == "Unique" then table.insert(bits, "Prismatic") end
 	-- a bow's or a crossbow's arrows (ReplicatedStorage ▸ ArrowFX)
 	if skin.arrow then
@@ -341,10 +468,20 @@ function SkinFX.apply(tool, skin, variant)
 		g.Parent = handle
 		any = true
 	end
-	local aura = skin.fx and AURAS[skin.fx]
+	local auraName, auraMult = SkinFX.auraOf(skin)
+	local aura = auraName and AURAS[auraName]
 	local part = aura and bladePart(tool)
 	if aura and part then
-		for i, e in ipairs(aura.emit) do emitter(e, "SkinAura" .. i).Parent = part end
+		for i, e in ipairs(aura.emit) do
+			local pe = emitter(e, "SkinAura" .. i)
+			if auraMult ~= 1 then
+				pe.Rate = (e.rate or 0) * auraMult
+				pe:SetAttribute("BaseRate", pe.Rate)
+			end
+			pe.Parent = part
+		end
+	end
+	if aura and part and not aura.nolight then
 		-- the blade glows
 		local l = Instance.new("PointLight")
 		l.Name = "SkinLight"
@@ -363,7 +500,9 @@ function SkinFX.apply(tool, skin, variant)
 			b:SetAttribute("Count", aura.swing.burst.count or 5)
 			b.Parent = tip
 		end
-		handle:SetAttribute("SkinAura", skin.fx)
+	end
+	if aura and part then
+		handle:SetAttribute("SkinAura", auraName)
 		any = true
 	end
 	-- A STAFF'S HEAD: its own lights, particles, lightning and trails (StaffHeads)

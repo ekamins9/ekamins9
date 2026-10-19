@@ -61,6 +61,11 @@ GUARD_FN = None    # (y, span, t) -> [bmesh]: replaces guard()
 POMMEL_FN = None   # (y, size) -> [bmesh]: replaces pommel()
 BUTT_FN = None     # (y, r) -> [bmesh]: replaces butt()
 GRIP_FN = None     # (length, r, y) -> [bmesh] or None: replaces grip()
+BLADE_FN = None    # (args dict) -> bmesh: a theme's own blade silhouette (THEME["blade"]), replaces blade()
+HAFT_FN = None     # (y0, y1, r, color, n) -> [bmesh]: a theme's own haft (THEME["haft"]), replaces haft()
+HEAD_FN = None     # (head [bmesh], y_top, r) -> [bmesh]: a theme's own head on a haft (THEME["head"])
+WEAPON_NAME = None  # the weapon being built (the Forge sets it, for HEAD_FN)
+_HOOKING = [False]
 
 
 def edge_mod(w, f, length=1.0):
@@ -385,13 +390,22 @@ def ring_single(w, t, spine=0.8):
 
 
 def blade(y0, length, w0, w1, t0, t1, tip=0.3, kind="double", fuller=0.0, fuller_end=0.6, curve=0.0,
-          waves=0, wave_amp=0.0, belly=0.0, steps=10, color=STEEL):
+          waves=0, wave_amp=0.0, belly=0.0, steps=10, color=STEEL, profile=None, xoff=None):
     """a blade from y0 up `length`: width w0 → w1 and thickness t0 → t1 along the
     body, then a point over the last `tip` share. kind double | single.
     fuller: how deep the groove runs (0..0.6), to `fuller_end` of the body.
     curve: the blade sweeps toward -X (the edge side) by this much at the tip.
     waves: a flamberge — the edges ripple `waves` times by wave_amp. belly: a
-    single edge swells out toward the point (falchion); its spine stays straight."""
+    single edge swells out toward the point (falchion); its spine stays straight.
+    profile(f) × the width along the body, xoff(f) shifts it across (the Forge's silhouettes);
+    a theme naming a `blade` hands the whole blade to BLADE_FN."""
+    if BLADE_FN and THEME and THEME.get("blade") and not _HOOKING[0]:
+        _HOOKING[0] = True
+        try:
+            return BLADE_FN(dict(y0=y0, length=length, w0=w0, w1=w1, t0=t0, t1=t1, tip=tip, kind=kind, fuller=fuller,
+                                 fuller_end=fuller_end, curve=curve, waves=waves, wave_amp=wave_amp, belly=belly, steps=steps, color=color))
+        finally:
+            _HOOKING[0] = False
     body = length * (1 - tip)
     secs, groove = [], []
     if waves:
@@ -404,6 +418,8 @@ def blade(y0, length, w0, w1, t0, t1, tip=0.3, kind="double", fuller=0.0, fuller
         w = w0 + (w1 - w0) * f + belly * math.sin(math.pi * 0.5 * f) ** 2
         if waves and f > 0.08:
             w *= 1 + wave_amp * math.sin(2 * math.pi * waves * (f - 0.08) / 0.92)
+        if profile:
+            w *= profile(f)
         w = edge_mod(w, f, length)
         t = t0 + (t1 - t0) * f
         if kind == "single":
@@ -412,6 +428,8 @@ def blade(y0, length, w0, w1, t0, t1, tip=0.3, kind="double", fuller=0.0, fuller
         else:
             pts = ring_diamond(w, t, fuller if f <= fuller_end else 0.0)
             dx = -curve * f * f
+        if xoff:
+            dx += xoff(f)
         secs.append((y, [(x + dx, z) for x, z in pts]))
         groove.append(fuller > 0 and f <= fuller_end)
     # the point
@@ -429,6 +447,8 @@ def blade(y0, length, w0, w1, t0, t1, tip=0.3, kind="double", fuller=0.0, fuller
             w = max(0.02, w_end * (1 - g ** 1.7))
             pts = ring_diamond(w, t_end * (1 - 0.6 * g))
             dx = -curve * (1 + 0.6 * g)
+        if xoff:
+            dx += xoff(1.0 + g * (length - body) / max(1e-3, body))
         secs.append((y, [(x + dx, z) for x, z in pts]))
         groove.append(False)
 
@@ -541,6 +561,8 @@ def sword(grip_len, blade_len, w0, w1, t0=0.14, t1=0.08, guard_w=1.2, pommel_kin
 #  hafts, sockets, langets
 # --------------------------------------------------------------------------
 def haft(y0, y1, r=0.1, color=WOOD, n=12):
+    if HAFT_FN and THEME and THEME.get("haft"):
+        return HAFT_FN(y0, y1, r, color, n)
     return [cylinder(y0, y1, r, r * 0.96, color, n=n)]
 
 
@@ -575,6 +597,8 @@ def butt(y, r, kind="cap", color=IRON):
 
 
 def hafted(grip_len, y_bottom, y_top, r, head, cap_bottom=True, wrap=True, grip_y=0.0, fittings=(), foot="cap"):
+    if HEAD_FN and THEME:
+        head = HEAD_FN(head, y_top, r)
     g = haft(y_bottom, y_top, r)
     if wrap:
         g += grip(grip_len, r + 0.02, LEATHER, wrap="spiral", ferrules=None, y=grip_y)
@@ -854,7 +878,11 @@ def bardiche():
 
 
 def spear():
-    return hafted(0.9, -1.6, 3.5, 0.09, spear_head(3.45, 1.4, wings=True), wrap=False, foot="spike", fittings=tassel(2.88, 0.09))
+    # (the tassel in a skin's own cloth: its tassel colour, else its leather)
+    tc = RED
+    if THEME:
+        tc = THEME.get("tassel_color") or THEME.get("palette", {}).get("leather") or RED
+    return hafted(0.9, -1.6, 3.5, 0.09, spear_head(3.45, 1.4, wings=True), wrap=False, foot="spike", fittings=tassel(2.88, 0.09, tc))
 
 
 def pitchfork():

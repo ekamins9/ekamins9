@@ -1,4 +1,42 @@
-# Updated scripts: throw your shield and your weapon; bigger one-handers
+# Updated scripts: every skin reforged with its own shape; effects on every Epic; emblems in relief
+
+- **Every weapon skin is reforged** (all 364 meshes rebuilt and re-uploaded; the models in Studio
+  rebuilt): a skin is now a different weapon to look at, not the same one painted. Swords get
+  their own blade (flame, leaf, broad, crystal, bone, fang, twin rails round a glowing core,
+  lightning, serpent, sun, tiered, forked, obsidian); spears their own head (winged, trident,
+  crescent, crystal, bone, flame, serpent, sun, broad); axes double-bit, crescent, bearded,
+  dragon; maces and morning stars spiked, skull, crystal, caged orb, star, crown; hammers and
+  mauls a hammer head in those styles; halberds, poleaxes, billhooks, glaives, bardiches and
+  pitchforks their own blades and points; and every haft its own shaft (banded, spiral, twisted,
+  bone, vine, gilded, crystal, runic, bamboo, rope, scaled, chain, ash). A spear's tassel takes
+  the skin's cloth.
+- **Effects**: every Epic now wears an aura matched to its look (calmer than a Legendary's), every
+  Rare a glint of light along the blade. New auras: spirit wisps, falling leaves, sea spray, void,
+  arcane runes, ash and cinders, black feathers, glint; frost now snows real snowflakes. Their
+  particle pictures were made with ForgeGUI (a leaf, a bubble, a rune, a wisp, a snowflake, a
+  feather).
+- **Shield emblems are raised metal**: every emblem (a skin's, your arms, your side's house) is a
+  carved relief standing off the board, its lines cut in, on a dark outline (a glowing one if it
+  shines). The fake painted light is gone. War crowds keep the painted emblem (performance).
+- **Save the place**: the new skin models (ReplicatedStorage ▸ Cosmetics ▸ Skins), the reliefs
+  (ReplicatedStorage ▸ ShieldRelief) and the particle pictures (ReplicatedStorage ▸ SkinArt ▸ fx_*)
+  live only in Studio.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [forge.py](../blender/forge.py) | — | Blender script | BLADES, spear / axe / blunt / polearm / hammer heads, HAFTS |
+| [themes.py](../blender/themes.py) | — | Blender script | `SHAPES`: every theme's blade, heads and haft |
+| [weapons.py](../blender/weapons.py) | — | Blender script | BLADE_FN / HEAD_FN / HAFT_FN hooks; `profile`, `xoff`; the tassel's colour |
+| [emblems.py](../blender/emblems.py) | — | Blender script | **new**: emblem reliefs from the pictures' masks |
+| [SkinFX.lua](ReplicatedStorage/SkinFX.lua) | ReplicatedStorage | ModuleScript | new auras, `LOOK_AURA`, `SkinFX.auraOf`, ForgeGUI sprites |
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | the emblem in relief; `LITE`; no painted light |
+| [WarCrowd.lua](ReplicatedStorage/WarCrowd.lua) | ReplicatedStorage | ModuleScript | builds its men with `ShieldPaint.LITE` |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | REFORGED card |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | the Forge's silhouettes, the effects, the reliefs |
+
+---
+
+## Before that: throw your shield and your weapon; bigger one-handers
 
 - **Throw your own steel** (new key **Hurl = Y**, rebindable in SETTINGS; a controller: hold D-pad →,
   a tap still switches weapons; a phone: hold the new 🛡 orb). Hold to aim (the same arc as a
