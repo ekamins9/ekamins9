@@ -1,4 +1,22 @@
-# Updated scripts: no pictures pasted on skins; return dates are a mystery
+# Updated scripts: bots wear real Roblox hair and faces
+
+- **Fill bots look like Roblox players**: a real Roblox hair (40 Roblox-made hairs: Pal Hair,
+  Brown Charmer, True Blue, Lavender Updo, braids, Beautiful Hair…) and a classic Roblox face
+  (Smile, Chill, Check It, Silly Fun, Man Face, Err…, Glee, Winky…) on a Roblox skin tone, worn
+  the same way your own avatar's hair and face are, instead of the game's made-up hair and faces.
+  A helmet still hides what it covers.
+- The hairs and faces live in Studio only: **ServerStorage ▸ GuiseLooks ▸ Hair** (Accessories) and
+  **Faces** (Decals); attribute `W` on each = how often bots pick it. Add or remove freely.
+  **Save the place** to keep them.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Guise.lua](ServerScriptService/Game/Guise.lua) | ServerScriptService ▸ Game | ModuleScript | Roblox looks through an avatar kit per mix |
+| [README.md](README.md) | — | doc | Bot fill: in guise |
+
+---
+
+## Before that: no pictures pasted on skins; return dates are a mystery
 
 - **Undone: the images over armour and blades.** Cloth sets no longer wear a coat-of-arms panel
   across the chest, plate sets no longer get an engraved medallion (the sunburst set shows its own

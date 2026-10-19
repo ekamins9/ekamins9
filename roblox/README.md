@@ -364,8 +364,12 @@ the map vote offers maps sized to who's there and the bots the mode brings, and 
 server's room shrinks to its map's most. (Horde skips the size rule: the horde is its own crowd,
 so all its maps take turns. Each vote offers three maps the last one didn't.)
 - **In guise** (`GameConfig.BOT_GUISE`, `Game ▸ Guise`): a fill bot passes for a player: an invented
-  player-style name (ShadowFang27, Lukas2011, mira_frost: never a real account's), a body of its own
-  (skin, hair, beard, face, eyes off `Catalog ▸ Body`), a level (most low, a few high), now and then
+  player-style name (ShadowFang27, Lukas2011, mira_frost: never a real account's), a real Roblox
+  look: a Roblox hair and a classic Roblox face (Smile, Chill, Check It, Silly Fun, Man Face…) on a
+  Roblox skin tone, worn through an avatar kit exactly as a player's own avatar is
+  (`ReplicatedStorage ▸ Avatars ▸ Guise_<hair>_<face>_<tone>`, from Studio-only
+  `ServerStorage ▸ GuiseLooks ▸ Hair` (Accessories) and `Faces` (Decals), attribute `W` = how often;
+  no GuiseLooks → the made-up look of `Catalog ▸ Body`), a level (most low, a few high), now and then
   a title it could have earned and a coat of arms (its plain shield wears it), pieces of its
   weight in palette colours, often a weapon skin (Common to Legendary only: never a numbered Mythic
   or a one-of-one). The board shows it with its title and no BOT, the name tag with its level and

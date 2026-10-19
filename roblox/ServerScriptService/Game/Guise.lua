@@ -2,10 +2,15 @@
      full. A guised bot gets
        a player's kind of name     invented from the parts below (never a real account's), the
                                    way people name themselves: ShadowFang27, Lukas2011, mira_frost
-       a body of its own           skin, hair and its colour, beard, face, eyes (Catalog ▸ Body)
+       a body of its own           a real Roblox hair and a real Roblox face on a Roblox skin
+                                   tone, worn the way a player's own avatar is (an avatar kit:
+                                   ReplicatedStorage ▸ Avatars ▸ Guise_<hair>_<face>_<tone>, from
+                                   Studio-only ServerStorage ▸ GuiseLooks ▸ Hair (Accessories) and
+                                   Faces (Decals), attribute W = how often); without GuiseLooks the
+                                   made-up look of Catalog ▸ Body
        a level                     most low, a few high; with it, now and then a title it could
                                    have earned (Catalog ▸ Body earnedTitles) and a coat of arms
-                                   (Catalog ▸ Arms), so its shield and surcoat wear one
+                                   (Catalog ▸ Arms), so its plain shield wears one
        a kit of its own choosing   pieces of its weight, mixed now and then, in colours off the
                                    palette; often a weapon skin (never a numbered Mythic or a
                                    one-of-one: nothing that tells a lie about who owns what)
@@ -17,6 +22,7 @@
        Guise.dress(opts, kind)     fills Bots.spawn's opts (appearance, loadout, skin, attrs) ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
@@ -74,6 +80,51 @@ local function pickFree(list, crownsChance)
 	return #pool > 0 and pick(pool) or list[1]
 end
 
+-- ROBLOX LOOKS: a Roblox hair and face on a Roblox skin tone, as an avatar kit the Dresser puts
+-- on as it does a player's own (Avatars: Accessory children Kind = "hair", attribute Face, the
+-- six skin colours, Ready). One kit per mix, shared by every bot that rolls it.
+local TONES = {
+	{Color3.fromRGB(234, 184, 146), 4}, {Color3.fromRGB(255, 204, 153), 3}, {Color3.fromRGB(204, 142, 105), 3},
+	{Color3.fromRGB(175, 148, 131), 1}, {Color3.fromRGB(124, 92, 70), 2}, {Color3.fromRGB(105, 64, 40), 2},
+	{Color3.fromRGB(86, 66, 54), 1}, {Color3.fromRGB(245, 205, 48), 1},
+}
+local function weighted(list, w)
+	local total = 0
+	for _, e in ipairs(list) do total += w(e) end
+	local x = math.random() * total
+	for i, e in ipairs(list) do x -= w(e); if x <= 0 then return e, i end end
+	return list[#list], #list
+end
+local function robloxLook()
+	local looks = ServerStorage:FindFirstChild("GuiseLooks")
+	local hairs = looks and looks:FindFirstChild("Hair")
+	local faces = looks and looks:FindFirstChild("Faces")
+	if not (hairs and faces) or #faces:GetChildren() == 0 then return nil end
+	local function w(i) return i:GetAttribute("W") or 1 end
+	local hairList, faceList = hairs:GetChildren(), faces:GetChildren()
+	local hair, hi = nil, 0
+	if #hairList > 0 and math.random() > 0.06 then hair, hi = weighted(hairList, w) end
+	local face, fi = weighted(faceList, w)
+	local tone, ti = weighted(TONES, function(e) return e[2] end)
+	local key = string.format("Guise_%d_%d_%d", hi, fi, ti)
+	local folder = ReplicatedStorage:FindFirstChild("Avatars")
+	if not folder then folder = Instance.new("Folder"); folder.Name = "Avatars"; folder.Parent = ReplicatedStorage end
+	if not folder:FindFirstChild(key) then
+		local kit = Instance.new("Folder")
+		kit.Name = key
+		if hair then
+			local c = hair:Clone()
+			c:SetAttribute("Kind", "hair")
+			c.Parent = kit
+		end
+		kit:SetAttribute("Face", face.Texture)
+		for _, n in ipairs({"Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg"}) do kit:SetAttribute(n, tone[1]) end
+		kit:SetAttribute("Ready", true)
+		kit.Parent = folder
+	end
+	return key
+end
+
 local function body()
 	local Bd = Catalog.BODY
 	local app = table.clone(Bd.defaults)
@@ -86,6 +137,9 @@ local function body()
 	app.face = face.id
 	for k, v in pairs(face.parts or {}) do app[k] = v end
 	app.eyeColor = pickFree(Bd.eyeColors, 0.05).name
+	-- (a Roblox hair and face, as players wear: the made-up look stays only as the fallback)
+	local ok, key = pcall(robloxLook)
+	if ok and key then app.avatar = key end
 	return app
 end
 
