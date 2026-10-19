@@ -276,6 +276,45 @@ L += [
       glow=((90, 255, 210), ["cracks", "runes"])),
 ]
 
+# ---------------------------------------------------------------- THE REFORGED (2026-10-19): new skins built round the silhouettes
+L += [
+    T("tidebreaker", palette=dict(steel=(46, 150, 150), face=(46, 150, 150), fuller=(24, 90, 96), edge=(210, 255, 244), wood=(24, 70, 80),
+                                  leather=(30, 90, 100), darksteel=(30, 100, 110), pattern_b=(130, 226, 214)), pattern="waves",
+      glow=((90, 255, 220), ["veins"]), tassel_color=(30, 120, 130)),
+    T("sakuraronin", palette=dict(steel=(238, 236, 242), face=(238, 236, 242), fuller=(214, 170, 190), edge=(255, 255, 255), leather=(200, 60, 110),
+                                  darkleather=(140, 30, 70), brass=(232, 184, 74), pattern_b=(255, 176, 210)), pattern="sheen", wrap="gilt", pommel="ring",
+      guard_color="gold"),
+    T("voidrender", palette=dict(steel=(22, 20, 32), face=(22, 20, 32), fuller=(10, 8, 16), edge=(196, 156, 255), leather=(32, 22, 52),
+                                 darkleather=(18, 12, 30), pattern_b=(124, 84, 210)), pattern="stars", guard="crescent", guard_color="blackiron",
+      pommel="claw", glow=((180, 110, 255), ["core", "stars"])),
+    T("emberwyrm", palette=dict(steel=(38, 30, 28), face=(38, 30, 28), fuller=(22, 16, 14), edge=(255, 156, 64), wood=(40, 24, 18),
+                                darksteel=(30, 24, 22), pattern_b=(190, 64, 20)), pattern="embers", guard="horns", horn_color=(30, 24, 22),
+      pommel="dragon", guard_color="blackiron", glow=((255, 120, 30), ["cracks"])),
+    T("glacialwarden", palette=dict(steel=(204, 236, 255), face=(204, 236, 255), fuller=(150, 196, 240), edge=(255, 255, 255), wood=(170, 210, 236),
+                                    leather=(60, 100, 150), darksteel=(150, 190, 230), pattern_b=(120, 170, 232)), pattern="frost", edge="jag",
+      glow=((170, 230, 255), ["crystals", "veins"])),
+    T("verdantoath", palette=dict(steel=(92, 142, 82), face=(92, 142, 82), fuller=(60, 100, 54), edge=(232, 250, 212), leather=(60, 90, 40),
+                                  darkleather=(40, 62, 28), pattern_b=(52, 82, 40)), pattern="bark", guard="holly", guard_color="gold", wrap="rope",
+      pommel="acorn"),
+    T("gravecaller", palette=dict(steel=BONE, face=BONE, fuller=(160, 140, 110), edge=(250, 246, 236), wood=(60, 50, 40), darksteel=(110, 96, 80),
+                                  pattern_b=(130, 110, 84)), pattern="rust", guard="ribs", pommel="skull", bone_color=BONE,
+      glow=((120, 255, 170), ["runes"])),
+    T("starfall", palette=dict(steel=(32, 36, 74), face=(32, 36, 74), fuller=(20, 22, 50), edge=(240, 240, 255), leather=(40, 30, 80),
+                               darkleather=(26, 20, 56), brass=(232, 184, 74), pattern_b=(255, 236, 170)), pattern="stars", pommel="star",
+      glow=((210, 220, 255), ["stars", "crystals"])),
+    T("sunderer", palette=dict(steel=(92, 98, 124), face=(92, 98, 124), fuller=(60, 64, 86), edge=(212, 222, 255), wood=(40, 40, 62),
+                               darksteel=(70, 74, 96), pattern_b=(152, 172, 255)), pattern="knotwork", glow=((140, 170, 255), ["runes"])),
+    T("krakencoil", palette=dict(steel=(42, 62, 92), face=(42, 62, 92), fuller=(26, 40, 62), edge=(184, 255, 232), wood=(30, 50, 62),
+                                 darksteel=(36, 54, 80), pattern_b=(92, 162, 152)), pattern="scales", ornaments=["serpent"], serpent_color=(72, 52, 112),
+      glow=((90, 255, 210), [])),
+    T("ashbringer", palette=dict(steel=(56, 52, 50), face=(56, 52, 50), fuller=(34, 30, 28), edge=(255, 192, 122), leather=(42, 32, 28),
+                                 darkleather=(26, 20, 18), pattern_b=(152, 72, 30)), pattern="embers", guard="spikes", guard_color="blackiron",
+      pommel="spike", glow=((255, 140, 60), ["cracks"])),
+    T("featherfall", palette=dict(steel=(36, 36, 42), face=(36, 36, 42), fuller=(22, 22, 26), edge=(192, 192, 212), leather=(28, 28, 32),
+                                  pattern_b=(92, 92, 112)), pattern="sheen", guard="wings", guard_color="blackiron", ornaments=["feathers"],
+      feather_color=(26, 26, 32), pommel="claw"),
+]
+
 # ---------------------------------------------------------------- SILHOUETTES (forge.py BLADES / heads / HAFTS)
 # id: (sword blade, spear head, axe head, blunt head, haft); None keeps the weapon's own
 SHAPES = {
@@ -341,6 +380,13 @@ SHAPES = {
     "jarlsbane": ("lightning", "winged", "dragon", "star", "runic"), "rimeheart": ("crystal", "crystal", "crescent", "crystal", "crystal"),
     "krampus": ("forked", "trident", "dragon", "skull", "chain"), "forgefather": ("flame", "flame", "dragon", "crown", "chain"),
     "firstlight": ("sun", "sun", "crescent", "orb", "gilded"), "davyjones": ("serpent", "trident", "crescent", "skull", "scaled"),
+    # the reforged
+    "tidebreaker": ("serpent", "trident", "crescent", "orb", "scaled"), "sakuraronin": ("fang", "winged", None, None, "bamboo"),
+    "voidrender": ("twin", "crescent", "dragon", "orb", "runic"), "emberwyrm": ("flame", "flame", "dragon", "spiked", "chain"),
+    "glacialwarden": ("crystal", "crystal", "crescent", "crystal", "crystal"), "verdantoath": ("leaf", "winged", "bearded", None, "vine"),
+    "gravecaller": ("bone", "bone", "bearded", "skull", "bone"), "starfall": ("crystal", "crystal", "crescent", "star", "runic"),
+    "sunderer": ("tiered", "broad", "broad", "crystal", "runic"), "krakencoil": ("serpent", "trident", "crescent", "orb", "scaled"),
+    "ashbringer": ("flame", "flame", "dragon", "spiked", "chain"), "featherfall": ("fang", "winged", "bearded", None, "scaled"),
 }
 for _t in L:
     _sh = SHAPES.get(_t["id"])

@@ -1,4 +1,27 @@
-# Updated scripts: every skin reforged with its own shape; effects on every Epic; emblems in relief
+# Updated scripts: twelve new skins
+
+- **Twelve new skins**, built round the Forge's new shapes and auras, in the two daily crates:
+  Bladesmith — Sakura Ronin (falchion, Epic, petals), Verdant Oath (arming sword, Epic, falling
+  leaves), Featherfall (dagger, Epic, black feathers), Voidrender (greatsword, Legendary, twin
+  rails round a void core), Starfall (rapier, Legendary, crystal stars, arcane runes), Ashbringer
+  (zweihander, Legendary, flame blade, ash and cinders); Hafted — Glacial Warden (halberd, Epic,
+  crystal), Sunderer (maul, Epic, crystal hammer, runes), Gravecaller (glaive, Epic, bone, spirit
+  wisps), Tidebreaker (spear, Legendary, trident, sea spray), Emberwyrm (battle axe, Legendary,
+  dragon double-bit, embers), Kraken's Coil (morning star, Legendary, caged orb, sea spray).
+- (`scripts/gen_content.py` is out of date with the hand-edited catalog: don't run it; the new
+  skins are hand-written lines at the end of Catalog ▸ Skins.)
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Skins.lua](ReplicatedStorage/Catalog/Skins.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | the twelve, hand-written |
+| [themes.py](../blender/themes.py) | — | Blender script | their twelve themes and silhouettes |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a line for them |
+
+Their models are in Studio (ReplicatedStorage ▸ Cosmetics ▸ Skins): **save the place**.
+
+---
+
+## Before that: every skin reforged with its own shape; effects on every Epic; emblems in relief
 
 - **Every weapon skin is reforged** (all 364 meshes rebuilt and re-uploaded; the models in Studio
   rebuilt): a skin is now a different weapon to look at, not the same one painted. Swords get

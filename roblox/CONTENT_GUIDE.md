@@ -273,7 +273,10 @@ play: Roblox's licensed library (Pro Sound Effects, APM) or your own uploads.
 
 ## 5. A weapon skin
 
-`Catalog ▸ Skins` is generated: edit the tables in `scripts/gen_content.py` (`LOOK`,
+**Don't run `scripts/gen_content.py` any more**: the catalog has been hand-edited past it (staff
+heads, tomes, the sized-up weapons' REACH, the Reforged skins) and it would undo them. Add skins as
+hand-written lines at the end of `Catalog ▸ Skins` (the Reforged ones are the pattern).
+(Formerly:) `Catalog ▸ Skins` is generated: edit the tables in `scripts/gen_content.py` (`LOOK`,
 `DROP_SKINS`, `TINTS`, `SHOP_STYLES`, `TASK_SKINS`, `PASS_SKINS`) or the hand-written lines in
 `scripts/skins_handmade.part`, then run `python scripts/gen_content.py skins`. A drop skin
 looks like this (every weapon already has a free "Default"):

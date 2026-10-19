@@ -496,4 +496,18 @@ return {
 	{weapon = "Halberd", name = "Black Flag", rarity = "Legendary", crate = "BlackSails", drop = "BlackSails", look = "blackflag", fx = "blood"},
 	{weapon = "BattleAxe", name = "Black Flag", rarity = "Legendary", crate = "BlackSails", drop = "BlackSails", look = "blackflag", fx = "blood"},
 	{weapon = "Messer", name = "Davy's Locker", rarity = "Mythic", crate = "BlackSails", drop = "BlackSails", look = "davyjones", fx = "toxic"},
+
+	-- THE REFORGED (hand-written): skins built round the Forge's own shapes, in the two daily crates
+	{weapon = "Falchion",   name = "Sakura Ronin",   rarity = "Epic",      crate = "Bladesmith", blade = C(238, 236, 242), grip = C(200, 60, 110), trim = "feather", fx = "petals", look = "sakuraronin"},
+	{weapon = "ArmingSword", name = "Verdant Oath",  rarity = "Epic",      crate = "Bladesmith", blade = C(92, 142, 82),   grip = C(60, 90, 40),   trim = "laurel", fx = "leaves", look = "verdantoath"},
+	{weapon = "Dagger",     name = "Featherfall",    rarity = "Epic",      crate = "Bladesmith", blade = C(36, 36, 42),    grip = C(28, 28, 32),   trim = "feather", fx = "feathers", look = "featherfall"},
+	{weapon = "Greatsword", name = "Voidrender",     rarity = "Legendary", crate = "Bladesmith", blade = C(22, 20, 32),    grip = C(32, 22, 52),   trim = "runes", glow = C(180, 110, 255), fx = "void", look = "voidrender"},
+	{weapon = "Rapier",     name = "Starfall",       rarity = "Legendary", crate = "Bladesmith", blade = C(32, 36, 74),    grip = C(40, 30, 80),   trim = "halo", glow = C(210, 220, 255), fx = "arcane", look = "starfall"},
+	{weapon = "Zweihander", name = "Ashbringer",     rarity = "Legendary", crate = "Bladesmith", blade = C(56, 52, 50),    grip = C(42, 32, 28),   trim = "flame", glow = C(255, 140, 60), fx = "ash", look = "ashbringer"},
+	{weapon = "Halberd",    name = "Glacial Warden", rarity = "Epic",      crate = "Hafted",     blade = C(204, 236, 255), grip = C(170, 210, 236), trim = "frost", fx = "frost", look = "glacialwarden"},
+	{weapon = "Maul",       name = "Sunderer",       rarity = "Epic",      crate = "Hafted",     blade = C(92, 98, 124),   grip = C(40, 40, 62),   trim = "runes", glow = C(140, 170, 255), fx = "arcane", look = "sunderer"},
+	{weapon = "Glaive",     name = "Gravecaller",    rarity = "Epic",      crate = "Hafted",     blade = C(222, 210, 182), grip = C(60, 50, 40),   trim = "bone", glow = C(120, 255, 170), fx = "spirit", look = "gravecaller"},
+	{weapon = "Spear",      name = "Tidebreaker",    rarity = "Legendary", crate = "Hafted",     blade = C(46, 150, 150),  grip = C(24, 70, 80),   trim = "wave", glow = C(90, 255, 220), fx = "sea", look = "tidebreaker"},
+	{weapon = "BattleAxe",  name = "Emberwyrm",      rarity = "Legendary", crate = "Hafted",     blade = C(38, 30, 28),    grip = C(40, 24, 18),   trim = "flame", glow = C(255, 120, 30), fx = "embers", look = "emberwyrm"},
+	{weapon = "MorningStar", name = "Kraken's Coil", rarity = "Legendary", crate = "Hafted",     blade = C(42, 62, 92),    grip = C(30, 50, 62),   trim = "serpent", glow = C(90, 255, 210), fx = "sea", look = "krakencoil"},
 }

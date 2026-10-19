@@ -26,8 +26,8 @@ local NEWS = {
 		{"🔱", "Heads and hafts too", "spears winged, trident, crescent; axes double-bit; maces skull, orb, crown; new shafts"},
 		{"✨", "Effects on every Epic", "spirit wisps, falling leaves, sea spray, runes, feathers; Rares glint"},
 		{"🦁", "Emblems in raised metal", "your arms and every shield's emblem stand off the board, carved, catching the light"},
-		{"🛡", "Throw your shield", "hold {Hurl}: it flies flat and spinning and knocks them flat; go and pick it up"},
-		{"⚔", "Then throw your sword", "a one-hander hurled lands its best blow, and sticks in the turf or a beam"},
+		{"🆕", "Twelve new skins", "Tidebreaker, Emberwyrm, Voidrender, Starfall, Ashbringer, Kraken's Coil and more"},
+		{"🛡", "Throw your shield, then your sword", "hold {Hurl}: they fly, hit hard, and stick where they land; pick them up again"},
 		{"🪓", "Bigger one-handers", "war axes, maces, hammers, cleavers and shortswords sized up to the hand"},
 	},
 }
