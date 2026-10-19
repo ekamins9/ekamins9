@@ -469,7 +469,11 @@ shop is there every day, and every card says how long it has left.
   shadow (the scripts that made the first 24 cut each one, grow its silhouette for `_o` and blur
   it for `_s`), uploaded as Decals, the image ids put in StringValues `<name>`, `<name>_o`,
   `<name>_s` in ShieldArt. A new **board shape** needs its outline in `ShieldDress.outline` and its
-  `<shape>_<division>`, `_shade` and `_wear` pictures.
+  `<shape>_<division>` and `_wear` pictures, and its division inlays: the same outline in
+  `OUTLINES` in `blender/divisions.py`, run it, upload the FBXs, and put each MeshPart in
+  `ReplicatedStorage ▸ ShieldDivision` named `<shape>_<division>` with attribute `Art` = its
+  json's `bounds.center`. A new **division** is a rule in `second()` there, then the same.
+  An emblem that should bring an aura: a line in `SkinFX` `EMBLEM_AURA`.
 - **Class levels**: `Catalog ▸ Mastery` (the XP curve, titles at levels, a Key every N levels).
 
 ## 6f. Season rewards

@@ -1,4 +1,28 @@
-# Updated scripts: twelve new skins
+# Updated scripts: shield divisions in relief; emblems bring their auras
+
+- **A shield's division is geometry now, not a picture**: per pale, per fess, quarterly, bend,
+  saltire, chevron, gyronny, paly, barry, checky, chief, bordure, pile, cross — each a thin raised
+  inlay in the second colour, clipped to the board's outline (heater, kite, scutum, rect, round),
+  catching the light at its edges; gold, silver and black in metal. The scratches lie over it and
+  the emblem's relief stands in front. 70 meshes (`blender/divisions.py`), in Studio-only
+  ReplicatedStorage ▸ ShieldDivision. A war's crowds keep the painted one.
+- **Shield emblems call up their aura** (a shield skin with no `fx`, Epic and up): a phoenix or a
+  dragon embers, a kraken or a longship sea spray, a raven or an owl feathers, a tree or a stag
+  falling leaves, a rose petals, a sun holy light, a skull spirit wisps, a thunderbolt storm, a
+  crown or a lion gold.
+- **Save the place**: ReplicatedStorage ▸ ShieldDivision lives only in Studio.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ShieldPaint.lua](ReplicatedStorage/ShieldPaint.lua) | ReplicatedStorage | ModuleScript | the division as an inlay (`inlayOf`, `INLAY`); scratches and emblem in front of it |
+| [SkinFX.lua](ReplicatedStorage/SkinFX.lua) | ReplicatedStorage | ModuleScript | `EMBLEM_AURA` |
+| [divisions.py](../blender/divisions.py) | — | Blender script | **new**: the division inlays |
+| [emblems.py](../blender/emblems.py) | — | Blender script | `SMOOTH` (divisions keep their corners) |
+| [README.md](README.md), [CONTENT_GUIDE.md](CONTENT_GUIDE.md) | — | doc | divisions in relief; a new shape or division |
+
+---
+
+## Before that: twelve new skins
 
 - **Twelve new skins**, built round the Forge's new shapes and auras, in the two daily crates:
   Bladesmith — Sakura Ronin (falchion, Epic, petals), Verdant Oath (arming sword, Epic, falling

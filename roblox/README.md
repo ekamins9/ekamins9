@@ -794,9 +794,13 @@ side's house — is raised metal standing off the board, not a picture: Studio-o
 (`blender/emblems.py`): Lo, the silhouette a shade darker, and Hi, the bright parts raised above
 it, so its lines are cut in; on a dark backing a little larger (its outline), or a glowing one
 for an emblem that shines; gold, silver and black in Metal, colours in enamel. The painted light
-is gone (the relief catches the real light); the field's division and its scratches are still
-paint. A war's crowds keep the painted emblem (`ShieldPaint.LITE` while WarCrowd builds its
-men: hundreds of shields).
+is gone (the relief catches the real light). The field's **division** (per pale, quarterly, a
+chevron, a bordure, checky…) is geometry too: a thin raised inlay in its second colour clipped to
+the board's outline (Studio-only `ReplicatedStorage ▸ ShieldDivision ▸ <shape>_<division>`, made
+by `blender/divisions.py`; gold, silver and black in Metal). Only the scratches are paint. A
+war's crowds keep the painted emblem and division (`ShieldPaint.LITE` while WarCrowd builds its
+men: hundreds of shields). A shield skin with no `fx` wears an aura its emblem calls for (a
+phoenix embers, a kraken sea spray, a raven feathers: `SkinFX` `EMBLEM_AURA`).
 
 **Throwables** (`Catalog ▸ Arsenal` throwables; `Combat ▸ Throwing`): Throwing Knives (free),
 Throwing Axe, War Darts, Javelin (pierces armour), Firebomb, Frost Flask, Smoke Bomb,

@@ -22,6 +22,7 @@ DIR = os.path.join(ROOT, "blender", "out", "forge", "emblems")
 N = 128
 DEPTH = 0.05      # how far it stands off the board (of the emblem's width)
 BEVEL = 0.018     # the rounded edge
+SMOOTH = 1        # corner-rounding passes (a division keeps its corners: 0)
 BUDGET = 14000    # triangles at most (a shield wears one; a crowd wears dozens)
 
 
@@ -175,7 +176,8 @@ def layer(cu, grid):
         pts = simplify(pts, 0.8 / N)
         if len(pts) < 3:
             continue
-        pts = chaikin(pts, 1)
+        if SMOOTH:
+            pts = chaikin(pts, SMOOTH)
         sp = cu.splines.new("POLY")
         sp.points.add(len(pts) - 1)
         for i, (x, y) in enumerate(pts):

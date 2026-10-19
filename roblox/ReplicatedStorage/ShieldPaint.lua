@@ -10,7 +10,11 @@
      higher, so its lines are cut in between), each with attribute Art = where its middle sits in
      the picture's square and how deep; in its metal, on a dark backing a little larger that is
      its outline (or, for an emblem that shines, a glowing one).
-     Without a relief (or for a war's crowds, ShieldPaint.LITE) the picture stands in.
+     THE DIVISION IS AN INLAY: Studio-only ReplicatedStorage ▸ ShieldDivision ▸ <shape>_<division>
+     is the second part of the field as a thin raised panel clipped to the board's outline
+     (blender/divisions.py; made in the outline's box, -0.5..0.5, stretched to the board's; Art =
+     its middle in that box), in divisionColor (gold, silver and black in metal).
+     Without a relief or an inlay (or for a war's crowds, ShieldPaint.LITE) the picture stands in.
      The pictures live only in Studio: ReplicatedStorage ▸ ShieldArt holds a StringValue per
      picture (its image), named
        <emblem>  <emblem>_o (its outline)  <emblem>_s (its shadow)
@@ -66,6 +70,13 @@ local function relief(name)
 	local m = f and f:FindFirstChild(name)
 	return (m and m:FindFirstChild("Lo")) and m or nil
 end
+local function inlayOf(shape, division)
+	if ShieldPaint.LITE then return nil end
+	local f = RS:FindFirstChild("ShieldDivision")
+	local m = f and f:FindFirstChild(shape .. "_" .. division)
+	return (m and m:IsA("MeshPart")) and m or nil
+end
+local INLAY = 1.5   -- (× the inlay's own depth: how far it stands proud of the board)
 -- (gold and silver and black are metal; a coloured emblem is enamel)
 local function metalLook(c)
 	local h, s, v = c:ToHSV()
@@ -146,11 +157,30 @@ function ShieldPaint.apply(container, skin)
 		return d
 	end
 
-	-- THE FIELD: the division, the scratches, the light (one plate the size of the board)
+	-- THE FIELD: the division (raised, else painted), then the scratches over it all
 	local wear = skin.wear or WEAR[skin.rarity] or 0.3
-	local field = plate((x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, -0.012)
 	local n = 0
-	if skin.division and decal(field, art(shape .. "_" .. skin.division), skin.divisionColor or Color3.new(1, 1, 1), 0, 1) then n += 1 end
+	local top = -0.012   -- (the board's paint lies here; in front of an inlay when there is one)
+	local inlay = skin.division and inlayOf(shape, skin.division)
+	if inlay then
+		local bw, bh = x1 - x0, y1 - y0
+		local a = inlay:GetAttribute("Art") or Vector3.new(0, 0, inlay.MeshSize.Z / 2)
+		local c = skin.divisionColor or Color3.new(1, 1, 1)
+		local r = inlay:Clone()
+		r.Name = "Division"
+		r.Size = Vector3.new(inlay.MeshSize.X * bw, inlay.MeshSize.Y * bh, inlay.MeshSize.Z * INLAY)
+		r.CFrame = F * CFrame.new((x0 + x1) / 2 - a.X * bw, (y0 + y1) / 2 + a.Y * bh, -0.004 - a.Z * INLAY)
+		r.Color = c
+		r.Material = metalLook(c)
+		r.Anchored = true
+		r.CanCollide, r.CanQuery, r.CanTouch, r.CastShadow = false, false, false, false
+		r:SetAttribute(TAG, true)
+		table.insert(made, r)
+		top = -0.004 - (a.Z + inlay.MeshSize.Z / 2) * INLAY - 0.004
+		n += 1
+	end
+	local field = plate((x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, top)
+	if skin.division and not inlay and decal(field, art(shape .. "_" .. skin.division), skin.divisionColor or Color3.new(1, 1, 1), 0, 1) then n += 1 end
 	-- (the scratches are always laid on, clear when it's new: a fight deepens them, Shields.batter)
 	local wd = decal(field, art(shape .. "_wear"), SCRATCH, 1 - math.clamp(wear, 0, 1), 2)
 	if wd then wd:SetAttribute("Wear", math.clamp(wear, 0, 1)); if wear > 0 then n += 1 end end
@@ -166,10 +196,10 @@ function ShieldPaint.apply(container, skin)
 		local count = math.clamp(skin.emblemCount or 1, 1, 3)
 		local each = count == 1 and size or size * (count == 2 and 0.6 or 0.44)
 		local src = relief(em)
-		local lift = skin.heraldry and -0.09 or -0.012
+		local lift = skin.heraldry and -0.09 or math.min(-0.012, top - 0.002)
 		for i = 1, count do
 			local y = spot[1] + (skin.emblemY or 0) + ((count + 1) / 2 - i) * each * 1.02
-			local ep = plate(0, y, each, each, skin.heraldry and -0.09 or -0.03, "Emblem")
+			local ep = plate(0, y, each, each, skin.heraldry and -0.09 or math.min(-0.03, top - 0.01), "Emblem")
 			if src then
 				-- the relief: raised metal (each layer's middle where the picture's is, its back on the board)
 				local base = F * CFrame.new(0, y, lift)

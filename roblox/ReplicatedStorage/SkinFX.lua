@@ -317,13 +317,22 @@ local LOOK_AURA = {
 	bloodletter = "blood", skald = "arcane", runecarved = "arcane", flamberge = "arcane", ironvow = "arcane",
 	veteran = "glint", ironlion = "gold", boarspear = "leaves", krampus = "embers",
 }
+-- (a shield skin has no Forge look: its emblem calls for one)
+local EMBLEM_AURA = {
+	phoenix = "embers", dragon = "embers", salamander = "embers", kraken = "sea", longship = "sea", anchor = "sea",
+	trident = "sea", raven = "feathers", owl = "feathers", eagle = "feathers", tree = "leaves", stag = "leaves",
+	boar = "leaves", hound = "leaves", rose = "petals", sun = "holy", unicorn = "holy", cross = "holy", moon = "arcane",
+	knot = "arcane", keys = "arcane", skull = "spirit", serpent = "toxic", scorpion = "toxic", thunderbolt = "storm",
+	crown = "gold", fleur = "gold", lion = "gold", griffin = "gold", tower = "glint", wolf = "frost", bear = "ash",
+	bull = "ash", horse = "glint", axes = "ash", swords = "glint",
+}
 function SkinFX.auraOf(skin)
 	if not skin or skin.name == "Default" then return nil, 1 end
 	if skin.fx then return skin.fx, 1 end
 	-- (a staff's head brings its own lights; a shield and a bow only glint)
 	if StaffHeads.has(skin) then return nil, 1 end
 	local r = skin.rarity
-	local look = skin.look and LOOK_AURA[skin.look]
+	local look = (skin.look and LOOK_AURA[skin.look]) or (skin.emblem and EMBLEM_AURA[skin.emblem])
 	if look and (r == "Epic" or r == "Legendary" or r == "Mythic" or r == "Unique") then
 		return look, r == "Epic" and 0.6 or 1
 	end
