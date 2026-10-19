@@ -885,7 +885,8 @@ end
 -- THE ISLAND'S BOTS (BotFill asks): there before you, with what they'd found; outside the ring,
 -- they head in
 function Crownfall:botOpts(opts)
-	opts.startDelay = 8 + math.random() * 14
+	-- (still a while: the ride and the fall take half a minute, and you land with only a dagger)
+	opts.startDelay = 25 + math.random() * 20
 	opts.class, opts.power, opts.powerSkin = nil, nil, nil
 	local w = Loot.weapon(CLASS, math.random() * 0.6)
 	opts.weapon = w and w.weapon or FREE_WEAPON
