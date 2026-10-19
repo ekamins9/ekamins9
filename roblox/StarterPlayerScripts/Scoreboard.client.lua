@@ -17,6 +17,7 @@ local TweenService      = game:GetService("TweenService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
+local Hints = require(ReplicatedStorage:WaitForChild("InputHints"))   -- (a key named in the objective: {Menu})
 
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("KillFeedRemote")
@@ -612,7 +613,7 @@ local function refreshRound()
 		-- (the Gilded Rat has its own bar at the top: DungeonMenu.client's TavernHud)
 		if roundNode:GetAttribute("Mode") == "Tavern" then timer.Text = ""; obj = "" end
 		timer.TextColor3 = COL_TEXT
-		objective.Text = obj
+		objective.Text = Hints.fill(obj)
 		banner.Visible = false
 		payLine.Visible = false
 		voteBox.Visible = false

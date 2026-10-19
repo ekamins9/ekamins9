@@ -1,4 +1,38 @@
-# Updated scripts: Crownfall, loot only, in on a dragon
+# Updated scripts: a shield goes with your weapon; every key hint is yours
+
+- **A shield goes with a one-handed primary**, on your arm, and **your secondary stays a weapon**
+  of its own (no more shield-instead-of-secondary, and no third-slot sidearm on 3). A loadout saved
+  the old way keeps its sidearm: it becomes the secondary. In the loadout: SHIELD · WITH YOUR
+  ONE-HANDED WEAPON; the SIDEARM panel is gone.
+- **Every on-screen hint that names a key follows the player's controls** (their own binds, a
+  pad's buttons, or the touch button / a tap): the loot games' bag and belt, the Deadvault line,
+  banners from the server (`{Bag}`, `{Pickup}` in their text), the top bar's objective (`{Menu}`),
+  the Courtyard's nests (`InputHints.keyed`), the training master's "press", the duel challenge's
+  answer keys, the Gilded Rat's LOBBY / WALK AROUND, the throwable's "hold" in the loadout and the
+  Armory, the crossbow's "hold to aim". Where a server or a sign can't know your controls, no key
+  is named ("THE MENU › SETTINGS › THE RULES").
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Profile.lua](ServerScriptService/Loadout/Profile.lua) | ServerScriptService ▸ Loadout | ModuleScript | shield keeps the secondary; no third-slot sidearm (old one → secondary) |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | no sidearm on 3 |
+| [HubMenu.client.lua](StarterPlayerScripts/HubMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | shield panel; no sidearm panel; `HX.throwKey`; the gift toast |
+| [Catalog/init.lua](ReplicatedStorage/Catalog/init.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | comments: the rule |
+| [Shields.lua](ServerScriptService/Combat/Shields.lua) | ServerScriptService ▸ Combat | ModuleScript | comment: the rule |
+| [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage | ModuleScript | Interact; `keyed(action, verb)` |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | banners and the mode's line filled with your keys |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the objective filled with your keys |
+| [Pastimes.client.lua](StarterPlayerScripts/Pastimes.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the nests' key |
+| [Training.client.lua](StarterPlayerScripts/Training.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the master's "press" |
+| [Duels.client.lua](StarterPlayerScripts/Duels.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | ACCEPT / DECLINE keys by input |
+| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | LOBBY / WALK AROUND keys by input |
+| [RangedClient.lua](ReplicatedStorage/Combat/RangedClient.lua) | ReplicatedStorage ▸ Combat | ModuleScript | "hold … to aim" in your block key |
+| [Deadvault.lua](ServerScriptService/Game/Modes/Deadvault.lua) · [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) · [Hub.lua](ServerScriptService/Game/Modes/Hub.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | `{Bag}` / `{Menu}` in their words |
+| [Courtyard.server.lua](ServerScriptService/Hub/Courtyard.server.lua) · [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) · [AdminServer.server.lua](ServerScriptService/Admin/AdminServer.server.lua) | ServerScriptService | Script | no key named where it can't be yours |
+
+---
+
+## Before that: Crownfall, loot only, in on a dragon
 
 - **No classes in Crownfall.** No class screen: everyone is the same plain body in plain clothes
   with an old dagger; no power, no throwable, no shield, no skins of your own. Everything else is

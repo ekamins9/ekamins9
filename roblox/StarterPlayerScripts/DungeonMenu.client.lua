@@ -35,6 +35,7 @@ local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local DarkUI = require(ReplicatedStorage:WaitForChild("DarkUI"))
 local PreviewRig = require(ReplicatedStorage:WaitForChild("PreviewRig"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local vaultRemote = ReplicatedStorage:WaitForChild("VaultRemote")
 local hubRemote = ReplicatedStorage:WaitForChild("HubRemote")
 local hubEvent = ReplicatedStorage:WaitForChild("HubEvent")
@@ -1189,7 +1190,18 @@ local hudBar = DarkUI.panel(hudGui)
 hudBar.AnchorPoint = Vector2.new(0.5, 0); hudBar.Position = UDim2.new(0.5, 0, 0, 8); hudBar.Size = UDim2.fromOffset(600, 66)
 local hudTitle = left(T(hudBar, "THE GILDED RAT", 22, C.GOLD2, BOLD)); hudTitle.Position = UDim2.fromOffset(18, 8); hudTitle.Size = UDim2.fromOffset(240, 26)
 local hudSub = left(T(hudBar, "Walk to a merchant, your stash or the gate", 12, C.DIM, SEMI)); hudSub.Position = UDim2.fromOffset(18, 36); hudSub.Size = UDim2.fromOffset(250, 18)
-local hudLobby = DarkUI.button(hudBar, "LOBBY  [M]", "blue", 16)
+local hudLobby = DarkUI.button(hudBar, "LOBBY", "blue", 16)
+-- (the menu key on the buttons that it works: M, a pad's VIEW, none on a touch screen)
+do
+	local function writeKeys()
+		local m = InputHints.mode()
+		local k = m == "Touch" and "" or ("  [" .. InputHints.name("Menu") .. "]")
+		hudLobby.Text = "LOBBY" .. k
+		leaveBtn.Text = "WALK AROUND" .. k
+	end
+	writeKeys()
+	InputHints.changed:Connect(writeKeys)
+end
 hudLobby.AnchorPoint = Vector2.new(1, 0.5); hudLobby.Position = UDim2.new(1, -190, 0.5, 0); hudLobby.Size = UDim2.fromOffset(130, 44)
 local hudHome = DarkUI.button(hudBar, "◀  MAIN MENU", "blue", 15)
 hudHome.AnchorPoint = Vector2.new(1, 0.5); hudHome.Position = UDim2.new(1, -12, 0.5, 0); hudHome.Size = UDim2.fromOffset(170, 44)

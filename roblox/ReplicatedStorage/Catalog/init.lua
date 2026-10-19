@@ -235,7 +235,7 @@ Catalog.EGG = {}        for _, e in ipairs(Catalog.EGGS.eggs) do Catalog.EGG[e.i
 function Catalog.weaponFits(cls, w, slot)
 	if type(w) == "string" then w = Catalog.WEAPON[w] end
 	if not (cls and w) then return false end
-	-- (a shield goes beside a one-handed primary, a throwable in the third slot: Catalog.shieldFits / thirdFits)
+	-- (a shield goes with a one-handed primary: Catalog.shieldFits; a throwable has its own slot)
 	if w.shield or w.throwable then return false end
 	if w.weights then local ok = false; for _, x in ipairs(w.weights) do if x == cls.weight then ok = true end end; if not ok then return false end end
 	if cls.weapons and cls.weapons ~= "any" then local ok = false; for _, x in ipairs(cls.weapons) do if x == w.id then ok = true end end; if not ok then return false end end
@@ -248,15 +248,14 @@ function Catalog.weaponFits(cls, w, slot)
 end
 Catalog.COMPANION = {}  for _, c in ipairs(Catalog.COMPANIONS) do Catalog.COMPANION[c.id] = c end
 
--- A SHIELD takes the secondary slot beside a ONE-HANDED primary (any class that carries one)
+-- A SHIELD goes with a ONE-HANDED primary, on the left arm (any class that carries one); the
+-- secondary stays a weapon of its own
 function Catalog.shieldFits(cls, primaryId, shieldId)
 	local w, sh = Catalog.WEAPON[primaryId or ""], Catalog.WEAPON[shieldId or ""]
 	return cls ~= nil and w ~= nil and sh ~= nil and sh.shield == true and w.family == "OneHanded" and not cls.ranged and not cls.magic
 end
--- THE THIRD SLOT: {kind = "power", id} (one of the class's powers its class level has opened),
--- {kind = "throwable", id}, or {kind = "sidearm", id} (a one-handed weapon, when the secondary
--- is a shield). Ownership is the caller's business; the class level is checked here (p = a
--- profile or its summary)
+-- A POWER is open when its class level is reached (the power and the throwable have their own
+-- slots now; no third weapon). Ownership is the caller's business (p = a profile or its summary)
 function Catalog.classLevel(p, classId)
 	local total = p and type(p.classXP) == "table" and p.classXP[classId] or 0
 	return (Catalog.MASTERY.levelOf(total))

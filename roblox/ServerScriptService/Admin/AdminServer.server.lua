@@ -405,7 +405,7 @@ local function act(plr, action, a)
 	if action == "kick" then
 		local reason = tostring(a.reason or ""):sub(1, 200)
 		reason = (target and TextFilter.forUser(reason, plr.UserId, targetId) or TextFilter.broadcast(reason, plr.UserId)) or ""
-		local msg = "Kicked by staff for breaking the game's rules. " .. reason .. "\nThe rules: MENU (M) › SETTINGS › THE RULES."
+		local msg = "Kicked by staff for breaking the game's rules. " .. reason .. "\nThe rules: THE MENU › SETTINGS › THE RULES."
 		if target then target:Kick(msg) else publish({kind = "kick", userId = targetId, text = msg}) end
 		logAction(plr, "kick", targetId, tname, reason)
 		return true, "kicked " .. tname

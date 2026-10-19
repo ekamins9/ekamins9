@@ -609,7 +609,7 @@ function Deadvault:noteSpawn(plr)
 end
 
 local function bagFull(self, plr, quiet)
-	if not quiet then banner({text = "YOUR BAG IS FULL", sub = "DROP SOMETHING (I) TO MAKE ROOM", kind = "fight"}, plr) end
+	if not quiet then banner({text = "YOUR BAG IS FULL", sub = "DROP SOMETHING TO MAKE ROOM  ·  YOUR BAG {Bag}", kind = "fight"}, plr) end
 	return false
 end
 
@@ -855,7 +855,7 @@ function Deadvault:start(map)
 		end)
 	end
 	task.delay(2, function()
-		banner({text = "DEADVAULT", sub = "LOOT IT, AND GET OUT ALIVE  ·  THE STAIRS OPEN IN " .. clock(STAIRS_AT) .. "  ·  (I) YOUR BAG", kind = "floor"})
+		banner({text = "DEADVAULT", sub = "LOOT IT, AND GET OUT ALIVE  ·  THE STAIRS OPEN IN " .. clock(STAIRS_AT) .. "  ·  YOUR BAG {Bag}", kind = "floor"})
 	end)
 end
 

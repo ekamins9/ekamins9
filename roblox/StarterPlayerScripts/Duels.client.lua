@@ -68,8 +68,17 @@ local function button(label, color, x)
 	b.Parent = card
 	return b
 end
-local yes = button("ACCEPT  [Y]", Theme.GREEN, 0.27)
-local no = button("DECLINE  [N]", Theme.RED, 0.73)
+local yes = button("ACCEPT", Theme.GREEN, 0.27)
+local no = button("DECLINE", Theme.RED, 0.73)
+-- (the keys on them: Y / N, a pad's D-pad up / down, none on a touch screen)
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
+local function writeKeys()
+	local m = InputHints.mode()
+	yes.Text = m == "Keyboard" and "ACCEPT  [Y]" or (m == "Gamepad" and "ACCEPT  [D-PAD ↑]" or "ACCEPT")
+	no.Text = m == "Keyboard" and "DECLINE  [N]" or (m == "Gamepad" and "DECLINE  [D-PAD ↓]" or "DECLINE")
+end
+writeKeys()
+InputHints.changed:Connect(writeKeys)
 local fuse = Instance.new("Frame")
 fuse.BackgroundColor3 = GOLD
 fuse.BorderSizePixel = 0

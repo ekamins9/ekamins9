@@ -266,7 +266,7 @@ function Crownfall:wear(plr, item)
 end
 
 local function full(plr)
-	banner({text = "YOUR BAG IS FULL", sub = "DROP SOMETHING TO MAKE ROOM", kind = "fight"}, plr)
+	banner({text = "YOUR BAG IS FULL", sub = "DROP SOMETHING TO MAKE ROOM  ·  YOUR BAG {Bag}", kind = "fight"}, plr)
 	return false
 end
 

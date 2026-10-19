@@ -20,6 +20,7 @@ local Companions = require(ReplicatedStorage:WaitForChild("Companions"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local UIFX = require(ReplicatedStorage:WaitForChild("UIFX"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local player = Players.LocalPlayer
 local hubRemote = ReplicatedStorage:WaitForChild("HubRemote")
@@ -481,7 +482,7 @@ RunService.RenderStepped:Connect(function()
 				top.Text = e.name
 				top.TextColor3 = RARITY[e.rarity] or Color3.new(1, 1, 1)
 				if left <= 0 then
-					bottom.Text = "READY!  [E] HATCH"; bottom.TextColor3 = Theme.GREEN
+					bottom.Text = "READY!  " .. InputHints.keyed("Interact", "HATCH"); bottom.TextColor3 = Theme.GREEN
 					n.prompt.ActionText = "Hatch"
 				else
 					bottom.Text = clock(left); bottom.TextColor3 = Color3.fromRGB(255, 214, 120)
@@ -494,7 +495,7 @@ RunService.RenderStepped:Connect(function()
 			else
 				top.Text = "EMPTY NEST"; top.TextColor3 = Theme.DIM
 				local eggs = player:GetAttribute("EggCount") or 0
-				bottom.Text = eggs > 0 and string.format("[E] SET AN EGG (%d)", eggs) or "[E] GET EGGS"
+				bottom.Text = eggs > 0 and string.format("%s (%d)", InputHints.keyed("Interact", "SET AN EGG"), eggs) or InputHints.keyed("Interact", "GET EGGS")
 				bottom.TextColor3 = Color3.new(1, 1, 1)
 				n.prompt.ActionText = eggs > 0 and "Set an egg" or "Get eggs"
 			end

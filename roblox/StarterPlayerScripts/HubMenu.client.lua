@@ -2437,6 +2437,13 @@ _G.HubCrateSpin = function(res) return HX.spinCrate(res) end
 --------------------------------------------------------------------
 HX.CrateModels = require(ReplicatedStorage:WaitForChild("CrateModels"))
 HX.Hints = require(ReplicatedStorage:WaitForChild("InputHints"))   -- (control names for keys / a controller / touch)
+-- the throw, in your controls: "HOLD C", "HOLD D-PAD ↓", "HOLD THE THROW ORB"
+function HX.throwKey()
+	local m = HX.Hints.mode()
+	local n = HX.Hints.name("Throw")
+	if m == "Keyboard" then return "HOLD " .. n end
+	return string.upper(n)
+end
 -- ARMOR on show: what a piece or a finish looks like on someone. A piece is shown
 -- with the rest of its set (a crate set wears its finish only whole), on the
 -- active class if the weight fits, else the first class of its weight; a finish
@@ -4530,11 +4537,10 @@ do
 			lo.weaponSkin = v .. ":Default"; if lo.secondary == v then lo.secondary = nil; lo.secondarySkin = nil end
 			-- (a shield only beside a one-hander)
 			local w = Catalog.WEAPON[v]
-			if lo.shield and not (w and w.family == "OneHanded") then lo.shield, lo.shieldSkin = nil, nil; if lo.thirdKind == "sidearm" then lo.thirdKind = nil end end
+			if lo.shield and not (w and w.family == "OneHanded") then lo.shield, lo.shieldSkin = nil, nil end
 		end
 		if k == "secondary" then
 			lo.secondarySkin = v and (v .. ":Default") or nil
-			if v then lo.shield, lo.shieldSkin = nil, nil; if lo.thirdKind == "sidearm" then lo.thirdKind = nil end end   -- (a secondary or a shield)
 		end
 		ui.dirty[ui.editing] = true
 		ui.tryOn = nil
@@ -4807,7 +4813,7 @@ do
 		-- THE SECONDARY (or a shield: GEAR)
 		local sp = panel(page, "SECONDARY")
 		local sg2 = LT.grid(sp, 3, 100)
-		LT.tile(sg2, 0, {name = "None", sub = lo.shield and "you carry a shield" or "nothing on 2", have = true, on = lo.secondary == nil, onClick = function() choose("secondary", nil) end})
+		LT.tile(sg2, 0, {name = "None", sub = "nothing on 2", have = true, on = lo.secondary == nil, onClick = function() choose("secondary", nil) end})
 		local n = 0
 		for _, w in ipairs(Catalog.WEAPONS) do
 			if w.id ~= lo.weapon and allowed(w, "secondary") then
@@ -5406,7 +5412,7 @@ do
 		local leftList = scroll(left, 6)
 		local right = clearFrame(body); right.Position = UDim2.new(0, 286, 0, 0); right.Size = UDim2.new(1, -286, 1, 0)
 		local groups = {{"OneHanded", "ONE-HANDED"}, {"TwoHanded", "TWO-HANDED"}, {"Polearm", "POLEARMS"}, {"Ranged", "RANGED  ·  ARCHER"},
-			{"Shield", "SHIELDS  ·  BESIDE A ONE-HANDER"}, {"Throwable", "THROWABLES  ·  HOLD C TO THROW"}}
+			{"Shield", "SHIELDS  ·  BESIDE A ONE-HANDER"}, {"Throwable", "THROWABLES  ·  " .. HX.throwKey() .. " TO THROW"}}
 		local function shown(w) return not HX.hideLocked() or owns("weapons", w.id) end
 		if not Catalog.WEAPON[ui.shopWeapon] or not shown(Catalog.WEAPON[ui.shopWeapon]) then
 			ui.shopWeapon = nil
@@ -5446,7 +5452,7 @@ do
 		local sk = title(stg, sel.name == "Default" and "DEFAULT LOOK" or (string.upper(sel.name) .. "  SKIN"), 18, RARITY_COL[sel.rarity] or COL.DIM); sk.Position = UDim2.fromOffset(20, 50); sk.Size = UDim2.new(1, -40, 0, 22)
 		if sel.name ~= "Default" then local tag = rarityTag(stg, sel.rarity); tag.AnchorPoint = Vector2.new(1, 0); tag.Position = UDim2.new(1, -16, 0, 16) end
 		local fam = w.family == "OneHanded" and "One-handed" or (w.family == "TwoHanded" and "Two-handed" or (w.family == "Ranged" and "Ranged (the Archer's)" or (w.family == "Magic" and "Magic (the Mage's)"
-			or (w.family == "Shield" and "Shield (beside a one-hander)" or (w.family == "Throwable" and "Throwable (hold C)" or "Polearm")))))
+			or (w.family == "Shield" and "Shield (beside a one-hander)" or (w.family == "Throwable" and ("Throwable (" .. string.lower(HX.throwKey()) .. ")") or "Polearm")))))
 		local fxText = Preview.fxText(sel)
 		local info = title(stg, fam .. (w.secondary and "  ·  can be your secondary" or "") .. (sel.trim and ("  ·  trim: " .. sel.trim) or "") .. (fxText and ("  ·  " .. fxText) or ""), 13, COL.DIM); info.Position = UDim2.fromOffset(20, 74); info.Size = UDim2.new(1, -40, 0, 16)
 		local desc = (weaponStats(w.id) or {}).Description or w.desc
@@ -6556,8 +6562,7 @@ function HX.classLevelPanel(list, classId)
 	dim(p, (#nexts > 0 and ("NEXT  ·  " .. table.concat(nexts, "   ·   ") .. ".  ") or "") .. "Every bit of XP you earn as a " .. className(classId) .. " counts; a Key every " .. M.keyEvery .. " levels.", 12)
 end
 
--- THE SHIELD (beside a one-handed primary), THE POWER (E), THE THROWABLE (C), and beside a
--- shield a SIDEARM on 3
+-- THE SHIELD (with a one-handed primary), THE POWER (E), THE THROWABLE (C)
 function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 	local cls = GameConfig.CLASSES[classId]
 	local P = state.profile or {}
@@ -6595,23 +6600,21 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 	-- SHIELD
 	local w = Catalog.WEAPON[lo.weapon or ""]
 	if w and w.family == "OneHanded" and not cls.ranged and not cls.magic then
-		local sp = panel(list, "SHIELD  ·  INSTEAD OF A SECONDARY")
-		dim(sp, "Beside a one-handed weapon, up in front of you while you block: it catches blows from wider, for less stamina, and stops arrows, bolts and thrown things. Your kick becomes a bash.", 12)
+		local sp = panel(list, "SHIELD  ·  WITH YOUR ONE-HANDED WEAPON")
+		dim(sp, "On your arm with a one-handed weapon (your secondary stays yours too), up in front of you while you block: it catches blows from wider, for less stamina, and stops arrows, bolts and thrown things. Your kick becomes a bash.", 12)
 		local function noShield()
 			lo.shield, lo.shieldSkin = nil, nil
-			if lo.thirdKind == "sidearm" then lo.thirdKind, lo.thirdId, lo.thirdSkin = nil, nil, nil end
 			dirty()
 		end
 		if tiles then
 			local g = tiles.grid(sp, 3, 100)
-			tiles.tile(g, 0, {name = "No shield", sub = "carry a secondary", have = true, on = lo.shield == nil, onClick = noShield})
+			tiles.tile(g, 0, {name = "No shield", sub = "a free left hand", have = true, on = lo.shield == nil, onClick = noShield})
 			for i, sh in ipairs(Catalog.ARSENAL.shields) do
 				local have = owns("weapons", sh.id)
 				tiles.tile(g, i, {name = sh.name, sub = have and string.format("+%d° · %d%% cheaper", sh.cone, math.floor((1 - sh.block) * 100 + 0.5)) or unlockText(sh),
 					have = have, weapon = sh.id, skin = lo.shield == sh.id and lo.shieldSkin or nil, on = lo.shield == sh.id, onClick = function()
 						if have then
 							lo.shield, lo.shieldSkin = sh.id, sh.id .. ":Default"
-							lo.secondary, lo.secondarySkin = nil, nil
 							dirty()
 						else toast(sh.name .. ": " .. unlockText(sh) .. (sh.marks and (" (or " .. fmt(sh.marks) .. " Marks in the ARMORY)") or ""), COL.DIM) end
 					end})
@@ -6619,14 +6622,13 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 		end
 		local g = cardGrid(sp, 40)
 		g.Visible = not tiles
-		itemCard(g, 0, "No shield", "carry a secondary", lo.shield == nil, true, nil, noShield)
+		itemCard(g, 0, "No shield", "a free left hand", lo.shield == nil, true, nil, noShield)
 		for i, sh in ipairs(Catalog.ARSENAL.shields) do
 			local have = owns("weapons", sh.id)
 			local stats = string.format("blocks %d%% cheaper · +%d°%s", math.floor((1 - sh.block) * 100 + 0.5), sh.cone, sh.arrows and " · arrows" or "")
 			itemCard(g, i, sh.name, have and stats or (unlockText(sh) .. (sh.marks and ("  ·  or " .. fmt(sh.marks) .. " Marks") or "")), lo.shield == sh.id, have, nil, function()
 				if have then
 					lo.shield, lo.shieldSkin = sh.id, sh.id .. ":Default"
-					lo.secondary, lo.secondarySkin = nil, nil
 					dirty()
 				else toast(sh.name .. ": " .. unlockText(sh) .. " (or buy it in the ARMORY)", COL.DIM) end
 			end)
@@ -6726,32 +6728,6 @@ function HX.arsenalPanels(list, lo, classId, cardGrid, itemCard, tiles)
 			dim(tp, (t.desc or "") .. string.format("  (a %.2fs wind-up)", Catalog.throwWindup(t)), 12)
 			heading(tp, "ITS SKIN")
 			skinCards(tp, t.id, lo.throwableSkin, function(v) lo.throwableSkin = v; dirty() end)
-		end
-	end
-	-- A SIDEARM on 3, beside a shield (the shield took the secondary's place)
-	if lo.shield then
-		local sp = panel(list, "SIDEARM  ·  BESIDE YOUR SHIELD  ·  3")
-		dim(sp, "Your shield takes the secondary's place: a one-handed sidearm can ride on key 3.", 12)
-		local kind = lo.thirdKind
-		local function noSide() lo.thirdKind, lo.thirdId, lo.thirdSkin = "none", nil, nil; dirty() end
-		local g = tiles and tiles.grid(sp, 3, 100) or cardGrid(sp, 40)
-		if tiles then tiles.tile(g, 0, {name = "None", sub = "no sidearm", have = true, on = kind ~= "sidearm", onClick = noSide})
-		else itemCard(g, 0, "None", "no sidearm", kind ~= "sidearm", true, nil, noSide) end
-		local n = 0
-		for _, sw in ipairs(Catalog.WEAPONS) do
-			if sw.id ~= lo.weapon and Catalog.weaponFits(cls, sw, "secondary") then
-				n += 1
-				local have = owns("weapons", sw.id)
-				local on = kind == "sidearm" and lo.thirdId == sw.id
-				local function pick() if have then lo.thirdKind, lo.thirdId, lo.thirdSkin = "sidearm", sw.id, sw.id .. ":Default"; dirty() end end
-				if tiles then tiles.tile(g, n, {name = sw.name, sub = have and "a sidearm on 3" or unlockText(sw), have = have, weapon = sw.id, skin = on and lo.thirdSkin or nil, on = on, onClick = pick})
-				else itemCard(g, n, sw.name, have and "a sidearm on 3" or unlockText(sw), on, have, nil, pick) end
-			end
-		end
-		local sw = kind == "sidearm" and Catalog.WEAPON[lo.thirdId or ""]
-		if sw then
-			heading(sp, "ITS SKIN")
-			skinCards(sp, sw.id, lo.thirdSkin, function(v) lo.thirdSkin = v; dirty() end)
 		end
 	end
 end
@@ -9675,7 +9651,7 @@ hubEvent.OnClientEvent:Connect(function(what, a, b, c)
 	if what == "GiftsIn" and type(a) == "table" then
 		if b then state.profile = b; refreshWallet() end
 		local from = a[1] and a[1].fromName or "someone"
-		toast("🎁 a gift from " .. tostring(from) .. (open and "" or ": press M to open it"), COL.GOOD)
+		toast("🎁 a gift from " .. tostring(from) .. (open and "" or ": open the menu to see it"), COL.GOOD)
 		HX.showGifts(a)
 		return
 	end

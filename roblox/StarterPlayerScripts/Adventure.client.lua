@@ -30,6 +30,7 @@ local Theme = require(ReplicatedStorage:WaitForChild("Theme"))
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local Dresser = require(ReplicatedStorage:WaitForChild("Dresser"))
 local Device = require(ReplicatedStorage:WaitForChild("Device"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local round = ReplicatedStorage:WaitForChild("Round")
 local event = ReplicatedStorage:WaitForChild("AdventureEvent")
 
@@ -418,8 +419,9 @@ local function showBanner(b)
 	if b.kind == "boss" and b.intro then bossIntro(b); return end
 	bannerToken += 1
 	local my = bannerToken
-	bannerText.Text = b.text or ""
-	bannerSub.Text = b.sub or ""
+	-- (a key named in braces, {Bag}, in the player's own controls)
+	bannerText.Text = InputHints.fill(b.text or "")
+	bannerSub.Text = InputHints.fill(b.sub or "")
 	bannerText.TextColor3 = BANNER_COL[b.kind or ""] or Theme.TEXT
 	banner.Visible = true
 	bannerText.TextTransparency, bannerSub.TextTransparency = 1, 1
@@ -1019,9 +1021,9 @@ edgeLabel.TextStrokeTransparency = 0.2
 
 local lastGuideScan, guideList = 0, {}
 local MODE_HINT = {
-	Depths = "EXPLORE: FIND THE WAY DOWN", Deadvault = "LOOT THE ROOMS  ·  THE WAYS OUT OPEN SOON",
-	Crownfall = "FIND CHESTS  ·  STAY INSIDE THE RING", Kingslayer = "TAKE THE CROWN, OR TAKE IT FROM THE KING",
-	Deadvault = "SEARCH THE ROOMS (V)  ·  CROUCH TO STAY UNHEARD  ·  YOUR BAG (I)",
+	Depths = "EXPLORE: FIND THE WAY DOWN",
+	Crownfall = "FIND CHESTS  ·  YOUR BAG {Bag}  ·  STAY INSIDE THE RING", Kingslayer = "TAKE THE CROWN, OR TAKE IT FROM THE KING",
+	Deadvault = "SEARCH THE ROOMS {Pickup}  ·  CROUCH TO STAY UNHEARD  ·  YOUR BAG {Bag}",
 	Plague = "SURVIVE UNTIL DAWN",
 }
 RunService.RenderStepped:Connect(function()
@@ -1065,7 +1067,7 @@ RunService.RenderStepped:Connect(function()
 	if own then
 		if state == "fight" then hintLine.Text = "FIGHT: DEFEAT THEM ALL, THE GATES OPEN WHEN THEY FALL"
 		elseif best then hintLine.Text = "UP NEXT: " .. best.text
-		else hintLine.Text = MODE_HINT[round:GetAttribute("Mode") or ""] or "" end
+		else hintLine.Text = InputHints.fill(MODE_HINT[round:GetAttribute("Mode") or ""] or "") end
 	end
 	edge.Visible = false
 	-- (no arrow to things through the walls in a raid: find your way)

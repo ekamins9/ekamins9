@@ -1,4 +1,5 @@
---[[ SHIELDS — a shield in the secondary slot, beside a one-handed primary (Catalog ▸ Arsenal).
+--[[ SHIELDS — a shield that goes with a one-handed primary (Catalog ▸ Arsenal; the secondary stays a
+     weapon of its own, and the shield stays on the arm with it if that's one-handed too).
      It's worn, not held: a copy of its Tool's body (ServerStorage ▸ Weapons ▸ <id>) strapped
      to your LEFT ARM (welded to it: it goes wherever the arm goes), in its skin and arms
      (Dresser.applySkin, Heraldry, ShieldDress). While you block, the arm comes up across your

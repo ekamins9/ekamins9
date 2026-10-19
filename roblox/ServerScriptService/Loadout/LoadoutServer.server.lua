@@ -250,7 +250,6 @@ local Powers = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("
 local function thirdSlot(plr, char, lo)
 	if lo.shield then Shields.wear(char, lo.shield, lo.shieldSkin, Profile.get(plr).appearance) else Shields.unwear(char) end
 	Powers.equip(char, plr, lo)
-	if lo.thirdKind == "sidearm" and lo.thirdId then giveWeapon(plr, char, lo.thirdId, lo.thirdSkin, false, 3, lo) end
 end
 
 local spawnAs   -- (below)
@@ -389,7 +388,6 @@ spawnAs = function(plr, classId, opts)
 	-- (a shield only beside a one-handed primary: a lesson's or the roulette's weapon may not be one)
 	if lo.shield and not Catalog.shieldFits(GameConfig.CLASSES[classId], lo.weapon, lo.shield) then
 		lo.shield, lo.shieldSkin = nil, nil
-		if lo.thirdKind == "sidearm" then lo.thirdKind, lo.thirdId = "none", nil end
 	end
 	if not forced then Profile.setActive(plr, classId) end
 	spawning[plr] = true

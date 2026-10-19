@@ -184,7 +184,11 @@ function RangedClient.attach(Tool, cfgIn)
 		local c = char()
 		if not c or c:GetAttribute("Reloading") then return end
 		if not c:GetAttribute("Loaded") then reload(); return end
-		if not aiming or aim < 0.8 then hint("HOLD RIGHT MOUSE TO AIM"); return end
+		if not aiming or aim < 0.8 then
+			local IH = require(game:GetService("ReplicatedStorage"):WaitForChild("InputHints"))
+			hint(IH.mode() == "Touch" and "HOLD BLOCK TO AIM" or ("HOLD " .. IH.name("Block") .. " TO AIM"))
+			return
+		end
 		loose()
 	end
 

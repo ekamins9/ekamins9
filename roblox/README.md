@@ -629,11 +629,12 @@ so everyone sees it; the spell bar and crosshair take its colours. Menus show a 
 ## Magic for every class: a power and a throwable, shields, class levels
 
 **Every class carries a POWER and a THROWABLE**, each on its own key, besides its weapons:
-1 the primary · 2 a sidearm, or a **SHIELD** beside a one-handed primary (then a sidearm can ride
-on 3). The loadout's `power` and `throwable` / `throwableSkin` (a loadout saved when the two
-shared a third slot, `thirdKind` "power" / "throwable", is read into its own: Profile, Powers.equip,
-the class screen); `thirdKind` is only the shield's sidearm now. New loadouts get the class's first
-power and the free Throwing Knives.
+1 the primary · 2 the secondary, and a **SHIELD** goes with a one-handed primary (on the left
+arm; the secondary stays a weapon of its own, no third weapon). The loadout's `power` and
+`throwable` / `throwableSkin` (a loadout saved when the two shared a third slot, `thirdKind`
+"power" / "throwable", is read into its own: Profile, Powers.equip, the class screen; one saved
+with a sidearm on 3 beside a shield has that sidearm as its secondary). New loadouts get the
+class's first power and the free Throwing Knives.
 - **POWER: E** (a controller's D-pad ↑ tap, a hold is still the emote wheel; on a phone, tap its
   orb): used at once, aimed at your crosshair (`Powers.client` → `PowerRemote` "Use" →
   `Combat ▸ Powers`).

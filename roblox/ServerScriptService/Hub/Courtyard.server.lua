@@ -328,7 +328,7 @@ local function rulesBoard(nb)
 		y += 80
 	end
 	line(Rules.CONSEQUENCES, y + 6, 70, Color3.fromRGB(150, 30, 30), Enum.Font.GothamBold, 17)
-	line("All of it: MENU (M) › SETTINGS › THE RULES", y + 84, 26, INK, Enum.Font.GothamBold, 17, Enum.TextXAlignment.Center)
+	line("All of it: THE MENU › SETTINGS › THE RULES", y + 84, 26, INK, Enum.Font.GothamBold, 17, Enum.TextXAlignment.Center)
 	keep(prompt(p, "Read", "The Rules", {Open = "RULES"}, 12))
 end
 

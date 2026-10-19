@@ -443,7 +443,7 @@ TeleportService.TeleportInitFailed:Connect(function(plr, result, msg, placeId, o
 		event:FireClient(plr, "Toast", "Couldn't reach the battle: trying another one…")
 		task.delay(6, function() if plr.Parent and _G.HubTravel then _G.HubTravel(plr, "Warfront", {mode = "TDM", first = true}) end end)
 	else
-		event:FireClient(plr, "Toast", "Couldn't get there: try again from PLAY (M)")
+		event:FireClient(plr, "Toast", "Couldn't get there: try again from PLAY in the menu")
 	end
 end)
 

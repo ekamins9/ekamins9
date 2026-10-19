@@ -265,8 +265,10 @@ local function refreshCard()
 		for id in (player:GetAttribute("DrillsDone") or ""):gmatch("[^,]+") do done[id] = true end
 		local all = true
 		for _, x in ipairs(TRACK.knight) do if not done[x.id] then all = false end end
-		bubbleText.Text = all and "You've learned all I can teach. Spar in the ring, run the Gauntlet, or call up bots. Press E!"
-			or "Come here, recruit. Press E and I'll teach you."
+		local touch = InputHints.mode() == "Touch"
+		local press = touch and "Tap me" or ("Press " .. InputHints.say("Interact"))
+		bubbleText.Text = all and ("You've learned all I can teach. Spar in the ring, run the Gauntlet, or call up bots. " .. press .. "!")
+			or ("Come here, recruit. " .. press .. " and I'll teach you.")
 		return
 	end
 	local n, goal = player:GetAttribute("DrillProgress") or 0, player:GetAttribute("DrillGoal") or l.goal

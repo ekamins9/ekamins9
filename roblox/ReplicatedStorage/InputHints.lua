@@ -16,7 +16,9 @@
      Kick, Sprint, Dodge, Jump, Crouch, View, Pickup, Emote, Cursor, Reload…)
      plus Block, Menu, Board (the scoreboard), Weapons (switching), and the loot
      games' Bag (your gear: RaidInventory), TakeAll (a loot window) and Belt (the
-     potions on it). ]]
+     potions on it), and Interact (a prompt's own key: E, a pad's X, a tap).
+
+       InputHints.keyed(action, verb)   "[E] HATCH" · "[X] HATCH" · "TAP TO HATCH" ]]
 
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -43,15 +45,17 @@ local PS = {ButtonA = "×", ButtonB = "○", ButtonX = "□", ButtonY = "△", B
 -- (special cases said in words)
 local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s",
 	Bag = "HOLD %s", TakeAll = "TAKE ALL", Belt = "THE BAG"}
+-- (a prompt's pad button: Roblox's own, X; not a fight action, so not in PAD)
+local PROMPT_PAD = {Interact = K.ButtonX}
 -- the touch buttons' names (StarterPlayerScripts ▸ TouchControls)
 local TOUCH = {Swing = "SWING", Stab = "STAB", Overhead = "OVERHEAD", Underhand = "SWING", Block = "BLOCK", Feint = "FEINT", Kick = "KICK",
 	Dodge = "DODGE", Jump = "JUMP", Sprint = "SPRINT", Crouch = "CROUCH", View = "VIEW", Emote = "EMOTE", Menu = "MENU", Board = "SCORES",
 	Pickup = "PICK UP", Weapons = "weapon", Cursor = "MENU", Reload = "SWING", Power = "the orb", Throw = "hold the throw orb", Lock = "LOCK",
-	Bag = "BAG", TakeAll = "TAKE ALL", Belt = "TAP"}
+	Bag = "BAG", TakeAll = "TAKE ALL", Belt = "TAP", Interact = "TAP"}
 -- keyboard binds, the way a player says them
 local NICE = {MouseButton1 = "LEFT MOUSE", MouseButton3 = "MIDDLE MOUSE", MouseWheelUp = "SCROLL UP", MouseWheelDown = "SCROLL DOWN",
 	LeftAlt = "LEFT ALT", RightAlt = "RIGHT ALT", LeftShift = "LEFT SHIFT", LeftControl = "LEFT CTRL", Space = "SPACE"}
-local FIXED_KEYS = {Block = "RIGHT MOUSE", Menu = "M", Board = "TAB", Weapons = "1 · 2", Bag = "I", TakeAll = "Y", Belt = "3 – 6"}
+local FIXED_KEYS = {Block = "RIGHT MOUSE", Menu = "M", Board = "TAB", Weapons = "1 · 2", Bag = "I", TakeAll = "Y", Belt = "3 – 6", Interact = "E"}
 
 local settings
 local function key(action)
@@ -115,7 +119,7 @@ function InputHints.name(action)
 	local mode = InputHints.mode()
 	if mode == "Gamepad" then
 		local names = isPlayStation() and PS or XBOX
-		local code = InputHints.PAD[action]
+		local code = InputHints.PAD[action] or PROMPT_PAD[action]
 		local btn = code and (names[code.Name] or code.Name) or nil
 		local words = PAD_WORDS[action]
 		if words then return string.format(words, btn or (names.ButtonR2)) end
@@ -135,6 +139,12 @@ end
 
 function InputHints.fill(text)
 	return (string.gsub(text, "{(%a+)}", function(a) return InputHints.say(a) end))
+end
+
+-- a button's words with its key: "[E] HATCH", or on a touch screen "TAP TO HATCH"
+function InputHints.keyed(action, verb)
+	if InputHints.mode() == "Touch" then return "TAP TO " .. verb end
+	return "[" .. InputHints.name(action) .. "] " .. verb
 end
 
 return InputHints

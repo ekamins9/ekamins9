@@ -61,7 +61,7 @@ function Hub:hall()
 	end
 end
 
-function Hub:objective() return "HUB  ·  press M for the menu" end
+function Hub:objective() return "HUB  ·  {Menu} for the menu" end
 function Hub:isOver()
 	local nxt = Game.node:GetAttribute("NextMode")
 	if nxt ~= nil and nxt ~= "" and nxt ~= "Hub" then return "TO BATTLE" end
