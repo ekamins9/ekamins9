@@ -14,7 +14,9 @@
 
      Actions are ClientSettings.KEYS' (Swing, Stab, Overhead, Underhand, Feint,
      Kick, Sprint, Dodge, Jump, Crouch, View, Pickup, Emote, Cursor, Reload…)
-     plus Block, Menu, Board (the scoreboard) and Weapons (switching). ]]
+     plus Block, Menu, Board (the scoreboard), Weapons (switching), and the loot
+     games' Bag (your gear: RaidInventory), TakeAll (a loot window) and Belt (the
+     potions on it). ]]
 
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,6 +32,8 @@ InputHints.PAD = {
 	Sprint = K.ButtonL3, View = K.ButtonR3, Emote = K.DPadUp, Crouch = K.DPadDown,
 	Menu = K.ButtonSelect, Board = K.ButtonSelect, Pickup = K.ButtonX, Reload = K.ButtonR2, Stance = K.DPadLeft,
 	Power = K.DPadUp, Throw = K.DPadDown, Lock = K.ButtonR3,
+	-- (the loot games carry no throwable: holding D-pad ↓ opens the bag there, GamepadControls)
+	Bag = K.DPadDown,
 }
 -- what the button is called (Xbox / PlayStation)
 local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", ButtonL1 = "LB", ButtonR1 = "RB", ButtonL2 = "LT", ButtonR2 = "RT",
@@ -37,15 +41,17 @@ local XBOX = {ButtonA = "A", ButtonB = "B", ButtonX = "X", ButtonY = "Y", Button
 local PS = {ButtonA = "×", ButtonB = "○", ButtonX = "□", ButtonY = "△", ButtonL1 = "L1", ButtonR1 = "R1", ButtonL2 = "L2", ButtonR2 = "R2",
 	ButtonL3 = "L3", ButtonR3 = "R3", DPadUp = "D-PAD ↑", DPadDown = "D-PAD ↓", DPadLeft = "D-PAD ←", DPadRight = "D-PAD →", ButtonSelect = "TOUCHPAD"}
 -- (special cases said in words)
-local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s"}
+local PAD_WORDS = {Underhand = "%s + RIGHT STICK ↓", SideFlip = "RIGHT STICK ← →", Weapons = "D-PAD ← →", Board = "HOLD %s", Cursor = "SELECT", Throw = "HOLD %s", View = "HOLD %s",
+	Bag = "HOLD %s", TakeAll = "TAKE ALL", Belt = "THE BAG"}
 -- the touch buttons' names (StarterPlayerScripts ▸ TouchControls)
 local TOUCH = {Swing = "SWING", Stab = "STAB", Overhead = "OVERHEAD", Underhand = "SWING", Block = "BLOCK", Feint = "FEINT", Kick = "KICK",
 	Dodge = "DODGE", Jump = "JUMP", Sprint = "SPRINT", Crouch = "CROUCH", View = "VIEW", Emote = "EMOTE", Menu = "MENU", Board = "SCORES",
-	Pickup = "PICK UP", Weapons = "weapon", Cursor = "MENU", Reload = "SWING", Power = "the orb", Throw = "hold the throw orb", Lock = "LOCK"}
+	Pickup = "PICK UP", Weapons = "weapon", Cursor = "MENU", Reload = "SWING", Power = "the orb", Throw = "hold the throw orb", Lock = "LOCK",
+	Bag = "BAG", TakeAll = "TAKE ALL", Belt = "TAP"}
 -- keyboard binds, the way a player says them
 local NICE = {MouseButton1 = "LEFT MOUSE", MouseButton3 = "MIDDLE MOUSE", MouseWheelUp = "SCROLL UP", MouseWheelDown = "SCROLL DOWN",
 	LeftAlt = "LEFT ALT", RightAlt = "RIGHT ALT", LeftShift = "LEFT SHIFT", LeftControl = "LEFT CTRL", Space = "SPACE"}
-local FIXED_KEYS = {Block = "RIGHT MOUSE", Menu = "M", Board = "TAB", Weapons = "1 · 2"}
+local FIXED_KEYS = {Block = "RIGHT MOUSE", Menu = "M", Board = "TAB", Weapons = "1 · 2", Bag = "I", TakeAll = "Y", Belt = "3 – 6"}
 
 local settings
 local function key(action)

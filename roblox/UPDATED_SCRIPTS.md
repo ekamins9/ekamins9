@@ -1,4 +1,51 @@
-# Updated scripts: Crownfall's island is a real land
+# Updated scripts: Crownfall, loot only, in on a dragon
+
+- **No classes in Crownfall.** No class screen: everyone is the same plain body in plain clothes
+  with an old dagger; no power, no throwable, no shield, no skins of your own. Everything else is
+  found on the island (GameConfig `forceClass`; LoadoutServer leaves your own class pick alone).
+- **The battle-bus dragon.** Everyone rides in on the back of a great dragon flying across the
+  island, high up, wings beating; your Jump key leaps off where you like (the key on screen is
+  yours, or your pad's, or the touch JUMP button), and at the far shore it shakes off whoever's
+  left. **The fall**: steer as you fall, look down to dive faster or ahead to glide, wind streaks
+  and the roar of the wind; then **a hero's landing**: down hard on one knee, a fist to the ground,
+  a ring of dust and stones, the ground shaking. Everyone sees everyone's dive and landing. The
+  canopy glide is gone.
+- **Armour you find is armour you wear**: a real set on your body (padded jack, mail, brigandine,
+  plate, Kingsguard plate in gold and crimson), in a palette of its own; heavier is tougher and
+  slower; putting it on keeps your wounds. Better armour goes straight on; the old one to your bag.
+- **An inventory**: two weapons, your armour, a belt of four potions (keys 3 – 6 drink one; tap
+  on a phone) and a bag of six; equip, take off, drink, drop. Walk over loot to take it: a weapon
+  to a free hand (the old dagger gives way), a potion to the belt. Chests hold weapons, armour and
+  potions only; more lies about the places; bots drop their weapon, armour and bottles.
+- The HUD chip shows your kills; on the dragon it says so.
+- **Keys follow the player** in the loot games' inventory: the bag key, Take All and the belt
+  numbers come from InputHints (keyboard binds, a pad, touch). On a pad, holding D-pad down opens
+  the bag (the loot games carry no throwable); VIEW stays the menu. The seat hint ("… to stand up")
+  names your own Jump.
+- Fixed while building it: a weapon held on the dragon's back fell out of your hand into the sea
+  (weapons now ride in the backpack and come back to hand as you land).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | rewritten: the dragon, leap/land, take/wear/inv, plain start, bots' finds |
+| [Skyfall.client.lua](StarterPlayerScripts/Skyfall.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new**: the ride's key, the dive, the hero's landing, CfDive / CfLand |
+| [LoadoutServer.server.lua](ServerScriptService/Loadout/LoadoutServer.server.lua) | ServerScriptService ▸ Loadout | Script | `forceClass`: no class screen, that body, your pick untouched |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Crownfall: `forceClass`, description |
+| [Catalog/Loot.lua](ReplicatedStorage/Catalog/Loot.lua) | ReplicatedStorage ▸ Catalog | ModuleScript | ARMOR `weight`; CHESTS.crownfall weapons / armour / potions |
+| [Loot.lua](ServerScriptService/Game/Loot.lua) | ServerScriptService ▸ Game | ModuleScript | an armour card says how it wears |
+| [RaidInventory.client.lua](StarterPlayerScripts/RaidInventory.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the royale layout; keys from InputHints; `_G.PadBag` |
+| [InputHints.lua](ReplicatedStorage/InputHints.lua) | ReplicatedStorage | ModuleScript | Bag, TakeAll, Belt |
+| [GamepadControls.client.lua](StarterPlayerScripts/GamepadControls.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | hold D-pad down: the bag in the loot games |
+| [Dragon.client.lua](StarterPlayerScripts/Dragon.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | also animates dragons in workspace ▸ Steeds |
+| [CameraRig.client.lua](StarterCharacterScripts/CameraRig.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | ViewWant "Far" |
+| [Movement.client.lua](StarterCharacterScripts/Movement.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | no stand-up on a dragon; the seat hint's key |
+| [DungeonMenu.client.lua](StarterPlayerScripts/DungeonMenu.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the down screen for Crownfall (YOU FELL) |
+| [Spectate.client.lua](StarterPlayerScripts/Spectate.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no SPAWN / CLASS in a class-less mode |
+| [README.md](README.md) | — | doc | Crownfall |
+
+---
+
+## Before that: Crownfall's island is a real land
 
 - **The Crownfall island is rebuilt** (Realm v2), about twice as wide and every bit of it sitting on
   the ground: a height-mapped island written straight into Terrain (rolling meadows, highlands with

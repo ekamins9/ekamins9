@@ -1,11 +1,15 @@
---[[ RAID INVENTORY — Deadvault's gear, bag, belt and loot windows (Game ▸ Modes ▸ Deadvault), in
-     the dungeon game's look (ReplicatedStorage ▸ DarkUI: every thing shown as itself, in 3D).
+--[[ RAID INVENTORY — the loot games' gear, bag, belt and loot windows: Deadvault's (Game ▸ Modes ▸
+     Deadvault) and Crownfall's (a payload with royale = true: two weapons, armour, the belt and a
+     small bag; no gold, no worth, no tome, no relics), in the dungeon game's look (ReplicatedStorage
+     ▸ DarkUI: every thing shown as itself, in 3D). Every key it names is the player's own
+     (InputHints Bag, TakeAll, Belt: a key, a pad button, or the touch button).
 
        THE BELT (always on screen)     your four draughts: keys 3 – 6 (a tap on phone) drink one: a
                                        moment with the bottle at your lips, slowed, then it works
-       YOUR GEAR (I, or the bag button) what you wear (a weapon, a sidearm, armour, a tome's power,
-                                       three relics), the belt and the bag; pick a thing: EQUIP /
-                                       TAKE OFF / DRINK / DROP. What you carry is worth (to the vault)
+       YOUR GEAR (I, hold D-pad ↓ on a pad, or the bag button) what you wear (a weapon, a sidearm,
+                                       armour, a tome's power, three relics), the belt and the bag;
+                                       pick a thing: EQUIP / TAKE OFF / DRINK / DROP. What you carry
+                                       is worth (to the vault)
        A LOOT WINDOW                   searching a crate, a chest, a body: what's in it; TAKE one, or
                                        TAKE ALL (Y). Walk away and it closes.
 
@@ -20,6 +24,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local DarkUI = require(ReplicatedStorage:WaitForChild("DarkUI"))
+local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 local event = ReplicatedStorage:WaitForChild("AdventureEvent")
 
 local C = DarkUI.C
@@ -139,18 +144,32 @@ local function pick(card, where)
 	render()
 end
 
+-- (the belt's keys are the number row's: shown only on a keyboard)
+local function keyed() return InputHints.mode() == "Keyboard" end
+local function beltTitleText()
+	local m = InputHints.mode()
+	if m == "Touch" then return "Belt  ·  tap one to drink" end
+	if m == "Gamepad" then return "Belt  ·  drink one from here" end
+	return "Belt  ·  " .. InputHints.name("Belt")
+end
 render = function()
 	if not inv then return end
-	goldLabel.Text = "Gold  " .. tostring(inv.gold or 0)
-	worthLabel.Text = string.format("What you carry is worth about %d gold  ·  get it out to keep it", inv.worth or 0)
+	local royale = inv.royale == true
+	goldLabel.Text = royale and "" or ("Gold  " .. tostring(inv.gold or 0))
+	worthLabel.Text = royale and "Two weapons, your armour, a belt of potions, a small bag  ·  fall, and it's left where you fell"
+		or string.format("What you carry is worth about %d gold  ·  get it out to keep it", inv.worth or 0)
 	bagTitle.Text = string.format("Bag  ·  %d / %d", #(inv.bag or {}), inv.max or 20)
+	beltTitle.Text = beltTitleText()
 	for _, c in ipairs(worn:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
 	for _, s in ipairs(SLOTS) do
-		cell(worn, inv.equip and inv.equip[s.key], function(card) pick(card, s.key) end, {pos = UDim2.fromOffset(s.x, s.y), size = UDim2.fromOffset(s.w, s.h), label = s.label, upright = s.upright})
+		if not (royale and (s.key == "power" or s.key:match("^relic"))) then
+			cell(worn, inv.equip and inv.equip[s.key], function(card) pick(card, s.key) end, {pos = UDim2.fromOffset(s.x, s.y), size = UDim2.fromOffset(s.w, s.h), label = s.label, upright = s.upright})
+		end
 	end
 	for i = 1, inv.beltMax or 4 do
 		local card = inv.belt and inv.belt[i]
-		cell(worn, card, function(c2) pick(c2, "belt" .. i) end, {pos = UDim2.fromOffset(22 + (i - 1) * 74, 306), size = UDim2.fromOffset(66, 66), label = tostring(i + 2), key = card and tostring(i + 2) or nil})
+		cell(worn, card, function(c2) pick(c2, "belt" .. i) end, {pos = UDim2.fromOffset(22 + (i - 1) * 74, 306), size = UDim2.fromOffset(66, 66),
+			label = keyed() and tostring(i + 2) or "", key = (card and keyed()) and tostring(i + 2) or nil})
 	end
 	for _, c in ipairs(bagGrid:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
 	for i = 1, inv.max or 20 do
@@ -174,8 +193,13 @@ render = function()
 	else
 		dName.Text = "Pick a thing"
 		dName.TextColor3 = C.TEXT
-		dSub.Text = "Valuables (cups, rings, idols, gems) sell to the Treasurer, if you get them out."
-		dLines.Text = "Fall, and everything here lies on your body where you fell. The free kit (FREE) is never lost."
+		if royale then
+			dSub.Text = "Walk over a thing to take it: a weapon to a free hand, better armour straight on, a potion to your belt."
+			dLines.Text = "Fall, and everything here is left where you fell. The old dagger (FREE) is yours to the end."
+		else
+			dSub.Text = "Valuables (cups, rings, idols, gems) sell to the Treasurer, if you get them out."
+			dLines.Text = "Fall, and everything here lies on your body where you fell. The free kit (FREE) is never lost."
+		end
 		act1.Visible, act2.Visible = false, false
 	end
 end
@@ -220,7 +244,7 @@ lootList.CanvasSize = UDim2.new(); lootList.AutomaticCanvasSize = Enum.Automatic
 lootList.ScrollBarThickness = 4
 lootList.Parent = lootPanel
 local lll = Instance.new("UIListLayout"); lll.Padding = UDim.new(0, 6); lll.Parent = lootList
-local takeAll = DarkUI.button(lootPanel, "Take All  (Y)", "gold", 18)
+local takeAll = DarkUI.button(lootPanel, "Take All", "gold", 18)
 takeAll.AnchorPoint = Vector2.new(0.5, 1); takeAll.Position = UDim2.new(0.5, 0, 1, -14); takeAll.Size = UDim2.new(1, -28, 0, 44)
 
 local function closeLoot()
@@ -294,11 +318,21 @@ local function drawBelt()
 	for i = 1, 4 do
 		local card = inv and inv.belt and inv.belt[i]
 		cell(beltSlots, card, function() if card then event:FireServer("Belt", i) end end,
-			{pos = UDim2.fromOffset((i - 1) * 70, 0), size = UDim2.fromOffset(64, 64), label = tostring(i + 2), key = card and tostring(i + 2) or nil})
+			{pos = UDim2.fromOffset((i - 1) * 70, 0), size = UDim2.fromOffset(64, 64), label = keyed() and tostring(i + 2) or "", key = (card and keyed()) and tostring(i + 2) or nil})
 	end
 end
 
-local bagButton = DarkUI.button(gui, "Bag  (I)", "stone", 16)
+local bagButton = DarkUI.button(gui, "Bag", "stone", 16)
+-- (the keys it names: the player's own, a pad's, or none on a touch screen)
+local function writeKeys()
+	local m = InputHints.mode()
+	bagButton.Text = m == "Touch" and "Bag" or ("Bag  (" .. InputHints.name("Bag") .. ")")
+	takeAll.Text = m == "Keyboard" and ("Take All  (" .. InputHints.name("TakeAll") .. ")") or "Take All"
+	beltLbl.Text = m == "Touch" and "BELT  ·  TAP TO DRINK" or "BELT"
+	lastBelt = "?"
+	drawBelt()
+	if open then render() end
+end
 bagButton.AnchorPoint = Vector2.new(0, 1)
 bagButton.Position = UDim2.new(0, 22 + 4 * 70 + 6, 1, -22)
 bagButton.Size = UDim2.fromOffset(110, 64)
@@ -309,6 +343,14 @@ local function setOpen(on)
 	back.Visible = open
 	if open then selected = nil; render() else tip:hide() end
 end
+writeKeys()
+InputHints.changed:Connect(writeKeys)
+-- (a pad's bag: hold D-pad down, GamepadControls; the VIEW button stays the menu's)
+_G.PadBag = function()
+	if not inv then return false end
+	setOpen(not open)
+	return true
+end
 close.Activated:Connect(function() setOpen(false) end)
 bagButton.Activated:Connect(function() setOpen(not open) end)
 -- (a test hook: the Open attribute opens and shuts it)
@@ -317,7 +359,7 @@ gui:GetAttributeChangedSignal("Open"):Connect(function() setOpen(gui:GetAttribut
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed and input.KeyCode ~= Enum.KeyCode.Escape then return end
 	if UserInputService:GetFocusedTextBox() then return end
-	if input.KeyCode == Enum.KeyCode.I or input.KeyCode == Enum.KeyCode.ButtonSelect then
+	if input.KeyCode == Enum.KeyCode.I then
 		if inv then setOpen(not open) end
 	elseif input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.ButtonB then
 		if open then setOpen(false) elseif loot then closeLoot() end

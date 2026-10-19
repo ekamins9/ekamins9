@@ -240,7 +240,7 @@ local function refreshCard()
 	classL.Text = cs and ("as " .. cs.className()) or ""
 	-- (the dungeon game has no class screen to go back to: its own DOWN screen, DungeonMenu.client)
 	local def = GameConfig.MODES[roundNode:GetAttribute("Mode") or ""]
-	local own = def ~= nil and def.ownSpawn == true
+	local own = def ~= nil and (def.ownSpawn == true or def.forceClass ~= nil)
 	spawnBtn.Visible = not own
 	classBtn.Text = own and "BACK" or "CLASS"
 	if own then classL.Text = "" end

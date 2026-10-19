@@ -166,9 +166,11 @@ GameConfig.MODES = {
 	-- CROWNFALL (Game ▸ Modes ▸ Crownfall): a battle royale on an island built fresh (Game ▸ Realm)
 	Crownfall = {
 		name = "Crownfall", category = "Adventure", teams = 0, maxPlayers = 16, minPlayers = 1,
-		description = "Drop onto an island built fresh every match with only a plain weapon. Loot its chests for weapons, armour, potions and tomes; the ring of fire closes in. Last one standing takes the crown.",
+		description = "Ride a dragon over an island built fresh every match and leap off where you like, with nothing but an old dagger. Everything else is found: weapons, armour, potions. The ring of fire closes in. Last one standing takes the crown.",
 		maps = {"Crownlands"}, procedural = true,
 		roundLength = 10 * 60, intermission = 15, respawnDelay = 0, hidden = true, botFill = 12, fillAnywhere = true,
+		-- (no class screen: everyone is this body, and only what they find: Modes ▸ Crownfall)
+		forceClass = "Vanguard",
 	},
 	-- KINGSLAYER (Game ▸ Modes ▸ Kingslayer): everyone against the King
 	Kingslayer = {

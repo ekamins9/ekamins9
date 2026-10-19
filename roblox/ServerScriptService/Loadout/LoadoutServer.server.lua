@@ -278,6 +278,17 @@ local function show(plr, reason)
 		end
 		return
 	end
+	-- A MODE WITH NO CLASSES (Crownfall: forceClass): no class screen in the round; in you go as
+	-- its body, and when you can't, the down screen says why (DungeonMenu.client)
+	if def and def.forceClass and Game.node:GetAttribute("State") == "Round" then
+		local ok, why = Game.canSpawn(plr)
+		if ok then
+			task.defer(function() if plr.Parent and not isAlive(plr) and not spawning[plr] then spawnAs(plr, def.forceClass) end end)
+		else
+			event:FireClient(plr, "Down", why or reason, Game.modeId)
+		end
+		return
+	end
 	event:FireClient(plr, "Show", Profile.get(plr).active, reason)
 end
 
@@ -307,6 +318,9 @@ spawnAs = function(plr, classId, opts)
 	if isAlive(plr) and not opts.again then return end
 	if not GameConfig.CLASSES[classId] then classId = Profile.get(plr).active end
 	if not Catalog.classOpen(classId, Profile.get(plr)) then classId = GameConfig.DEFAULT_CLASS end
+	-- (a mode with no classes: its one body for everyone, and your own pick left alone)
+	local forced = Game.current and Game.current.def.forceClass
+	if forced and GameConfig.CLASSES[forced] then classId = forced end
 	local ok, why = Game.canSpawn(plr)
 	if not ok and not opts.again then show(plr, why); return end
 	-- reinforcements come in waves (a mode's waveSpawn): wait for your side's next one
@@ -377,7 +391,7 @@ spawnAs = function(plr, classId, opts)
 		lo.shield, lo.shieldSkin = nil, nil
 		if lo.thirdKind == "sidearm" then lo.thirdKind, lo.thirdId = "none", nil end
 	end
-	Profile.setActive(plr, classId)
+	if not forced then Profile.setActive(plr, classId) end
 	spawning[plr] = true
 	log(plr.Name, "spawning as", classId, "-", lo.helmet, lo.top, lo.bottom, "+", tostring(lo.weapon), "/", tostring(lo.secondary))
 

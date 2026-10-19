@@ -91,9 +91,12 @@ local function watch(folder)
 		if m:GetAttribute("Dragon") then setup(m) end
 	end)
 end
-local npcs = workspace:FindFirstChild("NPCs")
-if npcs then watch(npcs) end
-workspace.ChildAdded:Connect(function(c) if c.Name == "NPCs" and c:IsA("Folder") then watch(c) end end)
+-- (and workspace ▸ Steeds: dragons that carry riders, Crownfall's)
+for _, name in ipairs({"NPCs", "Steeds"}) do
+	local f = workspace:FindFirstChild(name)
+	if f then watch(f) end
+end
+workspace.ChildAdded:Connect(function(c) if (c.Name == "NPCs" or c.Name == "Steeds") and c:IsA("Folder") then watch(c) end end)
 
 -- eased toward a target (so a change of state never snaps)
 local function ease(st, key, target, dt, rate)

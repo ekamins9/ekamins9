@@ -62,6 +62,8 @@ local function hop()
 end
 local function tryJump()
 	if Humanoid.Health <= 0 then return end
+	-- (on Crownfall's dragon the Jump leaps off it: Skyfall.client)
+	if character:GetAttribute("Riding") then return end
 	-- seated: stand up and step off the front, or the seat you're still
 	-- touching catches you again
 	if Humanoid.Sit or Humanoid.SeatPart then
@@ -113,9 +115,10 @@ local function showSeatHint(on)
 		seatHint = g
 	end
 	if seatHint then
-		seatHint.Enabled = on
-		local key = ClientSettings.get("Key_Jump")
-		seatHint.TextLabel.Text = string.format("%s  to stand up", string.upper(key == "Space" and "SPACE" or tostring(key)))
+		-- (not on a dragon's back: Skyfall.client says how to get off that)
+		seatHint.Enabled = on and not character:GetAttribute("Riding")
+		local InputHints = require(game:GetService("ReplicatedStorage"):WaitForChild("InputHints"))
+		seatHint.TextLabel.Text = InputHints.mode() == "Touch" and "JUMP to stand up" or string.format("%s  to stand up", InputHints.name("Jump"))
 	end
 end
 table.insert(conns, Humanoid.Seated:Connect(function(active) showSeatHint(active) end))

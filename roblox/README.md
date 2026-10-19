@@ -2747,17 +2747,28 @@ get out with what you found, or lose it all.
   armourer, **Wendel the Alchemist**, **the Treasurer** (your valuables at their full worth). The
   server decides (Hub ▸ VaultServer, VaultRemote).
 
-### Crownfall (`Game ▸ Modes ▸ Crownfall`, `Game ▸ Realm`)
+### Crownfall (`Game ▸ Modes ▸ Crownfall`, `Game ▸ Realm`, `Skyfall.client`, `RaidInventory.client`)
 A battle royale for up to 16, bots filling the rest (`fillAnywhere`). **The island is built fresh
-every match** (`Realm.build`): terrain (grass on a beach in a sea, round hills, dirt roads to the
-middle), the Crown Keep (walls, towers, arched gates, a hall, banners), villages, a mill, watchtowers,
-camps, a chapel with graves, ruins, each with a name and chests; forests and rocks between.
-- **The drop**: a few seconds in, everyone comes down out of the sky under a canopy (steer where
-  you land) as their class with only a plain weapon (no power, no throwable). Bots wait for it.
-- **Chests** spill three things for whoever opens them (`Catalog ▸ Loot` CHESTS.crownfall, rolled for
-  the opener's class): weapons (rarity, skin, affixes), armour (`Loot.setArmor`: less damage taken,
-  more health), potions (drunk on the spot), tomes (a power), relics. A new weapon or armour takes
-  its slot and drops the old one. Whoever falls drops what they found.
+every match** (`Realm.build`): a height-mapped island written into Terrain (meadows, highlands with
+snow, a lake, a river, beaches), the Crown Keep on its hill, villages, a harbour, farms, a mill,
+towers, a mine, a lodge, a fort, a chapel, ruins, stones, camps, roads and bridges, forests.
+- **No classes, nothing brought in** (`forceClass = "Vanguard"` in GameConfig: no class screen,
+  LoadoutServer spawns that body and leaves your own pick alone): plain clothes and an old dagger.
+- **The dragon**: everyone rides in on a great dragon (Dragonfall's wyrm at twice the size,
+  `workspace ▸ Steeds`, its wings beaten by `Dragon.client`) across the island; the Jump key leaps
+  off ("Leap"), and at the far shore it shakes off whoever's left. Weapons stay in the backpack
+  while you ride. **The fall** (`Skyfall.client`): steer with your move keys, look down to dive,
+  ahead to glide, wind streaks and the wind's roar; then **a hero's landing** (one knee, a fist to
+  the ground, a ring of dust, the ground shaking: `CfDive` / `CfLand` emotes on every screen;
+  attributes Riding / Diving / HeroLand). The camera pulls well back for it (`ViewWant "Far"`).
+- **The loot** (`Catalog ▸ Loot` CHESTS.crownfall: weapons, armour, potions only): chests spill
+  three things, more lies about the places (`layout.loot`), bots drop theirs. Walk over and take
+  it (`Crownfall:take`): a weapon to a free hand (the old dagger gives way), better armour straight
+  on, a potion to the belt, else the bag. **Armour is a real set on your body** (`Crownfall:wear`:
+  `Catalog ▸ Loot` ARMOR set + weight through the Dresser, in a palette of its own; heavier is
+  tougher and slower; wounds kept). **The inventory** (`RaidInventory.client`, payload `royale`):
+  two weapons, armour, a belt of four potions (keys 3 – 6; tap on touch), a bag of six; equip,
+  take off, drink, drop. Whoever falls drops everything but the dagger.
 - **The ring of fire** closes in phases (`RING`: wait, shrink, tighter, hotter); outside it you burn
   (the Burning look). Bots head into the next ring when they're outside it (`botOpts`, BotFill's hook).
 - **Royal caches**: as each of the first three rings starts to close, a gilded chest comes down out

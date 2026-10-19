@@ -311,10 +311,12 @@ local camDistTarget = DEFAULT_DIST
 -- (the view chosen to start in: Settings ▸ Start in)
 if S("StartView") == "First person" then camDist, camDistTarget = 0, 0 end
 -- a scene that wants a view (the Prologue: you wake in the barracks in first person, and the view
--- pulls back as you step out of its door): ViewWant "First" / "Third" on the character
+-- pulls back as you step out of its door): ViewWant "First" / "Third" on the character; "Far":
+-- well back, whatever you play in (Crownfall's dragon ride and the fall: Skyfall.client)
 local function viewWanted(snap)
 	local w = character:GetAttribute("ViewWant")
 	if w == "First" then camDistTarget = 0; if snap then camDist = 0 end
+	elseif w == "Far" then camDistTarget = DEFAULT_DIST * 2.3
 	-- (back out to third, unless first person is how you play: Settings ▸ Start in)
 	elseif w == "Third" and S("StartView") ~= "First person" then camDistTarget = DEFAULT_DIST end
 end

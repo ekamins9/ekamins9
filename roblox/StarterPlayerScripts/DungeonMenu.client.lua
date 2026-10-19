@@ -1148,7 +1148,8 @@ local loadoutEvent = ReplicatedStorage:WaitForChild("LoadoutEvent")
 local function menuBus() _G.MenuBus = _G.MenuBus or Instance.new("BindableEvent"); return _G.MenuBus end
 local function inDungeonGame()
 	local def = GameConfig.MODES[round:GetAttribute("Mode") or ""]
-	return def ~= nil and def.ownSpawn == true
+	-- (and a mode with no classes, Crownfall: no class screen to go back to either)
+	return def ~= nil and (def.ownSpawn == true or def.forceClass ~= nil)
 end
 
 -- ◀ MAIN MENU: asked once, then home to the main menu (HubRemote Play ▸ Courtyard; the menu opens
@@ -1237,6 +1238,10 @@ local function showDown()
 			downHint.Text = "What you carried lies in your pack where you fell, for whoever finds it. Your stash at the Gilded Rat is safe."
 		end
 		downOut.Text = "BACK TO THE GILDED RAT"
+	elseif m == "Crownfall" then
+		downTitle.Text, downTitle.TextColor3 = "YOU FELL", C.BAD
+		downHint.Text = "What you found lies where you fell. Watch the rest fight for the crown, or head home."
+		downOut.Text = "BACK TO THE COURTYARD"
 	elseif m == "Depths" then
 		downTitle.Text, downTitle.TextColor3 = "DOWN", C.GOLD2
 		downHint.Text = "Your party fights on: you're back on your feet when the room is cleared."

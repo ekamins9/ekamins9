@@ -13,7 +13,8 @@
                  right stick to move it to the next foe) · hold: first / third person
        D-pad ↑   tap: your POWER (Powers.client) · hold: the emote wheel (aim with the right
                  stick, let go)
-       D-pad ↓   tap: crouch (toggle) · hold: aim your THROWABLE, let go to throw
+       D-pad ↓   tap: crouch (toggle) · hold: aim your THROWABLE, let go to throw (in the loot
+                 games, which have none: hold opens your BAG, RaidInventory's _G.PadBag)
        D-pad ← →  weapons (Hotbar)
        VIEW / TOUCHPAD   tap: the menu · hold: the scoreboard
        right stick       look
@@ -99,6 +100,7 @@ local r3At, r3Held = nil, false   -- (RS click: a tap locks on, a hold switches 
 local flickArmed = true            -- (locked: a flick of the right stick moves the lock)
 local selectAt = nil
 local boardUp = false
+local bagHeld = false
 
 local BY_CODE = {}
 for action, code in pairs(PAD) do BY_CODE[code] = BY_CODE[code] or {}; table.insert(BY_CODE[code], action) end
@@ -126,7 +128,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
 		local mine = os.clock()
 		crouchDownAt, throwHeld = mine, false
 		task.delay(0.22, function()
-			if crouchDownAt == mine then throwHeld = true; TouchInput.press("Throw", true) end
+			if crouchDownAt ~= mine then return end
+			throwHeld = true
+			-- (a loot game's bag, where there's no throwable to aim)
+			if _G.PadBag and _G.PadBag() then bagHeld = true; return end
+			TouchInput.press("Throw", true)
 		end)
 	elseif code == K.ButtonR3 then
 		local mine = os.clock()
@@ -167,7 +173,8 @@ UserInputService.InputEnded:Connect(function(input)
 		if r3At and not r3Held then TouchInput.press("Lock", true) end
 		r3At, r3Held = nil, false
 	elseif code == PAD.Crouch then
-		if throwHeld then TouchInput.press("Throw", false)
+		if bagHeld then bagHeld = false
+		elseif throwHeld then TouchInput.press("Throw", false)
 		elseif crouchDownAt then crouchOn = not crouchOn; TouchInput.press("Crouch", crouchOn) end
 		crouchDownAt, throwHeld = nil, false
 	end

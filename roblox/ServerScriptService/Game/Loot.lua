@@ -340,6 +340,7 @@ function Loot.card(item)
 		c.sub = r.id .. " armor"
 		c.glyph = "🛡️"
 		if a then
+			if a.weight then table.insert(c.lines, a.weight .. " armour: " .. ((a.weight == "Heavy" and "the toughest, and slow") or (a.weight == "Medium" and "tough, still quick") or "light on your feet")) end
 			table.insert(c.lines, string.format("You take %d%% less damage", math.floor((1 - a.taken) * 100 + 0.5)))
 			if (a.health or 0) > 0 then table.insert(c.lines, "+" .. a.health .. " health") end
 		end
