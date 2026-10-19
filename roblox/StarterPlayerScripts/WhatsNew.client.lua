@@ -17,16 +17,16 @@ local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local NEWS = {
-	version = "2026-10-18c",
-	title = "STEEL, BANNERS AND THE LAND BEYOND",
+	version = "2026-10-19",
+	title = "DRAGONS, CROWNS AND ETCHED STEEL",
 	lines = {
-		{"✨", "Steel on steel", "a blocked blow glances off where the blades cross: sparks, the ring of the blade"},
-		{"💥", "Kick, then strike", "press a strike during your kick: it goes in the moment their guard drops"},
-		{"🔥", "Warfront: massive battles", "the great battle is a Warfront mode now, beside the new Capture the Standard"},
-		{"🛡", "Every shield repainted", "59 shields with real arms: gold lions, a burning phoenix, a silver unicorn"},
-		{"👑", "Your own coat of arms", "in LOOK: on your shield, your banner, and two houses at war on every field"},
-		{"🗺", "Ten new maps", "and the land runs on past every edge, strewn with the last fight"},
-		{"🏆", "Honor duels", "in the Courtyard, face someone and play Challenge: first to three touches"},
+		{"🐉", "Crownfall: ride the dragon in", "leap off where you like, dive, land like a hero; start with a dagger, loot the rest"},
+		{"🎒", "Crownfall: find, wear, carry", "real armour sets you put on, an inventory, a belt of potions to drink"},
+		{"🔥", "Dragonfall: learn the dragon", "its blows are called out, punish its openings, pin it with ballistae, drop rocks"},
+		{"🛡", "Your shield goes with your sword", "a shield rides with a one-handed weapon, and your secondary stays a weapon"},
+		{"⚜", "Your arms on your surcoat", "tabards and gambesons now wear your coat of arms, or your side's colours"},
+		{"⚔", "Etched blades", "runes, flames, frost, filigree, dragons down the blades of your weapon skins"},
+		{"🎓", "A longer first battle", "the tutorial now teaches the view, the free mouse and the Flameblade"},
 	},
 }
 
