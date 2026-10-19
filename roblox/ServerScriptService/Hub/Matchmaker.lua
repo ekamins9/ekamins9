@@ -35,7 +35,7 @@ local POLL = 4              -- seconds between pairing / record checks
 local TICKET_TTL = 15 * 60  -- a ticket dies after this (the client re-queues)
 local RECORD_TTL = 120      -- a match record waits this long to be collected
 local WINDOW0, WIDEN, WINDOW_MAX = 100, 40, 1000   -- rating window: start, +per POLL, cap
-local BOT_AFTER = 25        -- a casual ticket nobody's been found for: bots, after this
+local BOT_AFTER = 8         -- a casual ticket nobody's been found for: bots, after this
 
 local function sizeOf(bracket) return tonumber(bracket:match("^(%d)v%d$")) or 1 end
 local function queueName(bracket, ranked) return "MMQ_" .. bracket .. (ranked and "_R" or "_C") end
@@ -183,9 +183,17 @@ if not STUDIO and records and lock then
 		while true do
 			task.wait(POLL)
 			if next(local_) then
-				-- refresh our tickets' TTL and look for answers
-				for id, t in pairs(local_) do pcall(function() queueFor(t.bracket, t.ranked):SetAsync(id, t, TICKET_TTL) end) end
+				-- look for answers, then refresh the rest's TTL (only while still queued: a ticket a
+				-- pass has already matched must not go back in, or it's matched again as a ghost)
 				collect()
+				for id, t in pairs(local_) do
+					pcall(function()
+						queueFor(t.bracket, t.ranked):UpdateAsync(id, function(old)
+							if old == nil then return nil end
+							return t
+						end, TICKET_TTL)
+					end)
+				end
 			end
 			-- one pairing pass per POLL across the whole game: whoever takes the lock
 			local got = false

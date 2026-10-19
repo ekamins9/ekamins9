@@ -376,7 +376,7 @@ so all its maps take turns. Each vote offers three maps the last one didn't.)
   arms and no rank (Scoreboard, NameTags: `Guise`, `Level`, `Title`, `Arms`). A seat keeps its bot's
   guise and weapon, so the one who comes back is the same "player". How it fights, what its kill
   pays (`kill_<rank>`, far below a player) and where bots are allowed don't change.
-- **The Lists, casual**: a casual ticket the queue finds nobody for in 25 s (`Matchmaker`
+- **The Lists, casual**: a casual ticket the queue finds nobody for in 8 s (`Matchmaker`
   BOT_AFTER) is matched against bots: `bots` in the match and the teleport data, and the Lists
   server fills both sides to the bracket (your party's side too); the same opponents come back
   every round of the match. Ranked never has bots.

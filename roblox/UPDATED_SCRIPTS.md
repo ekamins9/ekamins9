@@ -1,4 +1,22 @@
-# Updated scripts: every skin in its true colours; rust that looks like rust
+# Updated scripts: casual Lists fill with bots in 8 seconds
+
+- **Casual 1v1 / 2v2 / 3v3 don't keep you waiting**: a casual ticket nobody's found for in 8
+  seconds (was 25) is matched against bots, both sides filled to the bracket. Ranked still waits
+  for people.
+- **No ghost tickets**: the queue's keep-alive used to write every waiting ticket back into the
+  queue, so one a pass had just matched could go back in and be matched again (a reserved server
+  nobody came to, or a real player paired with someone already gone). It only refreshes a ticket
+  that's still queued now, and looks for answers first.
+- **Live servers need a publish** for this (Studio skips the queue: FIND MATCH answers at once).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Matchmaker.lua](ServerScriptService/Hub/Matchmaker.lua) | ServerScriptService ▸ Hub | ModuleScript | `BOT_AFTER` 8; refresh only queued tickets |
+| [README.md](README.md) | — | doc | 8 s |
+
+---
+
+## Before that: every skin in its true colours; rust that looks like rust
 
 - **True colours on every Forge skin**: the meshes' vertex colours were written as linear, so the
   game showed each palette darker and redder than designed: gold came out orange, wood maroon or
