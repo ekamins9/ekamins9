@@ -100,17 +100,19 @@ local function paint(tag)
 	local name, title, color, gold = "", "", Color3.new(1, 1, 1), false
 	local teamMode = (roundNode:GetAttribute("Teams") or 0) == 2
 	local tc = teamMode and teamColor(model:GetAttribute("Team")) or nil
-	if plr then
-		name = plr.DisplayName
-		local t = plr:GetAttribute("Title") or model:GetAttribute("Title") or ""
+	-- (a fill bot in guise is drawn as a player is, from its own attributes: Game ▸ Guise)
+	local src = plr or (model:GetAttribute("Guise") and model) or nil
+	if src then
+		name = plr and plr.DisplayName or (model:GetAttribute("TagName") or model.Name)
+		local t = src:GetAttribute("Title") or model:GetAttribute("Title") or ""
 		title = FREE_TITLES[t] and "" or t
-		local lvl = plr:GetAttribute("Level")
+		local lvl = src:GetAttribute("Level")
 		if lvl then
 			local lv = chip(tag.row, "Lv " .. tostring(lvl), Color3.fromRGB(46, 52, 74)); lv.LayoutOrder = 1
 			fades(lv)
 		end
 		-- their own coat of arms, a little shield (Catalog ▸ Arms; the pictures in ShieldArt)
-		local arms = plr:GetAttribute("Arms")
+		local arms = src:GetAttribute("Arms")
 		if type(arms) == "string" then
 			local emblem, metalId, fieldName = string.match(arms, "^([^|]+)|([^|]*)|(.*)$")
 			local A = Catalog.ARMS
@@ -139,13 +141,13 @@ local function paint(tag)
 				fades(badge)
 			end
 		end
-		local role = ROLE[plr:GetAttribute("StaffRole") or ""]
+		local role = plr and ROLE[plr:GetAttribute("StaffRole") or ""]
 		if role then
 			local rc = chip(tag.row, role[1], role[2]); rc.LayoutOrder = 2
 			fades(rc)
 			color = role[2]
 		end
-		if plr:GetAttribute("PassHolder") then
+		if plr and plr:GetAttribute("PassHolder") then
 			gold = true
 			local crown, cs = text(tag.row, 18); crown.Text = "👑"; crown.TextColor3 = GOLD; crown.LayoutOrder = 3
 			fades(crown, cs)
@@ -176,7 +178,7 @@ local function paint(tag)
 	end
 	tag.titleLabel.Text = title
 	tag.titleLabel.Visible = title ~= ""
-	tag.titleLabel.TextColor3 = (plr or model:GetAttribute("TagTitle")) and TITLE_COL or Color3.fromRGB(200, 200, 210)
+	tag.titleLabel.TextColor3 = (src or model:GetAttribute("TagTitle")) and TITLE_COL or Color3.fromRGB(200, 200, 210)
 end
 
 local function makeTag(model, plr)
@@ -225,7 +227,7 @@ local function makeTag(model, plr)
 	-- what changes the look
 	local conns = {}
 	local function repaint() if tags[model] == tag then paint(tag) end end
-	for _, a in ipairs({"Team", "Title", "Boss", "TagName"}) do table.insert(conns, model:GetAttributeChangedSignal(a):Connect(repaint)) end
+	for _, a in ipairs({"Team", "Title", "Boss", "TagName", "Guise", "Level", "Arms"}) do table.insert(conns, model:GetAttributeChangedSignal(a):Connect(repaint)) end
 	if plr then
 		for _, a in ipairs({"Title", "Level", "PassHolder", "StaffRole", "Arms"}) do table.insert(conns, plr:GetAttributeChangedSignal(a):Connect(repaint)) end
 	end

@@ -43,8 +43,11 @@ function Lists:isOver()
 	if text and self.roundWins ~= before then self.matchDone = true end   -- LTS swaps in a fresh table when the match is won
 	if text then return text end
 	if self.startedAt and os.clock() - self.startedAt > 5 then
-		if Teams.count("A") == 0 and Teams.count("B") > 0 then self.matchDone = true; return self:teamResult("B") .. " BY FORFEIT" end
-		if Teams.count("B") == 0 and Teams.count("A") > 0 then self.matchDone = true; return self:teamResult("A") .. " BY FORFEIT" end
+		-- (a side of bots, a casual match the queue filled: Game ▸ BotFill, is a side)
+		local a = Teams.count("A") + (Game.fielded.A or 0)
+		local b = Teams.count("B") + (Game.fielded.B or 0)
+		if a == 0 and b > 0 then self.matchDone = true; return self:teamResult("B") .. " BY FORFEIT" end
+		if b == 0 and a > 0 then self.matchDone = true; return self:teamResult("A") .. " BY FORFEIT" end
 	end
 	return nil
 end

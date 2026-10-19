@@ -744,13 +744,13 @@ Matchmaker.onMatch = function(ticketId, match)
 	broadcast(party)
 	task.delay(3, function()
 		if match.studio or STUDIO then
-			studioSwitch(group[1], "Lists", {door = "Lists", bracket = match.bracket, ranked = match.ranked,
+			studioSwitch(group[1], "Lists", {door = "Lists", bracket = match.bracket, ranked = match.ranked, bots = match.bots == true and not match.ranked,
 				sides = (function() local s = {A = {}, B = {}}; for _, id in ipairs(match.sides.A) do s.A[id] = true end; for _, id in ipairs(match.sides.B) do s.B[id] = true end; return s end)(),
 				settings = nil, noRewards = false})
 			return
 		end
 		local data = {mode = "Lists", door = "Lists", access = "Locked", allowed = match.players, host = match.players[1],
-			sides = match.sides, bracket = match.bracket, ranked = match.ranked, name = ""}
+			sides = match.sides, bracket = match.bracket, ranked = match.ranked, name = "", bots = match.bots == true and not match.ranked}
 		teleport(group, game.PlaceId, data, nil, match.code, "The Lists  ·  " .. match.bracket .. (match.ranked and "  ·  RANKED" or ""))
 	end)
 end
@@ -762,7 +762,7 @@ do
 		task.delay(MATCH_OVER_DELAY, function()
 			local all = Players:GetPlayers()
 			if #all == 0 then return end
-			if STUDIO then Game.node:SetAttribute("MatchOver", false); studioSwitch(all[1], "Hub", {door = "Courtyard", sides = nil, bracket = nil, ranked = false}); return end
+			if STUDIO then Game.node:SetAttribute("MatchOver", false); studioSwitch(all[1], "Hub", {door = "Courtyard", sides = nil, bracket = nil, ranked = false, bots = false}); return end
 			teleport(all, game.PlaceId, {}, nil, nil, "Courtyard")
 		end)
 	end)

@@ -1,4 +1,31 @@
-# Updated scripts: engraved breastplates
+# Updated scripts: bots that pass for players; bots in casual Lists
+
+- **Fill bots pass for players** (GameConfig.BOT_GUISE, on): player-style invented names
+  (ShadowFang27, Lukas2011, mira_frost), their own faces, hair and skin, levels, sometimes a title
+  and a coat of arms, their own armour pieces and colours, often a weapon skin. The scoreboard no
+  longer marks them BOT and their name tags show a level and arms instead of a rank. The same bot
+  keeps its name, look and weapon when it comes back. Never real names, never numbered/one-of-one
+  skins, never fake pass holders or staff. Turn it off with `GameConfig.BOT_GUISE = false`.
+- **Casual 1v1 / 2v2 / 3v3 fill with bots**: if the queue finds nobody in 25 seconds, the match
+  starts against bots (and with bot teammates to make up your side); the same opponents fight
+  every round of the best of 5. Ranked never gets bots.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Guise.lua](ServerScriptService/Game/Guise.lua) | ServerScriptService ▸ Game | ModuleScript | **new**: names, bodies, levels, titles, arms, kits, skins |
+| [BotFill.lua](ServerScriptService/Game/BotFill.lua) | ServerScriptService ▸ Game | ModuleScript | guise per seat; casual Lists fill; seats kept across a Lists match |
+| [Matchmaker.lua](ServerScriptService/Hub/Matchmaker.lua) | ServerScriptService ▸ Hub | ModuleScript | casual tickets past 25 s: a bot match |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | `bots` in the teleport data / Studio switch |
+| [Game.lua](ServerScriptService/Game/Game.lua) | ServerScriptService ▸ Game | ModuleScript | `Game.server.bots` (never ranked) |
+| [Lists.lua](ServerScriptService/Game/Modes/Lists.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | a side of bots isn't a forfeit |
+| [NameTags.client.lua](StarterPlayerScripts/NameTags.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | a guised bot's tag like a player's |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no BOT for a guised bot; its title |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | BOT_GUISE |
+| [README.md](README.md) | — | doc | Bot fill: in guise, the Lists casual |
+
+---
+
+## Before that: engraved breastplates
 
 - **Plate armour is engraved** with Forge art too: a medallion on the breastplate, inlaid in your
   own Accent colour (gold if you have none): a sunburst in filigree for the Knight, Sun Knight,

@@ -80,6 +80,8 @@ function Game.identify(plr)
 		sv.door = GameConfig.DOORS[td.door] and td.door or "Warfront"
 		sv.bracket = type(td.bracket) == "string" and td.bracket or nil
 		sv.ranked = td.ranked == true
+		-- (a casual Lists match the queue filled with bots: Hub ▸ Matchmaker; never ranked)
+		sv.bots = td.bots == true and not sv.ranked
 		if type(td.sides) == "table" then
 			sv.sides = {A = {}, B = {}}
 			for _, id in ipairs(td.sides.A or {}) do sv.sides.A[id] = true end

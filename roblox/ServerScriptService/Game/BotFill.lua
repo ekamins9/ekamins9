@@ -18,7 +18,13 @@
 
      Custom servers follow their host's settings (bots on/off, botCount, botSkill:
      GameConfig.CUSTOM_DEFAULTS; the host panel changes them live: Hub ▸ HostServer).
-     Never on ranked servers (The Lists), Horde or the hubs. ]]
+     THE LISTS, CASUAL: a match the queue found nobody for in time (Game.server.bots, Hub ▸
+     Matchmaker) is filled to its bracket on both sides. Never on ranked servers, Horde or the hubs.
+
+     IN GUISE (GameConfig.BOT_GUISE: Game ▸ Guise): a fill bot passes for a player: a player's kind
+     of name, a body, a level, a title and arms now and then, its own kit and a weapon skin; the
+     board and the name tags show it like a player. A seat keeps its bot's guise and weapon, so
+     the one who comes back is the same "player". ]]
 
 local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
@@ -67,6 +73,8 @@ local function rosterWant(r, k, i, team, twoSides)
 end
 
 local Bots   -- (lazily: Combat ▸ Bots)
+local Guise = require(script.Parent:WaitForChild("Guise"))
+local guiseOf = setmetatable({}, {__mode = "k"})   -- [seat] = what its bot wears and carries
 local function bots()
 	if not Bots then Bots = require(ServerScriptService:WaitForChild("Combat"):WaitForChild("Bots")) end
 	return Bots
@@ -107,8 +115,15 @@ end
 local function wanted(def)
 	local sv = Game.server
 	def = def or (Game.current and Game.current.def)
+	if sv.ranked then return nil end
+	-- (a casual Lists match the queue filled with bots: its bracket on both sides)
+	if sv.door == "Lists" then
+		if not sv.bots then return nil end
+		local size = tonumber((sv.bracket or "1v1"):match("^(%d)v%d$")) or 1
+		return size * 2
+	end
 	-- (Warfront's; and an adventure that asks for them: Kingslayer, Crownfall)
-	if sv.ranked or (sv.door ~= "Warfront" and not (def and def.fillAnywhere)) then return nil end
+	if sv.door ~= "Warfront" and not (def and def.fillAnywhere) then return nil end
 	if rosterOf() then local n = rosterTotal(rosterOf()); return n > 0 and n or nil end
 	if sv.custom then
 		local s = sv.settings
@@ -192,8 +207,12 @@ local function spawnOne(team)
 	if not cf then return end
 	local at = CFrame.new(cf.Position + Vector3.new(math.random(-3, 3), 3, math.random(-3, 3))) * (cf - cf.Position)
 	local myRound = roundId
-	local seat = takeSeat(team, nextName())
+	local guised = GameConfig.BOT_GUISE == true and not BotFill.override
+	local seat = takeSeat(team, guised and Guise.name() or nextName())
 	local entry = {team = team, seat = seat, kind = kind}
+	-- (the seat's earlier bot: the same skill and class come back, as a player would)
+	local was = guiseOf[seat]
+	if was then skill, cls = was.skill, was.class end
 	-- (a power by rank: Knights now and then, Champions mostly; a showcase's always: Combat ▸ Bots)
 	local power, powerSkin = bots().pickPower(skill, cls, BotFill.override and (skill ~= "Squire" and 1 or 0.5) or nil)
 	local opts = {
@@ -226,6 +245,23 @@ local function spawnOne(team)
 	if BotFill.override and BotFill.override.dress then
 		local okD, err = pcall(BotFill.override.dress, opts, kind or cls or skill)
 		if not okD then warn("[BotFill] dress:", err) end
+	end
+	-- IN GUISE: dressed as a player (the seat's guise again, when its bot comes back)
+	if guised then
+		if was then
+			opts.weapon, opts.appearance, opts.loadout, opts.weight, opts.skin = was.weapon, was.appearance, was.loadout, was.weight, was.skin
+			opts.attrs = opts.attrs or {}
+			for k, v in pairs(was.attrs) do opts.attrs[k] = v end
+		else
+			local okG, err = pcall(Guise.dress, opts, kind or cls or skill)
+			if not okG then warn("[BotFill] guise:", err) end
+			guiseOf[seat] = {skill = skill, class = cls, weapon = opts.weapon, appearance = opts.appearance, loadout = opts.loadout,
+				weight = opts.weight, skin = opts.skin, attrs = table.clone(opts.attrs or {})}
+		end
+		local a = opts.attrs or {}
+		seat:SetAttribute("Guise", true)
+		seat:SetAttribute("Level", a.Level)
+		seat:SetAttribute("Title", a.Title)
 	end
 	local ok, bot = pcall(bots().spawn, opts)
 	if not ok or not bot then warn("[BotFill] spawn failed:", bot); table.insert(vacant, seat); return end
@@ -343,7 +379,11 @@ function BotFill.start()
 	active = true
 	Game.roundStarted.Event:Connect(function()
 		roundId += 1
-		clear(true)
+		-- (a Lists match is one match over its rounds: the same opponents come back every round,
+		-- in their seats, names, looks and weapons)
+		local keep = Game.server.door == "Lists"
+		clear(not keep)
+		if keep then for _, seat in ipairs(seatFolder:GetChildren()) do table.insert(vacant, seat) end end
 		startedAt = os.clock()
 	end)
 	-- THE BATTLE'S END: before the bots go, the side that won raises its weapons and roars and

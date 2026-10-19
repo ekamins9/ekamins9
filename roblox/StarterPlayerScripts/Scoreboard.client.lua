@@ -485,7 +485,8 @@ local function refreshBoard()
 	for _, s in ipairs(seats and seats:GetChildren() or {}) do
 		local def = GameConfig.TEAMS[s:GetAttribute("Team") or ""]
 		table.insert(list, {bot = s, name = s:GetAttribute("Name") or "Bot", k = s:GetAttribute("Kills") or 0,
-			d = s:GetAttribute("Deaths") or 0, team = def and def.name or "", tc = def and def.rgb or nil})
+			d = s:GetAttribute("Deaths") or 0, team = def and def.name or "", tc = def and def.rgb or nil,
+			guise = s:GetAttribute("Guise") == true, title = s:GetAttribute("Title")})
 	end
 	table.sort(list, function(a, b)
 		if teamMode and a.team ~= b.team then return a.team < b.team end
@@ -506,7 +507,13 @@ local function refreshBoard()
 		local tc
 		if e.bot then
 			tc = teamMode and e.tc or nil
-			r.cells[1].Text = e.name .. string.format('  <font color="#%s" size="12">BOT</font>', COL_DIM:ToHex())
+			-- (a bot in guise reads as a player does: its title, no BOT: Game ▸ Guise)
+			if e.guise then
+				local title = e.title or ""
+				r.cells[1].Text = e.name .. ((title ~= "" and title ~= "Recruit") and string.format('  <font color="#%s" size="12"><i>%s</i></font>', COL_TITLE:ToHex(), title) or "")
+			else
+				r.cells[1].Text = e.name .. string.format('  <font color="#%s" size="12">BOT</font>', COL_DIM:ToHex())
+			end
 			r.cells[1].TextColor3 = tc or COL_TEXT
 		else
 			tc = teamMode and teamColorOf(e.p) or nil

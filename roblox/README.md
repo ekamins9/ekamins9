@@ -363,6 +363,19 @@ by the players' rules. Horde sends archers from wave 3 and mages from wave 5. St
 the map vote offers maps sized to who's there and the bots the mode brings, and a public
 server's room shrinks to its map's most. (Horde skips the size rule: the horde is its own crowd,
 so all its maps take turns. Each vote offers three maps the last one didn't.)
+- **In guise** (`GameConfig.BOT_GUISE`, `Game ▸ Guise`): a fill bot passes for a player: an invented
+  player-style name (ShadowFang27, Lukas2011, mira_frost: never a real account's), a body of its own
+  (skin, hair, beard, face, eyes off `Catalog ▸ Body`), a level (most low, a few high), now and then
+  a title it could have earned and a coat of arms (its shield and surcoat wear it), pieces of its
+  weight in palette colours, often a weapon skin (Common to Legendary only: never a numbered Mythic
+  or a one-of-one). The board shows it with its title and no BOT, the name tag with its level and
+  arms and no rank (Scoreboard, NameTags: `Guise`, `Level`, `Title`, `Arms`). A seat keeps its bot's
+  guise and weapon, so the one who comes back is the same "player". How it fights, what its kill
+  pays (`kill_<rank>`, far below a player) and where bots are allowed don't change.
+- **The Lists, casual**: a casual ticket the queue finds nobody for in 25 s (`Matchmaker`
+  BOT_AFTER) is matched against bots: `bots` in the match and the teleport data, and the Lists
+  server fills both sides to the bracket (your party's side too); the same opponents come back
+  every round of the match. Ranked never has bots.
 - They fight **everyone not on their side**, players and bots (`Bots.spawn{fightBots = true}`),
   and with nobody within ~38 studs they **head for the objective** (`goal`: Round `ObjPos`, the
   hill or the ram). Long trips use **pathfinding** (`Bot:pathDir`, PathfindingService, worked out

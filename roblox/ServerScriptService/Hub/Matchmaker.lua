@@ -10,7 +10,11 @@
        Matchmaker.enqueue(ticket)   ticket = {id=, bracket="1v1", ranked=bool, players={ids}, rating=, jobId=}
        Matchmaker.dequeue(ticketId)
        Matchmaker.status(ticketId)  -> {waiting=seconds, window=rating} | nil
-       Matchmaker.onMatch = function(ticketId, match) end   -- match = {code=, bracket=, ranked=, sides={A={ids},B={ids}}, players={ids}}
+       Matchmaker.onMatch = function(ticketId, match) end   -- match = {code=, bracket=, ranked=, sides={A={ids},B={ids}}, players={ids}, bots=bool}
+
+     CASUAL, NOBODY FOUND: a casual ticket that's waited BOT_AFTER seconds is matched against bots
+     (and given bots beside it up to its bracket's size): its match has bots = true and the Lists
+     server fills both sides (Game ▸ BotFill). Ranked never: a ranked ticket waits for people.
 
      Studio (no MemoryStore / teleports): FIND MATCH matches against nobody —
      the ticket is answered at once with sides A = the party, B = empty, so
@@ -31,6 +35,7 @@ local POLL = 4              -- seconds between pairing / record checks
 local TICKET_TTL = 15 * 60  -- a ticket dies after this (the client re-queues)
 local RECORD_TTL = 120      -- a match record waits this long to be collected
 local WINDOW0, WIDEN, WINDOW_MAX = 100, 40, 1000   -- rating window: start, +per POLL, cap
+local BOT_AFTER = 25        -- a casual ticket nobody's been found for: bots, after this
 
 local function sizeOf(bracket) return tonumber(bracket:match("^(%d)v%d$")) or 1 end
 local function queueName(bracket, ranked) return "MMQ_" .. bracket .. (ranked and "_R" or "_C") end
@@ -60,7 +65,8 @@ function Matchmaker.enqueue(t)
 		task.delay(1.5, function()
 			if local_[t.id] and Matchmaker.onMatch then
 				local_[t.id] = nil
-				Matchmaker.onMatch(t.id, {code = nil, bracket = t.bracket, ranked = t.ranked, sides = {A = t.players, B = {}}, players = t.players, studio = true})
+				Matchmaker.onMatch(t.id, {code = nil, bracket = t.bracket, ranked = t.ranked, sides = {A = t.players, B = {}}, players = t.players, studio = true,
+					bots = not t.ranked})
 			end
 		end)
 		return true
@@ -128,14 +134,25 @@ local function pass(bracket, ranked)
 	if not ok or not items then return end
 	local tickets = {}
 	for _, it in ipairs(items) do if type(it.value) == "table" and it.value.players then table.insert(tickets, it.value) end end
-	if #tickets < 2 then return end
-	for _, m in ipairs(pair(tickets, sizeOf(bracket))) do
+	if #tickets == 0 then return end
+	local matches = #tickets >= 2 and pair(tickets, sizeOf(bracket)) or {}
+	-- (casual: whoever's waited long enough with nobody found plays bots)
+	if not ranked then
+		local taken = {}
+		for _, m in ipairs(matches) do for _, t in ipairs(m.tickets) do taken[t.id] = true end end
+		for _, t in ipairs(tickets) do
+			if not taken[t.id] and os.time() - (t.at or os.time()) >= BOT_AFTER then
+				table.insert(matches, {sides = {A = table.clone(t.players), B = {}}, tickets = {t}, bots = true})
+			end
+		end
+	end
+	for _, m in ipairs(matches) do
 		local okR, code = pcall(TeleportService.ReserveServer, TeleportService, game.PlaceId)
 		if okR then
 			local players = {}
 			for _, id in ipairs(m.sides.A) do table.insert(players, id) end
 			for _, id in ipairs(m.sides.B) do table.insert(players, id) end
-			local record = {code = code, bracket = bracket, ranked = ranked, sides = m.sides, players = players, at = os.time()}
+			local record = {code = code, bracket = bracket, ranked = ranked, sides = m.sides, players = players, at = os.time(), bots = m.bots == true}
 			for _, t in ipairs(m.tickets) do
 				pcall(function() q:RemoveAsync(t.id) end)
 				pcall(function() records:SetAsync("t:" .. t.id, record, RECORD_TTL) end)

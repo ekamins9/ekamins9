@@ -73,6 +73,10 @@ GameConfig.DOORS = {
 		blurb = "A themed horde: goblins after your gold, the elven host, the dead at night, an orc warband."},
 }
 GameConfig.DOOR_ORDER = {"Courtyard", "Tiltyard", "Warfront", "Horde", "Lists"}
+-- FILL BOTS IN GUISE (Game ▸ Guise): a bot that makes up the numbers passes for a player (a
+-- player's kind of name, a body, a level, a kit of its own; the board and the name tags show it
+-- like one). false: the old way, rank-named and marked BOT
+GameConfig.BOT_GUISE = true
 GameConfig.ADVENTURE_ORDER = {"Depths", "Deadvault", "Crownfall", "Invasion", "Dragonfall", "Kingslayer", "Plague"}
 GameConfig.PARTY_MAX = 3
 
