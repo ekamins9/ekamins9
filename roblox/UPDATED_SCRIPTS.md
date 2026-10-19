@@ -1,4 +1,25 @@
-# Updated scripts: etched blades, Forge art down every skin's blade
+# Updated scripts: Crownfall's map and ride, the weapon chip
+
+- **Crownfall's map** names only the big places (the keep, the villages, the harbour, the fort, the
+  mine) and the small ones when you're near them, so the names don't pile up; while the dragon
+  flies its way across the island is drawn in gold, with the dragon on it.
+- **The dragon only lets you off over land**: over the sea its prompt says HOLD ON (wait for land);
+  over the island, LEAP OFF. The plates down its back no longer stand in your view.
+- **The weapon chip** (bottom right) gives the skin its own line in its rarity's colour (it was cut
+  off after the weapon's name); a found weapon shows its name and its rarity.
+- What's New: dragons, crowns and etched steel.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the island map's names; the dragon's way |
+| [Crownfall.lua](ServerScriptService/Game/Modes/Crownfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | leap only over land (BusOverLand); back plates hidden |
+| [Skyfall.client.lua](StarterPlayerScripts/Skyfall.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | HOLD ON over the sea |
+| [HUD.client.lua](StarterCharacterScripts/HUD.client.lua) | StarterPlayer ▸ StarterCharacterScripts | LocalScript | the chip's skin / rarity line |
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | 2026-10-19's lines |
+
+---
+
+## Before that: etched blades, Forge art down every skin's blade
 
 - **Weapon skins are etched.** New art from ForgeGUI, eight engravings: Norse runes and knotwork,
   flames, frost, gothic filigree with a crown and fleurs-de-lis, a winding dragon, a laurel vine,

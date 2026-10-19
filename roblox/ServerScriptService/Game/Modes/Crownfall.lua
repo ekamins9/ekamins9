@@ -580,6 +580,8 @@ function Crownfall:launchBus()
 	end
 	for _, p in ipairs(m:GetDescendants()) do
 		if p:IsA("BasePart") then p.CanCollide = false; if p ~= root then p.Massless = true end end
+		-- (the plates down its back would stand in the riders' view)
+		if p:IsA("BasePart") and p.Name:match("^Spine%d") then p.Transparency = 1 end
 	end
 	-- flown by the server, smooth on every screen (physics carries it, as Dragonfall's)
 	root.Anchored = false
@@ -647,6 +649,12 @@ function Crownfall:flyBus()
 			if hum and c:FindFirstChildOfClass("Tool") then hum:UnequipTools() end
 		end
 	end
+	-- (over the island yet? only then will it let you off: Skyfall.client says so)
+	local overLand = flat(pos).Magnitude < ISLAND * 0.98
+	if overLand ~= bus.overLand then
+		bus.overLand = overLand
+		node:SetAttribute("BusOverLand", overLand)
+	end
 	-- the far shore: off you get
 	if k >= bus.shakeAt and not bus.shaken then
 		bus.shaken = true
@@ -676,6 +684,7 @@ function Crownfall:endBus()
 	if bus.model then bus.model:Destroy() end
 	node:SetAttribute("BusFrom", nil)
 	node:SetAttribute("BusTo", nil)
+	node:SetAttribute("BusOverLand", nil)
 end
 
 -- up onto the dragon's back (false: it's gone, or full)
@@ -713,10 +722,12 @@ function Crownfall:skyDrop(plr)
 	self.divers[plr] = os.clock()
 end
 
--- OFF THE DRAGON: the seat lets go, your body is yours again, and you fall (Skyfall.client steers)
-function Crownfall:leap(plr)
+-- OFF THE DRAGON: the seat lets go, your body is yours again, and you fall (Skyfall.client steers).
+-- Asked for over the sea, it holds you on (forced: the far shore, the round's end)
+function Crownfall:leap(plr, asked)
 	local seat = self.riders[plr]
 	if not seat then return end
+	if asked and self.bus and not self.bus.overLand then return end
 	self.riders[plr] = nil
 	if self.bus then self.bus.taken[seat] = nil end
 	local sw = seat:FindFirstChild("SeatWeld")
@@ -835,7 +846,7 @@ function Crownfall:start(map)
 			if kind == "Hello" then
 				self:sendLayout(plr)
 				if self.runs[plr] then self:sendRun(plr) end
-			elseif kind == "Leap" then self:leap(plr)
+			elseif kind == "Leap" then self:leap(plr, true)
 			elseif kind == "Landed" then self:landed(plr)
 			elseif kind == "Inv" and type(a) == "string" then self:inv(plr, a, b)
 			elseif kind == "Use" and type(a) == "string" then self:inv(plr, "Use", a)

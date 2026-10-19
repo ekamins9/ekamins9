@@ -104,16 +104,40 @@ local chipName = Instance.new("TextLabel")
 chipName.BackgroundTransparency = 1; chipName.Size = UDim2.new(1, -24, 0, 24); chipName.Position = UDim2.fromOffset(12, 4)
 chipName.Font = FONT_BIG; chipName.TextSize = 18; chipName.TextColor3 = Color3.new(1, 1, 1); chipName.TextXAlignment = Enum.TextXAlignment.Left; chipName.TextTruncate = Enum.TextTruncate.AtEnd
 chipName.Text = "Unarmed"; chipName.Parent = chip
+-- (its skin, or a found weapon's rarity, on a line of its own in that rarity's colour)
+local chipSkin = Instance.new("TextLabel")
+chipSkin.BackgroundTransparency = 1; chipSkin.Size = UDim2.new(1, -24, 0, 16); chipSkin.Position = UDim2.fromOffset(12, 26)
+chipSkin.Font = FONT_BIG; chipSkin.TextSize = 13; chipSkin.TextXAlignment = Enum.TextXAlignment.Left; chipSkin.TextTruncate = Enum.TextTruncate.AtEnd
+chipSkin.Text = ""; chipSkin.Visible = false; chipSkin.Parent = chip
 local chipSub = Instance.new("TextLabel")
 chipSub.BackgroundTransparency = 1; chipSub.Size = UDim2.new(1, -24, 0, 16); chipSub.Position = UDim2.fromOffset(12, 26)
 chipSub.Font = Enum.Font.GothamMedium; chipSub.TextSize = 11; chipSub.TextColor3 = Color3.fromRGB(168, 190, 230); chipSub.TextXAlignment = Enum.TextXAlignment.Left
 chipSub.Text = "1 · 2 to switch  ·  G kick  ·  M menu"; chipSub.Parent = chip
+local RARITY_COL = {Common = Color3.fromRGB(200, 204, 214), Uncommon = Color3.fromRGB(110, 220, 120), Rare = Color3.fromRGB(90, 160, 255),
+	Epic = Color3.fromRGB(190, 110, 255), Legendary = Color3.fromRGB(255, 196, 60), Mythic = Color3.fromRGB(255, 80, 90), Unique = Color3.fromRGB(255, 140, 220)}
 local function refreshChip()
 	local tool = character:FindFirstChildOfClass("Tool")
-	if not tool then chipName.Text = "Unarmed"; return end
-	local ok, cfg = pcall(function() return require(tool:WaitForChild("Config", 1)) end)
-	local skin = tool:GetAttribute("Skin")
-	chipName.Text = (ok and cfg and cfg.Name or tool.Name) .. (skin and skin ~= "" and skin ~= "Default" and ("  ·  " .. skin) or "")
+	local line, color
+	if not tool then
+		chipName.Text = "Unarmed"
+	else
+		local ok, cfg = pcall(function() return require(tool:WaitForChild("Config", 1)) end)
+		local skin = tool:GetAttribute("Skin")
+		local found = tool:GetAttribute("LootName")
+		chipName.Text = found or (ok and cfg and cfg.Name or tool.Name)
+		if found then
+			line, color = string.upper(tool:GetAttribute("LootRarity") or "Common") .. "  ·  " .. (ok and cfg and cfg.Name or tool.Name), RARITY_COL[tool:GetAttribute("LootRarity") or "Common"]
+		elseif skin and skin ~= "" and skin ~= "Default" then
+			local okC, Catalog = pcall(require, game:GetService("ReplicatedStorage"):WaitForChild("Catalog"))
+			local def = okC and Catalog.SKIN and Catalog.SKIN[tool:GetAttribute("SkinId") or ""]
+			line, color = skin, RARITY_COL[def and def.rarity or "Common"]
+		end
+	end
+	chipSkin.Visible = line ~= nil
+	chipSkin.Text = line or ""
+	if color then chipSkin.TextColor3 = color end
+	chip.Size = UDim2.fromOffset(240, line and 62 or 46)
+	chipSub.Position = UDim2.fromOffset(12, line and 42 or 26)
 end
 character.ChildAdded:Connect(function(c) if c:IsA("Tool") then task.defer(refreshChip) end end)
 character.ChildRemoved:Connect(function(c) if c:IsA("Tool") then task.defer(refreshChip) end end)

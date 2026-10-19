@@ -220,8 +220,11 @@ local function toMap(x, z)
 	return UDim2.fromOffset(ox + (x - bounds.x0) * s, oy + (z - bounds.z0) * s), s
 end
 local STATE_COL = {sealed = Color3.fromRGB(70, 74, 90), fight = Color3.fromRGB(210, 60, 60), clear = Color3.fromRGB(64, 92, 140)}
--- an island (Crownfall): its shape, its places, the ring and the next one
+-- an island (Crownfall): its shape, its places, the ring and the next one, the dragon's way
 local ringNow, ringNext
+local realmUI = {labels = {}}
+-- (named always: the big places; the rest only when you're near one)
+local MAJOR = {keep = true, village = true, harbor = true, fort = true, mine = true}
 local function circleFrame(color, fillT, strokeColor)
 	local f = frame(mapArea, color, fillT)
 	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0.5, 0); c.Parent = f
@@ -242,15 +245,42 @@ local function drawRealm()
 		d.Position = toMap(poi.x, poi.z)
 		d.Size = UDim2.fromOffset(5, 5)
 		d.ZIndex = 3
-		local t = text(mapArea, string.upper(poi.name), 8, Color3.fromRGB(240, 236, 220), FONT)
+		local major = MAJOR[poi.kind or ""] == true
+		local t = text(mapArea, string.upper(poi.name), major and 9 or 8, major and Color3.fromRGB(255, 240, 200) or Color3.fromRGB(226, 222, 206), FONT)
 		t.AnchorPoint = Vector2.new(0.5, 0)
 		local pp = toMap(poi.x, poi.z)
 		t.Position = UDim2.fromOffset(pp.X.Offset, pp.Y.Offset + 3)
 		t.Size = UDim2.fromOffset(80, 10)
 		t.ZIndex = 3
+		t.Visible = major
+		table.insert(realmUI.labels, {label = t, poi = poi, major = major})
 	end
 	ringNow = circleFrame(Color3.new(1, 1, 1), 1, Color3.fromRGB(255, 120, 40)); ringNow.ZIndex = 4
 	ringNext = circleFrame(Color3.new(1, 1, 1), 1, Color3.fromRGB(255, 255, 255)); ringNext.ZIndex = 4
+	-- the dragon's way across, and the dragon on it
+	local line = frame(mapArea, Color3.fromRGB(255, 196, 70), 0.25)
+	line.AnchorPoint = Vector2.new(0.5, 0.5); line.ZIndex = 4; line.Visible = false
+	local dragon = text(mapArea, "🐉", 14, Color3.new(1, 1, 1), FONT)
+	dragon.AnchorPoint = Vector2.new(0.5, 0.5); dragon.Size = UDim2.fromOffset(18, 18); dragon.ZIndex = 6; dragon.Visible = false
+	realmUI.busLine, realmUI.busDot = line, dragon
+end
+-- the dragon's way (the server's BusFrom / BusTo) while it flies, and where it is now
+local function drawBus()
+	local line, dot = realmUI.busLine, realmUI.busDot
+	if not (line and dot) then return end
+	local a, b = round:GetAttribute("BusFrom"), round:GetAttribute("BusTo")
+	if typeof(a) ~= "Vector3" or typeof(b) ~= "Vector3" then line.Visible = false; dot.Visible = false; return end
+	local pa, pb = toMap(a.X, a.Z), toMap(b.X, b.Z)
+	local ax, ay, bx, by = pa.X.Offset, pa.Y.Offset, pb.X.Offset, pb.Y.Offset
+	line.Visible = true
+	line.Position = UDim2.fromOffset((ax + bx) / 2, (ay + by) / 2)
+	line.Size = UDim2.fromOffset(math.sqrt((bx - ax) ^ 2 + (by - ay) ^ 2), 2)
+	line.Rotation = math.deg(math.atan2(by - ay, bx - ax))
+	local steeds = workspace:FindFirstChild("Steeds")
+	local m = steeds and steeds:FindFirstChildWhichIsA("Model")
+	local root = m and m:FindFirstChild("HumanoidRootPart")
+	dot.Visible = root ~= nil
+	if root then dot.Position = toMap(root.Position.X, root.Position.Z) end
 end
 local function placeOn(f, c, r)
 	if not (f and typeof(c) == "Vector3" and r) then if f then f.Visible = false end; return end
@@ -263,6 +293,7 @@ local function drawMap()
 	for _, c in ipairs(mapArea:GetChildren()) do c:Destroy() end
 	roomFrames, dots = {}, {}
 	ringNow, ringNext = nil, nil
+	realmUI = {labels = {}}
 	if not layout then return end
 	if layout.kind == "realm" then drawRealm(); return end
 	local x0, z0, x1, z1 = math.huge, math.huge, -math.huge, -math.huge
@@ -839,6 +870,12 @@ RunService.RenderStepped:Connect(function(dt)
 					if (Vector3.new(poi.x, 0, poi.z) - Vector3.new(hrp.Position.X, 0, hrp.Position.Z)).Magnitude < (poi.r or 25) + 6 then here = poi.name end
 				end
 				placeName = here
+				-- (the small places named only when you're near them)
+				for _, e in ipairs(realmUI.labels) do
+					local near = (Vector3.new(e.poi.x, 0, e.poi.z) - Vector3.new(hrp.Position.X, 0, hrp.Position.Z)).Magnitude < 170
+					e.label.Visible = e.major or near or e.poi.name == here
+				end
+				drawBus()
 			end
 		end
 		local live = {}

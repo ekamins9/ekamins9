@@ -118,10 +118,12 @@ local function show(what)
 end
 local function writeHint(height)
 	if shown == "ride" then
-		verb.Text = "LEAP OFF"
+		local land = ReplicatedStorage:FindFirstChild("Round") and ReplicatedStorage.Round:GetAttribute("BusOverLand") == true
+		verb.Text = land and "LEAP OFF" or "HOLD ON"
 		keyText.Text = InputHints.name("Jump")
-		key.Visible = true
-		line.Text = "Jump off over where you want to land  ·  the dragon shakes you off at the far shore"
+		key.Visible = land
+		line.Text = land and "Jump off over where you want to land  ·  the dragon shakes you off at the far shore"
+			or "Over the sea: wait for land, then leap off where you like"
 	elseif shown == "dive" then
 		verb.Text = height and string.format("%d", math.max(0, math.floor(height))) or ""
 		key.Visible = false
