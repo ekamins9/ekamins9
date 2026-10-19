@@ -7,6 +7,8 @@
        Look          where its head turns    Breath / BreathYaw   fire from its mouth, swept
        Snap Swipe Tail Buffet   counters: a bite snaps, a claw swipes, the tail whips, a big wingbeat
        Reel · Downed · Enraged · Dead
+       MoveName / MoveTip on MoveTick   the blow it's winding up, called over its head (and what to
+                     do, the first few times): CLAW, TAIL SWEEP, FIRE BREATH… OPENING, PINNED!
 
      Every joint is a Motor6D named after the part it moves; this sets their Transform (axes at
      rest: X to its right, Y up, Z behind it). Its walk is read off how fast it's going. The fire
@@ -14,6 +16,8 @@
 
 local RunService = game:GetService("RunService")
 local BossIntro = require(game:GetService("ReplicatedStorage"):WaitForChild("BossIntro"))
+local Theme = require(game:GetService("ReplicatedStorage"):WaitForChild("Theme"))
+local TweenService = game:GetService("TweenService")
 
 local FIRE = Color3.fromRGB(255, 130, 40)
 local dragons = {}   -- model -> state
@@ -78,6 +82,48 @@ local function setup(m)
 		m:GetAttributeChangedSignal(k):Connect(function()
 			local v = m:GetAttribute(k) or 0
 			if v ~= st.last[k] then st.last[k] = v; st.at[k] = os.clock() end
+		end)
+	end
+	-- ITS BLOWS CALLED over its head as it winds them up (Combat ▸ Dragon: MoveName, MoveTip, MoveTick)
+	do
+		local bb = Instance.new("BillboardGui")
+		bb.Name = "MoveCall"
+		bb.Adornee = root
+		bb.AlwaysOnTop = true
+		bb.LightInfluence = 0
+		bb.MaxDistance = 420
+		bb.Size = UDim2.fromOffset(560, 104)
+		bb.StudsOffsetWorldSpace = Vector3.new(0, 24, 0)
+		bb.Enabled = false
+		local scale = Instance.new("UIScale"); scale.Parent = bb
+		local function label(size, y, color)
+			local l = Instance.new("TextLabel")
+			l.BackgroundTransparency = 1
+			l.Font = Theme.FONT_TITLE
+			l.TextSize = size
+			l.TextColor3 = color
+			l.Size = UDim2.new(1, 0, 0, size + 6)
+			l.Position = UDim2.fromOffset(0, y)
+			local s = Instance.new("UIStroke"); s.Color = Color3.fromRGB(20, 8, 4); s.Thickness = 3; s.Parent = l
+			l.Parent = bb
+			return l
+		end
+		local nameL = label(44, 0, FIRE)
+		local tipL = label(22, 56, Color3.new(1, 1, 1))
+		bb.Parent = m
+		local token = 0
+		local GOOD = {OPENING = true, ["ITS BELLY GLOWS"] = true, ["PINNED!"] = true, ["FELLED!"] = true}
+		m:GetAttributeChangedSignal("MoveTick"):Connect(function()
+			token += 1
+			local my = token
+			local name = m:GetAttribute("MoveName") or ""
+			nameL.Text = name
+			nameL.TextColor3 = GOOD[name] and Color3.fromRGB(255, 214, 90) or FIRE
+			tipL.Text = m:GetAttribute("MoveTip") or ""
+			bb.Enabled = name ~= ""
+			scale.Scale = 1.4
+			TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+			task.delay(GOOD[name] and 2.4 or 1.7, function() if token == my then bb.Enabled = false end end)
 		end)
 	end
 	dragons[m] = st

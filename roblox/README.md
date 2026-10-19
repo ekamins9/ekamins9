@@ -2810,12 +2810,22 @@ You and your party (1 – 6, a party door like the Depths) against **Cindermaw, 
 - **The dragon** (`Combat ▸ Dragon`): a body of its own (parts on Motor6Ds, no person's rig: the
   `CustomBody` attribute keeps ragdolls, corpses and kill effects off it), held where the server
   says by AlignPosition/AlignOrientation; a Humanoid in NPCs, so every weapon hits it; its blows are
-  the bosses' (telegraphed rings, arcs and lanes: Combat ▸ BossMoves). On the ground: bite, claw,
-  tail sweep (behind it), wing buffet (when crowded), stomp, a charge (into the cliffs: it reels),
-  fire breath swept across the ground. At **two thirds** it takes to the sky: strafing runs of fire
-  and fireballs, and its **brood** (Cinderlings) climbs out of the lava pools. **Ballistae** (hold to
-  fire, 6 s to wind; guides over them while it's up there): 3 bolts (one more for every two of you
-  past the first) and it **crashes**, downed for 9 s (it takes 50% more). Under **a third** it's
+  the bosses' (telegraphed rings, arcs and lanes: Combat ▸ BossMoves). On the ground it fights in
+  **patterns you can learn** (`COMBOS`, picked by where you all are: claw → bite at its front,
+  tail → stomp behind it, wing buffet → fire breath when crowded, fire breath at range, charge →
+  tail at whoever keeps away (into the cliffs: it reels), stomp → bite right under it; enraged, one
+  blow longer). **Every blow is called over its head** as it winds up (`MoveName` / `MoveTip` /
+  `MoveTick`, a billboard from `Dragon.client`; what to do, the first three times), and after each
+  pattern it's **open** (`Dragon:opening`: ×1.45 for 2.2 s; after its fire **its belly glows**: ×2
+  for 3.4 s). At **two thirds** it takes to the sky: strafing runs of fire and fireballs, and its
+  **brood** (Cinderlings) climbs out of the lava pools. **Ballistae** (hold to fire, 6 s to wind;
+  guides over them while it's up there) work the whole fight: on the ground a bolt is a heavy wound
+  and two within 12 s **pin** it (5 s, ×1.6, not again for 22 s); in the sky 3 bolts (one more for
+  every two of you past the first) and it **crashes**, downed for 9 s (it takes 50% more).
+  **Rockfalls** (three, `Dragonfall:rigRockfalls`: boulders on chains under a shelf of rock at the
+  rim, a glowing drop zone, a lever with a torch and a rope up to the shelf): lure it under one and
+  cut the chains: 8% of its health and **felled** for 6 s (×1.5); whoever stands under them is hurt
+  too; they hang again after 45 s; the lever is marked while it's in reach. Under **a third** it's
   **enraged**: quicker, fire rains, and every 40 s it rises over the middle for an **Inferno**:
   whoever its fire can see is burned; behind a ward stone you're sheltered (the stones light up
   and are marked while it winds up). At **a fifth** left it takes to the sky one last time: the

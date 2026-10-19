@@ -9,15 +9,23 @@
        Dragon.spawn(opts) -> dragon             opts.at (CFrame on the ground), opts.arena
                                                 {centre, radius}, opts.hp, opts.onState(state),
                                                 opts.onDeath(killerPlayer), opts.onHarpoon(n, need)
-       dragon:harpoon(plr) -> bool              a ballista's bolt struck it in the air (Dragonfall)
+       dragon:harpoon(plr) -> bool              a ballista's bolt struck it (Dragonfall): in the air,
+                                                enough bring it down; on the ground, two close
+                                                together PIN it (staggered, open)
+       dragon:rockfall(plr, at) -> bool         boulders cut down on it (Dragonfall's traps): it's
+                                                FELLED, down a while, everyone strike
        dragon.state                             intro · ground · takeoff · sky · crash · downed ·
                                                 land · inferno · dead
        Dragon.publishDisplay()                  a still copy for the Play menu (MonsterDisplays ▸ Dragon)
 
-     ON THE GROUND it stalks the nearest of you, turning slowly (get to its side): a BITE, a CLAW
-     sweep, its TAIL behind it (jump or dodge it), a WING BUFFET when you crowd it, a CHARGE at
-     whoever keeps away (into the cliffs: it reels), and FIRE BREATH swept across the ground
-     (get under it, or behind it). At two thirds it TAKES TO THE SKY: strafing runs of fire,
+     ON THE GROUND it stalks the nearest of you, turning slowly (get to its side), and fights in
+     PATTERNS you can learn (COMBOS: which one by where you all are): CLAW then BITE when you're at
+     its front, TAIL then STOMP when you're behind it, a WING BUFFET then FIRE BREATH when you crowd
+     it, FIRE BREATH at range, a CHARGE then its TAIL at whoever keeps away (into the cliffs: it
+     reels), a STOMP then a BITE right under it; enraged, each runs one blow longer. Every blow is
+     called over its head as it winds up (its name, and what to do the first few times: MoveName,
+     MoveTip, MoveTick; Dragon.client), and after every pattern it's OPEN a moment (it takes more
+     from every blow: "OPENING"); after its fire, its belly glows and it's open longer. At two thirds it TAKES TO THE SKY: strafing runs of fire,
      fireballs at each of you, and its brood called up out of the lava; BALLISTAE bring it down
      (enough bolts and it CRASHES, DOWNED for a while: everyone strike). Under a third it is
      ENRAGED: quicker, the caldera rains fire, and now and then it rises over the middle and
@@ -493,10 +501,36 @@ end
 --  ITS BLOWS (on the ground)
 --------------------------------------------------------------------
 local A = {}
+-- what each blow is called over its head, and what to do (the tip only the first few times)
+local MOVE_INFO = {
+	bite = {"BITE", "STEP OUT OF THE RING UNDER ITS JAWS"},
+	claw = {"CLAW", "BACK OFF, OR BLOCK IT"},
+	tail = {"TAIL SWEEP", "JUMP IT, OR DODGE AWAY"},
+	buffet = {"WING BUFFET", "GET OUT FROM UNDER IT"},
+	stomp = {"STOMP", "GET OUT FROM UNDER IT"},
+	charge = {"CHARGE", "STEP OUT OF THE LANE  ·  LURE IT INTO THE CLIFFS"},
+	breath = {"FIRE BREATH", "GET UNDER ITS HEAD, OR BEHIND IT"},
+	open = {"OPENING", "STRIKE IT NOW"},
+	belly = {"ITS BELLY GLOWS", "STRIKE IT NOW: IT TAKES DOUBLE"},
+	pinned = {"PINNED!", "THE BOLTS HOLD IT  ·  STRIKE"},
+	felled = {"FELLED!", "THE ROCKS HAVE IT DOWN  ·  STRIKE"},
+}
+local TELL_TIMES = 3
+function Dragon:call(k)
+	local info = MOVE_INFO[k]
+	if not info then return end
+	self.told = self.told or {}
+	self.told[k] = (self.told[k] or 0) + 1
+	self:attr("MoveName", info[1])
+	self:attr("MoveTip", self.told[k] <= TELL_TIMES and info[2] or "")
+	self:tick("MoveTick")
+end
 
 -- a bite: a ring under its jaws fills, the jaws snap shut
 A.bite = function(self, tgt)
 	local tr = rootOf(tgt)
+	if not tr then return end
+	self:call("bite")
 	self:faceQuick(tr.Position, 0.35)
 	self:attr("Jaw", 0.6)
 	local m = self:mouth()
@@ -514,6 +548,8 @@ A.bite = function(self, tgt)
 end
 -- a claw: an arc in front fills, then the swipe
 A.claw = function(self, tgt)
+	if not rootOf(tgt) then return end
+	self:call("claw")
 	self:faceQuick(rootOf(tgt).Position, 0.3)
 	local base = CFrame.new(self:feet()) * CFrame.Angles(0, self.yaw, 0)
 	Moves.arc(base, 22, math.rad(55), FIRE, 0.8)
@@ -531,6 +567,7 @@ A.claw = function(self, tgt)
 end
 -- its tail behind it: an arc at its back, only the ones on the ground (jump it, or dodge)
 A.tail = function(self)
+	self:call("tail")
 	local hip = self.root.CFrame * CFrame.new(0, -GROUND_H, 12)
 	local base = CFrame.new(hip.Position) * CFrame.Angles(0, self.yaw + math.pi, 0)
 	Moves.arc(base, 28, math.rad(75), FIRE, 0.9)
@@ -548,6 +585,7 @@ A.tail = function(self)
 end
 -- its wings: a gust that throws everyone close away
 A.buffet = function(self)
+	self:call("buffet")
 	Moves.circle(self:feet(), 19, FIRE, 0.85)
 	self:tick("Buffet")
 	task.wait(0.85)
@@ -561,6 +599,7 @@ A.buffet = function(self)
 end
 -- a stomp: the ground under it
 A.stomp = function(self)
+	self:call("stomp")
 	self:attr("Rear", 0.6)
 	Moves.circle(self:feet(), 13, FIRE, 0.75)
 	task.wait(0.75)
@@ -577,9 +616,11 @@ end
 -- a charge: a lane lights up, then it barrels down it (into the cliffs: it reels)
 A.charge = function(self, tgt)
 	local tr = rootOf(tgt)
+	if not tr then return end
 	local dir = flat(tr.Position - self.pos)
 	if dir.Magnitude < 1 then return end
 	dir = dir.Unit
+	self:call("charge")
 	self:faceQuick(self.pos + dir * 10, 0.45)
 	local len = math.min(80, (flat(tr.Position - self.pos)).Magnitude + 16)
 	-- (the lane stops short of the caldera's wall)
@@ -622,6 +663,8 @@ A.charge = function(self, tgt)
 end
 -- FIRE BREATH: its head comes up, an arc lights across the ground, then the fire sweeps it
 A.breath = function(self, tgt)
+	if not rootOf(tgt) then return end
+	self:call("breath")
 	self:faceQuick(rootOf(tgt).Position, 0.4)
 	self:attr("Rear", 1)
 	self:attr("Jaw", 0.5)
@@ -678,7 +721,47 @@ function Dragon:faceQuick(pos, t)
 	self:attr("Look", pos)
 end
 
--- which blow, by where you all are
+-- OPEN: after a pattern it stops a moment to breathe, and every blow on it lands harder
+function Dragon:opening(k, dur, mult)
+	if not self.alive then return end
+	self:call(k)
+	self:attr("Open", true)
+	Powers.addMods(self.model, {taken = mult}, dur, "Opening")
+	Moves.remote:FireAllClients("Flash", self.model, k == "belly" and FIRE or Color3.fromRGB(255, 220, 140), 0.5)
+	local t0 = now()
+	while self.alive and now() - t0 < dur and not self.felled and not self.pinNow do task.wait(0.1) end
+	self:attr("Open", nil)
+end
+
+-- THE PATTERNS: a few blows in a row, always the same ones in the same order (learn them), then
+-- an opening. Which one, by where you all are; enraged, each runs one blow longer
+local COMBOS = {
+	{k = "claws", moves = {"claw", "bite"}, rage = {"claw", "bite", "claw"}, cd = 5},
+	{k = "rear", moves = {"tail", "stomp"}, rage = {"tail", "stomp", "tail"}, cd = 6},
+	{k = "gust", moves = {"buffet", "breath"}, rage = {"buffet", "breath", "stomp"}, cd = 14},
+	{k = "fire", moves = {"breath"}, rage = {"breath", "charge"}, cd = 13},
+	{k = "rush", moves = {"charge", "tail"}, rage = {"charge", "charge", "tail"}, cd = 10},
+	{k = "trample", moves = {"stomp", "bite"}, rage = {"stomp", "bite", "buffet"}, cd = 7},
+}
+local COMBO = {}
+for _, c in ipairs(COMBOS) do COMBO[c.k] = c end
+function Dragon:runCombo(c)
+	local list = self.enraged and c.rage or c.moves
+	local fiery = false
+	for i, m in ipairs(list) do
+		if not self.alive or self.felled or self.pinNow or self.state ~= "ground" then return end
+		local tgt = self:target()
+		if not rootOf(tgt) then return end
+		A[m](self, tgt)
+		if m == "breath" then fiery = true end
+		if i < #list then task.wait(0.3 * self.gapMul) end
+	end
+	if not self.alive or self.felled or self.pinNow then return end
+	-- (after its fire its belly glows: open longer, and every blow lands double)
+	if fiery then self:opening("belly", 3.4, 2) else self:opening("open", 2.2, 1.45) end
+end
+
+-- which pattern, by where you all are
 function Dragon:choose()
 	local tgt, dist = self:target()
 	local tr = rootOf(tgt)
@@ -686,7 +769,10 @@ function Dragon:choose()
 	local function ready(k) return now() >= (self.cd[k] or 0) end
 	local function use(k, cd) self.cd[k] = now() + cd * self.gapMul end
 	local pool, total = {}, 0
-	local function opt(k, w, fn, cd) if ready(k) and w > 0 then table.insert(pool, {k = k, w = w, fn = fn, cd = cd}); total += w end end
+	local function opt(k, w, _, cd)
+		local c = COMBO[k]
+		if c and ready(k) and w > 0 then table.insert(pool, {k = k, w = w, fn = function() self:runCombo(c) end, cd = c.cd}); total += w end
+	end
 	-- who's where, from its point of view
 	local behind, close, front = 0, 0, false
 	for _, c in ipairs(players(self, 60)) do
@@ -700,13 +786,12 @@ function Dragon:choose()
 	local side = math.abs(lt.X)
 	local underJaw = lt.Z < -14 and lt.Z > -42 and side < 12
 	local beside = lt.Z < 6 and lt.Z > -26 and side < 24
-	opt("tail", behind > 0 and 5 or 0, function() A.tail(self) end, 5)
-	opt("buffet", close >= 2 and 4 or (close >= 1 and 1 or 0), function() A.buffet(self) end, 11)
-	opt("stomp", flat(lt).Magnitude < 12 and 3 or 0, function() A.stomp(self) end, 7)
-	opt("bite", underJaw and 4 or 0, function() A.bite(self, tgt) end, 2.6)
-	opt("claw", beside and 3 or 0, function() A.claw(self, tgt) end, 3.5)
-	opt("breath", (dist > 18 and dist < 64 and lt.Z < 0) and 3 or 0, function() A.breath(self, tgt) end, 13)
-	opt("charge", dist > 38 and 4 or 0, function() A.charge(self, tgt) end, 10)
+	opt("rear", behind > 0 and 5 or 0)
+	opt("gust", close >= 2 and 4 or (close >= 1 and 1 or 0))
+	opt("trample", flat(lt).Magnitude < 12 and 3 or 0)
+	opt("claws", (underJaw or beside) and 4 or 0)
+	opt("fire", (dist > 18 and dist < 64 and lt.Z < 0) and 3 or 0)
+	opt("rush", dist > 38 and 4 or 0)
 	if #pool == 0 then return nil end
 	local x = math.random() * total
 	for _, o in ipairs(pool) do
@@ -838,9 +923,24 @@ S.strafe = function(self)
 	self:attr("Breath", nil); self:attr("Jaw", 0); self:attr("BreathYaw", nil)
 end
 
--- a ballista's bolt struck it
+-- a ballista's bolt struck it. ON THE GROUND: a heavy wound, and two close together PIN it
+-- (staggered, open: everyone strike), not again for a while
 function Dragon:harpoon(plr)
-	if self.state ~= "sky" or not self.alive then return false end
+	if not self.alive then return false end
+	if self.state == "ground" or self.state == "downed" then
+		if plr and plr.Character then CombatServer.credit(self.model, plr.Character, "Ballista", "Bolt") end
+		self.hum:TakeDamage(self.hum.MaxHealth * 0.035)
+		Moves.remote:FireAllClients("Flash", self.model, Color3.fromRGB(255, 255, 255), 0.4)
+		local recent = {}
+		for _, t in ipairs(self.boltsAt or {}) do if now() - t < 12 then table.insert(recent, t) end end
+		table.insert(recent, now())
+		self.boltsAt = recent
+		local pinned = #recent >= 2 and self.state == "ground" and now() > (self.pinFreeAt or 0)
+		if pinned then self.pinNow = true; self.boltsAt = {} end
+		if self.opts.onBolt then task.spawn(self.opts.onBolt, plr, pinned, #recent) end
+		return true
+	end
+	if self.state ~= "sky" then return false end
 	self.hits += 1
 	if plr and plr.Character then CombatServer.credit(self.model, plr.Character, "Ballista", "Bolt") end
 	self.hum:TakeDamage(self.hum.MaxHealth * 0.03)
@@ -848,6 +948,43 @@ function Dragon:harpoon(plr)
 	if self.opts.onHarpoon then task.spawn(self.opts.onHarpoon, self.hits, self.need or 3, plr) end
 	if self.hits >= (self.need or 3) then self.downNow = true end
 	return true
+end
+
+-- PINNED: the bolts hold it where it stands, a while (after a pattern's blow, never mid-air)
+function Dragon:pinned()
+	self.pinNow = false
+	self.pinFreeAt = now() + 22
+	self:call("pinned")
+	self:attr("Reel", true)
+	self:attr("Open", true)
+	Moves.remote:FireAllClients("Shake", self.pos, 1.2)
+	Powers.addMods(self.model, {taken = 1.6}, 5, "Pinned")
+	sound(ROAR, self.pos, 2.4, 0.5)
+	task.wait(5)
+	self:attr("Reel", nil)
+	self:attr("Open", nil)
+end
+
+-- BOULDERS ON IT (a Dragonfall trap cut loose over where it stood): a crushing wound, and down
+function Dragon:rockfall(plr, at)
+	if not self.alive or (self.state ~= "ground" and self.state ~= "downed") then return false end
+	if flat(self:feet() - at).Magnitude > 20 then return false end
+	if plr and plr.Character then CombatServer.credit(self.model, plr.Character, "Rockfall", "Rocks") end
+	self.hum:TakeDamage(self.hum.MaxHealth * 0.08)
+	Moves.remote:FireAllClients("Flash", self.model, Color3.fromRGB(255, 255, 255), 0.6)
+	self.felled = true
+	return true
+end
+function Dragon:felledDown()
+	self.felled = false
+	self:call("felled")
+	self:setState("downed")
+	self:attr("Downed", true)
+	Powers.addMods(self.model, {taken = 1.5}, 6, "Felled")
+	task.wait(6)
+	self:attr("Downed", nil)
+	if self.alive then self:roar(true) end
+	if self.alive then self:setState("ground") end
 end
 
 function Dragon:crash()
@@ -1006,6 +1143,16 @@ function Dragon:brain()
 				self.busy = true
 				local ok, err = pcall(self.inferno, self)
 				if not ok then warn("[Dragon] inferno", err); self.infernoAt = now() + 40; if self.state ~= "ground" then pcall(self.land, self) end end
+				self.busy = false
+			elseif self.felled then
+				self.busy = true
+				local ok, err = pcall(self.felledDown, self)
+				if not ok then warn("[Dragon] felled", err); self:setState("ground") end
+				self.busy = false
+			elseif self.pinNow then
+				self.busy = true
+				local ok, err = pcall(self.pinned, self)
+				if not ok then warn("[Dragon] pinned", err) end
 				self.busy = false
 			else
 				if self.enraged and now() >= (self.rainAt or 1e9) then

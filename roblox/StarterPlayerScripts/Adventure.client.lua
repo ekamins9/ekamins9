@@ -980,7 +980,7 @@ local function guideTargets()
 				if pr and pr.Enabled then table.insert(out, {part = d, text = d:GetAttribute("Escape") and "ESCAPE STAIRS" or "EXTRACT", color = d:GetAttribute("Escape") and Color3.fromRGB(255, 230, 170) or Color3.fromRGB(110, 180, 255), prio = 1, arrow = true, up = 7}) end
 			end
 		end
-		for _, fname in ipairs({"Ballistae", "Wards"}) do
+		for _, fname in ipairs({"Ballistae", "Wards", "Rockfalls"}) do
 			local fo = map:FindFirstChild(fname)
 			for _, m in ipairs(fo and fo:GetChildren() or {}) do
 				local gt = m:GetAttribute("GuideText")

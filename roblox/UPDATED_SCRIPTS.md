@@ -1,4 +1,30 @@
-# Updated scripts: a shield goes with your weapon; every key hint is yours
+# Updated scripts: Dragonfall, a dragon you can learn and bring down
+
+- **Learnable attack patterns.** Cindermaw fights in fixed patterns picked by where you all
+  stand: CLAW → BITE at its front, TAIL SWEEP → STOMP behind it, WING BUFFET → FIRE BREATH when
+  you crowd it, FIRE BREATH at range, CHARGE → TAIL at whoever keeps away, STOMP → BITE under it;
+  enraged, each runs one blow longer. **Every blow is called over its head** as it winds up, with
+  what to do the first three times ("TAIL SWEEP · JUMP IT, OR DODGE AWAY").
+- **Openings.** After every pattern it stops to breathe: OPENING, it takes 45% more for a moment;
+  after its fire, ITS BELLY GLOWS: double damage, longer. Dodge the pattern, then punish.
+- **Ballistae all fight long.** On the ground a bolt is a heavy wound, and two bolts close
+  together PIN it (it can't move, it takes 60% more); in the sky they still bring it crashing down.
+- **Rockfalls.** Three boulder traps hang under shelves of rock at the rim, lit by fire, over a
+  glowing drop zone: lure it under one and cut the chains at the lever: a crushing wound, and it's
+  FELLED. Don't stand under them yourself. They're hung again after 45 seconds.
+- The mode's line says it short: STRIKE IN ITS OPENINGS · BALLISTAE · ROCKFALLS.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [Dragon.lua](ServerScriptService/Combat/Dragon.lua) | ServerScriptService ▸ Combat | ModuleScript | COMBOS, `call`, `opening`, `runCombo`; ground bolts and PINNED; `rockfall` / FELLED |
+| [Dragonfall.lua](ServerScriptService/Game/Modes/Dragonfall.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | ballistae the whole fight; the rockfall traps; banners |
+| [Dragon.client.lua](StarterPlayerScripts/Dragon.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the blow called over its head |
+| [Adventure.client.lua](StarterPlayerScripts/Adventure.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | guides over the rockfall levers |
+| [README.md](README.md) | — | doc | Dragonfall |
+
+---
+
+## Before that: a shield goes with your weapon; every key hint is yours
 
 - **A shield goes with a one-handed primary**, on your arm, and **your secondary stays a weapon**
   of its own (no more shield-instead-of-secondary, and no third-slot sidearm on 3). A loadout saved
