@@ -1,4 +1,35 @@
-# Updated scripts: the Lists are pure swordsmanship
+# Updated scripts: a Lists match start to finish; small arenas, fenced in
+
+- **Small arenas only**: the Lists play RoseCourt, Sandpit, Colosseum, Bloodpit, Moonring,
+  Dustbowl, Thornpit, Mirepit and Greenring (no castles, no battlefields).
+- **Nobody leaves the arena**: an invisible fence round the fighting ground (inside the arena's
+  wall, across its gates: Thornpit's open gates are shut), tall enough that pillars and stairs
+  don't get you over; anyone still outside it, or fallen through the floor, is put back in.
+- **Same map every round**: no map vote between rounds (`sameMap`).
+- **The countdown**: each round starts held for 5 s, everyone frozen where they spawned, the screen
+  grey, ROUND n, the score, 3 · 2 · 1 · FIGHT (the round's clock gets the 5 s back).
+- **Round counter**: ROUND n with your round wins and theirs as pips (first to 3) under the top bar.
+- **Between rounds**: the grey again with ROUND WON / ROUND LOST, the counter and the next round's
+  clock. The old big VICTORY band and the vote board no longer show in the Lists; the death
+  screen gives way to it after a moment.
+- **The end**: VICTORY or DEFEAT over the winners standing on a podium in the middle of the arena,
+  emoting; the HUD steps aside; RE-QUEUE (back to the Courtyard and straight into the same queue)
+  or RETURN TO MENU; everyone goes home by themselves after 45 s.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [ListsFlow.client.lua](StarterPlayerScripts/ListsFlow.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new**: the counter, the countdown, between rounds, the end screen |
+| [Lists.lua](ServerScriptService/Game/Modes/Lists.lua) | ServerScriptService ▸ Game ▸ Modes | ModuleScript | the fence and put-back, the held start, the podium |
+| [GameServer.server.lua](ServerScriptService/Game/GameServer.server.lua) | ServerScriptService ▸ Game | Script | `sameMap`: no vote, the same map |
+| [HubServer.server.lua](ServerScriptService/Hub/HubServer.server.lua) | ServerScriptService ▸ Hub | Script | ListsRequeue / ListsLeave; re-queue on arrival; 45 s |
+| [GameConfig.lua](ReplicatedStorage/GameConfig.lua) | ReplicatedStorage | ModuleScript | Lists: the small arenas, `sameMap`, `fightCountdown` |
+| [RoundResult.client.lua](StarterPlayerScripts/RoundResult.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | not in the Lists |
+| [Scoreboard.client.lua](StarterPlayerScripts/Scoreboard.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | no board / vote / score row in the Lists |
+| [README.md](README.md) | — | doc | a Lists match, start to finish |
+
+---
+
+## Before that: the Lists are pure swordsmanship
 
 - **1v1 / 2v2 / 3v3 (casual and ranked) are melee only**: no powers, no throwables, no spells, no
   throwing your shield or weapon. A bow, crossbow, staff, wand or tome in your loadout gives way to

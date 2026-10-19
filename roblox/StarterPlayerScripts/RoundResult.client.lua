@@ -8,7 +8,7 @@
 
      Reads the Round node: State (Round → Intermission), Winner (a team's name
      or a player's), Objective (the result line), WinnerKills, MatchOver.
-     Not in the Courtyard, the Tiltyard or Horde. ]]
+     Not in the Courtyard, the Tiltyard, Horde or the Lists (ListsFlow.client has its own). ]]
 
 local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,7 +22,7 @@ local player = Players.LocalPlayer
 local round = ReplicatedStorage:WaitForChild("Round")
 
 local HOLD = 5.5          -- seconds it stays up
-local SKIP = {Hub = true, Tiltyard = true, Horde = true}
+local SKIP = {Hub = true, Tiltyard = true, Horde = true, Lists = true}   -- (the Lists: ListsFlow.client)
 local COL_WIN, COL_LOSE, COL_DRAW = Color3.fromRGB(255, 206, 70), Color3.fromRGB(255, 80, 90), Color3.fromRGB(230, 230, 236)
 
 local gui = Instance.new("ScreenGui")

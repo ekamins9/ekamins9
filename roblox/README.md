@@ -1050,6 +1050,18 @@ server teleports its own players with the sides in the teleport data (`Matchmake
 are `Locked` (only those user ids), best of 5, forfeited by a leaver; ratings are Elo
 (`Scoreboard`, `LB_<bracket>` OrderedDataStores), ranks from `Economy.rankTiers`, leaving a
 ranked match early locks the queue for `queueLockMinutes`.
+**A Lists match, start to finish** (`Game ▸ Modes ▸ Lists`, `StarterPlayerScripts ▸ ListsFlow`):
+pure swordsmanship (no powers, throwables, spells, bows or magic; no throwing your own steel), on
+the small arenas only (RoseCourt, Sandpit, Colosseum and the MapForge rings: Bloodpit, Moonring,
+Dustbowl, Thornpit, Mirepit, Greenring), every round on the same map (`sameMap`: no vote). An
+invisible fence keeps everyone inside the fighting ground (the arena's own wall, its gates
+included), and anyone who still ends up outside it or under the floor is put back in. Each round
+starts HELD for `fightCountdown` s: everyone frozen where they spawned, the screen grey, 3 · 2 · 1
+· FIGHT; a round counter (pips, first to 3) under the top strip; between rounds the grey again
+with ROUND WON / LOST and the next round's clock. At the end the winners stand on a podium in
+the middle of the arena and emote (players brought back onto it, the bots that won copied
+there) under VICTORY or DEFEAT, with RE-QUEUE (back to the Courtyard and straight into the same
+queue: `TeleportData.requeue`) and RETURN TO MENU; left alone, everyone goes home after 45 s.
 
 ## Staff: the admin panel (F2)
 
@@ -1429,7 +1441,7 @@ and 42 themed ones from **`Build ▸ MapForge`**, each a layout in a theme:
 - **Bridges:** Redgorge (a dry gorge), Mistbridge, Frostford (a winter river).
 - **Ruins:** Cinderfall, Duneshrine, Witchfen (a swamp in the rain).
 - **Clearings:** Hollow Grove (fireflies at night), Pinewatch, Amberglade (autumn).
-- **Warfields** (The Lists, 1v1 to 3v3): Redmeadow (autumn wheat), Ironvale (snow), Grimfield
+- **Warfields** (built for the Lists; out of its rotation now, which keeps to the small arenas): Redmeadow (autumn wheat), Ironvale (snow), Grimfield
   (ash and embers), Sunfall (desert dunes at dusk), Ravenfield (night, storm), Blossomfield (spring). A duel ring of pavises and planted spears in the middle of a battle: two
   armies fight all round it on every screen (`StarterPlayerScripts ▸ Warfield`, with
   `ReplicatedStorage ▸ WarCrowd` and `WarFX`; the map's `Warfield` attribute, the ring's radius,

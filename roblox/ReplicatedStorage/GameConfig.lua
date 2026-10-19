@@ -91,8 +91,11 @@ GameConfig.MODES = {
 		name = "The Lists", category = "Arena", teams = 2, maxPlayers = 6, minPlayers = 2,
 		description = "Best of 5 rounds, no respawns, one on one means one on one. Pure swordsmanship: no powers, no throwables, no bows, no magic.",
 		meleeOnly = true,   -- (Game ▸ Modes ▸ Lists: steel in the hand and nothing else)
-		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Abbeyfield", "Blackwater",
-			"Redmeadow", "Ironvale", "Grimfield", "Sunfall", "Ravenfield", "Snowcrest", "Sunhold", "Greenring", "Blossomfield"}, roundLength = 90, intermission = 6, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		-- (the small arenas only: a duel isn't fought across a castle or a battlefield)
+		maps = {"RoseCourt", "Sandpit", "Colosseum", "Bloodpit", "Moonring", "Dustbowl", "Thornpit", "Mirepit", "Greenring"},
+		roundLength = 90, intermission = 7, respawnDelay = 0, roundsToWin = 3, hidden = true,
+		sameMap = true,        -- every round of a match on the one map: no vote between rounds
+		fightCountdown = 5,    -- each round starts held: the screen grey, 3 · 2 · 1 · FIGHT (ListsFlow.client)
 	},
 	-- the dungeon game's lodge (Game ▸ Modes ▸ Tavern): walk about, trade, ready up
 	Tavern = {

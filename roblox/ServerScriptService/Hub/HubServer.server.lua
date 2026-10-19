@@ -52,7 +52,7 @@ local TextFilter = require(ServerScriptService:WaitForChild("Safety"):WaitForChi
 local STUDIO = RunService:IsStudio()
 local PARTY_MAX = GameConfig.PARTY_MAX or 3
 local PENDING_TTL = 90      -- a freshly reserved server is advertised for this long until it heartbeats itself
-local MATCH_OVER_DELAY = 12 -- seconds a finished Lists match shows its result before everyone goes home
+local MATCH_OVER_DELAY = 45 -- seconds a finished Lists match shows its podium before everyone goes home (or sooner: the end screen's buttons)
 
 local function log(...) DebugFlags.log("Hub", ...) end
 
@@ -755,6 +755,42 @@ Matchmaker.onMatch = function(ticketId, match)
 	end)
 end
 
+-- THE END SCREEN'S BUTTONS (ListsFlow.client): back to the Courtyard, or back and straight into
+-- the queue again (the same bracket, casual or ranked: TeleportData.requeue, picked up on arrival)
+local function listsAfter(plr, again)
+	if Game.server.door ~= "Lists" or Game.node:GetAttribute("MatchOver") ~= true then return false, "the match isn't over" end
+	local bracket, ranked = Game.server.bracket or "1v1", Game.server.ranked == true
+	if STUDIO then
+		Game.node:SetAttribute("MatchOver", false)
+		local ok, msg = studioSwitch(plr, "Hub", {door = "Courtyard", sides = nil, bracket = nil, ranked = false, bots = false})
+		if again then
+			task.delay(6, function()
+				if not plr.Parent then return end
+				local okQ, okJ, m = pcall(joinQueue, plr, bracket, ranked)
+				if not (okQ and okJ) then toast(plr, "Couldn't re-queue: " .. tostring(m or okJ)) end
+			end)
+		end
+		return ok, msg
+	end
+	return teleport({plr}, game.PlaceId, again and {requeue = {bracket = bracket, ranked = ranked}} or {}, nil, nil, "Courtyard")
+end
+
+-- back from a match with RE-QUEUE: into the queue again once the profile is in
+local function requeueOnArrival(plr, rq)
+	local bracket = type(rq.bracket) == "string" and rq.bracket or "1v1"
+	local ranked = rq.ranked == true
+	local t0 = os.clock()
+	while plr.Parent and os.clock() - t0 < 20 do
+		local ok, p = pcall(Profile.get, plr)
+		if ok and p then break end
+		task.wait(0.5)
+	end
+	task.wait(2.5)
+	if not plr.Parent or Game.server.mode ~= "Hub" then return end
+	local okQ, okJ, msg = pcall(joinQueue, plr, bracket, ranked)
+	toast(plr, (okQ and okJ) and ("Back in the queue  ·  " .. bracket .. (ranked and "  ·  ranked" or "")) or ("Couldn't re-queue: " .. tostring(msg or okJ)))
+end
+
 -- a finished Lists match: everyone back to a Courtyard
 do
 	Game.node:GetAttributeChangedSignal("MatchOver"):Connect(function()
@@ -920,6 +956,7 @@ remote.OnServerInvoke = function(plr, op, a, b, c)
 	elseif op == "PlayerProfile" then return profileFor(plr, a)
 	elseif op == "Play" then local ok, msg = play(plr, a, b); return {ok = ok, msg = msg}
 	elseif op == "Hub" then local ok, msg = goHub(plr); return {ok = ok, msg = msg}
+	elseif op == "ListsLeave" or op == "ListsRequeue" then local ok, msg = listsAfter(plr, op == "ListsRequeue"); return {ok = ok, msg = msg}
 	elseif op == "Custom" then local ok, msg = custom(plr, a); return {ok = ok, msg = msg}
 	elseif op == "Join" then local ok, msg = joinServer(plr, a); return {ok = ok, msg = msg}
 	elseif op == "JoinFriend" then local ok, msg = joinFriend(plr, a); return {ok = ok, msg = msg}
@@ -1128,6 +1165,7 @@ local function onArrival(plr)
 		if accessCode == nil and Game.server.reserved and type(td.code) == "string" then accessCode = td.code end
 		arrivedWithParty(plr, td)
 		if type(td.joinParty) == "number" then task.defer(joinInvited, plr, td.joinParty) end
+		if type(td.requeue) == "table" then task.spawn(requeueOnArrival, plr, td.requeue) end
 	end
 	local allowed, why = Game.mayJoin(plr)
 	if not allowed then

@@ -538,6 +538,8 @@ end
 --  ROUND STATE
 --------------------------------------------------------------------
 local function intermission() return roundNode:GetAttribute("State") == "Intermission" end
+-- (the Lists have no board between rounds and no vote: ListsFlow.client's screens)
+local function boardBreak() return intermission() and roundNode:GetAttribute("Mode") ~= "Lists" end
 local function hubMenuUp()
 	local pg = player:FindFirstChild("PlayerGui")
 	local h = pg and pg:FindFirstChild("HubMenu")
@@ -626,8 +628,10 @@ local function refreshRound()
 		voteBox.Visible = false
 		-- (a mode with a HUD of its own says its sides itself: Plague Night's living and plague)
 		local ownHud = roundNode:GetAttribute("OwnHud") == true
-		scoreRow.Visible = teams == 2 and not ownHud
-		if teams == 2 and not ownHud then
+		-- (the Lists count rounds under the strip instead: ListsFlow.client)
+		local lists = roundNode:GetAttribute("Mode") == "Lists"
+		scoreRow.Visible = teams == 2 and not ownHud and not lists
+		if teams == 2 and not ownHud and not lists then
 			scoreA.Text = string.format("%s  %d", string.upper(GameConfig.TEAMS.A.name), roundNode:GetAttribute("ScoreA") or 0)
 			scoreB.Text = string.format("%d  %s", roundNode:GetAttribute("ScoreB") or 0, string.upper(GameConfig.TEAMS.B.name))
 			paintHouses()
@@ -646,7 +650,7 @@ local holding = false
 local function setBoard(on)
 	if holding == on then return end
 	holding = on
-	board.Visible = on or (intermission() and not hubMenuUp())
+	board.Visible = on or (boardBreak() and not hubMenuUp())
 	if board.Visible then refreshBoard() end
 end
 UserInputService.InputBegan:Connect(function(input, gp)
@@ -673,7 +677,7 @@ RunService.RenderStepped:Connect(function(dt)
 		refreshRound()
 		sizeBoard()
 		-- (a battle's own finale may hold the board back a few seconds: War.client's _G.BoardHoldUntil)
-		local show = holding or (intermission() and not hubMenuUp() and os.clock() >= (_G.BoardHoldUntil or 0))
+		local show = holding or (boardBreak() and not hubMenuUp() and os.clock() >= (_G.BoardHoldUntil or 0))
 		if board.Visible ~= show then board.Visible = show end
 		-- the class screen (DisplayOrder 2000) is up during the intermission: sit above it
 		gui.DisplayOrder = intermission() and 2100 or 30
@@ -685,7 +689,7 @@ end)
 -- weapon, the menus), so whoever had it last can't keep it hidden or locked
 RunService:BindToRenderStep("VoteCursor", Enum.RenderPriority.Last.Value + 50, function()
 	local mode = roundNode:GetAttribute("Mode")
-	if intermission() and mode ~= "Hub" and mode ~= "Tiltyard" and mode ~= "Tavern" and not hubMenuUp() then
+	if intermission() and mode ~= "Hub" and mode ~= "Tiltyard" and mode ~= "Tavern" and mode ~= "Lists" and not hubMenuUp() then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 		UserInputService.MouseIconEnabled = true
 		if UserInputService.MouseIcon ~= "" then UserInputService.MouseIcon = "" end

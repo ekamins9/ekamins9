@@ -252,6 +252,9 @@ task.spawn(function()
 				node:SetAttribute("Vote" .. i, c.map)
 				node:SetAttribute("VoteMode" .. i, c.mode)
 			end
+		elseif def.sameMap and (node:GetAttribute("NextMode") or "") == "" then
+			-- (a match of rounds on one map, the Lists': no vote, the next round where this one was)
+			pendingMaps = {map}
 		else
 			local nextDef = GameConfig.MODES[node:GetAttribute("NextMode")] or def
 			pendingMaps = candidates(nextDef)
