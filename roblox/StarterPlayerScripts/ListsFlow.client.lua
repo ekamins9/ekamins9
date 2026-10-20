@@ -338,6 +338,7 @@ local function showBetween()
 	if phase ~= "between" or betweenRound ~= n then
 		phase, betweenRound, phaseAt = "between", n, os.clock()
 		setWash(true)
+		mySide = mySide or sideNow()
 		local w = round:GetAttribute("Winner") or ""
 		local mine = mySide and GameConfig.TEAMS[mySide] and GameConfig.TEAMS[mySide].name
 		if w == "" then
@@ -385,6 +386,7 @@ local function showEnd()
 		busy = false
 		setWash(false)
 		finale.Visible = true
+		mySide = mySide or sideNow()
 		local winner = round:GetAttribute("MatchWinner") or ""
 		local mine, theirs = counts()
 		local won = mySide ~= nil and winner == mySide
