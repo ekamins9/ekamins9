@@ -11,6 +11,11 @@
                          an overhead down, an underhand up, a stab forward); on a blade it skids
                          along the guard's length and its push into the guard bounces back
                          (restitution); on a shield it reflects off the board
+       THE CONTACT       the blades are made to meet as you see them: for the clang the attacker's
+                         arm keeps driving its blade onto the guard (most of the gap; on a shield
+                         all of it) and the guard leans in for the rest, worked out afresh every
+                         frame from the clip's own pose so its easing back can't pull them apart;
+                         then they're let go
        THE GLANCE        the attacker's arm is knocked along that bounce (a damped spring on the
                          shoulder: out fast, back with a little overshoot) and the blade rings in
                          the hand (a fast shiver of the grip, dying away); the defender's arm gives
@@ -19,8 +24,8 @@
                          cooling to orange as they fall; a flash and a burst of light at the
                          crossing; a parry's spray is bigger, a perfect parry's has a glint
 
-     Laid over the animation (the joints' Transform after the Animator, like DrawFX), so the
-     clips themselves are untouched. Only within 120 studs of your camera; a phone throws fewer
+     Laid over the animation (the joints' Transform after the Animator: ReplicatedStorage ▸
+     JointLayer), so the clips themselves are untouched. Only within 120 studs of your camera; a phone throws fewer
      sparks. Nothing here is sent to the server. ]]
 
 local Players = game:GetService("Players")
@@ -28,6 +33,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Device = require(ReplicatedStorage:WaitForChild("Device"))
+local JointLayer = require(ReplicatedStorage:WaitForChild("JointLayer"))
 local PHONE = Device.kind() == "phone"
 local NEAR = 120
 
@@ -125,16 +131,56 @@ end
 --------------------------------------------------------------------
 --  THE GLANCE: springs laid over the joints
 --------------------------------------------------------------------
-local moves = {}   -- {motor, axis (the joint's own frame), amp (rad), freq, decay, t0, dur}
-local function knock(motor, frame, worldAxis, amp, freq, decay, dur)
+local moves = {}   -- {motor, axis (the joint's own frame), amp (rad), freq, decay, t0, dur} or a held pose {.., hold = {rise, keep, fall}}
+-- (Studio: the player's attribute ClashSlow stretches the contact to look at it)
+local function slow()
+	local k = RunService:IsStudio() and Players.LocalPlayer:GetAttribute("ClashSlow")
+	return type(k) == "number" and k > 0 and k or 1
+end
+local function knock(motor, frame, worldAxis, amp, freq, decay, dur, delay)
 	if not (motor and motor:IsA("Motor6D") and frame) or worldAxis.Magnitude < 1e-4 or amp == 0 then return end
 	-- the joint's frame: the turn is laid on its Transform, so the axis goes into that frame
 	local jr = (frame.CFrame * motor.C0).Rotation
 	table.insert(moves, {motor = motor, axis = jr:VectorToObjectSpace(worldAxis.Unit), amp = amp, freq = freq,
-		decay = decay, t0 = os.clock(), dur = dur})
+		decay = decay, t0 = os.clock() + (delay or 0), dur = dur})
+end
+-- THE CONTACT: for the clang, each side's arm (both on a two-handed hilt) is turned about its
+-- shoulder by a correction that's re-aimed every frame, so that the blade stays on the guard
+-- while the clip under it eases back; eased in over `rise`, held for `keep`, eased out over `fall`
+local CONTACT_MAX = math.rad(32)
+local contacts = {}
+local function shouldersOf(char, two, onShield)
+	local torso = char and char:FindFirstChild("Torso")
+	if not torso then return nil end
+	local names = onShield and {"Left Shoulder"} or (two and {"Right Shoulder", "Left Shoulder"} or {"Right Shoulder"})
+	local out = {}
+	for _, n in ipairs(names) do
+		local j = torso:FindFirstChild(n)
+		if j and j:IsA("Motor6D") then table.insert(out, j) end
+	end
+	return #out > 0 and {torso = torso, joints = out} or nil
+end
+-- the turn about `pivot` that brings `from` toward `to` (a world rotation)
+local function turnToward(pivot, from, to)
+	local a, b = from - pivot, to - pivot
+	if a.Magnitude < 0.5 or b.Magnitude < 0.5 then return nil end
+	local axis = a:Cross(b)
+	if axis.Magnitude < 1e-5 then return nil end
+	return CFrame.fromAxisAngle(axis.Unit, math.acos(math.clamp(a.Unit:Dot(b.Unit), -1, 1)))
+end
+local function clampTurn(q)
+	local axis, angle = q:ToAxisAngle()
+	if angle > CONTACT_MAX then return CFrame.fromAxisAngle(axis, CONTACT_MAX) end
+	return q
+end
+local function twoHanded(char)
+	local tool = char and char:FindFirstChildOfClass("Tool")
+	local ok, Catalog = pcall(require, ReplicatedStorage:WaitForChild("Catalog"))
+	local w = ok and tool and Catalog.WEAPON and Catalog.WEAPON[tool.Name]
+	return w ~= nil and (w.family == "TwoHanded" or w.family == "Polearm")
 end
 -- turn an arm about its shoulder so that `tip` moves `dist` studs along `dir`
-local function swingArm(char, shoulderName, tip, dir, dist, freq, decay)
+local function swingArm(char, shoulderName, tip, dir, dist, freq, decay, delay)
 	local torso = char:FindFirstChild("Torso")
 	local sh = torso and torso:FindFirstChild(shoulderName)
 	if not (sh and sh:IsA("Motor6D")) or dir.Magnitude < 1e-4 then return end
@@ -143,26 +189,83 @@ local function swingArm(char, shoulderName, tip, dir, dist, freq, decay)
 	if r.Magnitude < 0.5 then return end
 	local axis = r:Cross(dir.Unit)
 	-- (a spring's first lobe peaks at about 0.6 of its height: the amp is raised to match)
-	knock(sh, torso, axis, (dist / r.Magnitude) / 0.6, freq, decay, 0.6)
+	knock(sh, torso, axis, (dist / r.Magnitude) / 0.6, freq, decay, 0.6, delay)
 end
 -- the blade ringing in the hand: a fast shiver of the grip, dying away
-local function ring(char, axisWorld, amp)
+local function ring(char, axisWorld, amp, delay)
 	local arm = char:FindFirstChild("Right Arm")
 	local grip = arm and arm:FindFirstChild("ToolGrip")
-	if grip then knock(grip, arm, axisWorld, amp, 24, 0.09, 0.4) end
+	if grip then knock(grip, arm, axisWorld, amp, 24, 0.09, 0.4, delay) end
 end
 
-RunService.Stepped:Connect(function()
-	if #moves == 0 then return end
+local function layTurn(arm, q, e)
+	-- (the arm's world turn, a fraction e of it, about each shoulder, laid on its Transform)
+	local axis, angle = q:ToAxisAngle()
+	if angle < 1e-4 then return end
+	for _, j in ipairs(arm.joints) do
+		local jr = (arm.torso.CFrame * j.C0).Rotation
+		JointLayer.turn(j, CFrame.fromAxisAngle(jr:VectorToObjectSpace(axis), angle * e))
+	end
+end
+local function stepContacts(now)
+	for i = #contacts, 1, -1 do
+		local c = contacts[i]
+		local t = now - c.t0
+		local total = c.rise + c.keep + c.fall
+		if t >= total or not (c.A.Parent and c.G.Parent) then
+			table.remove(contacts, i)
+		else
+			local e
+			if t < c.rise then e = t / c.rise; e = e * e * (3 - 2 * e)
+			elseif t < c.rise + c.keep then e = 1
+			else e = 1 - (t - c.rise - c.keep) / c.fall; e = e * e * (3 - 2 * e) end
+			-- re-aimed while it's held, from the clip's own pose this frame (the parts show the
+			-- clip whenever the clip has posed the joint since the layer last did)
+			if t < c.rise + c.keep then
+				local freshA = not c.atk or JointLayer.fresh(c.atk.joints[1])
+				local freshD = not c.def or JointLayer.fresh(c.def.joints[1])
+				if freshA and freshD then
+					local p1, p2 = closest(segOf(c.A), segOf(c.G))
+					local gap = p2 - p1
+					local meet = p1 + gap * c.share
+					if c.atk then
+						local pv = (c.atk.torso.CFrame * c.atk.joints[1].C0).Position
+						c.qa = gap.Magnitude > 0.04 and clampTurn(turnToward(pv, p1, meet) or CFrame.identity) or CFrame.identity
+					end
+					if c.def and c.share < 1 then
+						local pv = (c.def.torso.CFrame * c.def.joints[1].C0).Position
+						c.qd = gap.Magnitude > 0.04 and clampTurn(turnToward(pv, p2, meet) or CFrame.identity) or CFrame.identity
+					end
+				end
+			end
+			if c.atk then layTurn(c.atk, c.qa, e) end
+			if c.def then layTurn(c.def, c.qd, e) end
+		end
+	end
+end
+
+JointLayer.bind("ClashFX", function()
 	local now = os.clock()
+	if #contacts > 0 then stepContacts(now) end
+	if #moves == 0 then return end
 	for i = #moves, 1, -1 do
 		local m = moves[i]
 		local t = now - m.t0
 		if t >= m.dur or not m.motor.Parent then
 			table.remove(moves, i)
-		else
-			local a = m.amp * math.exp(-t / m.decay) * math.sin(2 * math.pi * m.freq * t)
-			m.motor.Transform = CFrame.fromAxisAngle(m.axis, a) * m.motor.Transform
+		elseif t >= 0 then
+			local a
+			if m.hold then
+				local rise, keep, fall = m.hold[1], m.hold[2], m.hold[3]
+				local e
+				if t < rise then e = t / rise; e = e * e * (3 - 2 * e)
+				elseif t < rise + keep then e = 1
+				else e = 1 - (t - rise - keep) / fall; e = e * e * (3 - 2 * e) end
+				a = m.amp * e
+			else
+				a = m.amp * math.exp(-t / m.decay) * math.sin(2 * math.pi * m.freq * t)
+			end
+			JointLayer.turn(m.motor, CFrame.fromAxisAngle(m.axis, a))
 		end
 	end
 end)
@@ -273,7 +376,7 @@ end)
 --------------------------------------------------------------------
 --  A CLASH
 --------------------------------------------------------------------
-event.OnClientEvent:Connect(function(atk, def, hitPos, kind, name, power)
+local function clash(atk, def, hitPos, kind, name, power)
 	if typeof(hitPos) ~= "Vector3" then return end
 	local cam = workspace.CurrentCamera
 	if cam and (cam.CFrame.Position - hitPos).Magnitude > NEAR then return end
@@ -287,10 +390,28 @@ event.OnClientEvent:Connect(function(atk, def, hitPos, kind, name, power)
 	local A = blade and segOf(blade)
 	local B = guard and segOf(guard)
 	local at = hitPos
+	local p1, p2
 	if A and B then
-		local p1, p2 = closest(A, B)
+		p1, p2 = closest(A, B)
 		local mid = (p1 + p2) / 2
-		if (mid - hitPos).Magnitude < 3.5 then at = mid end
+		if (mid - hitPos).Magnitude < 3.5 then at = mid else p1, p2 = nil, nil end
+	end
+	-- THE CONTACT: the blade driven onto the guard (most of the way; all of it on a shield), the
+	-- guard leaning in for the rest, held for the clang; the glance follows from where they met
+	local k0 = slow()
+	local rise, keep, fall = 0.04 * k0, 0.12 * k0, 0.22 * k0
+	local delay = 0
+	if p1 and p2 and blade and guard then
+		local gap = p2 - p1
+		if gap.Magnitude > 0.08 then
+			local share = (B and B.n) and 1 or 0.8
+			table.insert(contacts, {A = blade, G = guard, share = share, t0 = os.clock(), rise = rise, keep = keep, fall = fall,
+				atk = typeof(atk) == "Instance" and shouldersOf(atk, twoHanded(atk), false) or nil,
+				def = (typeof(def) == "Instance" and share < 1) and shouldersOf(def, twoHanded(def), false) or nil,
+				qa = CFrame.identity, qd = CFrame.identity})
+			at = p1 + gap * share
+			delay = rise + keep
+		end
 	end
 
 	-- which way: across the attacker's blade, as the attack goes
@@ -319,15 +440,15 @@ event.OnClientEvent:Connect(function(atk, def, hitPos, kind, name, power)
 		local tipA, tipB = A.c + A.a * A.h, A.c - A.a * A.h
 		local tip = tipA
 		if torso and (tipB - torso.Position).Magnitude > (tipA - torso.Position).Magnitude then tip = tipB end
-		swingArm(atk, "Right Shoulder", tip, d, k.knock * power, 3.4, 0.14)
-		ring(atk, A.a:Cross(d), 0.075 * k.ring)
+		swingArm(atk, "Right Shoulder", tip, d, k.knock * power, 3.4, 0.14, delay)
+		ring(atk, A.a:Cross(d), 0.075 * k.ring, delay)
 	end
 	-- the defender gives a little under it (a shield on the left arm)
 	if typeof(def) == "Instance" and B and k.give > 0 then
 		local onShield = B.n ~= nil
 		local tipB = B.c
-		swingArm(def, onShield and "Left Shoulder" or "Right Shoulder", tipB, v, k.give * power, 3, 0.12)
-		if not onShield then ring(def, B.a:Cross(v), 0.05 * k.ring) end
+		swingArm(def, onShield and "Left Shoulder" or "Right Shoulder", tipB, v, k.give * power, 3, 0.12, delay)
+		if not onShield then ring(def, B.a:Cross(v), 0.05 * k.ring, delay) end
 	end
 
 	-- the sparks: along the glance, both ways down the guard's edge, and out off its face
@@ -338,4 +459,13 @@ event.OnClientEvent:Connect(function(atk, def, hitPos, kind, name, power)
 	spray(at, dirs, math.floor(k.sparks * power + 0.5), 34 * math.sqrt(power))
 	flash(at, k)
 	if k.glint then glint(at) end
-end)
+end
+event.OnClientEvent:Connect(clash)
+-- (a Studio test: _G.ClashFxTest(attacker, defender, where, kind, name, power))
+if RunService:IsStudio() then
+	_G.ClashFxTest = clash
+	local be = Instance.new("BindableEvent")
+	be.Name = "ClashFxTest"
+	be.Event:Connect(clash)
+	be.Parent = Players.LocalPlayer
+end

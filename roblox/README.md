@@ -2102,12 +2102,35 @@ with pale chipped edges in stone, a dark gash in wood, a bright scratch on metal
 minute and a half. The server sends only the part (or none, for the world), the point, the
 direction and where the swing came from (`ScuffEvent`); nothing is replicated.
 
+## Effects laid on the body (`ReplicatedStorage ▸ JointLayer`)
+Every procedural motion over the animation (a struck bot rocking, the arm knocked off a guard, the
+blades meeting, a weapon drawn, a swing's momentum) goes through one layer: each effect says what
+it wants in the render step, and the layer lays it all down once a frame on top of the frame's
+animated pose. (A bot's clip is posed on your screen after Stepped, so a turn made in Stepped never
+showed on a bot: the hit reactions and the clash knocks were all but invisible on bots until this.)
+A joint the animation didn't touch this frame is rebuilt from its last animated pose, never laid on
+its own last frame, so no turn can pile up into a spin.
+
+## A swing carries the body (`SwingMomentum.client`)
+Every fighter near you (players, you, bots) is watched while Acting: the blade's tip, measured in
+their own frame (so walking and turning don't count), says where the swing goes, and the body goes
+with it: the torso coils as the windup draws the blade back, throws round into the swing, carries
+on past its end and settles back with a little overshoot (a spring); an overhead or a thrust pitches
+the body into it. The hips turn most of the way back (the feet stay put), the sword arm keeps the
+blade exactly where the clip has it (its path, and what it hits, are unchanged), the head keeps its
+eyes on the foe (yours stays level in first person), the free arm swings on a little (unless it
+holds a shield or the other end of the hilt). Within 90 studs (60 on a phone). Tuning: the
+constants at the top (K_YAW, YAW_MAX, the spring W / ZETA).
+
 ## Steel on steel (`ClashFX.client`, `CombatServer.clash` ClashEvent)
 A blow stopped on a guard (blocked, parried, perfect-parried, chambered, caught on a shield, or a
 guard broken) is fired to every screen: attacker, defender, the server's point, the kind, the
 attack's name and how hard (a parry streak hits harder). Each screen works out what the blades
 did as it shows them: **where** they met (the closest points of the attacker's Hitbox and the
-defender's GuardHull, each taken as a segment along its length), **which way** the blow was
+defender's GuardHull, each taken as a segment along its length), **the contact** (for the clang the
+attacker's arm drives its blade onto the guard and the guard leans in, worked out afresh every
+frame from the clips' own pose so their easing back can't pull them apart, then let go into the
+bounce; capped at 32° of arm), **which way** the blow was
 travelling (from its name: RightSwing comes from the right and travels left, an overhead down, an
 underhand up, a stab forward; kept across the attacker's own blade), and **how it bounced** (on a
 blade it skids down the guard's length and its push into it comes back; on a shield it mirrors off

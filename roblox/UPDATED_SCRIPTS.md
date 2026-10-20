@@ -1,4 +1,29 @@
-# Updated scripts: a Lists match start to finish; small arenas, fenced in
+# Updated scripts: blades that meet, swings with weight, hit reactions you can see
+
+- **The procedural motion over the animation finally shows on bots**: HitReact (a struck bot
+  rocking), ClashFX (the arm knocked off a guard), DrawFX (a weapon drawn) all laid their turns in
+  Stepped, but a bot's clip is posed on your screen after Stepped, so on bots (most of who you
+  fight) they barely showed. They now go through ReplicatedStorage ▸ JointLayer, which lays every
+  effect down once a frame after the clips, and never lets a turn pile up into a spin.
+- **Blades meet**: when a blow is blocked, parried or chambered, the attacker's arm drives its
+  blade onto the guard and the guard leans in to meet it, held for the clang, then they glance
+  apart (ClashFX: re-aimed every frame from the clips' own pose).
+- **A swing carries the body** (new SwingMomentum): the torso coils with the windup, throws into
+  the swing and carries through it with a spring's overshoot; overheads and thrusts lean in; the
+  feet stay planted, the head stays on the foe, and the blade's path (what it hits) is unchanged.
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [JointLayer.lua](ReplicatedStorage/JointLayer.lua) | ReplicatedStorage | ModuleScript | **new**: one layer for every effect over the animation |
+| [SwingMomentum.client.lua](StarterPlayerScripts/SwingMomentum.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | **new**: the swing's momentum |
+| [ClashFX.client.lua](StarterPlayerScripts/ClashFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | the contact; through JointLayer |
+| [HitReact.client.lua](StarterPlayerScripts/HitReact.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | through JointLayer |
+| [DrawFX.client.lua](StarterPlayerScripts/DrawFX.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | through JointLayer |
+| [README.md](README.md) | — | doc | the layer, the momentum, the contact |
+
+---
+
+## Before that: a Lists match start to finish; small arenas, fenced in
 
 - **Small arenas only**: the Lists play RoseCourt, Sandpit, Colosseum, Bloodpit, Moonring,
   Dustbowl, Thornpit, Mirepit and Greenring (no castles, no battlefields).

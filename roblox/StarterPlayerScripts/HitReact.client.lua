@@ -4,7 +4,7 @@
 
        THE BODY GIVES   a bot's whole body rocks away from the blow and twists with it, the head
                         snapping a beat later and further (damped springs on the RootJoint and the
-                        Neck, laid over the animation like DrawFX / ClashFX; a player's own body
+                        Neck, laid over the animation through ReplicatedStorage ▸ JointLayer; a player's own body
                         already jolts through CameraRig ▸ RigPose and the pose relay)
        A FLASH          the one struck flashes white for a blink (a Highlight, never more than a
                         few at once: Roblox draws 31 at most)
@@ -15,6 +15,8 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local JointLayer = require(ReplicatedStorage:WaitForChild("JointLayer"))
 
 local player = Players.LocalPlayer
 local NEAR = 120
@@ -30,7 +32,7 @@ local function knock(motor, frame, worldAxis, amp, freq, decay, dur, delay)
 	table.insert(moves, {motor = motor, axis = jr:VectorToObjectSpace(worldAxis.Unit), amp = amp, freq = freq, decay = decay,
 		t0 = os.clock() + (delay or 0), dur = dur})
 end
-RunService.Stepped:Connect(function()
+JointLayer.bind("HitReact", function()
 	if #moves == 0 then return end
 	local now = os.clock()
 	for i = #moves, 1, -1 do
@@ -40,7 +42,7 @@ RunService.Stepped:Connect(function()
 			table.remove(moves, i)
 		elseif t > 0 then
 			local a = m.amp * math.exp(-t / m.decay) * math.sin(2 * math.pi * m.freq * t)
-			m.motor.Transform = CFrame.fromAxisAngle(m.axis, a) * m.motor.Transform
+			JointLayer.turn(m.motor, CFrame.fromAxisAngle(m.axis, a))
 		end
 	end
 end)

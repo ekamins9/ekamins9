@@ -3,8 +3,8 @@
      a bow or a staff, the left hip for a one-hander or a grimoire, the right hip for
      a dagger or a wand) and sweeps it out into the weapon's own idle. Played here on
      every character this client sees (players and bots), laid over their animation
-     for a moment (the arm's Transform, after the Animator, eased in and out), so the
-     clips themselves are untouched. Settings ▸ "Draw animation" turns it off.
+     for a moment (the arm's Transform, after the Animator, eased in and out: ReplicatedStorage
+     ▸ JointLayer), so the clips themselves are untouched. Settings ▸ "Draw animation" turns it off.
 
      The server holds the blow until the weapon is out (Combat ▸ CombatServer
      DRAW_TIME), so the motion is also the time a swap costs. ]]
@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Catalog = require(ReplicatedStorage:WaitForChild("Catalog"))
 local ClientSettings = require(ReplicatedStorage:WaitForChild("ClientSettings"))
+local JointLayer = require(ReplicatedStorage:WaitForChild("JointLayer"))
 
 local DUR, DUR_2H = 0.4, 0.52   -- seconds (CombatServer DRAW_TIME / DRAW_TIME_2H)
 local REACH = 0.11              -- the hand gets to the weapon this fast, then pulls it out
@@ -84,7 +85,7 @@ task.spawn(function()
 end)
 
 -- after the Animator has written this frame's pose: the arm drawn toward the weapon
-RunService.Stepped:Connect(function()
+JointLayer.bind("DrawFX", function()
 	if not next(draws) then return end
 	local now = os.clock()
 	for char, d in pairs(draws) do
@@ -97,12 +98,12 @@ RunService.Stepped:Connect(function()
 			local rs = torso:FindFirstChild("Right Shoulder")
 			if rs and rs:IsA("Motor6D") then
 				local target = CFrame.Angles(0, d.pose.across, 0) * CFrame.Angles(0, 0, d.pose.raise)
-				rs.Transform = rs.Transform:Lerp(target, w)
+				JointLayer.blend(rs, target, w)
 			end
 			-- (a two-hander: the off hand lets go of where the grip will be until it's out)
 			if d.two then
 				local ls = torso:FindFirstChild("Left Shoulder")
-				if ls and ls:IsA("Motor6D") then ls.Transform = ls.Transform:Lerp(CFrame.Angles(0, 0, -0.15), w * 0.75) end
+				if ls and ls:IsA("Motor6D") then JointLayer.blend(ls, CFrame.Angles(0, 0, -0.15), w * 0.75) end
 			end
 		end
 	end
