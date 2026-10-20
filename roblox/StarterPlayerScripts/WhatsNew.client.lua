@@ -19,17 +19,16 @@ local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local InputHints = require(ReplicatedStorage:WaitForChild("InputHints"))
 
 local NEWS = {
-	version = "2026-10-19d",
-	title = "REFORGED: EVERY SKIN, EVERY SHIELD",
+	version = "2026-10-20",
+	title = "STEEL MEETS STEEL",
 	lines = {
-		{"⚒", "Every skin reforged", "its own blade: flame, crystal, bone, fang, lightning, twin rails, forked, a sun"},
-		{"🔱", "Heads and hafts too", "spears winged, trident, crescent; axes double-bit; maces skull, orb, crown; new shafts"},
-		{"✨", "Effects on every Epic", "spirit wisps, falling leaves, sea spray, runes, feathers; Rares glint"},
-		{"🦁", "Emblems in raised metal", "your arms and every shield's emblem stand off the board, carved, catching the light"},
-		{"🆕", "Twelve new skins", "Tidebreaker, Emberwyrm, Voidrender, Starfall, Ashbringer, Kraken's Coil and more"},
-		{"👑", "The Mythics and Uniques reforged", "Starforged, Worldbreaker, The Sovereign, Kingslayer: each its own shape"},
-		{"🛡", "Throw your shield, then your sword", "hold {Hurl}: they fly, hit hard, and stick where they land; pick them up again"},
-		{"🪓", "Bigger one-handers", "war axes, maces, hammers, cleavers and shortswords sized up to the hand"},
+		{"⚔", "The Lists: pure swordsmanship", "1v1, 2v2, 3v3: no powers, no throwables, no bows, no magic. Steel only"},
+		{"⏱", "A fight in seconds", "casual queues find you a match fast; one arena for the whole match"},
+		{"🏟", "Small arenas, walled in", "the duelling grounds only, and nobody slips out of the ring"},
+		{"🔔", "3 · 2 · 1 · FIGHT", "every round starts on a countdown; a round counter keeps the score"},
+		{"🏆", "Victory on the podium", "the winners take the podium and celebrate; re-queue in one click"},
+		{"🗡", "Blades that meet", "a blocked blow rings off the guard: the steel really meets now"},
+		{"💨", "Swings with weight", "the body throws into every swing, and a struck fighter reels from the blow"},
 	},
 }
 
@@ -81,9 +80,15 @@ local function show()
 	Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
 	local stroke = Instance.new("UIStroke", card); stroke.Color = Theme.ACCENT; stroke.Thickness = 2; stroke.Transparency = 0.35
 	local size = Instance.new("UISizeConstraint", card); size.MaxSize = Vector2.new(640, 576)
-	-- (a short screen, a phone on its side: the whole card scaled to fit)
-	local vh = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 720
-	local fit = math.min(1, (vh - 30) / 576)
+	-- (a short screen, a phone on its side: the whole card scaled to fit, and fitted again if the
+	-- screen changes size; a window still opening or minimized reads as tiny, so never below half)
+	local function fitNow()
+		local vh = gui.AbsoluteSize.Y
+		if vh < 200 then vh = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 720 end
+		if vh < 200 then vh = 720 end
+		return math.clamp((vh - 30) / 576, 0.5, 1)
+	end
+	local fit = fitNow()
 	local scale = Instance.new("UIScale", card); scale.Scale = fit * 0.9
 	local pad = Instance.new("UIPadding", card)
 	pad.PaddingLeft, pad.PaddingRight, pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 24), UDim.new(0, 24), UDim.new(0, 18), UDim.new(0, 18)
@@ -146,11 +151,16 @@ local function show()
 
 	local closed = false
 	local conn, modeConn
+	local sizeConn = gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		local f = fitNow()
+		if math.abs(f - fit) > 0.01 then fit = f; scale.Scale = f end
+	end)
 	local function close(seen)
 		if closed then return end
 		closed = true
 		if conn then conn:Disconnect() end
 		if modeConn then modeConn:Disconnect() end
+		sizeConn:Disconnect()
 		if seen ~= false then ClientSettings.set("SeenNews", NEWS.version) else shown = false end
 		TweenService:Create(veil, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
 		TweenService:Create(scale, TweenInfo.new(0.2), {Scale = fit * 0.85}):Play()

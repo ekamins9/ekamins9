@@ -1,4 +1,22 @@
-# Updated scripts: blades that meet, swings with weight, hit reactions you can see
+# Updated scripts: What's New for tonight; the Lists end screen knows your side
+
+- **What's New: STEEL MEETS STEEL**: the card in the Courtyard now tells players about the Lists
+  (pure swordsmanship, a fight in seconds, small walled arenas, the countdown, the podium) and the
+  combat feel (blades that meet, swings with weight). Seven lines, so the button never overlaps.
+- **The card always opens at a readable size**: it measured the screen once, and a window still
+  opening or minimized at that moment made it open at almost nothing. It now fits itself again
+  whenever the screen changes size, and never below half size.
+- **The Lists' between-rounds and end screens work out your side** if it wasn't caught during the
+  round (ROUND WON / LOST and VICTORY / DEFEAT were blank for someone who joined late).
+
+| File | Studio location | Type | Change |
+|---|---|---|---|
+| [WhatsNew.client.lua](StarterPlayerScripts/WhatsNew.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | tonight's news; fits on resize |
+| [ListsFlow.client.lua](StarterPlayerScripts/ListsFlow.client.lua) | StarterPlayer ▸ StarterPlayerScripts | LocalScript | your side, worked out when missing |
+
+---
+
+## Before that: blades that meet, swings with weight, hit reactions you can see
 
 - **The procedural motion over the animation finally shows on bots**: HitReact (a struck bot
   rocking), ClashFX (the arm knocked off a guard), DrawFX (a weapon drawn) all laid their turns in
